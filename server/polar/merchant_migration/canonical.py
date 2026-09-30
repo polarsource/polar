@@ -85,6 +85,8 @@ class CanonicalPrice:
     # Picks the price Polar sells when a product has several in one currency.
     is_default: bool = False
     created_at: datetime | None = None
+    # False when the source stopped selling it. It still bills its subscribers.
+    active: bool = True
 
 
 @dataclass
@@ -92,10 +94,7 @@ class CanonicalProduct:
     # In Polar the recurring interval lives on the product and a product holds
     # several prices (one per currency), so a source product is grouped per
     # interval: one CanonicalProduct = one Polar product = (source product,
-    # interval), carrying its currency prices. Archived Stripe products use
-    # that same grouping. Inactive prices on a live Stripe product are a
-    # sibling catalog row (`:archived`) so they don't collide with sellable
-    # prices. Polar archives the row after create.
+    # interval), carrying all its prices, inactive ones included.
     source_id: str
     product_source_id: str
     name: str
@@ -495,6 +494,7 @@ def deserialize(
                         pricing_scheme=CanonicalPricingScheme(price["pricing_scheme"]),
                         is_default=price.get("is_default", False),
                         created_at=_parse_datetime(price.get("created_at")),
+                        active=price.get("active", True),
                     )
                     for price in data["prices"]
                 ],

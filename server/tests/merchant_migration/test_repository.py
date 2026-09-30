@@ -40,6 +40,66 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer, create_payment_method
 from tests.merchant_migration._helpers import canonical_discount, canonical_subscription
 
+_OLD_PRICE = CanonicalPrice(
+    source_id="price_old",
+    currency="usd",
+    amount=500,
+    pricing_scheme=CanonicalPricingScheme.fixed,
+)
+
+
+def _live_product() -> CanonicalProduct:
+    return CanonicalProduct(
+        source_id="prod_1:month:1",
+        product_source_id="prod_1",
+        name="Pro",
+        recurring_interval="month",
+        recurring_interval_count=1,
+        prices=[
+            CanonicalPrice(
+                source_id="price_new",
+                currency="usd",
+                amount=1000,
+                pricing_scheme=CanonicalPricingScheme.fixed,
+            )
+        ],
+    )
+
+
+async def _stage_archived_sibling(
+    save_fixture: SaveFixture,
+    migration: MerchantMigration,
+    organization: Organization,
+    status: MerchantMigrationRecordStatus,
+) -> None:
+    await save_fixture(
+        MerchantMigrationRecord(
+            merchant_migration=migration,
+            organization=organization,
+            type=MerchantMigrationRecordType.product,
+            status=status,
+            source_id="prod_1:month:1:archived",
+            canonical=serialize(
+                replace(
+                    _live_product(),
+                    source_id="prod_1:month:1:archived",
+                    prices=[_OLD_PRICE],
+                    archived=True,
+                )
+            ),
+        )
+    )
+
+
+async def _archived_sibling(
+    repository: MerchantMigrationRecordRepository, organization: Organization
+) -> MerchantMigrationRecord | None:
+    return await repository.get_by_source(
+        organization_id=organization.id,
+        type=MerchantMigrationRecordType.product,
+        source_id="prod_1:month:1:archived",
+    )
+
 
 async def _create_migration(
     save_fixture: SaveFixture, organization: Organization
@@ -355,6 +415,104 @@ class TestUpsert:
         assert reused.merchant_migration_id == second_migration.id
         assert [price["source_id"] for price in reused.canonical["prices"]] == [
             "price_current"
+        ]
+
+    async def test_a_pending_archived_sibling_folds_into_its_product_row(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        await _stage_archived_sibling(
+            save_fixture, migration, organization, MerchantMigrationRecordStatus.pending
+        )
+        repository = MerchantMigrationRecordRepository.from_session(session)
+
+        staged = await repository.upsert(
+            migration, organization, _live_product(), merge_product_prices=True
+        )
+
+        assert await _archived_sibling(repository, organization) is None
+        assert {
+            (price["source_id"], price["active"])
+            for price in staged.canonical["prices"]
+        } == {("price_new", True), ("price_old", False)}
+
+    @pytest.mark.parametrize(
+        ("old_price_active", "expected"),
+        [(False, ["price_new"]), (True, ["price_new", "price_old"])],
+    )
+    async def test_an_imported_archived_sibling_keeps_its_inactive_prices(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        old_price_active: bool,
+        expected: list[str],
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        await _stage_archived_sibling(
+            save_fixture,
+            migration,
+            organization,
+            MerchantMigrationRecordStatus.imported,
+        )
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        product = _live_product()
+        product.prices.append(replace(_OLD_PRICE, active=old_price_active))
+
+        staged = await repository.upsert(
+            migration, organization, product, merge_product_prices=True
+        )
+
+        assert await _archived_sibling(repository, organization) is not None
+        assert [price["source_id"] for price in staged.canonical["prices"]] == expected
+
+    @pytest.mark.parametrize("sibling_staged", [True, False])
+    async def test_an_imported_row_stages_new_inactive_prices_on_its_sibling(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        sibling_staged: bool,
+    ) -> None:
+        first_migration = await _create_migration(save_fixture, organization)
+        second_migration = await _create_migration(save_fixture, organization)
+        imported = MerchantMigrationRecord(
+            merchant_migration=first_migration,
+            organization=organization,
+            type=MerchantMigrationRecordType.product,
+            status=MerchantMigrationRecordStatus.imported,
+            source_id="prod_1:month:1",
+            canonical=serialize(_live_product()),
+        )
+        await save_fixture(imported)
+        if sibling_staged:
+            await _stage_archived_sibling(
+                save_fixture,
+                first_migration,
+                organization,
+                MerchantMigrationRecordStatus.pending,
+            )
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        product = _live_product()
+        product.prices.append(replace(_OLD_PRICE, active=False))
+
+        staged = await repository.upsert(
+            second_migration, organization, product, merge_product_prices=True
+        )
+
+        assert staged.id == imported.id
+        assert [price["source_id"] for price in staged.canonical["prices"]] == [
+            "price_new"
+        ]
+        sibling = await _archived_sibling(repository, organization)
+        assert sibling is not None
+        assert sibling.status == MerchantMigrationRecordStatus.pending
+        assert sibling.merchant_migration_id == second_migration.id
+        assert [price["source_id"] for price in sibling.canonical["prices"]] == [
+            "price_old"
         ]
 
     async def test_merges_promotion_codes_onto_a_pending_coupon(

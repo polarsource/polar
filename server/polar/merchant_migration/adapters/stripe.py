@@ -364,16 +364,13 @@ class StripeAdapter:
             product = price.product
             # Deleted products have no catalog row; subscriptions on them stay
             # on the source. Archived products and inactive prices are catalog
-            # rows. Inactive prices on a live product are a sibling so they
-            # don't collide with the sellable prices.
+            # rows, so their subscriptions can still move.
             if not isinstance(product, stripe_lib.Product) or product.get("deleted"):
                 continue
             recurring = price.recurring
             interval = recurring.interval if recurring else None
             interval_count = recurring.interval_count if recurring else 1
-            key, archived = self._catalog_product_key(
-                product, interval, interval_count, price
-            )
+            key = f"{product.id}:{interval}:{interval_count}"
             canonical = grouped.get(key)
             if canonical is None:
                 canonical = CanonicalProduct(
@@ -383,25 +380,11 @@ class StripeAdapter:
                     recurring_interval=interval,
                     recurring_interval_count=interval_count,
                     prices=[],
-                    archived=archived,
+                    archived=not bool(product.get("active")),
                 )
                 grouped[key] = canonical
             canonical.prices.extend(self._map_prices(price, product))
         return list(grouped.values())
-
-    def _catalog_product_key(
-        self,
-        product: stripe_lib.Product,
-        interval: str | None,
-        interval_count: int,
-        price: stripe_lib.Price,
-    ) -> tuple[str, bool]:
-        base = f"{product.id}:{interval}:{interval_count}"
-        if not bool(product.get("active")):
-            return base, True
-        if bool(price.get("active")):
-            return base, False
-        return f"{base}:archived", True
 
     async def _extract_coupon_page(
         self, cursor: StripeExtractionCursor
@@ -664,6 +647,7 @@ class StripeAdapter:
             default_price is not None and self._id_of(default_price) == price.id
         )
         created_at = self._to_datetime(price.get("created"))
+        active = bool(price.get("active"))
         return [
             CanonicalPrice(
                 source_id=price.id,
@@ -672,6 +656,7 @@ class StripeAdapter:
                 pricing_scheme=pricing_scheme,
                 is_default=is_default,
                 created_at=created_at,
+                active=active,
             )
             for currency, amount in amounts.items()
         ]

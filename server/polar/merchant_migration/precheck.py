@@ -117,6 +117,7 @@ ACTION_REQUIRED_CODES = {
     "duplicate_customer_email",
     "product_name_too_short",
     "missing_default_currency_price",
+    "product_not_sold_in_default_currency",
     "send_invoice_collection",
     "customer_stripe_id_conflict",
     "customer_tax_id_dropped",
@@ -1069,6 +1070,18 @@ def _product_items(
         plan = plans[product.source_id]
         # Sharing a name is allowed in Polar, so it only earns a note.
         note = _pick_note(
+            Reason(
+                "product_not_sold_in_default_currency",
+                (
+                    "The source no longer sells this product in "
+                    f"{default_currency.upper()}, your organization's default "
+                    "currency, so it imports archived: its subscribers move, but "
+                    "new customers can't buy it. To sell it, add an active "
+                    f"{default_currency.upper()} price at the source, then refresh."
+                ),
+            )
+            if not product.archived and imports_archived(product, default_currency)
+            else None,
             Reason("duplicate_product_name", _DUPLICATE_PRODUCT_NAME_REASON)
             if product.name in duplicate_names
             else None,
@@ -1085,7 +1098,9 @@ def _product_items(
                 skip=plan.skip,
                 note=note,
                 price=_representative_price(
-                    product, plan.importable_prices & _sold_price_keys(product)
+                    product,
+                    plan.importable_prices
+                    & _sold_price_keys(product, default_currency),
                 ),
                 product_name=product.name,
                 product_source_id=product.product_source_id,
@@ -1105,7 +1120,7 @@ def _price_items(
             precheck_engine._check_product(product, default_currency),
             PRODUCT_DROP_CODES,
         )
-        sold = _sold_price_keys(product)
+        sold = _sold_price_keys(product, default_currency)
         for price in product.prices:
             skip = product_skip or _drop_reason(
                 precheck_engine._check_price(product, price), PRICE_DROP_CODES
@@ -1495,15 +1510,34 @@ def _importable_prices(product: CanonicalProduct) -> list[CanonicalPrice]:
     ]
 
 
-def _sale_rank(price: CanonicalPrice) -> tuple[bool, datetime]:
-    return price.is_default, price.created_at or datetime.min.replace(tzinfo=UTC)
+def _sale_rank(price: CanonicalPrice) -> tuple[bool, bool, datetime]:
+    return (
+        price.active,
+        price.is_default,
+        price.created_at or datetime.min.replace(tzinfo=UTC),
+    )
 
 
-def _sold_prices(product: CanonicalProduct) -> dict[str, CanonicalPrice]:
+def imports_archived(product: CanonicalProduct, default_currency: str) -> bool:
+    """An archived source product, or a live one the source no longer sells in
+    the organization's default currency, imports as an archived Polar product:
+    new customers can't buy it, and its prices still bill their subscribers."""
+    return product.archived or not any(
+        price.active and price.currency.lower() == default_currency
+        for price in _importable_prices(product)
+    )
+
+
+def _sold_prices(
+    product: CanonicalProduct, default_currency: str
+) -> dict[str, CanonicalPrice]:
     """The price Polar sells in each currency: the source default, else the
-    newest."""
+    newest. A live product only sells prices the source still sells."""
+    sellable_only = not imports_archived(product, default_currency)
     sold: dict[str, CanonicalPrice] = {}
     for price in _importable_prices(product):
+        if sellable_only and not price.active:
+            continue
         currency = price.currency.lower()
         current = sold.get(currency)
         if current is None or _sale_rank(price) > _sale_rank(current):
@@ -1511,21 +1545,27 @@ def _sold_prices(product: CanonicalProduct) -> dict[str, CanonicalPrice]:
     return sold
 
 
-def _sold_price_keys(product: CanonicalProduct) -> set[PriceKey]:
-    return {canonical_price_key(price) for price in _sold_prices(product).values()}
-
-
-def archived_price_keys(product: CanonicalProduct) -> set[PriceKey]:
-    """Importable prices that bill another amount than the one Polar sells in
-    their currency. Each amount imports as an archived price on the same product,
-    so its subscribers keep paying it. A price at the sold amount bills through
-    the sold one."""
-    sold = _sold_prices(product)
+def _sold_price_keys(product: CanonicalProduct, default_currency: str) -> set[PriceKey]:
     return {
         canonical_price_key(price)
-        for price in _importable_prices(product)
-        if price.amount != sold[price.currency.lower()].amount
+        for price in _sold_prices(product, default_currency).values()
     }
+
+
+def archived_price_keys(
+    product: CanonicalProduct, default_currency: str
+) -> set[PriceKey]:
+    """Importable prices that bill another amount than the one Polar sells in
+    their currency, or in a currency it doesn't sell. Each amount imports as an
+    archived price on the same product, so its subscribers keep paying it. A
+    price at the sold amount bills through the sold one."""
+    sold = _sold_prices(product, default_currency)
+    archived: set[PriceKey] = set()
+    for price in _importable_prices(product):
+        sold_price = sold.get(price.currency.lower())
+        if sold_price is None or price.amount != sold_price.amount:
+            archived.add(canonical_price_key(price))
+    return archived
 
 
 def plan_customer_imports(

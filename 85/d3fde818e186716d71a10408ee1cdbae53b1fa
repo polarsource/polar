@@ -1,0 +1,589 @@
+server/polar/merchant_migration/importer.py
+  s_49562f8133e9bf::t_e9b2296e036804 780-781,786,793-794
+server/polar/openapi.py
+  s_49562f8133e9bf::t_e9b2296e036804 75-97
+sdk/cli-commands/src/customers/delete_external.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-52
+sdk/cli-commands/src/metrics/get.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-694
+sdk/cli-commands/src/refunds/create.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-84
+server/tests/merchant_migration/test_endpoints.py
+  s_49562f8133e9bf::t_e9b2296e036804 223,235-243
+sdk/generator/generator/ir.py
+  s_49562f8133e9bf::t_e9b2296e036804 7-13,141-170,180,252,290-301,318-325,710-722,747,767,1026,1304-1319,1334-1345
+clients/packages/cli/src/commands/listen.ts
+  s_49562f8133e9bf::t_e9b2296e036804 20,96,108,124,405
+sdk/cli-commands/src/subscriptions/list.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-178
+sdk/cli-commands/src/meters/update.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-111
+server/tests/merchant_migration/test_repository.py
+  s_49562f8133e9bf::t_e9b2296e036804 385-414,425,428-438,441-444,447-449
+server/polar/subscription/endpoints.py
+  s_49562f8133e9bf::t_e9b2296e036804 20,231-236
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/new/ai/ChatMessageParts.tsx
+  s_49562f8133e9bf::t_e9b2296e036804 85-88
+sdk/cli-commands/src/customers/get.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-24
+server/polar/checkout_link/endpoints.py
+  s_49562f8133e9bf::t_e9b2296e036804 17,94
+sdk/cli-commands/tsconfig.json
+  s_49562f8133e9bf::t_e9b2296e036804 1-12
+sdk/generator/justfile
+  s_49562f8133e9bf::t_e9b2296e036804 25-27
+sdk/cli-commands/src/orders/get.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-24
+sdk/cli-commands/src/orders/update.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-47
+sdk/cli-commands/src/checkout_links/update.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-120
+clients/pnpm-workspace.yaml
+  s_49562f8133e9bf::t_e9b2296e036804 36,61
+clients/packages/cli/src/services/organizations.test.ts
+  s_49562f8133e9bf::t_e9b2296e036804 37,83,177-188
+  s_49562f8133e9bf::t_cb7f36b05e87a0 189-190
+sdk/cli-commands/README.md
+  s_49562f8133e9bf::t_e9b2296e036804 1-186
+sdk/generator/python/template/polar/.agents/skills/polar-python-sdk/SKILL.md
+  s_49562f8133e9bf::t_e9b2296e036804 15
+sdk/cli-commands/src/customers/get_external.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-25
+sdk/cli-commands/src/checkout_links/delete.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-34
+docs/snippets/adapters/webhook-handlers.mdx
+  s_49562f8133e9bf::t_e9b2296e036804 1-51
+terraform/modules/s3_buckets/main.tf
+  s_49562f8133e9bf::t_e9b2296e036804 390
+clients/apps/web/package.json
+  s_49562f8133e9bf::t_e9b2296e036804 23-25,27-28,40,48
+sdk/cli-commands/src/benefits/files.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-47
+sdk/cli-commands/src/customer_seats/revoke_seat.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-27
+server/polar/custom_field/endpoints.py
+  s_49562f8133e9bf::t_e9b2296e036804 11,76-78
+server/polar/webhook/endpoints.py
+  s_49562f8133e9bf::t_e9b2296e036804 12,66-68
+server/tests/auth/oauth2/test_router.py
+  s_49562f8133e9bf::t_e9b2296e036804 42-43,45-48,141-156
+sdk/cli-commands/src/payments/list.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-91
+clients/packages/cli/src/services/trigger.test.ts
+  s_49562f8133e9bf::t_e9b2296e036804 32,89,132,153-155
+server/polar/benefit/endpoints.py
+  s_49562f8133e9bf::t_e9b2296e036804 11,100-102
+sdk/cli-commands/src/checkouts/get.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-24
+clients/packages/cli/src/utils/api-preview.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-56
+sdk/cli-commands/src/license_keys/update.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-86
+server/polar/subscription/schemas.py
+  s_49562f8133e9bf::t_e9b2296e036804 35,467,480-481,489
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/PrecheckPanel.test.tsx
+  s_49562f8133e9bf::t_e9b2296e036804 36-39,42,52-53,55-79,103
+clients/apps/web/src/hooks/queries/merchantMigrations.test.tsx
+  s_49562f8133e9bf::t_e9b2296e036804 1-74
+sdk/cli-commands/src/checkouts/list.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-98
+sdk/cli-commands/src/customers/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-33
+server/tests/merchant_migration/test_service.py
+  s_49562f8133e9bf::t_e9b2296e036804 30,92,241-249,258-365,478,485,530,535-537,2046,2061-2069,2076-2082
+sdk/generator/typescript/template/src/base.ts
+  s_49562f8133e9bf::t_e9b2296e036804 112-113,169-171
+sdk/cli-commands/src/webhooks/redeliver_webhook_event.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-25
+sdk/generator/cli_commands/template/src/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-17
+clients/adapters/tanstack-start/package.json
+  s_49562f8133e9bf::t_e9b2296e036804 3
+sdk/cli-commands/src/payments/get.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-24
+clients/apps/web/src/app/(main)/feedback/question/route.ts
+  s_49562f8133e9bf::t_e9b2296e036804 5,11,13,16,150,215-222,225-226,233,235,238-240
+clients/adapters/better-auth/CHANGELOG.md
+  s_49562f8133e9bf::t_e9b2296e036804 3-26
+clients/packages/cli/src/commands/api-organization.test.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-252
+sdk/cli-commands/src/custom_fields/get.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-24
+sdk/cli-commands/src/customers/members/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-27
+sdk/cli-commands/src/products/delete.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-34
+sdk/cli-commands/src/benefits/grants.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-58
+server/polar/license_key/schemas.py
+  s_49562f8133e9bf::t_e9b2296e036804 28,283-286
+sdk/cli-commands/src/checkout_links/get.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-24
+server/polar/meter/schemas.py
+  s_49562f8133e9bf::t_e9b2296e036804 15,93
+clients/packages/cli/src/schemas/Auth.ts
+  s_49562f8133e9bf::t_e9b2296e036804 34
+server/polar/kit/versioning.py
+  s_49562f8133e9bf::t_e9b2296e036804 27,148-151,161-180,188
+server/polar/merchant_migration/adapters/stripe.py
+  s_49562f8133e9bf::t_e9b2296e036804 17,1129-1130,1138-1156,1160-1161
+sdk/cli-commands/src/benefit_grants/list.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-87
+sdk/cli-commands/src/subscriptions/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-15
+sdk/cli-commands/src/webhooks/delete_webhook_endpoint.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-37
+sdk/cli-commands/src/customer_meters/list.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-92
+sdk/cli-commands/src/webhooks/get_webhook_endpoint.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-24
+sdk/cli-commands/src/inputs.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-43
+sdk/cli-commands/src/organizations/get.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-24
+sdk/cli-commands/src/customer_seats/assign_seat.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-85
+docs/integrate/sdk/adapters/better-auth.mdx
+  s_49562f8133e9bf::t_e9b2296e036804 6-7,16,33,38,43,48,53-54,77,79-80,84,107-114,133,146-147,149-160,173,177-178,190-191,194-247,250-263,267-278,288-290,295,339,341-350,352-362,373,375,406,408,413,427,431,443,446,451,454,500,504,513,529-536,549,570-572,580,590-591,607,609,613,656
+clients/packages/cli/src/commands/destructive-flags.test.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-125
+docs/integrate/sdk/adapters/tanstack-start.mdx
+  s_49562f8133e9bf::t_e9b2296e036804 6-7,19,24,29,34,45,51,54,62-63,68-80,83-84,91,97,99-100,107-108,111,132,136
+sdk/cli-commands/.gitignore
+  s_49562f8133e9bf::t_e9b2296e036804 1-3
+sdk/cli-commands/src/customers/members/delete_external.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-49
+sdk/cli-commands/src/orders/list.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-147
+sdk/cli-commands/src/products/get.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-24
+server/polar/merchant_migration/repository.py
+  s_49562f8133e9bf::t_e9b2296e036804 884-889,891,900-903
+sdk/generator/tests/test_cli_commands.py
+  s_49562f8133e9bf::t_e9b2296e036804 1-427
+clients/adapters/adapter-utils/CHANGELOG.md
+  s_49562f8133e9bf::t_e9b2296e036804 3-8
+clients/packages/cli/src/services/organizations.ts
+  s_49562f8133e9bf::t_e9b2296e036804 63-65
+sdk/cli-commands/package.json
+  s_49562f8133e9bf::t_e9b2296e036804 1-19
+sdk/cli-commands/src/events/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-8
+sdk/cli-commands/src/orders/receipt.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-42
+sdk/cli-commands/src/discounts/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-17
+docs/integrate/sdk/adapters/nextjs.mdx
+  s_49562f8133e9bf::t_e9b2296e036804 6-7,21,26,31,36,41,51,54,59-60,65-77,80-81,88,91-92,94,98-99,102,120
+sdk/cli-commands/src/events/get.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-24
+clients/apps/web/src/components/Layout/Dashboard/DashboardSidebar.tsx
+  s_49562f8133e9bf::t_e9b2296e036804 75-76,78-88,227,231,240-247
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/new/ai/chat/route.ts
+  s_49562f8133e9bf::t_e9b2296e036804 6,8-9,14,16,19,26,238-239,241-244,251,254-255,258,353-357,360-361,385,447-450,459-471,478,481-483
+sdk/cli-commands/src/customer_seats/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-19
+server/polar/auth/schemas.py
+  s_49562f8133e9bf::t_e9b2296e036804 53-61
+clients/adapters/nuxt/CHANGELOG.md
+  s_49562f8133e9bf::t_e9b2296e036804 3-18
+clients/packages/cli/package.json
+  s_49562f8133e9bf::t_e9b2296e036804 12,37-38
+clients/packages/cli/README.md
+  s_49562f8133e9bf::t_e9b2296e036804 92-116
+docs/guides/grant-meter-credits-after-purchase.mdx
+  s_49562f8133e9bf::t_e9b2296e036804 174
+sdk/cli-commands/src/customers/members/get.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-26
+sdk/cli-commands/src/products/create.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-136
+server/tests/auth/test_endpoints.py
+  s_49562f8133e9bf::t_e9b2296e036804 203-207,212-215,284-299
+sdk/cli-commands/src/custom_fields/update.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-72
+sdk/cli-commands/src/customers/get_state_external.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-25
+sdk/cli-commands/src/subscriptions/update.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-193
+sdk/cli-commands/src/customers/create.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-92
+sdk/cli-commands/src/files/delete.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-26
+sdk/cli-commands/src/webhooks/list_webhook_endpoints.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-51
+clients/adapters/tanstack-start/CHANGELOG.md
+  s_49562f8133e9bf::t_e9b2296e036804 3-17
+clients/adapters/nuxt/README.md
+  s_49562f8133e9bf::t_e9b2296e036804 11-13,17,22-29,33-34,40,62,68,79,86,98,109,123,125,130-132,137-140,142,149,156-166
+sdk/cli-commands/src/webhooks/reset_webhook_endpoint_secret.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-25
+sdk/cli-commands/src/customers/delete.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-50
+sdk/cli-commands/src/customers/members/create_external.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-67
+sdk/cli-commands/src/customers/list_payment_methods_external.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-53
+sdk/generator/python/template/polar/version/client.py
+  s_49562f8133e9bf::t_e9b2296e036804 29,33,62,66
+sdk/cli-commands/src/orders/generate_invoice.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-24
+sdk/cli-commands/src/customers/members/create.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-58
+sdk/cli-commands/src/meters/list.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-80
+sdk/cli-commands/src/discounts/delete.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-36
+sdk/generator/cli.py
+  s_49562f8133e9bf::t_e9b2296e036804 20,53,114,118-126
+server/polar/product/endpoints.py
+  s_49562f8133e9bf::t_e9b2296e036804 14,112-114
+server/tests/openapi.2026-10.json
+  s_49562f8133e9bf::t_e9b2296e036804 1
+sdk/generator/python/template/README.md
+  s_49562f8133e9bf::t_e9b2296e036804 126-138
+sdk/cli-commands/src/customers/members/list_external.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-64
+sdk/cli-commands/src/customer_seats/resend_invitation.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-25
+sdk/generator/cli_commands/template/tsconfig.json
+  s_49562f8133e9bf::t_e9b2296e036804 1-12
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/PrecheckPanel.tsx
+  s_49562f8133e9bf::t_e9b2296e036804 29-37,67-73
+sdk/cli-commands/src/refunds/list.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-94
+server/polar/discount/endpoints.py
+  s_49562f8133e9bf::t_e9b2296e036804 10,67-73
+clients/packages/cli/tsup.config.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-5
+clients/adapters/better-auth/package.json
+  s_49562f8133e9bf::t_e9b2296e036804 3
+sdk/cli-commands/src/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-79
+server/polar/webhook/schemas.py
+  s_49562f8133e9bf::t_e9b2296e036804 27,220-222
+sdk/cli-commands/src/metrics/limits.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-19
+clients/apps/web/src/instrumentation.ts
+  s_49562f8133e9bf::t_e9b2296e036804 6-7
+clients/packages/cli/src/commands/api-commands.test.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-236
+sdk/cli-commands/src/orders/invoice.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-24
+clients/packages/cli/src/services/api.ts
+  s_49562f8133e9bf::t_e9b2296e036804 53-55
+sdk/cli-commands/src/files/list.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-53
+sdk/cli-commands/src/license_keys/rotate.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-26
+sdk/cli-commands/src/webhooks/update_webhook_endpoint.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-132
+sdk/cli-commands/src/meters/get.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-24
+sdk/cli-commands/src/products/list.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-106
+sdk/generator/cli_commands/emitter.py
+  s_49562f8133e9bf::t_e9b2296e036804 1-380
+sdk/cli-commands/src/customers/members/update.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-54
+sdk/generator/cli_commands/ir.py
+  s_49562f8133e9bf::t_e9b2296e036804 1-6
+docs/integrate/sdk/adapters/nuxt.mdx
+  s_49562f8133e9bf::t_e9b2296e036804 6-7,39-40,43,48-55,59-60,65,75,83-84,89-101,104-105,113,119,121,130-131,134,158
+sdk/cli-commands/src/license_keys/list.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-64
+sdk/generator/python/template/polar/base.py
+  s_49562f8133e9bf::t_e9b2296e036804 75-86,128,133,162,167
+server/polar/auth/oauth2/router.py
+  s_49562f8133e9bf::t_e9b2296e036804 43,45,162,169,184
+clients/adapters/nuxt/package.json
+  s_49562f8133e9bf::t_e9b2296e036804 3
+clients/packages/cli/src/utils/api-preview.test.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-73
+sdk/generator/typescript/template/src/base.test.ts
+  s_49562f8133e9bf::t_e9b2296e036804 205-226
+sdk/cli-commands/src/discounts/list.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-74
+sdk/cli-commands/src/benefits/update.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-74
+sdk/cli-commands/src/meters/create.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-84
+sdk/cli-commands/src/subscriptions/get.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-24
+sdk/cli-commands/src/subscriptions/revoke.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-37
+clients/packages/cli/AGENTS.md
+  s_49562f8133e9bf::t_e9b2296e036804 1-4
+sdk/generator/cli_commands/template/.gitignore
+  s_49562f8133e9bf::t_e9b2296e036804 1-3
+clients/apps/web/src/hooks/auth.ts
+  s_49562f8133e9bf::t_e9b2296e036804 7,70-73,75,77
+clients/adapters/better-auth/README.md
+  s_49562f8133e9bf::t_e9b2296e036804 44-47,50-55,58-80,82-104,113,146,162-163,175,180,197,268,346,433-436,453-455,477,639-646,654,665,667,670,679-682,691,701-703
+sdk/cli-commands/src/products/update_benefits.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-43
+sdk/cli-commands/src/products/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-19
+sdk/cli-commands/src/custom_fields/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-17
+server/tests/kit/test_versioning.py
+  s_49562f8133e9bf::t_e9b2296e036804 31-32,37,78-85,108,115,118,125
+sdk/cli-commands/src/customers/update.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-81
+clients/adapters/tanstack-start/README.md
+  s_49562f8133e9bf::t_e9b2296e036804 5,14-27,35,51-63,69,72,74-85,87,95,97,102-104,109-112,114,121,128-138
+sdk/cli-commands/src/customers/members/list.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-58
+sdk/cli-commands/src/benefits/get.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-24
+clients/packages/cli/src/commands/listen.test.ts
+  s_49562f8133e9bf::t_e9b2296e036804 78,139
+sdk/cli-commands/src/custom_fields/delete.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-35
+sdk/cli-commands/src/payments/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-8
+server/polar/auth/endpoints.py
+  s_49562f8133e9bf::t_e9b2296e036804 70,105,113-114,237
+server/polar/auth/helpers.py
+  s_49562f8133e9bf::t_e9b2296e036804 45,47-49,56
+clients/apps/web/src/app/(main)/onboarding/validate-description/route.ts
+  s_49562f8133e9bf::t_e9b2296e036804 2,84-85,99,190
+sdk/cli-commands/src/discounts/create.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-256
+sdk/cli-commands/src/runtime.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-58
+sdk/cli-commands/src/webhooks/create_webhook_endpoint.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-115
+clients/apps/web/src/app/(main)/feedback/question/validation.ts
+  s_49562f8133e9bf::t_e9b2296e036804 2-7,34,44,48-49,51,56
+sdk/cli-commands/src/discounts/update.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-246
+server/polar/refund/schemas.py
+  s_49562f8133e9bf::t_e9b2296e036804 19,57
+sdk/cli-commands/src/custom_fields/create.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-80
+sdk/cli-commands/src/customer_seats/list_seats.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-40
+sdk/cli-commands/src/events/list_names.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-87
+sdk/cli-commands/src/refunds/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-8
+server/polar/meter/endpoints.py
+  s_49562f8133e9bf::t_e9b2296e036804 15,81
+server/pyproject.toml
+  s_49562f8133e9bf::t_e9b2296e036804 66
+sdk/generator/cli_commands/template/src/command.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-130
+sdk/cli-commands/src/license_keys/get_activation.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-29
+sdk/cli-commands/src/checkouts/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-8
+server/tests/merchant_migration/test_stripe_adapter.py
+  s_49562f8133e9bf::t_e9b2296e036804 17,1063,1075,1172-1232
+  s_49562f8133e9bf::t_3c68681749557f 1233
+clients/packages/cli/src/cli.ts
+  s_49562f8133e9bf::t_e9b2296e036804 2,12,30,53-55
+sdk/cli-commands/src/event_types/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-8
+sdk/cli-commands/src/customer_meters/get.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-24
+sdk/generator/cli_commands/preview.py
+  s_49562f8133e9bf::t_e9b2296e036804 1-83
+sdk/cli-commands/src/benefits/create.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-89
+sdk/cli-commands/src/files/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-8
+server/polar/license_key/endpoints.py
+  s_49562f8133e9bf::t_e9b2296e036804 16,101-103,155
+clients/packages/cli/src/utils/ui.ts
+  s_49562f8133e9bf::t_e9b2296e036804 31,34-35,41-43
+clients/packages/i18n/scripts/translate.ts
+  s_49562f8133e9bf::t_e9b2296e036804 71
+sdk/cli-commands/src/discounts/get.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-24
+server/scripts/backfill_resend_id.py
+  s_49562f8133e9bf::t_e9b2296e036804 2,25-44,61-71
+sdk/cli-commands/src/organizations/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-8
+sdk/generator/typescript/template/README.md
+  s_49562f8133e9bf::t_e9b2296e036804 67-82
+sdk/cli-commands/src/event_types/update.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-47
+sdk/cli-commands/src/customers/members/delete.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-42
+docs/guides/nextjs.mdx
+  s_49562f8133e9bf::t_e9b2296e036804 62-63,103-106,121-129
+sdk/generator/typescript/template/.agents/skills/polar-typescript-sdk/SKILL.md
+  s_49562f8133e9bf::t_e9b2296e036804 15
+clients/adapters/nextjs/package.json
+  s_49562f8133e9bf::t_e9b2296e036804 3
+clients/apps/web/src/utils/aiTelemetry.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-70
+sdk/cli-commands/src/customer_meters/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-8
+clients/packages/cli/src/services/trigger.ts
+  s_49562f8133e9bf::t_e9b2296e036804 13,74,150,153-155,176-179,191
+sdk/cli-commands/src/license_keys/get.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-24
+clients/packages/cli/src/utils/test-utils/services.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1,254-257,265,268-275
+sdk/cli-commands/src/meters/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-17
+sdk/generator/python/template/tests/test_base.py
+  s_49562f8133e9bf::t_e9b2296e036804 17,277-308
+server/polar/merchant_migration/service.py
+  s_49562f8133e9bf::t_e9b2296e036804 460-462,524,538-542
+clients/packages/cli/src/services/polar.test.ts
+  s_49562f8133e9bf::t_e9b2296e036804 3,25-28,79-84,100-103,109-123,138-196
+server/polar/product/schemas.py
+  s_49562f8133e9bf::t_e9b2296e036804 84,744
+sdk/cli-commands/src/customers/list_payment_methods.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-46
+sdk/cli-commands/src/customers/list.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-89
+sdk/cli-commands/src/customers/members/update_external.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-60
+clients/adapters/nextjs/README.md
+  s_49562f8133e9bf::t_e9b2296e036804 5,28,54-55,58,77,120
+sdk/cli-commands/src/customers/update_external.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-68
+sdk/CHANGELOG.md
+  s_49562f8133e9bf::t_e9b2296e036804 13-23,34-35
+sdk/cli-commands/src/products/update.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-147
+sdk/generator/cli_commands/confirmation.py
+  s_49562f8133e9bf::t_e9b2296e036804 1-97
+sdk/generator/cli_commands/template/src/inputs.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-39
+sdk/cli-commands/src/customer_seats/get_claim_info.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-44
+sdk/cli-commands/src/customer_seats/claim_seat.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-55
+sdk/cli-commands/src/customers/get_state.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-24
+clients/adapters/adapter-utils/package.json
+  s_49562f8133e9bf::t_e9b2296e036804 3
+clients/adapters/nextjs/CHANGELOG.md
+  s_49562f8133e9bf::t_e9b2296e036804 3-17
+sdk/cli-commands/src/checkout_links/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-17
+sdk/cli-commands/src/webhooks/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-23
+server/polar/models/product_price.py
+  s_49562f8133e9bf::t_e9b2296e036804 459
+sdk/cli-commands/src/checkout_links/list.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-71
+sdk/cli-commands/src/metrics/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-8
+sdk/cli-commands/src/customers/members/get_external.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-33
+sdk/cli-commands/src/orders/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-19
+server/polar/member/endpoints.py
+  s_49562f8133e9bf::t_e9b2296e036804 9,41-48,285,309
+sdk/cli-commands/src/webhooks/list_webhook_deliveries.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-131
+sdk/cli-commands/src/custom_fields/list.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-85
+server/polar/customer/endpoints.py
+  s_49562f8133e9bf::t_e9b2296e036804 20,63-69,270,292
+clients/packages/cli/src/services/polar.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-13,19-38,44,46,65,67,70-73,75,77-88,93-94,97-101,105,108,123,128-131,135,141
+sdk/cli-commands/src/license_keys/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-17
+sdk/cli-commands/src/organizations/list.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-65
+sdk/cli-commands/src/benefits/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-21
+docs/features/customer-portal/navigate-customers.mdx
+  s_49562f8133e9bf::t_e9b2296e036804 55,57
+sdk/generator/cli_commands/template/src/service.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-19
+clients/apps/web/src/hooks/queries/merchantMigrations.ts
+  s_49562f8133e9bf::t_e9b2296e036804 53-58
+sdk/cli-commands/src/benefits/delete.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-34
+sdk/cli-commands/src/meters/quantities.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-689
+clients/packages/cli/src/commands/trigger/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 100,106
+sdk/cli-commands/src/benefit_grants/index.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-7
+clients/packages/cli/src/services/api-runtime.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-163
+sdk/cli-commands/src/checkout_links/create.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-134
+sdk/cli-commands/src/event_types/list.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-102
+sdk/generator/cli_commands/template/src/runtime.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-58
+sdk/cli-commands/src/benefits/list.ts
+  s_49562f8133e9bf::t_e9b2296e036804 1-103
+sdk/generator/cli_commands/template/package.json
+  s_49562f8133e9bf::t_e9b2296e036804 1-17
+clients/packages/client/src/v1.ts
+  s_49562f8133e9bf::t_c3232a1bb585d4 23203-23213,23249,23251,23283,23285,23290,23292,24140,24142,24309,24311,34336,34338,39221,39223,39255,39257,39262,39264,45541
+clients/pnpm-lock.yaml
+  s_49562f8133e9bf::t_221bf63f950895 10-11,79-80,641-642,644-645,647-648,651-654,656-657,691-693,716-717,732,762,1053-1055,1057-1058,1147,1159,1395-1397,1401-1403,1407-1409,1413-1415,1419-1421,1425-1431,1435-1437,1439-1441,3896-3899,3910-3921,3928-3939,3946-3957,4506-4511,4519-4520,4538-4539,4542-4547,4552-4553,4558-4567,4576-4579,4587-4588,6938-6940,7019-7021,13676-13678,14551,14553-14554,14557,14559-14560,14564,14566-14567,14570,14572-14573,14578,14580-14581,14584-14592,14594,14596,14598,14601,14605,14607-14610,15366-15367,16447,16926,16931,16941,16943,16945-16946,16948,16950,16958,16960,16962-16964,16971,16973-16974,17796-17800,17808-17823,17833-17850,17857-17872,18170-18174,18182,18200,18202,18207-18209,18211,18213-18214,18225-18227,18231-18232,18234-18235,18237-18238,18240-18241,18246,18248-18249,18251-18252,18254-18255,18257-18258,19734,19742,19760,19769,19773,19780,20701-20702,20908,20920,20996,21218-21219,21281,21283-21285,21717-21718,21795-21796,22479-22480,22664,22972-22973,23526,23657,23716,23725,23847,23849-23850,24253-24254,24719,24767,24873,24919,24925,24970,24972-24975,24985,24987,24992,24996,25245-25246,26366-26367,26615-26616,26629,26932,27098-27099,27131,27137,27143,27148,27153,27155-27156,27791,27793,28497-28498,29590,30298-30299
+docs/openapi/2026-10.openapi.json
+  s_49562f8133e9bf::t_f7acc686de147a 58650-58651,60111-60112,60501-60502,74483-74484,80706-80707
+docs/openapi/2027-01.openapi.json
+  s_49562f8133e9bf::t_3e2f6672dde4f1 58640-58687,58698-58699,58709-58713,60007-60047,60204-60205,60228-60293,60660-60661,70019-70022,70030-70033,74650-74651,80854-80901,80921-80922,80932-80936
+sdk/python/README.md
+  s_49562f8133e9bf::t_66530bf864a620 124-136
+sdk/python/polar/.agents/skills/polar-python-sdk/SKILL.md
+  s_49562f8133e9bf::t_d82c628eb25fb6 15
+sdk/python/polar/__init__.py
+  s_49562f8133e9bf::t_bc0692be97d0a4 11
+sdk/python/polar/base.py
+  s_49562f8133e9bf::t_d0399e3b997692 77-88,130,135,164,169
+sdk/python/polar/v2026_04/client.py
+  s_49562f8133e9bf::t_21d3c19a479ac3 58,62,114,118
+sdk/python/polar/v2026_10/client.py
+  s_49562f8133e9bf::t_d1651df4df38e2 58,62,114,118
+sdk/python/polar/v2026_10/outputs.py
+  s_49562f8133e9bf::t_134a685264a290 6504,6507,6876,6879,6921,6924,9478,9481,11023,11026
+sdk/python/polar/v2027_01/client.py
+  s_49562f8133e9bf::t_d245285bcc18d1 58,62,114,118
+sdk/python/polar/v2027_01/outputs.py
+  s_49562f8133e9bf::t_9d90741465ccbd 6504,6507,6531-6542,6871-6884,6902,6905,6930-6949,6967,6970,9524,9527,11069,11072,11096-11107
+sdk/python/tests/test_base.py
+  s_49562f8133e9bf::t_3fc1a6dfc98bc5 17,305-336
+sdk/python/uv.lock
+  s_49562f8133e9bf::t_333c6944ab5a2b 215-235
+sdk/typescript/.agents/skills/polar-typescript-sdk/SKILL.md
+  s_49562f8133e9bf::t_9a99f60f1111f8 15
+sdk/typescript/README.md
+  s_49562f8133e9bf::t_280daf9114dcd0 67-82
+sdk/typescript/package.json
+  s_49562f8133e9bf::t_da3860629d8d6b 3
+sdk/typescript/pnpm-lock.yaml
+  s_49562f8133e9bf::t_06e47797baa9a5 19,163-164,169-170,175-176,181-182,187-188,193-194,199-200,205-206,212-213,219-220,226-227,233-234,240-241,247-248,254-255,261-262,267-268,273-274,279-280,745-746,1051,1054,1057,1060,1063,1066,1069,1072,1075,1078,1081,1084,1087,1090,1093,1096,1099,1102,1105,1415,1417-1435
+sdk/typescript/src/2026-04/models.ts
+  s_49562f8133e9bf::t_da6704222a35a3 944
+sdk/typescript/src/2026-10/models.ts
+  s_49562f8133e9bf::t_d39674d4000102 944,14589,14593,15249,15253,15397,15401,21157,21161,23971,23975
+sdk/typescript/src/2027-01/models.ts
+  s_49562f8133e9bf::t_b9d0224c496289 944,14589,14593,14634-14649,15234-15255,15287,15291,15334-15363,15465,15469,21225,21229,24039,24043,24084-24099
+sdk/typescript/src/base.test.ts
+  s_49562f8133e9bf::t_7cbb48ff736286 188-209
+sdk/typescript/src/base.ts
+  s_49562f8133e9bf::t_eab95e0872c854 103-104,156-158
+server/uv.lock
+  s_49562f8133e9bf::t_3dfe332a7b6917 15,182,186,188,190,457,464,466,498,505,507,1031,1042,1044,1193,1199,1201,2789,2901,2909,2911,3253,3255,3257,3463,3468,3470
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "85d3fde818e186716d71a10408ee1cdbae53b1fa",
+  "prompts": {},
+  "sessions": {
+    "s_49562f8133e9bf": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f7b2060f-9b00-4e09-80cd-7cd9a7570907",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

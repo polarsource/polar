@@ -374,6 +374,22 @@ class OrganizationReviewRepository(
         )
         await self.session.execute(statement)
 
+    async def get_latest_human_feedback(
+        self, agent_review_id: UUID
+    ) -> OrganizationReviewFeedback | None:
+        statement = (
+            select(OrganizationReviewFeedback)
+            .where(
+                OrganizationReviewFeedback.agent_review_id == agent_review_id,
+                OrganizationReviewFeedback.actor_type == ActorType.HUMAN,
+                OrganizationReviewFeedback.deleted_at.is_(None),
+            )
+            .order_by(OrganizationReviewFeedback.created_at.desc())
+            .limit(1)
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none()
+
     async def get_feedback_history(
         self, organization_id: UUID
     ) -> list[OrganizationReviewFeedback]:

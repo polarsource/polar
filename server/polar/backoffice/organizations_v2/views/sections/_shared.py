@@ -22,6 +22,14 @@ VERDICT_BADGE: dict[str, str] = {
     "NEEDS_HUMAN_REVIEW": "badge-warning",
 }
 
+# DaisyUI badge class for each DecisionType value
+DECISION_BADGE: dict[str, str] = {
+    "APPROVE": "badge-success",
+    "DENY": "badge-error",
+    "ESCALATE": "badge-warning",
+    "SNOOZE": "badge-info",
+}
+
 # Short label for each ReviewContext value (the review trigger)
 REVIEW_CONTEXT_LABELS: dict[str, str] = {
     "submission": "Submission",

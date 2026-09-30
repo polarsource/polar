@@ -23200,6 +23200,17 @@ export interface components {
       /** Repository Name */
       repository_name: string
     }
+    /** GlobalAuthenticationSessionStart */
+    GlobalAuthenticationSessionStart: {
+      /** Return To */
+      return_to?: string | null
+      /**
+       * Sso Discovery
+       * @description Send users of an SSO-enforced email domain to their organization's SSO.
+       * @default true
+       */
+      sso_discovery: boolean
+    }
     /** GrantedLicenseKey */
     GrantedLicenseKey: {
       /**
@@ -45527,7 +45538,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['AuthenticationSessionStart']
+        'application/json': components['schemas']['GlobalAuthenticationSessionStart']
       }
     }
     responses: {

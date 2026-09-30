@@ -1273,7 +1273,17 @@ class MerchantMigrationService:
         if operation is not None and operation.is_stalled():
             # The report already shows a stalled run as stopped, so a late job
             # must not resume switching behind it.
-            await self._fail_operation(session, migration, _STALLED_CUTOVER_ERROR)
+            loaded_progress_at = operation.last_progress_at
+            await MerchantMigrationRepository.from_session(session).refresh_for_update(
+                migration
+            )
+            current_operation = migration.operation
+            if (
+                current_operation is not None
+                and current_operation.is_stalled()
+                and current_operation.last_progress_at == loaded_progress_at
+            ):
+                await self._fail_operation(session, migration, _STALLED_CUTOVER_ERROR)
             return
         if not self._cutover_started(migration):
             log.warning(

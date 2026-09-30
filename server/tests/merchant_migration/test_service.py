@@ -9,7 +9,7 @@ import freezegun
 import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload
 
 from polar.auth.models import AuthSubject
@@ -4768,6 +4768,57 @@ class TestRunCutover:
         enqueue.assert_not_called()
         assert migration.operation is not None
         assert migration.operation.status == MerchantMigrationOperationStatus.failed
+
+    async def test_keeps_a_restart_that_landed_after_loading_the_stall(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+        runner = _fake_cutover(mocker)
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_MOVE_SUBSCRIPTIONS
+        )
+        migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.running,
+            last_progress_at=utc_now() - STALL_THRESHOLD - timedelta(minutes=1),
+        )
+        await save_fixture(migration)
+        restarted = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.running,
+            kind=MerchantMigrationOperationKind.cutover,
+            last_progress_at=utc_now(),
+        )
+
+        refresh_for_update = MerchantMigrationRepository.refresh_for_update
+
+        async def restart_then_lock(
+            repository: MerchantMigrationRepository,
+            locked: MerchantMigration,
+        ) -> None:
+            await session.execute(
+                update(MerchantMigration)
+                .where(MerchantMigration.id == locked.id)
+                .values(operation=restarted)
+            )
+            await refresh_for_update(repository, locked)
+
+        mocker.patch.object(
+            MerchantMigrationRepository, "refresh_for_update", restart_then_lock
+        )
+
+        await service.run_cutover(session, migration.id)
+
+        await session.flush()
+        await session.refresh(migration)
+        assert runner.run.await_count == 0
+        enqueue.assert_not_called()
+        assert migration.operation is not None
+        assert migration.operation.status == MerchantMigrationOperationStatus.running
+        assert migration.operation.stalled is False
 
 
 @pytest.mark.asyncio

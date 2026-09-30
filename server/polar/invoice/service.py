@@ -4,7 +4,6 @@ import json
 from datetime import datetime
 
 from polar.config import settings
-from polar.enums import PayoutAccountType
 from polar.exceptions import PolarError
 from polar.integrations.aws.s3 import S3Service
 from polar.kit.utils import utc_now
@@ -119,11 +118,10 @@ class InvoiceService:
 
         # Manual payouts have no succeeded attempt, so `paid_at` is always None.
         # Fall back to the payout's creation date in that case.
-        if payout.processor == PayoutAccountType.manual:
+        paid_at = payout.paid_at
+        if payout.paid_at is None:
             paid_at = payout.created_at
-        else:
-            assert payout.paid_at is not None
-            paid_at = payout.paid_at
+        assert paid_at is not None
 
         items = [
             InvoiceItem(

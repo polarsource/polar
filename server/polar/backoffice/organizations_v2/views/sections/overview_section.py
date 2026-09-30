@@ -254,7 +254,7 @@ class OverviewSection(ChecklistMixin):
 
             # Verdict + risk level — prominent inline
             has_missing = bool(self.missing_items)
-            with tag.div(classes="flex items-center gap-4 mb-4"):
+            with tag.div(classes="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4"):
                 verdict = review_report.verdict.value
                 if verdict == ReviewVerdict.APPROVE.value and has_missing:
                     badge_class = "badge-neutral"
@@ -265,7 +265,7 @@ class OverviewSection(ChecklistMixin):
                 else:
                     badge_class = "badge-neutral"
                     display_verdict = verdict
-                with tag.div(classes="flex items-center gap-1"):
+                with tag.div(classes="flex items-center gap-1 whitespace-nowrap"):
                     with tag.span(classes="text-sm text-base-content/60"):
                         text("AI Verdict:")
                     with tag.div(classes=f"badge {badge_class} badge-sm"):
@@ -273,7 +273,7 @@ class OverviewSection(ChecklistMixin):
 
                 risk_level = review_report.overall_risk_level.value
                 risk_badge_class = RISK_LEVEL_BADGE.get(risk_level, "badge-ghost")
-                with tag.div(classes="flex items-center gap-1"):
+                with tag.div(classes="flex items-center gap-1 whitespace-nowrap"):
                     with tag.span(classes="text-sm text-base-content/60"):
                         text("AI Risk:")
                     with tag.div(classes=f"badge {risk_badge_class} badge-sm"):
@@ -282,7 +282,7 @@ class OverviewSection(ChecklistMixin):
                 if self.human_feedback and self.human_feedback.decision:
                     decision = self.human_feedback.decision.value
                     decision_badge_class = DECISION_BADGE.get(decision, "badge-ghost")
-                    with tag.div(classes="flex items-center gap-1"):
+                    with tag.div(classes="flex items-center gap-1 whitespace-nowrap"):
                         with tag.span(classes="text-sm text-base-content/60"):
                             text("Human Decision:")
                         with tag.div(classes=f"badge {decision_badge_class} badge-sm"):

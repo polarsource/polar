@@ -2,26 +2,20 @@ import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { BackdropPanel, type BackdropSrc } from './Backdrop'
 
-const INDENT = ' '
-
 const isComment = (line: string) => /^\s*(\/\/|#)/.test(line)
 
-export const CodeLine = ({ line }: { line: string }) => {
-  const indented = line.replace(/ {2,}/g, (spaces) =>
-    INDENT.repeat(spaces.length),
-  )
-  return (
+export const CodeLine = ({ line }: { line: string }) => (
+  <div className="whitespace-pre">
     <Text
       variant="default"
       as="span"
       color={isComment(line) ? 'muted' : 'default'}
       monospace
-      wrap="nowrap"
     >
-      {indented || INDENT}
+      {line || <br />}
     </Text>
-  )
-}
+  </div>
+)
 
 interface CodePanelProps {
   caption: string

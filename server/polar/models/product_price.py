@@ -448,15 +448,11 @@ class ProductPriceSeatUnit(TieredPrice, NewProductPrice, ProductPrice):
     """Seat-based price billed from the shared `tiers` columns.
 
     The public `seat_tiers` attribute is the HTTP payload reconstructed
-    from those columns. `_seat_tiers` keeps the unused DB column mapped
-    so Alembic does not try to drop it.
+    from those columns.
     """
 
     amount_type: Mapped[Literal[ProductPriceAmountType.seat_based]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.seat_based
-    )
-    _seat_tiers: Mapped[SeatTiersData | None] = mapped_column(
-        "seat_tiers", postgresql.JSONB, nullable=True, deferred=True
     )
 
     @property

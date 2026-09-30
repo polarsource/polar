@@ -97,13 +97,13 @@ export const trigger = Command.make(
       const trigger = yield* Trigger
 
       if (list) {
-        const events = yield* trigger.listEvents(environment)
+        const events = yield* trigger.listEvents(organization)
         return yield* Console.log(formatCatalog(events))
       }
 
       const eventType = Option.isSome(event)
         ? event.value
-        : yield* pickEvent(yield* trigger.listEvents(environment))
+        : yield* pickEvent(yield* trigger.listEvents(organization))
 
       const result = yield* trigger
         .send(organization, {

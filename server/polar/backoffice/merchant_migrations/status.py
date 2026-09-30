@@ -43,8 +43,9 @@ STEP_LABELS: dict[MerchantMigrationStep, str] = {
 
 STEP_ORDER = list(MerchantMigrationStep)
 
-# Cutover lands on `cleanup`; there is no close-out step after that. Ops reads
-# those the same way the merchant dashboard does: finished.
+# A cutover that leaves no switchable subscription unattempted lands on
+# `cleanup`; there is no close-out step after that. Ops reads those the same
+# way the merchant dashboard does: finished.
 FINISHED_STEPS = frozenset(
     {MerchantMigrationStep.cleanup, MerchantMigrationStep.completed}
 )

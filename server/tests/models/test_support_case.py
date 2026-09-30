@@ -232,3 +232,31 @@ class TestAwaitingPlatformExpression:
             audience=[SupportCaseAudience.merchant],
         )
         assert await self._awaiting(session, case.id) is True
+
+    async def test_system_message_does_not_clear(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        case = ReviewAppealSupportCase(
+            organization_review=await create_organization_review(
+                save_fixture, organization
+            ),
+            organization=organization,
+        )
+        await save_fixture(case)
+
+        await support_case_service.post_message(
+            session,
+            case,
+            author_kind=SupportCaseMessageAuthorKind.merchant,
+            audience=[SupportCaseAudience.merchant],
+        )
+        await support_case_service.post_message(
+            session,
+            case,
+            author_kind=SupportCaseMessageAuthorKind.system,
+            audience=[SupportCaseAudience.merchant],
+        )
+        assert await self._awaiting(session, case.id) is True

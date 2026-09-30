@@ -113,12 +113,12 @@ describe('CheckoutProductSwitcherItemPrice', () => {
     it('shows "From" minimum seat total for multi-seat minimum when not selected', () => {
       const multiSeatPrice = createSeatBasedPrice({
         id: 'price_seat_5min',
-        seat_tiers: {
-          seat_tier_type: 'volume',
-          tiers: [{ min_seats: 5, max_seats: null, price_per_seat: 1000 }],
-          minimum_seats: 5,
-          maximum_seats: null,
+        tiers: {
+          type: 'volume',
+          tiers: [{ bound: null, unit_amount: '1000' }],
         },
+        minimum_units: 5,
+        maximum_units: null,
       })
 
       const checkout = createCheckout({
@@ -148,12 +148,12 @@ describe('CheckoutProductSwitcherItemPrice', () => {
     })
     const seatPrice = createSeatBasedPrice({
       id: 'price_seat',
-      seat_tiers: {
-        seat_tier_type: 'volume',
-        tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 2000 }],
-        minimum_seats: 1,
-        maximum_seats: null,
+      tiers: {
+        type: 'volume',
+        tiers: [{ bound: null, unit_amount: '2000' }],
       },
+      minimum_units: 1,
+      maximum_units: null,
     })
 
     const fixedSeatCheckout = () =>
@@ -211,12 +211,12 @@ describe('CheckoutProductSwitcherItemPrice', () => {
       const usdSeat = createSeatBasedPrice({
         id: 'price_seat_usd',
         price_currency: 'usd',
-        seat_tiers: {
-          seat_tier_type: 'volume',
-          tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 2000 }],
-          minimum_seats: 1,
-          maximum_seats: null,
+        tiers: {
+          type: 'volume',
+          tiers: [{ bound: null, unit_amount: '2000' }],
         },
+        minimum_units: 1,
+        maximum_units: null,
       })
       const eurFixed = createFixedPrice({
         id: 'price_fixed_eur',
@@ -226,12 +226,12 @@ describe('CheckoutProductSwitcherItemPrice', () => {
       const eurSeat = createSeatBasedPrice({
         id: 'price_seat_eur',
         price_currency: 'eur',
-        seat_tiers: {
-          seat_tier_type: 'volume',
-          tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 1800 }],
-          minimum_seats: 1,
-          maximum_seats: null,
+        tiers: {
+          type: 'volume',
+          tiers: [{ bound: null, unit_amount: '1800' }],
         },
+        minimum_units: 1,
+        maximum_units: null,
       })
       const checkout = createCheckout({
         currency: 'eur',

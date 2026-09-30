@@ -26,10 +26,11 @@ class Polar:
         environment: Environment = "production",
         base_url: str | None = None,
         timeout: RequestTimeout | None = 5.0,
+        organization_id: str | None = None,
     ) -> None:
         resolved_base_url = resolve_base_url(SERVERS, environment, base_url)
         self._client = SyncClientBase(
-            resolved_base_url, self.version, access_token, timeout
+            resolved_base_url, self.version, access_token, timeout, organization_id
         )
 {% for service in api.services %}
         self.{{ service.name | service_name }} = {{ service.name }}Sync(self._client)
@@ -58,10 +59,11 @@ class PolarAsync:
         environment: Environment = "production",
         base_url: str | None = None,
         timeout: RequestTimeout | None = 5.0,
+        organization_id: str | None = None,
     ) -> None:
         resolved_base_url = resolve_base_url(SERVERS, environment, base_url)
         self._client = AsyncClientBase(
-            resolved_base_url, self.version, access_token, timeout
+            resolved_base_url, self.version, access_token, timeout, organization_id
         )
 {% for service in api.services %}
         self.{{ service.name | service_name }} = {{ service.name }}Async(self._client)

@@ -1,16 +1,18 @@
 import contextlib
 from collections.abc import AsyncGenerator, Mapping, Sequence
 from datetime import datetime
-from typing import Any
+from typing import Any, NamedTuple
 from uuid import UUID
 
 from sqlalchemy import (
     TIMESTAMP,
+    Case,
     ColumnElement,
     Select,
     String,
     Uuid,
     and_,
+    case,
     cast,
     column,
     func,
@@ -20,7 +22,7 @@ from sqlalchemy import (
     values,
 )
 from sqlalchemy import inspect as orm_inspect
-from sqlalchemy.orm import InstanceState
+from sqlalchemy.orm import InstanceState, InstrumentedAttribute
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.event.system import CustomerUpdatedFields, SystemEvent
@@ -32,11 +34,27 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
-from polar.models import Customer, Subscription
+from polar.models import (
+    Customer,
+    MerchantMigrationRecord,
+    MerchantMigrationRecordStatus,
+    MerchantMigrationRecordType,
+    PaymentMethod,
+    Subscription,
+)
 from polar.models.customer import EXTERNAL_ID_METADATA_KEY
 from polar.models.subscription import SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.worker import enqueue_job
+
+
+class CustomerStripeIdentity(NamedTuple):
+    id: UUID
+    # The Stripe id the customer can't move off: None when it has none, or when
+    # nothing depends on it any more.
+    stripe_customer_id: str | None
+    # Trialing, active or past due: `get_active_clause`, not just `active`.
+    subscribed: bool
 
 
 def _get_changed_value(
@@ -200,20 +218,73 @@ class CustomerRepository(
         )
         return await self.get_one_or_none(statement)
 
-    async def get_stripe_identities_by_organization(
+    async def get_bound_stripe_identities_by_organization(
         self, organization_id: UUID
-    ) -> dict[str, tuple[UUID, str | None]]:
+    ) -> dict[str, CustomerStripeIdentity]:
+        """Per lower-cased email, the customer's Stripe identity."""
         statement = (
             self.get_base_statement()
-            .with_only_columns(Customer.id, Customer.email, Customer.stripe_customer_id)
+            .with_only_columns(Customer.email, *self._stripe_identity_columns())
             .where(Customer.organization_id == organization_id)
         )
         result = await self.session.execute(statement)
         return {
-            email.lower(): (customer_id, stripe_customer_id)
-            for customer_id, email, stripe_customer_id in result.all()
+            email.lower(): CustomerStripeIdentity(*identity)
+            for email, *identity in result.all()
             if email
         }
+
+    async def get_bound_stripe_identity(
+        self, customer_id: UUID
+    ) -> CustomerStripeIdentity:
+        statement = select(*self._stripe_identity_columns()).where(
+            Customer.id == customer_id
+        )
+        result = await self.session.execute(statement)
+        return CustomerStripeIdentity(*result.one())
+
+    def _stripe_identity_columns(
+        self,
+    ) -> tuple[InstrumentedAttribute[UUID], Case[Any], ColumnElement[bool]]:
+        return (
+            Customer.id,
+            case(
+                (
+                    self.get_stripe_customer_in_use_clause(),
+                    Customer.stripe_customer_id,
+                ),
+                else_=None,
+            ),
+            self.get_active_clause(True),
+        )
+
+    def get_stripe_customer_in_use_clause(self) -> ColumnElement[bool]:
+        """Counts a merchant migration's import too: it may still link copied
+        cards to the customer's Stripe id."""
+        payment_method_exists = (
+            select(PaymentMethod.id)
+            .where(
+                PaymentMethod.customer_id == Customer.id,
+                PaymentMethod.deleted_at.is_(None),
+            )
+            .exists()
+        )
+        migration_import_exists = (
+            select(MerchantMigrationRecord.id)
+            .where(
+                MerchantMigrationRecord.target_id == Customer.id,
+                MerchantMigrationRecord.type == MerchantMigrationRecordType.customer,
+                MerchantMigrationRecord.status
+                == MerchantMigrationRecordStatus.imported,
+                MerchantMigrationRecord.deleted_at.is_(None),
+            )
+            .exists()
+        )
+        return or_(
+            payment_method_exists,
+            self.get_active_clause(True),
+            migration_import_exists,
+        )
 
     async def get_ids_by_email(self, email: str) -> Sequence[UUID]:
         statement = (

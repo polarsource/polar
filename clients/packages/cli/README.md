@@ -89,6 +89,31 @@ bun src/cli.ts trigger customer.created --json --seed 3
 
 Each trigger prints a confirmation, the listen terminal logs the forwarded event with your server's status code, and the receiver prints the payload type with `triggered: true`. Nothing is created in the organization: the dashboard shows no new orders, customers, or webhook deliveries.
 
+## Generated customer commands prototype
+
+The CLI imports its API command tree from the private `@polar-sh/cli-commands`
+package in `sdk/cli-commands` through a local `file:` dependency. The generator and templates live in
+`sdk/generator/cli_commands`; the CLI supplies the Effect runtime implementation
+in `src/services/api-runtime.ts`.
+
+```bash
+pnpm generate
+bun src/cli.ts customers --help
+bun src/cli.ts customers list --email=alice@example.com --limit=20
+bun src/cli.ts customers create --email=alice@example.com --org=<organization-id>
+bun src/cli.ts customers update <id> -d '{"name":"Alice"}'
+```
+
+These make real requests using the organization selected with `polar auth org`,
+or the one given with `--org`, in that organization's environment. Authenticated
+requests send its ID in the `Polar-Organization` header, so the API only returns
+and changes that organization's data. The CLI does not fill in organization inputs:
+`--org` is the alias for the `organization_id` input and does not change the saved
+selection. Repeated `--org` values are sent as filters without the header. See [the package README](../../../sdk/cli-commands/README.md)
+for the generated files, setup, and limitations. Generation is explicit for now, and generated files
+are committed. Start with `sdk/cli-commands/src/customers/list.ts` to inspect the
+emitted Effect command.
+
 ## Releases
 
 Add a changeset from `clients/` with `pnpm exec changeset` and select `polar-cli`.

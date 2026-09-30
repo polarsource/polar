@@ -1,6 +1,6 @@
 {
   "name": "@polar-sh/adapter-utils",
-  "version": "0.4.7",
+  "version": "1.0.0",
   "description": "Core package for Polar adapters",
   "repository": {
     "type": "git",

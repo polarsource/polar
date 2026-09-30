@@ -52,9 +52,9 @@ If you're on Next.js, the `@polar-sh/nextjs` adapter wraps this into a single ro
 import { CustomerPortal } from "@polar-sh/nextjs";
 
 export const GET = CustomerPortal({
-  accessToken: process.env.POLAR_ACCESS_TOKEN,
+  accessToken: process.env.POLAR_ACCESS_TOKEN!,
   getCustomerId: async (req) => "<value>",
-  server: "sandbox", // Use sandbox if you're testing Polar — pass 'production' otherwise
+  environment: "sandbox", // Use sandbox if you're testing Polar — pass 'production' otherwise
 });
 ```
 

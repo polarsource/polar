@@ -2,15 +2,18 @@ import {
   ACCOUNT_REVIEW_REPLY,
   REJECTION_PRE_APPROVAL_TEXT,
 } from '@/components/Feedback/constants'
+import { aiTracing, flushAITelemetry } from '@/utils/aiTelemetry'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import * as Sentry from '@sentry/nextjs'
 import {
   convertToModelMessages,
+  createUIMessageStreamResponse,
   hasToolCall,
+  isStepCount,
   smoothStream,
-  stepCountIs,
   streamText,
+  toUIMessageStream,
   tool,
   type UIMessage,
 } from 'ai'
@@ -19,7 +22,6 @@ import { z } from 'zod'
 
 import { ALLOWED_DASHBOARD_PATHS } from './dashboardPaths'
 import { fetchMintlifyPageContent, searchMintlify } from './mintlify'
-import { flushPostHog, wrapWithTracing } from './posthog'
 
 const MAX_STEPS = 10
 const MAX_BODY_BYTES = 256 * 1024
@@ -145,7 +147,7 @@ export async function POST(req: Request) {
     }
   }
 
-  const sonnet = wrapWithTracing(anthropic('claude-sonnet-5'), {
+  const tracing = aiTracing({
     userId: user.id,
     conversationId,
     organizationId: trustedOrganizationId,
@@ -210,31 +212,32 @@ export async function POST(req: Request) {
     const forceEscalation = messages.length >= MAX_MESSAGES - 1
 
     const result = streamText({
-      model: sonnet,
-      messages: [
-        {
-          role: 'system',
-          content: ANSWER_SYSTEM_PROMPT,
-          providerOptions: {
-            anthropic: {
-              cacheControl: { type: 'ephemeral' },
-            },
+      model: anthropic('claude-sonnet-5'),
+      ...tracing,
+      instructions: {
+        role: 'system',
+        content: ANSWER_SYSTEM_PROMPT,
+        providerOptions: {
+          anthropic: {
+            cacheControl: { type: 'ephemeral' },
           },
         },
-        ...modelMessages,
-      ],
+      },
+      messages: modelMessages,
       tools: forceEscalation
         ? { escalateToHuman }
         : { search, fetchPageContent, escalateToHuman },
       toolChoice: forceEscalation
         ? { type: 'tool', toolName: 'escalateToHuman' }
         : 'auto',
-      stopWhen: [stepCountIs(MAX_STEPS), hasToolCall('escalateToHuman')],
+      stopWhen: [isStepCount(MAX_STEPS), hasToolCall('escalateToHuman')],
       experimental_transform: smoothStream(),
-      onFinish: () => flushPostHog(),
+      onEnd: () => flushAITelemetry(),
     })
 
-    return result.toUIMessageStreamResponse()
+    return createUIMessageStreamResponse({
+      stream: toUIMessageStream({ stream: result.stream }),
+    })
   } catch (error) {
     Sentry.captureException(error)
     return NextResponse.json({ error: 'Something went wrong' }, { status: 502 })

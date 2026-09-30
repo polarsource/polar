@@ -17,7 +17,6 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.kit.address import Address, CountryAlpha2
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.postgres import AsyncSession
-from polar.kit.utils import utc_now
 from polar.models import (
     Customer,
     Discount,
@@ -59,13 +58,13 @@ from .canonical import (
     subscription_price_key,
 )
 from .precheck import (
-    CUSTOMER_STRIPE_ID_CONFLICT_REASON,
     ProductImportPlan,
     Reason,
     plan_customer_imports,
     plan_discount_imports,
     plan_product_imports,
     plan_subscription_imports,
+    stripe_id_conflict_reason,
 )
 from .repository import MerchantMigrationRecordRepository
 from .schemas import (
@@ -291,6 +290,11 @@ class CatalogImporter:
         pass open.
         """
         ctx = await self._load_context()
+        # An empty selection only moves the migration on. Discounts and products
+        # are imported regardless of which subscriptions are picked, so they'd
+        # otherwise still land.
+        if self.record_ids is not None and not self.record_ids:
+            return self._report(ctx)
         budget = IMPORT_BATCH_SIZE
         catalog_products = self._records_of(
             ctx.catalog, MerchantMigrationRecordType.product
@@ -778,26 +782,21 @@ class CatalogImporter:
     async def _create_discount(
         self, discount: CanonicalDiscount, product_ids: list[UUID]
     ) -> Discount:
+        # Polar can't store the source's used count, so ``max_redemptions`` is
+        # what's left. A spent code keeps its name at 0 left, which blocks it.
         exhausted = discount.max_redemptions == 0
         duration = DiscountDuration(discount.duration.value)
-        ends_at = discount.ends_at
-        if exhausted:
-            now = utc_now()
-            ends_at = now if ends_at is None or ends_at > now else ends_at
         shared: dict[str, Any] = {
             "name": discount.name,
-            "code": (
-                None
-                if exhausted
-                else await self._available_discount_code(discount.code)
-            ),
+            "code": await self._available_discount_code(discount.code),
             "duration": duration,
             "duration_in_months": (
                 discount.duration_in_months
                 if duration == DiscountDuration.repeating
                 else None
             ),
-            "ends_at": ends_at,
+            "ends_at": discount.ends_at,
+            # The create schema rejects 0; it's set once the row exists.
             "max_redemptions": None if exhausted else discount.max_redemptions,
             "products": product_ids or None,
             # An organization token rejects an explicit organization_id.
@@ -837,23 +836,21 @@ class CatalogImporter:
             customer.email, self.organization.id
         )
         if existing is not None:
-            # Reusing a customer bound to another Stripe id would attach the
-            # PAN-copied card to the wrong record.
-            if (
+            # The PAN-copied card lands under the source `cus_…` id, and renewals
+            # charge it through the customer's Stripe id, so the customer has to
+            # move onto the source id. Only while nothing depends on its own.
+            rebind = (
                 stripe_customer_id is not None
-                and existing.stripe_customer_id is not None
                 and existing.stripe_customer_id != stripe_customer_id
-            ):
-                return ImportedCustomer(
-                    skip=Reason(
-                        "customer_stripe_id_conflict",
-                        CUSTOMER_STRIPE_ID_CONFLICT_REASON,
-                    )
+            )
+            if rebind:
+                identity = await self.customer_repository.get_bound_stripe_identity(
+                    existing.id
                 )
-            # Reconcile the source id so the PAN-copied card lands on the same
-            # customer, but never overwrite one that's already set.
+                if identity.stripe_customer_id is not None:
+                    return ImportedCustomer(skip=stripe_id_conflict_reason(identity))
             updates: dict[str, object] = {}
-            if stripe_customer_id and existing.stripe_customer_id is None:
+            if rebind:
                 updates["stripe_customer_id"] = stripe_customer_id
             address = self._billing_address(customer, country_fallback)
             if address is not None:

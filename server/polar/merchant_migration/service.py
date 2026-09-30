@@ -12,7 +12,7 @@ from polar.auth.permission import OrganizationPermission
 from polar.auth.scope import Scope
 from polar.authz.service import assert_organization_permission
 from polar.config import settings
-from polar.customer.repository import CustomerRepository
+from polar.customer.repository import CustomerRepository, CustomerStripeIdentity
 from polar.exceptions import PolarError
 from polar.kit.address import Address
 from polar.kit.db.postgres import AsyncSession
@@ -463,8 +463,9 @@ class MerchantMigrationService:
         create_schema: MerchantMigrationCreate,
     ) -> MerchantMigration:
         """Validate the source API key's permissions, then create the migration
-        with the key stored. If the key is invalid or missing any required scope,
-        nothing is persisted — the merchant fixes the key and retries."""
+        with the key stored and its pre-check queued. If the key is invalid or
+        missing any required scope, nothing is persisted or queued — the merchant
+        fixes the key and retries."""
         await assert_organization_permission(
             session,
             auth_subject,
@@ -530,7 +531,7 @@ class MerchantMigrationService:
         enqueue_job(
             "merchant_migration.notify_created", merchant_migration_id=migration.id
         )
-        return migration
+        return await self._queue_precheck(session, migration)
 
     async def start_precheck(
         self,
@@ -544,6 +545,11 @@ class MerchantMigrationService:
         migration = await self._get_manageable(
             session, auth_subject, migration_id, for_update=True
         )
+        return await self._queue_precheck(session, migration)
+
+    async def _queue_precheck(
+        self, session: AsyncSession, migration: MerchantMigration
+    ) -> MerchantMigration:
         if self._operation_blocks_new_work(migration):
             raise MigrationOperationInProgress()
         # Fail before enqueueing if the key is gone or the source isn't Stripe.
@@ -1323,10 +1329,11 @@ class MerchantMigrationService:
         completed_steps = self._complete_polar_app_step(
             migration, STEP_MOVE_SUBSCRIPTIONS
         )
-        update_dict: dict[str, object] = {
-            "operation": self._done_operation(migration),
-            "step": MerchantMigrationStep.cleanup,
-        }
+        update_dict: dict[str, object] = {"operation": self._done_operation(migration)}
+        # A switch of a subset must not finish the migration: it would read as
+        # done while prepared subscriptions still bill on the source.
+        if not await record_repository.has_pending_cutover_candidates(migration.id):
+            update_dict["step"] = MerchantMigrationStep.cleanup
         if completed_steps is not None:
             # `annotate` refuses a completed step, so the receipt note goes on
             # the step object directly before the completion is persisted.
@@ -1783,7 +1790,7 @@ class MerchantMigrationService:
             existing_product_names = await ProductRepository.from_session(
                 session
             ).get_active_names_by_organization(migration.organization_id)
-        existing_customers: dict[str, tuple[UUID, str | None]] = {}
+        existing_customers: dict[str, CustomerStripeIdentity] = {}
         if (
             PrecheckEntity.subscriptions in entities
             or PrecheckEntity.customers in entities
@@ -1838,12 +1845,12 @@ class MerchantMigrationService:
 
     async def _existing_polar_customers(
         self, session: AsyncReadSession, migration: MerchantMigration
-    ) -> dict[str, tuple[UUID, str | None]]:
+    ) -> dict[str, CustomerStripeIdentity]:
         if migration.source_platform != MerchantMigrationSourcePlatform.stripe:
             return {}
         return await CustomerRepository.from_session(
             session
-        ).get_stripe_identities_by_organization(migration.organization_id)
+        ).get_bound_stripe_identities_by_organization(migration.organization_id)
 
     async def summarize_records(
         self,

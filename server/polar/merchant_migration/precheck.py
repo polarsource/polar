@@ -17,6 +17,7 @@ from uuid import UUID
 
 from pydantic import TypeAdapter, ValidationError
 
+from polar.customer.repository import CustomerStripeIdentity
 from polar.discount.schemas import BasisPoints, DurationInMonths
 from polar.enums import SubscriptionRecurringInterval, TaxBehavior
 from polar.invoice.generator import format_date
@@ -121,6 +122,7 @@ ACTION_REQUIRED_CODES = {
     "multiple_prices_same_currency",
     "send_invoice_collection",
     "customer_stripe_id_conflict",
+    "customer_subscribed_on_polar",
     "customer_tax_id_dropped",
     "customer_tax_exempt",
     "subscription_tax_behavior_unspecified",
@@ -157,10 +159,15 @@ _SUBSCRIPTION_PRODUCT_MISSING_REASON = (
 _SUBSCRIPTION_CUSTOMER_REASON = (
     "The customer for this subscription won't be imported, so it stays on the source."
 )
-CUSTOMER_STRIPE_ID_CONFLICT_REASON = (
-    "A Polar customer already exists for this email, bound to a different "
-    "Stripe customer. Open that Polar customer to reconcile them; this one "
-    "stays on Stripe."
+_CUSTOMER_SUBSCRIBED_ON_POLAR_REASON = (
+    "This customer already has a subscription on Polar. Moving this one too "
+    "would bill them twice, so it stays on Stripe. If it's a duplicate, cancel "
+    "it on Stripe. If they should keep both, contact Polar support."
+)
+_CUSTOMER_STRIPE_ID_CONFLICT_REASON = (
+    "A Polar customer with this email is already tied to a different Stripe "
+    "customer that still holds a saved card or an earlier migration's import, "
+    "so this one stays on Stripe. Contact Polar support to resolve it."
 )
 _NO_IMPORTABLE_PRICE_REASON = (
     "None of this product's prices can be imported, so the product is skipped."
@@ -1134,7 +1141,7 @@ def _price_items(
 def _customer_items(
     customers: Sequence[CanonicalCustomer],
     subscriptions: Sequence[CanonicalSubscription],
-    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
+    existing_customers: Mapping[str, CustomerStripeIdentity] | None = None,
 ) -> list[MerchantMigrationRecordItem]:
     # Use the importer's plan, so the report can't promise a customer it will skip.
     plans = plan_customer_imports(customers, existing_customers)
@@ -1188,7 +1195,7 @@ def _subscription_items(
     customers: Sequence[CanonicalCustomer],
     discounts: Sequence[CanonicalDiscount],
     default_currency: str,
-    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
+    existing_customers: Mapping[str, CustomerStripeIdentity] | None = None,
 ) -> list[MerchantMigrationRecordItem]:
     # Use the importer's plan; the notes on top are display-only.
     plans = plan_subscription_imports(
@@ -1409,7 +1416,7 @@ def classify_records(
     entity: PrecheckEntity,
     default_currency: str,
     existing_product_names: set[str] | None = None,
-    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
+    existing_customers: Mapping[str, CustomerStripeIdentity] | None = None,
 ) -> list[MerchantMigrationRecordItem]:
     """Classify the source catalog into per-record rows of one entity type,
     each marked importable or skipped with a reason."""
@@ -1490,7 +1497,7 @@ def plan_product_imports(
 
 def plan_customer_imports(
     customers: Sequence[CanonicalCustomer],
-    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
+    existing_customers: Mapping[str, CustomerStripeIdentity] | None = None,
 ) -> dict[str, Reason | None]:
     """Per customer ``source_id``, the skip reason or ``None`` when importable.
     A Polar customer is unique by email and carries a single source id, so of
@@ -1510,15 +1517,31 @@ def plan_customer_imports(
             )
         else:
             polar = existing.get(customer.email.lower())
-            if polar and polar[1] and polar[1] != customer.source_id:
-                plans[customer.source_id] = Reason(
-                    "customer_stripe_id_conflict",
-                    CUSTOMER_STRIPE_ID_CONFLICT_REASON,
-                    polar_customer_id=polar[0],
-                )
+            if (
+                polar is not None
+                and polar.stripe_customer_id is not None
+                and polar.stripe_customer_id != customer.source_id
+            ):
+                plans[customer.source_id] = stripe_id_conflict_reason(polar)
             else:
                 plans[customer.source_id] = None
     return plans
+
+
+def stripe_id_conflict_reason(polar: CustomerStripeIdentity) -> Reason:
+    """Why a source customer can't take over the Polar customer with its email.
+    A live Polar subscription is the one case the merchant can settle alone."""
+    if polar.subscribed:
+        return Reason(
+            "customer_subscribed_on_polar",
+            _CUSTOMER_SUBSCRIBED_ON_POLAR_REASON,
+            polar_customer_id=polar.id,
+        )
+    return Reason(
+        "customer_stripe_id_conflict",
+        _CUSTOMER_STRIPE_ID_CONFLICT_REASON,
+        polar_customer_id=polar.id,
+    )
 
 
 def _discount_items(
@@ -1653,7 +1676,7 @@ def plan_subscription_imports(
     products: Sequence[CanonicalProduct],
     customers: Sequence[CanonicalCustomer],
     default_currency: str,
-    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
+    existing_customers: Mapping[str, CustomerStripeIdentity] | None = None,
     discounts: Sequence[CanonicalDiscount] = (),
 ) -> dict[str, Reason | None]:
     """Per subscription ``source_id``, the skip reason or ``None`` when

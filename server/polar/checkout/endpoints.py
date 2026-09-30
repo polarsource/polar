@@ -17,6 +17,7 @@ from polar.kit.schemas import (
     MultipleQueryFilter,
     SetSchemaReference,
 )
+from polar.kit.versioning import version
 from polar.models import Checkout
 from polar.models.checkout import CheckoutStatus
 from polar.openapi import APITag
@@ -35,8 +36,9 @@ from polar.postgres import (
 from polar.product.schemas import ProductID
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
+from polar.version import V2027_01
 
-from . import auth, ip_geolocation, sorting
+from . import auth, ip_geolocation, legacy_schemas, sorting
 from .repository import CheckoutRepository
 from .schemas import Checkout as CheckoutSchema
 from .schemas import (
@@ -185,6 +187,27 @@ async def get(
     responses={201: {"description": "Checkout session created."}},
 )
 async def create(
+    checkout_create: legacy_schemas.CheckoutCreate,
+    auth_subject: auth.CheckoutWrite,
+    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
+    session: AsyncSession = Depends(get_db_session),
+) -> Checkout:
+    """Create a checkout session."""
+    return await checkout_service.create(
+        session, checkout_create, auth_subject, ip_geolocation_client
+    )
+
+
+@inner_router.post(
+    "/",
+    name="create",
+    response_model=CheckoutSchema,
+    status_code=201,
+    summary="Create Checkout Session",
+    responses={201: {"description": "Checkout session created."}},
+)
+@version(starting_from=V2027_01)
+async def create_v2027_01(
     checkout_create: CheckoutCreate,
     auth_subject: auth.CheckoutWrite,
     ip_geolocation_client: ip_geolocation.IPGeolocationClient,

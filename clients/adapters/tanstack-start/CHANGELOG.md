@@ -1,5 +1,20 @@
 # @polar-sh/tanstack-start
 
+## 1.0.0
+
+### Major Changes
+
+- 332b802: Migrate to the new Polar SDK (`@polar-sh/sdk/2026-10`) and use standalone SDK functions so application bundles include only the API operations used by each adapter.
+
+### Minor Changes
+
+- de3c006: Support `discount_code` in checkout requests, applying the code before redirecting or opening an embedded checkout. Discount codes must be enabled, and an explicit `discount_id` takes precedence.
+
+### Patch Changes
+
+- Updated dependencies [193578b]
+  - @polar-sh/adapter-utils@1.0.0
+
 ## 0.4.7
 
 ### Patch Changes

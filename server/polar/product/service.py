@@ -66,6 +66,7 @@ from .schemas import (
     ProductPriceCreate,
     ProductPriceMeteredCreateBase,
     ProductPriceMeteredTiersCreate,
+    ProductPriceSeatBasedCreate,
     ProductPriceUnitBasedCreate,
     ProductUpdate,
 )
@@ -659,7 +660,9 @@ class ProductService:
                 model_class = price_schema.get_model_class()
                 if isinstance(
                     price_schema,
-                    ProductPriceUnitBasedCreate | ProductPriceMeteredTiersCreate,
+                    ProductPriceUnitBasedCreate
+                    | ProductPriceMeteredTiersCreate
+                    | ProductPriceSeatBasedCreate,
                 ):
                     price = model_class(
                         product=product,

@@ -42,14 +42,18 @@ def check_factor(
 
 
 async def get_sso_redirect_url(
-    session: AsyncSession, email: str, return_to: str | None
+    session: AsyncSession, email: str, context: dict[str, typing.Any] | None
 ) -> str | None:
+    context = context or {}
+    if context.get("sso_discovery") is False:
+        return None
     _, domain = email.rsplit("@", 1)
     organization_repository = OrganizationRepository.from_session(session)
     organization = await organization_repository.get_sso_enforced_by_domain(domain)
     if organization is None:
         return None
     path = f"/auth/sso/{organization.slug}"
+    return_to = context.get("return_to")
     if return_to is not None:
         path = f"{path}?{urlencode({'return_to': return_to})}"
     return settings.generate_frontend_url(path)

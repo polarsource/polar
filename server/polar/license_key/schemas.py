@@ -25,6 +25,7 @@ from polar.kit.versioning import Version
 from polar.models.license_key import LicenseKeyStatus
 from polar.models.order import OrderStatus
 from polar.models.subscription import SubscriptionStatus
+from polar.openapi import cli_confirm_one_of
 from polar.order.schemas import OrderBase
 from polar.subscription.schemas import SubscriptionBase
 from polar.version import V2026_10, V2027_01
@@ -279,7 +280,10 @@ class LicenseKeyActivationCreated(LicenseKeyActivationRead):
 
 
 class LicenseKeyUpdate(Schema):
-    status: LicenseKeyStatus | None = None
+    status: LicenseKeyStatus | None = Field(
+        default=None,
+        json_schema_extra=cli_confirm_one_of("revoked", "disabled"),
+    )
     usage: Int32 = 0
     limit_activations: Int32 | None = Field(gt=0, default=None)
     limit_usage: Int32 | None = Field(gt=0, default=None)

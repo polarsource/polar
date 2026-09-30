@@ -1,11 +1,10 @@
 import { getAuthenticatedUser } from '@/utils/user'
+import { aiTracing, flushAITelemetry } from '@/utils/aiTelemetry'
 import { createOpenAI } from '@ai-sdk/openai'
-import { withTracing } from '@posthog/ai'
 import { generateText, Output } from 'ai'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { NextResponse } from 'next/server'
-import { PostHog } from 'posthog-node'
 import { z } from 'zod'
 import * as Sentry from '@sentry/nextjs'
 
@@ -18,12 +17,6 @@ const openai = createOpenAI({
   apiKey: process.env.PYDANTIC_AI_GATEWAY_API_KEY,
   baseURL: 'https://gateway-us.pydantic.dev/proxy/chat/',
 })
-
-const phClient = process.env.NEXT_PUBLIC_POSTHOG_TOKEN
-  ? new PostHog(process.env.NEXT_PUBLIC_POSTHOG_TOKEN!, {
-      host: 'https://us.i.posthog.com',
-    })
-  : null
 
 // Loaded from the local copy of the canonical MDX file.
 // The file is created by `scripts/copy-aup.mjs` (run via `prebuild`).
@@ -86,16 +79,10 @@ export async function POST(req: Request) {
     history,
   } = parsed.data
 
-  const model = phClient
-    ? withTracing(openai('gpt-5.4-mini'), phClient, {
-        posthogDistinctId: user.id,
-        posthogTraceId: conversation_id,
-      })
-    : openai('gpt-5.4-mini')
-
   try {
     const { output } = await generateText({
-      model,
+      model: openai('gpt-5.4-mini'),
+      ...aiTracing({ userId: user.id, conversationId: conversation_id }),
       maxOutputTokens: 256,
       output: Output.object({
         schema: z.object({
@@ -109,7 +96,7 @@ export async function POST(req: Request) {
             ),
         }),
       }),
-      system: `You are a compliance reviewer for Polar, a Merchant of Record (MoR) platform for digital products only.
+      instructions: `You are a compliance reviewer for Polar, a Merchant of Record (MoR) platform for digital products only.
 
 Your job is to review a seller's product description against Polar's Acceptable Use Policy and determine if it complies.
 
@@ -152,7 +139,7 @@ Ask a clarifying question when the description is ambiguous on one of these poin
   the risk factor is with medical advice. Health API's, glucose readers, biomarkers are fine. The risk starts when there are actionable recommendations or advice generated
   by the application.
 - **Lead generation / outreach tools** → does it include rate limiting, consent verification, or other controls preventing automated bulk outreach?
-- **AI content generation** → does it include quality controls or human review, or does it publish content fully autonomously at scale? NSFW content guards should be asked about and clarified.
+- **AI text content generation** → does it include quality controls or human review, or does it publish content fully autonomously at scale? This applies to text-only tools (copy, translation, rewriting). AI image or video generation is never a clarification — it is an automatic DENY.
 - **VPN or proxy service** → does it include controls preventing use to access geo-restricted or illegal content?
 - **E-book or PDF guide** → is the content human-authored or AI-generated?
 - **Directory or listing platform** → is it a curated resource, or a marketplace where third parties list and sell their own products?
@@ -166,6 +153,7 @@ Ask a clarifying question when the description is ambiguous on one of these poin
 ## Automatic DENY (no clarification resolves these)
 
 - Adult or pornographic content
+- AI image or video generation — any product that generates images or video, or starts that generation for the user (prompt builders, model pickers, batch generations, spend ceilings). This applies regardless of NSFW safeguards, whether a third party runs the model, or whether the customer brings their own API key. Text-only AI tools are not covered by this rule.
 - Firearms, weapons, or explosives
 - Watermark removal tools
 - Third-party content downloaders
@@ -199,9 +187,7 @@ Pricing models: ${pricing_models.join(', ') || 'Not specified'}
 Product description: <user_input>${product_description}</user_input>`,
     })
 
-    if (phClient) {
-      await phClient.flush()
-    }
+    await flushAITelemetry()
 
     return NextResponse.json(output)
   } catch (error) {

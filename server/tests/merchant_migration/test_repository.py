@@ -382,7 +382,36 @@ class TestUpsert:
         assert merged.canonical["extra_codes"] == 1
         assert merged.canonical["ends_at"] == promo_ends.isoformat()
 
-    async def test_coupon_reextract_refreshes_terms_and_keeps_promo_code(
+    @pytest.mark.parametrize(
+        "codes",
+        [
+            [("OLD", 0), ("NEW", 5), ("OLDER", 0)],
+            [("NEW", 5), ("OLD", 0), ("OLDER", 0)],
+        ],
+    )
+    async def test_usable_promotion_code_wins_over_spent_ones(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        codes: list[tuple[str, int]],
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        coupon = canonical_discount(code=None, max_redemptions=None)
+        merged = await repository.upsert(migration, organization, coupon)
+        for code, remaining in codes:
+            merged = await repository.upsert(
+                migration,
+                organization,
+                replace(coupon, code=code, max_redemptions=remaining),
+            )
+
+        assert merged.canonical["code"] == "NEW"
+        assert merged.canonical["max_redemptions"] == 5
+        assert merged.canonical["extra_codes"] == 0
+
+    async def test_coupon_reextract_refreshes_terms_and_restarts_codes(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -393,23 +422,31 @@ class TestUpsert:
         coupon = canonical_discount(code=None, name="Launch", max_redemptions=100)
         await repository.upsert(migration, organization, coupon)
         await repository.upsert(
-            migration,
-            organization,
-            replace(coupon, code="LAUNCH", max_redemptions=3),
+            migration, organization, replace(coupon, code="NEW", max_redemptions=3)
         )
 
+        refreshed = canonical_discount(
+            code=None, name="Launch 20", basis_points=2000, max_redemptions=50
+        )
+        restarted = await repository.upsert(migration, organization, refreshed)
+        assert restarted.canonical["name"] == "Launch 20"
+        assert restarted.canonical["basis_points"] == 2000
+        assert restarted.canonical["code"] is None
+        assert restarted.canonical["max_redemptions"] == 50
+
+        # NEW got spent since the first pass and is listed after a newer code.
+        await repository.upsert(
+            migration,
+            organization,
+            replace(refreshed, code="NEWER", max_redemptions=10),
+        )
         merged = await repository.upsert(
-            migration,
-            organization,
-            canonical_discount(
-                code=None, name="Launch 20", basis_points=2000, max_redemptions=50
-            ),
+            migration, organization, replace(refreshed, code="NEW", max_redemptions=0)
         )
 
-        assert merged.canonical["name"] == "Launch 20"
-        assert merged.canonical["basis_points"] == 2000
-        assert merged.canonical["code"] == "LAUNCH"
-        assert merged.canonical["max_redemptions"] == 3
+        assert merged.canonical["code"] == "NEWER"
+        assert merged.canonical["max_redemptions"] == 10
+        assert merged.canonical["extra_codes"] == 0
 
 
 @pytest.mark.asyncio

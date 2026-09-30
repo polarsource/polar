@@ -6501,10 +6501,10 @@ class GrantedLicenseKey:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None = None
+    member_id: str | None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None = None
+    member: LicenseKeyMember | None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -6873,10 +6873,10 @@ class LicenseKeyRead:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None = None
+    member_id: str | None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None = None
+    member: LicenseKeyMember | None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -6918,10 +6918,10 @@ class LicenseKeyWithActivations:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None = None
+    member_id: str | None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None = None
+    member: LicenseKeyMember | None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -9475,10 +9475,10 @@ class RotatedLicenseKey:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None = None
+    member_id: str | None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None = None
+    member: LicenseKeyMember | None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -11020,10 +11020,10 @@ class ValidatedLicenseKey:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None = None
+    member_id: str | None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None = None
+    member: LicenseKeyMember | None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str

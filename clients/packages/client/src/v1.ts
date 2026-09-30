@@ -5503,7 +5503,7 @@ export interface paths {
     }
     /**
      * Get Merchant Migration Card Transfer
-     * @description **Scopes**: `organizations:write`
+     * @description **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['merchant-migrations:pan_transfer']
     put?: never
@@ -5571,7 +5571,7 @@ export interface paths {
     }
     /**
      * Summarize Merchant Migration Records
-     * @description **Scopes**: `organizations:write`
+     * @description **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['merchant-migrations:records_summary']
     put?: never
@@ -5591,7 +5591,7 @@ export interface paths {
     }
     /**
      * List Merchant Migration Records
-     * @description **Scopes**: `organizations:write`
+     * @description **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['merchant-migrations:records']
     put?: never
@@ -23200,6 +23200,17 @@ export interface components {
       /** Repository Name */
       repository_name: string
     }
+    /** GlobalAuthenticationSessionStart */
+    GlobalAuthenticationSessionStart: {
+      /** Return To */
+      return_to?: string | null
+      /**
+       * Sso Discovery
+       * @description Send users of an SSO-enforced email domain to their organization's SSO.
+       * @default true
+       */
+      sso_discovery: boolean
+    }
     /** GrantedLicenseKey */
     GrantedLicenseKey: {
       /**
@@ -23235,9 +23246,9 @@ export interface components {
        * Member Id
        * @description The ID of the seat member holding this key, if any.
        */
-      member_id?: string | null
+      member_id: string | null
       /** @description The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly. */
-      member?: components['schemas']['LicenseKeyMember'] | null
+      member: components['schemas']['LicenseKeyMember'] | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -23269,16 +23280,16 @@ export interface components {
        * Subscription Id
        * @description The ID of the subscription granting the license key.
        */
-      subscription_id?: string | null
+      subscription_id: string | null
       /** @description The subscription granting the license key, if any. */
-      subscription?: components['schemas']['LicenseKeySubscription'] | null
+      subscription: components['schemas']['LicenseKeySubscription'] | null
       /**
        * Order Id
        * @description The ID of the one-time order granting the license key.
        */
-      order_id?: string | null
+      order_id: string | null
       /** @description The one-time order granting the license key, if any. */
-      order?: components['schemas']['LicenseKeyOrder'] | null
+      order: components['schemas']['LicenseKeyOrder'] | null
     }
     /** HTTPValidationError */
     HTTPValidationError: {
@@ -24126,9 +24137,9 @@ export interface components {
        * Member Id
        * @description The ID of the seat member holding this key, if any.
        */
-      member_id?: string | null
+      member_id: string | null
       /** @description The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly. */
-      member?: components['schemas']['LicenseKeyMember'] | null
+      member: components['schemas']['LicenseKeyMember'] | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -24295,9 +24306,9 @@ export interface components {
        * Member Id
        * @description The ID of the seat member holding this key, if any.
        */
-      member_id?: string | null
+      member_id: string | null
       /** @description The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly. */
-      member?: components['schemas']['LicenseKeyMember'] | null
+      member: components['schemas']['LicenseKeyMember'] | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -33619,8 +33630,18 @@ export interface components {
        * @description The ID of the product owning the price.
        */
       product_id: string
-      /** @description Tiered pricing based on seat quantity */
-      seat_tiers: components['schemas']['ProductPriceSeatTiers-Output']
+      /** @description Tiered pricing based on the purchased seat quantity. */
+      tiers: components['schemas']['Tiers']
+      /**
+       * Minimum Units
+       * @description The minimum purchasable seat quantity (inclusive).
+       */
+      minimum_units: number | null
+      /**
+       * Maximum Units
+       * @description The maximum purchasable seat quantity, from the last tier's bound. `null` for unlimited.
+       */
+      readonly maximum_units: number | null
     }
     /**
      * ProductPriceSeatBasedCreate
@@ -33639,79 +33660,13 @@ export interface components {
       price_currency: components['schemas']['PresentmentCurrency']
       /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
       tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
-      /** @description Tiered pricing based on seat quantity */
-      seat_tiers: components['schemas']['ProductPriceSeatTiers-Input']
-    }
-    /**
-     * ProductPriceSeatTier
-     * @description A pricing tier for seat-based pricing.
-     */
-    ProductPriceSeatTier: {
+      /** @description Tiered pricing based on the purchased seat quantity. */
+      tiers: components['schemas']['TiersInput']
       /**
-       * Min Seats
-       * @description Minimum number of seats (inclusive)
+       * Minimum Units
+       * @description The minimum purchasable seat quantity (inclusive). Defaults to 1 when not set.
        */
-      min_seats: number
-      /**
-       * Max Seats
-       * @description Maximum number of seats (inclusive). None for unlimited.
-       */
-      max_seats?: number | null
-      /**
-       * Price Per Seat
-       * @description Price per seat in cents for this tier
-       */
-      price_per_seat: number
-    }
-    /**
-     * ProductPriceSeatTiers
-     * @description List of pricing tiers for seat-based pricing.
-     *
-     *     The minimum and maximum seat limits are derived from the tiers:
-     *     - minimum_seats = first tier's min_seats
-     *     - maximum_seats = last tier's max_seats (None for unlimited)
-     */
-    'ProductPriceSeatTiers-Input': {
-      /**
-       * @description How tiers are applied. 'volume' prices all seats at the matching tier's rate. 'graduated' prices each tier's range independently.
-       * @default volume
-       */
-      seat_tier_type: components['schemas']['SeatTierType']
-      /**
-       * Tiers
-       * @description List of pricing tiers
-       */
-      tiers: components['schemas']['ProductPriceSeatTier'][]
-    }
-    /**
-     * ProductPriceSeatTiers
-     * @description List of pricing tiers for seat-based pricing.
-     *
-     *     The minimum and maximum seat limits are derived from the tiers:
-     *     - minimum_seats = first tier's min_seats
-     *     - maximum_seats = last tier's max_seats (None for unlimited)
-     */
-    'ProductPriceSeatTiers-Output': {
-      /**
-       * @description How tiers are applied. 'volume' prices all seats at the matching tier's rate. 'graduated' prices each tier's range independently.
-       * @default volume
-       */
-      seat_tier_type: components['schemas']['SeatTierType']
-      /**
-       * Tiers
-       * @description List of pricing tiers
-       */
-      tiers: components['schemas']['ProductPriceSeatTier'][]
-      /**
-       * Minimum Seats
-       * @description Minimum number of seats required for purchase, derived from first tier.
-       */
-      readonly minimum_seats: number
-      /**
-       * Maximum Seats
-       * @description Maximum number of seats allowed for purchase, derived from last tier. None for unlimited.
-       */
-      readonly maximum_seats: number | null
+      minimum_units?: number | null
     }
     /**
      * ProductPriceSource
@@ -34333,9 +34288,9 @@ export interface components {
        * Member Id
        * @description The ID of the seat member holding this key, if any.
        */
-      member_id?: string | null
+      member_id: string | null
       /** @description The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly. */
-      member?: components['schemas']['LicenseKeyMember'] | null
+      member: components['schemas']['LicenseKeyMember'] | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -34748,11 +34703,6 @@ export interface components {
      * @enum {string}
      */
     SeatStatus: 'pending' | 'claimed' | 'revoked'
-    /**
-     * SeatTierType
-     * @enum {string}
-     */
-    SeatTierType: 'volume' | 'graduated'
     /** SeatsList */
     SeatsList: {
       /**
@@ -39218,9 +39168,9 @@ export interface components {
        * Member Id
        * @description The ID of the seat member holding this key, if any.
        */
-      member_id?: string | null
+      member_id: string | null
       /** @description The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly. */
-      member?: components['schemas']['LicenseKeyMember'] | null
+      member: components['schemas']['LicenseKeyMember'] | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -39252,16 +39202,16 @@ export interface components {
        * Subscription Id
        * @description The ID of the subscription granting the license key.
        */
-      subscription_id?: string | null
+      subscription_id: string | null
       /** @description The subscription granting the license key, if any. */
-      subscription?: components['schemas']['LicenseKeySubscription'] | null
+      subscription: components['schemas']['LicenseKeySubscription'] | null
       /**
        * Order Id
        * @description The ID of the one-time order granting the license key.
        */
-      order_id?: string | null
+      order_id: string | null
       /** @description The one-time order granting the license key, if any. */
-      order?: components['schemas']['LicenseKeyOrder'] | null
+      order: components['schemas']['LicenseKeyOrder'] | null
       activation?: components['schemas']['LicenseKeyActivationBase'] | null
     }
     /** ValidationError */
@@ -45538,7 +45488,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['AuthenticationSessionStart']
+        'application/json': components['schemas']['GlobalAuthenticationSessionStart']
       }
     }
     responses: {
@@ -72874,9 +72824,6 @@ export const searchResultSubscriptionTypeValues: ReadonlyArray<
 export const seatStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SeatStatus']
 > = ['pending', 'claimed', 'revoked']
-export const seatTierTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['SeatTierType']
-> = ['volume', 'graduated']
 export const stripeAccountCountryValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['StripeAccountCountry']
 > = [

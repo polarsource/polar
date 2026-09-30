@@ -12,7 +12,7 @@ Use the generated, versioned Polar SDK without inventing methods or parameters.
 1. Identify the installed `polar-sdk` version and preserve the API version already selected by the application.
 2. Inspect generated service signatures, input `TypedDict` definitions, output dataclasses, and endpoint-specific errors before writing calls.
 3. Use `Polar` in synchronous code and `PolarAsync` in asynchronous code. Do not mix blocking SDK calls into an async request path.
-4. Identify whether the access token is scoped to an organization. Pass `organization_id` when the selected token does not imply one, and confirm the required endpoint scopes.
+4. Identify whether the access token is scoped to an organization. When the selected token does not imply one, create the client with `Polar(..., organization_id=...)` or pass `organization_id`, and confirm the required endpoint scopes.
 5. Keep client, webhook, and environment configuration on the server.
 
 ## Migrate from the old SDK

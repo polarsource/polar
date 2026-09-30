@@ -2,14 +2,13 @@
 
 import { DetailCell } from '@/components/Orders/OrderSection'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import { buildCustomerDashboardPath } from '@/utils/customer'
 import { Alert, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
-import { ReactNode, useContext } from 'react'
+import { Fragment, ReactNode, useContext } from 'react'
 import { ImportTaxPicker } from '../ImportTaxPicker'
 import { BillingAddressEditor } from './BillingAddressEditor'
-import { needsAttention, ReviewRow } from './reviewRows'
+import { needsAttention, reasonLinks, ReviewRow } from './reviewRows'
 
 export function RecordCard({
   title,
@@ -52,11 +51,7 @@ export function RecordReason({ row }: { row: ReviewRow }) {
   const { organization } = useContext(OrganizationContext)
   if (!row.reason) return null
 
-  const polarCustomerHref = row.conflicting_customer_id
-    ? buildCustomerDashboardPath(organization.slug, {
-        id: row.conflicting_customer_id,
-      })
-    : null
+  const links = reasonLinks(row, organization.slug)
   const attention = needsAttention(row)
 
   return (
@@ -66,14 +61,15 @@ export function RecordReason({ row }: { row: ReviewRow }) {
         variant={attention ? 'warning' : 'info'}
         title={attention ? 'Needs your attention' : 'Good to know'}
         description={
-          polarCustomerHref ? (
-            <>
-              {row.reason}{' '}
-              <Link href={polarCustomerHref}>View Polar customer</Link>
-            </>
-          ) : (
-            row.reason
-          )
+          <>
+            {row.reason}
+            {links.map((link) => (
+              <Fragment key={link.href}>
+                {' '}
+                <Link href={link.href}>{link.label}</Link>
+              </Fragment>
+            ))}
+          </>
         }
       />
     </Box>

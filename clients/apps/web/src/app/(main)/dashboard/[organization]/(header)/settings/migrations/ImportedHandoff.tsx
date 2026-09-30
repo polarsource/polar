@@ -51,7 +51,10 @@ export function ImportedHandoff({
 }: Props) {
   const start = useStartPanTransfer(migrationId)
   const remaining = plural(outcome.selectableTotal, 'subscription')
-  const nothingLanded = nothingImported(outcome)
+  const nothingLanded = nothingImported({
+    ...outcome,
+    readyToSwitch: outcome.counts.subscriptions.ready,
+  })
 
   return (
     <Box

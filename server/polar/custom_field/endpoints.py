@@ -8,7 +8,7 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import CustomField
 from polar.models.custom_field import CustomFieldType
-from polar.openapi import APITag
+from polar.openapi import APITag, cli_preview
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
@@ -73,6 +73,9 @@ async def list(
 @router.get(
     "/{id}",
     summary="Get Custom Field",
+    openapi_extra=cli_preview(
+        ("id", "ID"), ("name", "Name"), ("slug", "Slug"), ("type", "Type")
+    ),
     response_model=CustomFieldSchema,
     responses={404: CustomFieldNotFound},
 )

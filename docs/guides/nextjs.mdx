@@ -59,8 +59,8 @@ import { Checkout } from "@polar-sh/nextjs";
 
 export const GET = Checkout({
   accessToken: process.env.POLAR_ACCESS_TOKEN!,
-  successUrl: "https://your-app.com/confirmation?checkout_id={CHECKOUT_ID}",
-  server: "sandbox", // Use this option if you're using the sandbox environment - else use 'production' or omit the parameter
+  successUrl: "https://your-app.com/confirmation", // The handler appends checkout_id={CHECKOUT_ID}
+  environment: "sandbox", // Use this option if you're using the sandbox environment - else use 'production' or omit the parameter
 });
 ```
 
@@ -100,8 +100,10 @@ POLAR_WEBHOOK_SECRET="..."
 import { Webhooks } from "@polar-sh/nextjs";
 
 export const POST = Webhooks({
-	webhookSecret: process.env.POLAR_WEBHOOK_SECRET,
-	onPayload: async (payload) => // Handle payload...
+  webhookSecret: process.env.POLAR_WEBHOOK_SECRET!,
+  onPayload: async (payload) => {
+    // Handle payload...
+  },
 });
 ```
 
@@ -116,11 +118,15 @@ Depending on which events you've subscribed to, you'll receive different payload
 import { Webhooks } from "@polar-sh/nextjs";
 
 export const POST = Webhooks({
-  webhookSecret: process.env.POLAR_WEBHOOK_SECRET,
-  onPayload: async (payload) => ...,
-  onOrderCreated: async (order) => ...,
-  onCustomerStateChanged: async (customerState) => ...,
-  ...
+  webhookSecret: process.env.POLAR_WEBHOOK_SECRET!,
+  onPayload: async (payload) => {},
+  onOrderCreated: async (payload) => {
+    // The order is in payload.data
+  },
+  onCustomerStateChanged: async (payload) => {
+    // The customer state is in payload.data
+  },
+  // ...
 });
 ```
 

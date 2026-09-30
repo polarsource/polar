@@ -50,6 +50,12 @@ export const useCreateMerchantMigration = (organizationId: string) =>
       if (result.error) {
         return
       }
+      // Create queues the pre-check, so seeding the row lets the detail page
+      // open straight onto the running read and start polling.
+      getQueryClient().setQueryData(
+        ['merchantMigration', { id: result.data.id }],
+        result.data,
+      )
       getQueryClient().invalidateQueries({
         queryKey: ['merchantMigrations', { organizationId }],
       })

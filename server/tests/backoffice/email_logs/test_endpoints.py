@@ -7,8 +7,7 @@ import pytest_asyncio
 from polar.backoffice import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
 from polar.email.schemas import EmailTemplate
-from polar.models import User
-from polar.models.user_session import UserSession
+from polar.models import User, UserSession
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 
 
@@ -33,7 +32,7 @@ async def backoffice_client(
 
 
 @pytest.mark.asyncio
-class TestList:
+class TestListEmailLogs:
     async def test_lists_every_template_without_logs(
         self, backoffice_client: httpx.AsyncClient
     ) -> None:

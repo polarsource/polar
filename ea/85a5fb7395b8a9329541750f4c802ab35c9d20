@@ -1,0 +1,21 @@
+server/polar/merchant_migration/service.py
+  s_fd528823e8d35d::t_e25a0dd17fc8f3 1276-1286
+server/tests/merchant_migration/test_service.py
+  s_fd528823e8d35d::t_0db0fae4e55597 12,4772-4822
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ea85a5fb7395b8a9329541750f4c802ab35c9d20",
+  "prompts": {},
+  "sessions": {
+    "s_fd528823e8d35d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

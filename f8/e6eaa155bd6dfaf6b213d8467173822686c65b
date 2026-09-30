@@ -1,0 +1,31 @@
+server/tests/merchant_migration/test_endpoints.py
+  s_fd528823e8d35d::t_122768510f4eaa 1064-1088
+server/polar/merchant_migration/endpoints.py
+  s_fd528823e8d35d::t_c6cbb3848ea0c6 377
+server/polar/merchant_migration/service.py
+  s_fd528823e8d35d::t_723cfe4bd76d1a 123
+  s_fd528823e8d35d::t_bb20c65553ddf5 1273-1275,1277
+  s_fd528823e8d35d::t_74c64e2d6783d3 1468-1469
+  s_fd528823e8d35d::t_cac3848f71ec1e 1276
+  s_fd528823e8d35d::t_5b7ecd98b16e70 1196
+server/tests/merchant_migration/test_service.py
+  s_fd528823e8d35d::t_a4ed9d12bebf8c 4887
+  s_fd528823e8d35d::t_7916e43975b904 4863
+  s_fd528823e8d35d::t_42d06e2f8471a9 4735-4771
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f8e6eaa155bd6dfaf6b213d8467173822686c65b",
+  "prompts": {},
+  "sessions": {
+    "s_fd528823e8d35d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

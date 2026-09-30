@@ -72,18 +72,18 @@ async def list(
 @router.get(
     "/{id}",
     summary="Get Discount",
-    openapi_extra=cli_preview(
-        ("id", "ID"),
-        ("name", "Name"),
-        ("code", "Code"),
-        ("type", "Type"),
-        ("duration", "Duration"),
-    ),
-    response_model=DiscountSchema,
-    responses={404: DiscountNotFound},
     openapi_extra={
+        **cli_preview(
+            ("id", "ID"),
+            ("name", "Name"),
+            ("code", "Code"),
+            ("type", "Type"),
+            ("duration", "Duration"),
+        ),
         "x-tool-description": "Retrieve a specific discount by ID.",
     },
+    response_model=DiscountSchema,
+    responses={404: DiscountNotFound},
 )
 async def get(
     id: DiscountID,

@@ -231,18 +231,18 @@ async def export(
 @router.get(
     "/{id}",
     summary="Get Subscription",
-    openapi_extra=cli_preview(
-        ("id", "ID"),
-        ("status", "Status"),
-        ("customer_id", "Customer ID"),
-        ("product_id", "Product ID"),
-    ),
+    openapi_extra={
+        **cli_preview(
+            ("id", "ID"),
+            ("status", "Status"),
+            ("customer_id", "Customer ID"),
+            ("product_id", "Product ID"),
+        ),
+        "x-tool-title": "Get subscription details",
+    },
     response_model=SubscriptionSchema,
     tags=[APITag.mcp, APITag.cli],
     responses={404: SubscriptionNotFound},
-    openapi_extra={
-        "x-tool-title": "Get subscription details",
-    },
 )
 async def get(
     id: SubscriptionID,

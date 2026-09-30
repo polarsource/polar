@@ -1394,6 +1394,26 @@
           "Organization",
           "User"
         ],
+        "x-polar-cli-preview": {
+          "fields": [
+            {
+              "key": "id",
+              "label": "ID"
+            },
+            {
+              "key": "status",
+              "label": "Status"
+            },
+            {
+              "key": "customer_id",
+              "label": "Customer ID"
+            },
+            {
+              "key": "product_id",
+              "label": "Product ID"
+            }
+          ]
+        },
         "x-speakeasy-group": "subscriptions",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
@@ -2672,6 +2692,22 @@
           "Organization",
           "User"
         ],
+        "x-polar-cli-preview": {
+          "fields": [
+            {
+              "key": "id",
+              "label": "ID"
+            },
+            {
+              "key": "type",
+              "label": "Type"
+            },
+            {
+              "key": "description",
+              "label": "Description"
+            }
+          ]
+        },
         "x-speakeasy-group": "benefits",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
@@ -3883,6 +3919,26 @@
           "Organization",
           "User"
         ],
+        "x-polar-cli-preview": {
+          "fields": [
+            {
+              "key": "id",
+              "label": "ID"
+            },
+            {
+              "key": "name",
+              "label": "Name"
+            },
+            {
+              "key": "url",
+              "label": "URL"
+            },
+            {
+              "key": "enabled",
+              "label": "Enabled"
+            }
+          ]
+        },
         "x-speakeasy-group": "webhooks",
         "x-speakeasy-name-override": "get_webhook_endpoint",
         "x-codeSamples": [
@@ -5053,6 +5109,22 @@
           "Organization",
           "User"
         ],
+        "x-polar-cli-preview": {
+          "fields": [
+            {
+              "key": "id",
+              "label": "ID"
+            },
+            {
+              "key": "name",
+              "label": "Name"
+            },
+            {
+              "key": "is_archived",
+              "label": "Archived"
+            }
+          ]
+        },
         "x-speakeasy-group": "products",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
@@ -5263,6 +5335,13 @@
             }
           }
         },
+        "x-tool-name": "products_delete",
+        "x-tool-title": "Delete Product",
+        "x-tool-description": "Delete a product.\n\nOnly products without orders, subscriptions, trials or discounts can be deleted.\nProducts that are in use can only be archived.",
+        "x-tool-annotations": [
+          "destructive",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -11686,6 +11765,22 @@
           "Organization",
           "User"
         ],
+        "x-polar-cli-preview": {
+          "fields": [
+            {
+              "key": "id",
+              "label": "ID"
+            },
+            {
+              "key": "status",
+              "label": "Status"
+            },
+            {
+              "key": "customer_id",
+              "label": "Customer ID"
+            }
+          ]
+        },
         "x-speakeasy-group": "license_keys",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
@@ -11910,6 +12005,7 @@
           "Organization",
           "User"
         ],
+        "x-polar-cli-confirm": true,
         "x-speakeasy-group": "license_keys",
         "x-speakeasy-name-override": "rotate",
         "x-codeSamples": [
@@ -12702,6 +12798,22 @@
           "Organization",
           "User"
         ],
+        "x-polar-cli-preview": {
+          "fields": [
+            {
+              "key": "id",
+              "label": "ID"
+            },
+            {
+              "key": "label",
+              "label": "Label"
+            },
+            {
+              "key": "url",
+              "label": "URL"
+            }
+          ]
+        },
         "x-speakeasy-group": "checkout-links",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
@@ -13309,6 +13421,26 @@
           "Organization",
           "User"
         ],
+        "x-polar-cli-preview": {
+          "fields": [
+            {
+              "key": "id",
+              "label": "ID"
+            },
+            {
+              "key": "name",
+              "label": "Name"
+            },
+            {
+              "key": "slug",
+              "label": "Slug"
+            },
+            {
+              "key": "type",
+              "label": "Type"
+            }
+          ]
+        },
         "x-speakeasy-group": "custom-fields",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
@@ -13893,6 +14025,30 @@
           "Organization",
           "User"
         ],
+        "x-polar-cli-preview": {
+          "fields": [
+            {
+              "key": "id",
+              "label": "ID"
+            },
+            {
+              "key": "name",
+              "label": "Name"
+            },
+            {
+              "key": "code",
+              "label": "Code"
+            },
+            {
+              "key": "type",
+              "label": "Type"
+            },
+            {
+              "key": "duration",
+              "label": "Duration"
+            }
+          ]
+        },
         "x-speakeasy-group": "discounts",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
@@ -14626,6 +14782,26 @@
           "Organization",
           "User"
         ],
+        "x-polar-cli-preview": {
+          "fields": [
+            {
+              "key": "id",
+              "label": "ID"
+            },
+            {
+              "key": "name",
+              "label": "Name"
+            },
+            {
+              "key": "email",
+              "label": "Email"
+            },
+            {
+              "key": "external_id",
+              "label": "External ID"
+            }
+          ]
+        },
         "x-speakeasy-group": "customers",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
@@ -14932,6 +15108,26 @@
           "Organization",
           "User"
         ],
+        "x-polar-cli-preview": {
+          "fields": [
+            {
+              "key": "id",
+              "label": "ID"
+            },
+            {
+              "key": "name",
+              "label": "Name"
+            },
+            {
+              "key": "email",
+              "label": "Email"
+            },
+            {
+              "key": "external_id",
+              "label": "External ID"
+            }
+          ]
+        },
         "x-speakeasy-group": "customers",
         "x-speakeasy-name-override": "get_external",
         "x-codeSamples": [
@@ -16396,6 +16592,30 @@
           "Organization",
           "User"
         ],
+        "x-polar-cli-preview": {
+          "fields": [
+            {
+              "key": "id",
+              "label": "ID"
+            },
+            {
+              "key": "name",
+              "label": "Name"
+            },
+            {
+              "key": "email",
+              "label": "Email"
+            },
+            {
+              "key": "external_id",
+              "label": "External ID"
+            },
+            {
+              "key": "role",
+              "label": "Role"
+            }
+          ]
+        },
         "x-speakeasy-group": "customers.members",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
@@ -16734,6 +16954,30 @@
           "Organization",
           "User"
         ],
+        "x-polar-cli-preview": {
+          "fields": [
+            {
+              "key": "id",
+              "label": "ID"
+            },
+            {
+              "key": "name",
+              "label": "Name"
+            },
+            {
+              "key": "email",
+              "label": "Email"
+            },
+            {
+              "key": "external_id",
+              "label": "External ID"
+            },
+            {
+              "key": "role",
+              "label": "Role"
+            }
+          ]
+        },
         "x-speakeasy-group": "customers.members",
         "x-speakeasy-name-override": "get_external",
         "x-codeSamples": [
@@ -24039,6 +24283,22 @@
           "Organization",
           "User"
         ],
+        "x-polar-cli-preview": {
+          "fields": [
+            {
+              "key": "id",
+              "label": "ID"
+            },
+            {
+              "key": "name",
+              "label": "Name"
+            },
+            {
+              "key": "unit",
+              "label": "Unit"
+            }
+          ]
+        },
         "x-speakeasy-group": "meters",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
@@ -60712,7 +60972,13 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "x-polar-cli-confirm": {
+              "one_of": [
+                "revoked",
+                "disabled"
+              ]
+            }
           },
           "usage": {
             "type": "integer",
@@ -62894,7 +63160,10 @@
               }
             ],
             "title": "Is Archived",
-            "description": "Whether the meter is archived. Archived meters are no longer used for billing."
+            "description": "Whether the meter is archived. Archived meters are no longer used for billing.",
+            "x-polar-cli-confirm": {
+              "equals": true
+            }
           }
         },
         "type": "object",
@@ -74285,7 +74554,10 @@
               }
             ],
             "title": "Is Archived",
-            "description": "Whether the product is archived. If `true`, the product won't be available for purchase anymore. Existing customers will still have access to their benefits, and subscriptions will continue normally."
+            "description": "Whether the product is archived. If `true`, the product won't be available for purchase anymore. Existing customers will still have access to their benefits, and subscriptions will continue normally.",
+            "x-polar-cli-confirm": {
+              "equals": true
+            }
           },
           "visibility": {
             "anyOf": [
@@ -74615,7 +74887,10 @@
             "type": "boolean",
             "title": "Revoke Benefits",
             "description": "Should this refund trigger the associated customer benefits to be revoked?\n\n**Note:**\nOnly allowed in case the `order` is a one-time purchase.\nSubscriptions automatically revoke customer benefits once the\nsubscription itself is revoked, i.e fully canceled.",
-            "default": false
+            "default": false,
+            "x-polar-cli-confirm": {
+              "equals": true
+            }
           }
         },
         "type": "object",
@@ -76328,7 +76603,10 @@
           "cancel_at_period_end": {
             "type": "boolean",
             "title": "Cancel At Period End",
-            "description": "Cancel an active subscription once the current period ends.\n\nOr uncancel a subscription currently set to be revoked at period end."
+            "description": "Cancel an active subscription once the current period ends.\n\nOr uncancel a subscription currently set to be revoked at period end.",
+            "x-polar-cli-confirm": {
+              "equals": true
+            }
           }
         },
         "additionalProperties": false,
@@ -77779,7 +78057,10 @@
           "pause_at_period_end": {
             "type": "boolean",
             "title": "Pause At Period End",
-            "description": "Pause an active subscription at the end of the current period.\n\nOr cancel a scheduled pause on a subscription set to be paused at\nperiod end."
+            "description": "Pause an active subscription at the end of the current period.\n\nOr cancel a scheduled pause on a subscription set to be paused at\nperiod end.",
+            "x-polar-cli-confirm": {
+              "equals": true
+            }
           },
           "resumes_at": {
             "anyOf": [
@@ -78739,7 +79020,10 @@
             "type": "boolean",
             "const": true,
             "title": "Revoke",
-            "description": "Cancel and revoke an active subscription immediately"
+            "description": "Cancel and revoke an active subscription immediately",
+            "x-polar-cli-confirm": {
+              "equals": true
+            }
           }
         },
         "additionalProperties": false,
@@ -82381,7 +82665,10 @@
               }
             ],
             "title": "Enabled",
-            "description": "Whether the webhook endpoint is enabled."
+            "description": "Whether the webhook endpoint is enabled.",
+            "x-polar-cli-confirm": {
+              "equals": false
+            }
           }
         },
         "type": "object",

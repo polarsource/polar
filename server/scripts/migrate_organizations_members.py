@@ -187,7 +187,7 @@ async def prepare(
             async with sessionmaker() as session:
                 organization = await OrganizationRepository.from_session(
                     session
-                ).get_by_id(org.id)
+                ).get_by_id(org.id, include_blocked=True)
                 assert organization is not None
                 owner_members_created = await _backfill_owner_members(
                     session, organization
@@ -198,7 +198,7 @@ async def prepare(
             async with sessionmaker() as session:
                 organization = await OrganizationRepository.from_session(
                     session
-                ).get_by_id(org.id)
+                ).get_by_id(org.id, include_blocked=True)
                 assert organization is not None
                 seats_prepared = await _prepare_seats(session, organization)
                 await session.commit()
@@ -207,7 +207,7 @@ async def prepare(
             async with sessionmaker() as session:
                 organization = await OrganizationRepository.from_session(
                     session
-                ).get_by_id(org.id)
+                ).get_by_id(org.id, include_blocked=True)
                 assert organization is not None
                 grants_linked = await _prepare_benefit_grants(session, organization)
                 await session.commit()

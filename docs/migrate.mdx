@@ -132,8 +132,9 @@ Polar subscription, as this can cause double billing.
 
 If a subscription renews within 24 hours, Polar leaves it on Stripe to avoid a
 billing conflict and give you time to react if something goes wrong. A
-subscription already scheduled to end also stays there because there is no
-future renewal to take over.
+subscription set to cancel at the end of its period moves too: Polar keeps that
+end and does not renew it. A subscription set to end on any other date stays on
+Stripe.
 
 At the next renewal after a successful switch, Polar attempts to charge the
 copied card. If a payment method is missing, the renewal fails and Polar emails
@@ -153,7 +154,9 @@ regular cancellation, so prepare them before you switch:
   cannot turn these off for you.
 - **Your `customer.subscription.deleted` handling.** Make sure it does not
   revoke access or send a cancellation email for switched subscriptions. Their
-  `cancellation_details.comment` starts with `Migrated to Polar`.
+  `cancellation_details.comment` starts with `Migrated to Polar`. Stripe sends
+  this event right away, even for a subscription set to cancel at the end of
+  its period, so do not end access early.
 - **Tools connected to Stripe.** Churn, analytics, and retention tools report
   the cancellation as churn and can start win-back emails.
 
@@ -485,32 +488,48 @@ Every handler needs signature verification, `webhook-id` deduplication,
 object-level idempotency, out-of-order handling, retries, dead-letter behavior,
 safe logging, and an API reconciliation fallback.
 
-At migration cutover, expect:
+Migration never looks like a new sale. Importing the catalog creates products,
+discounts, and customers without `product.created`, discount,
+`customer.created`, or `member.created` webhooks. During import and card
+mapping, expect only:
 
+- `customer.updated` when the import fills in billing details or the Stripe
+  customer ID on a customer you already had in Polar
+- `customer.updated` when Polar sets a copied card as a customer's default
+  payment method
+
+At migration cutover, for each subscription, expect:
+
+- `subscription.updated` when the imported subscription activates
+- `subscription.migrated` with `provider` and `provider_subscription_id` to
+  match the Polar subscription to its source
+- `customer.state_changed` asynchronously after activation
+- Relevant `benefit_grant.*` events, if you attached benefits to the imported
+  products
+- `customer.updated` if the cutover sets the copied card as the default
 - Stripe `customer.subscription.deleted` when Polar cancels the source
   subscription. Its `cancellation_details.comment` starts with
   `Migrated to Polar`.
-- `subscription.migrated` with `provider` and `provider_subscription_id` to
-  match the Polar subscription to its source
-- `subscription.updated` when the imported subscription activates
-- `customer.state_changed` asynchronously after activation
-- `customer.updated` when Polar sets a copied card as the customer's default
-  payment method, or fills in billing details on a customer the import reused.
-  These can also arrive earlier, during import and card mapping.
-- Relevant `benefit_grant.*` events
-- `order.paid` when the first Polar renewal succeeds
 
 The Stripe cancellation is immediate, without proration or a final invoice, so
 `customer.subscription.deleted` is the expected Stripe subscription lifecycle
 event. Other Stripe events can still arrive depending on the account's
 configuration.
 
-Do not expect `subscription.created`, `subscription.active`,
-`product.created`, or `customer.created` from migration, and do not invent a
-`merchant_migration.*` webhook.
+Do not expect `subscription.created`, `subscription.active`, or
+`subscription.resumed` from migration, and do not invent a
+`merchant_migration.*` webhook. A subscription set to cancel at the end of its
+period arrives with `cancel_at_period_end` and `ends_at` set, but without a
+`subscription.canceled` event: it was already canceled on Stripe. At its end,
+Polar sends `subscription.canceled` and `subscription.revoked` as usual.
 
-This list is not delivery order. Polar currently enqueues
-`subscription.updated` before `subscription.migrated`, and Stripe and Polar
+After cutover, a moved subscription renews like any other Polar subscription:
+`subscription.cycled`, `subscription.updated`, `order.created`, `order.paid`,
+and `benefit_grant.cycled`, or `subscription.past_due` if the first charge
+fails.
+
+This list is not delivery order. Polar enqueues `subscription.updated` before
+`subscription.migrated`, but retries can reorder them, and Stripe and Polar
 events can arrive in either order. Do not treat the Stripe cancellation as
 ordinary churn or revoke access while its matching migration is still being
 reconciled.
@@ -539,6 +558,9 @@ During cutover:
 - Treat `subscription.migrated` as the cutover signal. Match its
   `provider_subscription_id` to the source Stripe subscription, then reconcile
   with the public Subscriptions API.
+- Handle `subscription.migrated` as an idempotent upsert: store the Polar
+  subscription ID and record Polar as the billing provider. Do not grant or
+  revoke access, and do not send a welcome or cancellation email.
 - Compare status and current period boundaries before recording Polar as the
   system that will charge next.
 - Keep skipped or failed subscriptions billing on Stripe.

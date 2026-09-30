@@ -172,7 +172,7 @@ async def list(
             statement = statement.where(
                 or_(
                     Customer.id == parsed_uuid,
-                    Organization.id == parsed_uuid,
+                    Customer.organization_id == parsed_uuid,
                 )
             )
         except ValueError:

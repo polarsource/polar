@@ -82,6 +82,21 @@ class TestList:
         assert "customer-0@example.com" in second_page.text
         assert "page=3" not in second_page.text
 
+    async def test_query_by_organization_id(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        organization: Organization,
+        customer: Customer,
+        customer_organization_second: Customer,
+    ) -> None:
+        response = await backoffice_client.get(
+            "/customers/", params={"query": str(organization.id)}
+        )
+
+        assert response.status_code == 200
+        assert str(customer.id) in response.text
+        assert str(customer_organization_second.id) not in response.text
+
 
 @pytest.mark.asyncio
 class TestCreateBalanceTransaction:

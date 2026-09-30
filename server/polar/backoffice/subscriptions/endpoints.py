@@ -140,7 +140,10 @@ async def list(
         try:
             parsed_uuid = uuid.UUID(query)
             statement = statement.where(
-                or_(Subscription.id == parsed_uuid, Organization.id == parsed_uuid)
+                or_(
+                    Subscription.id == parsed_uuid,
+                    Subscription.organization_id == parsed_uuid,
+                )
             )
         except ValueError:
             ts_query_simple = func.websearch_to_tsquery("simple", query)

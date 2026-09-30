@@ -9,7 +9,7 @@ from pytest_mock import MockerFixture
 from polar.backoffice import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
 from polar.kit.utils import utc_now
-from polar.models import Customer, Product, User
+from polar.models import Customer, Organization, Product, User
 from polar.models.order import OrderStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user_session import UserSession
@@ -40,6 +40,36 @@ async def backoffice_client(
         backoffice_app.dependency_overrides.pop(get_db_session, None)
         backoffice_app.dependency_overrides.pop(get_db_read_session, None)
         backoffice_app.dependency_overrides.pop(get_admin, None)
+
+
+@pytest.mark.asyncio
+class TestList:
+    async def test_query_by_organization_id(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+        product_organization_second: Product,
+        customer_organization_second: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        other_subscription = await create_active_subscription(
+            save_fixture,
+            product=product_organization_second,
+            customer=customer_organization_second,
+        )
+
+        response = await backoffice_client.get(
+            "/subscriptions/", params={"query": str(organization.id)}
+        )
+
+        assert response.status_code == 200
+        assert str(subscription.id) in response.text
+        assert str(other_subscription.id) not in response.text
 
 
 @pytest.mark.asyncio

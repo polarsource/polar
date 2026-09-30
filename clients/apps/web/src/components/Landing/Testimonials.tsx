@@ -198,7 +198,7 @@ export const Testimonials = () => {
                 aria-label={`${person.name}, ${person.company}`}
                 onClick={(event) => {
                   setActive(index)
-                  event.currentTarget.blur()
+                  if (event.detail > 0) event.currentTarget.blur()
                 }}
               >
                 <Box

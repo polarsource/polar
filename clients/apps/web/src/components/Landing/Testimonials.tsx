@@ -8,7 +8,6 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import Link from 'next/link'
 import { ReactNode, useEffect, useRef, useState } from 'react'
 import { Chapter } from './Chapter'
-import { LogoGrid } from './LogoGrid'
 
 const QUOTE_SECONDS = 6
 
@@ -121,134 +120,132 @@ export const Testimonials = () => {
     <Chapter
       index="04"
       name="What people say"
-      title="Trusted by teams that ship daily"
-      subtitle="From AI startups to infrastructure veterans"
+      title="Noticed by the people building what's next"
+      subtitle="Customers, advisors and peers"
     >
-      <Box flexDirection="column" rowGap="3xl" width="100%">
-        <LogoGrid />
-        <Box
-          ref={ref}
-          flexDirection="column"
-          alignItems="center"
-          rowGap={{ base: '3xl', md: '4xl' }}
-          paddingVertical={{ base: '3xl', md: '5xl' }}
-          paddingHorizontal={{ base: 'xl', md: '4xl' }}
-          backgroundColor="background-secondary"
-          onMouseEnter={() => setPaused('hovered', true)}
-          onMouseLeave={() => setPaused('hovered', false)}
-          onFocus={() => setPaused('focused', true)}
-          onBlur={(event) => {
-            if (!event.currentTarget.contains(event.relatedTarget as Node)) {
-              setPaused('focused', false)
-            }
-          }}
-        >
-          <Box width="100%" maxWidth="48rem" minHeight={{ md: '18rem' }}>
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div
-                key={testimonial.name}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.35, ease: 'easeOut' }}
-              >
-                <QuoteLink testimonial={testimonial}>
-                  <figure>
-                    <Box
-                      flexDirection="column"
-                      alignItems="center"
-                      rowGap="2xl"
-                      textAlign="center"
-                      opacity={{ base: 1, hover: 0.75 }}
-                      transitionProperty="opacity"
-                      transitionDuration="base"
-                    >
-                      <blockquote>
-                        <Box flexDirection="column" rowGap="l">
-                          {testimonial.quote.map((paragraph) => (
-                            <Text key={paragraph} variant="heading-s" as="p">
-                              {paragraph}
-                            </Text>
-                          ))}
-                        </Box>
-                      </blockquote>
-                      <figcaption>
-                        <Text color="muted">
-                          {testimonial.name}, {testimonial.company}
-                        </Text>
-                      </figcaption>
-                    </Box>
-                  </figure>
-                </QuoteLink>
-              </motion.div>
-            </AnimatePresence>
-          </Box>
+      <Box
+        ref={ref}
+        width="100%"
+        flexDirection="column"
+        alignItems="center"
+        rowGap={{ base: '3xl', md: '4xl' }}
+        paddingVertical={{ base: '3xl', md: '5xl' }}
+        paddingHorizontal={{ base: 'xl', md: '4xl' }}
+        backgroundColor="background-secondary"
+        onMouseEnter={() => setPaused('hovered', true)}
+        onMouseLeave={() => setPaused('hovered', false)}
+        onFocus={() => setPaused('focused', true)}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+            setPaused('focused', false)
+          }
+        }}
+      >
+        <Box width="100%" maxWidth="48rem" minHeight={{ md: '18rem' }}>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={testimonial.name}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
+            >
+              <QuoteLink testimonial={testimonial}>
+                <figure>
+                  <Box
+                    flexDirection="column"
+                    alignItems="center"
+                    rowGap="2xl"
+                    textAlign="center"
+                    opacity={{ base: 1, hover: 0.75 }}
+                    transitionProperty="opacity"
+                    transitionDuration="base"
+                  >
+                    <blockquote>
+                      <Box flexDirection="column" rowGap="l">
+                        {testimonial.quote.map((paragraph) => (
+                          <Text key={paragraph} variant="heading-s" as="p">
+                            {paragraph}
+                          </Text>
+                        ))}
+                      </Box>
+                    </blockquote>
+                    <figcaption>
+                      <Text color="muted">
+                        {testimonial.name}, {testimonial.company}
+                      </Text>
+                    </figcaption>
+                  </Box>
+                </figure>
+              </QuoteLink>
+            </motion.div>
+          </AnimatePresence>
+        </Box>
 
-          <Grid
-            width="100%"
-            maxWidth="64rem"
-            templateColumns="repeat(4, 1fr)"
-            gap="l"
-          >
-            {TESTIMONIALS.map((person, index) => (
-              <button
-                key={person.name}
-                type="button"
-                aria-pressed={index === active}
-                aria-label={`${person.name}, ${person.company}`}
-                onClick={(event) => {
-                  setActive(index)
-                  if (event.detail > 0) event.currentTarget.blur()
-                }}
+        <Grid
+          width="100%"
+          maxWidth="64rem"
+          templateColumns="repeat(4, 1fr)"
+          gap="l"
+        >
+          {TESTIMONIALS.map((person, index) => (
+            <button
+              key={person.name}
+              type="button"
+              aria-pressed={index === active}
+              aria-label={`${person.name}, ${person.company}`}
+              onClick={(event) => {
+                setActive(index)
+                if (event.detail > 0) event.currentTarget.blur()
+              }}
+            >
+              <Box
+                flexDirection="column"
+                rowGap="l"
+                opacity={index === active ? 1 : 0.5}
+                transitionProperty="opacity"
+                transitionDuration="slow"
               >
                 <Box
-                  flexDirection="column"
-                  rowGap="l"
-                  opacity={index === active ? 1 : 0.5}
-                  transitionProperty="opacity"
-                  transitionDuration="slow"
+                  display="block"
+                  height={1}
+                  backgroundColor="background-card"
+                  overflow="hidden"
                 >
                   <Box
-                    display="block"
-                    height={1}
-                    backgroundColor="background-card"
-                    overflow="hidden"
+                    ref={(element) => {
+                      progressRefs.current[index] = element
+                    }}
+                    height="100%"
+                    backgroundColor="background-inverse"
+                    transformOrigin="left"
+                    transform={
+                      index === active && reducedMotion
+                        ? 'scaleX(1)'
+                        : 'scaleX(0)'
+                    }
+                  />
+                </Box>
+                <Box alignItems="center" columnGap="m" textAlign="left">
+                  <Avatar
+                    avatar_url={person.avatar}
+                    name={person.name}
+                    className="size-8"
+                  />
+                  <Box
+                    display={{ base: 'none', md: 'flex' }}
+                    flexDirection="column"
                   >
-                    <Box
-                      ref={(element) => {
-                        progressRefs.current[index] = element
-                      }}
-                      height="100%"
-                      backgroundColor="background-inverse"
-                      transformOrigin="left"
-                      transform={
-                        index === active && reducedMotion
-                          ? 'scaleX(1)'
-                          : 'scaleX(0)'
-                      }
-                    />
-                  </Box>
-                  <Box alignItems="center" columnGap="m" textAlign="left">
-                    <Avatar
-                      avatar_url={person.avatar}
-                      name={person.name}
-                      className="size-8"
-                    />
-                    <Box
-                      display={{ base: 'none', md: 'flex' }}
-                      flexDirection="column"
-                    >
-                      <Text as="span">{person.name}</Text>
-                      <Text as="span" color="muted">
-                        {person.company}
-                      </Text>
-                    </Box>
+                    <Text as="span">{person.name}</Text>
+                    <Text as="span" color="muted">
+                      {person.company}
+                    </Text>
                   </Box>
                 </Box>
-              </button>
-            ))}
-          </Grid>
-        </Box>
+              </Box>
+            </button>
+          ))}
+        </Grid>
       </Box>
     </Chapter>
   )

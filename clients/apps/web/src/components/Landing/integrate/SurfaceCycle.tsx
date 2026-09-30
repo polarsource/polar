@@ -163,7 +163,12 @@ export const SurfaceCycle = () => {
               {surface.header}
             </Text>
           </Box>
-          <Box flexDirection="column" minWidth={0} minHeight={20} overflowX="auto">
+          <Box
+            flexDirection="column"
+            minWidth={0}
+            minHeight={20}
+            overflowX="auto"
+          >
             {lines.map((line, i) => (
               <Box key={i} alignItems="center">
                 {surface.prose ? (

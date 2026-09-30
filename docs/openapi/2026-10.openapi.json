@@ -5335,6 +5335,13 @@
             }
           }
         },
+        "x-tool-name": "products_delete",
+        "x-tool-title": "Delete Product",
+        "x-tool-description": "Delete a product.\n\nOnly products without orders, subscriptions, trials or discounts can be deleted.\nProducts that are in use can only be archived.",
+        "x-tool-annotations": [
+          "destructive",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"

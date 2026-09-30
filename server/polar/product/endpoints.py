@@ -186,14 +186,12 @@ async def list_v2027_01(
 @router.get(
     "/{id}",
     summary="Get Product",
-    openapi_extra=cli_preview(
-        ("id", "ID"), ("name", "Name"), ("is_archived", "Archived")
-    ),
-    response_model=ProductSchema,
-    responses={404: ProductNotFound},
     openapi_extra={
+        **cli_preview(("id", "ID"), ("name", "Name"), ("is_archived", "Archived")),
         "x-tool-description": "Retrieve a specific product by ID.",
     },
+    response_model=ProductSchema,
+    responses={404: ProductNotFound},
 )
 async def get(
     id: ProductID,

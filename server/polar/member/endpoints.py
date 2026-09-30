@@ -288,14 +288,14 @@ async def create_external(
 @customer_members_router.get(
     "/{id}/members/{member_id}",
     summary="Get Member",
-    openapi_extra=cli_preview(*MEMBER_PREVIEW_FIELDS),
+    openapi_extra={
+        **cli_preview(*MEMBER_PREVIEW_FIELDS),
+        "x-tool-title": "Get customer member",
+    },
     response_model=Member,
     responses={
         200: {"description": "Member retrieved."},
         404: MemberNotFound,
-    },
-    openapi_extra={
-        "x-tool-title": "Get customer member",
     },
 )
 async def get(
@@ -315,15 +315,15 @@ async def get(
 @customer_members_router.get(
     "/external/{external_id}/members/{member_external_id}",
     summary="Get Member by External ID",
-    openapi_extra=cli_preview(*MEMBER_PREVIEW_FIELDS),
+    openapi_extra={
+        **cli_preview(*MEMBER_PREVIEW_FIELDS),
+        "x-tool-title": "Get customer member by external ID",
+    },
     response_model=Member,
     responses={
         200: {"description": "Member retrieved."},
         404: MemberNotFound,
         409: AmbiguousExternalCustomer,
-    },
-    openapi_extra={
-        "x-tool-title": "Get customer member by external ID",
     },
 )
 async def get_external(

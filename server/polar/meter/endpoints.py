@@ -158,12 +158,12 @@ async def get_external(
 @router.get(
     "/{id}",
     summary="Get Meter",
-    openapi_extra=cli_preview(("id", "ID"), ("name", "Name"), ("unit", "Unit")),
-    response_model=MeterSchema,
-    responses={404: MeterNotFound},
     openapi_extra={
+        **cli_preview(("id", "ID"), ("name", "Name"), ("unit", "Unit")),
         "x-tool-description": "Retrieve a specific meter by ID.",
     },
+    response_model=MeterSchema,
+    responses={404: MeterNotFound},
 )
 async def get(
     id: MeterID,

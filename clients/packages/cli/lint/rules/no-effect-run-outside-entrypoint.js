@@ -1,13 +1,15 @@
-import { isFile, isMember } from '../ast.js'
+import { isFile, isMember, propertyName } from '../ast.js'
 
-const runners = new Set([
-  'runPromise',
-  'runPromiseExit',
-  'runSync',
-  'runSyncExit',
-  'runFork',
-  'runCallback',
-])
+const runners = new Set(
+  [
+    'runPromise',
+    'runPromiseExit',
+    'runSync',
+    'runSyncExit',
+    'runFork',
+    'runCallback',
+  ].flatMap((runner) => [runner, `${runner}With`]),
+)
 
 export default {
   meta: {
@@ -29,7 +31,7 @@ export default {
     }
     return {
       MemberExpression(node) {
-        if (isMember(node, 'Effect') && runners.has(node.property.name)) {
+        if (isMember(node, 'Effect') && runners.has(propertyName(node))) {
           context.report({ node, messageId: 'run' })
         } else if (isMember(node, 'BunRuntime', 'runMain')) {
           context.report({ node, messageId: 'main' })

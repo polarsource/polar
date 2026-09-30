@@ -184,9 +184,7 @@ export const trigger = Command.make(
       }
     }),
 ).pipe(
-  Command.withDescription(
-    'Send a sample webhook event to your local server through polar listen. Exits with an error when your server does not accept it. Run with --list to see every event.',
-  ),
+  Command.withDescription('Send a sample webhook event to your local server'),
   Command.withExamples([
     { command: 'polar trigger', description: 'Pick an event from a list' },
     {

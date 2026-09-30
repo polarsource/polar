@@ -17,7 +17,10 @@ import { fakeAuth, fakeOrganizations } from '@/utils/test-utils/services'
 import * as ui from '@/utils/ui'
 
 describe('renderEvent', () => {
-  const render = (event: ListenEvent) => {
+  const render = (
+    event: ListenEvent,
+    forwardUrl = 'http://localhost:3000/webhook',
+  ) => {
     const { lines, console } = captureConsole()
     const errors: string[] = []
     vi.spyOn(process.stderr, 'write').mockImplementation((chunk) => {
@@ -27,7 +30,7 @@ describe('renderEvent', () => {
     Effect.runSync(
       renderEvent(
         'Acme',
-        'http://localhost:3000/webhook',
+        forwardUrl,
       )(event).pipe(Effect.provideService(Console.Console, console)),
     )
     return { output: lines.join('\n'), errors: errors.join('') }
@@ -46,6 +49,15 @@ describe('renderEvent', () => {
     expect(output).toContain('http://localhost:3000/webhook')
     expect(output).toContain('whsec_test')
     expect(errors).toBe('')
+  })
+
+  test('keeps secrets in the forward URL out of the banner', () => {
+    const { output } = render(
+      { _tag: 'Connected', secret: 'whsec_test' },
+      'http://user:s3cret@localhost:3000/webhook?token=t0ken',
+    )
+    expect(output).toContain('http://***@localhost:3000/webhook?token=***')
+    expect(output).not.toMatch(/s3cret|t0ken/)
   })
 
   test('prints a forwarded event with its status and duration', () => {

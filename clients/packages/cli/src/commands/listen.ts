@@ -43,11 +43,12 @@ const banner = (organizationName: string, secret: string, forwardUrl: string) =>
     ui.blank,
   ].join('\n')
 
-export const renderEvent =
-  (organizationName: string, forwardUrl: string) => (event: ListenEvent) => {
+export const renderEvent = (organizationName: string, forwardUrl: string) => {
+  const shownUrl = redactUrl(forwardUrl)
+  return (event: ListenEvent) => {
     switch (event._tag) {
       case 'Connected':
-        return Console.log(banner(organizationName, event.secret, forwardUrl))
+        return Console.log(banner(organizationName, event.secret, shownUrl))
       case 'Undecodable':
         return printError(decodeFailure(event.key))
       case 'Forwarded':
@@ -68,6 +69,7 @@ export const renderEvent =
         )
     }
   }
+}
 
 export const forwardTarget = (input: string): URL | undefined => {
   const value = input.trim()
@@ -182,7 +184,7 @@ const listenCommand = (url: string, org: string | undefined) =>
       startListening({
         organization,
         forwardUrl: target.href,
-        onEvent: renderEvent(organization.name, redactUrl(target.href)),
+        onEvent: renderEvent(organization.name, target.href),
       }),
     )
   })

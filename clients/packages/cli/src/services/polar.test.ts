@@ -2,6 +2,7 @@ import { afterEach, expect, test, vi } from 'vitest'
 import { Effect, Redacted } from 'effect'
 import type { Polar as PolarSDK } from '@polar-sh/sdk/2026-10'
 import { AuthError, type PolarEnvironment } from '@/schemas/Auth'
+import { UsedEnvironments } from '@/services/api'
 import { Auth, type Credential } from '@/services/auth'
 import { make } from '@/services/polar'
 import {
@@ -25,6 +26,19 @@ const polarWith = (resolve: Resolve) =>
 afterEach(() => {
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
+})
+
+test('notes the environment even when there is no saved session', async () => {
+  const used = new Set<PolarEnvironment>()
+  const polar = await polarWith(() =>
+    Effect.fail(new AuthError({ message: 'Not logged in to production.' })),
+  )
+  await Effect.runPromise(
+    polar
+      .use(() => Promise.resolve('unreachable'), 'production')
+      .pipe(Effect.provideService(UsedEnvironments, used), Effect.flip),
+  )
+  expect([...used]).toEqual(['production'])
 })
 
 test('retries a rejected saved token with refreshed credentials in the same environment', async () => {

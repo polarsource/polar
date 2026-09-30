@@ -7,6 +7,7 @@ export type { Environment } from '@polar-sh/sdk/{{ api.version }}'
 export class ApiCommandError extends Data.TaggedError('ApiCommandError')<{
   message: string
   hint?: string
+  statusCode?: number | undefined
 }> {}
 
 export interface PreviewField {

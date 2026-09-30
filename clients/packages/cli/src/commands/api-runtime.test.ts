@@ -67,6 +67,18 @@ describe('generated commands', () => {
     }
   }
 
+  test('keeps the status code of an API failure', async () => {
+    vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
+      requests.push(new Request(input, init))
+      return Promise.resolve(
+        Response.json({ detail: 'Not found' }, { status: 404 }),
+      )
+    })
+    await expect(
+      run(['products', 'get', 'missing-id']).promise,
+    ).rejects.toMatchObject({ _tag: 'ApiCommandError', statusCode: 404 })
+  })
+
   describe('required flags', () => {
     test('stops before calling the API and shows an example', async () => {
       await expect(
@@ -253,7 +265,10 @@ describe('generated commands', () => {
       await expect(
         run(['customers', 'delete', 'missing-id'], { interactive: true })
           .promise,
-      ).rejects.toThrow('Resource does not exist in production.')
+      ).rejects.toMatchObject({
+        message: 'Resource does not exist in production.',
+        statusCode: 404,
+      })
       expect(Prompt.run).not.toHaveBeenCalled()
       expect(requests.map((request) => request.method)).toEqual(['GET'])
     })

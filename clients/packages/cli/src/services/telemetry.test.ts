@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import { Cause, Effect, Exit, FileSystem, Layer, PlatformError } from 'effect'
 import { CliError, Command } from 'effect/unstable/cli'
-import { AuthError } from '@/schemas/Auth'
+import { AuthError, type PolarEnvironment } from '@/schemas/Auth'
+import { UsedEnvironments } from '@/services/api'
 import {
   Build,
   commandPath,
@@ -36,7 +37,7 @@ type Env = Record<string, string>
 const telemetry = (
   env: Env = { POLAR_CLI_POSTHOG_KEY: 'phc_test' },
   build: BuildKind = 'release',
-  { writable = true } = {},
+  { writable = true, used = new Set<PolarEnvironment>() } = {},
 ) => {
   const files = new Map<string, string>()
   const events: TelemetryEvent[] = []
@@ -74,6 +75,7 @@ const telemetry = (
         sender,
         Layer.succeed(Environment, env),
         Layer.succeed(Build, build),
+        Layer.succeed(UsedEnvironments, used),
       ),
     ),
   )
@@ -198,6 +200,21 @@ describe('command identification', () => {
       ]),
     ).toEqual(['org', 'h'])
   })
+
+  test('does not mistake a value that starts with a dash for a flag', () => {
+    expect(
+      flagNames([
+        'orders',
+        'list',
+        '--sorting',
+        '-created_at',
+        '--limit',
+        '-1',
+        '--',
+        '--after-the-separator',
+      ]),
+    ).toEqual(['sorting', 'limit'])
+  })
 })
 
 describe('outcomes', () => {
@@ -232,7 +249,7 @@ describe('outcomes', () => {
           }),
         ),
       ),
-    ).toMatchObject({ outcome: 'failure', error: 'ShowHelp' })
+    ).toEqual({ outcome: 'failure', error: 'ShowHelp:UnknownSubcommand' })
     expect(outcomeOf(Exit.die(new TypeError('boom')))).toEqual({
       outcome: 'failure',
       error: 'TypeError',
@@ -266,6 +283,55 @@ describe('outcomes', () => {
       errorMessage: 'StatusCode: 429',
       errorCode: 429,
     })
+    expect(
+      describeFailure(
+        new AuthError({ message: 'Not found in sandbox.', statusCode: 404 }),
+      ),
+    ).toEqual({
+      error: 'AuthError',
+      errorMessage: 'Not found in sandbox.',
+      errorCode: 404,
+    })
+  })
+
+  test('names the flag or argument behind a usage mistake, never what was typed', () => {
+    const usage = (error: CliError.ShowHelp['errors'][number]) =>
+      describeFailure(
+        new CliError.ShowHelp({ commandPath: ['polar'], errors: [error] }),
+      )
+    expect(
+      usage(
+        new CliError.UnrecognizedOption({ option: '--bogus', suggestions: [] }),
+      ),
+    ).toEqual({ error: 'ShowHelp:UnrecognizedOption', errorMessage: '--bogus' })
+    expect(usage(new CliError.MissingArgument({ argument: 'id' }))).toEqual({
+      error: 'ShowHelp:MissingArgument',
+      errorMessage: 'id',
+    })
+    expect(
+      usage(
+        new CliError.InvalidValue({
+          option: 'limit',
+          value: 'a private value',
+          expected: 'integer',
+          kind: 'flag',
+        }),
+      ),
+    ).toEqual({ error: 'ShowHelp:InvalidValue', errorMessage: 'limit' })
+    expect(
+      usage(
+        new CliError.UnknownSubcommand({
+          subcommand: 'polar_oat_short',
+          parent: ['polar'],
+          suggestions: [],
+        }),
+      ),
+    ).toEqual({ error: 'ShowHelp:UnknownSubcommand' })
+    expect(
+      usage(
+        new CliError.UnexpectedArgument({ arguments: ['a private value'] }),
+      ),
+    ).toEqual({ error: 'ShowHelp:UnexpectedArgument' })
   })
 })
 
@@ -462,6 +528,21 @@ describe('Telemetry.record', () => {
     expect(second.properties['error_code']).toBeNull()
     const [stored] = [...files.values()]
     expect(JSON.parse(stored!).installId).toBe(first.distinct_id.slice(4))
+  })
+
+  test('reports the environments the command talked to', async () => {
+    const used = new Set<PolarEnvironment>()
+    const { record, events } = telemetry(undefined, 'release', { used })
+    await record()
+    used.add('sandbox')
+    await record()
+    used.add('production')
+    await record()
+    expect(events.map((event) => event.properties['environment'])).toEqual([
+      null,
+      'sandbox',
+      'production,sandbox',
+    ])
   })
 
   test('reports no agent outside an AI coding tool', async () => {

@@ -37,24 +37,27 @@ export const layer = Layer.effect(
           const organization =
             operation.requiresAuthentication === false
               ? undefined
-              : yield* organizations
-                  .resolve(organizationIds[0])
-                  .pipe(
-                    Effect.mapError(
-                      (error) =>
-                        new ApiCommandError({ message: error.message }),
-                    ),
-                  )
+              : yield* organizations.resolve(organizationIds[0]).pipe(
+                  Effect.mapError(
+                    (error) =>
+                      new ApiCommandError({
+                        message: error.message,
+                        statusCode: error.statusCode,
+                      }),
+                  ),
+                )
           const environment =
             organization?.environment ?? operation.environment ?? 'production'
           for (const id of organizationIds.slice(1)) {
-            const other = yield* organizations
-              .resolve(id)
-              .pipe(
-                Effect.mapError(
-                  (error) => new ApiCommandError({ message: error.message }),
-                ),
-              )
+            const other = yield* organizations.resolve(id).pipe(
+              Effect.mapError(
+                (error) =>
+                  new ApiCommandError({
+                    message: error.message,
+                    statusCode: error.statusCode,
+                  }),
+              ),
+            )
             if (other.environment !== environment) {
               return yield* new ApiCommandError({
                 message:
@@ -111,6 +114,7 @@ export const layer = Layer.effect(
               ) {
                 return yield* new ApiCommandError({
                   message: `Resource does not exist${environmentContext}.`,
+                  statusCode: 404,
                 })
               }
               if (fields.length > 0) {
@@ -151,7 +155,11 @@ export const layer = Layer.effect(
             })
             .pipe(
               Effect.mapError(
-                (error) => new ApiCommandError({ message: error.message }),
+                (error) =>
+                  new ApiCommandError({
+                    message: error.message,
+                    statusCode: error.statusCode,
+                  }),
               ),
             )
 

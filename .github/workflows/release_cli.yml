@@ -140,7 +140,8 @@ jobs:
           p12-password: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
 
       - name: Build binary
-        run: bun build ./src/cli.ts --compile --no-compile-autoload-dotenv --no-compile-autoload-bunfig --target=${{ matrix.target }} --outfile polar
+        shell: bash
+        run: bun build ./src/cli.ts --compile --no-compile-autoload-dotenv --no-compile-autoload-bunfig --define POLAR_CLI_BUILD='"release"' --target=${{ matrix.target }} --outfile polar
 
       - name: Sign macOS binary
         if: matrix.sign

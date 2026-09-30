@@ -11,7 +11,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { motion } from 'motion/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { NavLink } from './NavLink'
 import { NavMenu, NavMenuLink, navMenus } from './desktopNavigation'
 
@@ -63,16 +63,23 @@ export const LandingPageDesktopNavigation = () => {
           <Link href="/">
             <PolarLogotype logoVariant="icon" size={36} />
           </Link>
-          <Box as="ul" alignItems="center" columnGap="l">
+          <Box as="ul" alignItems="center" columnGap="xl">
             {navMenus.map((menu) => (
-              <Box as="li" key={menu.id}>
-                <NavMenuTrigger
-                  menu={menu}
-                  isOpen={openMenuId === menu.id}
-                  onOpen={() => setOpenMenuId(menu.id)}
-                  pathname={pathname}
-                />
-              </Box>
+              <Fragment key={menu.id}>
+                <Box as="li">
+                  <NavMenuTrigger
+                    menu={menu}
+                    isOpen={openMenuId === menu.id}
+                    onOpen={() => setOpenMenuId(menu.id)}
+                    pathname={pathname}
+                  />
+                </Box>
+                {menu.id === 'features' ? (
+                  <Box as="li" onMouseEnter={closeMenu}>
+                    <NavLink href="/integrate">Integrate</NavLink>
+                  </Box>
+                ) : null}
+              </Fragment>
             ))}
             <Box as="li" onMouseEnter={closeMenu}>
               <NavLink href="/blog">Blog</NavLink>

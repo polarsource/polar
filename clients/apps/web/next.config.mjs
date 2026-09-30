@@ -175,6 +175,26 @@ const nextConfig = {
         permanent: false,
       },
       {
+        source: '/sdk',
+        destination: '/integrate#sdk',
+        permanent: false,
+      },
+      {
+        source: '/api',
+        destination: '/integrate#api',
+        permanent: false,
+      },
+      {
+        source: '/cli',
+        destination: '/integrate#cli',
+        permanent: false,
+      },
+      {
+        source: '/mcp',
+        destination: '/integrate#mcp',
+        permanent: false,
+      },
+      {
         source: '/legal/terms',
         destination: 'https://polar.sh/legal/master-services-terms',
         permanent: false,

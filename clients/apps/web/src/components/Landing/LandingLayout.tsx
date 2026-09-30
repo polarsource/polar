@@ -80,6 +80,10 @@ const mobileNavigationItems: NavigationItem[] = [
     isActive: (pathname) => pathname === '/',
   },
   {
+    title: 'Integrate',
+    href: '/integrate',
+  },
+  {
     title: 'Documentation',
     href: 'https://polar.sh/docs',
     target: '_blank',

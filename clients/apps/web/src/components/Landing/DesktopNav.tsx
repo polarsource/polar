@@ -60,9 +60,7 @@ export const LandingPageDesktopNavigation = () => {
         justifyContent="between"
       >
         <Box alignItems="center" columnGap="2xl">
-          <Link href="/">
-            <PolarLogotype logoVariant="icon" size={36} />
-          </Link>
+          <PolarLogotype logoVariant="icon" size={36} href="/" />
           <Box as="ul" alignItems="center" columnGap="xl">
             {navMenus.map((menu) => (
               <Fragment key={menu.id}>

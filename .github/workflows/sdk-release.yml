@@ -4,6 +4,12 @@ concurrency: sdk-release
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Already published SDK version (X.Y.Z) to update the adapters and CLI to"
+        required: true
+        type: string
 
 # Required for OIDC (Trusted Publishing)
 permissions:
@@ -14,13 +20,26 @@ jobs:
   detect-release:
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.extract.outputs.version }}
+      version: ${{ steps.extract.outputs.version || steps.manual.outputs.version }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 
+      - name: Use the manually provided version
+        if: github.event_name == 'workflow_dispatch'
+        id: manual
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if ! [[ "$INPUT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Version must be X.Y.Z, got '$INPUT_VERSION'"
+            exit 1
+          fi
+          echo "version=$INPUT_VERSION" >> $GITHUB_OUTPUT
+
       - name: Check for release commit
+        if: github.event_name == 'push'
         id: check
         run: |
           if git log --oneline -1 | grep -qP '^.*sdk\[release\]: \K.+'; then
@@ -39,7 +58,7 @@ jobs:
 
   tag:
     needs: detect-release
-    if: needs.detect-release.outputs.version != ''
+    if: github.event_name == 'push' && needs.detect-release.outputs.version != ''
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -58,7 +77,7 @@ jobs:
 
   publish-python:
     needs: [detect-release, tag]
-    if: needs.detect-release.outputs.version != ''
+    if: github.event_name == 'push' && needs.detect-release.outputs.version != ''
     runs-on: ubuntu-latest
     environment: sdk-release
     steps:
@@ -81,7 +100,7 @@ jobs:
 
   publish-typescript:
     needs: [detect-release, tag]
-    if: needs.detect-release.outputs.version != ''
+    if: github.event_name == 'push' && needs.detect-release.outputs.version != ''
     runs-on: ubuntu-latest
     environment: sdk-release
     steps:
@@ -113,7 +132,10 @@ jobs:
 
   update-sdk-dependents:
     needs: [detect-release, publish-typescript]
-    if: needs.detect-release.outputs.version != ''
+    if: >-
+      !cancelled() &&
+      needs.detect-release.outputs.version != '' &&
+      (github.event_name == 'workflow_dispatch' || needs.publish-typescript.result == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

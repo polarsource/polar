@@ -3109,6 +3109,81 @@ class TestImportCatalog:
         } == {("eur", 900), ("usd", 1000)}
 
     @pytest.mark.auth
+    async def test_extra_prices_in_one_currency_import_as_archived_prices(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        records: list[CanonicalRecord] = [
+            CanonicalProduct(
+                source_id="prod_1:month:1",
+                product_source_id="prod_1",
+                name="Pro",
+                recurring_interval="month",
+                recurring_interval_count=1,
+                prices=[
+                    CanonicalPrice(
+                        source_id=source_id,
+                        currency="usd",
+                        amount=amount,
+                        pricing_scheme=CanonicalPricingScheme.fixed,
+                        is_default=source_id == "price_new",
+                    )
+                    for source_id, amount in [
+                        ("price_old", 1000),
+                        ("price_new", 1200),
+                        ("price_same", 1200),
+                    ]
+                ],
+            ),
+            CanonicalCustomer(
+                source_id="cus_1",
+                email="alice@example.com",
+                name="Alice",
+                country="US",
+            ),
+            canonical_subscription(price_source_id="price_old"),
+        ]
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization, records=records
+        )
+
+        report = await _import_catalog(session, auth_subject, migration.id)
+
+        results = {result.entity: result for result in report.results}
+        assert results[PrecheckEntity.products].imported == 1
+        [product] = (
+            (
+                await session.execute(
+                    select(Product)
+                    .where(Product.organization_id == organization.id)
+                    .options(selectinload(Product.all_prices))
+                )
+            )
+            .scalars()
+            .all()
+        )
+        assert {
+            (price.price_amount, price.is_archived)
+            for price in product.all_prices
+            if isinstance(price, ProductPriceFixed)
+        } == {(1200, False), (1000, True)}
+        items, _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=None,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+        assert items[0].status == PrecheckRecordStatus.importable
+        assert items[0].dependencies_imported is True
+
+    @pytest.mark.auth
     @pytest.mark.parametrize(
         ("deleted_in_between", "in_a_new_migration", "expected"),
         [

@@ -82,6 +82,9 @@ class CanonicalPrice:
     # decimal price); such prices can't be imported.
     amount: int | None
     pricing_scheme: CanonicalPricingScheme
+    # Picks the price Polar sells when a product has several in one currency.
+    is_default: bool = False
+    created_at: datetime | None = None
 
 
 @dataclass
@@ -490,6 +493,8 @@ def deserialize(
                         currency=price["currency"],
                         amount=price["amount"],
                         pricing_scheme=CanonicalPricingScheme(price["pricing_scheme"]),
+                        is_default=price.get("is_default", False),
+                        created_at=_parse_datetime(price.get("created_at")),
                     )
                     for price in data["prices"]
                 ],

@@ -386,7 +386,7 @@ class StripeAdapter:
                     archived=archived,
                 )
                 grouped[key] = canonical
-            canonical.prices.extend(self._map_prices(price))
+            canonical.prices.extend(self._map_prices(price, product))
         return list(grouped.values())
 
     def _catalog_product_key(
@@ -652,17 +652,26 @@ class StripeAdapter:
             return e.code == "resource_missing"
         return subscription.status == "canceled"
 
-    def _map_prices(self, price: stripe_lib.Price) -> list[CanonicalPrice]:
+    def _map_prices(
+        self, price: stripe_lib.Price, product: stripe_lib.Product
+    ) -> list[CanonicalPrice]:
         pricing_scheme = self._map_pricing_scheme(price)
         amounts: dict[str, int | None] = {price.currency: price.unit_amount}
         for currency, option in (price.get("currency_options") or {}).items():
             amounts[currency] = option.get("unit_amount")
+        default_price = product.get("default_price")
+        is_default = (
+            default_price is not None and self._id_of(default_price) == price.id
+        )
+        created_at = self._to_datetime(price.get("created"))
         return [
             CanonicalPrice(
                 source_id=price.id,
                 currency=currency,
                 amount=amount,
                 pricing_scheme=pricing_scheme,
+                is_default=is_default,
+                created_at=created_at,
             )
             for currency, amount in amounts.items()
         ]

@@ -27,6 +27,7 @@ from polar.merchant_migration.canonical import (
     serialize,
 )
 from polar.merchant_migration.cutover import CutoverOutcome, SubscriptionCutover
+from polar.merchant_migration.repository import MerchantMigrationRecordRepository
 from polar.models import (
     Customer,
     MerchantMigration,
@@ -51,6 +52,7 @@ from tests.fixtures.random_objects import (
     create_customer,
     create_discount,
     create_payment_method,
+    create_product_price_fixed,
     create_subscription,
 )
 from tests.fixtures.stripe import build_stripe_payment_method
@@ -398,6 +400,63 @@ class TestRun:
         assert outcome.status == MerchantMigrationCutoverStatus.moved
         subscription = await _created(session, pending_record)
         assert subscription.product_id == product.id
+
+    async def test_legacy_price_moves_onto_its_archived_price(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        archived = await create_product_price_fixed(
+            save_fixture, product=product, amount=500, is_archived=True
+        )
+        product_record = await MerchantMigrationRecordRepository.from_session(
+            session
+        ).get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.product,
+            source_id="prod_1:month:1",
+        )
+        assert product_record is not None
+        product_record.canonical = serialize(
+            CanonicalProduct(
+                source_id="prod_1:month:1",
+                product_source_id="prod_1",
+                name="Product",
+                recurring_interval="month",
+                recurring_interval_count=1,
+                prices=[
+                    CanonicalPrice(
+                        source_id="price_new",
+                        currency="usd",
+                        amount=1000,
+                        pricing_scheme=CanonicalPricingScheme.fixed,
+                        is_default=True,
+                    ),
+                    CanonicalPrice(
+                        source_id="price_1",
+                        currency="usd",
+                        amount=500,
+                        pricing_scheme=CanonicalPricingScheme.fixed,
+                    ),
+                ],
+            )
+        )
+        await save_fixture(product_record)
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+
+        outcome = await cutover(_source())
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.amount == 500
+        assert [
+            price.product_price_id for price in subscription.subscription_product_prices
+        ] == [archived.id]
 
     async def test_applies_imported_discount(
         self,

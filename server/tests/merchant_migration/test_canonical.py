@@ -61,6 +61,8 @@ class TestSerialize:
                     "currency": "usd",
                     "amount": 1000,
                     "pricing_scheme": "fixed",
+                    "is_default": False,
+                    "created_at": None,
                 }
             ],
             "archived": False,
@@ -127,6 +129,38 @@ class TestSerialize:
 
 
 class TestDeserialize:
+    def test_price_sale_fields_round_trip_and_default_for_legacy_payload(
+        self,
+    ) -> None:
+        price = CanonicalPrice(
+            source_id="price_1",
+            currency="usd",
+            amount=1000,
+            pricing_scheme=CanonicalPricingScheme.fixed,
+            is_default=True,
+            created_at=datetime(2026, 1, 1, tzinfo=UTC),
+        )
+        product = CanonicalProduct(
+            source_id="prod_1:month:1",
+            product_source_id="prod_1",
+            name="Pro",
+            recurring_interval="month",
+            recurring_interval_count=1,
+            prices=[price],
+        )
+        legacy = serialize(product)
+        del legacy["prices"][0]["is_default"]
+        del legacy["prices"][0]["created_at"]
+
+        assert (
+            deserialize(MerchantMigrationRecordType.product, serialize(product))
+            == product
+        )
+        result = deserialize(MerchantMigrationRecordType.product, legacy)
+        assert isinstance(result, CanonicalProduct)
+        assert result.prices[0].is_default is False
+        assert result.prices[0].created_at is None
+
     def test_customer_tax_id_dropped_round_trips(self) -> None:
         customer = CanonicalCustomer(
             source_id="cus_1",

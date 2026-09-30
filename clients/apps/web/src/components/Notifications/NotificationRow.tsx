@@ -7,6 +7,8 @@ import PersonAddAltOutlined from '@mui/icons-material/PersonAddAltOutlined'
 import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
+import { DEFAULT_LOCALE } from '@polar-sh/i18n'
+import { formatDate } from '@polar-sh/i18n/formatters/date'
 import { Avatar, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'
@@ -118,7 +120,7 @@ export const NotificationRow = ({
           }
           avatar={p.subscriber_name}
           title={`${p.subscriber_name} subscribed`}
-          subtitle={`${p.tier_name}, ${p.formatted_price_with_interval}`}
+          subtitle={`${p.tier_name} · ${p.formatted_price_with_interval}`}
           href={
             p.tier_organization_slug && p.subscription_id
               ? `/dashboard/${p.tier_organization_slug}/sales/subscriptions/${p.subscription_id}`
@@ -130,7 +132,7 @@ export const NotificationRow = ({
     case 'MaintainerNewTrialNotification': {
       const p = n.payload
       const ends = p.trial_end
-        ? `, ends ${new Date(p.trial_end).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+        ? ` · ends ${formatDate(p.trial_end, DEFAULT_LOCALE, { month: 'short', day: 'numeric' })}`
         : ''
       return (
         <Row
@@ -168,7 +170,7 @@ export const NotificationRow = ({
           }
           avatar={customer}
           title={`${customer} purchased`}
-          subtitle={`${p.product_name}, ${formatCurrency('compact')(p.product_price_amount, p.currency)}`}
+          subtitle={`${p.product_name} · ${formatCurrency('compact')(p.product_price_amount, p.currency)}`}
           href={
             p.organization_slug && p.order_id
               ? `/dashboard/${p.organization_slug}/sales/${p.order_id}`
@@ -192,7 +194,7 @@ export const NotificationRow = ({
           }
           avatar={customer}
           title={`${customer} renewed`}
-          subtitle={`${p.product_name}, ${formatCurrency('compact')(p.product_price_amount, p.currency)} ${p.formatted_recurring_interval}`}
+          subtitle={`${p.product_name} · ${formatCurrency('compact')(p.product_price_amount, p.currency)} ${p.formatted_recurring_interval}`}
           href={
             p.organization_slug && p.subscription_id
               ? `/dashboard/${p.organization_slug}/sales/subscriptions/${p.subscription_id}`
@@ -212,7 +214,7 @@ export const NotificationRow = ({
           }
           avatar={p.organization_name}
           title="Fee credits granted"
-          subtitle={`${p.organization_name}, ${formatCurrency('compact')(p.amount, p.currency)}`}
+          subtitle={`${p.organization_name} · ${formatCurrency('compact')(p.amount, p.currency)}`}
           href={null}
         />
       )

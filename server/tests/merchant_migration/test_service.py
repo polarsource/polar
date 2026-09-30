@@ -3875,7 +3875,7 @@ class TestImportPaymentMethodMappings:
     ) -> None:
         migration = await build_connected_migration(save_fixture, organization)
 
-        await service.import_payment_method_mappings(
+        summary = await service.import_payment_method_mappings(
             session,
             migration,
             (
@@ -3883,6 +3883,121 @@ class TestImportPaymentMethodMappings:
                 b"cus_unknown,pm_old,cus_unknown,pm_new\n"
             ),
         )
+
+        assert summary.linked == 0
+        assert summary.skipped == [
+            "Customer cus_unknown wasn't imported in this migration."
+        ]
+
+    async def test_all_customers_without_payment_method(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        record = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_1",
+            email="nocard@example.com",
+        )
+        get_payment_method = mocker.patch(
+            "polar.merchant_migration.cards.stripe_service.get_payment_method"
+        )
+
+        summary = await service.import_payment_method_mappings(
+            session,
+            migration,
+            (
+                b"customer_id_old,source_id_old,customer_id_new,source_id_new\n"
+                b"cus_sub_1,,cus_sub_1,\n"
+                b"cus_other,,cus_other,\n"
+            ),
+        )
+
+        assert summary.linked == 0
+        assert summary.customers_without_payment_method == 2
+        assert summary.skipped == []
+        get_payment_method.assert_not_called()
+        staged = deserialize(record.type, record.canonical)
+        assert isinstance(staged, CanonicalSubscription)
+        assert staged.payment_method is None
+
+    async def test_mixed_file(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        with_card = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_card",
+            email="card@example.com",
+            payment_method=CanonicalPaymentMethod(
+                source_id="pm_old", type=CanonicalPaymentMethodType.card
+            ),
+        )
+        await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_nocard",
+            email="nocard@example.com",
+        )
+        half = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_half",
+            email="half@example.com",
+            payment_method=CanonicalPaymentMethod(
+                source_id="pm_half", type=CanonicalPaymentMethodType.card
+            ),
+        )
+        stripe_payment_method = build_stripe_payment_method(customer="cus_sub_card")
+        stripe_payment_method.id = "pm_new"
+        get_payment_method = mocker.patch(
+            "polar.merchant_migration.cards.stripe_service.get_payment_method",
+            new=mocker.AsyncMock(return_value=stripe_payment_method),
+        )
+
+        summary = await service.import_payment_method_mappings(
+            session,
+            migration,
+            (
+                b"customer_id_old,source_id_old,customer_id_new,source_id_new\n"
+                b"cus_sub_card,pm_old,cus_sub_card,pm_new\n"
+                b"cus_sub_nocard,,cus_sub_nocard,\n"
+                b"cus_sub_half,pm_half,cus_sub_half,\n"
+            ),
+        )
+
+        assert summary.linked == 1
+        assert summary.customers_without_payment_method == 1
+        assert len(summary.skipped) == 1
+        assert "Line 4" in summary.skipped[0]
+        get_payment_method.assert_awaited_once_with("pm_new")
+        staged_with_card = deserialize(with_card.type, with_card.canonical)
+        assert isinstance(staged_with_card, CanonicalSubscription)
+        assert staged_with_card.payment_method is not None
+        assert staged_with_card.payment_method.source_id == "pm_new"
+        staged_half = deserialize(half.type, half.canonical)
+        assert isinstance(staged_half, CanonicalSubscription)
+        assert staged_half.payment_method is not None
+        assert staged_half.payment_method.source_id == "pm_half"
 
 
 @pytest.mark.asyncio

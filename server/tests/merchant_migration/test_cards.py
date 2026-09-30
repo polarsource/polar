@@ -46,20 +46,69 @@ MAPPING_CSV_HEADER = b"customer_id_old,source_id_old,customer_id_new,source_id_n
 
 class TestParsePaymentMethodMappingCSV:
     def test_valid(self) -> None:
-        mappings = parse_payment_method_mapping_csv(
+        parsed = parse_payment_method_mapping_csv(
             MAPPING_CSV_HEADER + b"cus_1,pm_old,cus_1,pm_new\n"
         )
 
-        assert mappings == [
+        assert parsed.mappings == [
             PaymentMethodMapping(
                 customer_id="cus_1",
                 source_payment_method_id="pm_old",
                 destination_payment_method_id="pm_new",
             )
         ]
+        assert parsed.customers_without_payment_method == frozenset()
+        assert parsed.skipped == []
 
     def test_accepts_header_only(self) -> None:
-        assert parse_payment_method_mapping_csv(MAPPING_CSV_HEADER) == []
+        parsed = parse_payment_method_mapping_csv(MAPPING_CSV_HEADER)
+
+        assert parsed.mappings == []
+        assert parsed.customers_without_payment_method == frozenset()
+        assert parsed.skipped == []
+
+    def test_customer_without_payment_method(self) -> None:
+        parsed = parse_payment_method_mapping_csv(
+            MAPPING_CSV_HEADER + b"cus_1,,cus_1,\ncus_2, ,cus_2, \n"
+        )
+
+        assert parsed.mappings == []
+        assert parsed.customers_without_payment_method == {"cus_1", "cus_2"}
+        assert parsed.skipped == []
+
+    def test_skips_source_without_copy(self) -> None:
+        parsed = parse_payment_method_mapping_csv(
+            MAPPING_CSV_HEADER + b"cus_1,pm_old,cus_1,\n"
+        )
+
+        assert parsed.mappings == []
+        assert parsed.customers_without_payment_method == frozenset()
+        assert len(parsed.skipped) == 1
+        assert "Line 2" in parsed.skipped[0]
+        assert "pm_old has no copied payment method" in parsed.skipped[0]
+
+    def test_skips_copy_without_source(self) -> None:
+        parsed = parse_payment_method_mapping_csv(
+            MAPPING_CSV_HEADER + b"cus_1,,cus_1,pm_new\n"
+        )
+
+        assert parsed.mappings == []
+        assert parsed.customers_without_payment_method == frozenset()
+        assert len(parsed.skipped) == 1
+        assert "Line 2" in parsed.skipped[0]
+        assert "pm_new has no source payment method" in parsed.skipped[0]
+
+    def test_customer_with_a_card_is_not_counted_without_one(self) -> None:
+        parsed = parse_payment_method_mapping_csv(
+            MAPPING_CSV_HEADER + b"cus_1,,cus_1,\ncus_1,pm_old,cus_1,pm_new\n"
+        )
+
+        assert len(parsed.mappings) == 1
+        assert parsed.customers_without_payment_method == frozenset()
+
+    def test_rejects_empty_customer_id(self) -> None:
+        with pytest.raises(PaymentMethodMappingCSVError):
+            parse_payment_method_mapping_csv(MAPPING_CSV_HEADER + b",pm_old,,pm_new\n")
 
     def test_rejects_incorrect_headers(self) -> None:
         with pytest.raises(PaymentMethodMappingCSVError):

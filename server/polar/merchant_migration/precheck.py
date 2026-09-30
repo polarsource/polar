@@ -158,9 +158,10 @@ _SUBSCRIPTION_CUSTOMER_REASON = (
     "The customer for this subscription won't be imported, so it stays on the source."
 )
 CUSTOMER_STRIPE_ID_CONFLICT_REASON = (
-    "A Polar customer already exists for this email, and its cards or "
-    "subscriptions are on a different Stripe customer. Open that Polar "
-    "customer to reconcile them; this one stays on Stripe."
+    "A Polar customer with this email is already tied to a different Stripe "
+    "customer that still has a saved card, a subscription, or an earlier "
+    "migration import, so this one stays on Stripe. Contact Polar support to "
+    "resolve it."
 )
 _NO_IMPORTABLE_PRICE_REASON = (
     "None of this product's prices can be imported, so the product is skipped."

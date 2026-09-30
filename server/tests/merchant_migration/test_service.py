@@ -3185,6 +3185,104 @@ class TestImportCatalog:
 
     @pytest.mark.auth
     @pytest.mark.parametrize(
+        ("live_amount", "expected_prices", "product_archived", "product_note"),
+        [
+            (1200, {(1200, False), (1000, True)}, False, None),
+            (None, {(1000, False)}, True, "product_not_sold_in_default_currency"),
+        ],
+    )
+    async def test_inactive_prices_import_onto_their_product(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        live_amount: int | None,
+        expected_prices: set[tuple[int, bool]],
+        product_archived: bool,
+        product_note: str | None,
+    ) -> None:
+        prices = [
+            CanonicalPrice(
+                source_id="price_old",
+                currency="usd",
+                amount=1000,
+                pricing_scheme=CanonicalPricingScheme.fixed,
+                active=False,
+            )
+        ]
+        if live_amount is not None:
+            prices.append(
+                CanonicalPrice(
+                    source_id="price_new",
+                    currency="usd",
+                    amount=live_amount,
+                    pricing_scheme=CanonicalPricingScheme.fixed,
+                )
+            )
+        records: list[CanonicalRecord] = [
+            CanonicalProduct(
+                source_id="prod_1:month:1",
+                product_source_id="prod_1",
+                name="Pro",
+                recurring_interval="month",
+                recurring_interval_count=1,
+                prices=prices,
+            ),
+            CanonicalCustomer(
+                source_id="cus_1",
+                email="alice@example.com",
+                name="Alice",
+                country="US",
+            ),
+            canonical_subscription(price_source_id="price_old"),
+        ]
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization, records=records
+        )
+        [product_item], _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.products,
+            status=None,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+
+        await _import_catalog(session, auth_subject, migration.id)
+
+        assert product_item.reason_code == product_note
+        [product] = (
+            (
+                await session.execute(
+                    select(Product)
+                    .where(Product.organization_id == organization.id)
+                    .options(selectinload(Product.all_prices))
+                )
+            )
+            .scalars()
+            .all()
+        )
+        assert product.is_archived is product_archived
+        assert {
+            (price.price_amount, price.is_archived)
+            for price in product.all_prices
+            if isinstance(price, ProductPriceFixed)
+        } == expected_prices
+        items, _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=None,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+        assert items[0].dependencies_imported is True
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
         ("deleted_in_between", "in_a_new_migration", "expected"),
         [
             (False, False, {"Pro", "Team"}),

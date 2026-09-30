@@ -832,6 +832,32 @@ class MerchantMigrationRecordRepository(
             type=record.type,
             source_id=record.source_id,
         )
+        if isinstance(record, CanonicalProduct):
+            reconciled = await self._reconcile_archived_sibling(
+                merchant_migration, organization, record, existing
+            )
+            if isinstance(reconciled, MerchantMigrationRecord):
+                return reconciled
+            record = reconciled
+        return await self._stage(
+            merchant_migration,
+            organization,
+            record,
+            existing,
+            merge_product_prices=merge_product_prices,
+            preserved_tax_behavior=preserved_tax_behavior,
+        )
+
+    async def _stage(
+        self,
+        merchant_migration: MerchantMigration,
+        organization: Organization,
+        record: CanonicalRecord,
+        existing: MerchantMigrationRecord | None,
+        *,
+        merge_product_prices: bool,
+        preserved_tax_behavior: Mapping[str, TaxBehavior] | None = None,
+    ) -> MerchantMigrationRecord:
         record = self._restore_subscription_tax(
             record,
             existing=existing,
@@ -876,6 +902,81 @@ class MerchantMigrationRecordRepository(
             ),
             flush=True,
         )
+
+    async def _reconcile_archived_sibling(
+        self,
+        merchant_migration: MerchantMigration,
+        organization: Organization,
+        product: CanonicalProduct,
+        existing: MerchantMigrationRecord | None,
+    ) -> CanonicalProduct | MerchantMigrationRecord:
+        """Inactive prices used to stage on a `:archived` sibling of their
+        product's row, and stage on the row itself now. Returns the product to
+        stage, or the row to return when there's nothing left to stage.
+
+        A row that already left pending can't take prices, so inactive ones it
+        doesn't hold still stage on the sibling, or their subscriptions would have
+        nothing to move from. A pending sibling folds into a row that can. An
+        imported one keeps the inactive prices it holds, so later subscriptions
+        move where earlier ones did.
+        """
+        sibling_source_id = f"{product.source_id}:archived"
+        if existing is not None and existing.status != (
+            MerchantMigrationRecordStatus.pending
+        ):
+            frozen = deserialize(existing.type, existing.canonical)
+            assert isinstance(frozen, CanonicalProduct)
+            frozen_keys = {canonical_price_key(price) for price in frozen.prices}
+            stopped_prices = [
+                price
+                for price in product.prices
+                if not price.active and canonical_price_key(price) not in frozen_keys
+            ]
+            if stopped_prices:
+                await self._stage(
+                    merchant_migration,
+                    organization,
+                    replace(
+                        product,
+                        source_id=sibling_source_id,
+                        prices=stopped_prices,
+                        archived=True,
+                    ),
+                    await self.get_by_source(
+                        organization_id=organization.id,
+                        type=MerchantMigrationRecordType.product,
+                        source_id=sibling_source_id,
+                    ),
+                    merge_product_prices=True,
+                )
+            return existing
+
+        sibling = await self.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.product,
+            source_id=sibling_source_id,
+        )
+        if sibling is None:
+            return product
+        held = deserialize(sibling.type, sibling.canonical)
+        assert isinstance(held, CanonicalProduct)
+        if sibling.status == MerchantMigrationRecordStatus.imported:
+            held_keys = {canonical_price_key(price) for price in held.prices}
+            prices = [
+                price
+                for price in product.prices
+                if price.active or canonical_price_key(price) not in held_keys
+            ]
+            if not prices:
+                return existing or sibling
+            return replace(product, prices=prices)
+        if sibling.status != MerchantMigrationRecordStatus.pending:
+            return product
+        await self.soft_delete(sibling, flush=True)
+        stopped = replace(
+            held, prices=[replace(price, active=False) for price in held.prices]
+        )
+        return replace(product, prices=_merged_prices(stopped, product))
 
     @staticmethod
     def _merge_discount_code(

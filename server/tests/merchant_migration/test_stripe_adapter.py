@@ -652,7 +652,7 @@ class TestExtractProducts:
             ("price_archived", "eur", 900),
         }
 
-    async def test_archived_price_on_live_product_is_a_catalog_sibling(
+    async def test_archived_price_on_live_product_joins_its_product(
         self, mocker: MockerFixture
     ) -> None:
         adapter, client = _adapter(mocker)
@@ -664,18 +664,17 @@ class TestExtractProducts:
         )
 
         products = await _extracted_products(adapter)
-        by_id = {product.source_id: product for product in products}
 
-        assert set(by_id) == {"prod_1:month:1", "prod_1:month:1:archived"}
-        assert by_id["prod_1:month:1"].archived is False
-        assert {(p.source_id, p.amount) for p in by_id["prod_1:month:1"].prices} == {
-            ("price_1", 1000),
-        }
-        assert by_id["prod_1:month:1:archived"].archived is True
-        assert by_id["prod_1:month:1:archived"].product_source_id == "prod_1"
+        assert [product.source_id for product in products] == [
+            "prod_1:month:1",
+            "prod_1:month:1",
+        ]
+        assert all(product.archived is False for product in products)
         assert {
-            (p.source_id, p.amount) for p in by_id["prod_1:month:1:archived"].prices
-        } == {("price_archived", 500)}
+            (price.source_id, price.amount, price.active)
+            for product in products
+            for price in product.prices
+        } == {("price_1", 1000, True), ("price_archived", 500, False)}
 
     async def test_prices_carry_the_product_default_and_their_creation(
         self, mocker: MockerFixture

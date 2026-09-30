@@ -63,6 +63,7 @@ class TestSerialize:
                     "pricing_scheme": "fixed",
                     "is_default": False,
                     "created_at": None,
+                    "active": True,
                 }
             ],
             "archived": False,
@@ -139,6 +140,7 @@ class TestDeserialize:
             pricing_scheme=CanonicalPricingScheme.fixed,
             is_default=True,
             created_at=datetime(2026, 1, 1, tzinfo=UTC),
+            active=False,
         )
         product = CanonicalProduct(
             source_id="prod_1:month:1",
@@ -151,6 +153,7 @@ class TestDeserialize:
         legacy = serialize(product)
         del legacy["prices"][0]["is_default"]
         del legacy["prices"][0]["created_at"]
+        del legacy["prices"][0]["active"]
 
         assert (
             deserialize(MerchantMigrationRecordType.product, serialize(product))
@@ -160,6 +163,7 @@ class TestDeserialize:
         assert isinstance(result, CanonicalProduct)
         assert result.prices[0].is_default is False
         assert result.prices[0].created_at is None
+        assert result.prices[0].active is True
 
     def test_customer_tax_id_dropped_round_trips(self) -> None:
         customer = CanonicalCustomer(

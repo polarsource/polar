@@ -65,6 +65,7 @@ from .precheck import (
     ProductImportPlan,
     Reason,
     archived_price_keys,
+    imports_archived,
     plan_customer_imports,
     plan_discount_imports,
     plan_product_imports,
@@ -103,8 +104,8 @@ def _price_keys(record: MerchantMigrationRecord) -> list[PriceKey]:
 def _price_owners(
     product_records: Sequence[MerchantMigrationRecord],
 ) -> dict[PriceKey, MerchantMigrationRecord]:
-    """The row each price resolves to. Archiving a Stripe price stages it again
-    on an `:archived` sibling row, while the row imported before keeps it.
+    """The row each price resolves to. A row staged before inactive prices
+    joined their product's row can hold one on an `:archived` sibling row too.
     Imported rows win, the oldest first, in the cutover lookup's order; a
     skipped or failed row never takes a price from a pending one."""
     owners = {
@@ -190,23 +191,15 @@ def find_imported_price(
     if canonical_price is None:
         return None
     currency = canonical_price.currency.lower()
-    if key in archived_price_keys(canonical_product):
-        return next(
-            (
-                price
-                for price in product.all_prices
-                if isinstance(price, ProductPriceFixed)
-                and price.source == ProductPriceSource.catalog
-                and price.price_currency == currency
-                and price.price_amount == canonical_price.amount
-            ),
-            None,
-        )
+    # Only the subscriber's own amount, so moving never changes what they pay.
     return next(
         (
             price
-            for price in product.prices
-            if isinstance(price, ProductPriceFixed) and price.price_currency == currency
+            for price in sorted(product.all_prices, key=lambda p: p.is_archived)
+            if isinstance(price, ProductPriceFixed)
+            and price.source == ProductPriceSource.catalog
+            and price.price_currency == currency
+            and price.price_amount == canonical_price.amount
         ),
         None,
     )
@@ -763,7 +756,8 @@ class CatalogImporter:
         self, product: CanonicalProduct, plan: ProductImportPlan
     ) -> Product:
         assert product.recurring_interval is not None
-        archived_keys = archived_price_keys(product)
+        default_currency = self.organization.default_presentment_currency
+        archived_keys = archived_price_keys(product, default_currency)
         sold_amounts: dict[str, int] = {}
         archived_amounts: set[tuple[str, int]] = set()
         for price in product.prices:
@@ -812,7 +806,7 @@ class CatalogImporter:
                     is_archived=True,
                 )
             )
-        if product.archived:
+        if imports_archived(product, default_currency):
             polar_product.is_archived = True
             await self.session.flush()
         return polar_product

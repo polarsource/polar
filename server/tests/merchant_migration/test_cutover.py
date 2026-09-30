@@ -458,6 +458,73 @@ class TestRun:
             price.product_price_id for price in subscription.subscription_product_prices
         ] == [archived.id]
 
+    async def test_a_price_replaced_on_polar_keeps_the_subscriber_on_their_amount(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        replaced = await create_product_price_fixed(
+            save_fixture, product=product, amount=800, is_archived=True
+        )
+        product_record = await MerchantMigrationRecordRepository.from_session(
+            session
+        ).get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.product,
+            source_id="prod_1:month:1",
+        )
+        assert product_record is not None
+        staged = deserialize(product_record.type, product_record.canonical)
+        assert isinstance(staged, CanonicalProduct)
+        staged.prices[0].amount = 800
+        product_record.canonical = serialize(staged)
+        await save_fixture(product_record)
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+
+        outcome = await cutover(_source())
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.amount == 800
+        assert [
+            price.product_price_id for price in subscription.subscription_product_prices
+        ] == [replaced.id]
+
+    async def test_no_polar_price_at_the_subscriber_amount_stays_on_the_source(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+        organization: Organization,
+    ) -> None:
+        product_record = await MerchantMigrationRecordRepository.from_session(
+            session
+        ).get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.product,
+            source_id="prod_1:month:1",
+        )
+        assert product_record is not None
+        staged = deserialize(product_record.type, product_record.canonical)
+        assert isinstance(staged, CanonicalProduct)
+        staged.prices[0].amount = 700
+        product_record.canonical = serialize(staged)
+        await save_fixture(product_record)
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        adapter = _source()
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.skipped
+        _assert_left_alone(adapter, pending_record)
+
     async def test_applies_imported_discount(
         self,
         mocker: MockerFixture,

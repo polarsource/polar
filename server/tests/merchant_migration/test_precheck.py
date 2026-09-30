@@ -24,6 +24,7 @@ from polar.merchant_migration.canonical import (
 from polar.merchant_migration.precheck import (
     archived_price_keys,
     classify_records,
+    imports_archived,
     plan_customer_imports,
     plan_product_imports,
     precheck_engine,
@@ -88,6 +89,7 @@ def build_price(
     pricing_scheme: CanonicalPricingScheme = CanonicalPricingScheme.fixed,
     is_default: bool = False,
     created_at: datetime | None = None,
+    active: bool = True,
 ) -> CanonicalPrice:
     return CanonicalPrice(
         source_id=source_id,
@@ -96,6 +98,7 @@ def build_price(
         pricing_scheme=pricing_scheme,
         is_default=is_default,
         created_at=created_at,
+        active=active,
     )
 
 
@@ -210,6 +213,25 @@ class TestPrecheckEngine:
         warnings = codes(report, PrecheckIssueLevel.warning)
         assert "unsupported_pricing_scheme" in warnings
         assert "duplicate_customer_email" in warnings
+
+    async def test_a_product_extracted_in_parts_is_judged_once(self) -> None:
+        report = await run(
+            [
+                build_product(prices=[build_price(source_id="price_new")]),
+                build_product(
+                    prices=[
+                        build_price(source_id="price_old", amount=800, active=False)
+                    ]
+                ),
+            ]
+        )
+
+        products = next(
+            summary
+            for summary in report.entities
+            if summary.entity == PrecheckEntity.products
+        )
+        assert (products.total, products.importable) == (1, 1)
 
     async def test_organization_not_renewal_enabled_blocks(self) -> None:
         report = await run(
@@ -1758,7 +1780,7 @@ class TestArchivedPriceKeys:
             ]
         )
 
-        assert archived_price_keys(product) == {("price_old", "usd")}
+        assert archived_price_keys(product, "usd") == {("price_old", "usd")}
 
     def test_a_default_multi_currency_price_is_sold_in_every_currency(self) -> None:
         product = build_product(
@@ -1772,10 +1794,71 @@ class TestArchivedPriceKeys:
             ]
         )
 
-        assert archived_price_keys(product) == {
+        assert archived_price_keys(product, "usd") == {
             ("price_old", "usd"),
             ("price_old", "eur"),
         }
+
+    def test_a_live_product_never_sells_an_inactive_price(self) -> None:
+        product = build_product(
+            prices=[
+                build_price(
+                    source_id="price_live",
+                    amount=1000,
+                    created_at=datetime(2026, 1, 1, tzinfo=UTC),
+                ),
+                build_price(
+                    source_id="price_stopped",
+                    amount=1200,
+                    is_default=True,
+                    created_at=datetime(2026, 2, 1, tzinfo=UTC),
+                    active=False,
+                ),
+                build_price(
+                    source_id="price_eur_stopped",
+                    currency="eur",
+                    amount=900,
+                    active=False,
+                ),
+            ]
+        )
+
+        assert imports_archived(product, "usd") is False
+        assert archived_price_keys(product, "usd") == {
+            ("price_stopped", "usd"),
+            ("price_eur_stopped", "eur"),
+        }
+
+
+class TestImportsArchived:
+    def test_a_live_product_no_longer_sold_in_the_default_currency(self) -> None:
+        product = build_product(
+            prices=[
+                build_price(source_id="price_old", amount=1000, active=False),
+                build_price(source_id="price_eur", currency="eur", amount=900),
+            ]
+        )
+
+        [item] = classify_records([product], PrecheckEntity.products, "usd")
+
+        assert imports_archived(product, "usd") is True
+        assert archived_price_keys(product, "usd") == set()
+        assert item.status == PrecheckRecordStatus.importable
+        assert item.reason_code == "product_not_sold_in_default_currency"
+        assert item.reason_level == PrecheckReasonLevel.action_required
+
+    def test_a_live_product_sold_in_the_default_currency(self) -> None:
+        product = build_product(
+            prices=[
+                build_price(source_id="price_new", amount=1000),
+                build_price(source_id="price_old", amount=800, active=False),
+            ]
+        )
+
+        [item] = classify_records([product], PrecheckEntity.products, "usd")
+
+        assert imports_archived(product, "usd") is False
+        assert item.reason_code is None
 
 
 class TestPlanCustomerImports:

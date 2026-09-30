@@ -526,6 +526,7 @@ async def _backfill_seats(
                         billing_customer_id,
                         organization.id,
                         email,
+                        seat_holder.external_id if seat_holder else None,
                     )
                     seat.member_id = member.id
                     seat.email = email
@@ -573,14 +574,31 @@ async def _get_or_create_member_for_backfill(
     billing_customer_id: uuid.UUID,
     organization_id: uuid.UUID,
     email: str,
+    external_id: str | None = None,
 ) -> Member:
-    """Get or create a member under the billing customer for seat backfill."""
-    return await member_service.get_or_create_by_email(
+    """Get or create a member under the billing customer for seat backfill.
+
+    external_id is set outside get_or_create_by_email because prepare has
+    already created most of these members, so the create path never runs.
+    """
+    member = await member_service.get_or_create_by_email(
         session,
         customer_id=billing_customer_id,
         organization_id=organization_id,
         email=email,
     )
+    if external_id is not None and member.external_id is None:
+        taken = await session.scalar(
+            select(Member.id).where(
+                Member.customer_id == billing_customer_id,
+                Member.external_id == external_id,
+                Member.deleted_at.is_(None),
+                Member.id != member.id,
+            )
+        )
+        if taken is None:
+            member.external_id = external_id
+    return member
 
 
 async def _transfer_benefit_records(

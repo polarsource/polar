@@ -179,14 +179,17 @@ describe('auth login', () => {
 })
 
 describe('auth whoami', () => {
-  test('shows the sessions and the active organization', async () => {
+  test('shows only the active organization', async () => {
     organizations.state.selected = { id: 'org-2', environment: 'production' }
     const { promise, output } = run(['whoami'])
     await promise
 
-    expect(output()).toMatch(/Logged in\s+sandbox, production/)
-    expect(output()).toContain('Beta beta production')
-    expect(output()).toContain('org-2')
+    expect(output()).not.toContain('Logged in')
+    expect(output()).not.toContain('sandbox')
+    expect(output()).toMatch(/Organization\s+Beta/)
+    expect(output()).toMatch(/Slug\s+beta/)
+    expect(output()).toMatch(/Environment\s+production/)
+    expect(output()).toMatch(/ID\s+org-2/)
     expect(output()).not.toContain('No active organization')
   })
 
@@ -217,7 +220,7 @@ describe('auth whoami', () => {
 
     expect(output()).toContain('POLAR_ACCESS_TOKEN')
     expect(output()).toMatch(/Environment\s+sandbox/)
-    expect(output()).toContain('Acme acme')
+    expect(output()).toMatch(/Organization\s+Acme/)
     expect(output()).not.toContain('No active organization')
   })
 

@@ -205,6 +205,72 @@ class TestGetLatestAgentReview:
 
 
 @pytest.mark.asyncio
+class TestGetLatestHumanFeedback:
+    async def test_returns_latest_human_decision(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        repo = OrganizationReviewRepository.from_session(session)
+        agent_review = await repo.save_agent_review(
+            organization_id=organization.id,
+            report=_make_typed_report(verdict=ReviewVerdict.DENY),
+            reviewed_at=datetime.now(UTC),
+        )
+        await session.flush()
+
+        await repo.record_agent_decision(
+            organization_id=organization.id,
+            agent_review_id=agent_review.id,
+            decision=DecisionType.DENY,
+            review_context=ReviewContext.SUBMISSION,
+            verdict=ReviewVerdict.DENY,
+        )
+        await repo.record_human_decision(
+            organization_id=organization.id,
+            reviewer_id=user.id,
+            decision=DecisionType.DENY,
+        )
+        await session.flush()
+        await repo.record_human_decision(
+            organization_id=organization.id,
+            reviewer_id=user.id,
+            decision=DecisionType.APPROVE,
+        )
+        await session.flush()
+
+        feedback = await repo.get_latest_human_feedback(agent_review.id)
+
+        assert feedback is not None
+        assert feedback.actor_type == ActorType.HUMAN
+        assert feedback.decision == DecisionType.APPROVE
+
+    async def test_ignores_agent_decisions(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        repo = OrganizationReviewRepository.from_session(session)
+        agent_review = await repo.save_agent_review(
+            organization_id=organization.id,
+            report=_make_typed_report(),
+            reviewed_at=datetime.now(UTC),
+        )
+        await session.flush()
+        await repo.record_agent_decision(
+            organization_id=organization.id,
+            agent_review_id=agent_review.id,
+            decision=DecisionType.APPROVE,
+            review_context=ReviewContext.SUBMISSION,
+            verdict=ReviewVerdict.APPROVE,
+        )
+        await session.flush()
+
+        assert await repo.get_latest_human_feedback(agent_review.id) is None
+
+
+@pytest.mark.asyncio
 class TestRecordHumanDecision:
     async def test_derives_context_from_agent_review(
         self,

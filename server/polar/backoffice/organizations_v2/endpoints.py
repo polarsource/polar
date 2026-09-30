@@ -991,9 +991,11 @@ async def get_organization_detail(
 
     parsed_agent_report = None
     agent_reviewed_at = None
-    if section == "overview":
-        parsed_agent_report = agent_review.parsed_report if agent_review else None
-        agent_reviewed_at = agent_review.reviewed_at if agent_review else None
+    human_feedback = None
+    if section == "overview" and agent_review:
+        parsed_agent_report = agent_review.parsed_report
+        agent_reviewed_at = agent_review.reviewed_at
+        human_feedback = await review_repo.get_latest_human_feedback(agent_review.id)
 
     # Render based on section
     with layout(
@@ -1011,6 +1013,7 @@ async def get_organization_detail(
                     organization,
                     agent_report=parsed_agent_report,
                     agent_reviewed_at=agent_reviewed_at,
+                    human_feedback=human_feedback,
                     has_open_appeal_case=appeal_case is not None and appeal_case_open,
                     risk_signals=risk_signals,
                 )

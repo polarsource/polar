@@ -15,6 +15,7 @@ from polar.organization_review.schemas import AUP_SECTION_LABELS, ActorType
 
 from ....components import card
 from ._shared import (
+    DECISION_BADGE,
     RISK_LEVEL_BADGE,
     VERDICT_BADGE,
     render_dimension,
@@ -23,14 +24,6 @@ from ._shared import (
 from .risk_signals import render_risk_signals_card
 
 logger = structlog.get_logger()
-
-# Badge classes for decision types
-DECISION_BADGE: dict[str, str] = {
-    "APPROVE": "badge-success",
-    "DENY": "badge-error",
-    "ESCALATE": "badge-warning",
-    "SNOOZE": "badge-info",
-}
 
 
 class ReviewsSection:

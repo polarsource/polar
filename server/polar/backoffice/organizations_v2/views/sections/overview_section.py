@@ -9,7 +9,7 @@ from fastapi import Request
 from tagflow import tag, text
 
 from polar.enums import PayoutAccountStatus
-from polar.models import Organization
+from polar.models import Organization, OrganizationReviewFeedback
 from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.organization_review.report import AnyAgentReport
 from polar.organization_review.schemas import DimensionAssessment, ReviewVerdict
@@ -26,6 +26,7 @@ from polar.organization_review.thresholds import (
 from ....components import button, card, lazy_card
 from ....components._metric_card import Variant
 from ._shared import (
+    DECISION_BADGE,
     RISK_LEVEL_BADGE,
     ChecklistMixin,
     render_checklist_row,
@@ -51,6 +52,7 @@ class OverviewSection(ChecklistMixin):
         unrefunded_orders_count: int = 0,
         agent_report: AnyAgentReport | None = None,
         agent_reviewed_at: datetime | None = None,
+        human_feedback: OrganizationReviewFeedback | None = None,
         has_open_appeal_case: bool = False,
         risk_signals: Sequence[OrganizationRiskSignal] = (),
         shared_organizations: Sequence[Organization] = (),
@@ -60,6 +62,7 @@ class OverviewSection(ChecklistMixin):
         self.unrefunded_orders_count = unrefunded_orders_count
         self.agent_report = agent_report
         self.agent_reviewed_at = agent_reviewed_at
+        self.human_feedback = human_feedback
         self.has_open_appeal_case = has_open_appeal_case
         self.risk_signals = risk_signals
         self.shared_organizations = shared_organizations
@@ -250,7 +253,7 @@ class OverviewSection(ChecklistMixin):
 
             # Verdict + risk level — prominent inline
             has_missing = bool(self.missing_items)
-            with tag.div(classes="flex items-center gap-4 mb-4"):
+            with tag.div(classes="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4"):
                 verdict = review_report.verdict.value
                 if verdict == ReviewVerdict.APPROVE.value and has_missing:
                     badge_class = "badge-neutral"
@@ -261,7 +264,7 @@ class OverviewSection(ChecklistMixin):
                 else:
                     badge_class = "badge-neutral"
                     display_verdict = verdict
-                with tag.div(classes="flex items-center gap-1"):
+                with tag.div(classes="flex items-center gap-1 whitespace-nowrap"):
                     with tag.span(classes="text-sm text-base-content/60"):
                         text("AI Verdict:")
                     with tag.div(classes=f"badge {badge_class} badge-sm"):
@@ -269,11 +272,20 @@ class OverviewSection(ChecklistMixin):
 
                 risk_level = review_report.overall_risk_level.value
                 risk_badge_class = RISK_LEVEL_BADGE.get(risk_level, "badge-ghost")
-                with tag.div(classes="flex items-center gap-1"):
+                with tag.div(classes="flex items-center gap-1 whitespace-nowrap"):
                     with tag.span(classes="text-sm text-base-content/60"):
                         text("AI Risk:")
                     with tag.div(classes=f"badge {risk_badge_class} badge-sm"):
                         text(risk_level)
+
+                if self.human_feedback and self.human_feedback.decision:
+                    decision = self.human_feedback.decision.value
+                    decision_badge_class = DECISION_BADGE.get(decision, "badge-ghost")
+                    with tag.div(classes="flex items-center gap-1 whitespace-nowrap"):
+                        with tag.span(classes="text-sm text-base-content/60"):
+                            text("Human Decision:")
+                        with tag.div(classes=f"badge {decision_badge_class} badge-sm"):
+                            text(decision)
 
             # Summary
             if review_report.summary:

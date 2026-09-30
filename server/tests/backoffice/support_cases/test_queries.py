@@ -126,6 +126,11 @@ class TestCasesStatement:
         assert not needs_action[submitted.id]
         assert not needs_action[silent.id]
 
+        filtered = await _rows(
+            session, organization_id=organization.id, status="needs_action"
+        )
+        assert {row[0].id for row in filtered} == {appeal.id, countered.id}
+
     async def test_closed_case_excluded_by_open_status(
         self,
         session: AsyncSession,

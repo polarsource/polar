@@ -64,7 +64,7 @@ def cases_statement(
 ) -> Select[Row]:
     """Polymorphic case list with its organization, open state and assignee.
 
-    ``status`` (open/closed/all), ``assigned`` (me/unassigned/all),
+    ``status`` (open/closed/needs_action/all), ``assigned`` (me/unassigned/all),
     ``case_type`` (review_appeal/dispute/all) and ``self_service``
     (enabled/disabled/all, on the org's ``disputes_enabled`` flag) narrow the
     set; ``sort`` is pure recency, support tier first, or the dispute evidence
@@ -73,6 +73,14 @@ def cases_statement(
     """
     is_open = SupportCaseMessageRepository.is_open_expression()
     awaiting_platform = SupportCaseMessageRepository.awaiting_platform_expression()
+    needs_action = and_(
+        is_open,
+        awaiting_platform,
+        or_(
+            SupportCase.type == SupportCaseType.review_appeal,
+            Dispute.status == DisputeStatus.needs_response,
+        ),
+    )
 
     latest_activity = (
         select(func.max(SupportCaseMessage.created_at))
@@ -113,14 +121,7 @@ def cases_statement(
             Dispute.status.label("dispute_status"),
             Dispute.evidence_due_by.label("evidence_due_by"),
             Dispute.past_due.label("evidence_past_due"),
-            and_(
-                is_open,
-                awaiting_platform,
-                or_(
-                    SupportCase.type == SupportCaseType.review_appeal,
-                    Dispute.status == DisputeStatus.needs_response,
-                ),
-            ).label("needs_action"),
+            needs_action.label("needs_action"),
         )
         .join(Organization, Organization.id == SupportCase.organization_id)
         .outerjoin(Dispute, DisputeSupportCase.dispute_id == Dispute.id)
@@ -134,6 +135,8 @@ def cases_statement(
         statement = statement.where(is_open)
     elif status == "closed":
         statement = statement.where(~is_open)
+    elif status == "needs_action":
+        statement = statement.where(needs_action)
     if assigned == "me" and assigned_user_id is not None:
         statement = statement.where(SupportCase.assigned_user_id == assigned_user_id)
     elif assigned == "unassigned":

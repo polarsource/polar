@@ -101,6 +101,11 @@ def _list_tabs(
     # clears back to everyone, so no redundant "all assignees" tab is needed.
     return [
         Tab("Open", url=url("open", assigned), active=status == "open"),
+        Tab(
+            "Needs action",
+            url=url("needs_action", assigned),
+            active=status == "needs_action",
+        ),
         Tab("Closed", url=url("closed", assigned), active=status == "closed"),
         Tab("All", url=url("all", assigned), active=status == "all"),
         Tab(

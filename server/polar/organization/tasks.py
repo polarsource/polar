@@ -400,12 +400,69 @@ async def _backfill_owner_members(
 
     await session.flush()
 
+    external_ids_carried = await _carry_external_ids_to_owner_members(
+        session, organization
+    )
+
     log.info(
         "organization.backfill_members.step_a_complete",
         organization_id=str(organization.id),
         customers_found=customers_found,
         members_created=count,
+        external_ids_carried=external_ids_carried,
     )
+    return count
+
+
+async def _carry_external_ids_to_owner_members(
+    session: AsyncSession,
+    organization: Organization,
+) -> int:
+    """Copy customer.external_id onto an owner member that has none.
+
+    create_owner_member only sets it when it creates the member, so an owner that
+    predates the customer's external_id keeps none.
+    """
+    statement = (
+        select(Customer, Member)
+        .join(
+            Member,
+            (Customer.id == Member.customer_id)
+            & (Member.role == MemberRole.owner)
+            & (~Member.is_deleted),
+        )
+        .where(
+            Customer.organization_id == organization.id,
+            ~Customer.is_deleted,
+            Customer.external_id.is_not(None),
+            Member.external_id.is_(None),
+        )
+    )
+    results = await session.stream(
+        statement,
+        execution_options={"yield_per": _BACKFILL_BATCH_SIZE},
+    )
+
+    count = 0
+    try:
+        async for customer, member in results:
+            taken = await session.scalar(
+                select(Member.id).where(
+                    Member.customer_id == customer.id,
+                    Member.external_id == customer.external_id,
+                    Member.deleted_at.is_(None),
+                )
+            )
+            if taken is not None:
+                continue
+            member.external_id = customer.external_id
+            count += 1
+            if count % _BACKFILL_BATCH_SIZE == 0:
+                await session.flush()
+    finally:
+        await results.close()
+
+    await session.flush()
     return count
 
 

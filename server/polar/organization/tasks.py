@@ -3,6 +3,7 @@ from typing import Annotated, Any, cast
 
 import structlog
 from sqlalchemy import CursorResult, func, or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from polar.customer.repository import CustomerRepository
@@ -400,12 +401,73 @@ async def _backfill_owner_members(
 
     await session.flush()
 
+    external_ids_carried = await _carry_external_ids_to_owner_members(
+        session, organization
+    )
+
     log.info(
         "organization.backfill_members.step_a_complete",
         organization_id=str(organization.id),
         customers_found=customers_found,
         members_created=count,
+        external_ids_carried=external_ids_carried,
     )
+    return count
+
+
+async def _carry_external_ids_to_owner_members(
+    session: AsyncSession,
+    organization: Organization,
+) -> int:
+    """Copy customer.external_id onto an owner member that has none.
+
+    create_owner_member only sets it when it creates the member, so an owner that
+    predates the customer's external_id keeps none.
+    """
+    statement = (
+        select(Customer, Member)
+        .join(
+            Member,
+            (Customer.id == Member.customer_id)
+            & (Member.role == MemberRole.owner)
+            & (~Member.is_deleted),
+        )
+        .where(
+            Customer.organization_id == organization.id,
+            ~Customer.is_deleted,
+            Customer.external_id.is_not(None),
+            Member.external_id.is_(None),
+        )
+        .order_by(Member.id)
+        .limit(_BACKFILL_BATCH_SIZE)
+    )
+
+    # Keyset by member id: the loop writes the column the statement filters on, and a
+    # member whose id is taken keeps it NULL, so paging by offset would never end.
+    count = 0
+    last_id: uuid.UUID | None = None
+    while True:
+        batch_statement = statement
+        if last_id is not None:
+            batch_statement = batch_statement.where(Member.id > last_id)
+        rows = (await session.execute(batch_statement)).all()
+        if not rows:
+            break
+
+        for customer, member in rows:
+            last_id = member.id
+            # A savepoint per member: another member of the same customer may take
+            # that id first, and the constraint must not take the backfill down.
+            try:
+                async with session.begin_nested():
+                    member.external_id = customer.external_id
+                    await session.flush()
+            except IntegrityError:
+                await session.refresh(member)
+                continue
+            count += 1
+
+    await session.flush()
     return count
 
 
@@ -588,16 +650,15 @@ async def _get_or_create_member_for_backfill(
         email=email,
     )
     if external_id is not None and member.external_id is None:
-        taken = await session.scalar(
-            select(Member.id).where(
-                Member.customer_id == billing_customer_id,
-                Member.external_id == external_id,
-                Member.deleted_at.is_(None),
-                Member.id != member.id,
-            )
-        )
-        if taken is None:
-            member.external_id = external_id
+        # A savepoint: another member of the same customer may hold that id, and the
+        # constraint must not take the whole backfill down.
+        try:
+            async with session.begin_nested():
+                member.external_id = external_id
+                await session.flush()
+        except IntegrityError:
+            # The rollback expired the member, and the caller reads its id next.
+            await session.refresh(member)
     return member
 
 

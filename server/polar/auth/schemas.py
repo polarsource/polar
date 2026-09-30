@@ -50,6 +50,15 @@ class AuthenticationSessionStart(Schema):
     return_to: ReturnTo | None = None
 
 
+class GlobalAuthenticationSessionStart(AuthenticationSessionStart):
+    sso_discovery: bool = Field(
+        default=True,
+        description=(
+            "Send users of an SSO-enforced email domain to their organization's SSO."
+        ),
+    )
+
+
 class AuthenticationSession(Schema):
     identity_id: UUID4 | None
     available_factors: list[Factor]

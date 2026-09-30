@@ -200,12 +200,19 @@ class TestBackupCodesEnroll:
 
 
 async def request_email_otp(
-    client: httpx.AsyncClient, mocker: MockerFixture, email: str
+    client: httpx.AsyncClient,
+    mocker: MockerFixture,
+    email: str,
+    *,
+    sso_discovery: bool = True,
 ) -> tuple[httpx.Response, MagicMock]:
     mocker.patch("polar.auth.endpoints.verify_turnstile")
     enqueue_email_template = mocker.patch("polar.auth.factors.enqueue_email_template")
 
-    start = await client.post("/v1/auth/start", json={"return_to": "/dashboard"})
+    start = await client.post(
+        "/v1/auth/start",
+        json={"return_to": "/dashboard", "sso_discovery": sso_discovery},
+    )
     assert start.status_code == 201
 
     response = await client.post(
@@ -274,3 +281,19 @@ class TestEmailOTPRequest:
             ),
         }
         enqueue_email_template.assert_not_called()
+
+    async def test_sso_discovery_disabled(
+        self,
+        login_client: httpx.AsyncClient,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        await create_sso_domain(save_fixture, organization)
+
+        response, enqueue_email_template = await request_email_otp(
+            login_client, mocker, "jane@acme.com", sso_discovery=False
+        )
+
+        assert response.status_code == 202
+        enqueue_email_template.assert_called_once()

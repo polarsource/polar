@@ -1,3 +1,4 @@
+import { buildCustomerDashboardPath } from '@/utils/customer'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 
@@ -37,6 +38,30 @@ export function isImported(row: ReviewRow): boolean {
 // Something the merchant has to fix, as opposed to a note they only read.
 export function needsAttention(row: ReviewRow): boolean {
   return row.reason_level === 'action_required' && !isImported(row)
+}
+
+export interface ReasonLink {
+  label: string
+  href: string
+}
+
+// A clash with an existing Polar customer. The merchant can settle a duplicate
+// subscription themselves; anything else needs support to move the customer.
+export function reasonLinks(
+  row: ReviewRow,
+  organizationSlug: string,
+): ReasonLink[] {
+  if (!row.conflicting_customer_id) return []
+  const customerHref = buildCustomerDashboardPath(organizationSlug, {
+    id: row.conflicting_customer_id,
+  })
+  if (row.reason_code === 'customer_subscribed_on_polar') {
+    return [{ label: 'View their Polar subscription', href: customerHref }]
+  }
+  return [
+    { label: 'View Polar customer', href: customerHref },
+    { label: 'Contact support', href: 'mailto:support@polar.sh' },
+  ]
 }
 
 const INTERVAL_ABBREVIATION: Record<string, string> = {

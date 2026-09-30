@@ -12,7 +12,7 @@ from polar.auth.permission import OrganizationPermission
 from polar.auth.scope import Scope
 from polar.authz.service import assert_organization_permission
 from polar.config import settings
-from polar.customer.repository import CustomerRepository
+from polar.customer.repository import CustomerRepository, CustomerStripeIdentity
 from polar.exceptions import PolarError
 from polar.kit.address import Address
 from polar.kit.db.postgres import AsyncSession
@@ -1774,7 +1774,7 @@ class MerchantMigrationService:
             existing_product_names = await ProductRepository.from_session(
                 session
             ).get_active_names_by_organization(migration.organization_id)
-        existing_customers: dict[str, tuple[UUID, str | None]] = {}
+        existing_customers: dict[str, CustomerStripeIdentity] = {}
         if (
             PrecheckEntity.subscriptions in entities
             or PrecheckEntity.customers in entities
@@ -1829,7 +1829,7 @@ class MerchantMigrationService:
 
     async def _existing_polar_customers(
         self, session: AsyncReadSession, migration: MerchantMigration
-    ) -> dict[str, tuple[UUID, str | None]]:
+    ) -> dict[str, CustomerStripeIdentity]:
         if migration.source_platform != MerchantMigrationSourcePlatform.stripe:
             return {}
         return await CustomerRepository.from_session(

@@ -116,6 +116,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_customer,
     create_payment_method,
+    create_subscription,
 )
 from tests.fixtures.stripe import build_stripe_payment_method
 from tests.merchant_migration._helpers import (
@@ -2325,6 +2326,13 @@ class TestImportCatalog:
         )
 
     @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("subscribed", "reason_code"),
+        [
+            (False, "customer_stripe_id_conflict"),
+            (True, "customer_subscribed_on_polar"),
+        ],
+    )
     async def test_customer_skipped_on_stripe_id_conflict(
         self,
         mocker: MockerFixture,
@@ -2333,9 +2341,13 @@ class TestImportCatalog:
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
+        product: Product,
+        subscribed: bool,
+        reason_code: str,
     ) -> None:
         # An existing Polar customer whose own Stripe id still holds a saved card
-        # can't be moved onto the source id, or that card would stop charging.
+        # or bills a subscription can't be moved onto the source id, or those
+        # would stop charging.
         polar_customer = await customer_service.create_for_organization(
             session,
             organization,
@@ -2344,7 +2356,15 @@ class TestImportCatalog:
             billing_address=None,
             stripe_customer_id="cus_existing",
         )
-        await create_payment_method(save_fixture, polar_customer)
+        if subscribed:
+            await create_subscription(
+                save_fixture,
+                product=product,
+                customer=polar_customer,
+                status=SubscriptionStatus.active,
+            )
+        else:
+            await create_payment_method(save_fixture, polar_customer)
         migration = await _staged_migration(
             mocker, session, save_fixture, auth_subject, organization
         )
@@ -2372,7 +2392,7 @@ class TestImportCatalog:
             status=None,
             pagination=PaginationParams(page=1, limit=20),
         )
-        assert items[0].reason_code == "customer_stripe_id_conflict"
+        assert items[0].reason_code == reason_code
         assert items[0].conflicting_customer_id == polar_customer.id
         assert items[0].reason_level == PrecheckReasonLevel.action_required
 

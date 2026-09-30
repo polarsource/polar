@@ -7,7 +7,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy import inspect
 
 from polar.authz.types import AccessibleOrganizationID
-from polar.customer.repository import CustomerRepository
+from polar.customer.repository import CustomerRepository, CustomerStripeIdentity
 from polar.event.system import SystemEvent
 from polar.models import (
     Customer,
@@ -584,17 +584,21 @@ class TestGetBoundStripeIdentitiesByOrganization:
         )
 
         assert result == {
-            "in-use@example.com": (in_use.id, "cus_in_use"),
-            "unused@example.com": (unused.id, None),
+            "in-use@example.com": CustomerStripeIdentity(
+                in_use.id, "cus_in_use", False
+            ),
+            "unused@example.com": CustomerStripeIdentity(unused.id, None, False),
         }
 
 
 @pytest.mark.asyncio
-class TestIsStripeCustomerInUse:
+class TestGetBoundStripeIdentity:
     async def test_unused(
         self, repository: CustomerRepository, customer: Customer
     ) -> None:
-        assert await repository.is_stripe_customer_in_use(customer.id) is False
+        assert await repository.get_bound_stripe_identity(
+            customer.id
+        ) == CustomerStripeIdentity(customer.id, None, False)
 
     async def test_saved_payment_method(
         self,
@@ -604,10 +608,12 @@ class TestIsStripeCustomerInUse:
     ) -> None:
         await create_payment_method(save_fixture, customer)
 
-        assert await repository.is_stripe_customer_in_use(customer.id) is True
+        assert await repository.get_bound_stripe_identity(
+            customer.id
+        ) == CustomerStripeIdentity(customer.id, customer.stripe_customer_id, False)
 
     @pytest.mark.parametrize(
-        ("status", "in_use"),
+        ("status", "subscribed"),
         [
             (SubscriptionStatus.active, True),
             (SubscriptionStatus.canceled, False),
@@ -620,13 +626,19 @@ class TestIsStripeCustomerInUse:
         customer: Customer,
         product: Product,
         status: SubscriptionStatus,
-        in_use: bool,
+        subscribed: bool,
     ) -> None:
         await create_subscription(
             save_fixture, product=product, customer=customer, status=status
         )
 
-        assert await repository.is_stripe_customer_in_use(customer.id) is in_use
+        assert await repository.get_bound_stripe_identity(
+            customer.id
+        ) == CustomerStripeIdentity(
+            customer.id,
+            customer.stripe_customer_id if subscribed else None,
+            subscribed,
+        )
 
     async def test_imported_by_merchant_migration(
         self,
@@ -647,4 +659,6 @@ class TestIsStripeCustomerInUse:
             )
         )
 
-        assert await repository.is_stripe_customer_in_use(customer.id) is True
+        assert await repository.get_bound_stripe_identity(
+            customer.id
+        ) == CustomerStripeIdentity(customer.id, customer.stripe_customer_id, False)

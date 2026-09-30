@@ -59,13 +59,13 @@ from .canonical import (
     subscription_price_key,
 )
 from .precheck import (
-    CUSTOMER_STRIPE_ID_CONFLICT_REASON,
     ProductImportPlan,
     Reason,
     plan_customer_imports,
     plan_discount_imports,
     plan_product_imports,
     plan_subscription_imports,
+    stripe_id_conflict_reason,
 )
 from .repository import MerchantMigrationRecordRepository
 from .schemas import (
@@ -844,19 +844,12 @@ class CatalogImporter:
                 stripe_customer_id is not None
                 and existing.stripe_customer_id != stripe_customer_id
             )
-            if (
-                rebind
-                and existing.stripe_customer_id is not None
-                and await self.customer_repository.is_stripe_customer_in_use(
+            if rebind:
+                identity = await self.customer_repository.get_bound_stripe_identity(
                     existing.id
                 )
-            ):
-                return ImportedCustomer(
-                    skip=Reason(
-                        "customer_stripe_id_conflict",
-                        CUSTOMER_STRIPE_ID_CONFLICT_REASON,
-                    )
-                )
+                if identity.stripe_customer_id is not None:
+                    return ImportedCustomer(skip=stripe_id_conflict_reason(identity))
             updates: dict[str, object] = {}
             if rebind:
                 updates["stripe_customer_id"] = stripe_customer_id

@@ -2,12 +2,13 @@
 import { Effect } from 'effect'
 import { Argument, Command } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { confirm } from '../inputs'
+import { confirm, fields } from '../inputs'
 
 export const command = Command.make(
   'revoke',
   {
     confirm,
+    fields,
     path: {
       id: Argument.String('id'),
     },
@@ -20,6 +21,7 @@ export const command = Command.make(
         method: 'DELETE',
         requiresConfirmation: true,
         confirm: config.confirm,
+        fields: config.fields,
         preview: {
           fields: [
             { key: 'id', label: 'ID' },

@@ -2,10 +2,12 @@
 import { Effect } from 'effect'
 import { Argument, Command } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
+import { fields } from '../inputs'
 
 export const command = Command.make(
   'get_activation',
   {
+    fields,
     path: {
       id: Argument.String('id'),
       activation_id: Argument.String('activation_id'),
@@ -19,6 +21,7 @@ export const command = Command.make(
         method: 'GET',
         requiresConfirmation: false,
         confirm: false,
+        fields: config.fields,
         invoke: (client) =>
           client.licenseKeys.getActivation(
             config.path.id,

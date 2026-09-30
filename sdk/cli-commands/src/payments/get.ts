@@ -2,10 +2,12 @@
 import { Effect } from 'effect'
 import { Argument, Command } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
+import { fields } from '../inputs'
 
 export const command = Command.make(
   'get',
   {
+    fields,
     path: {
       id: Argument.String('id'),
     },
@@ -18,6 +20,7 @@ export const command = Command.make(
         method: 'GET',
         requiresConfirmation: false,
         confirm: false,
+        fields: config.fields,
         invoke: (client) => client.payments.get(config.path.id),
       })
     }),

@@ -3,13 +3,14 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime, ApiCommandError } from '../runtime'
-import { data, mergeInput, missingFlags } from '../inputs'
+import { fields, data, mergeInput, missingFlags } from '../inputs'
 
 type Query = NonNullable<Parameters<Polar['metrics']['get']>[0]>
 
 export const command = Command.make(
   'get',
   {
+    fields,
     data,
     input: {
       start_date: Flag.String('start-date').pipe(
@@ -699,6 +700,7 @@ export const command = Command.make(
         requiresConfirmation: false,
         confirm: false,
         organizationId: query.organization_id,
+        fields: config.fields,
         invoke: (client) => client.metrics.get(query),
       })
     }),

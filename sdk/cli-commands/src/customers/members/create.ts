@@ -4,6 +4,7 @@ import { Effect } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime, ApiCommandError } from '../../runtime'
 import {
+  fields,
   data,
   mergeInput,
   missingFlags,
@@ -15,6 +16,7 @@ type Body = NonNullable<Parameters<Polar['customers']['members']['create']>[1]>
 export const command = Command.make(
   'create',
   {
+    fields,
     path: {
       id: Argument.String('id'),
     },
@@ -63,6 +65,7 @@ export const command = Command.make(
         method: 'POST',
         requiresConfirmation: false,
         confirm: false,
+        fields: config.fields,
         invoke: (client) =>
           client.customers.members.create(config.path.id, body),
       })

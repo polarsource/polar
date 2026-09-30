@@ -3,13 +3,20 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput, jsonFlag, nullableStringFlag } from '../inputs'
+import {
+  fields,
+  data,
+  mergeInput,
+  jsonFlag,
+  nullableStringFlag,
+} from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['customers']['create']>[0]>
 
 export const command = Command.make(
   'create',
   {
+    fields,
     data,
     input: {
       metadata: jsonFlag('metadata').pipe(
@@ -88,6 +95,7 @@ export const command = Command.make(
         requiresConfirmation: false,
         confirm: false,
         organizationId: body.organization_id,
+        fields: config.fields,
         invoke: (client) => client.customers.create(body),
       })
     }),

@@ -4,6 +4,7 @@ import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime, ApiCommandError } from '../runtime'
 import {
+  fields,
   data,
   mergeInput,
   missingFlags,
@@ -16,6 +17,7 @@ type Body = NonNullable<Parameters<Polar['customFields']['create']>[0]>
 export const command = Command.make(
   'create',
   {
+    fields,
     data,
     input: {
       metadata: jsonFlag('metadata').pipe(
@@ -80,6 +82,7 @@ export const command = Command.make(
         requiresConfirmation: false,
         confirm: false,
         organizationId: body.organization_id,
+        fields: config.fields,
         invoke: (client) => client.customFields.create(body),
       })
     }),

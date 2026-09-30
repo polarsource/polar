@@ -2,10 +2,12 @@
 import { Effect } from 'effect'
 import { Argument, Command } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
+import { fields } from '../inputs'
 
 export const command = Command.make(
   'generate_invoice',
   {
+    fields,
     path: {
       id: Argument.String('id'),
     },
@@ -18,6 +20,7 @@ export const command = Command.make(
         method: 'POST',
         requiresConfirmation: false,
         confirm: false,
+        fields: config.fields,
         invoke: (client) => client.orders.generateInvoice(config.path.id),
       })
     }),

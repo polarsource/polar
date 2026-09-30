@@ -67,6 +67,111 @@ describe('generated commands', () => {
     }
   }
 
+  describe('--fields', () => {
+    const respond = (body: unknown) =>
+      vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
+        requests.push(new Request(input, init))
+        return Promise.resolve(Response.json(body))
+      })
+
+    test('prints only the requested fields', async () => {
+      respond({ id: 'prod-1', name: 'Pro', description: 'A plan' })
+      const cli = run(['products', 'get', 'prod-1', '--fields', 'id,name'])
+      await cli.promise
+      expect(JSON.parse(cli.output())).toEqual({ id: 'prod-1', name: 'Pro' })
+    })
+
+    test('applies to every item of a list', async () => {
+      respond({
+        items: [
+          { id: 'prod-1', name: 'Pro' },
+          { id: 'prod-2', name: 'Free' },
+        ],
+        pagination: { total_count: 2, max_page: 1 },
+      })
+      const cli = run(['products', 'list', '--fields', 'id'])
+      await cli.promise
+      expect(JSON.parse(cli.output())).toEqual({
+        items: [{ id: 'prod-1' }, { id: 'prod-2' }],
+        pagination: { total_count: 2, max_page: 1 },
+      })
+    })
+
+    test('rejects an unknown field on a read and lists the real ones', async () => {
+      respond({ id: 'prod-1', name: 'Pro' })
+      await expect(
+        run(['products', 'get', 'prod-1', '--fields', 'id,nme']).promise,
+      ).rejects.toMatchObject({
+        message: 'Unknown field nme',
+        hint: 'Available: id, name',
+      })
+    })
+
+    test('selects the fields of a record that has its own items', async () => {
+      respond({ id: 'order-1', status: 'paid', items: [{ label: 'Pro' }] })
+      const cli = run(['orders', 'get', 'order-1', '--fields', 'id,status'])
+      await cli.promise
+      expect(JSON.parse(cli.output())).toEqual({
+        id: 'order-1',
+        status: 'paid',
+      })
+    })
+
+    test('warns when a nested field matches nothing and still prints', async () => {
+      respond({ id: 'prod-1', prices: [{ id: 'price-1', price_amount: 1000 }] })
+      const warn = vi
+        .spyOn(process.stderr, 'write')
+        .mockImplementation(() => true)
+      const cli = run([
+        'products',
+        'get',
+        'prod-1',
+        '--fields',
+        'id,prices.price_amout',
+      ])
+      await cli.promise
+      expect(JSON.parse(cli.output())).toEqual({ id: 'prod-1', prices: [{}] })
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'Nothing in this result matches prices.price_amout',
+        ),
+      )
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('prices has: id, price_amount'),
+      )
+    })
+
+    test('does not offer --fields where the answer can be a pending notice', async () => {
+      await expect(
+        run(['orders', 'receipt', 'order-1', '--fields', 'url']).promise,
+      ).rejects.toThrow()
+      expect(requests).toHaveLength(0)
+    })
+
+    test('never fails a write over an unknown field', async () => {
+      respond({ id: 'prod-1', name: 'Renamed' })
+      const warn = vi
+        .spyOn(process.stderr, 'write')
+        .mockImplementation(() => true)
+      const cli = run([
+        'products',
+        'update',
+        'prod-1',
+        '--name=Renamed',
+        '--fields',
+        'nme',
+      ])
+      await cli.promise
+      expect(JSON.parse(cli.output())).toEqual({
+        id: 'prod-1',
+        name: 'Renamed',
+      })
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('Unknown field nme, printing every field'),
+      )
+    })
+  })
+
   describe('required flags', () => {
     test('stops before calling the API and shows an example', async () => {
       await expect(

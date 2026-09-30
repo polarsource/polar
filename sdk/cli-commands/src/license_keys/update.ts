@@ -3,7 +3,13 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect, Schema } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime, ApiCommandError } from '../runtime'
-import { confirm, data, mergeInput, nullableStringFlag } from '../inputs'
+import {
+  confirm,
+  fields,
+  data,
+  mergeInput,
+  nullableStringFlag,
+} from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['licenseKeys']['update']>[1]>
 
@@ -11,6 +17,7 @@ export const command = Command.make(
   'update',
   {
     confirm,
+    fields,
     path: {
       id: Argument.String('id'),
     },
@@ -72,6 +79,7 @@ export const command = Command.make(
           confirmationInput['status'] === 'revoked' ||
           confirmationInput['status'] === 'disabled',
         confirm: config.confirm,
+        fields: config.fields,
         preview: {
           fields: [
             { key: 'id', label: 'ID' },

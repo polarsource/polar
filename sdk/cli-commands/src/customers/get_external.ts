@@ -2,10 +2,12 @@
 import { Effect } from 'effect'
 import { Argument, Command } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
+import { fields } from '../inputs'
 
 export const command = Command.make(
   'get_external',
   {
+    fields,
     path: {
       external_id: Argument.String('external_id'),
     },
@@ -18,6 +20,7 @@ export const command = Command.make(
         method: 'GET',
         requiresConfirmation: false,
         confirm: false,
+        fields: config.fields,
         invoke: (client) =>
           client.customers.getExternal(config.path.external_id),
       })

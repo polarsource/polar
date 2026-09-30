@@ -5547,7 +5547,7 @@ export interface paths {
     }
     /**
      * Get Merchant Migration Switch
-     * @description **Scopes**: `organizations:write`
+     * @description **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['merchant-migrations:get_cutover']
     put?: never

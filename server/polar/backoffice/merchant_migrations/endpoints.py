@@ -315,7 +315,15 @@ class SourceModeItem(description_list.DescriptionListItem[MerchantMigration]):
 
 SOURCE_DESCRIPTION_LIST = description_list.DescriptionList[MerchantMigration](
     description_list.DescriptionListAttrItem("id", "Migration ID", clipboard=True),
-    description_list.DescriptionListAttrItem("organization.slug", "Organization slug"),
+    description_list.DescriptionListLinkItem[MerchantMigration](
+        "organization.slug",
+        "Organization slug",
+        href_getter=lambda request, item: str(
+            request.url_for(
+                "organizations:detail", organization_id=item.organization_id
+            )
+        ),
+    ),
     SourcePlatformItem("Source platform"),
     SourceAccountItem("Source account"),
     SourceModeItem("Mode"),
@@ -354,14 +362,16 @@ async def get_migration(
     )
 
     position, total = step_position(migration.step)
+    organization_url = str(
+        request.url_for(
+            "organizations:detail", organization_id=migration.organization_id
+        )
+    )
 
     with layout(
         request,
         [
-            (
-                migration.organization.name,
-                str(request.url_for("merchant_migrations:detail", id=migration.id)),
-            ),
+            (migration.organization.name, organization_url),
             ("Migrations", str(request.url_for("merchant_migrations:list"))),
         ],
         "merchant_migrations:list",
@@ -369,15 +379,7 @@ async def get_migration(
         with tag.div(classes="flex flex-col gap-6"):
             with tag.div(classes="flex items-center gap-4"):
                 with tag.h1(classes="text-3xl"):
-                    with tag.a(
-                        href=str(
-                            request.url_for(
-                                "organizations:detail",
-                                organization_id=migration.organization_id,
-                            )
-                        ),
-                        classes="no-underline",
-                    ):
+                    with tag.a(href=organization_url, classes="no-underline"):
                         text(migration.organization.name)
                 views.attention_badge(triage)
 

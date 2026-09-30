@@ -1,0 +1,65 @@
+server/polar/customer/repository.py
+  s_49562f8133e9bf::t_cd067a449502ad 246-248
+  s_49562f8133e9bf::t_9f99717eacb93e 25
+  s_49562f8133e9bf::t_2b187726f0cc7f 9
+  s_49562f8133e9bf::t_d1d7021bf88de3 223-224,227,232-233,237-240,244-245,249-259
+  s_49562f8133e9bf::t_c8f4bed6763a1b 4
+  s_49562f8133e9bf::t_4ad0279a0e15be 51-55,57-59
+  s_49562f8133e9bf::t_f77b52be968468 56
+server/polar/merchant_migration/precheck.py
+  s_49562f8133e9bf::t_cf6455f2ac1167 1520-1525,1531-1544
+  s_49562f8133e9bf::t_e432c3d61b7d9d 1144,1198,1419,1500,1679
+  s_49562f8133e9bf::t_6327c8f4cf7176 162-167,169-170
+  s_49562f8133e9bf::t_1320d4e30cc405 125
+  s_49562f8133e9bf::t_35c0405810d179 20
+  s_5e72fbc252f76a::t_e56a714ed721be 1545-1546
+server/tests/merchant_migration/test_service.py
+  s_49562f8133e9bf::t_e51f1c7f0645b1 2329-2335,2344-2346,2349-2350,2359-2367
+  s_49562f8133e9bf::t_511967139b5e9f 2395
+  s_49562f8133e9bf::t_a418e4121e057a 119
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewRows.ts
+  s_49562f8133e9bf::t_9f3380eb333f24 1
+  s_49562f8133e9bf::t_0579c74c205472 43-66
+server/polar/merchant_migration/service.py
+  s_49562f8133e9bf::t_20f44300104104 15
+  s_49562f8133e9bf::t_e2dee388d6bd97 1832
+  s_49562f8133e9bf::t_f8b7858c07e7ff 1777
+server/tests/customer/test_repository.py
+  s_49562f8133e9bf::t_3189f96c11c61a 662-664
+  s_49562f8133e9bf::t_ff2b1bf8cb5ca8 10
+  s_49562f8133e9bf::t_7e46be172bdbb4 587-590,595,599-601,611-613,616,629,635-641
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewRecordFields.tsx
+  s_49562f8133e9bf::t_703d56cc5e4171 54,64-72
+  s_49562f8133e9bf::t_6064f7cccf3571 8,11
+server/polar/merchant_migration/importer.py
+  s_49562f8133e9bf::t_d0a5096c312131 68
+  s_49562f8133e9bf::t_35a313e24e9a8b 847-848,851-852
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewRows.test.ts
+  s_49562f8133e9bf::t_f1154ecd929ea4 141-145,149-177
+  s_49562f8133e9bf::t_559264e95865ea 6
+  s_49562f8133e9bf::t_d4a955bf48aae8 146-148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "9341fe01fb91647cfb1ec39064d313d57812e124",
+  "prompts": {},
+  "sessions": {
+    "s_49562f8133e9bf": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f7b2060f-9b00-4e09-80cd-7cd9a7570907",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_5e72fbc252f76a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f0b4-6003-7de3-bb4c-7e7d427209b9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

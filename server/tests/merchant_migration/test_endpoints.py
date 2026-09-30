@@ -7,7 +7,7 @@ import stripe as stripe_lib
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
-from polar.auth.scope import Scope
+from polar.auth.scope import READ_ONLY_SCOPES, Scope
 from polar.config import settings
 from polar.kit.utils import utc_now
 from polar.merchant_migration.adapters.base import ExtractionPage
@@ -507,6 +507,24 @@ class TestRecords:
         assert json_body["items"][0]["source_id"] == "prod_1"
         assert json_body["items"][0]["status"] == "importable"
 
+    @pytest.mark.auth(AuthSubjectFixture(scopes=READ_ONLY_SCOPES))
+    async def test_read_only_session_can_review(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+
+        records = await client.get(f"/v1/merchant-migrations/{migration.id}/records")
+        summary = await client.get(
+            f"/v1/merchant-migrations/{migration.id}/records/summary"
+        )
+
+        assert records.status_code == 200
+        assert summary.status_code == 200
+
 
 def _catalog_with_customer() -> list[CanonicalRecord]:
     return [
@@ -677,6 +695,23 @@ class TestGetPanTransfer:
         assert json_body["started"] is False
         assert json_body["steps"] == []
         assert json_body["current_step_key"] is None
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=READ_ONLY_SCOPES))
+    async def test_read_only_session(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        _configure_destination(mocker)
+        migration = await _create_migration(save_fixture, organization)
+
+        response = await client.get(
+            f"/v1/merchant-migrations/{migration.id}/pan-transfer"
+        )
+        assert response.status_code == 200
 
 
 @pytest.mark.asyncio

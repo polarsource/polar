@@ -5503,7 +5503,7 @@ export interface paths {
     }
     /**
      * Get Merchant Migration Card Transfer
-     * @description **Scopes**: `organizations:write`
+     * @description **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['merchant-migrations:pan_transfer']
     put?: never
@@ -5571,7 +5571,7 @@ export interface paths {
     }
     /**
      * Summarize Merchant Migration Records
-     * @description **Scopes**: `organizations:write`
+     * @description **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['merchant-migrations:records_summary']
     put?: never
@@ -5591,7 +5591,7 @@ export interface paths {
     }
     /**
      * List Merchant Migration Records
-     * @description **Scopes**: `organizations:write`
+     * @description **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['merchant-migrations:records']
     put?: never

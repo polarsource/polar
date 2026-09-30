@@ -477,6 +477,7 @@ class SubscriptionUpdateContext:
         service: "SubscriptionService",
         *,
         notify_customer: bool = True,
+        customer_initiated: bool = False,
     ) -> None:
         self.session = session
         self.service = service
@@ -485,6 +486,7 @@ class SubscriptionUpdateContext:
         self._previous_status = subscription.status
         self._previous_is_canceled = subscription.canceled
         self._notify_customer = notify_customer
+        self._customer_initiated = customer_initiated
 
         self._billing_effect: Literal["invoice", "cycle", "cycle_sync"] | None = None
         self._event_metadata: SubscriptionUpdatedMetadataFields = {}
@@ -540,6 +542,7 @@ class SubscriptionUpdateContext:
                 previous_status=self._previous_status,
                 previous_is_canceled=self._previous_is_canceled,
                 notify_customer=self._notify_customer,
+                customer_initiated=self._customer_initiated,
                 previous_product=self._previous_product,
             )
 
@@ -3558,6 +3561,7 @@ class SubscriptionService:
         previous_status: SubscriptionStatus,
         previous_is_canceled: bool,
         notify_customer: bool = True,
+        customer_initiated: bool = False,
         previous_product: Product | None = None,
     ) -> None:
         await self._on_subscription_updated(
@@ -3617,7 +3621,7 @@ class SubscriptionService:
         if became_past_due:
             await self._on_subscription_past_due(session, subscription)
 
-        if became_canceled:
+        if became_canceled and customer_initiated:
             await self._send_cancellation_notification(session, subscription)
 
         if became_canceled or (became_revoked and previous_is_canceled):

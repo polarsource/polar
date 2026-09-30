@@ -9,7 +9,7 @@ from pytest_mock import MockerFixture
 from polar.backoffice import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
 from polar.kit.utils import utc_now
-from polar.models import Customer, Organization, Product, User
+from polar.models import Customer, Organization, Product, Subscription, User
 from polar.models.order import OrderStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user_session import UserSession
@@ -49,14 +49,10 @@ class TestList:
         backoffice_client: httpx.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
-        product: Product,
-        customer: Customer,
+        subscription: Subscription,
         product_organization_second: Product,
         customer_organization_second: Customer,
     ) -> None:
-        subscription = await create_active_subscription(
-            save_fixture, product=product, customer=customer
-        )
         other_subscription = await create_active_subscription(
             save_fixture,
             product=product_organization_second,

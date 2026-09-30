@@ -39,8 +39,13 @@ async def google_callback(
     client: httpx.AsyncClient,
     mocker: MockerFixture,
     callback_result: OAuth2Enrollment | OAuth2Account,
+    *,
+    sso_discovery: bool = True,
 ) -> httpx.Response:
-    start = await client.post("/v1/auth/start", json={"return_to": "/dashboard"})
+    start = await client.post(
+        "/v1/auth/start",
+        json={"return_to": "/dashboard", "sso_discovery": sso_discovery},
+    )
     assert start.status_code == 201
 
     authorize = await client.get("/v1/auth/google/authorize")
@@ -133,3 +138,19 @@ class TestLoginCallback:
         assert response.headers["location"] == settings.generate_frontend_url(
             f"/auth/sso/{organization.slug}?return_to=%2Fdashboard"
         )
+
+    async def test_sso_discovery_disabled(
+        self,
+        login_client: httpx.AsyncClient,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        await create_sso_domain(save_fixture, organization)
+
+        response = await google_callback(
+            login_client, mocker, google_account(), sso_discovery=False
+        )
+
+        assert response.status_code == 303
+        assert response.headers["location"] == settings.generate_frontend_url("/auth")

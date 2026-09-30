@@ -6,9 +6,11 @@ from uuid import UUID, uuid4
 import pytest
 import pytest_asyncio
 import stripe as stripe_lib
+from freezegun import freeze_time
 from pytest_mock import MockerFixture
+from sqlalchemy.exc import OperationalError
 
-from polar.enums import TaxBehavior
+from polar.enums import RecurringInterval, TaxBehavior
 from polar.kit.utils import utc_now
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
@@ -40,9 +42,10 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordType,
 )
 from polar.models.organization import OrganizationStatus
-from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.subscription.repository import SubscriptionRepository
+from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_customer,
@@ -143,14 +146,22 @@ class _FakeSourceAdapter:
         self._subscription = subscription
         self._error = error
         self.stopped: list[str] = []
+        self.period_end_stops: list[bool] = []
 
     async def get_subscription(self, source_id: str) -> CanonicalSubscription | None:
         if self._error is not None:
             raise self._error
         return self._subscription
 
-    async def stop_source_subscription(self, source_id: str, *, reference: str) -> None:
+    async def stop_source_subscription(
+        self,
+        source_id: str,
+        *,
+        reference: str,
+        cancel_at_period_end: bool = False,
+    ) -> None:
         self.stopped.append(source_id)
+        self.period_end_stops.append(cancel_at_period_end)
 
     # Unused by the cutover, but a fake that satisfies half a protocol isn't one.
     async def extract(self) -> AsyncIterator[CanonicalRecord]:
@@ -181,6 +192,25 @@ async def _created(
     )
     assert subscription is not None
     return subscription
+
+
+def _discounted_renewals(subscription: Subscription, renewals: int) -> list[bool]:
+    """Whether each coming renewal keeps the discount, checked the way ``cycle``
+    does."""
+    discount = subscription.discount
+    applied_at = subscription.discount_applied_at
+    assert discount is not None
+    assert applied_at is not None
+    discounted: list[bool] = []
+    period_start = subscription.current_period_end
+    for _ in range(renewals):
+        discounted.append(not discount.is_repetition_expired(applied_at, period_start))
+        period_start = subscription.recurring_interval.get_next_period(
+            period_start,
+            subscription.anchor_day,
+            subscription.recurring_interval_count,
+        )
+    return discounted
 
 
 @pytest_asyncio.fixture
@@ -405,6 +435,30 @@ class TestRun:
         assert subscription.discount_id == polar_discount.id
         assert subscription.discount_applied_at == applied_at
 
+    async def test_blocked_discount_stays_on_stripe(
+        self,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        await _discounted_pending(
+            save_fixture,
+            pending_record,
+            discount_block="subscription_stacked_discounts",
+        )
+        adapter = _source(
+            has_discount=True,
+            discount_block="subscription_stacked_discounts",
+        )
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.skipped
+        assert outcome.message is not None
+        assert "stacks discounts" in outcome.message
+        assert "stays on Stripe" in outcome.message
+        _assert_left_alone(adapter, pending_record)
+
     async def test_repeating_discount_does_not_use_staged_start(
         self,
         save_fixture: SaveFixture,
@@ -469,7 +523,7 @@ class TestRun:
             target_id=polar_discount.id,
         )
         first_start = utc_now() - timedelta(days=90)
-        kept_start = utc_now() - timedelta(days=40)
+        kept_start = utc_now() - timedelta(days=30)
         starts = {"coupon_bad": first_start, "coupon_ok": kept_start}
         await _discounted_pending(
             save_fixture,
@@ -491,7 +545,144 @@ class TestRun:
         assert outcome.status == MerchantMigrationCutoverStatus.moved
         subscription = await _created(session, pending_record)
         assert subscription.discount_id == polar_discount.id
-        assert subscription.discount_applied_at == kept_start
+        assert _discounted_renewals(subscription, 3) == [True, True, False]
+
+    @pytest.mark.parametrize(
+        ("duration", "duration_in_months", "started_days_ago", "discounted"),
+        [
+            pytest.param(DiscountDuration.once, None, 3, [True, False], id="once"),
+            pytest.param(
+                DiscountDuration.repeating,
+                3,
+                3,
+                [True, True, True, False],
+                id="repeating added mid-period",
+            ),
+            pytest.param(
+                DiscountDuration.repeating,
+                3,
+                50,
+                [True, False, False],
+                id="repeating nearly used up",
+            ),
+        ],
+    )
+    async def test_discounts_the_renewals_the_source_still_would(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+        migration: MerchantMigration,
+        organization: Organization,
+        duration: DiscountDuration,
+        duration_in_months: int | None,
+        started_days_ago: int,
+        discounted: list[bool],
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        polar_discount = await _percentage_discount(
+            save_fixture,
+            organization,
+            duration=duration,
+            duration_in_months=duration_in_months,
+        )
+        await stage_discount_record(
+            save_fixture, migration, organization, target_id=polar_discount.id
+        )
+        started_at = utc_now() - timedelta(days=started_days_ago)
+        fields: dict[str, Any] = {
+            "discount_source_ids": ["coupon_1"],
+            "discount_started_at": started_at,
+        }
+        await _discounted_pending(save_fixture, pending_record, **fields)
+
+        outcome = await cutover(_source(has_discount=True, **fields))
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert _discounted_renewals(subscription, len(discounted)) == discounted
+
+    async def test_repeating_discount_keeps_a_renewal_after_a_short_month(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+        migration: MerchantMigration,
+        organization: Organization,
+    ) -> None:
+        """Renewing on the 30th, a 2-month coupon from Feb 5 ends Apr 5 on the
+        source, so it still discounts Feb 28 and Mar 30."""
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        polar_discount = await _percentage_discount(
+            save_fixture,
+            organization,
+            duration=DiscountDuration.repeating,
+            duration_in_months=2,
+        )
+        await stage_discount_record(
+            save_fixture, migration, organization, target_id=polar_discount.id
+        )
+        fields: dict[str, Any] = {
+            "discount_source_ids": ["coupon_1"],
+            "discount_started_at": datetime(2026, 2, 5, tzinfo=UTC),
+            "current_period_start": datetime(2026, 1, 30, tzinfo=UTC),
+            "current_period_end": datetime(2026, 2, 28, tzinfo=UTC),
+            "anchor_day": 30,
+        }
+        await _discounted_pending(save_fixture, pending_record, **fields)
+
+        with freeze_time("2026-02-20"):
+            outcome = await cutover(_source(has_discount=True, **fields))
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert _discounted_renewals(subscription, 3) == [True, True, False]
+
+    async def test_skips_a_coupon_end_no_month_count_lands_on(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+        migration: MerchantMigration,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        """Renewing every 2 days, a 3-month coupon from Jan 30 ends Apr 30 on
+        the source: Apr 29 is discounted, May 1 isn't. Only an end on Apr 29 or
+        30 would say that, and no Feb 29 or 30 exists to count two months from."""
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        product.recurring_interval = RecurringInterval.day
+        product.recurring_interval_count = 2
+        await save_fixture(product)
+        polar_discount = await _percentage_discount(
+            save_fixture,
+            organization,
+            duration=DiscountDuration.repeating,
+            duration_in_months=3,
+        )
+        await stage_discount_record(
+            save_fixture, migration, organization, target_id=polar_discount.id
+        )
+        fields: dict[str, Any] = {
+            "discount_source_ids": ["coupon_1"],
+            "discount_started_at": datetime(2026, 1, 30, tzinfo=UTC),
+            "current_period_start": datetime(2026, 4, 27, tzinfo=UTC),
+            "current_period_end": datetime(2026, 4, 29, tzinfo=UTC),
+        }
+        await _discounted_pending(save_fixture, pending_record, **fields)
+        adapter = _source(has_discount=True, **fields)
+
+        with freeze_time("2026-04-27T06:00:00Z", tick=True):
+            outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.skipped
+        assert "can't end this coupon" in (outcome.message or "")
+        _assert_left_alone(adapter, pending_record)
 
     async def test_skips_when_discount_was_never_imported(
         self,
@@ -762,6 +953,58 @@ class TestRun:
         assert reloaded.payment_method_id is not None
         assert reloaded.tax_behavior == TaxBehavior.exclusive
         assert reloaded.tax_exempted is False
+
+    async def test_writes_everything_before_stopping_the_source(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        pending_record: MerchantMigrationRecord,
+        imported_customer: Customer,
+        product: Product,
+    ) -> None:
+        """A write failing after the stop would leave a customer nobody bills."""
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=imported_customer,
+            status=SubscriptionStatus.paused,
+            tax_behavior=TaxBehavior.inclusive,
+            user_metadata={"provider": "stripe", "provider_subscription_id": "sub_1"},
+        )
+        pending_record.target_id = subscription.id
+        pending_record.status = MerchantMigrationRecordStatus.imported
+        pending_record.canonical = serialize(
+            canonical_subscription(tax_behavior=TaxBehavior.exclusive)
+        )
+        await save_fixture(pending_record)
+        adapter = _source()
+        stop = adapter.stop_source_subscription
+        unwritten_at_stop: list[object] = []
+
+        async def stop_and_check(
+            source_id: str, *, reference: str, cancel_at_period_end: bool = False
+        ) -> None:
+            unwritten_at_stop.extend([*session.new, *session.dirty])
+            await stop(
+                source_id,
+                reference=reference,
+                cancel_at_period_end=cancel_at_period_end,
+            )
+
+        mocker.patch.object(
+            adapter, "stop_source_subscription", side_effect=stop_and_check
+        )
+
+        outcome = await SubscriptionCutover(session, migration, adapter).run(
+            pending_record
+        )
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert adapter.stopped == ["sub_1"]
+        assert unwritten_at_stop == []
 
     async def test_charges_a_card_that_landed_after_the_card_check(
         self,
@@ -1244,6 +1487,370 @@ class TestAlreadyLiveOnPolar:
 
 
 @pytest.mark.asyncio
+class TestCancelAtPeriodEnd:
+    """A selected ending subscription moves, and still ends on that date."""
+
+    async def test_moves_and_keeps_the_scheduled_end(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        period_end = utc_now() + timedelta(days=20)
+        adapter = _source(cancel_at_period_end=True, current_period_end=period_end)
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert adapter.stopped == ["sub_1"]
+        assert adapter.period_end_stops == [True]
+        subscription = await _created(session, pending_record)
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.cancel_at_period_end is True
+        assert subscription.ends_at == period_end
+        assert subscription.current_period_end == period_end
+        assert subscription.ended_at is None
+
+    async def test_moves_inside_the_renewal_safety_window(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        period_end = utc_now() + timedelta(hours=6)
+        adapter = _source(cancel_at_period_end=True, current_period_end=period_end)
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.cancel_at_period_end is True
+        assert subscription.ends_at == period_end
+        assert subscription.ended_at is None
+
+    async def test_retry_keeps_the_staged_end_after_the_source_was_stopped(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        period_end = utc_now() + timedelta(days=20)
+        pending_record.canonical = serialize(
+            canonical_subscription(
+                cancel_at_period_end=True, current_period_end=period_end
+            )
+        )
+        await save_fixture(pending_record)
+        adapter = _source(**STOPPED_BY_US, current_period_end=period_end)
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert adapter.stopped == []
+        subscription = await _created(session, pending_record)
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.cancel_at_period_end is True
+        assert subscription.ends_at == period_end
+        assert subscription.ended_at is None
+
+    async def test_keeps_when_and_why_without_announcing_a_new_cancellation(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        canceled_at = utc_now() - timedelta(days=12)
+        adapter = _source(
+            cancel_at_period_end=True,
+            canceled_at=canceled_at,
+            cancellation_reason="too_expensive",
+        )
+        announced = mocker.spy(subscription_service, "_on_subscription_canceled")
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.canceled_at == canceled_at
+        assert (
+            subscription.customer_cancellation_reason
+            == CustomerCancellationReason.too_expensive
+        )
+        announced.assert_not_called()
+
+    async def test_retry_keeps_the_staged_date_and_reason(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        canceled_at = utc_now() - timedelta(days=12)
+        pending_record.canonical = serialize(
+            canonical_subscription(
+                cancel_at_period_end=True,
+                canceled_at=canceled_at,
+                cancellation_reason="unused",
+            )
+        )
+        await save_fixture(pending_record)
+        adapter = _source(
+            **STOPPED_BY_US, cancel_at_period_end=True, cancel_at_period_end_known=True
+        )
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.canceled_at == canceled_at
+        assert (
+            subscription.customer_cancellation_reason
+            == CustomerCancellationReason.unused
+        )
+
+    async def test_a_request_without_feedback_keeps_no_earlier_reason(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        pending_record.canonical = serialize(
+            canonical_subscription(
+                cancel_at_period_end=True,
+                canceled_at=utc_now() - timedelta(days=12),
+                cancellation_reason="unused",
+            )
+        )
+        await save_fixture(pending_record)
+        requested_again_at = utc_now() - timedelta(days=2)
+        adapter = _source(cancel_at_period_end=True, canceled_at=requested_again_at)
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.canceled_at == requested_again_at
+        assert subscription.customer_cancellation_reason is None
+
+    async def test_live_feedback_without_a_date_replaces_the_staged_reason(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        pending_record.canonical = serialize(
+            canonical_subscription(
+                cancel_at_period_end=True,
+                canceled_at=utc_now() - timedelta(days=12),
+                cancellation_reason="unused",
+            )
+        )
+        await save_fixture(pending_record)
+        adapter = _source(
+            cancel_at_period_end=True, cancellation_reason="too_expensive"
+        )
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert (
+            subscription.customer_cancellation_reason
+            == CustomerCancellationReason.too_expensive
+        )
+
+    async def test_keeps_when_and_why_on_a_paused_polar_subscription(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        pending_record: MerchantMigrationRecord,
+        imported_customer: Customer,
+        product: Product,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        period_end = utc_now() + timedelta(days=20)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=imported_customer,
+            status=SubscriptionStatus.paused,
+            user_metadata={"provider": "stripe", "provider_subscription_id": "sub_1"},
+        )
+        pending_record.target_id = subscription.id
+        pending_record.status = MerchantMigrationRecordStatus.imported
+        await save_fixture(pending_record)
+        canceled_at = utc_now() - timedelta(days=12)
+        adapter = _source(
+            cancel_at_period_end=True,
+            canceled_at=canceled_at,
+            cancellation_reason="too_expensive",
+            current_period_end=period_end,
+        )
+
+        outcome = await SubscriptionCutover(session, migration, adapter).run(
+            pending_record
+        )
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert adapter.period_end_stops == [True]
+        await session.refresh(subscription)
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.canceled_at == canceled_at
+        assert subscription.ends_at == period_end
+        assert (
+            subscription.customer_cancellation_reason
+            == CustomerCancellationReason.too_expensive
+        )
+
+    async def test_renews_when_the_customer_takes_the_end_back_before_the_stop(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        adapter = _source(cancel_at_period_end=True)
+        mocker.patch.object(
+            adapter,
+            "get_subscription",
+            side_effect=[
+                canonical_subscription(cancel_at_period_end=True),
+                canonical_subscription(),
+            ],
+        )
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert adapter.period_end_stops == [False]
+        subscription = await _created(session, pending_record)
+        assert subscription.cancel_at_period_end is False
+        assert subscription.canceled_at is None
+
+    async def test_skips_when_the_customer_cancels_outright_before_the_stop(
+        self,
+        mocker: MockerFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        adapter = _source()
+        mocker.patch.object(
+            adapter,
+            "get_subscription",
+            side_effect=[
+                canonical_subscription(),
+                canonical_subscription(status=CanonicalSubscriptionStatus.canceled),
+            ],
+        )
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.skipped
+        _assert_left_alone(adapter, pending_record)
+
+    async def test_renewing_subscription_stays_renewing(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+
+        outcome = await cutover(_source())
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.cancel_at_period_end is False
+        assert subscription.ends_at is None
+        assert subscription.ended_at is None
+
+    async def test_retry_keeps_an_end_scheduled_after_import(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        period_end = utc_now() + timedelta(days=20)
+        pending_record.canonical = serialize(
+            canonical_subscription(
+                cancel_at_period_end=False, current_period_end=period_end
+            )
+        )
+        await save_fixture(pending_record)
+        adapter = _source(
+            **STOPPED_BY_US,
+            cancel_at_period_end=True,
+            cancel_at_period_end_known=True,
+            current_period_end=period_end,
+        )
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert adapter.stopped == []
+        subscription = await _created(session, pending_record)
+        assert subscription.cancel_at_period_end is True
+        assert subscription.ends_at == period_end
+        assert subscription.ended_at is None
+
+    async def test_retry_renews_when_the_customer_uncancelled_before_the_stop(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        period_end = utc_now() + timedelta(days=20)
+        pending_record.canonical = serialize(
+            canonical_subscription(
+                cancel_at_period_end=True, current_period_end=period_end
+            )
+        )
+        await save_fixture(pending_record)
+        adapter = _source(
+            **STOPPED_BY_US,
+            cancel_at_period_end=False,
+            cancel_at_period_end_known=True,
+            current_period_end=period_end,
+        )
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.cancel_at_period_end is False
+        assert subscription.ends_at is None
+        assert subscription.ended_at is None
+
+
+@pytest.mark.asyncio
 class TestSkips:
     """Every skip leaves the source billing."""
 
@@ -1259,11 +1866,6 @@ class TestSkips:
                 {"status": CanonicalSubscriptionStatus.past_due},
                 None,
                 id="payment-failing",
-            ),
-            pytest.param(
-                {"cancel_at_period_end": True},
-                "cancel at the end of the period",
-                id="already-ending",
             ),
             pytest.param(
                 {"cancel_at": utc_now() + timedelta(days=60)},
@@ -1305,6 +1907,11 @@ class TestSkips:
                 {"customer_balance": -500},
                 "credit balance on Stripe",
                 id="customer-credit-since-the-import",
+            ),
+            pytest.param(
+                {"managed_payments": True},
+                "Stripe Managed Payments",
+                id="sold-through-managed-payments",
             ),
         ],
     )
@@ -1452,6 +2059,163 @@ class TestFailures:
         assert outcome.status == MerchantMigrationCutoverStatus.failed
         assert "can't tell which is which" in (outcome.message or "")
         _assert_left_alone(adapter, pending_record)
+
+    async def test_activation_failing_after_the_stop_keeps_a_retryable_paused_one(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        """Rolling back to pending would hide a customer nobody is billing."""
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        activate_imported = subscription_service.activate_imported
+
+        async def activate_then_fail(*args: Any, **kwargs: Any) -> Subscription:
+            await activate_imported(*args, **kwargs)
+            raise RuntimeError("boom")
+
+        activation = mocker.patch.object(
+            subscription_service, "activate_imported", side_effect=activate_then_fail
+        )
+        adapter = _source()
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.failed
+        assert "nobody is billing the customer" in (outcome.message or "")
+        assert adapter.stopped == ["sub_1"]
+        assert pending_record.status == MerchantMigrationRecordStatus.imported
+        subscription = await _created(session, pending_record)
+        assert subscription.status == SubscriptionStatus.paused
+
+        activation.side_effect = activate_imported
+        retry = _source(stopped_for_migration=True)
+
+        outcome = await cutover(retry)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert retry.stopped == []
+        retried = await _created(session, pending_record)
+        assert retried.status == SubscriptionStatus.active
+
+    async def test_a_stop_that_timed_out_after_cancelling_still_moves(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        adapter = _source()
+        mocker.patch.object(
+            adapter,
+            "stop_source_subscription",
+            side_effect=stripe_lib.APIConnectionError("Read timed out"),
+        )
+        mocker.patch.object(
+            adapter,
+            "get_subscription",
+            side_effect=[
+                canonical_subscription(),
+                canonical_subscription(),
+                canonical_subscription(stopped_for_migration=True),
+            ],
+        )
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.status == SubscriptionStatus.active
+
+    async def test_a_stop_nobody_can_confirm_keeps_a_retryable_paused_one(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        adapter = _source()
+        mocker.patch.object(
+            adapter,
+            "stop_source_subscription",
+            side_effect=stripe_lib.APIConnectionError("Read timed out"),
+        )
+        mocker.patch.object(
+            adapter,
+            "get_subscription",
+            side_effect=[
+                canonical_subscription(),
+                canonical_subscription(),
+                stripe_lib.APIConnectionError("Stripe is down"),
+            ],
+        )
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.failed
+        assert "may already be cancelled" in (outcome.message or "")
+        assert pending_record.status == MerchantMigrationRecordStatus.imported
+        subscription = await _created(session, pending_record)
+        assert subscription.status == SubscriptionStatus.paused
+
+    async def test_a_stop_that_timed_out_before_cancelling_changes_nothing(
+        self,
+        mocker: MockerFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        adapter = _source()
+        mocker.patch.object(
+            adapter,
+            "stop_source_subscription",
+            side_effect=stripe_lib.APIConnectionError("Read timed out"),
+        )
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.failed
+        assert pending_record.status == MerchantMigrationRecordStatus.pending
+        _assert_left_alone(adapter, pending_record)
+
+    async def test_an_unexpected_error_fails_the_record_not_the_run(
+        self,
+        mocker: MockerFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        adapter = _source()
+        mocker.patch.object(
+            adapter, "stop_source_subscription", side_effect=RuntimeError("boom")
+        )
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.failed
+        assert "Something went wrong" in (outcome.message or "")
+        assert pending_record.status == MerchantMigrationRecordStatus.pending
+        _assert_left_alone(adapter, pending_record)
+
+    async def test_a_database_error_fails_the_run_so_it_retries(
+        self,
+        mocker: MockerFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        adapter = _source()
+        mocker.patch.object(
+            adapter,
+            "stop_source_subscription",
+            side_effect=OperationalError("SELECT 1", {}, Exception("lock timeout")),
+        )
+
+        with pytest.raises(OperationalError):
+            await cutover(adapter)
 
     async def test_polar_subscription_no_longer_exists(
         self,

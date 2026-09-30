@@ -4,6 +4,7 @@ import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'
 import { schemas, unwrap } from '@polar-sh/client'
 import * as Sentry from '@sentry/nextjs'
+import { useSearchParams } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useCallback, useContext, useEffect } from 'react'
 
@@ -66,11 +67,14 @@ export const useLogout = (): (() => void) => {
   }, [posthog])
 }
 
-export const useAuthSessionStart = () =>
-  useMutation({
+export const useAuthSessionStart = () => {
+  const searchParams = useSearchParams()
+  const sso_discovery = searchParams.get('sso_discovery') !== 'false'
+  return useMutation({
     mutationFn: (return_to?: string) =>
-      api.POST('/v1/auth/start', { body: { return_to } }),
+      api.POST('/v1/auth/start', { body: { return_to, sso_discovery } }),
   })
+}
 
 export const useOrgAuthSessionStart = (slug: string) =>
   useMutation({

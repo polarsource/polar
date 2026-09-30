@@ -72,6 +72,7 @@ class AUPSection(StrEnum):
     TECH_SUPPORT_REPAIR = "tech_support_repair"
     TEST_PREP_PLATFORMS = "test_prep_platforms"
     OSINT = "osint"
+    AI_IMAGE_VIDEO_GENERATION = "ai_image_video_generation"
     OTHER = "other"
 
 
@@ -171,6 +172,7 @@ AUP_SECTION_LABELS: dict[AUPSection, str] = {
         "36. Open Source Intelligence (OSINT) platforms aggregating/exposing personal "
         "data"
     ),
+    AUPSection.AI_IMAGE_VIDEO_GENERATION: "37. AI image and video generation",
     AUPSection.OTHER: "Other",
 }
 

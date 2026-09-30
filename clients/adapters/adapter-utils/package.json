@@ -1,6 +1,6 @@
 {
   "name": "@polar-sh/adapter-utils",
-  "version": "0.4.7",
+  "version": "1.0.0",
   "description": "Core package for Polar adapters",
   "repository": {
     "type": "git",
@@ -38,7 +38,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@polar-sh/sdk": "1.0.0-alpha.22"
+    "@polar-sh/sdk": "1.0.0"
   },
   "devDependencies": {
     "@polar-sh/typescript-config": "workspace:*",

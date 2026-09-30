@@ -4,11 +4,13 @@ from datetime import datetime, timedelta
 
 from sqlalchemy import ColumnElement, and_, or_, select
 
+from polar.checkout.repository import expired_pending_anonymization
 from polar.config import settings
 from polar.kit.db.models import RecordModel
 from polar.kit.utils import utc_now
 from polar.models import (
     AuthenticationSession,
+    Checkout,
     CustomerEmailVerification,
     CustomerSession,
     CustomerSessionCode,
@@ -116,6 +118,15 @@ CLEANUP_TASKS: tuple[CleanupTask, ...] = (
         lambda cutoff: and_(
             WebhookEvent.payload.is_not(None),
             WebhookEvent.created_at < cutoff - settings.WEBHOOK_EVENT_RETENTION_PERIOD,
+        ),
+    ),
+    CleanupTask(
+        "checkout.anonymize_expired",
+        Checkout,
+        lambda cutoff: and_(
+            *expired_pending_anonymization(
+                cutoff - settings.EXPIRED_CHECKOUT_RETENTION_PERIOD
+            )
         ),
     ),
     CleanupTask(

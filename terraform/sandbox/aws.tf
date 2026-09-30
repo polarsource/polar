@@ -206,16 +206,6 @@ module "lambda_worker_queue" {
   ]
 }
 
-moved {
-  from = module.dummy_lambda_worker
-  to   = module.lambda_worker["low-priority"]
-}
-
-moved {
-  from = module.lambda_worker["low-priority"]
-  to   = module.lambda_worker
-}
-
 # =============================================================================
 # S3 access policy (attached to the secrets_kms role and the worker Lambdas)
 # The buckets live in the management account, which grants these roles in its

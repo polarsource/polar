@@ -18,7 +18,9 @@ from reauth.factors.oauth2.state import ExpiredStateException, InvalidStateExcep
 from polar.authz.dependencies import AuthorizeWebUserWrite
 from polar.config import settings
 from polar.kit.http import ReturnTo
+from polar.postgres import AsyncSession
 from polar.routing import APIRouter
+from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
 
 from ..authentication_session import (
@@ -28,8 +30,20 @@ from ..authentication_session import (
     get_optional_authentication_session,
 )
 from ..exceptions import GetEmailError, PolarAuthRedirectionError
-from ..helpers import OIDC_ERROR_MESSAGE, check_factor, set_state_cookie
+from ..helpers import (
+    OIDC_ERROR_MESSAGE,
+    check_factor,
+    get_sso_redirect_url,
+    set_state_cookie,
+)
 from .factor import OAuth2FactorMixin
+
+
+async def _get_sso_redirect(
+    session: AsyncSession, email: str, context: dict[str, typing.Any] | None
+) -> RedirectResponse | None:
+    url = await get_sso_redirect_url(session, email, context)
+    return RedirectResponse(url, status_code=303) if url is not None else None
 
 
 def get_oauth_login_router(
@@ -144,9 +158,18 @@ def get_oauth_login_router(
             if authentication_session is None:
                 raise PolarAuthRedirectionError("No active authentication session")
 
+        session = authentication_session_service.session
+        context = authentication_session.context
+
         # Existing or linked user
         if enrollment is not None:
             identity_id = enrollment.identity_id
+            user = await UserRepository.from_session(session).get_by_id(identity_id)
+            if user is not None and (
+                sso_redirect := await _get_sso_redirect(session, user.email, context)
+            ):
+                set_state_cookie(request, sso_redirect, "", 0)
+                return sso_redirect
         # New user
         else:
             assert oauth_account is not None
@@ -158,9 +181,11 @@ def get_oauth_login_router(
             except GetEmailError as e:
                 raise PolarAuthRedirectionError(e.message) from e
 
-            user, _ = await user_service.get_by_email_or_create(
-                authentication_session_service.session, email
-            )
+            if sso_redirect := await _get_sso_redirect(session, email, context):
+                set_state_cookie(request, sso_redirect, "", 0)
+                return sso_redirect
+
+            user, _ = await user_service.get_by_email_or_create(session, email)
             try:
                 enrollment = await factor.enroll(user.id, oauth_account)
             except OAuth2GetProfileException as e:

@@ -13,9 +13,9 @@ from polar.base import (
 from polar.v2026_04.errors import (
     AlreadyCanceledSubscription,
     HTTPValidationError,
-    PaymentFailed,
     ResourceNotFound,
     SubscriptionLocked,
+    SubscriptionsUpdate402Error,
     SubscriptionsUpdate403Error,
     SubscriptionsUpdate409Error,
 )
@@ -548,8 +548,8 @@ class SubscriptionsSync(SyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            PaymentFailed: Payment required to apply the subscription update.
-            SubscriptionsUpdate403Error: Subscription is already canceled or will be at the end of the period, or is not active.
+            SubscriptionsUpdate402Error: The charge failed, or requires customer authentication that can't be completed off-session.
+            SubscriptionsUpdate403Error: Subscription is already canceled or will be at the end of the period, is not active, or the organization is not ready to renew subscriptions.
             ResourceNotFound: Subscription not found.
             SubscriptionsUpdate409Error: Subscription is pending an update, or is not scheduled to be canceled.
             HTTPValidationError: Validation Error
@@ -570,7 +570,7 @@ class SubscriptionsSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
-            402: PaymentFailed,
+            402: SubscriptionsUpdate402Error,
             403: SubscriptionsUpdate403Error,
             404: ResourceNotFound,
             409: SubscriptionsUpdate409Error,
@@ -1083,8 +1083,8 @@ class SubscriptionsAsync(AsyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            PaymentFailed: Payment required to apply the subscription update.
-            SubscriptionsUpdate403Error: Subscription is already canceled or will be at the end of the period, or is not active.
+            SubscriptionsUpdate402Error: The charge failed, or requires customer authentication that can't be completed off-session.
+            SubscriptionsUpdate403Error: Subscription is already canceled or will be at the end of the period, is not active, or the organization is not ready to renew subscriptions.
             ResourceNotFound: Subscription not found.
             SubscriptionsUpdate409Error: Subscription is pending an update, or is not scheduled to be canceled.
             HTTPValidationError: Validation Error
@@ -1105,7 +1105,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
-            402: PaymentFailed,
+            402: SubscriptionsUpdate402Error,
             403: SubscriptionsUpdate403Error,
             404: ResourceNotFound,
             409: SubscriptionsUpdate409Error,

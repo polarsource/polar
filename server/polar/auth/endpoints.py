@@ -25,6 +25,7 @@ from polar.auth.exceptions import (
     PolarAuthError,
     PolarAuthRedirectionError,
     SessionNotFreshError,
+    SSORequired,
     UnavailableFactorError,
 )
 from polar.auth.models import is_user
@@ -56,16 +57,17 @@ from .factors import (
     get_email_otp_factor,
     get_totp_factor,
 )
+from .helpers import get_sso_redirect_url
 from .oauth2.apple import get_apple_factor
 from .oauth2.router import get_oauth_link_router, get_oauth_login_router
 from .schemas import AuthenticationSession as AuthenticationSessionSchema
 from .schemas import (
-    AuthenticationSessionStart,
     BackupCodesEnrollment,
     BackupCodesStatus,
     BackupCodesVerify,
     EmailOTPRequest,
     EmailOTPVerify,
+    GlobalAuthenticationSessionStart,
     LoginMethod,
     TOTPEnable,
     TOTPEnrollment,
@@ -100,7 +102,7 @@ async def logout(
 
 @router.post("/start", status_code=201)
 async def start(
-    authentication_session_start: AuthenticationSessionStart,
+    authentication_session_start: GlobalAuthenticationSessionStart,
     request: Request,
     response: Response,
     authentication_session_service: AuthenticationSessionService = Depends(
@@ -108,7 +110,8 @@ async def start(
     ),
 ) -> AuthenticationSessionSchema:
     token, authentication_session = await authentication_session_service.start(
-        return_to=authentication_session_start.return_to
+        return_to=authentication_session_start.return_to,
+        sso_discovery=authentication_session_start.sso_discovery,
     )
     await authentication_session_service.set_cookie(
         request, response, token, authentication_session.expires_at
@@ -204,7 +207,11 @@ async def complete(
         403: {
             "description": "Turnstile verification failed",
             "model": NotPermitted.schema(),
-        }
+        },
+        409: {
+            "description": "The email domain signs in through single sign-on",
+            "model": SSORequired.schema(),
+        },
     },
 )
 async def email_otp_request(
@@ -223,6 +230,14 @@ async def email_otp_request(
     )
     if email_otp_factor not in factors:
         raise UnavailableFactorError(email_otp_factor.identifier)
+
+    sso_redirect_url = await get_sso_redirect_url(
+        authentication_session_service.session,
+        email_otp_request.email,
+        authentication_session.context,
+    )
+    if sso_redirect_url is not None:
+        raise SSORequired(sso_redirect_url)
 
     await email_otp_factor.request(email_otp_request, authentication_session)
 

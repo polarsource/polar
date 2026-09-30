@@ -52,8 +52,6 @@ from polar.product.schemas import (
     ProductPriceMeteredTiersCreate,
     ProductPriceMeteredUnitCreate,
     ProductPriceSeatBasedCreate,
-    ProductPriceSeatTier,
-    ProductPriceSeatTiers,
     ProductPriceUnitBasedCreate,
     ProductUpdate,
 )
@@ -1150,14 +1148,11 @@ class TestCreate:
                 ProductPriceSeatBasedCreate(
                     amount_type=ProductPriceAmountType.seat_based,
                     price_currency=PresentmentCurrency.usd,
-                    seat_tiers=ProductPriceSeatTiers(
-                        tiers=[
-                            ProductPriceSeatTier(
-                                min_seats=1,
-                                max_seats=None,
-                                price_per_seat=1000,
-                            )
-                        ]
+                    tiers=TiersInput.model_validate(
+                        {
+                            "type": TierType.volume,
+                            "tiers": [{"bound": None, "unit_amount": "1000"}],
+                        }
                     ),
                 )
             ],
@@ -1286,12 +1281,11 @@ def _seat_price_create(
         amount_type=ProductPriceAmountType.seat_based,
         price_currency=currency,
         tax_behavior=tax_behavior,
-        seat_tiers=ProductPriceSeatTiers(
-            tiers=[
-                ProductPriceSeatTier(
-                    min_seats=1, max_seats=None, price_per_seat=price_per_seat
-                )
-            ]
+        tiers=TiersInput.model_validate(
+            {
+                "type": TierType.volume,
+                "tiers": [{"bound": None, "unit_amount": str(price_per_seat)}],
+            }
         ),
     )
 
@@ -2525,13 +2519,14 @@ class TestUpdateBenefits:
             UserOrganization(user=user, organization=organization_second)
         )
 
-        with pytest.raises(PolarRequestValidationError, match="same organization"):
+        with pytest.raises(PolarRequestValidationError) as exc_info:
             await product_service.update_benefits(
                 session,
                 product,
                 [benefit_other_organization.id],
                 auth_subject,
             )
+        assert "same organization" in exc_info.value.errors()[0]["msg"]
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

@@ -4,17 +4,32 @@ from unittest.mock import call
 
 import pytest
 from pytest_mock import MockerFixture
+from sqlalchemy import inspect
 
 from polar.authz.types import AccessibleOrganizationID
-from polar.customer.repository import CustomerRepository
+from polar.customer.repository import CustomerRepository, CustomerStripeIdentity
 from polar.event.system import SystemEvent
-from polar.models import Customer, Organization
+from polar.models import (
+    Customer,
+    MerchantMigrationRecord,
+    MerchantMigrationRecordStatus,
+    MerchantMigrationRecordType,
+    Organization,
+    Product,
+)
 from polar.models.customer import CustomerType, _avatar_url_for_email
 from polar.models.member import MemberRole
+from polar.models.subscription import SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer, create_member
+from tests.fixtures.random_objects import (
+    create_customer,
+    create_member,
+    create_payment_method,
+    create_subscription,
+)
+from tests.merchant_migration._helpers import build_connected_migration
 
 
 @pytest.fixture
@@ -276,6 +291,21 @@ async def test_update_with_update_dict_tracks_changed_fields(
 
 
 @pytest.mark.asyncio
+async def test_update_with_identical_value_does_not_modify_customer(
+    session: AsyncSession, customer: Customer, repository: CustomerRepository
+) -> None:
+    modified_at = customer.modified_at
+
+    await repository.update(customer, update_dict={"name": customer.name})
+
+    assert not session.is_modified(customer)
+    assert not inspect(customer).attrs.name.history.has_changes()
+    await session.flush()
+    await session.refresh(customer)
+    assert customer.modified_at == modified_at
+
+
+@pytest.mark.asyncio
 async def test_update_deleted_customer_is_silent(
     mocker: MockerFixture,
     customer: Customer,
@@ -308,7 +338,7 @@ async def test_update_restoring_customer_emits_updated(
 
 
 @pytest.mark.asyncio
-async def test_update_without_changes_emits_empty_updated_fields(
+async def test_update_without_changes(
     mocker: MockerFixture,
     customer: Customer,
     repository: CustomerRepository,
@@ -317,12 +347,7 @@ async def test_update_without_changes_emits_empty_updated_fields(
 
     await repository.update(customer)
 
-    enqueue_job_mock.assert_any_call(
-        "customer.event",
-        customer.id,
-        SystemEvent.customer_updated,
-        {},
-    )
+    enqueue_job_mock.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -530,3 +555,110 @@ class TestSearchByQuery:
 
         assert customer_ids == [match.id]
         assert external_ids == ["org_123_user"]
+
+
+@pytest.mark.asyncio
+class TestGetBoundStripeIdentitiesByOrganization:
+    async def test_only_keeps_stripe_ids_in_use(
+        self,
+        save_fixture: SaveFixture,
+        repository: CustomerRepository,
+        organization: Organization,
+    ) -> None:
+        in_use = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="In-Use@example.com",
+            stripe_customer_id="cus_in_use",
+        )
+        await create_payment_method(save_fixture, in_use)
+        unused = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="unused@example.com",
+            stripe_customer_id="cus_unused",
+        )
+
+        result = await repository.get_bound_stripe_identities_by_organization(
+            organization.id
+        )
+
+        assert result == {
+            "in-use@example.com": CustomerStripeIdentity(
+                in_use.id, "cus_in_use", False
+            ),
+            "unused@example.com": CustomerStripeIdentity(unused.id, None, False),
+        }
+
+
+@pytest.mark.asyncio
+class TestGetBoundStripeIdentity:
+    async def test_unused(
+        self, repository: CustomerRepository, customer: Customer
+    ) -> None:
+        assert await repository.get_bound_stripe_identity(
+            customer.id
+        ) == CustomerStripeIdentity(customer.id, None, False)
+
+    async def test_saved_payment_method(
+        self,
+        save_fixture: SaveFixture,
+        repository: CustomerRepository,
+        customer: Customer,
+    ) -> None:
+        await create_payment_method(save_fixture, customer)
+
+        assert await repository.get_bound_stripe_identity(
+            customer.id
+        ) == CustomerStripeIdentity(customer.id, customer.stripe_customer_id, False)
+
+    @pytest.mark.parametrize(
+        ("status", "subscribed"),
+        [
+            (SubscriptionStatus.active, True),
+            (SubscriptionStatus.canceled, False),
+        ],
+    )
+    async def test_subscription(
+        self,
+        save_fixture: SaveFixture,
+        repository: CustomerRepository,
+        customer: Customer,
+        product: Product,
+        status: SubscriptionStatus,
+        subscribed: bool,
+    ) -> None:
+        await create_subscription(
+            save_fixture, product=product, customer=customer, status=status
+        )
+
+        assert await repository.get_bound_stripe_identity(
+            customer.id
+        ) == CustomerStripeIdentity(
+            customer.id,
+            customer.stripe_customer_id if subscribed else None,
+            subscribed,
+        )
+
+    async def test_imported_by_merchant_migration(
+        self,
+        save_fixture: SaveFixture,
+        repository: CustomerRepository,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=migration,
+                organization=organization,
+                type=MerchantMigrationRecordType.customer,
+                status=MerchantMigrationRecordStatus.imported,
+                source_id="cus_source",
+                target_id=customer.id,
+            )
+        )
+
+        assert await repository.get_bound_stripe_identity(
+            customer.id
+        ) == CustomerStripeIdentity(customer.id, customer.stripe_customer_id, False)

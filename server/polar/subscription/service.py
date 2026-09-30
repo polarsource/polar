@@ -102,6 +102,7 @@ from polar.models.subscription import CustomerCancellationReason, SubscriptionSt
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
     MaintainerNewPaidSubscriptionNotificationPayload,
+    MaintainerNewTrialNotificationPayload,
     NotificationType,
 )
 from polar.notifications.service import PartialNotification
@@ -951,6 +952,8 @@ class SubscriptionService:
         payment_method: PaymentMethod | None,
         provider: str,
         provider_subscription_id: str,
+        canceled_at: datetime | None = None,
+        customer_cancellation_reason: CustomerCancellationReason | None = None,
     ) -> Subscription:
         """Hand billing of an imported subscription over to Polar (the cutover).
 
@@ -960,15 +963,20 @@ class SubscriptionService:
 
         With no ``payment_method``, the first renewal falls back to the
         customer's default, and goes to dunning when there is none.
+
+        ``canceled_at`` keeps an end the customer already asked for on the old
+        provider. Activation doesn't announce it as a new cancellation; the period
+        end revokes it like any other.
         """
         assert subscription.status == SubscriptionStatus.paused
+        repository = SubscriptionRepository.from_session(session)
 
+        await repository.release_scheduler_lock(subscription)
         subscription.status = (
             SubscriptionStatus.trialing if trial_end else SubscriptionStatus.active
         )
         subscription.paused_at = None
         subscription.resumes_at = None
-        subscription.scheduler_locked_at = None
         subscription.trial_start = current_period_start if trial_end else None
         subscription.trial_end = trial_end
         subscription.current_period_start = current_period_start
@@ -979,12 +987,16 @@ class SubscriptionService:
         # The scheduler converts a trial at `current_period_end`, so while
         # trialing the two have to agree or the customer is billed late.
         subscription.current_period_end = trial_end or current_period_end
+        if canceled_at is not None:
+            subscription.canceled_at = canceled_at
+            subscription.cancel_at_period_end = True
+            subscription.ends_at = subscription.current_period_end
+            subscription.customer_cancellation_reason = customer_cancellation_reason
         subscription.payment_method = payment_method
         subscription.initialize_meter_period(
             None if trial_end else current_period_start
         )
 
-        repository = SubscriptionRepository.from_session(session)
         # Flushed so the returned subscription carries `payment_method_id`, which
         # the cutover records, and not just the relationship.
         subscription = await repository.update(subscription, flush=True)
@@ -1179,9 +1191,7 @@ class SubscriptionService:
                 organization_id=subscription.organization.id,
             )
             repository = SubscriptionRepository.from_session(session)
-            return await repository.update(
-                subscription, update_dict={"scheduler_locked_at": None}
-            )
+            return await repository.release_scheduler_lock(subscription)
 
         cycle_at = subscription.current_period_end
         revoke = subscription.cancel_at_period_end
@@ -1201,9 +1211,7 @@ class SubscriptionService:
                 )
             await self.enqueue_benefits_grants(session, subscription)
             repository = SubscriptionRepository.from_session(session)
-            return await repository.update(
-                subscription, update_dict={"scheduler_locked_at": None}
-            )
+            return await repository.release_scheduler_lock(subscription)
 
         previous_status = subscription.status
         previous_canceled = subscription.canceled
@@ -1302,9 +1310,7 @@ class SubscriptionService:
             subscription.initialize_meter_period(subscription.current_period_start)
 
         repository = SubscriptionRepository.from_session(session)
-        subscription = await repository.update(
-            subscription, update_dict={"scheduler_locked_at": None}
-        )
+        subscription = await repository.release_scheduler_lock(subscription)
 
         reset_at = min(cycle_at, utc_now())
         await self.reset_meters(session, subscription, reset_at=reset_at)
@@ -1527,9 +1533,7 @@ class SubscriptionService:
             # No meter cycle, but dispatch locked the row: clear it or the
             # subscription (billing renewal included) never cycles again.
             repository = SubscriptionRepository.from_session(session)
-            return await repository.update(
-                subscription, update_dict={"scheduler_locked_at": None}
-            )
+            return await repository.release_scheduler_lock(subscription)
 
         now = utc_now()
 
@@ -1547,9 +1551,7 @@ class SubscriptionService:
                 )
             subscription.current_meter_period_end = period_end
             repository = SubscriptionRepository.from_session(session)
-            return await repository.update(
-                subscription, update_dict={"scheduler_locked_at": None}
-            )
+            return await repository.release_scheduler_lock(subscription)
 
         self.check_meter_cycle_lag(subscription)
 
@@ -1577,9 +1579,7 @@ class SubscriptionService:
         subscription.current_meter_period_end = next_period_end
 
         repository = SubscriptionRepository.from_session(session)
-        subscription = await repository.update(
-            subscription, update_dict={"scheduler_locked_at": None}
-        )
+        subscription = await repository.release_scheduler_lock(subscription)
         return subscription
 
     async def _after_subscription_created(
@@ -2669,6 +2669,8 @@ class SubscriptionService:
         if not subscription.can_reinstate():
             raise CannotReinstateSubscription(subscription)
 
+        repository = SubscriptionRepository.from_session(session)
+
         now = utc_now()
 
         if subscription.current_period_end <= now:
@@ -2694,13 +2696,12 @@ class SubscriptionService:
         subscription.pause_at_period_end = False
         subscription.paused_at = None
         subscription.resumes_at = None
-        subscription.scheduler_locked_at = None
+        await repository.release_scheduler_lock(subscription)
         subscription.initialize_meter_period(now)
 
         await self.reset_meters(session, subscription)
         await self.enqueue_benefits_grants(session, subscription)
 
-        repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(subscription)
 
         log.info(
@@ -2802,6 +2803,8 @@ class SubscriptionService:
         if not subscription.can_resume():
             raise NotPausedSubscription(subscription)
 
+        repository = SubscriptionRepository.from_session(session)
+
         # Defensive: renewals may have been disabled while the subscription was
         # paused. Resuming starts a fresh period and charges immediately, so skip
         # rather than bill a subscription the organization can no longer renew.
@@ -2811,16 +2814,13 @@ class SubscriptionService:
                 subscription_id=subscription.id,
                 organization_id=subscription.organization.id,
             )
-            repository = SubscriptionRepository.from_session(session)
-            return await repository.update(
-                subscription, update_dict={"scheduler_locked_at": None}
-            )
+            return await repository.release_scheduler_lock(subscription)
 
         now = utc_now()
         subscription.status = SubscriptionStatus.active
         subscription.paused_at = None
         subscription.resumes_at = None
-        subscription.scheduler_locked_at = None
+        await repository.release_scheduler_lock(subscription)
 
         # Start a fresh billing period from now and charge immediately.
         subscription.current_period_start = now
@@ -2843,7 +2843,6 @@ class SubscriptionService:
         await self.enqueue_benefits_grants(session, subscription)
         await self._create_cycle_billing_entries(session, subscription)
 
-        repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(subscription)
 
         enqueue_job(
@@ -3650,7 +3649,15 @@ class SubscriptionService:
         # Only send merchant notification if the subscription is a new one,
         # not a past due that has been reactivated.
         if not reactivated and notify_new_subscription:
-            await self._send_new_subscription_notification(session, subscription)
+            if subscription.trialing:
+                await self._send_new_trial_notification(session, subscription)
+            else:
+                await self.send_new_subscription_notification(
+                    session,
+                    subscription,
+                    product=subscription.product,
+                    organization=subscription.product.organization,
+                )
 
         if reactivated:
             await event_service.create_event(
@@ -3887,14 +3894,42 @@ class SubscriptionService:
         # Void all pending orders for this subscription
         enqueue_job("order.void_pending_orders_for_subscription", subscription.id)
 
-    async def _send_new_subscription_notification(
+    async def _send_new_trial_notification(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
         product = subscription.product
+        organization = product.organization
 
         await notifications_service.send_to_org_members(
             session,
-            org_id=product.organization_id,
+            org_id=organization.id,
+            is_free_product=all(price.is_free for price in subscription.prices),
+            notif=PartialNotification(
+                type=NotificationType.maintainer_new_trial,
+                payload=MaintainerNewTrialNotificationPayload(
+                    subscriber_name=subscription.customer.display_name,
+                    subscriber_email=subscription.customer.email,
+                    product_name=product.name,
+                    organization_name=organization.name,
+                    organization_slug=organization.slug,
+                    subscription_id=str(subscription.id),
+                    trial_end=subscription.trial_end,
+                ),
+            ),
+        )
+
+    async def send_new_subscription_notification(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        await notifications_service.send_to_org_members(
+            session,
+            org_id=organization.id,
+            is_free_product=all(price.is_free for price in subscription.prices),
             notif=PartialNotification(
                 type=NotificationType.maintainer_new_paid_subscription,
                 payload=MaintainerNewPaidSubscriptionNotificationPayload(
@@ -3904,8 +3939,8 @@ class SubscriptionService:
                     tier_price_amount=subscription.amount,
                     tier_price_recurring_interval=subscription.recurring_interval,
                     tier_price_recurring_interval_count=subscription.recurring_interval_count,
-                    tier_organization_name=product.organization.name,
-                    tier_organization_slug=product.organization.slug,
+                    tier_organization_name=organization.name,
+                    tier_organization_slug=organization.slug,
                     subscription_id=str(subscription.id),
                     currency=subscription.currency,
                 ),

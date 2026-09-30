@@ -28,3 +28,20 @@ Generate the Python SDK by running the following command:
 ```bash
 uv run -m cli generate openapi.json ../python --language python --clear
 ```
+
+## Releases
+
+Add user-facing changes to `sdk/CHANGELOG.md` under `## [Unreleased]`, grouped by
+`Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, or `Security`. Entries apply to
+all SDKs; prefix language-specific changes with `Python:` or `TypeScript:`.
+
+Run `just release X.Y.Z` from this directory.
+The release command uses `keepachangelog` to move the pending entries into a dated
+version section, update comparison links, and include the changelog in the release
+commit. Missing or empty notes and duplicate versions are rejected before generation.
+
+Keep the `sdk%2F` prefix in comparison links
+so `keepachangelog` preserves the SDK tag namespace when updating them.
+
+When the release commit reaches `main`, CI publishes both SDKs and uses
+`keepachangelog show` on the tagged changelog for the GitHub release body.

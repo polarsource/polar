@@ -1,12 +1,7 @@
 import { OrderSection } from '@/components/Orders/OrderSection'
 import { useGrantsForBenefit } from '@/hooks/queries/benefits'
-import {
-  DataTablePaginationState,
-  DataTableSortingState,
-  getAPIParams,
-  parseSearchParams,
-  serializeSearchParams,
-} from '@/utils/datatable'
+import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
+import { getAPIParams } from '@/utils/datatable'
 import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
@@ -16,7 +11,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { ExternalLink } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { parseAsStringLiteral, useQueryStates } from 'nuqs'
 import { useMemo } from 'react'
 import { BenefitGrantMemberBadge } from './BenefitGrantMemberBadge'
 import { BenefitGrantStatus } from './BenefitGrantStatus'
@@ -24,31 +19,25 @@ import BenefitGrantStatusSelect, {
   BenefitGrantStatusFilter,
 } from './BenefitGrantStatusSelect'
 
+const filterParsers = {
+  grant_status: parseAsStringLiteral<BenefitGrantStatusFilter>([
+    'any',
+    'granted',
+    'revoked',
+  ]).withDefault('any'),
+}
+
 export interface BenefitPageProps {
   benefit: schemas['Benefit']
   organization: schemas['Organization']
 }
 
 export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
-  const searchParamsMap = useSearchParams()
-  const searchParams = Object.fromEntries(searchParamsMap.entries())
-  const { pagination, sorting } = parseSearchParams(searchParams)
-  const grantStatus = (searchParams['grant_status'] ??
-    'any') as BenefitGrantStatusFilter
+  const { pagination, setPagination, sorting, setSorting, resetPage } =
+    useDataTableQueryState()
 
-  const getSearchParams = (
-    pagination: DataTablePaginationState,
-    sorting: DataTableSortingState,
-    grantStatus: BenefitGrantStatusFilter,
-  ) => {
-    const params = serializeSearchParams(pagination, sorting)
-    if (grantStatus !== 'any') {
-      params.append('grant_status', grantStatus)
-    }
-    return params
-  }
-
-  const router = useRouter()
+  const [{ grant_status: grantStatus }, setFilters] =
+    useQueryStates(filterParsers)
 
   const { data: benefitGrants, isLoading } = useGrantsForBenefit({
     benefitId: benefit.id,
@@ -63,52 +52,9 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
   const memberColumnEnabled =
     !!organization.feature_settings?.member_model_enabled
 
-  const setPagination = (
-    updaterOrValue:
-      | DataTablePaginationState
-      | ((old: DataTablePaginationState) => DataTablePaginationState),
-  ) => {
-    const updatedPagination =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(pagination)
-        : updaterOrValue
-
-    router.push(
-      `/dashboard/${organization.slug}/products/benefits/${benefit.id}?${getSearchParams(
-        updatedPagination,
-        sorting,
-        grantStatus,
-      )}`,
-    )
-  }
-
-  const setSorting = (
-    updaterOrValue:
-      | DataTableSortingState
-      | ((old: DataTableSortingState) => DataTableSortingState),
-  ) => {
-    const updatedSorting =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(sorting)
-        : updaterOrValue
-
-    router.push(
-      `/dashboard/${organization.slug}/products/benefits/${benefit.id}?${getSearchParams(
-        pagination,
-        updatedSorting,
-        grantStatus,
-      )}`,
-    )
-  }
-
   const setGrantStatus = (status: BenefitGrantStatusFilter) => {
-    router.push(
-      `/dashboard/${organization.slug}/products/benefits/${benefit.id}?${getSearchParams(
-        pagination,
-        sorting,
-        status,
-      )}`,
-    )
+    setFilters({ grant_status: status })
+    resetPage()
   }
 
   const columns: DataTableColumnDef<schemas['BenefitGrant']>[] = useMemo(() => {

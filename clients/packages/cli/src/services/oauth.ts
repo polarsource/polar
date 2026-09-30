@@ -110,7 +110,6 @@ const TokenResponse = Schema.Struct({
   access_token: Schema.NonEmptyString,
   refresh_token: Schema.optional(Schema.NullOr(Schema.NonEmptyString)),
   expires_in: Schema.Number.check(Schema.isGreaterThan(0)),
-  scope: Schema.optional(Schema.String),
 })
 
 export const exchange = (
@@ -159,10 +158,7 @@ export const exchange = (
         ? Redacted.make(data.refresh_token)
         : previous?.refreshToken,
       expiresAt: now.getTime() + data.expires_in * 1000,
-      scopes:
-        data.scope === undefined
-          ? (previous?.scopes ?? [])
-          : data.scope.split(' ').filter(Boolean),
+      scopes: [],
     }
   }).pipe(Effect.scoped)
 

@@ -121,7 +121,7 @@ def build_sso_factor(
     state_service: OAuth2StateService,
 ) -> OIDCFactorBase:
     configuration = connection.configuration
-    authorization_parameters = configuration.get("authorization_parameters") or {}
+    authorization_parameters = configuration["authorization_parameters"]
     if configuration["auth_method"] == OIDCAuthMethod.client_secret:
         client_secret = configuration.get("client_secret")
         assert client_secret is not None, (

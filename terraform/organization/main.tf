@@ -99,23 +99,3 @@ resource "aws_organizations_account" "workload" {
     prevent_destroy = true
   }
 }
-
-import {
-  to = aws_organizations_organization.current
-  id = "o-hrbfnn1uf5"
-}
-
-import {
-  to = aws_organizations_account.workload["production"]
-  id = "538043300756"
-}
-
-import {
-  to = aws_organizations_account.workload["sandbox"]
-  id = "427025827993"
-}
-
-import {
-  to = aws_organizations_account.workload["test"]
-  id = "805865757777"
-}

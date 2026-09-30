@@ -7,7 +7,7 @@ import {
 import { schemas } from '@polar-sh/client'
 import { Button, Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { CATALOG_READ_DURATION } from './catalogReadCopy'
+import { CATALOG_READ_DURATION, CATALOG_READ_STALLED } from './catalogReadCopy'
 
 export function PrecheckPanel({
   migration,
@@ -15,14 +15,26 @@ export function PrecheckPanel({
   migration: schemas['MerchantMigration']
 }) {
   const precheck = useRunMerchantMigrationPrecheck(migration.id)
+  const stalled = !precheck.isPending && migration.operation?.stalled === true
   const running =
-    precheck.isPending || isActiveMigrationOperation(migration.operation)
+    precheck.isPending ||
+    stalled ||
+    isActiveMigrationOperation(migration.operation)
   const failed = migration.operation?.status === 'failed'
   const error =
     (failed ? migration.operation?.error : null) ||
     (precheck.isError
       ? "We couldn't start the pre-check. Please try again."
       : null)
+  // Creating a migration starts the pre-check, so there's nothing to click
+  // while it runs.
+  const action = stalled
+    ? 'Start again'
+    : running
+      ? null
+      : failed
+        ? 'Try again'
+        : 'Run pre-check'
 
   return (
     <Box flexDirection="column" rowGap="l" marginTop="m">
@@ -41,22 +53,24 @@ export function PrecheckPanel({
             </Text>
           </Box>
           <Text variant="caption" color="muted">
-            {CATALOG_READ_DURATION}
+            {stalled ? CATALOG_READ_STALLED : CATALOG_READ_DURATION}
           </Text>
         </Box>
       )}
 
-      {error && !running && (
+      {error && (!running || stalled) && (
         <Text variant="caption" color="danger">
           {error}
         </Text>
       )}
 
-      <Box>
-        <Button size="sm" onClick={() => precheck.mutate()} disabled={running}>
-          {running ? 'Checking…' : failed ? 'Try again' : 'Run pre-check'}
-        </Button>
-      </Box>
+      {action && (
+        <Box>
+          <Button size="sm" onClick={() => precheck.mutate()}>
+            {action}
+          </Button>
+        </Box>
+      )}
     </Box>
   )
 }

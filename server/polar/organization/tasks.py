@@ -2,7 +2,7 @@ import uuid
 from typing import Annotated, Any, cast
 
 import structlog
-from sqlalchemy import CursorResult, select
+from sqlalchemy import CursorResult, func, or_, select
 from sqlalchemy.orm import joinedload
 
 from polar.customer.repository import CustomerRepository
@@ -451,7 +451,12 @@ async def _backfill_seats(
             Product.organization_id == organization.id,
             CustomerSeat.status != SeatStatus.revoked,
             CustomerSeat.subscription_id.is_not(None),
-            CustomerSeat.member_id.is_(None),
+            # A seat needs work while it has no member or still points at its
+            # holder rather than the billing customer.
+            or_(
+                CustomerSeat.member_id.is_(None),
+                CustomerSeat.customer_id.is_distinct_from(Subscription.customer_id),
+            ),
         )
         .order_by(CustomerSeat.id)
     )
@@ -466,7 +471,10 @@ async def _backfill_seats(
             Product.organization_id == organization.id,
             CustomerSeat.status != SeatStatus.revoked,
             CustomerSeat.order_id.is_not(None),
-            CustomerSeat.member_id.is_(None),
+            or_(
+                CustomerSeat.member_id.is_(None),
+                CustomerSeat.customer_id.is_distinct_from(Order.customer_id),
+            ),
         )
         .order_by(CustomerSeat.id)
     )
@@ -623,14 +631,21 @@ async def _backfill_benefit_grants(
 
     member_repository = MemberRepository.from_session(session)
 
-    # Find grants without member_id for this organization's customers
+    # A grant needs work while it has no member or still sits on a seat holder
+    # rather than the billing customer.
     statement = (
         select(BenefitGrant)
         .join(Customer, BenefitGrant.customer_id == Customer.id)
+        .outerjoin(Subscription, BenefitGrant.subscription_id == Subscription.id)
+        .outerjoin(Order, BenefitGrant.order_id == Order.id)
         .where(
             Customer.organization_id == organization.id,
-            BenefitGrant.member_id.is_(None),
             ~BenefitGrant.is_deleted,
+            or_(
+                BenefitGrant.member_id.is_(None),
+                BenefitGrant.customer_id
+                != func.coalesce(Subscription.customer_id, Order.customer_id),
+            ),
         )
     )
     results = await session.stream_scalars(

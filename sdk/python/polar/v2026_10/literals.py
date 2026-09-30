@@ -1048,7 +1048,7 @@ Scope: typing.TypeAlias = typing.Literal[
 ]
 SeatStatus: typing.TypeAlias = typing.Literal["pending", "claimed", "revoked"]
 SeatTierType: typing.TypeAlias = typing.Literal["volume", "graduated"]
-Status: typing.TypeAlias = typing.Literal["active", "trialing"]
+Status: typing.TypeAlias = typing.Literal["granted", "disabled"]
 SubType: typing.TypeAlias = typing.Literal["user", "organization"]
 SubscriptionExportColumn: typing.TypeAlias = typing.Literal[
     "email",
@@ -1748,6 +1748,7 @@ WebhookEventType: typing.TypeAlias = typing.Literal[
     "subscription.past_due",
     "subscription.paused",
     "subscription.resumed",
+    "subscription.migrated",
     "refund.created",
     "refund.updated",
     "product.created",

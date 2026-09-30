@@ -17,6 +17,7 @@ from uuid import UUID
 
 from pydantic import TypeAdapter, ValidationError
 
+from polar.customer.repository import CustomerStripeIdentity
 from polar.discount.schemas import BasisPoints, DurationInMonths
 from polar.enums import SubscriptionRecurringInterval, TaxBehavior
 from polar.invoice.generator import format_date
@@ -47,6 +48,7 @@ from .canonical import (
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
     PriceKey,
+    SubscriptionDiscountBlock,
     canonical_price_key,
     customer_country_fallbacks,
     discount_started_at_for,
@@ -94,9 +96,15 @@ SUBSCRIPTION_DROP_CODES = {
     "send_invoice_collection",
     "subscription_not_importable",
     "subscription_paused_collection",
+    "subscription_managed_payments",
     "subscription_scheduled_end",
     "subscription_scheduled_change",
     "subscription_customer_balance",
+    "subscription_stacked_discounts",
+    "subscription_customer_discount",
+    "subscription_item_discount",
+    "subscription_scheduled_discount",
+    "subscription_invoice_item_discount",
 }
 DISCOUNT_DROP_CODES = {
     "unsupported_percentage",
@@ -114,10 +122,12 @@ ACTION_REQUIRED_CODES = {
     "multiple_prices_same_currency",
     "send_invoice_collection",
     "customer_stripe_id_conflict",
+    "customer_subscribed_on_polar",
     "customer_tax_id_dropped",
     "customer_tax_exempt",
     "subscription_tax_behavior_unspecified",
     "subscription_customer_balance",
+    "subscription_scheduled_change",
 }
 _DUPLICATE_PRODUCT_NAME_REASON = (
     "Another source product uses this name. Both import and share it in Polar."
@@ -149,10 +159,15 @@ _SUBSCRIPTION_PRODUCT_MISSING_REASON = (
 _SUBSCRIPTION_CUSTOMER_REASON = (
     "The customer for this subscription won't be imported, so it stays on the source."
 )
-CUSTOMER_STRIPE_ID_CONFLICT_REASON = (
-    "A Polar customer already exists for this email, bound to a different "
-    "Stripe customer. Open that Polar customer to reconcile them; this one "
-    "stays on Stripe."
+_CUSTOMER_SUBSCRIBED_ON_POLAR_REASON = (
+    "This customer already has a subscription on Polar. Moving this one too "
+    "would bill them twice, so it stays on Stripe. If it's a duplicate, cancel "
+    "it on Stripe. If they should keep both, contact Polar support."
+)
+_CUSTOMER_STRIPE_ID_CONFLICT_REASON = (
+    "A Polar customer with this email is already tied to a different Stripe "
+    "customer that still holds a saved card or an earlier migration's import, "
+    "so this one stays on Stripe. Contact Polar support to resolve it."
 )
 _NO_IMPORTABLE_PRICE_REASON = (
     "None of this product's prices can be imported, so the product is skipped."
@@ -195,6 +210,36 @@ _SUBSCRIPTION_DISCOUNT_REASON = (
     "This subscription's coupon isn't one Polar can import, so it stays on the "
     "source rather than renewing at full price."
 )
+_DISCOUNT_BLOCK_NOTICES = {
+    SubscriptionDiscountBlock.stacked: (
+        "This subscription stacks discounts Polar can't combine into one coupon, "
+        "so the renewal amount wouldn't match. It stays on Stripe."
+    ),
+    SubscriptionDiscountBlock.customer: (
+        "This customer has a coupon that also applies to other purchases, not "
+        "just this subscription. Polar can't keep that without changing what "
+        "they pay. It stays on Stripe."
+    ),
+    SubscriptionDiscountBlock.item: (
+        "A discount applies to one item of this subscription, and Polar "
+        "discounts the whole subscription. Moving it would change the charge, "
+        "so it stays on Stripe."
+    ),
+    SubscriptionDiscountBlock.scheduled: (
+        "A future phase of this subscription changes its discount. Polar would "
+        "keep today's coupon, so a later invoice wouldn't match. It stays on "
+        "Stripe."
+    ),
+    SubscriptionDiscountBlock.invoice_item: (
+        "An invoice item on this subscription has its own discount. Polar "
+        "can't apply that to the renewal, so it stays on Stripe."
+    ),
+}
+_SUBSCRIPTION_DISCOUNT_CURRENCY_REASON = (
+    "This coupon takes a fixed amount off in a currency Polar can't apply to "
+    "this subscription. It stays on Stripe rather than renewing at a different "
+    "price."
+)
 _SUBSCRIPTION_DISCOUNT_START_REASON = (
     "The source doesn't say when this coupon was applied, so Polar can't "
     "continue its remaining duration. It stays on the source."
@@ -209,6 +254,23 @@ _EXTRA_PROMO_CODES_REASON = (
 )
 _BASIS_POINTS = TypeAdapter(BasisPoints)
 _DURATION_IN_MONTHS = TypeAdapter(DurationInMonths)
+
+
+def _discount_block_issue(
+    subscription: CanonicalSubscription,
+) -> PrecheckIssue | None:
+    if subscription.discount_block is None:
+        return None
+    try:
+        block = SubscriptionDiscountBlock(subscription.discount_block)
+    except ValueError:
+        return None
+    return PrecheckIssue(
+        level=PrecheckIssueLevel.warning,
+        code=block.value,
+        message=_DISCOUNT_BLOCK_NOTICES[block],
+        source_id=subscription.source_id,
+    )
 
 
 def _humanize_subscription_status(status: CanonicalSubscriptionStatus) -> str:
@@ -604,6 +666,9 @@ class PrecheckEngine:
         self, subscription: CanonicalSubscription
     ) -> Iterable[PrecheckIssue]:
         source_id = subscription.source_id
+        block_issue = _discount_block_issue(subscription)
+        if block_issue is not None:
+            yield block_issue
         if subscription.line_item_count > 1:
             yield PrecheckIssue(
                 level=PrecheckIssueLevel.warning,
@@ -656,6 +721,16 @@ class PrecheckEngine:
                 ),
                 source_id=source_id,
             )
+        if subscription.managed_payments:
+            yield PrecheckIssue(
+                level=PrecheckIssueLevel.warning,
+                code="subscription_managed_payments",
+                message=(
+                    "Sold through Stripe Managed Payments, where Link is the seller "
+                    "and holds the card authorization. It stays on Stripe for now."
+                ),
+                source_id=source_id,
+            )
         if subscription.cancel_at is not None and not subscription.cancel_at_period_end:
             yield PrecheckIssue(
                 level=PrecheckIssueLevel.warning,
@@ -673,9 +748,10 @@ class PrecheckEngine:
                 level=PrecheckIssueLevel.warning,
                 code="subscription_scheduled_change",
                 message=(
-                    "A subscription schedule on the source changes or ends it "
-                    "later. Polar can't carry that schedule over, so it stays on "
-                    "the source."
+                    "This subscription has a Stripe subscription schedule, which "
+                    "can change its price, quantity, or end date later. Polar "
+                    "can't run it. Release the schedule on Stripe (the "
+                    "subscription stays as it is), then run the pre-check again."
                 ),
                 source_id=source_id,
             )
@@ -890,6 +966,7 @@ def _item(
     tax_behavior: TaxBehavior | None = None,
     discount_name: str | None = None,
     discount_code: str | None = None,
+    cancels_at_period_end: bool | None = None,
 ) -> MerchantMigrationRecordItem:
     """One review row. ``skip`` means it won't import; ``note`` only annotates a
     row that will."""
@@ -932,6 +1009,7 @@ def _item(
         discount_code=discount_code,
         has_payment_method=None,
         dependencies_imported=None,
+        cancels_at_period_end=cancels_at_period_end,
     )
 
 
@@ -1063,7 +1141,7 @@ def _price_items(
 def _customer_items(
     customers: Sequence[CanonicalCustomer],
     subscriptions: Sequence[CanonicalSubscription],
-    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
+    existing_customers: Mapping[str, CustomerStripeIdentity] | None = None,
 ) -> list[MerchantMigrationRecordItem]:
     # Use the importer's plan, so the report can't promise a customer it will skip.
     plans = plan_customer_imports(customers, existing_customers)
@@ -1117,7 +1195,7 @@ def _subscription_items(
     customers: Sequence[CanonicalCustomer],
     discounts: Sequence[CanonicalDiscount],
     default_currency: str,
-    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
+    existing_customers: Mapping[str, CustomerStripeIdentity] | None = None,
 ) -> list[MerchantMigrationRecordItem]:
     # Use the importer's plan; the notes on top are display-only.
     plans = plan_subscription_imports(
@@ -1218,6 +1296,7 @@ def _subscription_items(
                 tax_behavior=subscription.import_tax_behavior(),
                 discount_name=kept_discount.name if kept_discount is not None else None,
                 discount_code=kept_discount.code if kept_discount is not None else None,
+                cancels_at_period_end=subscription.cancel_at_period_end,
             )
         )
     return items
@@ -1337,7 +1416,7 @@ def classify_records(
     entity: PrecheckEntity,
     default_currency: str,
     existing_product_names: set[str] | None = None,
-    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
+    existing_customers: Mapping[str, CustomerStripeIdentity] | None = None,
 ) -> list[MerchantMigrationRecordItem]:
     """Classify the source catalog into per-record rows of one entity type,
     each marked importable or skipped with a reason."""
@@ -1418,7 +1497,7 @@ def plan_product_imports(
 
 def plan_customer_imports(
     customers: Sequence[CanonicalCustomer],
-    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
+    existing_customers: Mapping[str, CustomerStripeIdentity] | None = None,
 ) -> dict[str, Reason | None]:
     """Per customer ``source_id``, the skip reason or ``None`` when importable.
     A Polar customer is unique by email and carries a single source id, so of
@@ -1438,15 +1517,31 @@ def plan_customer_imports(
             )
         else:
             polar = existing.get(customer.email.lower())
-            if polar and polar[1] and polar[1] != customer.source_id:
-                plans[customer.source_id] = Reason(
-                    "customer_stripe_id_conflict",
-                    CUSTOMER_STRIPE_ID_CONFLICT_REASON,
-                    polar_customer_id=polar[0],
-                )
+            if (
+                polar is not None
+                and polar.stripe_customer_id is not None
+                and polar.stripe_customer_id != customer.source_id
+            ):
+                plans[customer.source_id] = stripe_id_conflict_reason(polar)
             else:
                 plans[customer.source_id] = None
     return plans
+
+
+def stripe_id_conflict_reason(polar: CustomerStripeIdentity) -> Reason:
+    """Why a source customer can't take over the Polar customer with its email.
+    A live Polar subscription is the one case the merchant can settle alone."""
+    if polar.subscribed:
+        return Reason(
+            "customer_subscribed_on_polar",
+            _CUSTOMER_SUBSCRIBED_ON_POLAR_REASON,
+            polar_customer_id=polar.id,
+        )
+    return Reason(
+        "customer_stripe_id_conflict",
+        _CUSTOMER_STRIPE_ID_CONFLICT_REASON,
+        polar_customer_id=polar.id,
+    )
 
 
 def _discount_items(
@@ -1563,7 +1658,8 @@ def _subscription_discount_skip(
         currency = subscription.currency.lower() if subscription.currency else None
         if currency is None or currency not in amounts:
             return Reason(
-                "subscription_discount_not_importable", _SUBSCRIPTION_DISCOUNT_REASON
+                "subscription_discount_currency",
+                _SUBSCRIPTION_DISCOUNT_CURRENCY_REASON,
             )
     if (
         discount.duration != CanonicalDiscountDuration.forever
@@ -1580,7 +1676,7 @@ def plan_subscription_imports(
     products: Sequence[CanonicalProduct],
     customers: Sequence[CanonicalCustomer],
     default_currency: str,
-    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
+    existing_customers: Mapping[str, CustomerStripeIdentity] | None = None,
     discounts: Sequence[CanonicalDiscount] = (),
 ) -> dict[str, Reason | None]:
     """Per subscription ``source_id``, the skip reason or ``None`` when

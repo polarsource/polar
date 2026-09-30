@@ -6,7 +6,6 @@ import sys
 import openapi_pydantic as op
 
 from generator.docs_openapi import DOCS_OPENAPI_PATH, generate_docs_openapi
-from generator.emitter import Prerelease
 from generator.ir import generate_ir
 from generator.release import regenerate_openapi, release_sdk
 from python.emitter import PythonEmitter
@@ -18,6 +17,7 @@ subparsers = parser.add_subparsers(dest="command")
 parser_openapi = subparsers.add_parser(
     "openapi", help="Regenerate all OpenAPI specs from the server"
 )
+
 # Generate subcommand
 parser_generate = subparsers.add_parser(
     "generate", help="Generate SDK from OpenAPI spec"
@@ -50,7 +50,7 @@ parser_docs_openapi.add_argument(
 parser_generate.add_argument(
     "--language",
     type=str,
-    choices=["python", "typescript"],
+    choices=["python", "typescript", "cli"],
     default="python",
     help="Language to emit the SDK in (default: python).",
 )
@@ -61,12 +61,6 @@ parser_generate.add_argument(
     help="Version of the SDK to emit (default: 0.0.0).",
 )
 parser_generate.add_argument(
-    "--prerelease",
-    type=str,
-    default=None,
-    help="Prerelease identifier in the form <label>.<number>, e.g. alpha.1, beta.2, rc.1.",
-)
-parser_generate.add_argument(
     "--clear",
     action="store_true",
     help="Clear the output directory before emitting the SDK (default: false).",
@@ -75,22 +69,13 @@ parser_generate.add_argument(
 # Release subcommand
 parser_release = subparsers.add_parser("release", help="Release a new SDK version")
 parser_release.add_argument(
-    "version", type=str, help="Base version to release (e.g., 1.0.0)"
-)
-parser_release.add_argument(
-    "--prerelease",
-    type=str,
-    default=None,
-    help="Prerelease identifier in the form <label>.<number>, e.g. alpha.1, beta.2, rc.1.",
+    "version", type=str, help="Version to release (e.g., 1.0.0)"
 )
 parser_release.add_argument(
     "--skip-openapi", action="store_true", help="Skip OpenAPI regeneration"
 )
 parser_release.add_argument(
     "--skip-commit", action="store_true", help="Skip git commit"
-)
-parser_release.add_argument(
-    "--dry-run", action="store_true", help="Dry run without making changes"
 )
 
 args = parser.parse_args()
@@ -115,8 +100,6 @@ elif args.command == "generate":
             op.OpenAPI.model_validate_json(spec_path.read_text(encoding="utf-8"))
         )
 
-    ir = generate_ir(*specs)
-
     output_path = pathlib.Path(args.output)
     if output_path.exists() and not output_path.is_dir():
         print(f"Error: Output path {output_path} is not a directory.", file=sys.stderr)
@@ -125,22 +108,22 @@ elif args.command == "generate":
         if output_path.exists():
             shutil.rmtree(output_path)
 
-    prerelease: Prerelease | None = None
-    if args.prerelease is not None:
-        try:
-            prerelease = Prerelease.parse(args.prerelease)
-        except ValueError as e:
-            print(f"Error: {e}", file=sys.stderr)
-            sys.exit(1)
-
     language = args.language
     match language:
         case "python":
-            emitter = PythonEmitter(ir, args.version, prerelease=prerelease)
+            emitter = PythonEmitter(generate_ir(*specs), args.version)
         case "typescript":
             from typescript.emitter import TypeScriptEmitter
 
-            emitter = TypeScriptEmitter(ir, args.version, prerelease=prerelease)
+            emitter = TypeScriptEmitter(generate_ir(*specs), args.version)
+        case "cli":
+            from cli_commands.emitter import CLICommandsEmitter
+            from cli_commands.ir import is_private_cli_operation
+
+            emitter = CLICommandsEmitter(
+                generate_ir(*specs, is_private_operation=is_private_cli_operation),
+                args.version,
+            )
         case _:
             print(f"Error: Unsupported language {language}.", file=sys.stderr)
             sys.exit(1)
@@ -159,18 +142,8 @@ elif args.command == "docs-openapi":
     generate_docs_openapi(args.spec_paths, args.output, args.version)
 
 elif args.command == "release":
-    prerelease = None
-    if args.prerelease is not None:
-        try:
-            prerelease = Prerelease.parse(args.prerelease)
-        except ValueError as e:
-            print(f"Error: {e}", file=sys.stderr)
-            sys.exit(1)
-
     release_sdk(
         version=args.version,
-        prerelease=prerelease,
         skip_openapi=args.skip_openapi,
         skip_commit=args.skip_commit,
-        dry_run=args.dry_run,
     )

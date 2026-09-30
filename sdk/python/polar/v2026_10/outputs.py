@@ -312,6 +312,13 @@ class AuthorizeUser:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class BadRequest:
+    error: typing.Literal["BadRequest"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class BalanceCreditOrderEvent:
     """An event created by Polar when an order is paid via customer balance."""
 
@@ -925,8 +932,6 @@ class BenefitDiscordProperties:
 
     kick_member: bool
     """Whether to kick the member from the Discord server on revocation."""
-
-    guild_token: str
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -3068,6 +3073,13 @@ class CheckoutLinkProduct:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class CheckoutLocked:
+    error: typing.Literal["CheckoutLocked"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class CheckoutOrganization:
     created_at: str
     """Creation timestamp of the object."""
@@ -3813,6 +3825,8 @@ class CustomerBenefitGrantDiscord:
 
     customer: CustomerPortalCustomer
 
+    member: CustomerBenefitGrantMember | None = None
+
     benefit: BenefitDiscordSubscriber
 
     properties: BenefitGrantDiscordProperties
@@ -3927,6 +3941,8 @@ class CustomerBenefitGrantGitHubRepository:
 
     customer: CustomerPortalCustomer
 
+    member: CustomerBenefitGrantMember | None = None
+
     benefit: BenefitGitHubRepositorySubscriber
 
     properties: BenefitGrantGitHubRepositoryProperties
@@ -3968,6 +3984,14 @@ class CustomerBenefitGrantLicenseKeys:
     benefit: BenefitLicenseKeysSubscriber
 
     properties: BenefitGrantLicenseKeysProperties
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class CustomerBenefitGrantMember:
+    id: str
+    """The ID of the object."""
+
+    oauth_accounts: dict[str, CustomerPortalOAuthAccount]
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -6461,6 +6485,51 @@ class GenericPayment:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class GrantedLicenseKey:
+    id: str
+    """The ID of the object."""
+
+    created_at: str
+    """Creation timestamp of the object."""
+
+    modified_at: str | None
+    """Last modification timestamp of the object."""
+
+    organization_id: str
+
+    customer_id: str
+
+    customer: LicenseKeyCustomer
+
+    member_id: str | None
+    """The ID of the seat member holding this key, if any."""
+
+    member: LicenseKeyMember | None
+    """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
+
+    benefit_id: str
+    """The benefit ID."""
+
+    key: str
+
+    display_key: str
+
+    status: typing.Literal["granted"]
+
+    limit_activations: int | None
+
+    usage: int
+
+    limit_usage: int | None
+
+    validations: int
+
+    last_validated_at: str | None
+
+    expires_at: str | None
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class HTTPValidationError:
     detail: list[ValidationError] | None = None
 
@@ -6691,6 +6760,23 @@ class LicenseKeyActivationBase:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class LicenseKeyActivationCreated:
+    id: str
+
+    license_key_id: str
+
+    label: str
+
+    meta: dict[str, str | int | float | bool]
+
+    created_at: str
+
+    modified_at: str | None
+
+    license_key: GrantedLicenseKey
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class LicenseKeyActivationRead:
     id: str
 
@@ -6787,10 +6873,10 @@ class LicenseKeyRead:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None = None
+    member_id: str | None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None = None
+    member: LicenseKeyMember | None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -6832,10 +6918,10 @@ class LicenseKeyWithActivations:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None = None
+    member_id: str | None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None = None
+    member: LicenseKeyMember | None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -8914,6 +9000,9 @@ class Product:
 
     metadata: MetadataOutputType
 
+    is_deletable: bool
+    """Whether the product can be permanently deleted. Products referenced by an order, subscription, trial or discount cannot be deleted."""
+
     prices: list[LegacyRecurringProductPrice | ProductPrice]
     """List of prices for this product."""
 
@@ -8965,6 +9054,13 @@ class ProductMediaFileRead:
     size_readable: str
 
     public_url: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class ProductNotDeletable:
+    error: typing.Literal["ProductNotDeletable"]
+
+    detail: str
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -9360,6 +9456,51 @@ class RotateNotPermitted:
     error: typing.Literal["RotateNotPermitted"]
 
     detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class RotatedLicenseKey:
+    id: str
+    """The ID of the object."""
+
+    created_at: str
+    """Creation timestamp of the object."""
+
+    modified_at: str | None
+    """Last modification timestamp of the object."""
+
+    organization_id: str
+
+    customer_id: str
+
+    customer: LicenseKeyCustomer
+
+    member_id: str | None
+    """The ID of the seat member holding this key, if any."""
+
+    member: LicenseKeyMember | None
+    """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
+
+    benefit_id: str
+    """The benefit ID."""
+
+    key: str
+
+    display_key: str
+
+    status: Status
+
+    limit_activations: int | None
+
+    usage: int
+
+    limit_usage: int | None
+
+    validations: int
+
+    last_validated_at: str | None
+
+    expires_at: str | None
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -9891,6 +10032,63 @@ class SubscriptionMeter:
     """The ID of the meter."""
 
     meter: Meter
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class SubscriptionMigratedEvent:
+    """An event created by Polar when a subscription is migrated to Polar."""
+
+    id: str
+    """The ID of the object."""
+
+    timestamp: str
+    """The timestamp of the event."""
+
+    organization_id: str
+    """The ID of the organization owning the event."""
+
+    customer_id: str | None
+    """ID of the customer in your Polar organization associated with the event."""
+
+    customer: Customer | None
+    """The customer associated with the event."""
+
+    external_customer_id: str | None
+    """ID of the customer in your system associated with the event."""
+
+    member_id: str | None = None
+    """ID of the member within the customer's organization who performed the action inside B2B."""
+
+    external_member_id: str | None = None
+    """ID of the member in your system within the customer's organization who performed the action inside B2B."""
+
+    child_count: int = 0
+    """Number of direct child events linked to this event."""
+
+    parent_id: str | None = None
+    """The ID of the parent event."""
+
+    label: str
+    """Human readable label of the event type."""
+
+    source: typing.Literal["system"]
+    """The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."""
+
+    name: typing.Literal["subscription.migrated"]
+    """The name of the event."""
+
+    metadata: SubscriptionMigratedMetadata
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class SubscriptionMigratedMetadata:
+    subscription_id: str
+
+    provider: str
+
+    provider_subscription_id: str
+
+    product_id: str
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -10822,10 +11020,10 @@ class ValidatedLicenseKey:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None = None
+    member_id: str | None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None = None
+    member: LicenseKeyMember | None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -10835,7 +11033,7 @@ class ValidatedLicenseKey:
 
     display_key: str
 
-    status: LicenseKeyStatus
+    status: typing.Literal["granted"]
 
     limit_activations: int | None
 
@@ -11006,6 +11204,7 @@ BenefitPublic: typing.TypeAlias = (
 CheckoutForbiddenError: typing.TypeAlias = (
     AlreadyActiveSubscriptionError
     | NotOpenCheckout
+    | NotPermitted
     | PaymentNotReady
     | TrialAlreadyRedeemed
     | DiscountRedemptionLimitReached
@@ -11095,6 +11294,7 @@ SystemEvent: typing.TypeAlias = (
     | SubscriptionReinstatedEvent
     | SubscriptionPausedEvent
     | SubscriptionResumedEvent
+    | SubscriptionMigratedEvent
     | SubscriptionUncanceledEvent
     | SubscriptionProductUpdatedEvent
     | SubscriptionSeatsUpdatedEvent

@@ -3,6 +3,7 @@ import { Argument, Command, Flag, Prompt } from 'effect/unstable/cli'
 import { org } from '@/commands/flags'
 import { formatCatalog } from '@/commands/trigger/catalog'
 import { describeRejection, parseOverrides } from '@/commands/trigger/overrides'
+import { Deliveries, type Delivery } from '@/services/deliveries'
 import { Organizations } from '@/services/organizations'
 import { Trigger, TriggerError, type TriggerEvent } from '@/services/trigger'
 import * as ui from '@/utils/ui'
@@ -28,7 +29,9 @@ const seed = Flag.Int('seed').pipe(
 
 const json = Flag.Boolean('json').pipe(
   Flag.withDefault(false),
-  Flag.withDescription('Print the payload as JSON instead of sending it'),
+  Flag.withDescription(
+    'Print the payload as JSON instead of sending it, or the event list with --list',
+  ),
 )
 
 const list = Flag.Boolean('list').pipe(
@@ -50,6 +53,45 @@ const pickEvent = (events: ReadonlyArray<TriggerEvent>) =>
       title: item.type,
       description: item.description,
     })),
+  })
+
+const deliveryRows = (
+  delivery: Option.Option<Delivery>,
+): Array<readonly [string, string]> =>
+  Option.match(delivery, {
+    onNone: () => [
+      [
+        'Forwarded by',
+        `your ${ui.command('polar listen')} terminal, which shows the response`,
+      ],
+    ],
+    onSome: ({ forwardUrl, status, statusText, failure, durationMs }) => [
+      ['Forwarded to', forwardUrl],
+      [
+        'Response',
+        failure
+          ? ui.red(`failed  ${failure}`)
+          : `${ui.statusCode(status ?? 0, statusText ?? '')}  ${ui.duration(durationMs)}`,
+      ],
+    ],
+  })
+
+const accepted = ({ status, failure }: Delivery) =>
+  failure === undefined && status !== undefined && status >= 200 && status < 300
+
+const responseBody = (delivery: Option.Option<Delivery>) =>
+  Option.match(delivery, {
+    onNone: () => [],
+    onSome: ({ body }) =>
+      body
+        ? [
+            ui.blank,
+            ...ui
+              .printable(body)
+              .split('\n')
+              .map((line) => `  ${line}`),
+          ]
+        : [],
   })
 
 const listHint = `Run ${ui.command('polar trigger --list')} to see every event`
@@ -75,13 +117,15 @@ export const trigger = Command.make(
       const trigger = yield* Trigger
 
       if (list) {
-        const events = yield* trigger.listEvents(environment)
-        return yield* Console.log(formatCatalog(events))
+        const events = yield* trigger.listEvents(organization)
+        return yield* Console.log(
+          json ? JSON.stringify(events, null, 2) : formatCatalog(events),
+        )
       }
 
       const eventType = Option.isSome(event)
         ? event.value
-        : yield* pickEvent(yield* trigger.listEvents(environment))
+        : yield* pickEvent(yield* trigger.listEvents(organization))
 
       const result = yield* trigger
         .send(organization, {
@@ -118,6 +162,7 @@ export const trigger = Command.make(
       if (json) {
         return yield* Console.log(JSON.stringify(result.payload, null, 2))
       }
+      const delivery = yield* (yield* Deliveries).await(result.webhookEventId)
       yield* Console.log(
         [
           ui.blank,
@@ -126,14 +171,40 @@ export const trigger = Command.make(
           ),
           ui.keyValue([
             ['Event ID', ui.dim(result.webhookEventId)],
-            ['Delivered to', `your ${ui.command('polar listen')} terminal`],
+            ...deliveryRows(delivery),
           ]),
+          ...responseBody(delivery),
           ui.blank,
         ].join('\n'),
       )
+      if (Option.isSome(delivery) && !accepted(delivery.value)) {
+        return yield* new TriggerError({
+          message: `Your server did not accept ${result.event}`,
+        })
+      }
     }),
 ).pipe(
   Command.withDescription(
-    'Send a sample webhook event to your local server through polar listen. Run with --list to see every event.',
+    'Send a sample webhook event to your local server through polar listen. Exits with an error when your server does not accept it. Run with --list to see every event.',
   ),
+  Command.withExamples([
+    { command: 'polar trigger', description: 'Pick an event from a list' },
+    {
+      command: 'polar trigger order.paid',
+      description: 'Send a sample order.paid event',
+    },
+    {
+      command:
+        'polar trigger order.paid --override data.customer.email=jane@example.com',
+      description: 'Change a field in the payload',
+    },
+    {
+      command: 'polar trigger order.paid --seed 7',
+      description: 'Generate the same IDs every time',
+    },
+    {
+      command: 'polar trigger order.paid --json',
+      description: 'Print the payload instead of sending it',
+    },
+  ]),
 )

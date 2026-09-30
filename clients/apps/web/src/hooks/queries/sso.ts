@@ -22,6 +22,18 @@ export const useSSOConnections = (organizationId: string) =>
     retry: defaultRetry,
   })
 
+export const useSSODomains = (organizationId: string) =>
+  useQuery({
+    queryKey: ['sso_domains', { organizationId }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/organizations/{id}/sso-domains/', {
+          params: { path: { id: organizationId } },
+        }),
+      ),
+    retry: defaultRetry,
+  })
+
 export const useCreateSSOConnection = (organizationId: string) =>
   useMutation({
     mutationFn: (body: schemas['OrganizationSSOConnectionCreate']) =>

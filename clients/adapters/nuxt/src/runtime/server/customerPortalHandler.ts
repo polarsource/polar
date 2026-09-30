@@ -1,5 +1,5 @@
-import { createCustomerSessions } from '@polar-sh/sdk/2026-04/services/customer_sessions'
-import { createPolarCore, type Environment } from '@polar-sh/sdk/2026-04'
+import { createCustomerSessions } from '@polar-sh/sdk/2026-10/services/customer_sessions'
+import { createPolarCore, type Environment } from '@polar-sh/sdk/2026-10'
 import { createError, sendRedirect } from 'h3'
 import type { H3Event } from 'h3'
 

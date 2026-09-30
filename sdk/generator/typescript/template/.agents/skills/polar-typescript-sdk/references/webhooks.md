@@ -21,7 +21,7 @@ Replace `enqueueVerifiedWebhook` with a durable, idempotent application operatio
 
 ```typescript
 import express from "express";
-import { webhooks } from "@polar-sh/sdk/{{ ir.versions[0].version }}";
+import { webhooks } from "@polar-sh/sdk/{{ (ir.versions[-2] | default({})).version }}";
 
 const webhookSecret = process.env.POLAR_WEBHOOK_SECRET;
 if (!webhookSecret) {

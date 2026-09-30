@@ -1,6 +1,6 @@
 {
   "name": "@polar-sh/sdk",
-  "version": "1.0.0-alpha.22",
+  "version": "1.0.1",
   "description": "Polar SDK — A billing platform for the intelligence era",
   "keywords": [
     "api",
@@ -134,6 +134,56 @@
       "require": {
         "types": "./dist/2026-10/services/customer_portal/index.d.cts",
         "default": "./dist/2026-10/services/customer_portal/index.cjs"
+      }
+    },
+    "./2027-01": {
+      "import": {
+        "types": "./dist/2027-01/index.d.mts",
+        "default": "./dist/2027-01/index.mjs"
+      },
+      "require": {
+        "types": "./dist/2027-01/index.d.cts",
+        "default": "./dist/2027-01/index.cjs"
+      }
+    },
+    "./2027-01/services/*": {
+      "import": {
+        "types": "./dist/2027-01/services/*.d.mts",
+        "default": "./dist/2027-01/services/*.mjs"
+      },
+      "require": {
+        "types": "./dist/2027-01/services/*.d.cts",
+        "default": "./dist/2027-01/services/*.cjs"
+      }
+    },
+    "./2027-01/services/oauth2": {
+      "import": {
+        "types": "./dist/2027-01/services/oauth2/index.d.mts",
+        "default": "./dist/2027-01/services/oauth2/index.mjs"
+      },
+      "require": {
+        "types": "./dist/2027-01/services/oauth2/index.d.cts",
+        "default": "./dist/2027-01/services/oauth2/index.cjs"
+      }
+    },
+    "./2027-01/services/customers": {
+      "import": {
+        "types": "./dist/2027-01/services/customers/index.d.mts",
+        "default": "./dist/2027-01/services/customers/index.mjs"
+      },
+      "require": {
+        "types": "./dist/2027-01/services/customers/index.d.cts",
+        "default": "./dist/2027-01/services/customers/index.cjs"
+      }
+    },
+    "./2027-01/services/customer_portal": {
+      "import": {
+        "types": "./dist/2027-01/services/customer_portal/index.d.mts",
+        "default": "./dist/2027-01/services/customer_portal/index.mjs"
+      },
+      "require": {
+        "types": "./dist/2027-01/services/customer_portal/index.d.cts",
+        "default": "./dist/2027-01/services/customer_portal/index.cjs"
       }
     }
   },

@@ -13,7 +13,7 @@ export const SupportButton = ({
 }) => {
   const { state } = useSidebar()
   const isCollapsed = state === 'collapsed'
-  const { isShown, defaultType, open, hide } = useSupportModal()
+  const { isShown, open, hide } = useSupportModal()
 
   return (
     <>
@@ -32,7 +32,6 @@ export const SupportButton = ({
         isShown={isShown}
         hide={hide}
         organization={organization}
-        defaultType={defaultType}
       />
     </>
   )

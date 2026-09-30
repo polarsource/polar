@@ -6,9 +6,9 @@ vi.mock('@polar-sh/adapter-utils', () => ({
   handleWebhookPayload: vi.fn(),
 }))
 
-vi.mock('@polar-sh/sdk/2026-04', async (importOriginal) => {
+vi.mock('@polar-sh/sdk/2026-10', async (importOriginal) => {
   const original =
-    await importOriginal<typeof import('@polar-sh/sdk/2026-04')>()
+    await importOriginal<typeof import('@polar-sh/sdk/2026-10')>()
   class PolarWebhookError extends Error {}
   class PolarWebhookVerificationError extends PolarWebhookError {}
   class PolarWebhookUnknownTypeError extends PolarWebhookError {
@@ -47,7 +47,7 @@ vi.mock('better-auth/api', () => ({
 const { handleWebhookPayload } = (await vi.importMock(
   '@polar-sh/adapter-utils',
 )) as any
-import { webhooks as sdkWebhooks } from '@polar-sh/sdk/2026-04'
+import { webhooks as sdkWebhooks } from '@polar-sh/sdk/2026-10'
 const validateEvent = sdkWebhooks.validateEvent as Mock
 const { createAuthEndpoint } = (await vi.importMock('better-auth/api')) as any
 

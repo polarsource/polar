@@ -61,7 +61,7 @@ jobs:
           bun-version-file: clients/packages/cli/package.json
 
       - run: pnpm --dir clients install --filter polar-cli --frozen-lockfile --ignore-scripts
-      - run: pnpm --dir clients --filter polar-cli run prepare
+      - run: pnpm --dir clients --filter polar-cli exec effect-tsgo patch
       - run: pnpm --dir clients --filter polar-cli format:check
       - run: pnpm --dir clients --filter polar-cli lint
       - run: pnpm --dir clients --filter polar-cli typecheck
@@ -83,6 +83,10 @@ jobs:
           - target: bun-linux-x64
             archive: polar-linux-x64.tar.gz
             os: ubuntu-latest
+            sign: false
+          - target: bun-windows-x64
+            archive: polar-windows-x64.zip
+            os: windows-latest
             sign: false
     runs-on: ${{ matrix.os }}
     defaults:
@@ -157,7 +161,17 @@ jobs:
           chmod 600 "$key_path"
           echo "APP_STORE_CONNECT_API_KEY_PATH=$key_path" >> "$GITHUB_ENV"
 
+      - name: Package Windows binary
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          POLAR_CLI_TELEMETRY_OPTOUT: '1'
+        run: |
+          ./polar.exe --version
+          Compress-Archive -Path polar.exe -DestinationPath "${{ matrix.archive }}"
+
       - name: Package binary
+        if: runner.os != 'Windows'
         run: |
           if [[ "${{ matrix.archive }}" == *.zip ]]; then
             ditto -c -k polar "${{ matrix.archive }}"
@@ -199,7 +213,7 @@ jobs:
 
       - name: Generate checksums
         working-directory: release-assets
-        run: sha256sum polar-darwin-arm64.zip polar-darwin-x64.zip polar-linux-x64.tar.gz > checksums.txt
+        run: sha256sum polar-darwin-arm64.zip polar-darwin-x64.zip polar-linux-x64.tar.gz polar-windows-x64.zip > checksums.txt
 
       - name: Create draft release
         id: draft
@@ -249,7 +263,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
-        run: gh release upload "$RELEASE_TAG" polar-darwin-arm64.zip polar-darwin-x64.zip polar-linux-x64.tar.gz checksums.txt --clobber
+        run: gh release upload "$RELEASE_TAG" polar-darwin-arm64.zip polar-darwin-x64.zip polar-linux-x64.tar.gz polar-windows-x64.zip checksums.txt --clobber
 
       - name: Publish complete release
         if: needs.prepare.outputs.publish == 'true'

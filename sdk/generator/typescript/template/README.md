@@ -4,16 +4,14 @@ The official TypeScript client for the [Polar API](https://polar.sh/docs/api-ref
 
 ## Installation
 
-The SDK is currently available under the `next` pre-release tag.
-
 ```bash
-pnpm add @polar-sh/sdk@next
+pnpm add @polar-sh/sdk
 ```
 
 or, with `npm`:
 
 ```bash
-npm install @polar-sh/sdk@next
+npm install @polar-sh/sdk
 ```
 
 ## Quick Start
@@ -22,7 +20,7 @@ Create an [organization access token](https://polar.sh/docs/integrate/oat) and u
 the current API version:
 
 ```typescript
-import { createPolar } from "@polar-sh/sdk/{{ ir.versions[0].version }}";
+import { createPolar } from "@polar-sh/sdk/{{ (ir.versions[-2] | default({})).version }}";
 
 const polar = createPolar({
   accessToken: "polar_oat_xxx",
@@ -66,14 +64,30 @@ const customerState = await polar.customers.getStateExternal("customer_external_
 });
 ```
 
+## Organizations
+
+OAuth access tokens and personal access tokens can reach every organization the user belongs to.
+Pass `organizationId` to get a client that acts on a single organization. It sends the
+`Polar-Organization` header, so the API only returns and changes that organization's data:
+
+```typescript
+const acme = createPolar({
+  accessToken: "polar_at_u_xxx",
+  organizationId: "acme_organization_id",
+});
+const customers = await acme.customers.list();
+```
+
+Organization access tokens already act on their own organization and don't need it.
+
 ## Individual API Functions
 
 To import individual API functions for tree-shaking, create a core client and pass it to the
 function:
 
 ```typescript
-import { createPolarCore } from "@polar-sh/sdk/{{ ir.versions[0].version }}";
-import { getStateExternalCustomers } from "@polar-sh/sdk/{{ ir.versions[0].version }}/services/customers";
+import { createPolarCore } from "@polar-sh/sdk/{{ (ir.versions[-2] | default({})).version }}";
+import { getStateExternalCustomers } from "@polar-sh/sdk/{{ (ir.versions[-2] | default({})).version }}/services/customers";
 
 const polar = createPolarCore({
   accessToken: "polar_oat_xxx",
@@ -91,7 +105,7 @@ webhook signing secret:
 
 ```typescript
 import express from "express";
-import { webhooks } from "@polar-sh/sdk/{{ ir.versions[0].version }}";
+import { webhooks } from "@polar-sh/sdk/{{ (ir.versions[-2] | default({})).version }}";
 
 const app = express();
 const webhookSecret = process.env.POLAR_WEBHOOK_SECRET;

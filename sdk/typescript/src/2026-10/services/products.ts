@@ -10,7 +10,12 @@ import type {
   ProductVisibility,
 } from "../models";
 
-import { HTTPValidationError, NotPermitted, ResourceNotFound } from "../errors";
+import {
+  HTTPValidationError,
+  NotPermitted,
+  ProductNotDeletable,
+  ResourceNotFound,
+} from "../errors";
 
 export const listProducts = (client: ClientBase) => {
   /**
@@ -168,6 +173,47 @@ export const getProducts = (client: ClientBase) => {
     });
   };
 };
+export const deleteProducts = (client: ClientBase) => {
+  /**
+   * Delete a product.
+   *
+   * Only products without orders, subscriptions, trials or discounts can be deleted.
+   * Products that are in use can only be archived.
+   *
+   * **Scopes**: `products:write`
+   *
+   * @param id
+   * @param requestOptions - Request options
+   * @returns {void}
+   * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
+   * @throws {PolarServerError} When the server returns a 5xx error
+   * @throws {NotPermitted} You don't have the permission to delete this product.
+   * @throws {ResourceNotFound} Product not found.
+   * @throws {ProductNotDeletable} Product is in use and cannot be deleted.
+   * @throws {HTTPValidationError} Validation Error
+   */
+  return async (id: string, requestOptions?: RequestOptions): Promise<void> => {
+    const pathParams = {
+      id: id,
+    };
+    const queryParams = {};
+    const request = client.buildRequest(
+      "DELETE",
+      "/v1/products/{id}",
+      pathParams,
+      queryParams,
+      undefined,
+    );
+    const response = await client.sendRequest(request, requestOptions);
+    return client.parseResponse<void>(response, "none", {
+      403: NotPermitted,
+      404: ResourceNotFound,
+      409: ProductNotDeletable,
+      422: HTTPValidationError,
+    });
+  };
+};
 export const updateProducts = (client: ClientBase) => {
   /**
    * Update a product.
@@ -256,6 +302,7 @@ export function createProductsService(client: ClientBase) {
     list: listProducts(client),
     create: createProducts(client),
     get: getProducts(client),
+    delete: deleteProducts(client),
     update: updateProducts(client),
     updateBenefits: updateBenefitsProducts(client),
     iterList: iterListProducts(client),

@@ -220,7 +220,9 @@ export const QuestionFlow = ({
           <TextArea
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
-            placeholder="Ask a follow-up…"
+            placeholder={
+              messages.length === 0 ? 'Ask a question…' : 'Ask a follow-up…'
+            }
             disabled={isStreaming}
             onKeyDown={(event) => {
               if (

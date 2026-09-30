@@ -566,6 +566,91 @@ class TestCreate:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
     )
+    async def test_retry_with_the_same_email_and_external_id_is_idempotent(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="retry@example.com",
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        existing = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            external_id="same-external-id",
+            role=MemberRole.member,
+        )
+        await save_fixture(existing)
+
+        member = await member_service.create(
+            session,
+            auth_subject,
+            customer_id=customer.id,
+            email="member@example.com",
+            external_id="same-external-id",
+            role=MemberRole.member,
+        )
+
+        assert member.id == existing.id
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_external_id_already_taken(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="team@example.com",
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        existing = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="first@example.com",
+            external_id="shared-external-id",
+            role=MemberRole.member,
+        )
+        await save_fixture(existing)
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await member_service.create(
+                session,
+                auth_subject,
+                customer_id=customer.id,
+                email="second@example.com",
+                external_id="shared-external-id",
+                role=MemberRole.member,
+            )
+
+        assert exc_info.value.errors()[0]["loc"] == ("body", "external_id")
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
     async def test_team_customer_can_have_multiple_members(
         self,
         save_fixture: SaveFixture,
@@ -822,7 +907,9 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await member_service.update(session, owner, role=MemberRole.member)
 
-        assert "must have exactly one owner" in str(exc_info.value).lower()
+        assert (
+            "must have exactly one owner" in exc_info.value.errors()[0]["msg"].lower()
+        )
 
     @pytest.mark.auth
     async def test_update_cannot_promote_to_owner_when_owner_exists(
@@ -861,7 +948,10 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await member_service.update(session, member, role=MemberRole.owner)
 
-        assert "only the owner can transfer ownership" in str(exc_info.value).lower()
+        assert (
+            "only the owner can transfer ownership"
+            in exc_info.value.errors()[0]["msg"].lower()
+        )
 
     @pytest.mark.auth
     async def test_update_ownership_transfer_customer_portal(
@@ -1182,7 +1272,7 @@ class TestUpdateEmail:
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await member_service.update(session, member, email="TAKEN@example.com")
 
-        assert "already exists" in str(exc_info.value).lower()
+        assert "already exists" in exc_info.value.errors()[0]["msg"].lower()
 
     @pytest.mark.auth
     async def test_update_email_owner_individual_customer_blocked(
@@ -1212,7 +1302,7 @@ class TestUpdateEmail:
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await member_service.update(session, owner, email="new@example.com")
 
-        assert "individual customer" in str(exc_info.value).lower()
+        assert "individual customer" in exc_info.value.errors()[0]["msg"].lower()
 
     @pytest.mark.auth
     async def test_update_email_owner_team_customer_allowed(
@@ -1502,7 +1592,7 @@ class TestDelete:
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await member_service.delete(session, owner)
 
-        assert "only owner" in str(exc_info.value).lower()
+        assert "only owner" in exc_info.value.errors()[0]["msg"].lower()
 
 
 @pytest.mark.asyncio

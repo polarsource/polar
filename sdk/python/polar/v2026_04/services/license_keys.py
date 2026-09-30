@@ -11,6 +11,7 @@ from polar.base import (
     parse_response_none,
 )
 from polar.v2026_04.errors import (
+    BadRequest,
     HTTPValidationError,
     NotPermitted,
     ResourceNotFound,
@@ -27,10 +28,12 @@ from polar.v2026_04.literals import (
     LicenseKeyStatus,
 )
 from polar.v2026_04.outputs import (
+    LicenseKeyActivationCreated,
     LicenseKeyActivationRead,
     LicenseKeyRead,
     LicenseKeyWithActivations,
     ListResourceLicenseKeyRead,
+    RotatedLicenseKey,
     ValidatedLicenseKey,
 )
 
@@ -241,7 +244,7 @@ class LicenseKeysSync(SyncServiceBase):
         *,
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
-    ) -> LicenseKeyRead:
+    ) -> RotatedLicenseKey:
         """
         Rotate a license key.
 
@@ -283,7 +286,7 @@ class LicenseKeysSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response_json(response, LicenseKeyRead, method_errors)
+        return parse_response_json(response, RotatedLicenseKey, method_errors)
 
     def get_activation(
         self,
@@ -307,7 +310,7 @@ class LicenseKeysSync(SyncServiceBase):
 
         Raises:
             Unauthorized: Not authorized to manage license key.
-            ResourceNotFound: License key not found.
+            ResourceNotFound: License key or activation not found, or activation does not belong to the license key.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -351,7 +354,8 @@ class LicenseKeysSync(SyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            ResourceNotFound: License key not found.
+            BadRequest: The requested usage increment exceeds the license key's remaining usage allowance.
+            ResourceNotFound: License key not found, revoked, disabled, or expired, or the supplied activation is missing or does not match, or the conditions, benefit, or customer do not match.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -368,6 +372,7 @@ class LicenseKeysSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
+            400: BadRequest,
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
@@ -379,7 +384,7 @@ class LicenseKeysSync(SyncServiceBase):
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
         **kwargs: typing.Unpack[LicenseKeyActivate],
-    ) -> LicenseKeyActivationRead:
+    ) -> LicenseKeyActivationCreated:
         """
         Activate a license key instance.
 
@@ -392,7 +397,7 @@ class LicenseKeysSync(SyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            NotPermitted: License key activation not supported or limit reached. Use /validate endpoint for licenses without activations.
+            NotPermitted: License key is revoked, disabled, or expired, does not support activations, or has reached its activation limit. Use /validate for licenses without activations.
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -414,7 +419,7 @@ class LicenseKeysSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response_json(response, LicenseKeyActivationRead, method_errors)
+        return parse_response_json(response, LicenseKeyActivationCreated, method_errors)
 
     def deactivate(
         self,
@@ -435,7 +440,7 @@ class LicenseKeysSync(SyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            ResourceNotFound: License key not found.
+            ResourceNotFound: License key or activation not found, or activation does not belong to the license key.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -665,7 +670,7 @@ class LicenseKeysAsync(AsyncServiceBase):
         *,
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
-    ) -> LicenseKeyRead:
+    ) -> RotatedLicenseKey:
         """
         Rotate a license key.
 
@@ -707,7 +712,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response_json(response, LicenseKeyRead, method_errors)
+        return parse_response_json(response, RotatedLicenseKey, method_errors)
 
     async def get_activation(
         self,
@@ -731,7 +736,7 @@ class LicenseKeysAsync(AsyncServiceBase):
 
         Raises:
             Unauthorized: Not authorized to manage license key.
-            ResourceNotFound: License key not found.
+            ResourceNotFound: License key or activation not found, or activation does not belong to the license key.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -775,7 +780,8 @@ class LicenseKeysAsync(AsyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            ResourceNotFound: License key not found.
+            BadRequest: The requested usage increment exceeds the license key's remaining usage allowance.
+            ResourceNotFound: License key not found, revoked, disabled, or expired, or the supplied activation is missing or does not match, or the conditions, benefit, or customer do not match.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -792,6 +798,7 @@ class LicenseKeysAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
+            400: BadRequest,
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
@@ -803,7 +810,7 @@ class LicenseKeysAsync(AsyncServiceBase):
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
         **kwargs: typing.Unpack[LicenseKeyActivate],
-    ) -> LicenseKeyActivationRead:
+    ) -> LicenseKeyActivationCreated:
         """
         Activate a license key instance.
 
@@ -816,7 +823,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            NotPermitted: License key activation not supported or limit reached. Use /validate endpoint for licenses without activations.
+            NotPermitted: License key is revoked, disabled, or expired, does not support activations, or has reached its activation limit. Use /validate for licenses without activations.
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -838,7 +845,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response_json(response, LicenseKeyActivationRead, method_errors)
+        return parse_response_json(response, LicenseKeyActivationCreated, method_errors)
 
     async def deactivate(
         self,
@@ -859,7 +866,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            ResourceNotFound: License key not found.
+            ResourceNotFound: License key or activation not found, or activation does not belong to the license key.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.

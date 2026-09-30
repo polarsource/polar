@@ -1,4 +1,13 @@
-import { afterEach, beforeEach, describe, expect, vi, test } from 'vitest'
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  vi,
+  test,
+} from 'vitest'
 import { createHash } from 'node:crypto'
 import { writeFileSync } from 'node:fs'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
@@ -34,9 +43,17 @@ describe('update command', () => {
 })
 
 describe('downloadAndUpdate', () => {
-  const archiveName = getReleaseArchiveName({
-    os: process.platform,
-    arch: process.arch,
+  const host = { platform: process.platform, arch: process.arch }
+  const archiveName = getReleaseArchiveName({ os: 'linux', arch: 'x64' })
+
+  beforeAll(() => {
+    Object.defineProperty(process, 'platform', { value: 'linux' })
+    Object.defineProperty(process, 'arch', { value: 'x64' })
+  })
+
+  afterAll(() => {
+    Object.defineProperty(process, 'platform', { value: host.platform })
+    Object.defineProperty(process, 'arch', { value: host.arch })
   })
   const archive = new TextEncoder().encode('archive bytes')
   const checksum = createHash('sha256').update(archive).digest('hex')

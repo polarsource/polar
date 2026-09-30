@@ -5,11 +5,14 @@ from uuid import UUID
 
 from sqlalchemy import (
     TIMESTAMP,
+    ColumnElement,
     ForeignKey,
     Integer,
     String,
     UniqueConstraint,
     Uuid,
+    and_,
+    cast,
 )
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -17,12 +20,25 @@ from polar.kit.db.models import RecordModel
 from polar.kit.utils import utc_now
 
 from .benefit import Benefit
+from .benefit_grant import BenefitGrant
 from .customer import Customer
 from .member import Member
+from .order import Order
+from .subscription import Subscription
 
 if TYPE_CHECKING:
     from .license_key_activation import LicenseKeyActivation
     from .organization import Organization
+
+
+def _grant_join() -> ColumnElement[bool]:
+    return and_(
+        BenefitGrant.customer_id == LicenseKey.customer_id,
+        BenefitGrant.benefit_id == LicenseKey.benefit_id,
+        BenefitGrant.properties["license_key_id"].as_string()
+        == cast(LicenseKey.id, String),
+        BenefitGrant.deleted_at.is_(None),
+    )
 
 
 class LicenseKeyStatus(StrEnum):
@@ -76,6 +92,30 @@ class LicenseKey(RecordModel):
     def benefit(cls) -> Mapped[Benefit]:
         return relationship("Benefit", lazy="raise")
 
+    @declared_attr
+    def subscription(cls) -> Mapped["Subscription | None"]:
+        return relationship(
+            "Subscription",
+            secondary="benefit_grants",
+            primaryjoin=_grant_join,
+            secondaryjoin=lambda: Subscription.id == BenefitGrant.subscription_id,
+            lazy="raise",
+            uselist=False,
+            viewonly=True,
+        )
+
+    @declared_attr
+    def order(cls) -> Mapped["Order | None"]:
+        return relationship(
+            "Order",
+            secondary="benefit_grants",
+            primaryjoin=_grant_join,
+            secondaryjoin=lambda: Order.id == BenefitGrant.order_id,
+            lazy="raise",
+            uselist=False,
+            viewonly=True,
+        )
+
     key: Mapped[str] = mapped_column(String, nullable=False)
 
     status: Mapped[LicenseKeyStatus] = mapped_column(
@@ -125,6 +165,14 @@ class LicenseKey(RecordModel):
         prefix = "****"
         last_six_digits = self.key[-6:]
         return f"{prefix}-{last_six_digits}"
+
+    @property
+    def subscription_id(self) -> UUID | None:
+        return self.subscription.id if self.subscription else None
+
+    @property
+    def order_id(self) -> UUID | None:
+        return self.order.id if self.order else None
 
     @property
     def activation(self) -> "LicenseKeyActivation | None":

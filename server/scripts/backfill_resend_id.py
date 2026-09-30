@@ -1,4 +1,5 @@
 import asyncio
+from datetime import UTC, datetime
 from uuid import UUID
 
 import dramatiq
@@ -21,7 +22,26 @@ cli = typer.Typer()
 
 @cli.command()
 @typer_async
-async def backfill() -> None:
+async def backfill(
+    cutoff: datetime | None = typer.Option(
+        None, help="Only users created strictly after this date/time (defaults to UTC)."
+    ),
+) -> None:
+    if cutoff is not None and cutoff.tzinfo is None:
+        cutoff = cutoff.replace(tzinfo=UTC)
+    await enqueue_sync(cutoff=cutoff)
+
+
+@cli.command()
+@typer_async
+async def cleanup_deleted() -> None:
+    """Remove deleted users with a Resend ID from Resend and clear their ID."""
+    await enqueue_sync(deleted_only=True)
+
+
+async def enqueue_sync(
+    *, cutoff: datetime | None = None, deleted_only: bool = False
+) -> None:
     configure_script_logging()
     if settings.RESEND_ACTIVE_USERS_SEGMENT_ID is None or not settings.RESEND_API_KEY:
         typer.echo(
@@ -38,11 +58,17 @@ async def backfill() -> None:
             with Progress() as progress:
                 task_id = progress.add_task("[cyan]Enqueuing user sync...", total=None)
 
-                statement = (
-                    select(User.id)
-                    .where(or_(User.is_deleted, User.blocked_at.is_(None)))
-                    .order_by(User.id)
-                )
+                statement = select(User.id).order_by(User.id)
+                if deleted_only:
+                    statement = statement.where(
+                        User.is_deleted, User.resend_id.is_not(None)
+                    )
+                else:
+                    statement = statement.where(
+                        or_(User.is_deleted, User.blocked_at.is_(None))
+                    )
+                if cutoff is not None:
+                    statement = statement.where(User.created_at > cutoff)
                 count_statement = statement.with_only_columns(func.count()).order_by(
                     None
                 )

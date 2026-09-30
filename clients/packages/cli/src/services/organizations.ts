@@ -60,7 +60,9 @@ export const layer = Layer.effect(
     })
     const get = (id: string, environment: PolarEnvironment) =>
       Effect.map(
-        polar.use((client) => client.organizations.get(id), environment),
+        polar.use((client) => client.organizations.get(id), environment, {
+          organizationId: id,
+        }),
         (organization) => ({
           id: organization.id,
           name: organization.name,

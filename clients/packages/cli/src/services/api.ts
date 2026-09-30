@@ -1,4 +1,5 @@
 import { Context, Effect } from 'effect'
+import { HttpClientRequest } from 'effect/unstable/http'
 import { loginCommand, orgCommand, type PolarEnvironment } from '@/schemas/Auth'
 
 type Env = Record<string, string | undefined>
@@ -47,6 +48,9 @@ export const apiOrigin = (environment: PolarEnvironment) =>
 
 export const apiUrl = (environment: PolarEnvironment, path: string) =>
   Effect.map(apiOrigin(environment), (origin) => `${origin}/v1${path}`)
+
+export const withOrganization = (organizationId: string) =>
+  HttpClientRequest.setHeader('Polar-Organization', organizationId)
 
 export interface ApiFailure {
   message: string

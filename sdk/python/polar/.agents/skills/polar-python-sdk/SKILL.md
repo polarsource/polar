@@ -12,7 +12,7 @@ Use the generated, versioned Polar SDK without inventing methods or parameters.
 1. Identify the installed `polar-sdk` version and preserve the API version already selected by the application.
 2. Inspect generated service signatures, input `TypedDict` definitions, output dataclasses, and endpoint-specific errors before writing calls.
 3. Use `Polar` in synchronous code and `PolarAsync` in asynchronous code. Do not mix blocking SDK calls into an async request path.
-4. Identify whether the access token is scoped to an organization. Pass `organization_id` when the selected token does not imply one, and confirm the required endpoint scopes.
+4. Identify whether the access token is scoped to an organization. When the selected token does not imply one, create the client with `Polar(..., organization_id=...)` or pass `organization_id`, and confirm the required endpoint scopes.
 5. Keep client, webhook, and environment configuration on the server.
 
 ## Migrate from the old SDK
@@ -26,7 +26,7 @@ Keep production and sandbox access tokens separate. Never expose an organization
 ```python
 import os
 
-from polar.v2026_04 import Polar
+from polar.v2026_10 import Polar
 
 with Polar(
     os.environ["POLAR_ACCESS_TOKEN"],
@@ -42,7 +42,7 @@ Use the async client with an application-lifetime async context in async service
 ```python
 import os
 
-from polar.v2026_04 import PolarAsync
+from polar.v2026_10 import PolarAsync
 
 
 async def load_customer_state() -> None:
@@ -107,7 +107,7 @@ Validate return URLs and never let an untrusted caller choose another customer's
 Prefer a `feature_flag` benefit attached to the relevant products over inferring access from subscription statuses. Reconcile both access grants and access revocations.
 
 ```python
-from polar.v2026_04.outputs import CustomerState
+from polar.v2026_10.outputs import CustomerState
 
 
 def has_feature_access(customer_state: CustomerState, benefit_id: str) -> bool:

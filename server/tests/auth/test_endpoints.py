@@ -1,10 +1,12 @@
 from collections.abc import AsyncIterator
+from unittest.mock import MagicMock
 
 import httpx
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from httpx import AsyncClient
+from pytest_mock import MockerFixture
 from reauth.amr import AuthenticationMethodReference
 
 from polar.auth.authentication_session import TOKEN_PREFIX
@@ -12,8 +14,9 @@ from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.kit.crypto import generate_token_hash_pair
 from polar.kit.utils import utc_now
-from polar.models import AuthenticationSession, User
+from polar.models import AuthenticationSession, Organization, User
 from polar.postgres import AsyncSession
+from tests.auth.oauth2.test_router import create_sso_domain
 from tests.fixtures.auth import make_session_stale
 from tests.fixtures.base import IsolatedSessionTestClient
 from tests.fixtures.database import SaveFixture
@@ -194,3 +197,103 @@ class TestBackupCodesEnroll:
 
         assert response.status_code == 201
         assert len(response.json()["codes"]) > 0
+
+
+async def request_email_otp(
+    client: httpx.AsyncClient,
+    mocker: MockerFixture,
+    email: str,
+    *,
+    sso_discovery: bool = True,
+) -> tuple[httpx.Response, MagicMock]:
+    mocker.patch("polar.auth.endpoints.verify_turnstile")
+    enqueue_email_template = mocker.patch("polar.auth.factors.enqueue_email_template")
+
+    start = await client.post(
+        "/v1/auth/start",
+        json={"return_to": "/dashboard", "sso_discovery": sso_discovery},
+    )
+    assert start.status_code == 201
+
+    response = await client.post(
+        "/v1/auth/email-otp/request",
+        json={"email": email, "cf-turnstile-response": "turnstile-token"},
+    )
+    return response, enqueue_email_template
+
+
+@pytest.mark.asyncio
+class TestEmailOTPRequest:
+    async def test_without_sso(
+        self, login_client: httpx.AsyncClient, mocker: MockerFixture
+    ) -> None:
+        response, enqueue_email_template = await request_email_otp(
+            login_client, mocker, "jane@acme.com"
+        )
+
+        assert response.status_code == 202
+        enqueue_email_template.assert_called_once()
+
+    @pytest.mark.parametrize(
+        "setup",
+        [
+            {"verified": False},
+            {"sso_enforced": False},
+            {"connection_enabled": False},
+        ],
+    )
+    async def test_sso_not_enforced_for_domain(
+        self,
+        setup: dict[str, bool],
+        login_client: httpx.AsyncClient,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        await create_sso_domain(save_fixture, organization, **setup)
+
+        response, enqueue_email_template = await request_email_otp(
+            login_client, mocker, "jane@acme.com"
+        )
+
+        assert response.status_code == 202
+        enqueue_email_template.assert_called_once()
+
+    async def test_sso_required(
+        self,
+        login_client: httpx.AsyncClient,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        await create_sso_domain(save_fixture, organization)
+
+        response, enqueue_email_template = await request_email_otp(
+            login_client, mocker, "Jane@ACME.com"
+        )
+
+        assert response.status_code == 409
+        assert response.json() == {
+            "error": "SSORequired",
+            "detail": "This email domain signs in through single sign-on.",
+            "redirect_url": settings.generate_frontend_url(
+                f"/auth/sso/{organization.slug}?return_to=%2Fdashboard"
+            ),
+        }
+        enqueue_email_template.assert_not_called()
+
+    async def test_sso_discovery_disabled(
+        self,
+        login_client: httpx.AsyncClient,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        await create_sso_domain(save_fixture, organization)
+
+        response, enqueue_email_template = await request_email_otp(
+            login_client, mocker, "jane@acme.com", sso_discovery=False
+        )
+
+        assert response.status_code == 202
+        enqueue_email_template.assert_called_once()

@@ -188,9 +188,15 @@ def canonical_subscription(
     discount_source_ids: list[str] | None = None,
     discount_started_at: datetime | None = None,
     discount_starts: dict[str, datetime] | None = None,
+    customer_discount_source_id: str | None = None,
+    customer_discount_started_at: datetime | None = None,
+    discount_block: str | None = None,
     cancel_at_period_end: bool = False,
+    cancel_at_period_end_known: bool = False,
     cancel_at: datetime | None = None,
     has_scheduled_changes: bool = False,
+    canceled_at: datetime | None = None,
+    cancellation_reason: str | None = None,
     trial_end: datetime | None = None,
     stopped_for_migration: bool = False,
     latest_invoice_unpaid: bool = False,
@@ -203,6 +209,7 @@ def canonical_subscription(
     tax_rate_behavior: TaxBehavior | None = None,
     tax_behavior: TaxBehavior | None = None,
     customer_balance: int | None = None,
+    managed_payments: bool = False,
 ) -> CanonicalSubscription:
     """Renews outside the safety window, so a test only states its own field."""
     return CanonicalSubscription(
@@ -222,9 +229,15 @@ def canonical_subscription(
         discount_source_ids=discount_source_ids or [],
         discount_started_at=discount_started_at,
         discount_starts=discount_starts or {},
+        customer_discount_source_id=customer_discount_source_id,
+        customer_discount_started_at=customer_discount_started_at,
+        discount_block=discount_block,
         cancel_at_period_end=cancel_at_period_end,
+        cancel_at_period_end_known=cancel_at_period_end_known,
         cancel_at=cancel_at,
         has_scheduled_changes=has_scheduled_changes,
+        canceled_at=canceled_at,
+        cancellation_reason=cancellation_reason,
         trial_end=trial_end,
         stopped_for_migration=stopped_for_migration,
         latest_invoice_unpaid=latest_invoice_unpaid,
@@ -236,6 +249,7 @@ def canonical_subscription(
         tax_rate_behavior=tax_rate_behavior,
         tax_behavior=tax_behavior,
         customer_balance=customer_balance,
+        managed_payments=managed_payments,
     )
 
 

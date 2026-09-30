@@ -47,6 +47,7 @@ async def create_sso_connection(
         "client_id": "client-id",
         "auth_method": OIDCAuthMethod.client_secret,
         "client_secret": "secret",
+        "authorization_parameters": {},
     }
     connection = OrganizationSSOConnection(
         organization=organization,

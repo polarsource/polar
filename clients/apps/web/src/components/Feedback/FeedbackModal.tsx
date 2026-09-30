@@ -16,12 +16,10 @@ export const FeedbackModal = ({
   isShown,
   hide,
   organization,
-  defaultType = 'question',
 }: {
   isShown: boolean
   hide: () => void
   organization: schemas['Organization']
-  defaultType?: schemas['FeedbackType']
 }) => {
   const [submittedType, setSubmittedType] = useState<
     schemas['FeedbackType'] | null
@@ -82,8 +80,6 @@ export const FeedbackModal = ({
       <FeedbackForm
         organization={organization}
         conversationId={conversationId}
-        defaultType={defaultType}
-        onSuccess={setSubmittedType}
         onAskQuestion={setPendingQuestion}
         onCancel={handleHide}
       />

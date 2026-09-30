@@ -2,57 +2,21 @@
 
 import TransactionsList from '@/components/Transactions/TransactionsList'
 import { useOrganizationAccount, useSearchTransactions } from '@/hooks/queries'
-import {
-  DataTablePaginationState,
-  DataTableSortingState,
-  getAPIParams,
-  serializeSearchParams,
-} from '@/utils/datatable'
+import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
+import { getAPIParams } from '@/utils/datatable'
 import { ISODuration } from '@/utils/duration'
 import { schemas } from '@polar-sh/client'
-import { usePathname, useRouter } from 'next/navigation'
 
 export default function ClientPage({
-  pagination,
-  sorting,
   organization,
 }: {
-  pagination: DataTablePaginationState
-  sorting: DataTableSortingState
   organization: schemas['Organization']
 }) {
-  const router = useRouter()
-  const pathname = usePathname()
-
-  const setPagination = (
-    updaterOrValue:
-      | DataTablePaginationState
-      | ((old: DataTablePaginationState) => DataTablePaginationState),
-  ) => {
-    const updatedPagination =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(pagination)
-        : updaterOrValue
-
-    router.push(
-      `${pathname}?${serializeSearchParams(updatedPagination, sorting)}`,
-    )
-  }
-
-  const setSorting = (
-    updaterOrValue:
-      | DataTableSortingState
-      | ((old: DataTableSortingState) => DataTableSortingState),
-  ) => {
-    const updatedSorting =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(sorting)
-        : updaterOrValue
-
-    router.push(
-      `${pathname}?${serializeSearchParams(pagination, updatedSorting)}`,
-    )
-  }
+  const { pagination, setPagination, sorting, setSorting } =
+    useDataTableQueryState({
+      defaultSorting: [{ id: 'created_at', desc: true }],
+      defaultPageSize: 50,
+    })
 
   const { data: account, isLoading: accountIsLoading } = useOrganizationAccount(
     organization.id,

@@ -1475,6 +1475,26 @@ export interface paths {
     patch: operations['sso:update_sso_connection']
     trace?: never
   }
+  '/v1/organizations/{id}/sso-domains/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List SSO Domains
+     * @description **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['sso:list_sso_domains']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/subscriptions/': {
     parameters: {
       query?: never
@@ -5483,7 +5503,7 @@ export interface paths {
     }
     /**
      * Get Merchant Migration Card Transfer
-     * @description **Scopes**: `organizations:write`
+     * @description **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['merchant-migrations:pan_transfer']
     put?: never
@@ -5551,7 +5571,7 @@ export interface paths {
     }
     /**
      * Summarize Merchant Migration Records
-     * @description **Scopes**: `organizations:write`
+     * @description **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['merchant-migrations:records_summary']
     put?: never
@@ -5571,7 +5591,7 @@ export interface paths {
     }
     /**
      * List Merchant Migration Records
-     * @description **Scopes**: `organizations:write`
+     * @description **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['merchant-migrations:records']
     put?: never
@@ -23180,6 +23200,17 @@ export interface components {
       /** Repository Name */
       repository_name: string
     }
+    /** GlobalAuthenticationSessionStart */
+    GlobalAuthenticationSessionStart: {
+      /** Return To */
+      return_to?: string | null
+      /**
+       * Sso Discovery
+       * @description Send users of an SSO-enforced email domain to their organization's SSO.
+       * @default true
+       */
+      sso_discovery: boolean
+    }
     /** GrantedLicenseKey */
     GrantedLicenseKey: {
       /**
@@ -23215,9 +23246,9 @@ export interface components {
        * Member Id
        * @description The ID of the seat member holding this key, if any.
        */
-      member_id?: string | null
+      member_id: string | null
       /** @description The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly. */
-      member?: components['schemas']['LicenseKeyMember'] | null
+      member: components['schemas']['LicenseKeyMember'] | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -23245,6 +23276,20 @@ export interface components {
       last_validated_at: string | null
       /** Expires At */
       expires_at: string | null
+      /**
+       * Subscription Id
+       * @description The ID of the subscription granting the license key.
+       */
+      subscription_id: string | null
+      /** @description The subscription granting the license key, if any. */
+      subscription: components['schemas']['LicenseKeySubscription'] | null
+      /**
+       * Order Id
+       * @description The ID of the one-time order granting the license key.
+       */
+      order_id: string | null
+      /** @description The one-time order granting the license key, if any. */
+      order: components['schemas']['LicenseKeyOrder'] | null
     }
     /** HTTPValidationError */
     HTTPValidationError: {
@@ -24033,6 +24078,30 @@ export interface components {
        */
       external_id: string | null
     }
+    /** LicenseKeyOrder */
+    LicenseKeyOrder: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /** @example paid */
+      status: components['schemas']['OrderStatus']
+      /**
+       * Paid
+       * @description Whether the order has been paid for.
+       * @example true
+       */
+      paid: boolean
+    }
     /** LicenseKeyRead */
     LicenseKeyRead: {
       /**
@@ -24068,9 +24137,9 @@ export interface components {
        * Member Id
        * @description The ID of the seat member holding this key, if any.
        */
-      member_id?: string | null
+      member_id: string | null
       /** @description The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly. */
-      member?: components['schemas']['LicenseKeyMember'] | null
+      member: components['schemas']['LicenseKeyMember'] | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -24100,6 +24169,44 @@ export interface components {
      * @enum {string}
      */
     LicenseKeyStatus: 'granted' | 'revoked' | 'disabled'
+    /** LicenseKeySubscription */
+    LicenseKeySubscription: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * @description The status of the subscription.
+       * @example active
+       */
+      status: components['schemas']['SubscriptionStatus']
+      /**
+       * Current Period Start
+       * Format: date-time
+       * @description The start timestamp of the current billing period.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      current_period_start: string
+      /**
+       * Current Period End
+       * Format: date-time
+       * @description The end timestamp of the current billing period.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      current_period_end: string
+      /**
+       * Cancel At Period End
+       * @description Whether the subscription will be canceled at the end of the current period.
+       */
+      cancel_at_period_end: boolean
+      /**
+       * Ends At
+       * @description The timestamp when the subscription will end.
+       */
+      ends_at: string | null
+    }
     /** LicenseKeyUpdate */
     LicenseKeyUpdate: {
       status?: components['schemas']['LicenseKeyStatus'] | null
@@ -24199,9 +24306,9 @@ export interface components {
        * Member Id
        * @description The ID of the seat member holding this key, if any.
        */
-      member_id?: string | null
+      member_id: string | null
       /** @description The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly. */
-      member?: components['schemas']['LicenseKeyMember'] | null
+      member: components['schemas']['LicenseKeyMember'] | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -24476,6 +24583,12 @@ export interface components {
     ListResource_OrganizationSSOConnection_: {
       /** Items */
       items: components['schemas']['OrganizationSSOConnection'][]
+      pagination: components['schemas']['Pagination']
+    }
+    /** ListResource[OrganizationSSODomain] */
+    ListResource_OrganizationSSODomain_: {
+      /** Items */
+      items: components['schemas']['OrganizationSSODomain'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[Organization] */
@@ -24788,6 +24901,43 @@ export interface components {
       readonly formatted_address_country: string | null
       /** Order Url */
       readonly order_url: string | null
+    }
+    /** MaintainerNewTrialNotification */
+    MaintainerNewTrialNotification: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'MaintainerNewTrialNotification'
+      payload: components['schemas']['MaintainerNewTrialNotificationPayload']
+    }
+    /** MaintainerNewTrialNotificationPayload */
+    MaintainerNewTrialNotificationPayload: {
+      /** Subscriber Name */
+      subscriber_name: string
+      /** Subscriber Email */
+      subscriber_email: string | null
+      /** Product Name */
+      product_name: string
+      /** Organization Name */
+      organization_name: string
+      /** Organization Slug */
+      organization_slug: string | null
+      /** Subscription Id */
+      subscription_id: string | null
+      /** Trial End */
+      trial_end: string | null
     }
     /** MaintainerSubscriptionRenewalNotification */
     MaintainerSubscriptionRenewalNotification: {
@@ -25167,16 +25317,6 @@ export interface components {
      * @enum {string}
      */
     MerchantMigrationCutoverStatus: 'moved' | 'skipped' | 'failed'
-    /** MerchantMigrationImportReport */
-    MerchantMigrationImportReport: {
-      /** @description The migration step after the import. */
-      step: components['schemas']['MerchantMigrationStep']
-      /**
-       * Results
-       * @description Per-entity counts of what was imported vs skipped.
-       */
-      results: components['schemas']['MerchantMigrationImportResult'][]
-    }
     /** MerchantMigrationImportRequest */
     MerchantMigrationImportRequest: {
       /**
@@ -25189,21 +25329,6 @@ export interface components {
        * @description Prepare every importable subscription except these — the opt-out selection for large catalogs. Ignored when `record_ids` is set.
        */
       exclude_record_ids?: string[] | null
-    }
-    /** MerchantMigrationImportResult */
-    MerchantMigrationImportResult: {
-      /** @description The source entity type. */
-      entity: components['schemas']['PrecheckEntity']
-      /**
-       * Imported
-       * @description How many were created or reused in Polar.
-       */
-      imported: number
-      /**
-       * Skipped
-       * @description How many were left on the source (not importable).
-       */
-      skipped: number
     }
     /** MerchantMigrationNotEnabled */
     MerchantMigrationNotEnabled: {
@@ -25234,6 +25359,8 @@ export interface components {
     MerchantMigrationOperation: {
       /** @description pending or running while Polar works; done or failed when it finishes. */
       status: components['schemas']['MerchantMigrationOperationStatus']
+      /** @description Which job this is: pre-check, catalog import, or cutover. None when the run has no recorded job type. */
+      kind: components['schemas']['MerchantMigrationOperationKind'] | null
       /**
        * Stalled
        * @description Whether an active operation has stopped making progress.
@@ -25245,6 +25372,11 @@ export interface components {
        */
       error: string | null
     }
+    /**
+     * MerchantMigrationOperationKind
+     * @enum {string}
+     */
+    MerchantMigrationOperationKind: 'precheck' | 'import' | 'cutover'
     /**
      * MerchantMigrationOperationStatus
      * @enum {string}
@@ -25400,6 +25532,11 @@ export interface components {
        * @description Whether this subscription's customer and product are already in Polar, so it can be created at cutover. Null for non-subscription rows.
        */
       dependencies_imported: boolean | null
+      /**
+       * Cancels At Period End
+       * @description Whether the source subscription is set to cancel at period end. None for non-subscription rows.
+       */
+      cancels_at_period_end: boolean | null
     }
     /** MerchantMigrationRecordNotFound */
     MerchantMigrationRecordNotFound: {
@@ -26516,6 +26653,7 @@ export interface components {
       /** Notifications */
       notifications: (
         | components['schemas']['MaintainerNewPaidSubscriptionNotification']
+        | components['schemas']['MaintainerNewTrialNotification']
         | components['schemas']['MaintainerNewProductSaleNotification']
         | components['schemas']['MaintainerSubscriptionRenewalNotification']
         | components['schemas']['MaintainerAccountCreditsGrantedNotification']
@@ -29733,10 +29871,14 @@ export interface components {
       new_order: boolean
       /** New Subscription */
       new_subscription: boolean
+      /** New Trial */
+      new_trial?: boolean
       /** Chargeback Prevention */
       chargeback_prevention: boolean
       /** Subscription Renewal */
       subscription_renewal: boolean
+      /** Exclude Free Products */
+      exclude_free_products?: boolean
     }
     /** OrganizationOrder */
     OrganizationOrder: {
@@ -30177,6 +30319,39 @@ export interface components {
        * @description Whether the connection can be used to sign in.
        */
       enabled?: boolean | null
+    }
+    /** OrganizationSSODomain */
+    OrganizationSSODomain: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Domain
+       * @description Email domain routed to the organization's SSO.
+       */
+      domain: string
+      /**
+       * Verified At
+       * Format: date-time
+       * @description When Polar verified the domain.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      verified_at: string
     }
     /** OrganizationSlugAvailability */
     OrganizationSlugAvailability: {
@@ -33444,8 +33619,18 @@ export interface components {
        * @description The ID of the product owning the price.
        */
       product_id: string
-      /** @description Tiered pricing based on seat quantity */
-      seat_tiers: components['schemas']['ProductPriceSeatTiers-Output']
+      /** @description Tiered pricing based on the purchased seat quantity. */
+      tiers: components['schemas']['Tiers']
+      /**
+       * Minimum Units
+       * @description The minimum purchasable seat quantity (inclusive).
+       */
+      minimum_units: number | null
+      /**
+       * Maximum Units
+       * @description The maximum purchasable seat quantity, from the last tier's bound. `null` for unlimited.
+       */
+      readonly maximum_units: number | null
     }
     /**
      * ProductPriceSeatBasedCreate
@@ -33464,79 +33649,13 @@ export interface components {
       price_currency: components['schemas']['PresentmentCurrency']
       /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
       tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
-      /** @description Tiered pricing based on seat quantity */
-      seat_tiers: components['schemas']['ProductPriceSeatTiers-Input']
-    }
-    /**
-     * ProductPriceSeatTier
-     * @description A pricing tier for seat-based pricing.
-     */
-    ProductPriceSeatTier: {
+      /** @description Tiered pricing based on the purchased seat quantity. */
+      tiers: components['schemas']['TiersInput']
       /**
-       * Min Seats
-       * @description Minimum number of seats (inclusive)
+       * Minimum Units
+       * @description The minimum purchasable seat quantity (inclusive). Defaults to 1 when not set.
        */
-      min_seats: number
-      /**
-       * Max Seats
-       * @description Maximum number of seats (inclusive). None for unlimited.
-       */
-      max_seats?: number | null
-      /**
-       * Price Per Seat
-       * @description Price per seat in cents for this tier
-       */
-      price_per_seat: number
-    }
-    /**
-     * ProductPriceSeatTiers
-     * @description List of pricing tiers for seat-based pricing.
-     *
-     *     The minimum and maximum seat limits are derived from the tiers:
-     *     - minimum_seats = first tier's min_seats
-     *     - maximum_seats = last tier's max_seats (None for unlimited)
-     */
-    'ProductPriceSeatTiers-Input': {
-      /**
-       * @description How tiers are applied. 'volume' prices all seats at the matching tier's rate. 'graduated' prices each tier's range independently.
-       * @default volume
-       */
-      seat_tier_type: components['schemas']['SeatTierType']
-      /**
-       * Tiers
-       * @description List of pricing tiers
-       */
-      tiers: components['schemas']['ProductPriceSeatTier'][]
-    }
-    /**
-     * ProductPriceSeatTiers
-     * @description List of pricing tiers for seat-based pricing.
-     *
-     *     The minimum and maximum seat limits are derived from the tiers:
-     *     - minimum_seats = first tier's min_seats
-     *     - maximum_seats = last tier's max_seats (None for unlimited)
-     */
-    'ProductPriceSeatTiers-Output': {
-      /**
-       * @description How tiers are applied. 'volume' prices all seats at the matching tier's rate. 'graduated' prices each tier's range independently.
-       * @default volume
-       */
-      seat_tier_type: components['schemas']['SeatTierType']
-      /**
-       * Tiers
-       * @description List of pricing tiers
-       */
-      tiers: components['schemas']['ProductPriceSeatTier'][]
-      /**
-       * Minimum Seats
-       * @description Minimum number of seats required for purchase, derived from first tier.
-       */
-      readonly minimum_seats: number
-      /**
-       * Maximum Seats
-       * @description Maximum number of seats allowed for purchase, derived from last tier. None for unlimited.
-       */
-      readonly maximum_seats: number | null
+      minimum_units?: number | null
     }
     /**
      * ProductPriceSource
@@ -34158,9 +34277,9 @@ export interface components {
        * Member Id
        * @description The ID of the seat member holding this key, if any.
        */
-      member_id?: string | null
+      member_id: string | null
       /** @description The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly. */
-      member?: components['schemas']['LicenseKeyMember'] | null
+      member: components['schemas']['LicenseKeyMember'] | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -34297,6 +34416,19 @@ export interface components {
        * @description Human-friendly label for the connection, shown on the login page.
        */
       name: string | null
+    }
+    /** SSORequired */
+    SSORequired: {
+      /**
+       * Error
+       * @example SSORequired
+       * @constant
+       */
+      error: 'SSORequired'
+      /** Detail */
+      detail: string
+      /** Redirect Url */
+      redirect_url: string
     }
     /**
      * Scope
@@ -34560,11 +34692,6 @@ export interface components {
      * @enum {string}
      */
     SeatStatus: 'pending' | 'claimed' | 'revoked'
-    /**
-     * SeatTierType
-     * @enum {string}
-     */
-    SeatTierType: 'volume' | 'graduated'
     /** SeatsList */
     SeatsList: {
       /**
@@ -39030,9 +39157,9 @@ export interface components {
        * Member Id
        * @description The ID of the seat member holding this key, if any.
        */
-      member_id?: string | null
+      member_id: string | null
       /** @description The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly. */
-      member?: components['schemas']['LicenseKeyMember'] | null
+      member: components['schemas']['LicenseKeyMember'] | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -39060,6 +39187,20 @@ export interface components {
       last_validated_at: string | null
       /** Expires At */
       expires_at: string | null
+      /**
+       * Subscription Id
+       * @description The ID of the subscription granting the license key.
+       */
+      subscription_id: string | null
+      /** @description The subscription granting the license key, if any. */
+      subscription: components['schemas']['LicenseKeySubscription'] | null
+      /**
+       * Order Id
+       * @description The ID of the one-time order granting the license key.
+       */
+      order_id: string | null
+      /** @description The one-time order granting the license key, if any. */
+      order: components['schemas']['LicenseKeyOrder'] | null
       activation?: components['schemas']['LicenseKeyActivationBase'] | null
     }
     /** ValidationError */
@@ -39853,7 +39994,7 @@ export interface components {
        * @default 2026-04
        * @enum {string}
        */
-      api_version: '2026-04' | '2026-10'
+      api_version: '2026-04' | '2026-10' | '2027-01'
       /** @description The format of the webhook payload. */
       format: components['schemas']['WebhookFormat']
       /**
@@ -39883,7 +40024,7 @@ export interface components {
        * Api Version
        * @description The API version that'll be used in event payloads.
        */
-      api_version?: ('2026-04' | '2026-10') | null
+      api_version?: ('2026-04' | '2026-10' | '2027-01') | null
       format?: components['schemas']['WebhookFormat'] | null
       /** Events */
       events?: components['schemas']['WebhookEventType'][] | null
@@ -43943,6 +44084,60 @@ export interface operations {
       }
     }
   }
+  'sso:list_sso_domains': {
+    parameters: {
+      query?: {
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_OrganizationSSODomain_']
+        }
+      }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'subscriptions:list': {
     parameters: {
       query?: {
@@ -45282,7 +45477,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['AuthenticationSessionStart']
+        'application/json': components['schemas']['GlobalAuthenticationSessionStart']
       }
     }
     responses: {
@@ -45364,6 +45559,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description The email domain signs in through single sign-on */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SSORequired']
         }
       }
       /** @description Validation Error */
@@ -56647,7 +56851,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['MerchantMigrationImportReport']
+          'application/json': components['schemas']['MerchantMigration']
         }
       }
       /** @description The source is not connected or isn't supported. */
@@ -70606,6 +70810,9 @@ export const maintainerNewPaidSubscriptionNotificationTypeValues: ReadonlyArray<
 export const maintainerNewProductSaleNotificationTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MaintainerNewProductSaleNotification']['type']
 > = ['MaintainerNewProductSaleNotification']
+export const maintainerNewTrialNotificationTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MaintainerNewTrialNotification']['type']
+> = ['MaintainerNewTrialNotification']
 export const maintainerSubscriptionRenewalNotificationTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MaintainerSubscriptionRenewalNotification']['type']
 > = ['MaintainerSubscriptionRenewalNotification']
@@ -70624,6 +70831,9 @@ export const memberSortPropertyValues: ReadonlyArray<
 export const merchantMigrationCutoverStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationCutoverStatus']
 > = ['moved', 'skipped', 'failed']
+export const merchantMigrationOperationKindValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationOperationKind']
+> = ['precheck', 'import', 'cutover']
 export const merchantMigrationOperationStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationOperationStatus']
 > = ['pending', 'running', 'done', 'failed']
@@ -72602,9 +72812,6 @@ export const searchResultSubscriptionTypeValues: ReadonlyArray<
 export const seatStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SeatStatus']
 > = ['pending', 'claimed', 'revoked']
-export const seatTierTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['SeatTierType']
-> = ['volume', 'graduated']
 export const stripeAccountCountryValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['StripeAccountCountry']
 > = [
@@ -73294,10 +73501,10 @@ export const walletTypeValues: ReadonlyArray<
 > = ['usage', 'billing']
 export const webhookEndpointCreateApi_versionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['WebhookEndpointCreate']['api_version']
-> = ['2026-04', '2026-10']
+> = ['2026-04', '2026-10', '2027-01']
 export const webhookEndpointUpdateApi_versionAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['WebhookEndpointUpdate']['api_version']
-> = ['2026-04', '2026-10']
+> = ['2026-04', '2026-10', '2027-01']
 export const webhookEventTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['WebhookEventType']
 > = [

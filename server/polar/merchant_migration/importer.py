@@ -10,16 +10,17 @@ from uuid import UUID
 from polar.auth.models import AuthSubject
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
+from polar.discount.repository import DiscountRepository
 from polar.discount.schemas import DiscountFixedCreate, DiscountPercentageCreate
 from polar.discount.service import discount as discount_service
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.address import Address, CountryAlpha2
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.postgres import AsyncSession
-from polar.kit.utils import utc_now
 from polar.models import (
     Customer,
     Discount,
+    DiscountProduct,
     MerchantMigration,
     MerchantMigrationRecord,
     Organization,
@@ -34,6 +35,7 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordType,
 )
 from polar.models.product_price import ProductPriceAmountType, ProductPriceFixed
+from polar.product.repository import ProductRepository
 from polar.product.schemas import (
     ProductCreateRecurring,
     ProductPriceCreate,
@@ -56,13 +58,13 @@ from .canonical import (
     subscription_price_key,
 )
 from .precheck import (
-    CUSTOMER_STRIPE_ID_CONFLICT_REASON,
     ProductImportPlan,
     Reason,
     plan_customer_imports,
     plan_discount_imports,
     plan_product_imports,
     plan_subscription_imports,
+    stripe_id_conflict_reason,
 )
 from .repository import MerchantMigrationRecordRepository
 from .schemas import (
@@ -72,6 +74,8 @@ from .schemas import (
 )
 
 _CanonicalT = TypeVar("_CanonicalT")
+
+IMPORT_BATCH_SIZE = 100
 
 _DEPENDENCY_CODE = "subscription_dependency_not_imported"
 _PRICES_ALREADY_IMPORTED = Reason(
@@ -134,6 +138,32 @@ def _covered_source_ids(
         ):
             covered.add(record.source_id)
     return covered
+
+
+def _polar_product_ids_by_source(
+    product_records: Sequence[MerchantMigrationRecord],
+    products: Sequence[CanonicalProduct],
+) -> dict[str, list[UUID]]:
+    ids_by_source: dict[str, list[UUID]] = {}
+    for record, product in zip(product_records, products, strict=True):
+        if (
+            record.status == MerchantMigrationRecordStatus.imported
+            and record.target_id is not None
+        ):
+            ids_by_source.setdefault(product.product_source_id, []).append(
+                record.target_id
+            )
+    return ids_by_source
+
+
+def _polar_product_ids(
+    discount: CanonicalDiscount, ids_by_source: dict[str, list[UUID]]
+) -> list[UUID]:
+    return [
+        product_id
+        for product_source_id in discount.product_source_ids or []
+        for product_id in ids_by_source.get(product_source_id, [])
+    ]
 
 
 def find_imported_price(
@@ -209,6 +239,18 @@ class ImportCounts:
 
 
 @dataclass(frozen=True)
+class _ImportContext:
+    catalog: list[MerchantMigrationRecord]
+    product_records: list[MerchantMigrationRecord]
+    customer_records: list[MerchantMigrationRecord]
+    discount_records: list[MerchantMigrationRecord]
+    product_source_ids: set[str]
+    covered_product_source_ids: set[str]
+    customer_source_ids: set[str]
+    country_fallbacks: dict[str, str]
+
+
+@dataclass(frozen=True)
 class ImportedCustomer:
     """The Polar customer to use, or why the record is skipped."""
 
@@ -238,7 +280,114 @@ class CatalogImporter:
         self.record_repository = MerchantMigrationRecordRepository.from_session(session)
         self.customer_repository = CustomerRepository.from_session(session)
 
-    async def run(self) -> MerchantMigrationImportReport:
+    async def import_next_batch(self) -> MerchantMigrationImportReport | None:
+        """Import one batch, products then discounts then customers. None while
+        records remain; the report once the pass is done.
+
+        A phase that still has more than the remaining budget stops the task
+        there. A restricted discount with none of its products on Polar yet,
+        while one of them is still pending, stays pending and does not keep the
+        pass open.
+        """
+        ctx = await self._load_context()
+        # An empty selection only moves the migration on. Discounts and products
+        # are imported regardless of which subscriptions are picked, so they'd
+        # otherwise still land.
+        if self.record_ids is not None and not self.record_ids:
+            return self._report(ctx)
+        budget = IMPORT_BATCH_SIZE
+        catalog_products = self._records_of(
+            ctx.catalog, MerchantMigrationRecordType.product
+        )
+
+        pending_products = self._pending_selected(
+            ctx.product_records,
+            ctx.product_source_ids | ctx.covered_product_source_ids,
+        )
+        if pending_products:
+            batch = pending_products[:budget]
+            await self._import_products(
+                batch, covered_source_ids=ctx.covered_product_source_ids
+            )
+            await self._restrict_imported_discounts(
+                self._records_of(ctx.catalog, MerchantMigrationRecordType.discount),
+                product_records=catalog_products,
+                new_product_ids={
+                    record.target_id
+                    for record in batch
+                    if record.status == MerchantMigrationRecordStatus.imported
+                    and record.target_id is not None
+                },
+            )
+            budget -= len(batch)
+            if budget == 0:
+                return None
+
+        actionable_discounts = self._actionable_discounts(
+            ctx.discount_records, catalog_products
+        )
+        if actionable_discounts:
+            batch = actionable_discounts[:budget]
+            await self._import_discounts(batch, product_records=catalog_products)
+            budget -= len(batch)
+            if budget == 0:
+                return None
+
+        pending_customers = self._pending_selected(
+            ctx.customer_records, ctx.customer_source_ids
+        )
+        if pending_customers:
+            batch = pending_customers[:budget]
+            await self._import_customers(batch, country_fallbacks=ctx.country_fallbacks)
+            budget -= len(batch)
+            if budget == 0:
+                return None
+
+        return self._report(ctx)
+
+    def _report(self, ctx: _ImportContext) -> MerchantMigrationImportReport:
+        return MerchantMigrationImportReport(
+            step=self.migration.step,
+            results=[
+                self._tally(
+                    ctx.product_records,
+                    ctx.product_source_ids,
+                    PrecheckEntity.products,
+                ),
+                self._tally(ctx.discount_records, None, PrecheckEntity.discounts),
+                self._tally(
+                    ctx.customer_records,
+                    ctx.customer_source_ids,
+                    PrecheckEntity.customers,
+                ),
+                MerchantMigrationImportResult(
+                    entity=PrecheckEntity.subscriptions,
+                    imported=0,
+                    skipped=0,
+                ),
+            ],
+        )
+
+    def _tally(
+        self,
+        records: Sequence[MerchantMigrationRecord],
+        source_ids: set[str] | None,
+        entity: PrecheckEntity,
+    ) -> MerchantMigrationImportResult:
+        counts = ImportCounts()
+        for record in records:
+            if source_ids is not None and record.source_id not in source_ids:
+                continue
+            if record.status == MerchantMigrationRecordStatus.pending:
+                continue
+            counts.settle(record.status)
+        return MerchantMigrationImportResult(
+            entity=entity,
+            imported=counts.imported,
+            skipped=counts.skipped,
+        )
+
+    async def _load_context(self) -> _ImportContext:
         records = await self.record_repository.list_by_migration(self.migration.id)
         imported_dependencies = (
             await self.record_repository.list_imported_catalog_dependencies(
@@ -286,37 +435,17 @@ class CatalogImporter:
                 for record in subscription_records
             ],
         )
-
-        product_result = await self._import_products(
-            product_records,
-            selected_source_ids=product_source_ids,
-            covered_source_ids=_covered_source_ids(catalog_products, price_owners),
-        )
-        discount_result = await self._import_discounts(
-            discount_records,
-            product_records=self._records_of(
-                catalog, MerchantMigrationRecordType.product
+        return _ImportContext(
+            catalog=catalog,
+            product_records=product_records,
+            customer_records=customer_records,
+            discount_records=discount_records,
+            product_source_ids=product_source_ids,
+            covered_product_source_ids=_covered_source_ids(
+                catalog_products, price_owners
             ),
-        )
-        customer_result = await self._import_customers(
-            customer_records,
-            selected_source_ids=customer_source_ids,
+            customer_source_ids=customer_source_ids,
             country_fallbacks=country_fallbacks,
-        )
-        subscription_result = MerchantMigrationImportResult(
-            entity=PrecheckEntity.subscriptions,
-            imported=0,
-            skipped=0,
-        )
-
-        return MerchantMigrationImportReport(
-            step=self.migration.step,
-            results=[
-                product_result,
-                discount_result,
-                customer_result,
-                subscription_result,
-            ],
         )
 
     @staticmethod
@@ -395,95 +524,25 @@ class CatalogImporter:
                 product_source_ids.add(owner.source_id)
         return product_source_ids, customer_source_ids
 
-    async def _import_products(
-        self,
-        records: Sequence[MerchantMigrationRecord],
-        *,
-        selected_source_ids: set[str],
-        covered_source_ids: set[str],
-    ) -> MerchantMigrationImportResult:
-        products = [
-            self._as(deserialize(record.type, record.canonical), CanonicalProduct)
+    @staticmethod
+    def _pending_selected(
+        records: Sequence[MerchantMigrationRecord], source_ids: set[str]
+    ) -> list[MerchantMigrationRecord]:
+        return [
+            record
             for record in records
+            if record.source_id in source_ids
+            and record.status == MerchantMigrationRecordStatus.pending
         ]
-        plans = plan_product_imports(
-            products, self.organization.default_presentment_currency
-        )
 
-        counts = ImportCounts()
-        for record, product in zip(records, products, strict=True):
-            if record.source_id in covered_source_ids:
-                await self._mark_skipped(record, _PRICES_ALREADY_IMPORTED)
-                counts.skipped += 1
-                continue
-            if record.source_id not in selected_source_ids:
-                continue
-            if record.status != MerchantMigrationRecordStatus.pending:
-                counts.settle(record.status)
-                continue
-            plan = plans[product.source_id]
-            if plan.skip is not None:
-                await self._mark_skipped(record, plan.skip)
-                counts.skipped += 1
-                continue
-            polar_product = await self._create_product(product, plan)
-            await self._mark_imported(record, polar_product.id)
-            counts.imported += 1
-
-        return MerchantMigrationImportResult(
-            entity=PrecheckEntity.products,
-            imported=counts.imported,
-            skipped=counts.skipped,
-        )
-
-    async def _import_customers(
+    def _actionable_discounts(
         self,
         records: Sequence[MerchantMigrationRecord],
-        *,
-        selected_source_ids: set[str],
-        country_fallbacks: dict[str, str],
-    ) -> MerchantMigrationImportResult:
-        customers = [
-            self._as(deserialize(record.type, record.canonical), CanonicalCustomer)
-            for record in records
-        ]
-        plans = plan_customer_imports(customers)
-
-        counts = ImportCounts()
-        for record, customer in zip(records, customers, strict=True):
-            if record.source_id not in selected_source_ids:
-                continue
-            if record.status != MerchantMigrationRecordStatus.pending:
-                counts.settle(record.status)
-                continue
-            skip = plans[customer.source_id]
-            if skip is not None:
-                await self._mark_skipped(record, skip)
-                counts.skipped += 1
-                continue
-            result = await self._create_or_reuse_customer(
-                customer, country_fallbacks.get(customer.source_id)
-            )
-            if result.skip is not None:
-                await self._mark_skipped(record, result.skip)
-                counts.skipped += 1
-                continue
-            assert result.customer is not None
-            await self._mark_imported(record, result.customer.id)
-            counts.imported += 1
-
-        return MerchantMigrationImportResult(
-            entity=PrecheckEntity.customers,
-            imported=counts.imported,
-            skipped=counts.skipped,
-        )
-
-    async def _import_discounts(
-        self,
-        records: Sequence[MerchantMigrationRecord],
-        *,
         product_records: Sequence[MerchantMigrationRecord],
-    ) -> MerchantMigrationImportResult:
+    ) -> list[MerchantMigrationRecord]:
+        """Pending discounts this pass can settle. A restricted one with none of
+        its products on Polar yet stays out while any of them is still pending:
+        importing it now would skip it for good."""
         discounts = [
             self._as(deserialize(record.type, record.canonical), CanonicalDiscount)
             for record in records
@@ -495,62 +554,192 @@ class CatalogImporter:
         plans = plan_discount_imports(
             discounts, products, self.organization.default_presentment_currency
         )
-        polar_product_ids_by_source: dict[str, list[UUID]] = {}
-        pending_product_source_ids: set[str] = set()
-        for record, product in zip(product_records, products, strict=True):
-            if record.status == MerchantMigrationRecordStatus.pending:
-                pending_product_source_ids.add(product.product_source_id)
-            if (
-                record.status != MerchantMigrationRecordStatus.imported
-                or record.target_id is None
-            ):
-                continue
-            polar_product_ids_by_source.setdefault(
-                product.product_source_id, []
-            ).append(record.target_id)
-
-        counts = ImportCounts()
+        pending_product_source_ids = {
+            product.product_source_id
+            for record, product in zip(product_records, products, strict=True)
+            if record.status == MerchantMigrationRecordStatus.pending
+        }
+        polar_product_ids_by_source = _polar_product_ids_by_source(
+            product_records, products
+        )
+        actionable: list[MerchantMigrationRecord] = []
         for record, discount in zip(records, discounts, strict=True):
             if record.status != MerchantMigrationRecordStatus.pending:
-                counts.settle(record.status)
                 continue
+            if plans[discount.source_id] is not None:
+                actionable.append(record)
+                continue
+            if (
+                discount.product_source_ids
+                and not _polar_product_ids(discount, polar_product_ids_by_source)
+                and any(
+                    product_source_id in pending_product_source_ids
+                    for product_source_id in discount.product_source_ids
+                )
+            ):
+                continue
+            actionable.append(record)
+        return actionable
+
+    async def _import_products(
+        self,
+        records: Sequence[MerchantMigrationRecord],
+        *,
+        covered_source_ids: set[str],
+    ) -> None:
+        products = [
+            self._as(deserialize(record.type, record.canonical), CanonicalProduct)
+            for record in records
+        ]
+        plans = plan_product_imports(
+            products, self.organization.default_presentment_currency
+        )
+        for record, product in zip(records, products, strict=True):
+            if record.source_id in covered_source_ids:
+                await self._mark_skipped(record, _PRICES_ALREADY_IMPORTED)
+                continue
+            plan = plans[product.source_id]
+            if plan.skip is not None:
+                await self._mark_skipped(record, plan.skip)
+                continue
+            polar_product = await self._create_product(product, plan)
+            await self._mark_imported(record, polar_product.id)
+
+    async def _import_customers(
+        self,
+        records: Sequence[MerchantMigrationRecord],
+        *,
+        country_fallbacks: dict[str, str],
+    ) -> None:
+        customers = [
+            self._as(deserialize(record.type, record.canonical), CanonicalCustomer)
+            for record in records
+        ]
+        plans = plan_customer_imports(customers)
+        for record, customer in zip(records, customers, strict=True):
+            skip = plans[customer.source_id]
+            if skip is not None:
+                await self._mark_skipped(record, skip)
+                continue
+            result = await self._create_or_reuse_customer(
+                customer, country_fallbacks.get(customer.source_id)
+            )
+            if result.skip is not None:
+                await self._mark_skipped(record, result.skip)
+                continue
+            assert result.customer is not None
+            await self._mark_imported(record, result.customer.id)
+
+    async def _import_discounts(
+        self,
+        records: Sequence[MerchantMigrationRecord],
+        *,
+        product_records: Sequence[MerchantMigrationRecord],
+    ) -> None:
+        """Import coupons, restricted to the Polar products of their Stripe ones.
+
+        A restricted coupon imports once any of its products is on Polar: waiting
+        for every catalog row would wait forever on rows nothing selects, like a
+        yearly price nobody is on.
+        """
+        discounts = [
+            self._as(deserialize(record.type, record.canonical), CanonicalDiscount)
+            for record in records
+        ]
+        products = [
+            self._as(deserialize(record.type, record.canonical), CanonicalProduct)
+            for record in product_records
+        ]
+        plans = plan_discount_imports(
+            discounts, products, self.organization.default_presentment_currency
+        )
+        polar_product_ids_by_source = _polar_product_ids_by_source(
+            product_records, products
+        )
+        for record, discount in zip(records, discounts, strict=True):
             skip = plans[discount.source_id]
             if skip is not None:
                 await self._mark_skipped(record, skip)
-                counts.skipped += 1
                 continue
-            product_ids: list[UUID] = []
-            if discount.product_source_ids:
-                if any(
-                    product_source_id in pending_product_source_ids
-                    for product_source_id in discount.product_source_ids
-                ):
-                    continue
-                for product_source_id in discount.product_source_ids:
-                    product_ids.extend(
-                        polar_product_ids_by_source.get(product_source_id, [])
-                    )
-                if not product_ids:
-                    await self._mark_skipped(
-                        record,
-                        Reason(
-                            "discount_products_not_importable",
-                            (
-                                f"Coupon '{discount.name}' only applies to products "
-                                "that weren't imported, so it stays on the source."
-                            ),
+            product_ids = _polar_product_ids(discount, polar_product_ids_by_source)
+            if discount.product_source_ids and not product_ids:
+                await self._mark_skipped(
+                    record,
+                    Reason(
+                        "discount_products_not_importable",
+                        (
+                            f"Coupon '{discount.name}' only applies to products "
+                            "that weren't imported, so it stays on the source."
                         ),
-                    )
-                    counts.skipped += 1
-                    continue
+                    ),
+                )
+                continue
             polar_discount = await self._create_discount(discount, product_ids)
             await self._mark_imported(record, polar_discount.id)
-            counts.imported += 1
 
-        return MerchantMigrationImportResult(
-            entity=PrecheckEntity.discounts,
-            imported=counts.imported,
-            skipped=counts.skipped,
+    async def _restrict_imported_discounts(
+        self,
+        records: Sequence[MerchantMigrationRecord],
+        *,
+        product_records: Sequence[MerchantMigrationRecord],
+        new_product_ids: set[UUID],
+    ) -> None:
+        """Rows imported later join a restricted coupon's products, even when an
+        earlier migration imported the coupon."""
+        if not new_product_ids:
+            return
+        polar_product_ids_by_source = _polar_product_ids_by_source(
+            product_records,
+            [
+                self._as(deserialize(record.type, record.canonical), CanonicalProduct)
+                for record in product_records
+            ],
+        )
+        for record in records:
+            if record.status != MerchantMigrationRecordStatus.imported:
+                continue
+            imported = self._as(
+                deserialize(record.type, record.canonical), CanonicalDiscount
+            )
+            await self._restrict_to_new_products(
+                record,
+                [
+                    product_id
+                    for product_id in _polar_product_ids(
+                        imported, polar_product_ids_by_source
+                    )
+                    if product_id in new_product_ids
+                ],
+            )
+
+    async def _restrict_to_new_products(
+        self, record: MerchantMigrationRecord, product_ids: list[UUID]
+    ) -> None:
+        if not product_ids or record.target_id is None:
+            return
+        discount = await DiscountRepository.from_session(self.session).get_by_id(
+            record.target_id
+        )
+        # No products at all means every product: widening that would narrow it.
+        if (
+            discount is None
+            or discount.deleted_at is not None
+            or not discount.discount_products
+        ):
+            return
+        attached = {link.product_id for link in discount.discount_products}
+        missing = [id for id in product_ids if id not in attached]
+        if not missing:
+            return
+        product_repository = ProductRepository.from_session(self.session)
+        products = await product_repository.get_all(
+            product_repository.get_base_statement().where(
+                Product.id.in_(missing),
+                Product.organization_id == self.organization.id,
+            )
+        )
+        discount.discount_products.extend(
+            DiscountProduct(product=product) for product in products
         )
 
     async def _create_product(
@@ -570,11 +759,12 @@ class CatalogImporter:
                 )
             )
         # A bulk import must not webhook or re-review the org for every product.
+        # An organization token rejects an explicit organization_id.
         polar_product = await product_service.create(
             self.session,
             ProductCreateRecurring(
                 name=product.name,
-                organization_id=self.organization.id,
+                organization_id=None,
                 recurring_interval=SubscriptionRecurringInterval(
                     product.recurring_interval
                 ),
@@ -592,29 +782,25 @@ class CatalogImporter:
     async def _create_discount(
         self, discount: CanonicalDiscount, product_ids: list[UUID]
     ) -> Discount:
+        # Polar can't store the source's used count, so ``max_redemptions`` is
+        # what's left. A spent code keeps its name at 0 left, which blocks it.
         exhausted = discount.max_redemptions == 0
         duration = DiscountDuration(discount.duration.value)
-        ends_at = discount.ends_at
-        if exhausted:
-            now = utc_now()
-            ends_at = now if ends_at is None or ends_at > now else ends_at
         shared: dict[str, Any] = {
             "name": discount.name,
-            "code": (
-                None
-                if exhausted
-                else await self._available_discount_code(discount.code)
-            ),
+            "code": await self._available_discount_code(discount.code),
             "duration": duration,
             "duration_in_months": (
                 discount.duration_in_months
                 if duration == DiscountDuration.repeating
                 else None
             ),
-            "ends_at": ends_at,
+            "ends_at": discount.ends_at,
+            # The create schema rejects 0; it's set once the row exists.
             "max_redemptions": None if exhausted else discount.max_redemptions,
             "products": product_ids or None,
-            "organization_id": self.organization.id,
+            # An organization token rejects an explicit organization_id.
+            "organization_id": None,
             "metadata": {"stripe_coupon_id": discount.source_id},
         }
         create: DiscountFixedCreate | DiscountPercentageCreate
@@ -650,23 +836,21 @@ class CatalogImporter:
             customer.email, self.organization.id
         )
         if existing is not None:
-            # Reusing a customer bound to another Stripe id would attach the
-            # PAN-copied card to the wrong record.
-            if (
+            # The PAN-copied card lands under the source `cus_…` id, and renewals
+            # charge it through the customer's Stripe id, so the customer has to
+            # move onto the source id. Only while nothing depends on its own.
+            rebind = (
                 stripe_customer_id is not None
-                and existing.stripe_customer_id is not None
                 and existing.stripe_customer_id != stripe_customer_id
-            ):
-                return ImportedCustomer(
-                    skip=Reason(
-                        "customer_stripe_id_conflict",
-                        CUSTOMER_STRIPE_ID_CONFLICT_REASON,
-                    )
+            )
+            if rebind:
+                identity = await self.customer_repository.get_bound_stripe_identity(
+                    existing.id
                 )
-            # Reconcile the source id so the PAN-copied card lands on the same
-            # customer, but never overwrite one that's already set.
+                if identity.stripe_customer_id is not None:
+                    return ImportedCustomer(skip=stripe_id_conflict_reason(identity))
             updates: dict[str, object] = {}
-            if stripe_customer_id and existing.stripe_customer_id is None:
+            if rebind:
                 updates["stripe_customer_id"] = stripe_customer_id
             address = self._billing_address(customer, country_fallback)
             if address is not None:

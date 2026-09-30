@@ -1,5 +1,6 @@
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { CATALOG_READ_STALLED } from '../catalogReadCopy'
 import {
   CATALOG_EMPTY_COPY,
   CATALOG_READ_ERROR_TITLE,
@@ -12,6 +13,7 @@ interface Props {
   onRerunPrecheck?: () => void
   rerunning?: boolean
   readError?: string
+  stalled?: boolean
 }
 
 export function CatalogEmptyPanel({
@@ -19,10 +21,17 @@ export function CatalogEmptyPanel({
   onRerunPrecheck,
   rerunning = false,
   readError,
+  stalled = false,
 }: Props) {
+  const refreshing = rerunning && !stalled
   const failed = Boolean(readError) && !rerunning
   const { title, description } = rerunning
-    ? CATALOG_REFRESH_COPY
+    ? {
+        title: CATALOG_REFRESH_COPY.title,
+        description: stalled
+          ? CATALOG_READ_STALLED
+          : CATALOG_REFRESH_COPY.description,
+      }
     : readError
       ? { title: CATALOG_READ_ERROR_TITLE, description: readError }
       : CATALOG_EMPTY_COPY[kind]
@@ -57,9 +66,9 @@ export function CatalogEmptyPanel({
           size="sm"
           variant="secondary"
           onClick={onRerunPrecheck}
-          disabled={rerunning}
+          disabled={refreshing}
         >
-          {rerunning ? 'Refreshing…' : 'Refresh from Stripe'}
+          {refreshing ? 'Refreshing…' : 'Refresh from Stripe'}
         </Button>
       )}
     </Box>

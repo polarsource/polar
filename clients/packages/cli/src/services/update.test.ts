@@ -1,4 +1,13 @@
-import { afterEach, beforeEach, describe, expect, vi, test } from 'vitest'
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  vi,
+  test,
+} from 'vitest'
 import { createHash } from 'node:crypto'
 import { writeFileSync } from 'node:fs'
 import {
@@ -15,11 +24,14 @@ import { BunFileSystem } from '@effect/platform-bun'
 import { Effect, FileSystem, Layer, PlatformError } from 'effect'
 import type { CLIRelease } from '@/services/github-releases'
 import {
+  binaryNameFor,
   getArchiveExtractionCommand,
   getReleaseArchiveName,
   install,
   type InstallStep,
+  removeRetiredBinary,
   replaceBinary,
+  retiredBinaryPath,
 } from '@/services/update'
 import { fakeHttp } from '@/utils/test-utils/http'
 
@@ -40,17 +52,37 @@ describe('getReleaseArchiveName', () => {
       'polar-linux-x64.tar.gz',
     )
   })
+
+  test('uses zip archives for windows releases', () => {
+    expect(getReleaseArchiveName({ os: 'windows', arch: 'x64' })).toBe(
+      'polar-windows-x64.zip',
+    )
+  })
+})
+
+describe('binaryNameFor', () => {
+  test('adds the exe extension on windows only', () => {
+    expect(binaryNameFor('windows')).toBe('polar.exe')
+    expect(binaryNameFor('darwin')).toBe('polar')
+    expect(binaryNameFor('linux')).toBe('polar')
+  })
 })
 
 describe('getArchiveExtractionCommand', () => {
-  test('uses ditto for zip archives', () => {
-    expect(getArchiveExtractionCommand('/tmp/polar.zip', '/tmp/out')).toEqual([
-      'ditto',
-      '-x',
-      '-k',
-      '/tmp/polar.zip',
-      '/tmp/out',
-    ])
+  test('uses ditto for zip archives on macOS', () => {
+    expect(
+      getArchiveExtractionCommand('/tmp/polar.zip', '/tmp/out', 'darwin'),
+    ).toEqual(['ditto', '-x', '-k', '/tmp/polar.zip', '/tmp/out'])
+  })
+
+  test('uses the bundled tar for zip archives on windows', () => {
+    expect(
+      getArchiveExtractionCommand(
+        'C:\\Temp\\polar.zip',
+        'C:\\Temp\\out',
+        'win32',
+      ),
+    ).toEqual(['tar', '-xf', 'C:\\Temp\\polar.zip', '-C', 'C:\\Temp\\out'])
   })
 
   test('uses tar for tar.gz archives', () => {
@@ -60,7 +92,7 @@ describe('getArchiveExtractionCommand', () => {
   })
 })
 
-describe('replaceBinary', () => {
+describe('replaceBinary on macOS and Linux', () => {
   let dir: string
   let newBinaryPath: string
   let binaryPath: string
@@ -70,7 +102,7 @@ describe('replaceBinary', () => {
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem
       const error = writeError
-      return yield* replaceBinary(newBinaryPath, binaryPath).pipe(
+      return yield* replaceBinary(newBinaryPath, binaryPath, 'linux').pipe(
         Effect.provideService(FileSystem.FileSystem, {
           ...fs,
           writeFile: error ? () => Effect.fail(error) : fs.writeFile,
@@ -103,12 +135,15 @@ describe('replaceBinary', () => {
     )
   })
 
-  test('sets executable permissions on target binary', async () => {
-    await Effect.runPromise(runReplace())
+  test.skipIf(process.platform === 'win32')(
+    'sets executable permissions on target binary',
+    async () => {
+      await Effect.runPromise(runReplace())
 
-    const s = await stat(binaryPath)
-    expect(s.mode & 0o111).toBeGreaterThan(0)
-  })
+      const s = await stat(binaryPath)
+      expect(s.mode & 0o111).toBeGreaterThan(0)
+    },
+  )
 
   test('leaves no temp file behind after success', async () => {
     await Effect.runPromise(runReplace())
@@ -164,10 +199,116 @@ describe('replaceBinary', () => {
   })
 })
 
+describe('replaceBinary on windows', () => {
+  let dir: string
+  let newBinaryPath: string
+  let binaryPath: string
+  let copyError: PlatformError.PlatformError | undefined
+
+  const runReplace = () =>
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem
+      const error = copyError
+      return yield* replaceBinary(newBinaryPath, binaryPath, 'win32').pipe(
+        Effect.provideService(FileSystem.FileSystem, {
+          ...fs,
+          copyFile: error ? () => Effect.fail(error) : fs.copyFile,
+        }),
+      )
+    }).pipe(Effect.provide(BunFileSystem.layer))
+
+  beforeEach(async () => {
+    copyError = undefined
+    dir = await makeTemp()
+    newBinaryPath = join(dir, 'polar-new.exe')
+    binaryPath = join(dir, 'polar.exe')
+    await writeFile(newBinaryPath, 'new binary')
+    await writeFile(binaryPath, 'old binary')
+  })
+
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true })
+  })
+
+  test('moves the running binary aside and installs the new one', async () => {
+    await Effect.runPromise(runReplace())
+
+    await expect(readFile(binaryPath, 'utf8')).resolves.toBe('new binary')
+    await expect(readFile(retiredBinaryPath(binaryPath), 'utf8')).resolves.toBe(
+      'old binary',
+    )
+  })
+
+  test('replaces a binary left behind by an earlier update', async () => {
+    await writeFile(retiredBinaryPath(binaryPath), 'older binary')
+
+    await Effect.runPromise(runReplace())
+
+    await expect(readFile(retiredBinaryPath(binaryPath), 'utf8')).resolves.toBe(
+      'old binary',
+    )
+  })
+
+  test('restores the running binary when the new one cannot be installed', async () => {
+    copyError = PlatformError.systemError({
+      _tag: 'PermissionDenied',
+      module: 'FileSystem',
+      method: 'copyFile',
+    })
+
+    await expect(Effect.runPromise(runReplace())).rejects.toThrow(
+      'Could not replace',
+    )
+    await expect(readFile(binaryPath, 'utf8')).resolves.toBe('old binary')
+    await expect(readdir(dir)).resolves.not.toContain('polar.exe.old')
+  })
+})
+
+describe('removeRetiredBinary', () => {
+  let dir: string
+  let binaryPath: string
+
+  beforeEach(async () => {
+    dir = await makeTemp()
+    binaryPath = join(dir, 'polar.exe')
+    await writeFile(retiredBinaryPath(binaryPath), 'old binary')
+  })
+
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true })
+  })
+
+  test('removes the binary retired by the last update on windows', async () => {
+    removeRetiredBinary(binaryPath, 'win32')
+
+    await expect(readdir(dir)).resolves.toEqual([])
+  })
+
+  test('leaves other platforms alone', async () => {
+    removeRetiredBinary(binaryPath, 'darwin')
+
+    await expect(readdir(dir)).resolves.toEqual(['polar.exe.old'])
+  })
+
+  test('does nothing when no binary was retired', () => {
+    expect(() =>
+      removeRetiredBinary(join(dir, 'missing.exe'), 'win32'),
+    ).not.toThrow()
+  })
+})
+
 describe('install', () => {
-  const archiveName = getReleaseArchiveName({
-    os: process.platform,
-    arch: process.arch,
+  const host = { platform: process.platform, arch: process.arch }
+  const archiveName = getReleaseArchiveName({ os: 'linux', arch: 'x64' })
+
+  beforeAll(() => {
+    Object.defineProperty(process, 'platform', { value: 'linux' })
+    Object.defineProperty(process, 'arch', { value: 'x64' })
+  })
+
+  afterAll(() => {
+    Object.defineProperty(process, 'platform', { value: host.platform })
+    Object.defineProperty(process, 'arch', { value: host.arch })
   })
   const archiveUrl = `https://example.test/${archiveName}`
   const checksumsUrl = 'https://example.test/checksums.txt'

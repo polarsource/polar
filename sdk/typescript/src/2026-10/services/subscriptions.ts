@@ -15,9 +15,9 @@ import type {
 import {
   AlreadyCanceledSubscription,
   HTTPValidationError,
-  PaymentFailed,
   ResourceNotFound,
   SubscriptionLocked,
+  SubscriptionsUpdate402Error,
   SubscriptionsUpdate403Error,
   SubscriptionsUpdate409Error,
 } from "../errors";
@@ -324,8 +324,8 @@ export const updateSubscriptions = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {PaymentFailed} Payment required to apply the subscription update.
-   * @throws {SubscriptionsUpdate403Error} Subscription is already canceled or will be at the end of the period, or is not active.
+   * @throws {SubscriptionsUpdate402Error} The charge failed, or requires customer authentication that can't be completed off-session.
+   * @throws {SubscriptionsUpdate403Error} Subscription is already canceled or will be at the end of the period, is not active, or the organization is not ready to renew subscriptions.
    * @throws {ResourceNotFound} Subscription not found.
    * @throws {SubscriptionsUpdate409Error} Subscription is pending an update, or is not scheduled to be canceled.
    * @throws {HTTPValidationError} Validation Error
@@ -348,7 +348,7 @@ export const updateSubscriptions = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request, requestOptions);
     return client.parseResponse<Subscription>(response, "json", {
-      402: PaymentFailed,
+      402: SubscriptionsUpdate402Error,
       403: SubscriptionsUpdate403Error,
       404: ResourceNotFound,
       409: SubscriptionsUpdate409Error,

@@ -888,12 +888,12 @@ describe('CheckoutPricingBreakdown', () => {
         total_amount: 5000,
         seats: 10,
         product_price: createSeatBasedPrice({
-          seat_tiers: {
-            seat_tier_type: 'volume',
-            tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 500 }],
-            minimum_seats: 1,
-            maximum_seats: null,
+          tiers: {
+            type: 'volume',
+            tiers: [{ bound: null, unit_amount: '500' }],
           },
+          minimum_units: 1,
+          maximum_units: null,
         }),
       })
 
@@ -914,15 +914,15 @@ describe('CheckoutPricingBreakdown', () => {
         total_amount: 14000,
         seats: 15,
         product_price: createSeatBasedPrice({
-          seat_tiers: {
-            seat_tier_type: 'graduated',
+          tiers: {
+            type: 'graduated',
             tiers: [
-              { min_seats: 1, max_seats: 10, price_per_seat: 1000 },
-              { min_seats: 11, max_seats: null, price_per_seat: 800 },
+              { bound: 10, unit_amount: '1000' },
+              { bound: null, unit_amount: '800' },
             ],
-            minimum_seats: 1,
-            maximum_seats: null,
           },
+          minimum_units: 1,
+          maximum_units: null,
         }),
       })
 
@@ -945,15 +945,15 @@ describe('CheckoutPricingBreakdown', () => {
         total_amount: 5000,
         seats: 5,
         product_price: createSeatBasedPrice({
-          seat_tiers: {
-            seat_tier_type: 'graduated',
+          tiers: {
+            type: 'graduated',
             tiers: [
-              { min_seats: 1, max_seats: 10, price_per_seat: 1000 },
-              { min_seats: 11, max_seats: null, price_per_seat: 800 },
+              { bound: 10, unit_amount: '1000' },
+              { bound: null, unit_amount: '800' },
             ],
-            minimum_seats: 1,
-            maximum_seats: null,
           },
+          minimum_units: 1,
+          maximum_units: null,
         }),
       })
 
@@ -975,15 +975,15 @@ describe('CheckoutPricingBreakdown', () => {
         total_amount: 3000,
         seats: 8,
         product_price: createSeatBasedPrice({
-          seat_tiers: {
-            seat_tier_type: 'graduated',
+          tiers: {
+            type: 'graduated',
             tiers: [
-              { min_seats: 1, max_seats: 5, price_per_seat: 0 },
-              { min_seats: 6, max_seats: null, price_per_seat: 1000 },
+              { bound: 5, unit_amount: '0' },
+              { bound: null, unit_amount: '1000' },
             ],
-            minimum_seats: 1,
-            maximum_seats: null,
           },
+          minimum_units: 1,
+          maximum_units: null,
         }),
       })
 
@@ -997,6 +997,35 @@ describe('CheckoutPricingBreakdown', () => {
       expect(paidRow).toHaveTextContent('$30')
     })
 
+    it('renders the free tier as included when the minimum is above its bound', () => {
+      const checkout = createCheckout({
+        amount: 7000,
+        net_amount: 7000,
+        tax_amount: null,
+        total_amount: 7000,
+        seats: 12,
+        product_price: createSeatBasedPrice({
+          tiers: {
+            type: 'graduated',
+            tiers: [
+              { bound: 5, unit_amount: '0' },
+              { bound: null, unit_amount: '1000' },
+            ],
+          },
+          minimum_units: 10,
+          maximum_units: null,
+        }),
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      const includedRow = screen.getByTestId('detail-row-5 seats included')
+      expect(includedRow).not.toHaveTextContent('$')
+
+      const paidRow = screen.getByTestId('detail-row-7 seats')
+      expect(paidRow).toHaveTextContent('$70')
+    })
+
     it('uses the singular "One seat included" when a single seat is free', () => {
       const checkout = createCheckout({
         amount: 1000,
@@ -1005,15 +1034,15 @@ describe('CheckoutPricingBreakdown', () => {
         total_amount: 1000,
         seats: 2,
         product_price: createSeatBasedPrice({
-          seat_tiers: {
-            seat_tier_type: 'graduated',
+          tiers: {
+            type: 'graduated',
             tiers: [
-              { min_seats: 1, max_seats: 1, price_per_seat: 0 },
-              { min_seats: 2, max_seats: null, price_per_seat: 1000 },
+              { bound: 1, unit_amount: '0' },
+              { bound: null, unit_amount: '1000' },
             ],
-            minimum_seats: 1,
-            maximum_seats: null,
           },
+          minimum_units: 1,
+          maximum_units: null,
         }),
       })
 
@@ -1032,12 +1061,12 @@ describe('CheckoutPricingBreakdown', () => {
         total_amount: 0,
         seats: 4,
         product_price: createSeatBasedPrice({
-          seat_tiers: {
-            seat_tier_type: 'volume',
-            tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 0 }],
-            minimum_seats: 1,
-            maximum_seats: null,
+          tiers: {
+            type: 'volume',
+            tiers: [{ bound: null, unit_amount: '0' }],
           },
+          minimum_units: 1,
+          maximum_units: null,
         }),
       })
 
@@ -1051,12 +1080,12 @@ describe('CheckoutPricingBreakdown', () => {
   describe('fixed + seat pricing', () => {
     const seatPrice = createSeatBasedPrice({
       id: 'price_seat',
-      seat_tiers: {
-        seat_tier_type: 'volume',
-        tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 2000 }],
-        minimum_seats: 1,
-        maximum_seats: null,
+      tiers: {
+        type: 'volume',
+        tiers: [{ bound: null, unit_amount: '2000' }],
       },
+      minimum_units: 1,
+      maximum_units: null,
     })
 
     it('shows a base price row above the seat rows', () => {

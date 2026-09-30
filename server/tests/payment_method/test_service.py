@@ -3,15 +3,17 @@ from typing import cast
 from unittest.mock import MagicMock
 
 import pytest
+import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
 from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
 from polar.integrations.stripe.service import StripeService
 from polar.kit.utils import utc_now
-from polar.models import Customer, Organization, PaymentMethod, Product
+from polar.models import Checkout, Customer, Order, Organization, PaymentMethod, Product
 from polar.models.organization import OrganizationCustomerEmailSettings
 from polar.models.subscription import SubscriptionStatus
 from polar.payment_method.service import (
+    NoGeneratedSEPAPaymentMethod,
     PaymentMethodInUseByActiveSubscription,
 )
 from polar.payment_method.service import (
@@ -26,6 +28,124 @@ from tests.fixtures.random_objects import (
     create_subscription,
 )
 from tests.fixtures.stripe import build_stripe_payment_method
+
+
+@pytest.mark.asyncio
+class TestResolveFromStripeIntent:
+    @pytest.mark.parametrize("method_type", ["ideal", "bancontact", "sofort"])
+    @pytest.mark.parametrize(
+        "intent_type", ["charge", "setup_intent", "payment_intent"]
+    )
+    async def test_generated_sepa(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        mocker: MockerFixture,
+        method_type: str,
+        intent_type: str,
+    ) -> None:
+        original = build_stripe_payment_method(type=method_type)
+        generated = build_stripe_payment_method(
+            type="sepa_debit", details={"last4": "1234"}
+        )
+        generated.id = "pm_generated"
+        get_method = mocker.patch(
+            "polar.payment_method.service.stripe_service.get_payment_method",
+            side_effect=[original, generated],
+        )
+        details = {
+            "type": method_type,
+            method_type: {"generated_sepa_debit": generated.id},
+        }
+        charge = stripe_lib.Charge.construct_from(
+            {
+                "id": "ch_test",
+                "payment_method": original.id,
+                "payment_method_details": details,
+            },
+            None,
+        )
+        intent: stripe_lib.Charge | stripe_lib.SetupIntent | stripe_lib.PaymentIntent
+        if intent_type == "setup_intent":
+            intent = stripe_lib.SetupIntent.construct_from(
+                {
+                    "id": "seti_test",
+                    "payment_method": original.id,
+                    "latest_attempt": {
+                        "id": "setatt_test",
+                        "object": "setup_attempt",
+                        "payment_method_details": details,
+                    },
+                },
+                None,
+            )
+            mocker.patch(
+                "polar.payment_method.service.stripe_service.get_setup_intent",
+                return_value=intent,
+            )
+        elif intent_type == "payment_intent":
+            intent = stripe_lib.PaymentIntent.construct_from(
+                {
+                    "id": "pi_test",
+                    "payment_method": original.id,
+                    "latest_charge": charge.id,
+                },
+                None,
+            )
+            mocker.patch(
+                "polar.payment_method.service.stripe_service.get_charge",
+                return_value=charge,
+            )
+        else:
+            intent = charge
+
+        if isinstance(intent, stripe_lib.PaymentIntent):
+            saved = await payment_method_service.upsert_from_stripe_payment_intent_for_order(
+                session, intent, Order(customer_id=customer.id, product=None)
+            )
+        else:
+            saved = await payment_method_service.upsert_from_stripe_intent(
+                session, intent, Checkout(customer=customer)
+            )
+        assert saved is not None
+        assert saved.processor_id == generated.id
+        assert saved.type == "sepa_debit"
+        assert saved.method_metadata == {"last4": "1234"}
+        get_method.assert_any_await(generated.id)
+
+    @pytest.mark.parametrize("expanded", [False, True])
+    async def test_card_unchanged(self, mocker: MockerFixture, expanded: bool) -> None:
+        method = build_stripe_payment_method(type="card")
+        get_method = mocker.patch(
+            "polar.payment_method.service.stripe_service.get_payment_method",
+            return_value=method,
+        )
+        intent = stripe_lib.SetupIntent.construct_from(
+            {"id": "seti_card", "payment_method": method if expanded else method.id},
+            None,
+        )
+        assert await payment_method_service.resolve_from_stripe_intent(intent) == method
+        assert get_method.await_count == (0 if expanded else 1)
+
+    async def test_missing_generated_method(self, mocker: MockerFixture) -> None:
+        original = build_stripe_payment_method(type="ideal")
+        mocker.patch(
+            "polar.payment_method.service.stripe_service.get_payment_method",
+            return_value=original,
+        )
+        charge = stripe_lib.Charge.construct_from(
+            {
+                "id": "ch_missing",
+                "payment_method": original.id,
+                "payment_method_details": {
+                    "type": "ideal",
+                    "ideal": {"generated_sepa_debit": None},
+                },
+            },
+            None,
+        )
+        with pytest.raises(NoGeneratedSEPAPaymentMethod):
+            await payment_method_service.resolve_from_stripe_intent(charge)
 
 
 @pytest.mark.asyncio

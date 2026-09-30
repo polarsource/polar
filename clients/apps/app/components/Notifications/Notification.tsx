@@ -5,6 +5,7 @@ import {
   MaintainerFileFlaggedMaliciousNotificationPayload,
   MaintainerNewPaidSubscriptionNotificationPayload,
   MaintainerNewProductSaleNotificationPayload,
+  MaintainerNewTrialNotificationPayload,
   MaintainerSubscriptionRenewalNotificationPayload,
 } from '@/hooks/polar/notifications'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
@@ -19,6 +20,7 @@ export interface NotificationProps {
   createdAt: string
   payload:
     | MaintainerNewPaidSubscriptionNotificationPayload
+    | MaintainerNewTrialNotificationPayload
     | MaintainerNewProductSaleNotificationPayload
     | MaintainerAccountCreditsGrantedNotificationPayload
     | MaintainerSubscriptionRenewalNotificationPayload
@@ -39,6 +41,14 @@ export const Notification = ({
         return (
           <MaterialIcons
             name="all-inclusive"
+            size={20}
+            color={theme.colors.text}
+          />
+        )
+      case 'MaintainerNewTrialNotification':
+        return (
+          <MaterialIcons
+            name="hourglass-empty"
             size={20}
             color={theme.colors.text}
           />
@@ -76,6 +86,8 @@ export const Notification = ({
     switch (type) {
       case 'MaintainerNewPaidSubscriptionNotification':
         return 'New Subscription'
+      case 'MaintainerNewTrialNotification':
+        return 'New Trial'
       case 'MaintainerNewProductSaleNotification':
         return 'New Product Sale'
       case 'MaintainerSubscriptionRenewalNotification':
@@ -95,6 +107,12 @@ export const Notification = ({
         const { subscriber_name, tier_name } =
           payload as MaintainerNewPaidSubscriptionNotificationPayload
         return `${subscriber_name} subscribed to ${tier_name}`
+      case 'MaintainerNewTrialNotification':
+        const {
+          subscriber_name: trialSubscriberName,
+          product_name: trialProductName,
+        } = payload as MaintainerNewTrialNotificationPayload
+        return `${trialSubscriberName} started a ${trialProductName} trial`
       case 'MaintainerNewProductSaleNotification':
         const {
           customer_name,

@@ -2,7 +2,9 @@ import contextlib
 import contextvars
 import dataclasses
 import functools
+import json
 import re
+import types
 import typing
 from collections.abc import (
     Awaitable,
@@ -14,9 +16,15 @@ from collections.abc import (
 
 from fastapi import APIRouter, FastAPI
 from fastapi.routing import APIRoute, RouteContext, iter_route_contexts
-from pydantic import Field, GetCoreSchemaHandler, GetJsonSchemaHandler
+from pydantic import (
+    BaseModel,
+    Field,
+    GetCoreSchemaHandler,
+    GetJsonSchemaHandler,
+    TypeAdapter,
+)
 from pydantic.fields import FieldInfo
-from pydantic.json_schema import JsonSchemaValue
+from pydantic.json_schema import GenerateJsonSchema, JsonSchemaValue
 from pydantic_core import CoreSchema, PydanticOmit, core_schema
 from sqlalchemy import CHAR, Dialect, TypeDecorator
 from starlette.datastructures import Headers, MutableHeaders
@@ -137,6 +145,10 @@ class _VersionRange:
             self.up_to is None or version <= self.up_to
         )
 
+    def __call__(self, _: typing.Any) -> bool:
+        version = _ACTIVE_API_VERSION.get()
+        return version is not None and not self.includes(version)
+
     def __get_pydantic_json_schema__(
         self, core_schema: CoreSchema, handler: GetJsonSchemaHandler
     ) -> JsonSchemaValue:
@@ -146,6 +158,26 @@ class _VersionRange:
         return handler(core_schema)
 
 
+_original_field_is_required = GenerateJsonSchema.field_is_required
+
+
+def _versioned_field_is_required(
+    self: GenerateJsonSchema,
+    field: core_schema.ModelField
+    | core_schema.DataclassField
+    | core_schema.TypedDictField,
+    total: bool,
+) -> bool:
+    if isinstance(field.get("serialization_exclude_if"), _VersionRange):
+        field = field.copy()
+        field.pop("serialization_exclude_if")
+    return _original_field_is_required(self, field, total)
+
+
+# Version availability determines presence, not requiredness within that version.
+GenerateJsonSchema.field_is_required = _versioned_field_is_required  # type: ignore[method-assign]
+
+
 def Version(
     *,
     starting_from: APIVersion | None = None,
@@ -153,13 +185,65 @@ def Version(
 ) -> FieldInfo:
     version_range = _VersionRange(starting_from=starting_from, up_to=up_to)
 
-    def exclude_if_unavailable(_: typing.Any) -> bool:
-        version = _ACTIVE_API_VERSION.get()
-        return version is not None and not version_range.includes(version)
-
-    field_info = Field(exclude_if=exclude_if_unavailable)
+    field_info = Field(exclude_if=version_range)
     field_info.metadata.append(version_range)
     return field_info
+
+
+def _iter_model_classes(
+    cls: type[BaseModel] = BaseModel,
+) -> Generator[type[BaseModel]]:
+    for subclass in cls.__subclasses__():
+        yield subclass
+        yield from _iter_model_classes(subclass)
+
+
+def _get_omitted_schema_names(version: APIVersion) -> set[str]:
+    names: set[str] = set()
+    for model in _iter_model_classes():
+        for field in model.__pydantic_fields__.values():
+            if any(
+                isinstance(metadata, _VersionRange) and not metadata.includes(version)
+                for metadata in field.metadata
+            ):
+                schema = TypeAdapter(
+                    types.GenericAlias(list, (field.annotation,))
+                ).json_schema()
+                names.update(schema.get("$defs", {}))
+    return names
+
+
+def _get_schema_refs(value: typing.Any) -> set[str]:
+    return set(re.findall(r'"#/components/schemas/([^"]+)"', json.dumps(value)))
+
+
+def prune_version_omitted_schemas(
+    openapi_schema: dict[str, typing.Any], version: APIVersion
+) -> dict[str, typing.Any]:
+    """
+    Remove component schemas only reachable through fields omitted in this version.
+
+    FastAPI emits every model reachable through type annotations as a component,
+    including the ones behind fields that `Version` omits from this version.
+    """
+    schemas: dict[str, typing.Any] = openapi_schema["components"]["schemas"]
+    reachable: set[str] = set()
+    components = {
+        key: value
+        for key, value in openapi_schema["components"].items()
+        if key != "schemas"
+    }
+    pending = _get_schema_refs({**openapi_schema, "components": components})
+    while pending:
+        name = pending.pop()
+        if name in reachable or name not in schemas:
+            continue
+        reachable.add(name)
+        pending |= _get_schema_refs(schemas[name])
+
+    for name in _get_omitted_schema_names(version) - reachable:
+        schemas.pop(name, None)
+    return openapi_schema
 
 
 def version[**P, R](

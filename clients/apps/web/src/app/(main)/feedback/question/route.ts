@@ -1,12 +1,19 @@
+import {
+  ACCOUNT_REVIEW_REPLY,
+  REJECTION_PRE_APPROVAL_TEXT,
+} from '@/components/Feedback/constants'
+import { aiTracing, flushAITelemetry } from '@/utils/aiTelemetry'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import * as Sentry from '@sentry/nextjs'
 import {
   convertToModelMessages,
+  createUIMessageStreamResponse,
   hasToolCall,
+  isStepCount,
   smoothStream,
-  stepCountIs,
   streamText,
+  toUIMessageStream,
   tool,
   type UIMessage,
 } from 'ai'
@@ -15,7 +22,6 @@ import { z } from 'zod'
 
 import { ALLOWED_DASHBOARD_PATHS } from './dashboardPaths'
 import { fetchMintlifyPageContent, searchMintlify } from './mintlify'
-import { flushPostHog, wrapWithTracing } from './posthog'
 
 const MAX_STEPS = 10
 const MAX_BODY_BYTES = 256 * 1024
@@ -42,14 +48,27 @@ You have three tools:
 - \`search\`: search the Polar docs by an English query. Returns pages with short excerpts and a \`path\`.
 - \`fetchPageContent\`: fetch the full Markdown content of a documentation page by its \`path\` (which must come from a search result).
 - \`escalateToHuman\`: open the escalation panel so the user can hand the conversation to the Polar team. Pick the right \`type\` (question / feedback / bug). Use this when:
-  - The user explicitly asks for a human / support / to talk to someone.
+  - The user explicitly asks for a human / support / to talk to someone (except for account reviews and pre-approval, see below).
   - The fetched docs do not cover the question and the user still needs an answer.
   - The question is account-specific (refund, missing payout, billing dispute, account access) that docs cannot resolve.
   - After two unsuccessful attempts to answer, the user is still unsatisfied.
-  - The user is reporting a bug or unexpected behavior — pass \`type: "bug"\`.
-  - The user is sharing product feedback or a feature request — pass \`type: "feedback"\`.
+  - The user is reporting a bug or unexpected behavior, and the docs don't show it's expected behavior or a configuration issue — pass \`type: "bug"\`.
+  - The user is sharing product feedback or a feature request, and the docs don't show that Polar already supports it — pass \`type: "feedback"\`.
 
-Never proactively offer to escalate or to draft a message to the support team after you have already given a workable answer. Escalation only happens when the user explicitly asks for a human, or when the conversation is clearly stuck after repeated attempts — not as a courtesy after a good reply.
+Bug reports and feedback go through the same docs workflow as questions: search and fetch first, since the behavior may be documented or the requested feature may already exist. If the docs resolve it, answer. Otherwise, escalate with the matching \`type\` so the Polar team gets the report.
+
+Account reviews and pre-approval are never escalated, even if the user asks for a human. Don't search the docs for them either:
+- If the user asks why their account is under review, why payouts are on hold for a review, why they are being verified, or anything closely related, reply with the following and nothing else:
+
+${ACCOUNT_REVIEW_REPLY}
+
+- If the user asks you to confirm upfront whether their business, product, use case, or model is allowed on Polar, or to pre-approve their account, reply with the following and nothing else:
+
+${REJECTION_PRE_APPROVAL_TEXT}
+
+If the user's message is too vague to act on (e.g. "help", "it's broken"), ask what they're trying to do or what went wrong instead of searching.
+
+Never proactively offer to escalate or to draft a message to the support team after you have already given a workable answer. Escalation only happens when the user explicitly asks for a human, when the conversation is clearly stuck after repeated attempts, or when a bug report or feedback isn't resolved by the docs — not as a courtesy after a good reply.
 
 Workflow for answering:
 1. If the documentation already fetched earlier in this conversation contains the answer, use it directly without re-fetching.
@@ -128,7 +147,7 @@ export async function POST(req: Request) {
     }
   }
 
-  const sonnet = wrapWithTracing(anthropic('claude-sonnet-4-6'), {
+  const tracing = aiTracing({
     userId: user.id,
     conversationId,
     organizationId: trustedOrganizationId,
@@ -193,31 +212,32 @@ export async function POST(req: Request) {
     const forceEscalation = messages.length >= MAX_MESSAGES - 1
 
     const result = streamText({
-      model: sonnet,
-      messages: [
-        {
-          role: 'system',
-          content: ANSWER_SYSTEM_PROMPT,
-          providerOptions: {
-            anthropic: {
-              cacheControl: { type: 'ephemeral' },
-            },
+      model: anthropic('claude-sonnet-5'),
+      ...tracing,
+      instructions: {
+        role: 'system',
+        content: ANSWER_SYSTEM_PROMPT,
+        providerOptions: {
+          anthropic: {
+            cacheControl: { type: 'ephemeral' },
           },
         },
-        ...modelMessages,
-      ],
+      },
+      messages: modelMessages,
       tools: forceEscalation
         ? { escalateToHuman }
         : { search, fetchPageContent, escalateToHuman },
       toolChoice: forceEscalation
         ? { type: 'tool', toolName: 'escalateToHuman' }
         : 'auto',
-      stopWhen: [stepCountIs(MAX_STEPS), hasToolCall('escalateToHuman')],
+      stopWhen: [isStepCount(MAX_STEPS), hasToolCall('escalateToHuman')],
       experimental_transform: smoothStream(),
-      onFinish: () => flushPostHog(),
+      onEnd: () => flushAITelemetry(),
     })
 
-    return result.toUIMessageStreamResponse()
+    return createUIMessageStreamResponse({
+      stream: toUIMessageStream({ stream: result.stream }),
+    })
   } catch (error) {
     Sentry.captureException(error)
     return NextResponse.json({ error: 'Something went wrong' }, { status: 502 })

@@ -15,7 +15,7 @@ A [Better Auth](https://github.com/better-auth/better-auth) plugin for integrati
 ## Installation
 
 ```bash
-pnpm add better-auth @polar-sh/better-auth @polar-sh/sdk@next
+pnpm add better-auth @polar-sh/better-auth @polar-sh/sdk@1.0.0
 ```
 
 ## Preparation
@@ -41,64 +41,67 @@ The Polar plugin comes with a handful additional plugins which adds functionalit
 - Webhooks - Listen for relevant Polar webhooks
 
 ```typescript
-import { betterAuth } from "better-auth";
-import { organization } from "better-auth/plugins";
-import { polar, checkout, portal, usage, webhooks } from "@polar-sh/better-auth";
-import { createPolarCore } from "@polar-sh/sdk/2026-04";
+import { betterAuth } from 'better-auth'
+import { organization } from 'better-auth/plugins'
+import { polar, checkout, portal, usage, webhooks } from '@polar-sh/better-auth'
+import { createPolarCore } from '@polar-sh/sdk/2026-10'
 
 const polarClient = createPolarCore({
-    accessToken: process.env.POLAR_ACCESS_TOKEN,
-    // Use 'sandbox' if you're using the Polar Sandbox environment
-    // Remember that access tokens, products, etc. are completely separated between environments.
-    // Access tokens obtained in Production are for instance not usable in the Sandbox environment.
-    environment: 'sandbox'
-});
+  accessToken: process.env.POLAR_ACCESS_TOKEN,
+  // Use 'sandbox' if you're using the Polar Sandbox environment
+  // Remember that access tokens, products, etc. are completely separated between environments.
+  // Access tokens obtained in Production are for instance not usable in the Sandbox environment.
+  environment: 'sandbox',
+})
 
 const auth = betterAuth({
-    // ... Better Auth config
-    plugins: [
-        organization(),
-        polar({
-            client: polarClient,
-            createCustomerOnSignUp: true,
-            // Experimental: do not enable this if your application already
-            // handles organization billing. Existing billing is not migrated.
-            experimental_organizationSync: {
-                enabled: true,
-                getTeamCustomerCreateParams: async ({ organization, owner }) => ({
-                    metadata: {
-                        source: "better-auth",
-                        createdBy: owner.id,
-                    },
-                }),
+  // ... Better Auth config
+  plugins: [
+    organization(),
+    polar({
+      client: polarClient,
+      createCustomerOnSignUp: true,
+      // Experimental: do not enable this if your application already
+      // handles organization billing. Existing billing is not migrated.
+      experimental_organizationSync: {
+        enabled: true,
+        getTeamCustomerCreateParams: async ({ organization, owner }) => ({
+          metadata: {
+            source: 'better-auth',
+            createdBy: owner.id,
+          },
+        }),
+      },
+      use: [
+        checkout({
+          products: [
+            {
+              productId: '123-456-789', // ID of Product from Polar Dashboard
+              slug: 'pro', // Custom slug for easy reference in Checkout URL, e.g. /checkout/pro
             },
-            use: [
-                checkout({
-                    products: [
-                        {
-                            productId: "123-456-789", // ID of Product from Polar Dashboard
-                            slug: "pro" // Custom slug for easy reference in Checkout URL, e.g. /checkout/pro
-                        }
-                    ],
-                    successUrl: "/success?checkout_id={CHECKOUT_ID}",
-                    authenticatedUsersOnly: true,
-                    returnUrl: "https://myapp.com", // Optional Return URL, which renders a Back-button in the Checkout
-                }),
-                portal({
-                  returnUrl: "https://myapp.com", // Optional Return URL, which renders a Back-button in the Customer Portal
-                }),
-                usage(),
-                webhooks({
-                    secret: process.env.POLAR_WEBHOOK_SECRET,
-                    onCustomerStateChanged: (payload) => // Triggered when anything regarding a customer changes
-                    onOrderPaid: (payload) => // Triggered when an order was paid (purchase, subscription renewal, etc.)
-                    ...  // Over 25 granular webhook handlers
-                    onPayload: (payload) => // Catch-all for all events
-                })
-            ],
-        })
-    ]
-});
+          ],
+          successUrl: '/success?checkout_id={CHECKOUT_ID}',
+          authenticatedUsersOnly: true,
+          returnUrl: 'https://myapp.com', // Optional Return URL, which renders a Back-button in the Checkout
+        }),
+        portal({
+          returnUrl: 'https://myapp.com', // Optional Return URL, which renders a Back-button in the Customer Portal
+        }),
+        usage(),
+        webhooks({
+          secret: process.env.POLAR_WEBHOOK_SECRET!,
+          // Triggered when anything regarding a customer changes
+          onCustomerStateChanged: async (payload) => {},
+          // Triggered when an order was paid (purchase, subscription renewal, etc.)
+          onOrderPaid: async (payload) => {},
+          // ... Over 40 granular webhook handlers
+          // Called for every event
+          onPayload: async (payload) => {},
+        }),
+      ],
+    }),
+  ],
+})
 ```
 
 ### Configuring BetterAuth Client
@@ -107,7 +110,7 @@ You will be using the BetterAuth Client to interact with the Polar functionaliti
 
 ```typescript
 import { createAuthClient } from 'better-auth/react'
-import { polarClient } from '@polar-sh/better-auth'
+import { polarClient } from '@polar-sh/better-auth/client'
 import { organizationClient } from 'better-auth/client/plugins'
 
 // This is all that is needed
@@ -122,7 +125,7 @@ export const authClient = createAuthClient({
 ```typescript
 import { betterAuth } from 'better-auth'
 import { polar, checkout, portal, usage, webhooks } from '@polar-sh/better-auth'
-import { createPolarCore } from '@polar-sh/sdk/2026-04'
+import { createPolarCore } from '@polar-sh/sdk/2026-10'
 import { organization } from 'better-auth/plugins'
 
 const polarClient = createPolarCore({
@@ -140,7 +143,7 @@ const auth = betterAuth({
     polar({
       client: polarClient,
       createCustomerOnSignUp: true,
-      getCustomerCreateParams: ({ user }, request) => ({
+      getCustomerCreateParams: async ({ user }) => ({
         metadata: {
           myCustomProperty: 123,
         },
@@ -156,7 +159,8 @@ const auth = betterAuth({
         }),
       },
       use: [
-        // This is where you add Polar plugins
+        // This is where you add Polar plugins - at least one is required
+        checkout(),
       ],
     }),
   ],
@@ -168,11 +172,12 @@ The SDK v1 models returned by the state, benefits, subscriptions, orders, and me
 ### Required Options
 
 - `client`: Polar SDK core client instance, created with `createPolarCore`
+- `use`: Array of Polar plugins (checkout, portal, usage, webhooks). Pass at least one plugin.
 
 ### Optional Options
 
 - `createCustomerOnSignUp`: Automatically create a Polar customer when a user signs up
-- `getCustomerCreateParams`: Custom function to provide additional personal-customer creation metadata
+- `getCustomerCreateParams`: Async function to provide additional personal-customer creation metadata
 - `experimental_organizationSync`: Experimental Better Auth organization synchronization configuration. Set `experimental_organizationSync.enabled` to `true`; `experimental_organizationSync.getTeamCustomerCreateParams` can add team-customer fields such as metadata or billing details. Automatic seat management is separately opt-in through `experimental_organizationSync.syncSeats`, and `experimental_organizationSync.selectSeatProductsForMember` can customize per-member product-seat allocation when it is enabled.
 
 ### Calling the Polar SDK
@@ -180,7 +185,7 @@ The SDK v1 models returned by the state, benefits, subscriptions, orders, and me
 The core client has no service properties such as `customers` or `checkouts`. Import the operation you need and pass the core client to it:
 
 ```typescript
-import { getStateExternalCustomers } from '@polar-sh/sdk/2026-04/services/customers'
+import { getStateExternalCustomers } from '@polar-sh/sdk/2026-10/services/customers'
 
 const customerState = await getStateExternalCustomers(polarClient)(userId)
 ```
@@ -189,7 +194,7 @@ Custom plugins passed through `use` also receive a `PolarCore` and call SDK oper
 
 ### Customers
 
-When `createCustomerOnSignUp` is enabled, a new Polar Customer is automatically created when a new User is added in the Better-Auth Database.
+When `createCustomerOnSignUp` is enabled, a new Polar Customer is automatically created when a new User is added in the Better-Auth Database. Email and name changes are pushed to the Polar customer, and the Polar customer is deleted when the user is deleted. Anonymous users are skipped.
 
 Customer creation runs after Better Auth inserts the user, so the initial Polar creation request includes `external_id: user.id`. Applications that reject user creation in a `before` database hook do not create a Polar customer.
 
@@ -260,7 +265,7 @@ Organization deletion in Better Auth does **not** delete the Polar team customer
 
 Organization billing is always selected explicitly; the active Better Auth organization is never used implicitly. Pass `organizationId` in:
 
-- the POST body for checkout and usage ingestion;
+- the POST body for checkout (as `organization_id`) and usage ingestion (as `organizationId`);
 - the query for portal (GET or POST), customer state, benefits, subscriptions, orders, and usage meters.
 
 The adapter verifies the authenticated user's Better Auth membership before calling Polar. Organization checkout requires a billing-capable role. Team portal and meter requests create a member-scoped customer session with `externalCustomerId = organization.id` and `externalMemberId = user.id`; usage events carry both IDs. Omitting `organizationId` preserves personal-customer behavior.
@@ -338,7 +343,7 @@ const embed = await authClient.checkoutEmbed({
 })
 
 // Listen for successful completion
-checkout.addEventListener('success', (event) => {
+embed.addEventListener('success', (event) => {
   console.log('Purchase successful!', event.detail)
 
   // Call event.preventDefault() if you want to prevent the standard behavior
@@ -425,8 +430,10 @@ const auth = betterAuth({
             use: [
                 checkout(...),
                 portal({
-                   // Optional Return URL, which renders a Back-button in the Customer Portal
-                  redirectUrl: "https://myapp.com"
+                  // Optional absolute Return URL, which renders a Back-button in the Customer Portal
+                  returnUrl: "https://myapp.com",
+                  // Enforces the theme - System-preferred theme will be set if left omitted
+                  theme: "dark"
                 })
             ],
         })
@@ -442,6 +449,9 @@ The following method will redirect the user to the Polar Customer Portal, where 
 
 ```typescript
 await authClient.customer.portal()
+
+// Return the portal URL without redirecting
+const { data } = await authClient.customer.portal({ redirect: false })
 
 // Explicit organization portal access (membership is checked server-side)
 await authClient.customer.portal({
@@ -464,8 +474,7 @@ const { data: organizationState } = await authClient.customer.state({
 The customer state object contains:
 
 - All the data about the customer.
-- The list of their active subscriptions
-  - Note: This does not include subscriptions done by a parent organization. See the subscription list-method below for more information.
+- The list of their active subscriptions. Pass `organizationId` to get the state of a synchronized team customer instead.
 - The list of their granted benefits.
 - The list of their active meters, with their current balance.
 
@@ -627,11 +636,14 @@ const auth = betterAuth({
             ...
             use: [
                 webhooks({
-                    secret: process.env.POLAR_WEBHOOK_SECRET,
-                    onCustomerStateChanged: (payload) => // Triggered when anything regarding a customer changes
-                    onOrderPaid: (payload) => // Triggered when an order was paid (purchase, subscription renewal, etc.)
-                    ...  // Over 25 granular webhook handlers
-                    onPayload: (payload) => // Catch-all for all events
+                    secret: process.env.POLAR_WEBHOOK_SECRET!,
+                    // Triggered when anything regarding a customer changes
+                    onCustomerStateChanged: async (payload) => {},
+                    // Triggered when an order was paid (purchase, subscription renewal, etc.)
+                    onOrderPaid: async (payload) => {},
+                    // ... Over 40 granular webhook handlers
+                    // Called for every event
+                    onPayload: async (payload) => {},
                 })
             ],
         })
@@ -639,7 +651,7 @@ const auth = betterAuth({
 });
 ```
 
-Configure a Webhook endpoint in your Polar Organization Settings page. Webhook endpoint is configured at /polar/webhooks.
+Configure a Webhook endpoint in your Polar Organization Settings page. The endpoint is served at `/polar/webhooks` under your Better Auth base path, which is `/api/auth/polar/webhooks` by default.
 
 Add the secret to your environment.
 
@@ -650,10 +662,12 @@ POLAR_WEBHOOK_SECRET=...
 
 The plugin supports handlers for all Polar webhook events:
 
-- `onPayload` - Catch-all handler for any incoming Webhook event
+- `onPayload` - Called for every incoming Webhook event, in addition to the matching handler below
 - `onCheckoutCreated` - Triggered when a checkout is created
+- `onCheckoutExpired` - Triggered when a checkout expires
 - `onCheckoutUpdated` - Triggered when a checkout is updated
 - `onOrderCreated` - Triggered when an order is created
+- `onOrderUpdated` - Triggered when an order is updated
 - `onOrderPaid` - Triggered when an order is paid
 - `onOrderRefunded` - Triggered when an order is refunded
 - `onRefundCreated` - Triggered when a refund is created
@@ -662,6 +676,10 @@ The plugin supports handlers for all Polar webhook events:
 - `onSubscriptionUpdated` - Triggered when a subscription is updated
 - `onSubscriptionActive` - Triggered when a subscription becomes active
 - `onSubscriptionCanceled` - Triggered when a subscription is canceled
+- `onSubscriptionCycled` - Triggered when a subscription enters a new billing period
+- `onSubscriptionPastDue` - Triggered when a subscription payment fails and it becomes past due
+- `onSubscriptionPaused` - Triggered when a subscription is paused
+- `onSubscriptionResumed` - Triggered when a paused subscription is resumed
 - `onSubscriptionRevoked` - Triggered when a subscription is revoked
 - `onSubscriptionUncanceled` - Triggered when a subscription cancellation is reversed
 - `onProductCreated` - Triggered when a product is created
@@ -670,6 +688,7 @@ The plugin supports handlers for all Polar webhook events:
 - `onBenefitCreated` - Triggered when a benefit is created
 - `onBenefitUpdated` - Triggered when a benefit is updated
 - `onBenefitGrantCreated` - Triggered when a benefit grant is created
+- `onBenefitGrantCycled` - Triggered when a benefit grant renews with its subscription
 - `onBenefitGrantUpdated` - Triggered when a benefit grant is updated
 - `onBenefitGrantRevoked` - Triggered when a benefit grant is revoked
 - `onCustomerCreated` - Triggered when a customer is created
@@ -679,6 +698,9 @@ The plugin supports handlers for all Polar webhook events:
 - `onCustomerSeatAssigned` - Triggered when a seat is assigned and its invitation is created
 - `onCustomerSeatClaimed` - Triggered when a member claims a seat
 - `onCustomerSeatRevoked` - Triggered when a seat is revoked from a member
+- `onDiscountCreated` - Triggered when a discount is created
+- `onDiscountUpdated` - Triggered when a discount is updated
+- `onDiscountDeleted` - Triggered when a discount is deleted
 - `onMemberCreated` - Triggered when a Polar member is created
 - `onMemberUpdated` - Triggered when a Polar member is updated
 - `onMemberDeleted` - Triggered when a Polar member is deleted

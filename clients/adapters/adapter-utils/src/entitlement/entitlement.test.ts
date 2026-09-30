@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import type { models, webhooks } from '@polar-sh/sdk/2026-04'
+import type { models, webhooks } from '@polar-sh/sdk/2026-10'
 import { EntitlementStrategy } from './entitlement'
 
 describe('EntitlementStrategy', () => {

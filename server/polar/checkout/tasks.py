@@ -1,7 +1,13 @@
+import asyncio
 import uuid
 from typing import Annotated
 
+import structlog
+
+from polar.config import settings
 from polar.exceptions import PolarTaskError
+from polar.kit.utils import utc_now
+from polar.logging import Logger
 from polar.models.checkout import CheckoutStatus
 from polar.observability.task_logging import LoggableField
 from polar.worker import (
@@ -14,6 +20,8 @@ from polar.worker import (
 
 from .repository import CheckoutRepository
 from .service import checkout as checkout_service
+
+log: Logger = structlog.get_logger()
 
 
 class CheckoutTaskError(PolarTaskError): ...
@@ -74,3 +82,28 @@ async def checkout_expired(checkout_id: Annotated[uuid.UUID, LoggableField]) -> 
             return
 
         await checkout_service.send_expiration_events(session, checkout)
+
+
+@actor(
+    actor_name="checkout.anonymize_expired",
+    cron_trigger=CronTrigger.from_crontab("0 1 * * *"),
+    priority=TaskPriority.LOW,
+    max_retries=0,
+)
+async def anonymize_expired() -> None:
+    older_than = utc_now() - settings.EXPIRED_CHECKOUT_RETENTION_PERIOD
+    anonymized = 0
+    while True:
+        async with AsyncSessionMaker() as session:
+            repository = CheckoutRepository.from_session(session)
+            batch = await repository.anonymize_expired(older_than, batch_size=5000)
+        if batch == 0:
+            break
+        anonymized += batch
+        await asyncio.sleep(0.1)
+
+    log.info(
+        "checkout.anonymize_expired",
+        anonymized=anonymized,
+        older_than=older_than,
+    )

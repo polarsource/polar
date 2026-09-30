@@ -79,11 +79,6 @@ resource "tfe_variable" "backend_chargebackstop_webhook_secret_production" {
   }
 }
 
-import {
-  to = tfe_variable.backend_chargebackstop_webhook_secret_production
-  id = "polar-sh/polar/var-zspoEq1Cn7qz32i8"
-}
-
 resource "tfe_variable" "backend_discord_bot_token_production" {
   key             = "backend_discord_bot_token_production"
   category        = "terraform"
@@ -1015,9 +1010,4 @@ resource "tfe_variable" "redis_private_link_host_production" {
   lifecycle {
     ignore_changes = [value]
   }
-}
-
-import {
-  to = tfe_variable.redis_private_link_host_production
-  id = "polar-sh/polar/var-DiQgRaQF7rQwsxsw"
 }

@@ -119,11 +119,6 @@ resource "render_postgres" "db" {
   depends_on = [render_registry_credential.ghcr, render_project.polar]
 }
 
-import {
-  to = render_postgres.db
-  id = "dpg-d8m0n4poagis73du7gr0-a"
-}
-
 # =============================================================================
 # Redis
 # =============================================================================
@@ -152,21 +147,6 @@ module "cloudflare_ips" {
 # =============================================================================
 # Production
 # =============================================================================
-
-import {
-  to = module.production.cloudflare_dns_record.resend_dkim
-  id = "22bcd1b07ec25452aab472486bc8df94/85d90083fadec2175e748e87bdb6a8c1"
-}
-
-import {
-  to = module.production.cloudflare_dns_record.resend_spf_mx
-  id = "22bcd1b07ec25452aab472486bc8df94/a5c3c3ada2aa12ce91543ab2b2da619e"
-}
-
-import {
-  to = module.production.cloudflare_dns_record.resend_spf_txt
-  id = "22bcd1b07ec25452aab472486bc8df94/00c7b9e60ec890ff5b6f55dff6fa57cb"
-}
 
 module "production" {
   source = "../modules/render_service"
@@ -357,11 +337,6 @@ module "tailscale_router" {
 # Cloudflare DNS
 # =============================================================================
 
-import {
-  to = cloudflare_dns_record.buy
-  id = "22bcd1b07ec25452aab472486bc8df94/119002474ca374ebb18bbe1c7a6a55b5"
-}
-
 resource "cloudflare_dns_record" "api" {
   zone_id = "22bcd1b07ec25452aab472486bc8df94"
   name    = "api.polar.sh"
@@ -378,11 +353,6 @@ resource "cloudflare_dns_record" "buy" {
   content = replace(module.production.api_service_url, "https://", "")
   proxied = true
   ttl     = 1
-}
-
-moved {
-  from = cloudflare_dns_record.backoffice
-  to   = cloudflare_dns_record.backoffice[0]
 }
 
 resource "cloudflare_dns_record" "backoffice" {

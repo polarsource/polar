@@ -11,6 +11,7 @@ from polar.merchant_migration.canonical import (
     CanonicalCollectionMethod,
     CanonicalCustomer,
     CanonicalDiscountDuration,
+    CanonicalDiscountType,
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
     CanonicalPrice,
@@ -139,6 +140,7 @@ def build_subscription(
     discount_source_ids: list[str] | None = None,
     discount_started_at: datetime | None = None,
     discount_starts: dict[str, datetime] | None = None,
+    discount_block: str | None = None,
     currency: str | None = "usd",
 ) -> CanonicalSubscription:
     return CanonicalSubscription(
@@ -158,6 +160,7 @@ def build_subscription(
         discount_source_ids=discount_source_ids or [],
         discount_started_at=discount_started_at,
         discount_starts=discount_starts or {},
+        discount_block=discount_block,
         currency=currency,
     )
 
@@ -584,6 +587,21 @@ class TestClassifyRecords:
         assert items[0].reason_code is None
         assert items[0].discount_name == "Launch"
         assert items[0].discount_code == "LAUNCH"
+        assert items[0].cancels_at_period_end is False
+
+    def test_cancel_at_period_end_stays_importable(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            replace(build_subscription(), cancel_at_period_end=True),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.importable
+        assert items[0].cancels_at_period_end is True
 
     def test_subscription_keeps_first_importable_coupon(self) -> None:
         records: list[CanonicalRecord] = [
@@ -677,6 +695,105 @@ class TestClassifyRecords:
 
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "subscription_discount_not_importable"
+
+    @pytest.mark.parametrize(
+        ("block", "snippet"),
+        [
+            (
+                "subscription_stacked_discounts",
+                "stacks discounts Polar can't combine",
+            ),
+            (
+                "subscription_customer_discount",
+                "also applies to other purchases",
+            ),
+            (
+                "subscription_item_discount",
+                "one item of this subscription",
+            ),
+            (
+                "subscription_scheduled_discount",
+                "future phase of this subscription",
+            ),
+            (
+                "subscription_invoice_item_discount",
+                "invoice item on this subscription",
+            ),
+        ],
+    )
+    def test_discount_block_skips_before_other_subscription_reasons(
+        self, block: str, snippet: str
+    ) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            canonical_discount(),
+            build_subscription(
+                source_id="sub_1",
+                has_discount=True,
+                discount_source_ids=["coupon_1"],
+                discount_block=block,
+                line_item_count=2,
+            ),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == block
+        assert items[0].reason is not None
+        assert snippet in items[0].reason
+        assert "stays on Stripe" in items[0].reason
+
+    def test_fixed_amount_in_another_currency_stays_on_stripe(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            canonical_discount(
+                discount_type=CanonicalDiscountType.fixed,
+                amounts={"usd": 500},
+            ),
+            build_subscription(
+                source_id="sub_1",
+                has_discount=True,
+                discount_source_ids=["coupon_1"],
+                currency="eur",
+            ),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == "subscription_discount_currency"
+        assert items[0].reason is not None
+        assert "fixed amount off in a currency" in items[0].reason
+
+    def test_fixed_amount_in_the_subscription_currency_imports(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            canonical_discount(
+                discount_type=CanonicalDiscountType.fixed,
+                amounts={"usd": 500},
+            ),
+            build_subscription(
+                source_id="sub_1",
+                has_discount=True,
+                discount_source_ids=["coupon_1"],
+                currency="usd",
+            ),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.importable
+        assert items[0].reason_code is None
 
     def test_prices_drop_unsupported_scheme(self) -> None:
         records: list[CanonicalRecord] = [
@@ -1096,6 +1213,11 @@ class TestClassifyRecords:
                 "subscription_scheduled_change",
                 id="schedule-changes-it-later",
             ),
+            pytest.param(
+                {"managed_payments": True},
+                "subscription_managed_payments",
+                id="sold-through-managed-payments",
+            ),
         ],
     )
     def test_scheduled_end_drops_subscription(
@@ -1117,6 +1239,18 @@ class TestClassifyRecords:
             if reason_code is None
             else PrecheckRecordStatus.skipped
         )
+
+    def test_schedule_needs_the_merchant_to_release_it(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(),
+            build_customer(),
+            replace(build_subscription(), has_scheduled_changes=True),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].reason_code == "subscription_scheduled_change"
+        assert items[0].reason_level == PrecheckReasonLevel.action_required
 
     def test_zero_quantity_drops_subscription(self) -> None:
         records: list[CanonicalRecord] = [

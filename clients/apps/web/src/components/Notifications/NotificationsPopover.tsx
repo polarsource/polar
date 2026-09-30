@@ -3,6 +3,7 @@ import { useOutsideClick } from '@/utils/useOutsideClick'
 import AutorenewOutlined from '@mui/icons-material/AutorenewOutlined'
 import BoltOutlined from '@mui/icons-material/BoltOutlined'
 import GppMaybeOutlined from '@mui/icons-material/GppMaybeOutlined'
+import HourglassEmptyOutlined from '@mui/icons-material/HourglassEmptyOutlined'
 import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -193,6 +194,38 @@ const MaintainerNewPaidSubscription = ({
   )
 }
 
+const MaintainerNewTrial = ({
+  n,
+}: {
+  n: schemas['MaintainerNewTrialNotification']
+}) => {
+  const { payload } = n
+  const href =
+    payload.organization_slug && payload.subscription_id
+      ? `/dashboard/${payload.organization_slug}/sales/subscriptions/${payload.subscription_id}`
+      : null
+  return (
+    <Item n={n} iconClasses="bg-blue-200 text-blue-500">
+      {{
+        text: (
+          <>
+            {payload.subscriber_name} started a{' '}
+            {href ? (
+              <InternalLink href={href}>
+                <span>{payload.product_name}</span>
+              </InternalLink>
+            ) : (
+              <span className="font-bold">{payload.product_name}</span>
+            )}{' '}
+            trial
+          </>
+        ),
+        icon: <HourglassEmptyOutlined fontSize="small" />,
+      }}
+    </Item>
+  )
+}
+
 const MaintainerNewProductSale = ({
   n,
 }: {
@@ -328,6 +361,9 @@ const Notification = ({
   switch (n.type) {
     case 'MaintainerNewPaidSubscriptionNotification':
       return <MaintainerNewPaidSubscription n={n} />
+
+    case 'MaintainerNewTrialNotification':
+      return <MaintainerNewTrial n={n} />
 
     case 'MaintainerNewProductSaleNotification':
       return <MaintainerNewProductSale n={n} />

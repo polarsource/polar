@@ -13,9 +13,9 @@ const createSeatPrice = (amount: number): schemas['ProductPriceSeatBased'] =>
   ({
     amount_type: 'seat_based',
     price_currency: 'usd',
-    seat_tiers: {
-      seat_tier_type: 'volume',
-      tiers: [{ min_seats: 1, max_seats: null, price_per_seat: amount }],
+    tiers: {
+      type: 'volume',
+      tiers: [{ bound: null, unit_amount: String(amount) }],
     },
   }) as schemas['ProductPriceSeatBased']
 

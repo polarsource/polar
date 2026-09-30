@@ -4,7 +4,7 @@ import {
   deleteExternalCustomers,
   updateCustomers,
   listCustomers,
-} from '@polar-sh/sdk/2026-04/services/customers'
+} from '@polar-sh/sdk/2026-10/services/customers'
 import type { AuthContext, GenericEndpointContext, User } from 'better-auth'
 import { APIError } from 'better-auth/api'
 import {

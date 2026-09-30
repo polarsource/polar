@@ -1,8 +1,5 @@
-'use client'
-
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { motion } from 'motion/react'
 import { MissionRulers } from './MissionRulers'
 
 export const Hero = () => {
@@ -15,33 +12,24 @@ export const Hero = () => {
       paddingTop={{ base: 'm', md: '3xl' }}
       paddingBottom={{ base: '3xl', md: '5xl' }}
     >
-      <motion.div
-        variants={{
-          hidden: { opacity: 0 },
-          visible: { opacity: 1, transition: { duration: 1 } },
-        }}
-        initial="hidden"
-        animate="visible"
-      >
-        <Box flexDirection="column" rowGap={{ base: '4xl', md: '5xl' }}>
-          <Grid
-            templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
-            gap={{ base: '2xl', lg: 'l' }}
-          >
-            <Box flexDirection="column" alignItems="start" rowGap="3xl">
-              <Box flexDirection="column">
-                <Text variant="heading-m" as="h1" wrap="balance">
-                  Meet Polar
-                </Text>
-                <Text variant="heading-m" as="p" color="muted" wrap="balance">
-                  The billing stack for the intelligence era
-                </Text>
-              </Box>
+      <Box flexDirection="column" rowGap={{ base: '4xl', md: '5xl' }}>
+        <Grid
+          templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
+          gap={{ base: '2xl', lg: 'l' }}
+        >
+          <Box flexDirection="column" alignItems="start" rowGap="3xl">
+            <Box flexDirection="column">
+              <Text variant="heading-m" as="h1" wrap="balance">
+                Meet Polar
+              </Text>
+              <Text variant="heading-m" as="p" color="muted" wrap="balance">
+                The billing stack for the intelligence era
+              </Text>
             </Box>
-          </Grid>
-          <MissionRulers />
-        </Box>
-      </motion.div>
+          </Box>
+        </Grid>
+        <MissionRulers />
+      </Box>
     </Box>
   )
 }

@@ -1,4 +1,4 @@
-import type { models, webhooks } from '@polar-sh/sdk/2026-04'
+import type { models, webhooks } from '@polar-sh/sdk/2026-10'
 
 export type EntitlementProperties = Record<string, string>
 

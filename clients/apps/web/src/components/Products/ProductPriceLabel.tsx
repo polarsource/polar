@@ -40,7 +40,7 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
       />
     )
   } else if (staticPrice && isSeatBasedPrice(staticPrice)) {
-    const tiers = staticPrice.seat_tiers.tiers
+    const tiers = staticPrice.tiers.tiers
 
     // Show the starting tier price with "from" indicator if multiple tiers
     if (tiers.length > 0) {
@@ -55,7 +55,7 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
             </span>
           )}
           <AmountLabel
-            amount={firstTier.price_per_seat}
+            amount={Number(firstTier.unit_amount)}
             currency={staticPrice.price_currency}
             interval={product.recurring_interval || undefined}
           />

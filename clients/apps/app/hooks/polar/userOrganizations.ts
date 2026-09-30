@@ -7,6 +7,8 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 
+const NOTIFICATION_SETTINGS_HEADERS = { 'Polar-Version': '2027-01' }
+
 export const useUserOrganizationNotificationSettings = (
   organizationId?: string,
 ) => {
@@ -21,6 +23,7 @@ export const useUserOrganizationNotificationSettings = (
               '/v1/users/me/organizations/{organization_id}/notification-settings',
               {
                 params: { path: { organization_id: organizationId } },
+                headers: NOTIFICATION_SETTINGS_HEADERS,
               },
             ),
           )
@@ -46,6 +49,7 @@ export const useUpdateUserOrganizationNotificationSettings = () => {
           {
             params: { path: { organization_id: organizationId } },
             body: { notification_settings },
+            headers: NOTIFICATION_SETTINGS_HEADERS,
           },
         ),
       ),

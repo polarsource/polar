@@ -825,8 +825,3 @@ resource "tfe_variable" "redis_private_link_host_test" {
     ignore_changes = [value]
   }
 }
-
-import {
-  to = tfe_variable.redis_private_link_host_test
-  id = "polar-sh/test/var-v8N9GDpeN1MfxjFV"
-}

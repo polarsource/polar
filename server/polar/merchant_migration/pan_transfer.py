@@ -206,6 +206,9 @@ class PanTransferStepsType(TypeDecorator[Any]):
     impl = JSONB
     cache_ok = True
 
+    def compare_values(self, x: Any, y: Any) -> bool:
+        return False  # Make sure all assignations are treated as changes, so SQLAlchemy flushes the column.
+
     def process_bind_param(self, value: Any, dialect: Dialect) -> Any:
         if value is None:
             return value
@@ -368,6 +371,13 @@ def current(steps: Sequence[PanTransferStep]) -> PanTransferStep | None:
     for step in steps:
         if step.status in _ACTIONABLE:
             return step
+    return None
+
+
+def current_ops_step(steps: Sequence[PanTransferStep]) -> PanTransferStep | None:
+    step = current(steps)
+    if step is not None and step.owner == PanStepOwner.polar_ops:
+        return step
     return None
 
 

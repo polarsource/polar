@@ -357,6 +357,12 @@ class CheckoutProductCreate(CheckoutCreateBase):
     )
 
 
+CHECKOUT_PRICES_DESCRIPTION = (
+    "Optional mapping of product IDs to a list of ad-hoc prices to create for that product. "
+    "If not set, catalog prices of the product will be used."
+)
+
+
 class CheckoutProductsCreate(CheckoutCreateBase):
     """
     Create a new checkout session from a list of products.
@@ -383,11 +389,7 @@ class CheckoutProductsCreate(CheckoutCreateBase):
         return v
 
     prices: dict[UUID4, ProductPriceCreateList] | None = Field(
-        default=None,
-        description=(
-            "Optional mapping of product IDs to a list of ad-hoc prices to create for that product. "
-            "If not set, catalog prices of the product will be used."
-        ),
+        default=None, description=CHECKOUT_PRICES_DESCRIPTION
     )
 
 

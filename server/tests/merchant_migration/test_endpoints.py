@@ -1,12 +1,13 @@
 from collections.abc import Awaitable, Callable
 from datetime import timedelta
+from uuid import UUID
 
 import pytest
 import stripe as stripe_lib
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
-from polar.auth.scope import Scope
+from polar.auth.scope import READ_ONLY_SCOPES, Scope
 from polar.config import settings
 from polar.kit.utils import utc_now
 from polar.merchant_migration.adapters.base import ExtractionPage
@@ -42,6 +43,7 @@ from polar.models.merchant_migration import (
 from polar.models.merchant_migration_operation import (
     STALL_THRESHOLD,
     MerchantMigrationOperation,
+    MerchantMigrationOperationSelection,
     MerchantMigrationOperationStatus,
 )
 from polar.models.merchant_migration_record import (
@@ -218,6 +220,7 @@ class TestCreate:
     ) -> None:
         await _enable_feature(save_fixture, organization)
         _mock_stripe_adapter(mocker)
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
 
         response = await client.post(
             "/v1/merchant-migrations/", json=_body(organization)
@@ -229,6 +232,15 @@ class TestCreate:
         assert body["source_connected"] is True
         assert body["source"]["stripe_user_id"] == "acct_test"
         assert "source_credentials" not in body
+        assert body["operation"] == {
+            "status": "pending",
+            "kind": "precheck",
+            "stalled": False,
+            "error": None,
+        }
+        enqueue.assert_any_call(
+            "merchant_migration.precheck", merchant_migration_id=UUID(body["id"])
+        )
 
         repository = MerchantMigrationRepository.from_session(session)
         stored = await repository.get_by_id(body["id"])
@@ -495,6 +507,24 @@ class TestRecords:
         assert json_body["items"][0]["source_id"] == "prod_1"
         assert json_body["items"][0]["status"] == "importable"
 
+    @pytest.mark.auth(AuthSubjectFixture(scopes=READ_ONLY_SCOPES))
+    async def test_read_only_session_can_review(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+
+        records = await client.get(f"/v1/merchant-migrations/{migration.id}/records")
+        summary = await client.get(
+            f"/v1/merchant-migrations/{migration.id}/records/summary"
+        )
+
+        assert records.status_code == 200
+        assert summary.status_code == 200
+
 
 def _catalog_with_customer() -> list[CanonicalRecord]:
     return [
@@ -567,19 +597,23 @@ class TestImport:
         )
 
         await start_and_execute_precheck(migration)
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
 
         response = await client.post(f"/v1/merchant-migrations/{migration.id}/import")
         assert response.status_code == 200
         json_body = response.json()
-        assert json_body["step"] == "create_catalog"
-        results = {result["entity"]: result for result in json_body["results"]}
-        assert results["products"]["imported"] == 1
-        assert results["customers"]["imported"] == 1
+        assert json_body["step"] == "pre_check"
+        assert json_body["operation"]["status"] == "pending"
+        assert json_body["operation"]["kind"] == "import"
+        enqueue.assert_called_once_with(
+            "merchant_migration.import_catalog", merchant_migration_id=migration.id
+        )
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_imports_selected_subscription_dependencies(
         self,
         client: AsyncClient,
+        session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
@@ -613,9 +647,14 @@ class TestImport:
             json={"record_ids": [subscription_record_id]},
         )
         assert response.status_code == 200
-        results = {r["entity"]: r for r in response.json()["results"]}
-        assert results["customers"]["imported"] == 1
-        assert results["products"]["imported"] == 1
+        queued = await MerchantMigrationRepository.from_session(session).get_by_id(
+            migration.id
+        )
+        assert queued is not None
+        assert queued.operation is not None
+        assert queued.operation.selection == MerchantMigrationOperationSelection(
+            record_ids=[UUID(subscription_record_id)]
+        )
 
 
 def _configure_destination(mocker: MockerFixture) -> None:
@@ -656,6 +695,23 @@ class TestGetPanTransfer:
         assert json_body["started"] is False
         assert json_body["steps"] == []
         assert json_body["current_step_key"] is None
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=READ_ONLY_SCOPES))
+    async def test_read_only_session(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        _configure_destination(mocker)
+        migration = await _create_migration(save_fixture, organization)
+
+        response = await client.get(
+            f"/v1/merchant-migrations/{migration.id}/pan-transfer"
+        )
+        assert response.status_code == 200
 
 
 @pytest.mark.asyncio
@@ -765,6 +821,7 @@ class TestCompletePanTransferStep:
             save_fixture, organization, step=MerchantMigrationStep.create_catalog
         )
         await client.post(f"/v1/merchant-migrations/{migration.id}/pan-transfer")
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
 
         response = await client.post(
             f"/v1/merchant-migrations/{migration.id}/pan-transfer/steps/start_copy/complete",
@@ -772,6 +829,11 @@ class TestCompletePanTransferStep:
         )
         assert response.status_code == 200
         assert response.json()["current_step_key"] == "authorize_copy"
+        enqueue.assert_called_once_with(
+            "merchant_migration.notify_waiting_for_ops",
+            merchant_migration_id=migration.id,
+            step_key="authorize_copy",
+        )
 
         reread = await client.get(
             f"/v1/merchant-migrations/{migration.id}/pan-transfer"

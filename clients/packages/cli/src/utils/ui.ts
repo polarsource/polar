@@ -28,20 +28,24 @@ export const warning = (message: string) =>
 export const step = (message: string) => `${INDENT}${pc.dim(message)}`
 
 export const keyValue = (rows: ReadonlyArray<readonly [string, string]>) => {
-  const width = Math.max(...rows.map(([label]) => label.length))
+  const width = Math.max(...rows.map(([label]) => Bun.stringWidth(label)))
   return rows
     .map(
-      ([label, value]) => `${INDENT}${pc.dim(label.padEnd(width))}  ${value}`,
+      ([label, value]) =>
+        `${INDENT}${pc.dim(label + ' '.repeat(width - Bun.stringWidth(label)))}  ${value}`,
     )
     .join('\n')
 }
 
 export const blank = ''
+export const clearLine = '\r\x1b[2K'
+export const clearLines = (rows: number) =>
+  rows > 0 ? clearLine + `\x1b[1A${clearLine}`.repeat(rows - 1) : ''
 
 export const statusCode = (status: number, statusText: string) => {
   const text = `${status} ${statusText}`.trim()
   if (status >= 500) return pc.red(text)
-  if (status >= 400) return pc.yellow(text)
+  if (status >= 300) return pc.yellow(text)
   return pc.green(text)
 }
 
@@ -61,3 +65,19 @@ export const updateNotice = (current: string, latest: string) =>
     blank,
     blank,
   ].join('\n')
+
+const isPrintable = (character: string) =>
+  !/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u.test(character)
+
+export const printable = (text: string) =>
+  [...text]
+    .filter(
+      (character) =>
+        character === '\n' || character === '\t' || isPrintable(character),
+    )
+    .join('')
+
+export const pushTitle = (title: string) =>
+  `\x1b[22;0t\x1b]0;${[...title].filter(isPrintable).join('')}\x07`
+
+export const popTitle = '\x1b]0;\x07\x1b[23;0t'

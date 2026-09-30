@@ -22,7 +22,7 @@ import os
 
 from fastapi import FastAPI, HTTPException, Request, Response
 
-from polar.v{{ ir.versions[0].version | replace("-", "_") | replace(".", "_") }}.webhooks import (
+from polar.v{{ (ir.versions[-2] | default({})).version | replace("-", "_") | replace(".", "_") }}.webhooks import (
     PolarWebhookError,
     PolarWebhookUnknownTypeError,
     PolarWebhookVerificationError,

@@ -75,7 +75,30 @@ describe('auth login', () => {
     expect(output()).toContain('Logged in to Polar production')
   })
 
-  test('requires a flag outside a terminal', async () => {
+  test.each(['sandbox', 'production'] as const)(
+    'logs out of the only %s session without asking',
+    async (environment) => {
+      auth.state.sessions = [environment]
+      const { promise, output, terminal } = run(['logout'], {
+        interactive: true,
+      })
+      await promise
+
+      expect(terminal()).not.toContain('Which session')
+      expect(output()).toContain(`Logged out of Polar ${environment}`)
+      expect(auth.state.sessions).toEqual([])
+    },
+  )
+
+  test('logs out of the only session outside a terminal too', async () => {
+    auth.state.sessions = ['sandbox']
+    const { promise, output } = run(['logout'])
+    await promise
+
+    expect(output()).toContain('Logged out of Polar sandbox')
+  })
+
+  test('requires a flag outside a terminal when logged in to both', async () => {
     const { promise } = run(['login'])
 
     await expect(promise).rejects.toThrow('Pass --sandbox or --production')
@@ -121,6 +144,33 @@ describe('auth login', () => {
     expect(organizations.state.selected).toBeUndefined()
   })
 
+  test('selects the only organization without asking', async () => {
+    organizations.state.items = [acme]
+    const { promise, output, terminal } = run(['login', '--sandbox'], {
+      interactive: true,
+    })
+    await promise
+
+    expect(terminal()).not.toContain('Select organization')
+    expect(organizations.state.selected).toEqual({
+      id: 'org-1',
+      environment: 'sandbox',
+    })
+    expect(output()).toContain('Active organization Acme acme sandbox')
+  })
+
+  test('selects the only organization outside a terminal too', async () => {
+    organizations.state.items = [beta]
+    const { promise, output } = run(['login', '--production'])
+    await promise
+
+    expect(organizations.state.selected).toEqual({
+      id: 'org-2',
+      environment: 'production',
+    })
+    expect(output()).not.toContain('requires an interactive terminal')
+  })
+
   test('offers organizations from every environment after login', async () => {
     const { promise, output, terminal } = run(['login', '--sandbox'], {
       interactive: true,
@@ -140,14 +190,17 @@ describe('auth login', () => {
 })
 
 describe('auth whoami', () => {
-  test('shows the sessions and the active organization', async () => {
+  test('shows only the active organization', async () => {
     organizations.state.selected = { id: 'org-2', environment: 'production' }
     const { promise, output } = run(['whoami'])
     await promise
 
-    expect(output()).toMatch(/Logged in\s+sandbox, production/)
-    expect(output()).toContain('Beta beta production')
-    expect(output()).toContain('org-2')
+    expect(output()).not.toContain('Logged in')
+    expect(output()).not.toContain('sandbox')
+    expect(output()).toMatch(/Organization\s+Beta/)
+    expect(output()).toMatch(/Slug\s+beta/)
+    expect(output()).toMatch(/Environment\s+production/)
+    expect(output()).toMatch(/ID\s+org-2/)
     expect(output()).not.toContain('No active organization')
   })
 
@@ -178,7 +231,7 @@ describe('auth whoami', () => {
 
     expect(output()).toContain('POLAR_ACCESS_TOKEN')
     expect(output()).toMatch(/Environment\s+sandbox/)
-    expect(output()).toContain('Acme acme')
+    expect(output()).toMatch(/Organization\s+Acme/)
     expect(output()).not.toContain('No active organization')
   })
 
@@ -190,6 +243,53 @@ describe('auth whoami', () => {
     expect(output()).toMatch(/Environment\s+production/)
     expect(output()).toContain('No active organization')
     expect(output()).toContain('--org <id>')
+  })
+})
+
+describe('auth whoami --json', () => {
+  test('prints the sessions and the active organization', async () => {
+    organizations.state.selected = { id: 'org-2', environment: 'production' }
+    const { promise, output } = run(['whoami', '--json'])
+    await promise
+
+    expect(JSON.parse(output())).toEqual({
+      source: 'session',
+      environments: ['sandbox', 'production'],
+      organization: beta,
+    })
+  })
+
+  test('prints no organization when none is active', async () => {
+    const { promise, output } = run(['whoami', '--json'])
+    await promise
+
+    expect(JSON.parse(output()).organization).toBeNull()
+  })
+
+  test('prints no sessions when logged out', async () => {
+    auth.state.sessions = []
+    const { promise, output } = run(['whoami', '--json'])
+    await promise
+
+    expect(JSON.parse(output())).toEqual({
+      source: 'session',
+      environments: [],
+      organization: null,
+    })
+  })
+
+  test('prints the only organization of a token override', async () => {
+    auth.state.credential = overrideCredential()
+    auth.state.environment = 'sandbox'
+    organizations.state.items = [acme]
+    const { promise, output } = run(['whoami', '--json'])
+    await promise
+
+    expect(JSON.parse(output())).toEqual({
+      source: 'POLAR_ACCESS_TOKEN',
+      environments: ['sandbox'],
+      organization: acme,
+    })
   })
 })
 
@@ -238,6 +338,27 @@ describe('auth list', () => {
     await promise
 
     expect(output()).toContain('Not logged in')
+  })
+})
+
+describe('auth list --json', () => {
+  test('prints every organization and marks the active one', async () => {
+    organizations.state.selected = { id: 'org-1', environment: 'sandbox' }
+    const { promise, output } = run(['list', '--json'])
+    await promise
+
+    expect(JSON.parse(output())).toEqual([
+      { ...acme, active: true },
+      { ...beta, active: false },
+    ])
+  })
+
+  test('prints an empty list when logged out', async () => {
+    auth.state.sessions = []
+    const { promise, output } = run(['list', '--json'])
+    await promise
+
+    expect(JSON.parse(output())).toEqual([])
   })
 })
 

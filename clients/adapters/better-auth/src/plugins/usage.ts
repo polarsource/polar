@@ -1,7 +1,7 @@
-import { listCustomerMeters as listCustomerMetersCustomerPortal } from '@polar-sh/sdk/2026-04/services/customer_portal/customer_meters'
-import { createCustomerSessions } from '@polar-sh/sdk/2026-04/services/customer_sessions'
-import { ingestEvents } from '@polar-sh/sdk/2026-04/services/events'
-import type { models, PolarCore } from '@polar-sh/sdk/2026-04'
+import { listCustomerMeters as listCustomerMetersCustomerPortal } from '@polar-sh/sdk/2026-10/services/customer_portal/customer_meters'
+import { createCustomerSessions } from '@polar-sh/sdk/2026-10/services/customer_sessions'
+import { ingestEvents } from '@polar-sh/sdk/2026-10/services/events'
+import type { models, PolarCore } from '@polar-sh/sdk/2026-10'
 import {
   APIError,
   createAuthEndpoint,

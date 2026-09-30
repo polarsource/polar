@@ -7,7 +7,7 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter, SetSchemaReference
 from polar.models import Discount
-from polar.openapi import APITag
+from polar.openapi import APITag, cli_preview
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
@@ -64,6 +64,13 @@ async def list(
 @router.get(
     "/{id}",
     summary="Get Discount",
+    openapi_extra=cli_preview(
+        ("id", "ID"),
+        ("name", "Name"),
+        ("code", "Code"),
+        ("type", "Type"),
+        ("duration", "Duration"),
+    ),
     response_model=DiscountSchema,
     responses={404: DiscountNotFound},
 )

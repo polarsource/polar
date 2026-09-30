@@ -1,4 +1,4 @@
-import { Data, Duration, Effect, Exit, Schema, Stream } from 'effect'
+import { Cause, Data, Duration, Effect, Exit, Schema, Stream } from 'effect'
 import { Sse } from 'effect/unstable/encoding'
 import { HttpClientRequest, HttpClientResponse } from 'effect/unstable/http'
 import { type ActiveOrganization, loginCommand } from '@/schemas/Auth'
@@ -7,8 +7,10 @@ import {
   ListenReconnect,
   ListenWebhookEvent,
 } from '@/schemas/Events'
-import { apiUrl } from '@/services/api'
+import { apiUrl, withOrganization } from '@/services/api'
 import { authenticatedClient } from '@/services/client'
+import { Deliveries, type Delivery } from '@/services/deliveries'
+import { redactUrl } from '@/utils/url'
 
 export class ListenError extends Data.TaggedError('ListenError')<{
   message: string
@@ -33,14 +35,53 @@ export type ListenEvent =
       durationMs: number
     }
 
+const RESPONSE_BODY_LIMIT = 2000
+const RESPONSE_BODY_TIMEOUT = '1 second'
+const FORWARD_TIMEOUT = '10 seconds'
+
+const readBody = (response: Response) =>
+  Effect.gen(function* () {
+    let text = ''
+    yield* Effect.tryPromise(async (signal) => {
+      const reader = response.body?.getReader()
+      if (!reader) return
+      signal.addEventListener('abort', () => void reader.cancel(), {
+        once: true,
+      })
+      const decoder = new TextDecoder()
+      while (text.length <= RESPONSE_BODY_LIMIT) {
+        const { done, value } = await reader.read()
+        if (done) return
+        text += decoder.decode(value, { stream: true })
+      }
+      await reader.cancel()
+    }).pipe(Effect.timeoutOption(RESPONSE_BODY_TIMEOUT), Effect.ignore)
+    return text.length > RESPONSE_BODY_LIMIT
+      ? `${text.slice(0, RESPONSE_BODY_LIMIT)}…`
+      : text
+  })
+
+const refused = 'connection refused, is your server running?'
+
+const failureHints = new Map([
+  ['ConnectionRefused', refused],
+  ['ECONNREFUSED', refused],
+  ['ENOTFOUND', 'host not found, check the forward URL'],
+])
+
 const describeForwardFailure = (error: unknown) => {
+  if (Cause.isTimeoutError(error)) return `no response after ${FORWARD_TIMEOUT}`
   const cause =
     error instanceof Error && error.cause instanceof Error ? error.cause : error
+  const code =
+    typeof cause === 'object' && cause !== null && 'code' in cause
+      ? String(cause.code)
+      : ''
   const message = cause instanceof Error ? cause.message : String(cause)
-  if (/ECONNREFUSED/i.test(message)) {
-    return 'connection refused, is your server running?'
-  }
-  return message
+  return (
+    failureHints.get(code) ??
+    (/ECONNREFUSED/i.test(message) ? refused : message)
+  )
 }
 
 export interface StartListeningOptions {
@@ -66,6 +107,8 @@ export const startListening = ({
       `/cli/listen/${organization.id}`,
     )
     const client = yield* authenticatedClient(environment)
+    const deliveries = yield* Deliveries
+    const shownUrl = redactUrl(forwardUrl)
     let connected = false
     let retryDelay = Duration.millis(3000)
     let lastEventId: string | undefined
@@ -73,6 +116,7 @@ export const startListening = ({
       Effect.gen(function* () {
         let request = HttpClientRequest.get(listenUrl).pipe(
           HttpClientRequest.setHeader('Accept', 'text/event-stream'),
+          withOrganization(organization.id),
         )
         if (lastEventId)
           request = HttpClientRequest.setHeader(
@@ -145,19 +189,40 @@ export const startListening = ({
                 ? (payload.value.type ?? 'event')
                 : 'event'
               const startedAt = performance.now()
+              const triggered =
+                webhook.value.headers['x-polar-triggered'] === 'true'
+              const record = (
+                outcome: Pick<
+                  Delivery,
+                  'status' | 'statusText' | 'failure' | 'body'
+                >,
+              ) =>
+                triggered
+                  ? deliveries.record(webhook.value.payload.webhook_event_id, {
+                      forwardUrl: shownUrl,
+                      durationMs: performance.now() - startedAt,
+                      ...outcome,
+                    })
+                  : Effect.void
               yield* Effect.tryPromise((signal) =>
                 forward(forwardUrl, {
                   method: 'POST',
                   headers: webhook.value.headers,
                   body: rawPayload,
+                  redirect: 'manual',
                   signal,
                 }),
               ).pipe(
+                Effect.timeout(FORWARD_TIMEOUT),
                 Effect.flatMap((result) =>
-                  Effect.tryPromise(
-                    () => result.body?.cancel() ?? Promise.resolve(),
+                  (triggered && !result.ok
+                    ? readBody(result)
+                    : Effect.tryPromise(async () => {
+                        await result.body?.cancel()
+                        return ''
+                      })
                   ).pipe(
-                    Effect.andThen(
+                    Effect.tap(() =>
                       onEvent({
                         _tag: 'Forwarded',
                         eventType,
@@ -166,16 +231,24 @@ export const startListening = ({
                         durationMs: performance.now() - startedAt,
                       }),
                     ),
+                    Effect.flatMap((body) =>
+                      record({
+                        status: result.status,
+                        statusText: result.statusText,
+                        ...(body ? { body } : {}),
+                      }),
+                    ),
                   ),
                 ),
-                Effect.catch((error) =>
-                  onEvent({
+                Effect.catch((error) => {
+                  const failure = describeForwardFailure(error)
+                  return onEvent({
                     _tag: 'ForwardFailed',
                     eventType,
-                    reason: describeForwardFailure(error),
+                    reason: failure,
                     durationMs: performance.now() - startedAt,
-                  }),
-                ),
+                  }).pipe(Effect.andThen(record({ failure })))
+                }),
               )
             }),
           ),

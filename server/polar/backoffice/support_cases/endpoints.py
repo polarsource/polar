@@ -38,6 +38,7 @@ from ..components import (
     datatable,
     dispute_status_badge,
     evidence_due_label,
+    needs_action_badge,
     support_tier_badge,
 )
 from ..components._tab_nav import Tab, tab_nav
@@ -100,6 +101,11 @@ def _list_tabs(
     # clears back to everyone, so no redundant "all assignees" tab is needed.
     return [
         Tab("Open", url=url("open", assigned), active=status == "open"),
+        Tab(
+            "Needs action",
+            url=url("needs_action", assigned),
+            active=status == "needs_action",
+        ),
         Tab("Closed", url=url("closed", assigned), active=status == "closed"),
         Tab("All", url=url("all", assigned), active=status == "all"),
         Tab(
@@ -247,6 +253,7 @@ def _render_table(request: Request, rows: Sequence[Row], sort: str) -> None:
                     dispute_status,
                     evidence_due_by,
                     evidence_past_due,
+                    needs_action,
                 ) in rows:
                     case_url = str(
                         request.url_for("support_cases:detail", case_id=case.id)
@@ -270,6 +277,8 @@ def _render_table(request: Request, rows: Sequence[Row], sort: str) -> None:
                                 _status_badge(is_open)
                                 if dispute_status is not None:
                                     dispute_status_badge(dispute_status)
+                                if needs_action:
+                                    needs_action_badge(case.type)
                                 if unread:
                                     with tag.span(
                                         classes="tooltip text-warning",

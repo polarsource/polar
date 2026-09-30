@@ -1,10 +1,25 @@
 import { afterEach, describe, expect, vi, test } from 'vitest'
-import { Effect, Fiber } from 'effect'
+import { Effect, Fiber, Option } from 'effect'
 import { FetchHttpClient } from 'effect/unstable/http'
 import { AuthError } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
+import { Deliveries, type Delivery } from '@/services/deliveries'
 import { type ListenEvent, startListening } from '@/services/listen'
 import { fakeAuth, overrideCredential } from '@/utils/test-utils/services'
+
+const fakeDeliveries = () => {
+  const state = {
+    recorded: [] as Array<{ eventId: string; delivery: Delivery }>,
+  }
+  const deliveries = Deliveries.of({
+    record: (eventId, delivery) =>
+      Effect.sync(() => {
+        state.recorded.push({ eventId, delivery })
+      }),
+    await: () => Effect.succeed(Option.none()),
+  })
+  return { deliveries, state }
+}
 
 describe('startListening', () => {
   const { auth } = fakeAuth({ credential: overrideCredential('test-token') })
@@ -31,8 +46,14 @@ describe('startListening', () => {
   }
   const forward = vi.fn<Fetch>(async () => new Response(null, { status: 200 }))
   let events: ListenEvent[]
-  const run = (fetch: Fetch = streamFetch, credentials = auth) => {
+  let deliveries: ReturnType<typeof fakeDeliveries>
+  const run = (
+    fetch: Fetch = streamFetch,
+    credentials = auth,
+    forwardUrl = 'http://localhost:3000/webhook',
+  ) => {
     events = []
+    deliveries = fakeDeliveries()
     const fiber = Effect.runFork(
       startListening({
         organization: {
@@ -41,7 +62,7 @@ describe('startListening', () => {
           slug: 'acme',
           environment: 'sandbox',
         },
-        forwardUrl: 'http://localhost:3000/webhook',
+        forwardUrl,
         forward,
         onEvent: (event) =>
           Effect.sync(() => {
@@ -54,6 +75,7 @@ describe('startListening', () => {
           fetch as typeof globalThis.fetch,
         ),
         Effect.provideService(Auth, credentials),
+        Effect.provideService(Deliveries, deliveries.deliveries),
       ),
     )
     fibers.push(fiber)
@@ -64,6 +86,16 @@ describe('startListening', () => {
     connections[index]!.controller.enqueue(
       new TextEncoder().encode(`${prefix}data: ${JSON.stringify(data)}\n\n`),
     )
+  const emitWebhook = (headers: Record<string, string>) =>
+    emit({
+      id: 'evt_1',
+      key: 'webhook',
+      payload: {
+        webhook_event_id: 'whid_1',
+        payload: '{ "type": "order.paid" }',
+      },
+      headers,
+    })
 
   afterEach(async () => {
     await Promise.all(
@@ -74,6 +106,7 @@ describe('startListening', () => {
     requests.length = 0
     forward.mockClear()
     vi.restoreAllMocks()
+    vi.useRealTimers()
   })
 
   test.each([401, 500])('preserves terminal HTTP status %i', async (status) => {
@@ -102,8 +135,20 @@ describe('startListening', () => {
     await tick()
     expect(requests[0]!.get('Authorization')).toBe('Bearer test-token')
     expect(requests[0]!.get('Accept')).toBe('text/event-stream')
+    expect(requests[0]!.get('Polar-Organization')).toBe('org_1')
     await Effect.runPromise(Fiber.interrupt(fiber))
     expect(connections[0]!.signal?.aborted).toBe(true)
+  })
+
+  test('does not follow redirects, like real webhook delivery', async () => {
+    run()
+    await tick()
+    emitWebhook({})
+    await tick()
+    expect(forward).toHaveBeenCalledWith(
+      'http://localhost:3000/webhook',
+      expect.objectContaining({ redirect: 'manual' }),
+    )
   })
 
   test('forwards the exact signed payload and headers', async () => {
@@ -134,6 +179,176 @@ describe('startListening', () => {
         _tag: 'Forwarded',
         eventType: 'order.created',
         status: 200,
+      }),
+    )
+  })
+
+  test('records the outcome of a triggered event for polar trigger', async () => {
+    run()
+    await tick()
+    emitWebhook({ 'x-polar-triggered': 'true' })
+    await tick()
+    expect(deliveries.state.recorded).toEqual([
+      {
+        eventId: 'whid_1',
+        delivery: expect.objectContaining({
+          forwardUrl: 'http://localhost:3000/webhook',
+          status: 200,
+        }),
+      },
+    ])
+  })
+
+  test('records the response body when your server rejects a triggered event', async () => {
+    forward.mockResolvedValueOnce(
+      new Response('Missing customer', {
+        status: 422,
+        statusText: 'Unprocessable Entity',
+      }),
+    )
+    run()
+    await tick()
+    emitWebhook({ 'x-polar-triggered': 'true' })
+    await tick()
+    expect(deliveries.state.recorded[0]?.delivery).toEqual(
+      expect.objectContaining({ status: 422, body: 'Missing customer' }),
+    )
+  })
+
+  test('records what arrived when a rejected response body stalls, then moves on', async () => {
+    forward.mockResolvedValueOnce(
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode('partial'))
+          },
+        }),
+        { status: 500 },
+      ),
+    )
+    run()
+    await tick()
+    emitWebhook({ 'x-polar-triggered': 'true' })
+    emitWebhook({ 'x-polar-triggered': 'true' })
+    await new Promise((resolve) => setTimeout(resolve, 1200))
+    expect(deliveries.state.recorded.map(({ delivery }) => delivery)).toEqual([
+      expect.objectContaining({ status: 500, body: 'partial' }),
+      expect.objectContaining({ status: 200 }),
+    ])
+  })
+
+  test('gives up on a server that does not respond, like real webhook delivery', async () => {
+    vi.useFakeTimers()
+    let hung: AbortSignal | null | undefined
+    forward.mockImplementationOnce(
+      (_input, init) =>
+        new Promise((_resolve, reject) => {
+          hung = init?.signal
+          init?.signal?.addEventListener('abort', () =>
+            reject(init.signal?.reason),
+          )
+        }),
+    )
+    run()
+    await vi.advanceTimersByTimeAsync(20)
+    emitWebhook({ 'x-polar-triggered': 'true' })
+    emitWebhook({ 'x-polar-triggered': 'true' })
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(deliveries.state.recorded.map(({ delivery }) => delivery)).toEqual([
+      expect.objectContaining({ failure: 'no response after 10 seconds' }),
+      expect.objectContaining({ status: 200 }),
+    ])
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        _tag: 'ForwardFailed',
+        reason: 'no response after 10 seconds',
+      }),
+    )
+    expect(hung?.aborted).toBe(true)
+  })
+
+  test('stops reading a rejected response body at the limit', async () => {
+    const cancel = vi.fn()
+    forward.mockResolvedValueOnce(
+      new Response(
+        new ReadableStream({
+          pull(controller) {
+            controller.enqueue(new TextEncoder().encode('x'.repeat(500)))
+          },
+          cancel,
+        }),
+        { status: 500 },
+      ),
+    )
+    run()
+    await tick()
+    emitWebhook({ 'x-polar-triggered': 'true' })
+    await tick()
+    expect(deliveries.state.recorded[0]?.delivery.body).toBe(
+      `${'x'.repeat(2000)}…`,
+    )
+    expect(cancel).toHaveBeenCalled()
+  })
+
+  test('keeps secrets in the forward URL out of the record', async () => {
+    const forwardUrl = 'http://user:s3cret@localhost:3000/webhook?token=t0ken'
+    run(streamFetch, auth, forwardUrl)
+    await tick()
+    emitWebhook({ 'x-polar-triggered': 'true' })
+    await tick()
+    expect(deliveries.state.recorded[0]?.delivery.forwardUrl).toBe(
+      'http://***@localhost:3000/webhook?token=***',
+    )
+    expect(forward).toHaveBeenCalledWith(forwardUrl, expect.anything())
+  })
+
+  test('does not record real events', async () => {
+    run()
+    await tick()
+    emitWebhook({})
+    await tick()
+    expect(forward).toHaveBeenCalled()
+    expect(deliveries.state.recorded).toEqual([])
+  })
+
+  test('explains and records a host that cannot be found', async () => {
+    forward.mockRejectedValueOnce(
+      Object.assign(new Error('getaddrinfo ENOTFOUND qweqe'), {
+        code: 'ENOTFOUND',
+      }),
+    )
+    run()
+    await tick()
+    emitWebhook({ 'x-polar-triggered': 'true' })
+    await tick()
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        _tag: 'ForwardFailed',
+        reason: 'host not found, check the forward URL',
+      }),
+    )
+    expect(deliveries.state.recorded[0]?.delivery).toMatchObject({
+      failure: 'host not found, check the forward URL',
+    })
+  })
+
+  test('hints that the server is down when Bun refuses the connection', async () => {
+    forward.mockRejectedValueOnce(
+      Object.assign(
+        new TypeError(
+          'Unable to connect. Is the computer able to access the url?',
+        ),
+        { code: 'ConnectionRefused' },
+      ),
+    )
+    run()
+    await tick()
+    emitWebhook({})
+    await tick()
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        _tag: 'ForwardFailed',
+        reason: 'connection refused, is your server running?',
       }),
     )
   })

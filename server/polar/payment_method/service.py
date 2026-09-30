@@ -26,6 +26,8 @@ from polar.subscription.repository import SubscriptionRepository
 from .repository import PaymentMethodRepository
 from .schemas import PaymentMethodCard
 
+GENERATED_SEPA_PAYMENT_METHOD_TYPES = ("bancontact", "ideal", "sofort")
+
 
 class PaymentMethodError(PolarError): ...
 
@@ -44,6 +46,13 @@ class PaymentMethodDoesNotExist(PaymentMethodError):
         super().__init__(message)
 
 
+class NoGeneratedSEPAPaymentMethod(PaymentMethodError):
+    def __init__(self, intent_id: str) -> None:
+        super().__init__(
+            f"No generated SEPA payment method on Stripe intent {intent_id}."
+        )
+
+
 class PaymentMethodInUseByActiveSubscription(PaymentMethodError):
     def __init__(self, subscription_ids: list[uuid.UUID]) -> None:
         self.subscription_ids = subscription_ids
@@ -55,6 +64,43 @@ class PaymentMethodInUseByActiveSubscription(PaymentMethodError):
 
 
 class PaymentMethodService:
+    async def resolve_from_stripe_intent(
+        self,
+        intent: stripe_lib.Charge | stripe_lib.SetupIntent | stripe_lib.PaymentIntent,
+    ) -> stripe_lib.PaymentMethod:
+        if intent.payment_method is None:
+            raise NoPaymentMethodOnIntent(intent.id)
+
+        payment_method = intent.payment_method
+        if isinstance(payment_method, str):
+            payment_method = await stripe_service.get_payment_method(payment_method)
+        if payment_method.type not in GENERATED_SEPA_PAYMENT_METHOD_TYPES:
+            return payment_method
+
+        source: stripe_lib.Charge | stripe_lib.SetupAttempt | str | None
+        if isinstance(intent, stripe_lib.SetupIntent):
+            intent = await stripe_service.get_setup_intent(
+                intent.id, expand=["latest_attempt"]
+            )
+            source = intent.latest_attempt
+            assert not isinstance(source, str)
+        elif isinstance(intent, stripe_lib.PaymentIntent):
+            source = intent.latest_charge
+            if isinstance(source, str):
+                source = await stripe_service.get_charge(source)
+        else:
+            source = intent
+
+        details = source.get("payment_method_details") if source is not None else None
+        generated = (
+            (details.get(payment_method.type) or {}).get("generated_sepa_debit")
+            if details is not None
+            else None
+        )
+        if generated is None:
+            raise NoGeneratedSEPAPaymentMethod(intent.id)
+        return await stripe_service.get_payment_method(get_expandable_id(generated))
+
     async def upsert_from_stripe(
         self,
         session: AsyncSession,
@@ -93,12 +139,7 @@ class PaymentMethodService:
         intent: stripe_lib.Charge | stripe_lib.SetupIntent,
         checkout: Checkout,
     ) -> PaymentMethod:
-        if intent.payment_method is None:
-            raise NoPaymentMethodOnIntent(intent.id)
-
-        stripe_payment_method = await stripe_service.get_payment_method(
-            get_expandable_id(intent.payment_method)
-        )
+        stripe_payment_method = await self.resolve_from_stripe_intent(intent)
 
         assert checkout.customer is not None
         return await self.upsert_from_stripe(
@@ -121,9 +162,7 @@ class PaymentMethodService:
         if order.product and not order.product.is_recurring:
             return None
 
-        stripe_payment_method = await stripe_service.get_payment_method(
-            get_expandable_id(payment_intent.payment_method)
-        )
+        stripe_payment_method = await self.resolve_from_stripe_intent(payment_intent)
 
         customer_repository = CustomerRepository.from_session(session)
         customer = await customer_repository.get_by_id(
@@ -303,6 +342,15 @@ class PaymentMethodService:
             elif not force:
                 # No alternative payment method available, raise exception
                 raise PaymentMethodInUseByActiveSubscription(requiring_subscription_ids)
+
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_id(
+            payment_method.customer_id, include_deleted=True
+        )
+        if customer and customer.default_payment_method_id == payment_method.id:
+            await customer_repository.update(
+                customer, update_dict={"default_payment_method_id": None}
+            )
 
         if payment_method.processor == PaymentProcessor.stripe:
             try:

@@ -1,26 +1,31 @@
 import { BunRuntime, BunServices } from '@effect/platform-bun'
+import { commands } from '@polar-sh/cli-commands'
 import { Cause, Effect, Layer, Runtime, Stdio } from 'effect'
 import { CliConfig, Command, GlobalFlag } from 'effect/unstable/cli'
 import { FetchHttpClient } from 'effect/unstable/http'
 import { listen } from '@/commands/listen'
 import { trigger } from '@/commands/trigger'
 import { auth } from '@/commands/auth'
+import { home } from '@/commands/home'
 import { update } from '@/commands/update'
 import { describeError } from '@/utils/errors'
+import * as ApiRuntime from '@/services/api-runtime'
 import * as Auth from '@/services/auth'
 import * as Credentials from '@/services/credentials'
+import * as Deliveries from '@/services/deliveries'
 import * as Config from '@/services/config'
 import * as Organizations from '@/services/organizations'
 import * as OAuth from '@/services/oauth'
 import * as Polar from '@/services/polar'
 import * as Telemetry from '@/services/telemetry'
 import * as Trigger from '@/services/trigger'
+import { removeRetiredBinary } from '@/services/update'
 import { availableUpdate, checkForUpdate } from '@/services/update-check'
 import * as ui from '@/utils/ui'
 import { VERSION } from '@/version'
 
-const mainCommand = Command.make('polar').pipe(
-  Command.withSubcommands([auth, listen, trigger, update]),
+const mainCommand = Command.make('polar', {}, () => home).pipe(
+  Command.withSubcommands([auth, listen, trigger, update, ...commands]),
 )
 
 const cli = Command.run(mainCommand, {
@@ -43,7 +48,11 @@ const telemetryLayer = Telemetry.layer.pipe(
   Layer.provide(Layer.mergeAll(BunServices.layer, Telemetry.detachedSender)),
 )
 const services = Layer.mergeAll(
+  ApiRuntime.layer.pipe(
+    Layer.provide(Layer.mergeAll(polarLayer, organizationsLayer)),
+  ),
   authLayer,
+  Deliveries.layer,
   polarLayer,
   organizationsLayer,
   triggerLayer,
@@ -96,6 +105,7 @@ if (process.argv[2] === Telemetry.SENDER_COMMAND) {
     BunRuntime.runMain({ disableErrorReporting: true }),
   )
 } else {
+  removeRetiredBinary()
   const latestVersion = availableUpdate()
   if (latestVersion) {
     process.stderr.write(ui.updateNotice(VERSION, latestVersion))

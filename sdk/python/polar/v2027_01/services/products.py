@@ -1,0 +1,798 @@
+from __future__ import annotations
+
+import builtins
+import typing
+
+from polar.base import (
+    AsyncServiceBase,
+    RequestTimeout,
+    SyncServiceBase,
+    parse_response_json,
+    parse_response_none,
+)
+from polar.v2027_01.errors import (
+    HTTPValidationError,
+    NotPermitted,
+    ProductNotDeletable,
+    ResourceNotFound,
+)
+from polar.v2027_01.inputs import (
+    MetadataQuery,
+    ProductBenefitsUpdate,
+    ProductCreateOneTime,
+    ProductCreateRecurring,
+    ProductUpdate,
+)
+from polar.v2027_01.literals import (
+    ProductSortProperty,
+    ProductVisibility,
+)
+from polar.v2027_01.outputs import (
+    ListResourceProduct,
+    Product,
+)
+
+
+class ProductsSync(SyncServiceBase):
+    def list(
+        self,
+        *,
+        id: str | builtins.list[str] | None = None,
+        organization_id: str | builtins.list[str] | None = None,
+        query: str | None = None,
+        is_archived: bool | None = None,
+        is_recurring: bool | None = None,
+        benefit_id: str | builtins.list[str] | None = None,
+        visibility: builtins.list[ProductVisibility] | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[ProductSortProperty] | None = ["-created_at"],
+        metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+    ) -> ListResourceProduct:
+        """
+        List products.
+
+        **Scopes**: `products:read` `products:write`
+
+        Args:
+            id: Filter by product ID.
+            organization_id: Filter by organization ID.
+            query: Filter by product name.
+            is_archived: Filter on archived products.
+            is_recurring: Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned.
+            benefit_id: Filter products granting specific benefit.
+            visibility: Filter by visibility.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="GET",
+            url="/v1/products/",
+            path_params={},
+            query_params={
+                "id": id,
+                "organization_id": organization_id,
+                "query": query,
+                "is_archived": is_archived,
+                "is_recurring": is_recurring,
+                "benefit_id": benefit_id,
+                "visibility": visibility,
+                "page": page,
+                "limit": limit,
+                "sorting": sorting,
+                "metadata": metadata,
+            },
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, ListResourceProduct, method_errors)
+
+    def iter_list(
+        self,
+        *,
+        id: str | builtins.list[str] | None = None,
+        organization_id: str | builtins.list[str] | None = None,
+        query: str | None = None,
+        is_archived: bool | None = None,
+        is_recurring: bool | None = None,
+        benefit_id: str | builtins.list[str] | None = None,
+        visibility: builtins.list[ProductVisibility] | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[ProductSortProperty] | None = ["-created_at"],
+        metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+    ) -> typing.Generator[Product, None, None]:
+        """
+        List products.
+
+        **Scopes**: `products:read` `products:write`
+
+        Args:
+            id: Filter by product ID.
+            organization_id: Filter by organization ID.
+            query: Filter by product name.
+            is_archived: Filter on archived products.
+            is_recurring: Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned.
+            benefit_id: Filter products granting specific benefit.
+            visibility: Filter by visibility.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
+
+        Returns:
+            A generator that yields items of type Product.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list(
+                id=id,
+                organization_id=organization_id,
+                query=query,
+                is_archived=is_archived,
+                is_recurring=is_recurring,
+                benefit_id=benefit_id,
+                visibility=visibility,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+                metadata=metadata,
+                request_timeout=request_timeout,
+                request_access_token=request_access_token,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
+    @typing.overload
+    def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[ProductCreateRecurring],
+    ) -> Product: ...
+
+    @typing.overload
+    def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[ProductCreateOneTime],
+    ) -> Product: ...
+
+    def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Any,
+    ) -> Product:
+        """
+        Create a product.
+
+        **Scopes**: `products:write`
+
+        Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/products/",
+            path_params={},
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+            body=kwargs,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, Product, method_errors)
+
+    def get(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+    ) -> Product:
+        """
+        Get a product by ID.
+
+        **Scopes**: `products:read` `products:write`
+
+        Args:
+            id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+
+        Raises:
+            ResourceNotFound: Product not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="GET",
+            url="/v1/products/{id}",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            404: ResourceNotFound,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, Product, method_errors)
+
+    def delete(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+    ) -> None:
+        """
+        Delete a product.
+
+        Only products without orders, subscriptions, trials or discounts can be deleted.
+        Products that are in use can only be archived.
+
+        **Scopes**: `products:write`
+
+        Args:
+            id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+
+        Raises:
+            NotPermitted: You don't have the permission to delete this product.
+            ResourceNotFound: Product not found.
+            ProductNotDeletable: Product is in use and cannot be deleted.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="DELETE",
+            url="/v1/products/{id}",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            403: NotPermitted,
+            404: ResourceNotFound,
+            409: ProductNotDeletable,
+            422: HTTPValidationError,
+        }
+        return parse_response_none(response, method_errors)
+
+    def update(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[ProductUpdate],
+    ) -> Product:
+        """
+        Update a product.
+
+        **Scopes**: `products:write`
+
+        Args:
+            id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            NotPermitted: You don't have the permission to update this product.
+            ResourceNotFound: Product not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="PATCH",
+            url="/v1/products/{id}",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+            body=kwargs,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            403: NotPermitted,
+            404: ResourceNotFound,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, Product, method_errors)
+
+    def update_benefits(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[ProductBenefitsUpdate],
+    ) -> Product:
+        """
+        Update benefits granted by a product.
+
+        **Scopes**: `products:write`
+
+        Args:
+            id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            NotPermitted: You don't have the permission to update this product.
+            ResourceNotFound: Product not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/products/{id}/benefits",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+            body=kwargs,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            403: NotPermitted,
+            404: ResourceNotFound,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, Product, method_errors)
+
+
+class ProductsAsync(AsyncServiceBase):
+    async def list(
+        self,
+        *,
+        id: str | builtins.list[str] | None = None,
+        organization_id: str | builtins.list[str] | None = None,
+        query: str | None = None,
+        is_archived: bool | None = None,
+        is_recurring: bool | None = None,
+        benefit_id: str | builtins.list[str] | None = None,
+        visibility: builtins.list[ProductVisibility] | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[ProductSortProperty] | None = ["-created_at"],
+        metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+    ) -> ListResourceProduct:
+        """
+        List products.
+
+        **Scopes**: `products:read` `products:write`
+
+        Args:
+            id: Filter by product ID.
+            organization_id: Filter by organization ID.
+            query: Filter by product name.
+            is_archived: Filter on archived products.
+            is_recurring: Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned.
+            benefit_id: Filter products granting specific benefit.
+            visibility: Filter by visibility.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="GET",
+            url="/v1/products/",
+            path_params={},
+            query_params={
+                "id": id,
+                "organization_id": organization_id,
+                "query": query,
+                "is_archived": is_archived,
+                "is_recurring": is_recurring,
+                "benefit_id": benefit_id,
+                "visibility": visibility,
+                "page": page,
+                "limit": limit,
+                "sorting": sorting,
+                "metadata": metadata,
+            },
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, ListResourceProduct, method_errors)
+
+    async def iter_list(
+        self,
+        *,
+        id: str | builtins.list[str] | None = None,
+        organization_id: str | builtins.list[str] | None = None,
+        query: str | None = None,
+        is_archived: bool | None = None,
+        is_recurring: bool | None = None,
+        benefit_id: str | builtins.list[str] | None = None,
+        visibility: builtins.list[ProductVisibility] | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[ProductSortProperty] | None = ["-created_at"],
+        metadata: MetadataQuery = None,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+    ) -> typing.AsyncGenerator[Product, None]:
+        """
+        List products.
+
+        **Scopes**: `products:read` `products:write`
+
+        Args:
+            id: Filter by product ID.
+            organization_id: Filter by organization ID.
+            query: Filter by product name.
+            is_archived: Filter on archived products.
+            is_recurring: Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned.
+            benefit_id: Filter products granting specific benefit.
+            visibility: Filter by visibility.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for each request.
+
+
+        Returns:
+            An async generator that yields items of type Product.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list(
+                id=id,
+                organization_id=organization_id,
+                query=query,
+                is_archived=is_archived,
+                is_recurring=is_recurring,
+                benefit_id=benefit_id,
+                visibility=visibility,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+                metadata=metadata,
+                request_timeout=request_timeout,
+                request_access_token=request_access_token,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
+    @typing.overload
+    async def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[ProductCreateRecurring],
+    ) -> Product: ...
+
+    @typing.overload
+    async def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[ProductCreateOneTime],
+    ) -> Product: ...
+
+    async def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Any,
+    ) -> Product:
+        """
+        Create a product.
+
+        **Scopes**: `products:write`
+
+        Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/products/",
+            path_params={},
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+            body=kwargs,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, Product, method_errors)
+
+    async def get(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+    ) -> Product:
+        """
+        Get a product by ID.
+
+        **Scopes**: `products:read` `products:write`
+
+        Args:
+            id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+
+        Raises:
+            ResourceNotFound: Product not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="GET",
+            url="/v1/products/{id}",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            404: ResourceNotFound,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, Product, method_errors)
+
+    async def delete(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+    ) -> None:
+        """
+        Delete a product.
+
+        Only products without orders, subscriptions, trials or discounts can be deleted.
+        Products that are in use can only be archived.
+
+        **Scopes**: `products:write`
+
+        Args:
+            id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+
+        Raises:
+            NotPermitted: You don't have the permission to delete this product.
+            ResourceNotFound: Product not found.
+            ProductNotDeletable: Product is in use and cannot be deleted.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="DELETE",
+            url="/v1/products/{id}",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            403: NotPermitted,
+            404: ResourceNotFound,
+            409: ProductNotDeletable,
+            422: HTTPValidationError,
+        }
+        return parse_response_none(response, method_errors)
+
+    async def update(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[ProductUpdate],
+    ) -> Product:
+        """
+        Update a product.
+
+        **Scopes**: `products:write`
+
+        Args:
+            id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            NotPermitted: You don't have the permission to update this product.
+            ResourceNotFound: Product not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="PATCH",
+            url="/v1/products/{id}",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+            body=kwargs,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            403: NotPermitted,
+            404: ResourceNotFound,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, Product, method_errors)
+
+    async def update_benefits(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[ProductBenefitsUpdate],
+    ) -> Product:
+        """
+        Update benefits granted by a product.
+
+        **Scopes**: `products:write`
+
+        Args:
+            id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            NotPermitted: You don't have the permission to update this product.
+            ResourceNotFound: Product not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/products/{id}/benefits",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+            body=kwargs,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            403: NotPermitted,
+            404: ResourceNotFound,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, Product, method_errors)

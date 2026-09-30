@@ -12,7 +12,7 @@ import {
 import { Auth } from '@/services/auth'
 import { Organizations } from '@/services/organizations'
 import * as ui from '@/utils/ui'
-import { production, sandbox } from '@/commands/flags'
+import { json, production, sandbox } from '@/commands/flags'
 
 const isSelected = (
   organization: ActiveOrganization,
@@ -23,6 +23,15 @@ const isSelected = (
 
 const describe = (organization: ActiveOrganization) =>
   `${ui.bold(organization.name)} ${ui.dim(organization.slug)} ${ui.dim(organization.environment)}`
+
+const organizationRows = (
+  organization: ActiveOrganization,
+): Array<readonly [string, string]> => [
+  ['Organization', ui.bold(organization.name)],
+  ['Slug', organization.slug],
+  ['Environment', organization.environment],
+  ['ID', ui.dim(organization.id)],
+]
 
 const notLoggedIn = Effect.gen(function* () {
   yield* Console.log(ui.warning('Not logged in'))
@@ -81,6 +90,20 @@ const chooseEnvironment = (
     })
   })
 
+const activate = (organization: ActiveOrganization) =>
+  Effect.gen(function* () {
+    const organizations = yield* Organizations
+    yield* organizations.select({
+      id: organization.id,
+      environment: organization.environment,
+    })
+    yield* Console.log(ui.blank)
+    yield* Console.log(
+      ui.success(`Active organization ${describe(organization)}`),
+    )
+    yield* Console.log(ui.blank)
+  })
+
 const selectOrganization = Effect.gen(function* () {
   const organizations = yield* Organizations
   const items = yield* organizations.listAll
@@ -94,6 +117,7 @@ const selectOrganization = Effect.gen(function* () {
     yield* Console.log(ui.blank)
     return
   }
+  if (items.length === 1) return yield* activate(items[0]!)
   if (!(yield* interactive)) {
     yield* Console.log(
       ui.warning('Organization selection requires an interactive terminal'),
@@ -115,15 +139,7 @@ const selectOrganization = Effect.gen(function* () {
       description: organization.slug,
     })),
   })
-  yield* organizations.select({
-    id: organization.id,
-    environment: organization.environment,
-  })
-  yield* Console.log(ui.blank)
-  yield* Console.log(
-    ui.success(`Active organization ${describe(organization)}`),
-  )
-  yield* Console.log(ui.blank)
+  yield* activate(organization)
 })
 
 const login = Command.make(
@@ -170,26 +186,66 @@ const login = Command.make(
       yield* Console.log(ui.blank)
       yield* selectOrganization
     }),
-).pipe(Command.withDescription('Sign in to Polar through your browser'))
+).pipe(
+  Command.withDescription('Sign in to Polar through your browser'),
+  Command.withExamples([
+    {
+      command: 'polar auth login',
+      description: 'Choose sandbox or production, then sign in',
+    },
+    {
+      command: 'polar auth login --sandbox',
+      description: 'Sign in to sandbox',
+    },
+    {
+      command: 'polar auth login --production --new-session',
+      description: 'Sign in to production again, replacing the saved session',
+    },
+  ]),
+)
 
-const whoami = Command.make('whoami', {}, () =>
+const printJson = (value: unknown) =>
+  Console.log(JSON.stringify(value, null, 2))
+
+const whoamiJson = Effect.gen(function* () {
+  const auth = yield* Auth
+  const organizations = yield* Organizations
+  const environments = yield* auth.environments
+  if (yield* auth.override) {
+    const items = yield* organizations.listAll
+    return yield* printJson({
+      source: 'POLAR_ACCESS_TOKEN',
+      environments,
+      organization: items.length === 1 ? items[0] : null,
+    })
+  }
+  const selection =
+    environments.length > 0 ? yield* organizations.selected : undefined
+  return yield* printJson({
+    source: 'session',
+    environments,
+    organization: selection ? yield* organizations.resolve() : null,
+  })
+})
+
+const whoami = Command.make('whoami', { json }, ({ json }) =>
   Effect.gen(function* () {
+    if (json) return yield* whoamiJson
     const auth = yield* Auth
     const organizations = yield* Organizations
     const environments = yield* auth.environments
     yield* Console.log(ui.blank)
     if (yield* auth.override) {
-      const rows: Array<readonly [string, string]> = [
-        ['Token', 'POLAR_ACCESS_TOKEN'],
-        ['Environment', environments[0]!],
-      ]
       const items = yield* organizations.listAll
       const organization = items.length === 1 ? items[0] : undefined
-      if (organization) {
-        rows.push(['Organization', describe(organization)])
-        rows.push(['ID', ui.dim(organization.id)])
-      }
-      yield* Console.log(ui.keyValue(rows))
+      yield* Console.log(
+        ui.keyValue([
+          ...(organization
+            ? organizationRows(organization)
+            : [['Environment', environments[0]!] as const]),
+          ['Token', 'POLAR_ACCESS_TOKEN'],
+        ]),
+      )
       if (!organization) {
         yield* Console.log(ui.blank)
         yield* Console.log(ui.warning('No active organization'))
@@ -203,27 +259,37 @@ const whoami = Command.make('whoami', {}, () =>
       return
     }
     if (environments.length === 0) return yield* notLoggedIn
-    const rows: Array<readonly [string, string]> = [
-      ['Logged in', environments.join(', ')],
-    ]
     const selection = yield* organizations.selected
     if (selection) {
       const organization = yield* organizations.resolve()
-      rows.push(['Organization', describe(organization)])
-      rows.push(['ID', ui.dim(organization.id)])
-    }
-    yield* Console.log(ui.keyValue(rows))
-    if (!selection) {
-      yield* Console.log(ui.blank)
+      yield* Console.log(ui.keyValue(organizationRows(organization)))
+    } else {
       yield* Console.log(ui.warning('No active organization'))
       yield* Console.log(ui.step(`Run ${ui.command(orgCommand)} to choose one`))
     }
     yield* Console.log(ui.blank)
   }),
-).pipe(Command.withDescription('Show your sessions and active organization'))
+).pipe(Command.withDescription('Show the active organization'))
 
-const list = Command.make('list', {}, () =>
+const listJson = Effect.gen(function* () {
+  const auth = yield* Auth
+  const organizations = yield* Organizations
+  const selection = yield* organizations.selected
+  const items: Array<ActiveOrganization & { active: boolean }> = []
+  for (const environment of yield* auth.environments) {
+    for (const organization of yield* organizations.list(environment)) {
+      items.push({
+        ...organization,
+        active: isSelected(organization, selection),
+      })
+    }
+  }
+  return yield* printJson(items)
+})
+
+const list = Command.make('list', { json }, ({ json }) =>
   Effect.gen(function* () {
+    if (json) return yield* listJson
     const auth = yield* Auth
     const organizations = yield* Organizations
     const environments = yield* auth.environments
@@ -279,15 +345,15 @@ const logoutTargets = (flags: {
     if (flags.sandbox || flags.production) {
       return environments.filter((environment) => flags[environment])
     }
+    const auth = yield* Auth
+    const sessions = yield* auth.environments
+    if (sessions.length <= 1) return sessions
     if (!(yield* interactive)) {
       return yield* new AuthError({
         message:
           'Pass --sandbox, --production or --all to log out outside an interactive terminal.',
       })
     }
-    const auth = yield* Auth
-    const sessions = yield* auth.environments
-    if (sessions.length === 0) return []
     const choices = sessions.map((environment) => ({
       title: environment === 'production' ? 'Production' : 'Sandbox',
       value: [environment] as PolarEnvironment[],
@@ -336,7 +402,19 @@ const logout = Command.make(
       }
       yield* Console.log(ui.blank)
     }),
-).pipe(Command.withDescription('Sign out and remove saved sessions'))
+).pipe(
+  Command.withDescription('Sign out and remove saved sessions'),
+  Command.withExamples([
+    {
+      command: 'polar auth logout',
+      description: 'Sign out, asking which session only if you have both',
+    },
+    {
+      command: 'polar auth logout --all',
+      description: 'Remove every saved session',
+    },
+  ]),
+)
 
 export const auth = Command.make('auth').pipe(
   Command.withDescription('Manage your Polar sessions and active organization'),

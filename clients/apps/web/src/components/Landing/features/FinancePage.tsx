@@ -1,14 +1,10 @@
 'use client'
 
-import AccountBalanceOutlined from '@mui/icons-material/AccountBalanceOutlined'
-import OutboundOutlined from '@mui/icons-material/OutboundOutlined'
-import PriceCheckOutlined from '@mui/icons-material/PriceCheckOutlined'
-import ReceiptOutlined from '@mui/icons-material/ReceiptOutlined'
 import { ConcentricDraw } from '../graphics/ConcentricDraw'
 import {
   FeatureCardGrid,
   FeatureCTA,
-  FeaturePageGraphic,
+  FeatureHighlight,
   FeaturePageHeader,
   FeaturePageIntro,
   FeaturePageLayout,
@@ -21,12 +17,11 @@ export const FinancePage = () => {
   return (
     <FeaturePageLayout>
       <FeaturePageHeader
+        graphic={ConcentricDraw}
         title="Money in, money out"
         description="Balance, ledger, fees, and payouts."
         docsHref="/docs/features/finance/balance"
       />
-
-      <FeaturePageGraphic graphic={ConcentricDraw} />
 
       <FeaturePageIntro>
         Every order, refund, fee, and payout is recorded on a single page, with
@@ -36,9 +31,10 @@ export const FinancePage = () => {
 
       <FeatureSection title="The ledger">
         <p>
-          Your <strong>Finance</strong> page tracks earnings net of VAT (which
-          is captured for remittance) and net of our revenue share. The number
-          you see at the top is the amount actually available for payout.
+          Your <FeatureHighlight>Finance</FeatureHighlight> page tracks earnings
+          net of VAT (which is captured for remittance) and net of our revenue
+          share. The number you see at the top is the amount actually available
+          for payout.
         </p>
         <p>
           Below the balance, every transaction sits in chronological order with
@@ -61,24 +57,20 @@ export const FinancePage = () => {
       <FeatureCardGrid
         cards={[
           {
-            icon: <AccountBalanceOutlined fontSize="large" />,
             title: 'Live balance',
             description:
               'See exactly what is payable right now, net of every fee.',
           },
           {
-            icon: <ReceiptOutlined fontSize="large" />,
             title: 'Transactions ledger',
             description:
               'Every order, refund, dispute, and fee in chronological order.',
           },
           {
-            icon: <OutboundOutlined fontSize="large" />,
             title: 'Manual payouts',
             description: 'Withdraw on your schedule. No automatic transfers.',
           },
           {
-            icon: <PriceCheckOutlined fontSize="large" />,
             title: 'Transparent fees',
             description:
               'Every fee shown next to the transaction that triggered it.',

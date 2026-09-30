@@ -101,15 +101,15 @@ describe('ProductPriceLabel', () => {
   describe('seat-based price', () => {
     it('shows base tier price per seat', () => {
       const price = createSeatBasedPrice({
-        seat_tiers: {
-          seat_tier_type: 'volume',
+        tiers: {
+          type: 'volume',
           tiers: [
-            { min_seats: 1, max_seats: 10, price_per_seat: 549 },
-            { min_seats: 11, max_seats: null, price_per_seat: 449 },
+            { bound: 10, unit_amount: '549' },
+            { bound: null, unit_amount: '449' },
           ],
-          minimum_seats: 1,
-          maximum_seats: null,
         },
+        minimum_units: 1,
+        maximum_units: null,
       })
       const { container } = render(
         <ProductPriceLabel product={baseProduct} price={price} locale="en" />,

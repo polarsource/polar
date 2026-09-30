@@ -1,0 +1,55 @@
+import type { ClientBase, RequestOptions } from "../../base";
+import type {
+  CustomerSession,
+  CustomerSessionCustomerExternalIDCreate,
+  CustomerSessionCustomerIDCreate,
+} from "../models";
+
+import { AmbiguousExternalCustomerID, HTTPValidationError } from "../errors";
+
+export const createCustomerSessions = (client: ClientBase) => {
+  /**
+   * Create a customer session.
+   *
+   * For organizations with `member_model_enabled`, this will automatically
+   * create a member session for the owner member of the customer.
+   *
+   * **Scopes**: `customer_sessions:write`
+   *
+   * @param body - Request body
+   * @param requestOptions - Request options
+   * @returns {CustomerSession}
+   * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
+   * @throws {PolarServerError} When the server returns a 5xx error
+   * @throws {AmbiguousExternalCustomerID} The external customer ID matches customers in several accessible organizations.
+   * @throws {HTTPValidationError} Validation Error
+   */
+  return async (
+    body: CustomerSessionCustomerIDCreate | CustomerSessionCustomerExternalIDCreate,
+    requestOptions?: RequestOptions,
+  ): Promise<CustomerSession> => {
+    const pathParams = {};
+    const queryParams = {};
+    const request = client.buildRequest(
+      "POST",
+      "/v1/customer-sessions/",
+      pathParams,
+      queryParams,
+      body,
+    );
+    const response = await client.sendRequest(request, requestOptions);
+    return client.parseResponse<CustomerSession>(response, "json", {
+      409: AmbiguousExternalCustomerID,
+      422: HTTPValidationError,
+    });
+  };
+};
+
+export function createCustomerSessionsService(client: ClientBase) {
+  return {
+    create: createCustomerSessions(client),
+  };
+}
+
+export type CustomerSessions = ReturnType<typeof createCustomerSessionsService>;

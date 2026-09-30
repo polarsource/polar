@@ -8,7 +8,7 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Benefit
 from polar.models.benefit import BenefitType
-from polar.openapi import APITag
+from polar.openapi import APITag, cli_preview
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
@@ -97,6 +97,9 @@ async def list(
 @router.get(
     "/{id}",
     summary="Get Benefit",
+    openapi_extra=cli_preview(
+        ("id", "ID"), ("type", "Type"), ("description", "Description")
+    ),
     response_model=BenefitSchema,
     responses={404: BenefitNotFound},
 )

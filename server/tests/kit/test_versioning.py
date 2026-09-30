@@ -13,6 +13,7 @@ from polar.kit.versioning import (
     Version,
     add_versioned_routers,
     api_version_context,
+    prune_version_omitted_schemas,
     routes_for_version,
     version,
 )
@@ -27,17 +28,25 @@ class VersionedProduct(BaseModel):
     name: str
     shared_field: Annotated[
         str, Version(starting_from=CURRENT_VERSION, up_to=NEXT_VERSION)
-    ] = "shared"
-    current_field: Annotated[str, Version(up_to=CURRENT_VERSION)] = "current"
+    ]
+    current_field: Annotated[str, Version(up_to=CURRENT_VERSION)]
     next_field: Annotated[
         str,
         Version(starting_from=NEXT_VERSION),
         Field(description="Only available in the next API version."),
-    ] = "next"
+    ]
 
 
 class VersionedSubscription(BaseModel):
     product: VersionedProduct
+
+
+class NextOnlyDiscount(BaseModel):
+    code: str
+
+
+class VersionedOrder(BaseModel):
+    discount: Annotated[NextOnlyDiscount | None, Version(starting_from=NEXT_VERSION)]
 
 
 def test_api_version_is_ordered_hashable_and_immutable() -> None:
@@ -66,7 +75,14 @@ def test_version_decorator_only_adds_metadata() -> None:
 
 
 def test_versioned_fields_are_serialized_for_requested_version() -> None:
-    subscription = VersionedSubscription(product=VersionedProduct(name="Pro"))
+    subscription = VersionedSubscription(
+        product=VersionedProduct(
+            name="Pro",
+            shared_field="shared",
+            current_field="current",
+            next_field="next",
+        )
+    )
 
     with api_version_context(CURRENT_VERSION):
         assert subscription.model_dump() == {
@@ -89,22 +105,41 @@ def test_versioned_fields_are_serialized_for_requested_version() -> None:
 
 def test_versioned_fields_are_included_in_versioned_openapi_schema() -> None:
     with api_version_context(CURRENT_VERSION):
-        current_schema = VersionedSubscription.model_json_schema()
+        current_schema = VersionedSubscription.model_json_schema(mode="serialization")
     current_product = current_schema["$defs"]["VersionedProduct"]
     assert set(current_product["properties"]) == {
         "name",
         "shared_field",
         "current_field",
     }
+    assert set(current_product["required"]) == {"name", "shared_field", "current_field"}
 
     with api_version_context(NEXT_VERSION):
-        next_schema = VersionedSubscription.model_json_schema()
+        next_schema = VersionedSubscription.model_json_schema(mode="serialization")
     next_product = next_schema["$defs"]["VersionedProduct"]
     assert set(next_product["properties"]) == {"name", "shared_field", "next_field"}
     assert (
         next_product["properties"]["next_field"]["description"]
         == "Only available in the next API version."
     )
+    assert set(next_product["required"]) == {"name", "shared_field", "next_field"}
+
+
+@pytest.mark.parametrize(
+    ("api_version", "included"), [(CURRENT_VERSION, False), (NEXT_VERSION, True)]
+)
+def test_prune_version_omitted_schemas(api_version: APIVersion, included: bool) -> None:
+    app = FastAPI()
+
+    @app.get("/order")
+    def get_order() -> VersionedOrder:
+        return VersionedOrder(discount=None)
+
+    with api_version_context(api_version):
+        schema = get_openapi(title="Test", version="1", routes=app.routes)
+    schema = prune_version_omitted_schemas(schema, api_version)
+
+    assert ("NextOnlyDiscount" in schema["components"]["schemas"]) is included
 
 
 def test_versioned_routes() -> None:

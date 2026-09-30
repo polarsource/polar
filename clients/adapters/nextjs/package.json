@@ -1,6 +1,6 @@
 {
   "name": "@polar-sh/nextjs",
-  "version": "0.9.7",
+  "version": "1.0.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/polarsource/polar.git",
@@ -39,7 +39,7 @@
   },
   "dependencies": {
     "@polar-sh/adapter-utils": "workspace:*",
-    "@polar-sh/sdk": "1.0.0-alpha.22"
+    "@polar-sh/sdk": "1.0.0"
   },
   "devDependencies": {
     "@polar-sh/typescript-config": "workspace:*",

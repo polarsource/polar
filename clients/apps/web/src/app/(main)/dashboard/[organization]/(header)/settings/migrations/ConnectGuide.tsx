@@ -11,25 +11,92 @@ import {
 
 const NO_MISSING: string[] = []
 
+const PERMISSION_GROUPS = [
+  ...new Set(REQUIRED_PERMISSIONS.map((permission) => permission.group)),
+]
+
+function AccessBadge({
+  access,
+  missing,
+}: Pick<StripePermission, 'access'> & { missing: boolean }) {
+  const isWrite = access === 'Write'
+  const background = missing
+    ? 'background-danger'
+    : isWrite
+      ? 'background-inverse'
+      : undefined
+  return (
+    <Box
+      as="span"
+      display="inline-flex"
+      paddingHorizontal="s"
+      borderRadius="full"
+      borderWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
+      backgroundColor={background}
+    >
+      <Text
+        variant="caption"
+        color={missing ? 'danger' : isWrite ? 'inverse' : 'muted'}
+      >
+        {access}
+      </Text>
+    </Box>
+  )
+}
+
 function PermissionRow({
   resource,
   access,
+  hint,
   missing,
 }: StripePermission & { missing: boolean }) {
   const Icon = missing ? CircleAlert : Check
   return (
     <Box as="li" display="flex" alignItems="center" justifyContent="between">
       <Box alignItems="center" columnGap="s">
-        <Text as="span" color={missing ? 'danger' : 'default'}>
+        <Text as="span" color={missing ? 'danger' : 'muted'}>
           <Icon size={14} strokeWidth={2.5} aria-hidden="true" />
         </Text>
-        <Text variant="caption" color={missing ? 'danger' : 'default'}>
-          {resource}
-        </Text>
+        <Box flexDirection="column">
+          <Text variant="caption" color={missing ? 'danger' : 'default'}>
+            {resource}
+          </Text>
+          {hint ? (
+            <Text variant="caption" color="muted">
+              {hint}
+            </Text>
+          ) : null}
+        </Box>
       </Box>
-      <Text variant="caption" color={missing ? 'danger' : 'muted'}>
-        {access}
+      <AccessBadge access={access} missing={missing} />
+    </Box>
+  )
+}
+
+function PermissionGroup({
+  group,
+  missing,
+}: {
+  group: StripePermission['group']
+  missing: Set<string>
+}) {
+  const permissions = REQUIRED_PERMISSIONS.filter((p) => p.group === group)
+  return (
+    <Box flexDirection="column" rowGap="s">
+      <Text variant="caption" color="muted">
+        {group}
       </Text>
+      <Box as="ul" flexDirection="column" rowGap="s">
+        {permissions.map((permission) => (
+          <PermissionRow
+            key={permission.resource}
+            {...permission}
+            missing={missing.has(permission.resource)}
+          />
+        ))}
+      </Box>
     </Box>
   )
 }
@@ -48,8 +115,8 @@ export function ConnectGuide({
       <Box flexDirection="column" rowGap="m">
         <Text variant="label">1. Create a restricted key in Stripe</Text>
         <Text variant="caption" color="muted">
-          Name it e.g. &ldquo;Polar migration&rdquo;. This environment needs a{' '}
-          {mode}-mode key ({stripeKeyPlaceholder(mode)}).
+          Name it something like &ldquo;Polar migration&rdquo;. This environment
+          needs a {mode}-mode key ({stripeKeyPlaceholder(mode)}).
         </Text>
         <Button variant="secondary" fullWidth asChild>
           <a
@@ -66,47 +133,39 @@ export function ConnectGuide({
       </Box>
 
       <Box flexDirection="column" rowGap="m">
-        <Text variant="label">2. Grant exactly these permissions</Text>
+        <Text variant="label">2. Set these permissions</Text>
         {hasMissing ? (
           <Text variant="caption" color="danger">
             Grant the highlighted permissions and paste a new key.
           </Text>
-        ) : null}
+        ) : (
+          <Text variant="caption" color="muted">
+            Search for each one in Stripe&rsquo;s Permissions column. Leave
+            everything else at None.
+          </Text>
+        )}
         <Box
-          as="ul"
           flexDirection="column"
-          rowGap="s"
+          rowGap="l"
           padding="l"
           borderRadius="m"
           backgroundColor="background-secondary"
         >
-          {REQUIRED_PERMISSIONS.map((permission) => (
-            <PermissionRow
-              key={permission.resource}
-              {...permission}
-              missing={missing.has(permission.resource)}
-            />
+          {PERMISSION_GROUPS.map((group) => (
+            <PermissionGroup key={group} group={group} missing={missing} />
           ))}
         </Box>
         <Text variant="caption" color="muted">
-          Set everything else to None &mdash; &ldquo;Write&rdquo; includes read.
-        </Text>
-        <Text variant="caption" color="muted">
-          Subscriptions needs Write so that at cutover Polar can cancel each
-          subscription on Stripe and recreate it on Polar &mdash; moving the
-          billing cycle across without charging the customer twice.
-        </Text>
-        <Text variant="caption" color="muted">
-          All accounts Read lets Polar identify the Stripe account and reject
-          Connect platforms before the migration is saved. It is under Connect
-          in Stripe&rsquo;s key form.
+          Polar only writes to Stripe to cancel each subscription when you
+          switch it over, so no customer is billed twice. Everything else is
+          read-only.
         </Text>
       </Box>
 
       <Box flexDirection="column" rowGap="xs">
         <Text variant="label">3. Paste the key below</Text>
         <Text variant="caption" color="muted">
-          We&rsquo;ll validate it and start your migration.
+          We&rsquo;ll check it and start your migration.
         </Text>
       </Box>
     </Box>

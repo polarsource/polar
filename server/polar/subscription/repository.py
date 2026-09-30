@@ -84,6 +84,15 @@ class SubscriptionRepository(
 ):
     model = Subscription
 
+    async def release_scheduler_lock(self, subscription: Subscription) -> Subscription:
+        statement = (
+            sa.update(Subscription)
+            .where(Subscription.id == subscription.id)
+            .values(scheduler_locked_at=None)
+        )
+        await self.session.execute(statement)
+        return subscription
+
     async def list_active_by_customer(
         self, customer_id: UUID, *, options: Options = ()
     ) -> Sequence[Subscription]:

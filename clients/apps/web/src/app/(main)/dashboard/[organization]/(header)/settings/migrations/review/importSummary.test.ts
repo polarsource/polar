@@ -56,7 +56,12 @@ describe('importedCountsText', () => {
 })
 
 describe('nothingImported', () => {
-  const settled = { isLoading: false, isFetching: false, isError: false }
+  const settled = {
+    readyToSwitch: 0,
+    isLoading: false,
+    isFetching: false,
+    isError: false,
+  }
 
   it('is true once a settled read reports no imports', () => {
     expect(nothingImported({ imported: counts(), ...settled })).toBe(true)
@@ -65,6 +70,12 @@ describe('nothingImported', () => {
   it('is false when something landed', () => {
     expect(
       nothingImported({ imported: counts({ products: 1 }), ...settled }),
+    ).toBe(false)
+  })
+
+  it('is false when an earlier migration prepared the subscriptions', () => {
+    expect(
+      nothingImported({ imported: counts(), ...settled, readyToSwitch: 28 }),
     ).toBe(false)
   })
 

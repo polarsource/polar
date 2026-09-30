@@ -18,7 +18,7 @@ from .repository import FeedbackRepository
 )
 async def feedback_reply_in_plain(feedback_id: Annotated[UUID, LoggableField]) -> None:
     """
-    Automatically open a Plain support thread for a freshly submitted question.
+    Automatically open a Plain support thread for freshly submitted feedback.
 
     Mirrors the manual "Reply in Plain" backoffice action: it impersonates the
     customer with the message they wrote and attaches the full conversation
@@ -39,7 +39,7 @@ async def feedback_reply_in_plain(feedback_id: Annotated[UUID, LoggableField]) -
             return
 
         thread_url = await plain_service.create_feedback_thread(feedback)
-        # The thread was created successfully, so the question is now being
+        # The thread was created successfully, so the feedback is now being
         # handled in Plain: mark it as triaged in the backoffice.
         await repository.update(
             feedback,

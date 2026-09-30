@@ -6,6 +6,7 @@ from polar.notifications.notification import (
     MaintainerAccountCreditsGrantedNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
+    MaintainerNewTrialNotificationPayload,
     NotificationType,
 )
 from polar.notifications.service import PartialNotification
@@ -34,6 +35,21 @@ def _new_subscription_notif() -> PartialNotification:
             tier_price_amount=1000,
             tier_price_recurring_interval="month",
             tier_organization_name="Test",
+        ),
+    )
+
+
+def _new_trial_notif() -> PartialNotification:
+    return PartialNotification(
+        type=NotificationType.maintainer_new_trial,
+        payload=MaintainerNewTrialNotificationPayload(
+            subscriber_name="Subscriber",
+            subscriber_email=None,
+            product_name="Product",
+            organization_name="Test",
+            organization_slug=None,
+            subscription_id=None,
+            trial_end=None,
         ),
     )
 
@@ -164,3 +180,90 @@ class TestSendToOrgMembers:
 
         notified = {c.kwargs["user_id"] for c in send_to_user_mock.call_args_list}
         assert notified == {member_a.id, member_b.id}
+
+    async def test_free_product_skips_members_excluding_free_products(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        send_to_user_mock = mocker.patch(
+            "polar.notifications.service.NotificationsService.send_to_user"
+        )
+
+        member_excluding = await create_user(save_fixture)
+        member_including = await create_user(save_fixture)
+        await save_fixture(
+            UserOrganization(
+                user=member_excluding,
+                organization=organization,
+                notification_settings={
+                    "new_order": True,
+                    "new_subscription": True,
+                    "exclude_free_products": True,
+                },
+            )
+        )
+        await save_fixture(
+            UserOrganization(
+                user=member_including,
+                organization=organization,
+                notification_settings={"new_order": True, "new_subscription": True},
+            )
+        )
+
+        await notifications_service.send_to_org_members(
+            session,
+            org_id=organization.id,
+            notif=_new_subscription_notif(),
+            is_free_product=True,
+        )
+        notified = {c.kwargs["user_id"] for c in send_to_user_mock.call_args_list}
+        assert notified == {member_including.id}
+
+        send_to_user_mock.reset_mock()
+        await notifications_service.send_to_org_members(
+            session,
+            org_id=organization.id,
+            notif=_new_subscription_notif(),
+            is_free_product=False,
+        )
+        notified = {c.kwargs["user_id"] for c in send_to_user_mock.call_args_list}
+        assert notified == {member_excluding.id, member_including.id}
+
+    async def test_new_trial_setting_falls_back_to_new_subscription(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        send_to_user_mock = mocker.patch(
+            "polar.notifications.service.NotificationsService.send_to_user"
+        )
+
+        trial_on = await create_user(save_fixture)
+        trial_off = await create_user(save_fixture)
+        legacy_subscription_on = await create_user(save_fixture)
+        legacy_subscription_off = await create_user(save_fixture)
+        for user, settings in (
+            (trial_on, {"new_subscription": False, "new_trial": True}),
+            (trial_off, {"new_subscription": True, "new_trial": False}),
+            (legacy_subscription_on, {"new_subscription": True}),
+            (legacy_subscription_off, {"new_subscription": False}),
+        ):
+            await save_fixture(
+                UserOrganization(
+                    user=user,
+                    organization=organization,
+                    notification_settings={"new_order": True, **settings},
+                )
+            )
+
+        await notifications_service.send_to_org_members(
+            session, org_id=organization.id, notif=_new_trial_notif()
+        )
+
+        notified = {c.kwargs["user_id"] for c in send_to_user_mock.call_args_list}
+        assert notified == {trial_on.id, legacy_subscription_on.id}

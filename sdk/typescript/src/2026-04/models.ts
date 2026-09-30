@@ -5,7 +5,7 @@ export type AggregationFunction = "count" | "sum" | "max" | "min" | "avg" | "uni
 /**
  * The API version that'll be used in event payloads.
  */
-export type ApiVersion = "2026-04" | "2026-10";
+export type ApiVersion = "2026-04";
 /**
  * BenefitGrantSortProperty
  */
@@ -1217,7 +1217,7 @@ export type SeatTierType = "volume" | "graduated";
 /**
  * Status
  */
-export type Status = "active" | "trialing";
+export type Status = "granted" | "disabled";
 /**
  * SubType
  */
@@ -1951,6 +1951,7 @@ export type WebhookEventType =
   | "subscription.past_due"
   | "subscription.paused"
   | "subscription.resumed"
+  | "subscription.migrated"
   | "refund.created"
   | "refund.updated"
   | "product.created"
@@ -2244,6 +2245,20 @@ export interface AuthorizeUser {
    * avatar_url
    */
   avatar_url: string | null;
+}
+
+/**
+ * BadRequest
+ */
+export interface BadRequest {
+  /**
+   * error
+   */
+  error: "BadRequest";
+  /**
+   * detail
+   */
+  detail: string;
 }
 
 /**
@@ -3287,9 +3302,9 @@ You can store up to **50 key-value pairs**.
  */
 export interface BenefitDiscordCreateProperties {
   /**
-   * guild_token
+   * The ID of the Discord server.
    */
-  guild_token: string;
+  guild_id: string;
   /**
    * The ID of the Discord role to grant.
    */
@@ -3316,10 +3331,6 @@ export interface BenefitDiscordProperties {
    * Whether to kick the member from the Discord server on revocation.
    */
   kick_member: boolean;
-  /**
-   * guild_token
-   */
-  guild_token: string;
 }
 
 /**
@@ -7659,6 +7670,20 @@ You can store up to **50 key-value pairs**.
 }
 
 /**
+ * CheckoutLocked
+ */
+export interface CheckoutLocked {
+  /**
+   * error
+   */
+  error: "CheckoutLocked";
+  /**
+   * detail
+   */
+  detail: string;
+}
+
+/**
  * CheckoutOrganization
  */
 export interface CheckoutOrganization {
@@ -9399,6 +9424,10 @@ export interface CustomerBenefitGrantDiscord {
    */
   customer: CustomerPortalCustomer;
   /**
+   * member
+   */
+  member?: CustomerBenefitGrantMember | null;
+  /**
    * benefit
    */
   benefit: BenefitDiscordSubscriber;
@@ -9653,6 +9682,10 @@ export interface CustomerBenefitGrantGitHubRepository {
    */
   customer: CustomerPortalCustomer;
   /**
+   * member
+   */
+  member?: CustomerBenefitGrantMember | null;
+  /**
    * benefit
    */
   benefit: BenefitGitHubRepositorySubscriber;
@@ -9764,6 +9797,20 @@ export interface CustomerBenefitGrantLicenseKeysUpdate {
    * benefit_type
    */
   benefit_type: "license_keys";
+}
+
+/**
+ * CustomerBenefitGrantMember
+ */
+export interface CustomerBenefitGrantMember {
+  /**
+   * The ID of the object.
+   */
+  id: string;
+  /**
+   * oauth_accounts
+   */
+  oauth_accounts: Record<string, CustomerPortalOAuthAccount>;
 }
 
 /**
@@ -14509,6 +14556,76 @@ export interface GenericPayment {
 }
 
 /**
+ * GrantedLicenseKey
+ */
+export interface GrantedLicenseKey {
+  /**
+   * The ID of the object.
+   */
+  id: string;
+  /**
+   * Creation timestamp of the object.
+   */
+  created_at: string;
+  /**
+   * Last modification timestamp of the object.
+   */
+  modified_at: string | null;
+  /**
+   * organization_id
+   */
+  organization_id: string;
+  /**
+   * customer_id
+   */
+  customer_id: string;
+  /**
+   * customer
+   */
+  customer: LicenseKeyCustomer;
+  /**
+   * The benefit ID.
+   */
+  benefit_id: string;
+  /**
+   * key
+   */
+  key: string;
+  /**
+   * display_key
+   */
+  display_key: string;
+  /**
+   * status
+   */
+  status: "granted";
+  /**
+   * limit_activations
+   */
+  limit_activations: number | null;
+  /**
+   * usage
+   */
+  usage: number;
+  /**
+   * limit_usage
+   */
+  limit_usage: number | null;
+  /**
+   * validations
+   */
+  validations: number;
+  /**
+   * last_validated_at
+   */
+  last_validated_at: string | null;
+  /**
+   * expires_at
+   */
+  expires_at: string | null;
+}
+
+/**
  * HTTPValidationError
  */
 export interface HTTPValidationError {
@@ -14906,6 +15023,40 @@ export interface LicenseKeyActivationBase {
    * modified_at
    */
   modified_at: string | null;
+}
+
+/**
+ * LicenseKeyActivationCreated
+ */
+export interface LicenseKeyActivationCreated {
+  /**
+   * id
+   */
+  id: string;
+  /**
+   * license_key_id
+   */
+  license_key_id: string;
+  /**
+   * label
+   */
+  label: string;
+  /**
+   * meta
+   */
+  meta: Record<string, string | number | boolean>;
+  /**
+   * created_at
+   */
+  created_at: string;
+  /**
+   * modified_at
+   */
+  modified_at: string | null;
+  /**
+   * license_key
+   */
+  license_key: GrantedLicenseKey;
 }
 
 /**
@@ -19348,6 +19499,10 @@ export interface Product {
    */
   metadata: MetadataOutputType;
   /**
+   * Whether the product can be permanently deleted. Products referenced by an order, subscription, trial or discount cannot be deleted.
+   */
+  is_deletable: boolean;
+  /**
    * List of prices for this product.
    */
   prices: (LegacyRecurringProductPrice | ProductPrice)[];
@@ -19627,6 +19782,20 @@ export interface ProductMediaFileRead {
    * public_url
    */
   public_url: string;
+}
+
+/**
+ * ProductNotDeletable
+ */
+export interface ProductNotDeletable {
+  /**
+   * error
+   */
+  error: "ProductNotDeletable";
+  /**
+   * detail
+   */
+  detail: string;
 }
 
 /**
@@ -20913,6 +21082,76 @@ export interface RotateNotPermitted {
 }
 
 /**
+ * RotatedLicenseKey
+ */
+export interface RotatedLicenseKey {
+  /**
+   * The ID of the object.
+   */
+  id: string;
+  /**
+   * Creation timestamp of the object.
+   */
+  created_at: string;
+  /**
+   * Last modification timestamp of the object.
+   */
+  modified_at: string | null;
+  /**
+   * organization_id
+   */
+  organization_id: string;
+  /**
+   * customer_id
+   */
+  customer_id: string;
+  /**
+   * customer
+   */
+  customer: LicenseKeyCustomer;
+  /**
+   * The benefit ID.
+   */
+  benefit_id: string;
+  /**
+   * key
+   */
+  key: string;
+  /**
+   * display_key
+   */
+  display_key: string;
+  /**
+   * status
+   */
+  status: Status;
+  /**
+   * limit_activations
+   */
+  limit_activations: number | null;
+  /**
+   * usage
+   */
+  usage: number;
+  /**
+   * limit_usage
+   */
+  limit_usage: number | null;
+  /**
+   * validations
+   */
+  validations: number;
+  /**
+   * last_validated_at
+   */
+  last_validated_at: string | null;
+  /**
+   * expires_at
+   */
+  expires_at: string | null;
+}
+
+/**
  * S3DownloadURL
  */
 export interface S3DownloadURL {
@@ -21924,6 +22163,90 @@ export interface SubscriptionMeter {
    * meter
    */
   meter: Meter;
+}
+
+/**
+ * An event created by Polar when a subscription is migrated to Polar.
+ */
+export interface SubscriptionMigratedEvent {
+  /**
+   * The ID of the object.
+   */
+  id: string;
+  /**
+   * The timestamp of the event.
+   */
+  timestamp: string;
+  /**
+   * The ID of the organization owning the event.
+   */
+  organization_id: string;
+  /**
+   * ID of the customer in your Polar organization associated with the event.
+   */
+  customer_id: string | null;
+  /**
+   * The customer associated with the event.
+   */
+  customer: Customer | null;
+  /**
+   * ID of the customer in your system associated with the event.
+   */
+  external_customer_id: string | null;
+  /**
+   * ID of the member within the customer's organization who performed the action inside B2B.
+   */
+  member_id?: string | null;
+  /**
+   * ID of the member in your system within the customer's organization who performed the action inside B2B.
+   */
+  external_member_id?: string | null;
+  /**
+   * Number of direct child events linked to this event.
+   */
+  child_count?: number;
+  /**
+   * The ID of the parent event.
+   */
+  parent_id?: string | null;
+  /**
+   * Human readable label of the event type.
+   */
+  label: string;
+  /**
+   * The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+   */
+  source: "system";
+  /**
+   * The name of the event.
+   */
+  name: "subscription.migrated";
+  /**
+   * metadata
+   */
+  metadata: SubscriptionMigratedMetadata;
+}
+
+/**
+ * SubscriptionMigratedMetadata
+ */
+export interface SubscriptionMigratedMetadata {
+  /**
+   * subscription_id
+   */
+  subscription_id: string;
+  /**
+   * provider
+   */
+  provider: string;
+  /**
+   * provider_subscription_id
+   */
+  provider_subscription_id: string;
+  /**
+   * product_id
+   */
+  product_id: string;
 }
 
 /**
@@ -22947,7 +23270,7 @@ You can store up to **50 key-value pairs**.
    */
   discount_id?: string | null;
   /**
-   * Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately.
+   * Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately and the first billing cycle will be charged synchronously. The subscription remains trialing if the payment fails.
    */
   trial_end?: string | "now" | null;
 }
@@ -23607,7 +23930,7 @@ export interface ValidatedLicenseKey {
   /**
    * status
    */
-  status: LicenseKeyStatus;
+  status: "granted";
   /**
    * limit_activations
    */
@@ -23797,7 +24120,7 @@ export interface WebhookEndpointUpdate {
   /**
    * The API version that'll be used in event payloads.
    */
-  api_version?: ("2026-04" | "2026-10") | null;
+  api_version?: "2026-04" | null;
   /**
    * format
    */
@@ -23918,6 +24241,7 @@ export type BenefitPublic =
 export type CheckoutForbiddenError =
   | AlreadyActiveSubscriptionError
   | NotOpenCheckout
+  | NotPermitted
   | PaymentNotReady
   | TrialAlreadyRedeemed
   | DiscountRedemptionLimitReached;
@@ -24115,6 +24439,7 @@ export type SystemEvent =
   | SubscriptionReinstatedEvent
   | SubscriptionPausedEvent
   | SubscriptionResumedEvent
+  | SubscriptionMigratedEvent
   | SubscriptionUncanceledEvent
   | SubscriptionProductUpdatedEvent
   | SubscriptionSeatsUpdatedEvent

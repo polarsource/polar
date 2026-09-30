@@ -881,18 +881,14 @@ class MerchantMigrationRecordRepository(
     def _merge_discount_code(
         current: CanonicalDiscount, incoming: CanonicalDiscount
     ) -> CanonicalDiscount:
-        """Refresh coupon terms on re-extract and attach the first Polar-valid
-        promotion code. Extra codes are counted so the precheck can warn."""
+        """Attach the first Polar-valid promotion code, preferring one that can
+        still be redeemed. Extra usable codes are counted so the precheck can warn.
+
+        Coupons are extracted before their promotion codes, so a coupon record
+        starts the code set over: a staged code's cap may be stale until its own
+        record arrives, and keeping it would make the pick depend on order."""
         if incoming.code is None:
-            return replace(
-                incoming,
-                code=current.code,
-                extra_codes=current.extra_codes,
-                max_redemptions=tighter_cap(
-                    incoming.max_redemptions, current.max_redemptions
-                ),
-                ends_at=earlier_datetime(incoming.ends_at, current.ends_at),
-            )
+            return incoming
         if current.code is None:
             return replace(
                 current,
@@ -901,6 +897,10 @@ class MerchantMigrationRecordRepository(
                 ends_at=earlier_datetime(current.ends_at, incoming.ends_at),
             )
         if current.code != incoming.code:
+            if incoming.max_redemptions == 0:
+                return current
+            if current.max_redemptions == 0:
+                return replace(incoming, extra_codes=current.extra_codes)
             return replace(current, extra_codes=current.extra_codes + 1)
         return replace(
             current,

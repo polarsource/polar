@@ -2,7 +2,7 @@ import { PRODUCTS } from './utils/products'
 import { describe, expect, test } from './utils/test'
 
 const PRICE_PER_SEAT =
-  PRODUCTS.seatBasedSubscription.prices[0].seat_tiers.tiers[0].price_per_seat
+  PRODUCTS.seatBasedSubscription.prices[0].tiers.tiers[0].unit_amount
 
 describe('Seat-based subscription', () => {
   test('changes the seat count before subscribing', async ({

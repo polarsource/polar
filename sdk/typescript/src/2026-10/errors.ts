@@ -1,8 +1,10 @@
 import type {
   AlreadyCanceledSubscription as AlreadyCanceledSubscriptionModel,
   AmbiguousExternalCustomerID as AmbiguousExternalCustomerIDModel,
+  BadRequest as BadRequestModel,
   CannotCreateOrganizationError as CannotCreateOrganizationErrorModel,
   CheckoutForbiddenError as CheckoutForbiddenErrorModel,
+  CheckoutLocked as CheckoutLockedModel,
   CustomerNotReady as CustomerNotReadyModel,
   DisputeAutoAcceptNotEnabled as DisputeAutoAcceptNotEnabledModel,
   DisputeNotOpenError as DisputeNotOpenErrorModel,
@@ -25,6 +27,8 @@ import type {
   PaymentMethodInUseByActiveSubscription as PaymentMethodInUseByActiveSubscriptionModel,
   PaymentMethodRequired as PaymentMethodRequiredModel,
   PaymentMethodSetupFailed as PaymentMethodSetupFailedModel,
+  PaymentNotReady as PaymentNotReadyModel,
+  ProductNotDeletable as ProductNotDeletableModel,
   RefundedAlready as RefundedAlreadyModel,
   ResourceNotFound as ResourceNotFoundModel,
   RotateNotPermitted as RotateNotPermittedModel,
@@ -125,26 +129,31 @@ export class SubscriptionLocked extends PolarClientError<SubscriptionLockedModel
   }
 }
 /**
- * Payment required to apply the subscription update.
+ * The charge failed, or requires customer authentication that can't be completed off-session.
  */
-export class PaymentFailed extends PolarClientError<PaymentFailedModel> {
+export class SubscriptionsUpdate402Error extends PolarClientError<
+  PaymentFailedModel | PaymentActionRequiredModel
+> {
   constructor(
     public readonly statusCode: 402,
-    public readonly error: PaymentFailedModel,
+    public readonly error: PaymentFailedModel | PaymentActionRequiredModel,
   ) {
     super(statusCode, error);
-    this.name = "PaymentFailed";
+    this.name = "SubscriptionsUpdate402Error";
   }
 }
 /**
- * Subscription is already canceled or will be at the end of the period, or is not active.
+ * Subscription is already canceled or will be at the end of the period, is not active, or the organization is not ready to renew subscriptions.
  */
 export class SubscriptionsUpdate403Error extends PolarClientError<
-  AlreadyCanceledSubscriptionModel | InactiveSubscriptionModel
+  AlreadyCanceledSubscriptionModel | InactiveSubscriptionModel | PaymentNotReadyModel
 > {
   constructor(
     public readonly statusCode: 403,
-    public readonly error: AlreadyCanceledSubscriptionModel | InactiveSubscriptionModel,
+    public readonly error:
+      | AlreadyCanceledSubscriptionModel
+      | InactiveSubscriptionModel
+      | PaymentNotReadyModel,
   ) {
     super(statusCode, error);
     this.name = "SubscriptionsUpdate403Error";
@@ -174,6 +183,18 @@ export class NotPermitted extends PolarClientError<NotPermittedModel> {
   ) {
     super(statusCode, error);
     this.name = "NotPermitted";
+  }
+}
+/**
+ * Product is in use and cannot be deleted.
+ */
+export class ProductNotDeletable extends PolarClientError<ProductNotDeletableModel> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: ProductNotDeletableModel,
+  ) {
+    super(statusCode, error);
+    this.name = "ProductNotDeletable";
   }
 }
 /**
@@ -301,6 +322,18 @@ export class CheckoutsClientUpdate403Error extends PolarClientError<CheckoutForb
   }
 }
 /**
+ * The checkout session is being processed.
+ */
+export class CheckoutLocked extends PolarClientError<CheckoutLockedModel> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: CheckoutLockedModel,
+  ) {
+    super(statusCode, error);
+    this.name = "CheckoutLocked";
+  }
+}
+/**
  * The payment failed.
  */
 export class PaymentError extends PolarClientError<PaymentErrorModel> {
@@ -346,6 +379,18 @@ export class RotateNotPermitted extends PolarClientError<RotateNotPermittedModel
   ) {
     super(statusCode, error);
     this.name = "RotateNotPermitted";
+  }
+}
+/**
+ * The requested usage increment exceeds the license key's remaining usage allowance.
+ */
+export class BadRequest extends PolarClientError<BadRequestModel> {
+  constructor(
+    public readonly statusCode: 400,
+    public readonly error: BadRequestModel,
+  ) {
+    super(statusCode, error);
+    this.name = "BadRequest";
   }
 }
 /**
@@ -802,6 +847,18 @@ export class ManualRetryLimitExceeded extends PolarClientError<ManualRetryLimitE
   ) {
     super(statusCode, error);
     this.name = "ManualRetryLimitExceeded";
+  }
+}
+/**
+ * Payment required to apply the subscription update.
+ */
+export class PaymentFailed extends PolarClientError<PaymentFailedModel> {
+  constructor(
+    public readonly statusCode: 402,
+    public readonly error: PaymentFailedModel,
+  ) {
+    super(statusCode, error);
+    this.name = "PaymentFailed";
   }
 }
 /**

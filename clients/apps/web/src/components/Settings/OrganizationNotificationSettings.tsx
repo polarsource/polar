@@ -59,12 +59,25 @@ const OrganizationNotificationSettings: React.FC<
       <SettingsGroupItem
         layout="inline"
         title="New Subscriptions"
-        description="Receive a notification when new subscriptions are created"
+        description="Receive a notification when a paid subscription starts"
       >
         <Switch
           checked={settings.new_subscription}
           onCheckedChange={(checked) =>
             update((previous) => ({ ...previous, new_subscription: checked }))
+          }
+        />
+      </SettingsGroupItem>
+
+      <SettingsGroupItem
+        layout="inline"
+        title="New Trials"
+        description="Receive a notification when a customer starts a trial"
+      >
+        <Switch
+          checked={settings.new_trial ?? settings.new_subscription}
+          onCheckedChange={(checked) =>
+            update((previous) => ({ ...previous, new_trial: checked }))
           }
         />
       </SettingsGroupItem>
@@ -80,6 +93,22 @@ const OrganizationNotificationSettings: React.FC<
             update((previous) => ({
               ...previous,
               subscription_renewal: checked,
+            }))
+          }
+        />
+      </SettingsGroupItem>
+
+      <SettingsGroupItem
+        layout="inline"
+        title="Exclude Free Products"
+        description="Skip subscription, trial and renewal notifications for free products."
+      >
+        <Switch
+          checked={settings.exclude_free_products ?? false}
+          onCheckedChange={(checked) =>
+            update((previous) => ({
+              ...previous,
+              exclude_free_products: checked,
             }))
           }
         />

@@ -3,7 +3,7 @@ import { type MemoryDB, memoryAdapter } from 'better-auth/adapters/memory'
 import { organization } from 'better-auth/plugins'
 import { memberAc } from 'better-auth/plugins/organization/access'
 import { describe, expect, it, vi } from 'vitest'
-import { errors, type models } from '@polar-sh/sdk/2026-04'
+import { errors, type models } from '@polar-sh/sdk/2026-10'
 import type {
   PolarOrganizationOptions,
   SelectSeatProductsForMember,

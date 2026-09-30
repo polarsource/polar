@@ -1,14 +1,10 @@
 'use client'
 
-import LinkOutlined from '@mui/icons-material/LinkOutlined'
-import LocalOfferOutlined from '@mui/icons-material/LocalOfferOutlined'
-import PercentOutlined from '@mui/icons-material/PercentOutlined'
-import TimerOutlined from '@mui/icons-material/TimerOutlined'
 import { WaveBars } from '../graphics/WaveBars'
 import {
   FeatureCardGrid,
   FeatureCTA,
-  FeaturePageGraphic,
+  FeatureHighlight,
   FeaturePageHeader,
   FeaturePageIntro,
   FeaturePageLayout,
@@ -21,12 +17,11 @@ export const DiscountsPage = () => {
   return (
     <FeaturePageLayout>
       <FeaturePageHeader
+        graphic={WaveBars}
         title="Discounts and promo codes"
         description="Codes, links, or API. Once, monthly, or forever."
         docsHref="/docs/features/discounts"
       />
-
-      <FeaturePageGraphic graphic={WaveBars} />
 
       <FeaturePageIntro>
         Configure a discount with the right shape, the right duration, and the
@@ -37,48 +32,44 @@ export const DiscountsPage = () => {
       <FeatureSection title="Three knobs">
         <p>
           Every discount in Polar is built from three decisions. The first is{' '}
-          <strong>shape</strong>, which sets how the discount reduces the price:
-          a percentage off the order, or a fixed amount off in the
-          customer&apos;s currency.
+          <FeatureHighlight>shape</FeatureHighlight>, which sets how the
+          discount reduces the price: a percentage off the order, or a fixed
+          amount off in the customer&apos;s currency.
         </p>
         <p>
-          The second is <strong>duration</strong>, and it only matters for
-          recurring products. A discount can apply once on the next charge, for
-          a fixed number of months, or forever as long as the subscription keeps
-          renewing.
+          The second is <FeatureHighlight>duration</FeatureHighlight>, and it
+          only matters for recurring products. A discount can apply once on the
+          next charge, for a fixed number of months, or forever as long as the
+          subscription keeps renewing.
         </p>
         <p>
-          The third is <strong>delivery</strong>, which decides who can actually
-          use it. A discount can carry a code customers type at checkout, or no
-          code at all so it can only be applied programmatically through a
-          Checkout Link or the API. That single distinction separates a public
-          Black Friday promotion from a quiet partner deal you don&apos;t want
-          indexed.
+          The third is <FeatureHighlight>delivery</FeatureHighlight>, which
+          decides who can actually use it. A discount can carry a code customers
+          type at checkout, or no code at all so it can only be applied
+          programmatically through a Checkout Link or the API. That single
+          distinction separates a public Black Friday promotion from a quiet
+          partner deal you don&apos;t want indexed.
         </p>
       </FeatureSection>
 
       <FeatureCardGrid
         cards={[
           {
-            icon: <LocalOfferOutlined fontSize="large" />,
             title: 'Restrict by product',
             description:
               'Scope discounts to specific products, including ones created later.',
           },
           {
-            icon: <TimerOutlined fontSize="large" />,
             title: 'Time windows',
             description:
               'Set start and end dates so the discount goes live and expires on its own.',
           },
           {
-            icon: <PercentOutlined fontSize="large" />,
             title: 'Redemption limits',
             description:
               'Cap total redemptions to control how widely the discount circulates.',
           },
           {
-            icon: <LinkOutlined fontSize="large" />,
             title: 'Pinned to a Checkout Link',
             description:
               'Auto-apply on a specific link without exposing a code. For partner and influencer deals.',

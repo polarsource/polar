@@ -713,6 +713,23 @@ class MemberService:
             )
             return existing_member
 
+        if (
+            external_id is not None
+            and await repository.get_by_customer_id_and_external_id(
+                customer_id, external_id
+            )
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "external_id"),
+                        "msg": "A member with this external ID already exists.",
+                        "input": external_id,
+                    }
+                ]
+            )
+
         member = Member(
             customer_id=customer_id,
             organization_id=customer.organization_id,

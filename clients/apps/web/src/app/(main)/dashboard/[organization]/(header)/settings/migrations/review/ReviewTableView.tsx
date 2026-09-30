@@ -4,6 +4,7 @@ import { Alert, Button, DataTable, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { OnChangeFn, PaginationState } from '@tanstack/react-table'
 import { useMemo, useState } from 'react'
+import { CATALOG_READ_STALLED } from '../catalogReadCopy'
 import { CatalogEmptyPanel } from './CatalogEmptyPanel'
 import { ReviewRecordModal } from './ReviewRecordModal'
 import {
@@ -23,6 +24,7 @@ import {
   CATALOG_REFRESH_COPY,
   remainingSubscriptionCount,
   reviewCatalogEmptyKind,
+  reviewPrimaryAction,
 } from './reviewCatalog'
 import { ReviewRow } from './reviewRows'
 
@@ -44,10 +46,12 @@ interface Props {
   onToggle: (id: string) => void
   onToggleAll: () => void
   onImport: () => void
+  onContinue: () => void
   importing?: boolean
   importError?: string
   onRerunPrecheck?: () => void
   rerunning?: boolean
+  stalled?: boolean
   refreshError?: string
   attentionCount: number
 }
@@ -68,13 +72,16 @@ export function ReviewTableView({
   onToggle,
   onToggleAll,
   onImport,
+  onContinue,
   importing = false,
   importError,
   onRerunPrecheck,
   rerunning = false,
+  stalled = false,
   refreshError,
   attentionCount,
 }: Props) {
+  const refreshing = rerunning && !stalled
   const rowTotal = remainingSubscriptionCount(
     counts.subscriptions.total,
     counts.subscriptions.imported,
@@ -93,6 +100,10 @@ export function ReviewTableView({
         }`
       : 'Prepare subscriptions'
   const canPrepare = filter === 'all' || filter === 'to_prepare'
+  const primaryAction = reviewPrimaryAction(
+    selectableTotal,
+    counts.subscriptions.ready,
+  )
   const [openRow, setOpenRow] = useState<ReviewRow | null>(null)
 
   const columns = useMemo(
@@ -128,6 +139,7 @@ export function ReviewTableView({
         kind={catalogEmpty}
         onRerunPrecheck={onRerunPrecheck}
         rerunning={rerunning}
+        stalled={stalled}
         readError={refreshError}
       />
     )
@@ -140,7 +152,9 @@ export function ReviewTableView({
           variant="info"
           loading
           title={CATALOG_REFRESH_COPY.title}
-          description={CATALOG_REFRESH_COPY.description}
+          description={
+            stalled ? CATALOG_READ_STALLED : CATALOG_REFRESH_COPY.description
+          }
         />
       )}
       {refreshError && (
@@ -185,12 +199,20 @@ export function ReviewTableView({
                 size="sm"
                 variant="secondary"
                 onClick={onRerunPrecheck}
-                disabled={rerunning}
+                disabled={refreshing || importing}
               >
-                {rerunning ? 'Refreshing…' : 'Refresh from Stripe'}
+                {refreshing ? 'Refreshing…' : 'Refresh from Stripe'}
               </Button>
             )}
-            {canPrepare ? (
+            {primaryAction === 'continue' ? (
+              <Button
+                size="sm"
+                onClick={onContinue}
+                disabled={importing || refreshing}
+              >
+                {importing ? 'Continuing…' : 'Continue'}
+              </Button>
+            ) : canPrepare ? (
               <Button
                 size="sm"
                 onClick={onImport}
@@ -203,8 +225,9 @@ export function ReviewTableView({
         </Box>
 
         <Text variant="caption" color="muted">
-          Preparing a subscription brings its customer and product to Polar.
-          Polar starts billing only when you switch.
+          {primaryAction === 'continue'
+            ? 'Every subscription that can move is already prepared. Continue to switch them to Polar.'
+            : 'Preparing a subscription brings its customer and product to Polar. Polar starts billing only when you switch.'}
         </Text>
 
         {rows.length === 0 ? (

@@ -52,7 +52,7 @@ from polar.integrations.polar.schemas import (
 from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.kit.http import check_url_reachable, get_ip_address
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
-from polar.models import Account, Organization, UserOrganization
+from polar.models import Account, Organization, UserOrganization, UserSession
 from polar.models.support_case import (
     SupportCase,
 )
@@ -357,12 +357,13 @@ async def update(
 ) -> Organization:
     """Update an organization."""
     if organization_update.sso_enforced:
-        # Only allow enforcing SSO from a session already authenticated through
-        # this organization's SSO — proof it works — and only while an enabled
-        # connection exists, so an admin can't lock everyone out.
-        if (
-            authz.auth_subject.organization_ids is None
-            or authz.organization.id not in authz.auth_subject.organization_ids
+        # Only allow enforcing SSO from a dashboard session already authenticated
+        # through this organization's SSO — proof it works — and only while an
+        # enabled connection exists, so an admin can't lock everyone out.
+        # Check the persisted scope: the request's scope can come from a header.
+        if not isinstance(authz.auth_subject.session, UserSession) or not any(
+            scope.organization_id == authz.organization.id
+            for scope in authz.auth_subject.session.organization_scopes
         ):
             raise NotPermitted(
                 "You must be signed in through SSO for this organization to enforce it."

@@ -54,6 +54,7 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
+from polar.kit.versioning import Version
 from polar.kit.visibility import Visibility
 from polar.meter.unit import MeterUnit
 from polar.models import Benefit as BenefitModel
@@ -81,6 +82,7 @@ from polar.models.product_price import (
 from polar.models.product_price import (
     ProductPriceUnit as ProductPriceUnitModel,
 )
+from polar.openapi import cli_confirm_equals
 from polar.organization.schemas import OrganizationID
 from polar.product.meter_interval import meter_interval_divides_billing_interval
 from polar.product.tiers import (
@@ -95,6 +97,7 @@ from polar.product.tiers import (
     seat_tiers_unit_bounds,
     validate_unit_bounds,
 )
+from polar.version import V2026_10, V2027_01
 
 PRODUCT_NAME_MIN_LENGTH = 3
 PRODUCT_NAME_MAX_LENGTH = 64
@@ -416,9 +419,27 @@ class ProductPriceSeatBasedCreate(ProductPriceCreateBase):
     """
 
     amount_type: Literal[ProductPriceAmountType.seat_based]
-    seat_tiers: ProductPriceSeatTiers = Field(
-        description="Tiered pricing based on seat quantity"
+    tiers: TiersInput = Field(
+        description="Tiered pricing based on the purchased seat quantity."
     )
+    minimum_units: int | None = Field(
+        default=None,
+        ge=1,
+        description=(
+            "The minimum purchasable seat quantity (inclusive). "
+            "Defaults to 1 when not set."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def validate_rates_and_bounds(self) -> Self:
+        for tier in self.tiers.tiers:
+            if tier.unit_amount != tier.unit_amount.to_integral_value():
+                raise ValueError(
+                    f"Seat tier rates must be in smallest currency unit, got {tier.unit_amount}"
+                )
+        validate_unit_bounds(self.tiers, minimum_units=self.minimum_units)
+        return self
 
     def get_model_class(self) -> builtins.type[ProductPriceSeatUnitModel]:
         return ProductPriceSeatUnitModel
@@ -562,22 +583,32 @@ ProductPriceCreate = Annotated[
 ]
 
 
+PRICE_CREATE_LIST_SCHEMA = MergeJSONSchema(
+    {
+        "title": "ProductPriceCreateList",
+        "description": (
+            "List of prices for the product. "
+            "At most one fixed price and one seat-based price may be combined "
+            "(billed as `fixed + seat_charge`), or a single custom "
+            "price may stand alone, plus any number of metered prices. "
+            "A custom price cannot be combined with a fixed or seat-based price."
+        ),
+    }
+)
+
 ProductPriceCreateList = Annotated[
-    list[ProductPriceCreate],
-    Field(min_length=1),
-    MergeJSONSchema(
-        {
-            "title": "ProductPriceCreateList",
-            "description": (
-                "List of prices for the product. "
-                "At most one fixed price and one seat-based price may be combined "
-                "(billed as `fixed + seat_charge`), or a single custom "
-                "price may stand alone, plus any number of metered prices. "
-                "A custom price cannot be combined with a fixed or seat-based price."
-            ),
-        }
-    ),
+    list[ProductPriceCreate], Field(min_length=1), PRICE_CREATE_LIST_SCHEMA
 ]
+
+PRODUCT_CREATE_PRICES_DESCRIPTION = (
+    "List of available prices for this product. "
+    "It may combine at most one fixed price with one seat-based price "
+    "(billed as `fixed + seat_charge`), or contain a single custom or free "
+    "price, plus any number of metered prices. A free price cannot be "
+    "combined with other prices, and a custom price cannot be combined with "
+    "a fixed or seat-based price. "
+    "Metered prices are not supported on one-time purchase products."
+)
 
 
 class ProductCreateBase(MetadataInputMixin, Schema):
@@ -588,14 +619,7 @@ class ProductCreateBase(MetadataInputMixin, Schema):
         description="The visibility of the product.",
     )
     prices: ProductPriceCreateList = Field(
-        ...,
-        description="List of available prices for this product. "
-        "It may combine at most one fixed price with one seat-based price "
-        "(billed as `fixed + seat_charge`), or contain a single custom or free "
-        "price, plus any number of metered prices. A free price cannot be "
-        "combined with other prices, and a custom price cannot be combined with "
-        "a fixed or seat-based price. "
-        "Metered prices are not supported on one-time purchase products.",
+        ..., description=PRODUCT_CREATE_PRICES_DESCRIPTION
     )
     medias: list[UUID4] | None = Field(
         default=None,
@@ -710,6 +734,12 @@ ProductPriceUpdate = Annotated[
     ExistingProductPrice | ProductPriceCreate, Field(union_mode="left_to_right")
 ]
 
+PRODUCT_UPDATE_PRICES_DESCRIPTION = (
+    "List of available prices for this product. "
+    "If you want to keep existing prices, include them in the list "
+    "as an `ExistingProductPrice` object."
+)
+
 
 class ProductUpdate(TrialConfigurationInputMixin, MetadataInputMixin, Schema):
     """
@@ -740,6 +770,7 @@ class ProductUpdate(TrialConfigurationInputMixin, MetadataInputMixin, Schema):
     )
     is_archived: bool | None = Field(
         default=None,
+        json_schema_extra=cli_confirm_equals(True),
         description=(
             "Whether the product is archived. "
             "If `true`, the product won't be available for purchase anymore. "
@@ -752,12 +783,7 @@ class ProductUpdate(TrialConfigurationInputMixin, MetadataInputMixin, Schema):
         description="The visibility of the product.",
     )
     prices: list[ProductPriceUpdate] | None = Field(
-        default=None,
-        description=(
-            "List of available prices for this product. "
-            "If you want to keep existing prices, include them in the list "
-            "as an `ExistingProductPrice` object."
-        ),
+        default=None, description=PRODUCT_UPDATE_PRICES_DESCRIPTION
     )
     medias: list[UUID4] | None = Field(
         default=None,
@@ -848,14 +874,41 @@ class ProductPriceCustomBase(ProductPriceBase):
     )
 
 
+SEAT_TIERS_VERSION = Version(up_to=V2026_10)
+TIERS_VERSION = Version(starting_from=V2027_01)
+
+
 class ProductPriceSeatBasedBase(ProductPriceBase):
     amount_type: Literal[ProductPriceAmountType.seat_based]
-    seat_tiers: ProductPriceSeatTiers = Field(
-        description="Tiered pricing based on seat quantity"
+    seat_tiers: Annotated[
+        ProductPriceSeatTiers,
+        SEAT_TIERS_VERSION,
+        Field(description="Tiered pricing based on seat quantity"),
+    ]
+    tiers: Annotated[
+        Tiers,
+        TIERS_VERSION,
+        Field(description="Tiered pricing based on the purchased seat quantity."),
+    ]
+    minimum_units: Annotated[
+        int | None,
+        TIERS_VERSION,
+        Field(description="The minimum purchasable seat quantity (inclusive)."),
+    ]
+
+    @computed_field(
+        description=(
+            "The maximum purchasable seat quantity, from the last tier's bound. "
+            "`null` for unlimited."
+        ),
+        exclude_if=TIERS_VERSION.exclude_if,
     )
+    def maximum_units(self) -> Annotated[int | None, TIERS_VERSION]:
+        return self.tiers.last_bound
 
     @computed_field(
         description="Price per seat in cents from the first tier.",
+        exclude_if=SEAT_TIERS_VERSION.exclude_if,
         deprecated=(
             "Use `seat_tiers` instead. "
             "The tiered pricing system supports volume-based pricing with multiple tiers. "

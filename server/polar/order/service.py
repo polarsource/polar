@@ -370,7 +370,7 @@ class OrderService:
         try:
             yield
         except Exception:
-            await repository.release_payment_lock(order, flush=True)
+            await repository.release_payment_lock(order)
             raise
 
     async def list(
@@ -1895,6 +1895,10 @@ class OrderService:
                         f"order_finalize:{order.id}:{payment_method.processor_id}"
                     )
 
+                payment_intent_params: dict[str, Any] = {}
+                if payment_method.type == "sepa_debit":
+                    payment_intent_params["payment_method_types"] = ["sepa_debit"]
+
                 try:
                     payment_intent = await stripe_service.create_payment_intent(
                         amount=order.due_amount,
@@ -1908,6 +1912,7 @@ class OrderService:
                         description=f"{order.organization.name} — {order.description}",
                         metadata=metadata,
                         idempotency_key=idempotency_key,
+                        **payment_intent_params,
                     )
                 except stripe_lib.CardError as e:
                     # Card errors (declines, expired cards, etc.) should not be retried
@@ -1925,11 +1930,15 @@ class OrderService:
                     error = e.error
                     if error is not None and error.message:
                         message = error.message.lower()
-                        if (
-                            "requires a mandate" in message
-                            or "must provide a mandate" in message
-                            or "detached from a customer" in message
-                            or "does not belong to the customer" in message
+                        if any(
+                            phrase in message
+                            for phrase in (
+                                "requires a mandate",
+                                "must provide a mandate",
+                                "detached from a customer",
+                                "does not belong to the customer",
+                                "the payment failed",
+                            )
                         ):
                             log.info(
                                 "Invalid or expired payment method",
@@ -2081,19 +2090,24 @@ class OrderService:
             async with self.acquire_payment_lock(session, order):
                 if saved_payment_method is not None:
                     # Using saved payment method
+                    payment_intent_params: dict[str, Any] = {
+                        "automatic_payment_methods": {
+                            "enabled": True,
+                            "allow_redirects": "never",
+                        }
+                    }
+                    if saved_payment_method.type == "sepa_debit":
+                        payment_intent_params = {"payment_method_types": ["sepa_debit"]}
                     payment_intent = await stripe_service.create_payment_intent(
                         amount=order.due_amount,
                         currency=order.currency,
                         payment_method=saved_payment_method.processor_id,
                         customer=customer.stripe_customer_id,
                         confirm=True,
-                        automatic_payment_methods={
-                            "enabled": True,
-                            "allow_redirects": "never",
-                        },
                         statement_descriptor_suffix=order.statement_descriptor_suffix,
                         description=f"{order.organization.name} — {order.description}",
                         metadata=metadata,
+                        **payment_intent_params,
                     )
                 else:
                     # Using confirmation token (new payment method)
@@ -2446,9 +2460,19 @@ class OrderService:
         organization = order.organization
         customer = order.customer
 
+        if (
+            order.billing_reason
+            == OrderBillingReasonInternal.subscription_cycle_after_trial
+        ):
+            await subscription_service.send_new_subscription_notification(
+                session, subscription, product=product, organization=organization
+            )
+            return
+
         await notifications_service.send_to_org_members(
             session,
             org_id=organization.id,
+            is_free_product=all(price.is_free for price in subscription.prices),
             notif=PartialNotification(
                 type=NotificationType.maintainer_subscription_renewal,
                 payload=MaintainerSubscriptionRenewalNotificationPayload(

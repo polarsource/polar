@@ -615,6 +615,31 @@ class WebhookSubscriptionCycledPayload:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookSubscriptionMigratedPayload:
+    """Sent when Polar takes over billing of a subscription migrated from another provider.
+
+    This fires at cutover, once the subscription is live on Polar. `provider`
+    and `provider_subscription_id` identify the subscription on the billing
+    provider so you can correlate the two.
+
+    **Discord & Slack support:** Basic"""
+
+    type: typing.Literal["subscription.migrated"]
+
+    timestamp: str
+
+    api_version: str
+
+    data: Subscription
+
+    provider: str
+    """The billing provider the subscription was migrated from."""
+
+    provider_subscription_id: str
+    """The identifier of the subscription on the billing provider."""
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class WebhookSubscriptionPastDuePayload:
     """Sent when a subscription payment fails and the subscription enters `past_due` status.
 
@@ -761,6 +786,7 @@ WebhookPayload: typing.TypeAlias = (
     | WebhookSubscriptionCanceledPayload
     | WebhookSubscriptionCreatedPayload
     | WebhookSubscriptionCycledPayload
+    | WebhookSubscriptionMigratedPayload
     | WebhookSubscriptionPastDuePayload
     | WebhookSubscriptionPausedPayload
     | WebhookSubscriptionResumedPayload
@@ -806,6 +832,7 @@ _KNOWN_EVENT_TYPES = frozenset(
         "subscription.canceled",
         "subscription.created",
         "subscription.cycled",
+        "subscription.migrated",
         "subscription.past_due",
         "subscription.paused",
         "subscription.resumed",
@@ -867,6 +894,7 @@ __all__ = [
     "WebhookSubscriptionCanceledPayload",
     "WebhookSubscriptionCreatedPayload",
     "WebhookSubscriptionCycledPayload",
+    "WebhookSubscriptionMigratedPayload",
     "WebhookSubscriptionPastDuePayload",
     "WebhookSubscriptionPausedPayload",
     "WebhookSubscriptionResumedPayload",

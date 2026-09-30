@@ -6,16 +6,16 @@ The official Python client for the [Polar API](https://polar.sh/docs/api-referen
 
 The SDK requires Python 3.11 or later.
 
-The SDK is currently available as a pre-release. To install it with `uv`:
+To install it with `uv`:
 
 ```bash
-uv add polar-sdk --prerelease allow
+uv add polar-sdk
 ```
 
 or, with `pip`:
 
 ```bash
-pip install --pre polar-sdk
+pip install polar-sdk
 ```
 
 ## Quick Start
@@ -24,7 +24,7 @@ Create an [organization access token](https://polar.sh/docs/integrate/oat) and u
 the current API version:
 
 ```python
-from polar.v{{ ir.versions[0].version | replace("-", "_") | replace(".", "_") }} import Polar
+from polar.v{{ (ir.versions[-2] | default({})).version | default("") | replace("-", "_") | replace(".", "_") }} import Polar
 
 polar = Polar("polar_oat_xxx")
 
@@ -39,7 +39,7 @@ Use `PolarAsync` in asynchronous applications:
 ```python
 import asyncio
 
-from polar.v{{ ir.versions[0].version | replace("-", "_") | replace(".", "_") }} import PolarAsync
+from polar.v{{ (ir.versions[-2] | default({})).version | replace("-", "_") | replace(".", "_") }} import PolarAsync
 
 
 async def main() -> None:
@@ -61,7 +61,7 @@ block exits.
 For synchronous applications, use `Polar` with `with`:
 
 ```python
-from polar.v{{ ir.versions[0].version | replace("-", "_") | replace(".", "_") }} import Polar
+from polar.v{{ (ir.versions[-2] | default({})).version | replace("-", "_") | replace(".", "_") }} import Polar
 
 with Polar("polar_oat_xxx") as polar:
     customer_state = polar.customers.get_state_external("customer_external_id")
@@ -73,7 +73,7 @@ For asynchronous applications, use `PolarAsync` with `async with`:
 ```python
 import asyncio
 
-from polar.v{{ ir.versions[0].version | replace("-", "_") | replace(".", "_") }} import PolarAsync
+from polar.v{{ (ir.versions[-2] | default({})).version | replace("-", "_") | replace(".", "_") }} import PolarAsync
 
 
 async def main() -> None:
@@ -123,13 +123,26 @@ customer_state = polar.customers.get_state_external(
 
 Pass an `httpx.Timeout` instance to configure connect, read, write, and pool timeouts separately.
 
+## Organizations
+
+OAuth access tokens and personal access tokens can reach every organization the user belongs to.
+Pass `organization_id` to get a client that acts on a single organization. It sends the
+`Polar-Organization` header, so the API only returns and changes that organization's data:
+
+```python
+acme = Polar("polar_at_u_xxx", organization_id="acme_organization_id")
+customers = acme.customers.list()
+```
+
+Organization access tokens already act on their own organization and don't need it.
+
 ## Deserializing Data
 
 Use `deserialize` to convert arbitrary data into a generated SDK model or union type:
 
 ```python
 from polar import deserialize
-from polar.v{{ ir.versions[0].version | replace("-", "_") | replace(".", "_") }}.outputs import Customer
+from polar.v{{ (ir.versions[-2] | default({})).version | replace("-", "_") | replace(".", "_") }}.outputs import Customer
 
 customer = deserialize(data, Customer)
 ```
@@ -145,7 +158,7 @@ import os
 
 from fastapi import FastAPI, HTTPException, Request
 
-from polar.v{{ ir.versions[0].version | replace("-", "_") | replace(".", "_") }}.webhooks import (
+from polar.v{{ (ir.versions[-2] | default({})).version | replace("-", "_") | replace(".", "_") }}.webhooks import (
     PolarWebhookError,
     PolarWebhookVerificationError,
     validate_event,

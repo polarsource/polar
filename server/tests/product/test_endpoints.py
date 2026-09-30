@@ -4,6 +4,7 @@ from typing import Any
 import pytest
 from httpx import AsyncClient
 
+from polar.enums import SubscriptionRecurringInterval
 from polar.models import (
     Benefit,
     Customer,
@@ -14,6 +15,7 @@ from polar.models import (
 )
 from polar.models.custom_field import CustomFieldType
 from polar.postgres import AsyncSession
+from polar.version import V2026_04, V2026_10, V2027_01
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_custom_field,
@@ -173,6 +175,63 @@ class TestGetProduct:
         assert price["unit_label"] is None
         assert price["tiers"]["type"] == "volume"
         assert price["tiers"]["tiers"] == [{"bound": None, "unit_amount": "2900"}]
+
+    @pytest.mark.api_version(V2026_04, V2026_10)
+    @pytest.mark.auth
+    async def test_seat_based_before_2027_01(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1500, "usd")],
+        )
+
+        response = await client.get(f"/v1/products/{product.id}")
+
+        assert response.status_code == 200
+        price = response.json()["prices"][0]
+        assert price["seat_tiers"]["tiers"] == [
+            {"min_seats": 1, "max_seats": None, "price_per_seat": 1500}
+        ]
+        assert price["price_per_seat"] == 1500
+        assert "tiers" not in price
+        assert "minimum_units" not in price
+        assert "maximum_units" not in price
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_seat_based_2027_01(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1500, "usd")],
+        )
+
+        response = await client.get(f"/v1/products/{product.id}")
+
+        assert response.status_code == 200
+        price = response.json()["prices"][0]
+        assert price["tiers"] == {
+            "type": "volume",
+            "tiers": [{"bound": None, "unit_amount": "1500"}],
+        }
+        assert price["minimum_units"] == 1
+        assert price["maximum_units"] is None
+        assert "seat_tiers" not in price
+        assert "price_per_seat" not in price
 
 
 @pytest.mark.asyncio
@@ -387,6 +446,153 @@ class TestCreateProduct:
         assert prices[0]["amount_type"] == "fixed"
         assert prices[0]["price_amount"] == 0
 
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_seat_based_tiers_2027_01(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        tiers = {
+            "type": "graduated",
+            "tiers": [
+                {"bound": 10, "unit_amount": "1000"},
+                {"bound": None, "unit_amount": "800"},
+            ],
+        }
+        response = await client.post(
+            "/v1/products/",
+            json={
+                "name": "Product",
+                "organization_id": str(organization.id),
+                "recurring_interval": "month",
+                "prices": [
+                    {
+                        "amount_type": "seat_based",
+                        "price_currency": "usd",
+                        "tiers": tiers,
+                        "minimum_units": 2,
+                    }
+                ],
+            },
+        )
+
+        assert response.status_code == 201
+        price = response.json()["prices"][0]
+        assert price["tiers"] == tiers
+        assert price["minimum_units"] == 2
+        assert price["maximum_units"] is None
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_seat_based_seat_tiers_2027_01(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/products/",
+            json={
+                "name": "Product",
+                "organization_id": str(organization.id),
+                "recurring_interval": "month",
+                "prices": [
+                    {
+                        "amount_type": "seat_based",
+                        "price_currency": "usd",
+                        "seat_tiers": {
+                            "tiers": [
+                                {
+                                    "min_seats": 1,
+                                    "max_seats": None,
+                                    "price_per_seat": 1000,
+                                }
+                            ]
+                        },
+                    }
+                ],
+            },
+        )
+
+        assert response.status_code == 422
+        assert response.json()["detail"][0]["loc"][-1] == "tiers"
+
+    @pytest.mark.api_version(V2026_04, V2026_10)
+    @pytest.mark.auth
+    async def test_seat_based_seat_tiers_before_2027_01(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/products/",
+            json={
+                "name": "Product",
+                "organization_id": str(organization.id),
+                "recurring_interval": "month",
+                "prices": [
+                    {
+                        "amount_type": "seat_based",
+                        "price_currency": "usd",
+                        "seat_tiers": {
+                            "tiers": [
+                                {
+                                    "min_seats": 2,
+                                    "max_seats": 10,
+                                    "price_per_seat": 1000,
+                                },
+                                {
+                                    "min_seats": 11,
+                                    "max_seats": None,
+                                    "price_per_seat": 800,
+                                },
+                            ]
+                        },
+                    }
+                ],
+            },
+        )
+
+        assert response.status_code == 201
+        price = response.json()["prices"][0]
+        assert price["seat_tiers"]["tiers"] == [
+            {"min_seats": 2, "max_seats": 10, "price_per_seat": 1000},
+            {"min_seats": 11, "max_seats": None, "price_per_seat": 800},
+        ]
+
+    @pytest.mark.api_version(V2026_04, V2026_10)
+    @pytest.mark.auth
+    async def test_seat_based_tiers_before_2027_01(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/products/",
+            json={
+                "name": "Product",
+                "organization_id": str(organization.id),
+                "recurring_interval": "month",
+                "prices": [
+                    {
+                        "amount_type": "seat_based",
+                        "price_currency": "usd",
+                        "tiers": {
+                            "type": "volume",
+                            "tiers": [{"bound": None, "unit_amount": "1000"}],
+                        },
+                    }
+                ],
+            },
+        )
+
+        assert response.status_code == 422
+        assert response.json()["detail"][0]["loc"][-1] == "seat_tiers"
+
 
 @pytest.mark.asyncio
 class TestUpdateProduct:
@@ -437,6 +643,33 @@ class TestUpdateProduct:
 
         json = response.json()
         assert json["name"] == "Updated Name"
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_seat_based_tiers_2027_01(
+        self,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        tiers = {"type": "volume", "tiers": [{"bound": None, "unit_amount": "1200"}]}
+        response = await client.patch(
+            f"/v1/products/{product.id}",
+            json={
+                "prices": [
+                    {
+                        "amount_type": "seat_based",
+                        "price_currency": "usd",
+                        "tiers": tiers,
+                    }
+                ]
+            },
+        )
+
+        assert response.status_code == 200
+        price = response.json()["prices"][0]
+        assert price["amount_type"] == "seat_based"
+        assert price["tiers"] == tiers
 
     @pytest.mark.auth
     async def test_existing_price_with_full_schema(

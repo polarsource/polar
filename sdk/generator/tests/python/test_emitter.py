@@ -46,7 +46,7 @@ def test_emit_input_model_with_fields_and_additional_properties(
         output_unions=[],
     )
 
-    PythonEmitter(APIIR(versions=[api]), "1.0.0").emit(tmp_path)
+    PythonEmitter(APIIR(versions=[api]), "2026-10").emit(tmp_path)
 
     inputs = (tmp_path / "polar" / "v2026_04" / "inputs.py").read_text()
     assert "import typing_extensions" in inputs
@@ -90,7 +90,7 @@ def test_emit_output_model_with_fields_and_additional_properties(
         output_unions=[],
     )
 
-    PythonEmitter(APIIR(versions=[api]), "1.0.0").emit(tmp_path)
+    PythonEmitter(APIIR(versions=[api]), "2026-10").emit(tmp_path)
 
     outputs = (tmp_path / "polar" / "v2026_04" / "outputs.py").read_text()
     assert "import typing_extensions" in outputs

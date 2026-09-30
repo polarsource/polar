@@ -9,7 +9,7 @@ from tagflow import tag, text
 
 from polar.models import Organization
 
-from ....components import card, dispute_status_badge
+from ....components import card, dispute_status_badge, needs_action_badge
 from ....support_cases.queries import TYPE_LABELS, Row
 from ....support_cases.urls import case_detail_url
 
@@ -59,6 +59,7 @@ class SupportCasesListSection:
                         dispute_status,
                         _evidence_due_by,
                         _evidence_past_due,
+                        needs_action,
                     ) in self.rows:
                         case_url = case_detail_url(
                             request, case.id, return_to=return_to
@@ -82,7 +83,9 @@ class SupportCasesListSection:
                                         text("Open" if is_open else "Closed")
                                     if dispute_status is not None:
                                         dispute_status_badge(dispute_status)
-                                    if awaiting_platform:
+                                    if needs_action:
+                                        needs_action_badge(case.type)
+                                    elif awaiting_platform:
                                         with tag.span(
                                             classes="tooltip text-warning",
                                             data_tip="Awaiting reply",

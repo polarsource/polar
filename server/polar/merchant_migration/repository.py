@@ -236,6 +236,48 @@ class MerchantMigrationRecordRepository(
         finally:
             await results.close()
 
+    async def stream_customer_source_ids_to_copy(
+        self, migration_id: UUID
+    ) -> AsyncGenerator[str]:
+        """Stripe customers whose cards Stripe Copy still has to move.
+
+        The customers this migration imported, plus the ones behind pending
+        subscriptions it took over from an earlier migration of the account,
+        less those whose every pending switchable subscription here already has
+        its card on Polar. Copying those again would only duplicate the card.
+        """
+        covered = await self.payment_method_coverage(migration_id, exact=True)
+        customer_source_id = MerchantMigrationRecord.canonical.op("->>")(
+            "customer_source_id"
+        )
+        results = await self.session.stream(
+            self._switchable_subscriptions_statement(migration_id)
+            .where(
+                MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending
+            )
+            .with_only_columns(MerchantMigrationRecord.id, customer_source_id),
+            execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
+        )
+        to_copy: dict[str, None] = {}
+        has_card: set[str] = set()
+        try:
+            async for record_id, source_id in results:
+                if record_id in covered:
+                    has_card.add(source_id)
+                else:
+                    to_copy[source_id] = None
+        finally:
+            await results.close()
+        fully_covered = has_card - to_copy.keys()
+
+        async for source_id in self.stream_imported_customer_source_ids(migration_id):
+            if source_id in fully_covered:
+                continue
+            to_copy.pop(source_id, None)
+            yield source_id
+        for source_id in to_copy:
+            yield source_id
+
     async def count_by_type_and_status(
         self, migration_ids: Sequence[UUID]
     ) -> RecordCounts:

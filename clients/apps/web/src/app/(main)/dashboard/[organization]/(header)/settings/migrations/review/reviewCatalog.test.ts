@@ -2,7 +2,23 @@ import { describe, expect, it } from 'vitest'
 import {
   remainingSubscriptionCount,
   reviewCatalogEmptyKind,
+  reviewPrimaryAction,
 } from './reviewCatalog'
+
+describe('reviewPrimaryAction', () => {
+  it('continues when every importable subscription is already prepared', () => {
+    expect(reviewPrimaryAction(0, 28)).toBe('continue')
+  })
+
+  it('prepares while anything is left to prepare', () => {
+    expect(reviewPrimaryAction(3, 28)).toBe('prepare')
+    expect(reviewPrimaryAction(3, 0)).toBe('prepare')
+  })
+
+  it('does not offer to continue with nothing ready', () => {
+    expect(reviewPrimaryAction(0, 0)).toBe('prepare')
+  })
+})
 
 describe('remainingSubscriptionCount', () => {
   it('excludes already switched subscriptions from the All tab', () => {

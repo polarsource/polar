@@ -184,6 +184,12 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
           },
         })
       }}
+      onContinue={() => {
+        rerunPrecheck.reset()
+        // Prepares nothing: the summary this button was picked from can be
+        // stale, and new subscriptions shouldn't be prepared unasked.
+        importCatalog.mutate({ recordIds: [] })
+      }}
       importing={importCatalog.isPending || importingOperation}
       importError={importError}
       onRerunPrecheck={() => rerunPrecheck.mutate()}

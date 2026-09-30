@@ -186,16 +186,7 @@ class TestCalculateAmountIntegralityGuard:
 
 
 class TestSeatBillingReadsSharedTiers:
-    """Billing and bounds come from the shared columns, not `_seat_tiers`."""
-
-    def test_amount_ignores_legacy_column(self) -> None:
-        price = _make_seat_price(MULTI_TIER)
-        price._seat_tiers = {
-            "seat_tier_type": SeatTierType.volume,
-            "tiers": [{"min_seats": 1, "max_seats": None, "price_per_seat": 1}],
-        }
-        assert price.calculate_amount(10) == 10_000
-        assert price.calculate_amount(11) == 11 * 800
+    """Billing and bounds come from the shared columns."""
 
     def test_bounds_from_shared_columns(self) -> None:
         price = _make_seat_price(
@@ -343,7 +334,6 @@ class TestSeatTiersApiView:
         assert price.tiers == seat_tiers_to_tiers(price.seat_tiers)
         assert price.minimum_units == 1
         assert price.maximum_units is None
-        assert price._seat_tiers is None
 
     def test_updating_seat_tiers_updates_shared_columns(self) -> None:
         price = _make_seat_price(MULTI_TIER, SeatTierType.volume)
@@ -360,7 +350,6 @@ class TestSeatTiersApiView:
         assert price.seat_tiers["tiers"] == [
             {"min_seats": 5, "max_seats": 20, "price_per_seat": 250}
         ]
-        assert price._seat_tiers is None
 
     @pytest.mark.asyncio
     async def test_database_round_trip_returns_tiers_model(
@@ -376,19 +365,11 @@ class TestSeatTiersApiView:
             seat_tier_type=SeatTierType.graduated,
         )
 
-        result = (
-            (
-                await session.execute(
-                    select(
-                        ProductPriceSeatUnit.tiers,
-                        ProductPriceSeatUnit._seat_tiers,
-                    ).where(ProductPriceSeatUnit.id == price.id)
-                )
+        tiers = await session.scalar(
+            select(ProductPriceSeatUnit.tiers).where(
+                ProductPriceSeatUnit.id == price.id
             )
-            .tuples()
-            .one()
         )
-        tiers, legacy_seat_tiers = result
 
         assert isinstance(tiers, Tiers)
         assert tiers.type == TierType.graduated
@@ -397,7 +378,6 @@ class TestSeatTiersApiView:
             Decimal(800),
             Decimal(600),
         ]
-        assert legacy_seat_tiers is None
 
 
 class TestMinimumMaximumUnits:

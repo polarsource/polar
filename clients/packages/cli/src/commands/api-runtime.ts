@@ -4,6 +4,7 @@ import { Prompt } from 'effect/unstable/cli'
 import { Organizations } from '@/services/organizations'
 import { Polar } from '@/services/polar'
 import { formatRecordPreview } from '@/utils/api-preview'
+import { printJson } from '@/utils/json'
 import * as ui from '@/utils/ui'
 
 export const layer = Layer.effect(
@@ -155,7 +156,7 @@ export const layer = Layer.effect(
             )
 
           if (result !== undefined) {
-            yield* Console.log(JSON.stringify(result, null, 2))
+            yield* printJson(result)
           }
         }),
     })

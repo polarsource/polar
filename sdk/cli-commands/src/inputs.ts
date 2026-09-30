@@ -31,7 +31,7 @@ export const confirm = Flag.Boolean('confirm').pipe(
 
 export const missingFlags = (input: object, required: ReadonlyArray<string>) =>
   required
-    .filter((key) => (input as Record<string, unknown>)[key] == null)
+    .filter((key) => (input as Record<string, unknown>)[key] === undefined)
     .map((key) => `--${key.replaceAll('_', '-')}`)
 
 // The prototype validates flags and JSON syntax; full input validation remains server-side.

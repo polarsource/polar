@@ -56,7 +56,7 @@ export const command = Command.make(
       properties: jsonFlag('properties').pipe(
         Flag.optional,
         Flag.withDescription(
-          'properties JSON: {"note": string} | {"guild_id": string, "role_id": string, "kick_member": boolean} | {"repository_owner": string, "repository_name": string, "permission": "pull" | "triage" | "push" | "maintain" | "admin"} | {"files": array of string, ...} | {...} | {"units": integer, "rollover": boolean, "meter_id": string} | {} | {"slack_integration_id": string, "channel_name_template": string, ...}',
+          'properties JSON: {"note": string | null} | {"guild_id": string, "role_id": string, "kick_member": boolean} | {"repository_owner": string, "repository_name": string, "permission": "pull" | "triage" | "push" | "maintain" | "admin"} | {"files": array of string, ...} | {...} | {"units": integer, "rollover": boolean, "meter_id": string} | {} | {"slack_integration_id": string, "channel_name_template": string, ...}',
         ),
       ),
     },

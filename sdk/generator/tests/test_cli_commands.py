@@ -618,3 +618,49 @@ def test_commands_without_required_input_skip_the_check(
 ) -> None:
     _emit(cli_spec, tmp_path)
     assert "missingFlags" not in (tmp_path / "src/widgets/update.ts").read_text()
+
+
+def test_flag_descriptions_that_differ_between_variants_are_combined(
+    create_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    schemas = create_spec["components"]["schemas"]
+    schemas["WidgetCreateRecurring"]["properties"]["email"]["description"] = (
+        "The email. Must be unique."
+    )
+    schemas["WidgetCreateOneTime"]["properties"]["email"]["description"] = (
+        "Optional when an owner is given."
+    )
+    _emit(create_spec, tmp_path)
+    source = (tmp_path / "src/widgets/create.ts").read_text()
+    assert "The email. Must be unique. Optional when an owner is given." in _flag(
+        source, "email"
+    )
+
+
+def test_json_shapes_mark_nullable_fields(
+    create_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    price = create_spec["components"]["schemas"]["FixedPrice"]
+    price["properties"]["note"] = {"anyOf": [{"type": "string"}, {"type": "null"}]}
+    price["required"].append("note")
+    _emit(create_spec, tmp_path)
+    source = (tmp_path / "src/widgets/create.ts").read_text()
+    assert '\\"note\\": string | null,' in _flag(source, "prices")
+
+
+def test_examples_are_quoted_for_the_shell(
+    create_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    price = create_spec["components"]["schemas"]["FixedPrice"]
+    price["properties"]["label"] = {"type": "string", "examples": ["it's fixed"]}
+    price["required"].append("label")
+    _emit(create_spec, tmp_path)
+    source = (tmp_path / "src/widgets/create.ts").read_text()
+    assert "it'\\\"'\\\"'s fixed" in source
+
+
+def test_only_absent_required_fields_count_as_missing(
+    create_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    _emit(create_spec, tmp_path)
+    assert "[key] === undefined" in (tmp_path / "src/inputs.ts").read_text()

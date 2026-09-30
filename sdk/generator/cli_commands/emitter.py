@@ -32,6 +32,7 @@ from typescript.naming import exported_operation_name, operation_name, service_n
 
 JSON_SHAPE_DEPTH = 2
 JSON_SHAPE_ENUM_VALUES = 5
+NULLABLE = " | null"
 EXAMPLE_DEPTH = 6
 
 
@@ -290,7 +291,7 @@ class CLICommandsEmitter(EmitterBase):
         )
         expression = self._flag_expression(field.type, flag, api)
         if expression.startswith("jsonFlag("):
-            return f"--{flag} '{self._example_json(value)}'"
+            return f"--{flag} {shlex.quote(self._example_json(value))}"
         if isinstance(value, list):
             value = value[0]
         if isinstance(value, Placeholder):
@@ -388,7 +389,12 @@ class CLICommandsEmitter(EmitterBase):
 
     def _json_shape(self, type_ref: TypeRef, api: APIVersion, depth: int = 0) -> str:
         if isinstance(type_ref, NullableType):
-            return self._json_shape(type_ref.inner, api, depth)
+            inner = self._json_shape(type_ref.inner, api, depth)
+            return (
+                inner
+                if depth == 0 or inner.endswith(NULLABLE)
+                else f"{inner}{NULLABLE}"
+            )
 
         if isinstance(type_ref, LiteralType):
             return json.dumps(type_ref.value)
@@ -430,14 +436,19 @@ class CLICommandsEmitter(EmitterBase):
                 if isinstance(type_ref, UnionRef)
                 else type_ref
             )
-            shapes = list(
-                dict.fromkeys(
-                    self._json_shape(variant, api, depth)
-                    for variant in union.variants
-                    if not (isinstance(variant, LiteralType) and variant.value is None)
-                )
-            )
-            return " | ".join(shapes)
+            shapes: list[str] = []
+            nullable = False
+            for variant in union.variants:
+                if self._is_null(variant):
+                    nullable = True
+                    continue
+                shape = self._json_shape(variant, api, depth)
+                nullable = nullable or shape.endswith(NULLABLE)
+                shape = shape.removesuffix(NULLABLE)
+                if shape not in shapes:
+                    shapes.append(shape)
+            joined = " | ".join(shapes)
+            return f"{joined}{NULLABLE}" if nullable and depth > 0 else joined
 
         return "any"
 
@@ -456,15 +467,19 @@ class CLICommandsEmitter(EmitterBase):
             fields_by_variant = [
                 self._body_fields(variant, api) for variant in union.variants
             ]
-            described: set[str] = set()
+            descriptions: dict[str, list[str]] = {}
             for field in (f for variant in fields_by_variant for f in variant):
                 previous = fields.get(field.name)
-                if previous and (field.name in described or not field.description):
+                if field.description and not self._is_null(field.type):
+                    summary = self._summary(field.description, "")
+                    if summary and summary not in descriptions.setdefault(
+                        field.name, []
+                    ):
+                        descriptions[field.name].append(summary)
+                elif previous and previous.description:
                     field = field.model_copy(
                         update={"description": previous.description}
                     )
-                elif field.description and not self._is_null(field.type):
-                    described.add(field.name)
                 if previous and previous.cli_confirm:
                     if (
                         field.cli_confirm
@@ -501,7 +516,10 @@ class CLICommandsEmitter(EmitterBase):
                         "required": all(
                             any(f.name == field.name and f.required for f in variant)
                             for variant in fields_by_variant
-                        )
+                        ),
+                        "description": " ".join(descriptions[field.name])
+                        if field.name in descriptions
+                        else field.description,
                     }
                 )
                 for field in fields.values()

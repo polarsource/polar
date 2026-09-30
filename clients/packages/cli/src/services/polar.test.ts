@@ -183,6 +183,11 @@ test.each([
         detail: [
           { loc: ['body', 'prices'], msg: 'Field required', type: 'missing' },
           {
+            loc: ['body', 'config', 'body'],
+            msg: 'Too long',
+            type: 'too_long',
+          },
+          {
             loc: ['body', 'prices', 0, 'price_amount'],
             msg: 'Input should be a valid integer',
             type: 'int_type',
@@ -191,7 +196,7 @@ test.each([
       },
     },
     message:
-      'The request is invalid:\n    prices: Field required\n    prices.0.price_amount: Input should be a valid integer',
+      'The request is invalid:\n    prices: Field required\n    config.body: Too long\n    prices.0.price_amount: Input should be a valid integer',
   },
   {
     name: 'a body without detail',

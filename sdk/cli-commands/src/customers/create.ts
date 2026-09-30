@@ -62,7 +62,7 @@ export const command = Command.make(
       email: nullableStringFlag('email').pipe(
         Flag.optional,
         Flag.withDescription(
-          'The email address of the customer. This must be unique within the organization.',
+          'The email address of the customer. This must be unique within the organization. The email address of the team customer. Optional for team customers \u2014 if omitted, an owner with an email must be provided.',
         ),
       ),
     },

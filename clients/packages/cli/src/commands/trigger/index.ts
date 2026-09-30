@@ -6,6 +6,7 @@ import { describeRejection, parseOverrides } from '@/commands/trigger/overrides'
 import { Deliveries, type Delivery } from '@/services/deliveries'
 import { Organizations } from '@/services/organizations'
 import { Trigger, TriggerError, type TriggerEvent } from '@/services/trigger'
+import { printJson } from '@/utils/json'
 import * as ui from '@/utils/ui'
 
 const event = Argument.String('event').pipe(
@@ -118,9 +119,9 @@ export const trigger = Command.make(
 
       if (list) {
         const events = yield* trigger.listEvents(organization)
-        return yield* Console.log(
-          json ? JSON.stringify(events, null, 2) : formatCatalog(events),
-        )
+        return yield* json
+          ? printJson(events)
+          : Console.log(formatCatalog(events))
       }
 
       const eventType = Option.isSome(event)
@@ -160,7 +161,7 @@ export const trigger = Command.make(
         )
 
       if (json) {
-        return yield* Console.log(JSON.stringify(result.payload, null, 2))
+        return yield* printJson(result.payload)
       }
       const delivery = yield* (yield* Deliveries).await(result.webhookEventId)
       yield* Console.log(

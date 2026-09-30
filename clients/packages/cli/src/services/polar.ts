@@ -49,7 +49,7 @@ const describeIssues = (issues: ReadonlyArray<typeof ValidationIssue.Type>) =>
   [
     'The request is invalid:',
     ...issues.map(({ loc, msg }) => {
-      const field = loc.filter((segment) => segment !== 'body').join('.')
+      const field = (loc[0] === 'body' ? loc.slice(1) : loc).join('.')
       return field ? `${field}: ${msg}` : msg
     }),
   ].join('\n    ')

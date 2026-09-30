@@ -86,6 +86,21 @@ describe('generated commands', () => {
       )
     })
 
+    test('sends an explicit null on to the API', async () => {
+      await run([
+        'products',
+        'create',
+        '--name',
+        'Pro',
+        '-d',
+        '{"prices":null}',
+      ]).promise
+      expect(await requests.at(-1)!.json()).toEqual({
+        name: 'Pro',
+        prices: null,
+      })
+    })
+
     test('accepts required values from --data', async () => {
       await run([
         'products',

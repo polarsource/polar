@@ -18,13 +18,17 @@ import {
 } from './paths'
 import { LOGO_REVEAL_ARC, LOGO_REVEAL_EASE, LOGO_REVEAL_RAYS } from './timing'
 
-// The reveal played forwards, then backwards, on repeat. Only the stretch of
-// the reveal where something visibly moves is used: the first moments, before
-// the centre dot shows, and the last, where the curve is settling past the
-// rim, are skipped so the loop never sits still.
-const FROM = 0.1
-const TO = 0.76
-const STEPS = 36
+// The reveal played forwards, then backwards, on repeat. The loop covers the
+// stretch of the reveal where something visibly moves (before it only a speck
+// at the centre shows, after it the curve is settling past the rim), plus a
+// short rest at each turnaround.
+const MOVING_FROM = 0.1
+const MOVING_TO = 0.76
+// Seconds the loop stays empty after the exit and complete after the enter.
+const REST = 0.4
+const FROM = MOVING_FROM - REST / 2
+const TO = MOVING_TO + REST / 2
+const STEPS = 48
 
 const ease = cubicBezier(...LOGO_REVEAL_EASE)
 

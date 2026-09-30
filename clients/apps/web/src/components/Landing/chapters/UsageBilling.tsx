@@ -9,11 +9,8 @@ interface Feature {
 }
 
 const FEATURES: Feature[] = [
-  {
-    label: 'Event ingestion',
-    href: '/docs/features/usage-based-billing/event-ingestion',
-  },
-  { label: 'Live meters', href: '/docs/features/usage-based-billing/meters' },
+  { label: 'Event ingestion', href: '/features/event-ingestion' },
+  { label: 'Live meters', href: '/features/meters' },
   { label: 'Credits', href: '/features/credits' },
   { label: 'Cost Insights', href: '/features/cost-insights' },
 ]

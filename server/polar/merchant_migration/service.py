@@ -1066,7 +1066,7 @@ class MerchantMigrationService:
         await self._rewrite_staged_payment_methods(
             session, migration.id, payment_methods
         )
-        return PaymentMethodMappingImportSummary(
+        summary = PaymentMethodMappingImportSummary(
             linked=len(payment_methods),
             customers_without_payment_method=len(
                 parsed.customers_without_payment_method
@@ -1079,6 +1079,14 @@ class MerchantMigrationService:
                 ),
             ],
         )
+        log.info(
+            "merchant_migration.payment_method_mappings.imported",
+            merchant_migration_id=migration.id,
+            linked=summary.linked,
+            customers_without_payment_method=summary.customers_without_payment_method,
+            skipped=len(summary.skipped),
+        )
+        return summary
 
     async def _link_mapped_payment_methods(
         self,

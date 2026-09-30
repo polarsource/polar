@@ -59,8 +59,11 @@ def _is_joined_on_primary_key(join: Join) -> bool:
         column
         for condition in conditions
         if isinstance(condition, BinaryExpression) and condition.operator is eq
-        for column in (condition.left, condition.right)
-        if column in primary_key
+        for column, other in (
+            (condition.left, condition.right),
+            (condition.right, condition.left),
+        )
+        if column in primary_key and not join.right.c.contains_column(other)
     }
     return len(matched_columns) == len(primary_key)
 

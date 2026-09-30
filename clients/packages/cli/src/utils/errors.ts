@@ -1,3 +1,4 @@
+import type { ApiCommandError } from '@polar-sh/cli-commands'
 import type { ListenError } from '@/services/listen'
 import type { TriggerError } from '@/services/trigger'
 import type { UpdateError } from '@/services/update'
@@ -6,6 +7,7 @@ import type { GitHubReleaseError } from '@/services/github-releases'
 import type { UpdaterError } from '@/services/updater'
 
 export type CommandError =
+  | ApiCommandError
   | AuthError
   | ListenError
   | TriggerError
@@ -39,6 +41,7 @@ const isCommandError = (error: unknown): error is CommandError =>
   error !== null &&
   '_tag' in error &&
   [
+    'ApiCommandError',
     'AuthError',
     'ListenError',
     'TriggerError',
@@ -57,6 +60,7 @@ export const describeError = (error: unknown): ErrorDescription => {
   switch (error._tag) {
     case 'AuthError':
       return { title: error.message }
+    case 'ApiCommandError':
     case 'TriggerError':
       return error.hint
         ? { title: error.message, hint: error.hint }

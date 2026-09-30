@@ -4,7 +4,7 @@ import type { Polar } from '@polar-sh/sdk/{{ api.version }}'
 {% endif %}
 import { Effect{% if confirmation_fields %}, Schema{% endif %} } from 'effect'
 import { {% if method.path_params %}Argument, {% endif %}Command{% if fields or not method.requires_authentication %}, Flag{% endif %} } from 'effect/unstable/cli'
-import { ApiRuntime{% if confirmation_fields or discriminator %}, ApiCommandError{% endif %}{% if not method.requires_authentication or method.pending_response %}, executeRequest{% endif %} } from '{{ runtime_path }}runtime'
+import { ApiRuntime{% if confirmation_fields or required %}, ApiCommandError{% endif %}{% if not method.requires_authentication or method.pending_response %}, executeRequest{% endif %} } from '{{ runtime_path }}runtime'
 {% if helpers %}
 import { {{ helpers | join(', ') }} } from '{{ runtime_path }}inputs'
 {% endif %}
@@ -58,10 +58,12 @@ export const command = Command.make(
 {% endfor %}
     })
 {% endif %}
-{% if discriminator %}
-    if (body[{{ discriminator | quote }}] == null) {
+{% if required %}
+    const missing = missingFlags({{ input_type | lower }}, {{ required | quote }})
+    if (missing.length > 0) {
       return yield* new ApiCommandError({
-        message: {{ ('--' + discriminator.replace('_', '-') + ' is required; supply it as a flag or include ' + discriminator + ' in --data.') | quote }},
+        message: `Missing required ${missing.length > 1 ? 'flags' : 'flag'} ${missing.join(', ')}`,
+        hint: {{ ('Example: ' + example) | quote }},
       })
     }
 {% endif %}

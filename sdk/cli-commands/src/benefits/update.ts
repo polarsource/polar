@@ -2,8 +2,14 @@
 import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
-import { ApiRuntime } from '../runtime'
-import { data, mergeInput, jsonFlag, nullableStringFlag } from '../inputs'
+import { ApiRuntime, ApiCommandError } from '../runtime'
+import {
+  data,
+  mergeInput,
+  missingFlags,
+  jsonFlag,
+  nullableStringFlag,
+} from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['benefits']['update']>[1]>
 
@@ -18,7 +24,7 @@ export const command = Command.make(
       metadata: jsonFlag('metadata').pipe(
         Flag.optional,
         Flag.withDescription(
-          'Key-value object allowing you to store additional information.',
+          'Key-value object allowing you to store additional information. JSON: {"<key>": string | integer | number | boolean}',
         ),
       ),
       description: nullableStringFlag('description').pipe(
@@ -46,10 +52,12 @@ export const command = Command.make(
         'meter_credit',
         'feature_flag',
         'slack_shared_channel',
-      ]).pipe(Flag.optional, Flag.withDescription('type')),
+      ]).pipe(Flag.optional, Flag.withDescription('Required. type')),
       properties: jsonFlag('properties').pipe(
         Flag.optional,
-        Flag.withDescription('properties'),
+        Flag.withDescription(
+          'properties JSON: {"note": string | null} | {"guild_id": string, "role_id": string, "kick_member": boolean} | {"repository_owner": string, "repository_name": string, "permission": "pull" | "triage" | "push" | "maintain" | "admin"} | {"files": array of string, ...} | {...} | {"units": integer, "rollover": boolean, "meter_id": string} | {} | {"slack_integration_id": string, "channel_name_template": string, ...}',
+        ),
       ),
     },
   },
@@ -63,6 +71,13 @@ export const command = Command.make(
         type: config.input.type,
         properties: config.input.properties,
       })
+      const missing = missingFlags(body, ['type'])
+      if (missing.length > 0) {
+        return yield* new ApiCommandError({
+          message: `Missing required ${missing.length > 1 ? 'flags' : 'flag'} ${missing.join(', ')}`,
+          hint: 'Example: polar benefits update <id> --type custom',
+        })
+      }
       yield* api.execute({
         operationId: 'benefits:update',
         method: 'PATCH',

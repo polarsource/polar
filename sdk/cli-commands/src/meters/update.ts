@@ -25,7 +25,7 @@ export const command = Command.make(
       metadata: jsonFlag('metadata').pipe(
         Flag.optional,
         Flag.withDescription(
-          'Key-value object allowing you to store additional information.',
+          'Key-value object allowing you to store additional information. JSON: {"<key>": string | integer | number | boolean}',
         ),
       ),
       name: nullableStringFlag('name').pipe(
@@ -53,13 +53,13 @@ export const command = Command.make(
       filter: jsonFlag('filter').pipe(
         Flag.optional,
         Flag.withDescription(
-          "The filter to apply on events that'll be used to calculate the meter.",
+          'The filter to apply on events that\'ll be used to calculate the meter. JSON: {"conjunction": "and" | "or", "clauses": array of ({"property": string, "operator": "eq" | "ne" | "gt" | "gte" | "lt" | ..., "value": string | integer | boolean} | {"conjunction": "and" | "or", "clauses": array of {...}})}',
         ),
       ),
       aggregation: jsonFlag('aggregation').pipe(
         Flag.optional,
         Flag.withDescription(
-          'The aggregation to apply on the filtered events to calculate the meter.',
+          'The aggregation to apply on the filtered events to calculate the meter. JSON: {"func": "count"} | {"func": "sum" | "max" | "min" | "avg", "property": string} | {"func": "unique", "property": string}',
         ),
       ),
       is_archived: Flag.Boolean('is-archived').pipe(

@@ -176,6 +176,29 @@ test.each([
     message: 'Archive it instead.',
   },
   {
+    name: 'validation errors',
+    rejection: {
+      statusCode: 422,
+      error: {
+        detail: [
+          { loc: ['body', 'prices'], msg: 'Field required', type: 'missing' },
+          {
+            loc: ['body', 'config', 'body'],
+            msg: 'Too long',
+            type: 'too_long',
+          },
+          {
+            loc: ['body', 'prices', 0, 'price_amount'],
+            msg: 'Input should be a valid integer',
+            type: 'int_type',
+          },
+        ],
+      },
+    },
+    message:
+      'The request is invalid:\n    prices: Field required\n    config.body: Too long\n    prices.0.price_amount: Input should be a valid integer',
+  },
+  {
     name: 'a body without detail',
     rejection: { statusCode: 422, error: 'Unprocessable Entity' },
     message: 'The Polar API rejected the request (422).',

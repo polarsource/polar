@@ -2,8 +2,13 @@
 import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
-import { ApiRuntime } from '../../runtime'
-import { data, mergeInput, nullableStringFlag } from '../../inputs'
+import { ApiRuntime, ApiCommandError } from '../../runtime'
+import {
+  data,
+  mergeInput,
+  missingFlags,
+  nullableStringFlag,
+} from '../../inputs'
 
 type Body = NonNullable<Parameters<Polar['customers']['members']['create']>[1]>
 
@@ -17,7 +22,7 @@ export const command = Command.make(
     input: {
       email: Flag.String('email').pipe(
         Flag.optional,
-        Flag.withDescription('The email address of the member.'),
+        Flag.withDescription('Required. The email address of the member.'),
       ),
       name: nullableStringFlag('name').pipe(
         Flag.optional,
@@ -46,6 +51,13 @@ export const command = Command.make(
         external_id: config.input.external_id,
         role: config.input.role,
       })
+      const missing = missingFlags(body, ['email'])
+      if (missing.length > 0) {
+        return yield* new ApiCommandError({
+          message: `Missing required ${missing.length > 1 ? 'flags' : 'flag'} ${missing.join(', ')}`,
+          hint: 'Example: polar customers members create <id> --email member@example.com',
+        })
+      }
       yield* api.execute({
         operationId: 'customers:members:create',
         method: 'POST',

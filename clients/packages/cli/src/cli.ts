@@ -1,6 +1,6 @@
 import { BunRuntime, BunServices } from '@effect/platform-bun'
 import { commands } from '@polar-sh/cli-commands'
-import { Cause, Effect, Layer, Runtime, Stdio } from 'effect'
+import { Cause, Console, Effect, Layer, Runtime, Stdio } from 'effect'
 import { CliConfig, Command, GlobalFlag } from 'effect/unstable/cli'
 import { FetchHttpClient } from 'effect/unstable/http'
 import { listen } from '@/commands/listen'
@@ -8,6 +8,7 @@ import { trigger } from '@/commands/trigger'
 import { auth } from '@/commands/auth'
 import { home } from '@/commands/home'
 import { update } from '@/commands/update'
+import { stdoutConsole } from '@/utils/console'
 import { describeError } from '@/utils/errors'
 import * as ApiRuntime from '@/commands/api-runtime'
 import * as Auth from '@/services/auth'
@@ -67,6 +68,7 @@ const services = Layer.mergeAll(
   telemetryLayer,
   BunServices.layer,
   FetchHttpClient.layer,
+  Layer.succeed(Console.Console, stdoutConsole),
   CliConfig.layer({
     builtIns: [
       GlobalFlag.Help,

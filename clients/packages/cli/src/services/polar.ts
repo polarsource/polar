@@ -36,14 +36,34 @@ const isOrganizationNotAccessible = (body: unknown) =>
     )(body),
   )
 
-const ErrorDetail = Schema.Struct({ detail: Schema.String })
+const ValidationIssue = Schema.Struct({
+  loc: Schema.Array(Schema.Union([Schema.String, Schema.Number])),
+  msg: Schema.String,
+})
 
-const detailOf = (body: unknown) =>
-  Option.getOrUndefined(
+const ErrorDetail = Schema.Struct({
+  detail: Schema.Union([Schema.String, Schema.Array(ValidationIssue)]),
+})
+
+const describeIssues = (issues: ReadonlyArray<typeof ValidationIssue.Type>) =>
+  [
+    'The request is invalid:',
+    ...issues.map(({ loc, msg }) => {
+      const field = (loc[0] === 'body' ? loc.slice(1) : loc).join('.')
+      return field ? `${field}: ${msg}` : msg
+    }),
+  ].join('\n    ')
+
+const detailOf = (body: unknown) => {
+  const detail = Option.getOrUndefined(
     Schema.decodeUnknownOption(
       Schema.Union([ErrorDetail, Schema.fromJsonString(ErrorDetail)]),
     )(body),
   )?.detail
+  return typeof detail === 'string' || detail === undefined
+    ? detail
+    : describeIssues(detail)
+}
 
 const describeFailure = (statusCode: number | undefined, detail?: string) => {
   if (statusCode === undefined) {

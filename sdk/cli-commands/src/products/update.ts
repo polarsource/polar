@@ -25,7 +25,7 @@ export const command = Command.make(
       metadata: jsonFlag('metadata').pipe(
         Flag.optional,
         Flag.withDescription(
-          'Key-value object allowing you to store additional information.',
+          'Key-value object allowing you to store additional information. JSON: {"<key>": string | integer | number | boolean}',
         ),
       ),
       trial_interval: Flag.Literals('trial-interval', [
@@ -59,13 +59,13 @@ export const command = Command.make(
       ]).pipe(
         Flag.optional,
         Flag.withDescription(
-          "The recurring interval of the product. If `None`, the product is a one-time purchase. **Can only be set on legacy recurring products. Once set, it can't be changed.**",
+          "The recurring interval of the product. If `None`, the product is a one-time purchase. Can only be set on legacy recurring products. Once set, it can't be changed.",
         ),
       ),
       recurring_interval_count: Flag.Int('recurring-interval-count').pipe(
         Flag.optional,
         Flag.withDescription(
-          "Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. Once set, it can't be changed.**",
+          "Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. Once set, it can't be changed.",
         ),
       ),
       is_archived: Flag.Boolean('is-archived').pipe(
@@ -85,7 +85,7 @@ export const command = Command.make(
       prices: jsonFlag('prices').pipe(
         Flag.optional,
         Flag.withDescription(
-          'List of available prices for this product. If you want to keep existing prices, include them in the list as an `ExistingProductPrice` object.',
+          'List of available prices for this product. If you want to keep existing prices, include them in the list as an `ExistingProductPrice` object. JSON: array of ({"id": string} | {"amount_type": "fixed", "price_amount": integer, ...} | {"amount_type": "custom", ...} | {"amount_type": "seat_based", "seat_tiers": {"tiers": array of {...}, ...}, ...} | {"amount_type": "unit_based", "tiers": {"type": "volume" | "graduated", "tiers": array of {...}}, ...} | {"amount_type": "metered_unit", "meter_id": string, "unit_amount": number | string, ...} | {"amount_type": "metered_tiers", "meter_id": string, "tiers": {"type": "volume" | "graduated", "tiers": array of {...}}, ...})',
         ),
       ),
       medias: Flag.String('medias')
@@ -98,7 +98,9 @@ export const command = Command.make(
         ),
       attached_custom_fields: jsonFlag('attached-custom-fields').pipe(
         Flag.optional,
-        Flag.withDescription('attached_custom_fields'),
+        Flag.withDescription(
+          'attached_custom_fields JSON: array of {"custom_field_id": string, "required": boolean}',
+        ),
       ),
     },
   },

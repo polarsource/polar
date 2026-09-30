@@ -25,7 +25,7 @@ export const command = Command.make(
       metadata: jsonFlag('metadata').pipe(
         Flag.optional,
         Flag.withDescription(
-          'Key-value object allowing you to store additional information.',
+          'Key-value object allowing you to store additional information. JSON: {"<key>": string | integer | number | boolean}',
         ),
       ),
       product_id: nullableStringFlag('product-id').pipe(
@@ -108,7 +108,7 @@ export const command = Command.make(
       revoke: jsonFlag('revoke').pipe(
         Flag.optional,
         Flag.withDescription(
-          'Cancel and revoke an active subscription immediately',
+          'Cancel and revoke an active subscription immediately JSON: true',
         ),
       ),
       pause_at_period_end: Flag.Boolean('pause-at-period-end').pipe(
@@ -126,13 +126,13 @@ export const command = Command.make(
       resume: jsonFlag('resume').pipe(
         Flag.optional,
         Flag.withDescription(
-          'Resume a paused subscription immediately, starting a new billing period and charging the customer.',
+          'Resume a paused subscription immediately, starting a new billing period and charging the customer. JSON: true',
         ),
       ),
       pending_update: jsonFlag('pending-update').pipe(
         Flag.optional,
         Flag.withDescription(
-          'Clear the pending subscription update. Set to null to remove scheduled changes.',
+          'Clear the pending subscription update. Set to null to remove scheduled changes. JSON: null',
         ),
       ),
     },

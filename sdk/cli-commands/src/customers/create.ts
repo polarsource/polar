@@ -15,7 +15,7 @@ export const command = Command.make(
       metadata: jsonFlag('metadata').pipe(
         Flag.optional,
         Flag.withDescription(
-          'Key-value object allowing you to store additional information.',
+          'Key-value object allowing you to store additional information. JSON: {"<key>": string | integer | number | boolean}',
         ),
       ),
       external_id: nullableStringFlag('external-id').pipe(
@@ -30,7 +30,9 @@ export const command = Command.make(
       ),
       billing_address: jsonFlag('billing-address').pipe(
         Flag.optional,
-        Flag.withDescription('billing_address'),
+        Flag.withDescription(
+          'billing_address JSON: {"country": "AD" | "AE" | "AF" | "AG" | "AI" | ..., ...}',
+        ),
       ),
       tax_id: nullableStringFlag('tax-id').pipe(
         Flag.optional,
@@ -44,23 +46,23 @@ export const command = Command.make(
         Flag.withAlias('org'),
         Flag.optional,
         Flag.withDescription(
-          'The ID of the organization owning the customer. **Required unless you use an organization token.**',
+          'The ID of the organization owning the customer. Defaults to the active organization.',
         ),
       ),
       owner: jsonFlag('owner').pipe(
         Flag.optional,
         Flag.withDescription(
-          "Optional owner member to create with the customer. If not provided, an owner member will be automatically created using the customer's email and name.",
+          'Optional owner member to create with the customer. If not provided, an owner member will be automatically created using the customer\'s email and name. JSON: {"email": string, ...}',
         ),
       ),
       type: Flag.Literals('type', ['individual', 'team']).pipe(
         Flag.optional,
         Flag.withDescription('type'),
       ),
-      email: jsonFlag('email').pipe(
+      email: nullableStringFlag('email').pipe(
         Flag.optional,
         Flag.withDescription(
-          'The email address of the team customer. Optional for team customers \u2014 if omitted, an owner with an email must be provided.',
+          'The email address of the customer. This must be unique within the organization. The email address of the team customer. Optional for team customers \u2014 if omitted, an owner with an email must be provided.',
         ),
       ),
     },

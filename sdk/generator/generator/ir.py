@@ -740,7 +740,6 @@ def _schema_to_model(
             *context_sets,
             normalize_model_name=normalize_model_name,
         )
-        description = None
         read_only = None
         write_only = None
         deprecated = None
@@ -748,8 +747,8 @@ def _schema_to_model(
         default = None
         has_default = False
         has_example, example = _extract_example(prop)
+        description = prop.description or None
         if isinstance(prop, op.Schema):
-            description = prop.description or None
             read_only = True if prop.readOnly else None
             write_only = True if prop.writeOnly else None
             deprecated = True if prop.deprecated else None

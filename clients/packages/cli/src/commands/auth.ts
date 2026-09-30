@@ -11,6 +11,7 @@ import {
 } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
 import { Organizations } from '@/services/organizations'
+import { printJson } from '@/utils/json'
 import * as ui from '@/utils/ui'
 import { json, production, sandbox } from '@/commands/flags'
 
@@ -203,9 +204,6 @@ const login = Command.make(
     },
   ]),
 )
-
-const printJson = (value: unknown) =>
-  Console.log(JSON.stringify(value, null, 2))
 
 const whoamiJson = Effect.gen(function* () {
   const auth = yield* Auth

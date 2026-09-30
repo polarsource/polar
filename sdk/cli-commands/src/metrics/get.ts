@@ -2,8 +2,8 @@
 import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
-import { ApiRuntime } from '../runtime'
-import { data, mergeInput } from '../inputs'
+import { ApiRuntime, ApiCommandError } from '../runtime'
+import { data, mergeInput, missingFlags } from '../inputs'
 
 type Query = NonNullable<Parameters<Polar['metrics']['get']>[0]>
 
@@ -14,11 +14,11 @@ export const command = Command.make(
     input: {
       start_date: Flag.String('start-date').pipe(
         Flag.optional,
-        Flag.withDescription('Start date.'),
+        Flag.withDescription('Required. Start date.'),
       ),
       end_date: Flag.String('end-date').pipe(
         Flag.optional,
-        Flag.withDescription('End date.'),
+        Flag.withDescription('Required. End date.'),
       ),
       timezone: Flag.Literals('timezone', [
         'Africa/Abidjan',
@@ -633,14 +633,16 @@ export const command = Command.make(
         'hour',
       ]).pipe(
         Flag.optional,
-        Flag.withDescription('Interval between two timestamps.'),
+        Flag.withDescription('Required. Interval between two timestamps.'),
       ),
       organization_id: Flag.String('organization-id')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.withAlias('org'),
           Flag.optional,
-          Flag.withDescription('Filter by organization ID.'),
+          Flag.withDescription(
+            'Filter by organization ID. Defaults to the active organization.',
+          ),
         ),
       product_id: Flag.String('product-id')
         .pipe(Flag.atLeast(1))
@@ -680,6 +682,17 @@ export const command = Command.make(
         customer_id: config.input.customer_id,
         metrics: config.input.metrics,
       })
+      const missing = missingFlags(query, [
+        'start_date',
+        'end_date',
+        'interval',
+      ])
+      if (missing.length > 0) {
+        return yield* new ApiCommandError({
+          message: `Missing required ${missing.length > 1 ? 'flags' : 'flag'} ${missing.join(', ')}`,
+          hint: 'Example: polar metrics get --start-date <start-date> --end-date <end-date> --interval year',
+        })
+      }
       yield* api.execute({
         operationId: 'metrics:get',
         method: 'GET',

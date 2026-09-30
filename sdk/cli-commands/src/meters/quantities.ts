@@ -2,8 +2,8 @@
 import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
-import { ApiRuntime } from '../runtime'
-import { data, mergeInput, jsonFlag } from '../inputs'
+import { ApiRuntime, ApiCommandError } from '../runtime'
+import { data, mergeInput, missingFlags, jsonFlag } from '../inputs'
 
 type Query = NonNullable<Parameters<Polar['meters']['quantities']>[1]>
 
@@ -17,11 +17,11 @@ export const command = Command.make(
     input: {
       start_timestamp: Flag.String('start-timestamp').pipe(
         Flag.optional,
-        Flag.withDescription('Start timestamp.'),
+        Flag.withDescription('Required. Start timestamp.'),
       ),
       end_timestamp: Flag.String('end-timestamp').pipe(
         Flag.optional,
-        Flag.withDescription('End timestamp.'),
+        Flag.withDescription('Required. End timestamp.'),
       ),
       interval: Flag.Literals('interval', [
         'year',
@@ -31,7 +31,7 @@ export const command = Command.make(
         'hour',
       ]).pipe(
         Flag.optional,
-        Flag.withDescription('Interval between two timestamps.'),
+        Flag.withDescription('Required. Interval between two timestamps.'),
       ),
       timezone: Flag.Literals('timezone', [
         'Africa/Abidjan',
@@ -659,7 +659,7 @@ export const command = Command.make(
       metadata: jsonFlag('metadata').pipe(
         Flag.optional,
         Flag.withDescription(
-          'Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.',
+          'Filter by metadata key-value pairs. JSON: {"<key>": string | integer | boolean | array of string | array of integer | array of boolean}',
         ),
       ),
     },
@@ -678,6 +678,17 @@ export const command = Command.make(
           config.input.customer_aggregation_function,
         metadata: config.input.metadata,
       })
+      const missing = missingFlags(query, [
+        'start_timestamp',
+        'end_timestamp',
+        'interval',
+      ])
+      if (missing.length > 0) {
+        return yield* new ApiCommandError({
+          message: `Missing required ${missing.length > 1 ? 'flags' : 'flag'} ${missing.join(', ')}`,
+          hint: 'Example: polar meters quantities <id> --start-timestamp <start-timestamp> --end-timestamp <end-timestamp> --interval year',
+        })
+      }
       yield* api.execute({
         operationId: 'meters:quantities',
         method: 'GET',

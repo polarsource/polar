@@ -67,6 +67,41 @@ describe('generated commands', () => {
     }
   }
 
+  describe('required flags', () => {
+    test('stops before calling the API and shows an example', async () => {
+      await expect(
+        run(['products', 'create', '--name', 'Pro']).promise,
+      ).rejects.toMatchObject({
+        message: 'Missing required flag --prices',
+        hint: expect.stringContaining(
+          "polar products create --name <name> --prices '[{",
+        ),
+      })
+      expect(requests).toHaveLength(0)
+    })
+
+    test('names every missing flag', async () => {
+      await expect(run(['products', 'create']).promise).rejects.toThrow(
+        'Missing required flags --name, --prices',
+      )
+    })
+
+    test('accepts required values from --data', async () => {
+      await run([
+        'products',
+        'create',
+        '--name',
+        'Pro',
+        '-d',
+        '{"prices":[{"amount_type":"fixed","price_amount":1000}]}',
+      ]).promise
+      expect(await requests.at(-1)!.json()).toEqual({
+        name: 'Pro',
+        prices: [{ amount_type: 'fixed', price_amount: 1000 }],
+      })
+    })
+  })
+
   describe('CLI-tagged API commands', () => {
     test.each([
       { args: ['products', 'list'], method: 'GET', path: '/v1/products/' },
@@ -451,8 +486,8 @@ describe('organization resolution', () => {
       expect(
         new URL(requests.at(-1)!.url).searchParams.getAll('organization_id'),
       ).toEqual([])
-      await run(['products', 'create', '--name=Pro']).promise
-      expect(await requests.at(-1)!.json()).toEqual({ name: 'Pro' })
+      await run(['products', 'create', '--name=Pro', '--prices=[]']).promise
+      expect(await requests.at(-1)!.json()).toEqual({ name: 'Pro', prices: [] })
       await run(['products', 'update', 'product-1', '--name=Renamed']).promise
       expect(await requests.at(-1)!.json()).toEqual({ name: 'Renamed' })
       expect(requests.map(scope)).toEqual(requests.map(() => organization.id))

@@ -1,4 +1,5 @@
 import pathlib
+import re
 import typing
 
 import openapi_pydantic as op
@@ -425,3 +426,195 @@ def test_untagged_spec_fails_before_writing(tmp_path: pathlib.Path) -> None:
             generate_ir(spec, is_private_operation=is_private_cli_operation), "0.0.0"
         ).emit(tmp_path)
     assert not list(tmp_path.iterdir())
+
+
+def _emit(spec: dict, tmp_path: pathlib.Path) -> None:
+    CLICommandsEmitter(
+        generate_ir(
+            op.OpenAPI.model_validate(spec),
+            is_private_operation=is_private_cli_operation,
+        ),
+        "0.0.0",
+    ).emit(tmp_path)
+
+
+def _flag(source: str, name: str) -> str:
+    start = source.index(f"    {name}: ")
+    return source[start : source.index("    ),\n", start)]
+
+
+@pytest.fixture
+def create_spec(cli_spec: dict) -> dict:
+    prices = {
+        "type": "array",
+        "description": "The prices.",
+        "items": {
+            "oneOf": [
+                {"$ref": "#/components/schemas/FixedPrice"},
+                {"$ref": "#/components/schemas/FreePrice"},
+            ]
+        },
+    }
+    cli_spec["paths"]["/widgets/"] = {
+        "post": {
+            "operationId": "widgets:create",
+            "tags": ["cli"],
+            "requestBody": {
+                "required": True,
+                "content": {
+                    "application/json": {
+                        "schema": {"$ref": "#/components/schemas/WidgetCreate"},
+                    },
+                },
+            },
+            "responses": {"204": {"description": "Created"}},
+        },
+    }
+    cli_spec["components"]["schemas"] |= {
+        "WidgetCreate": {
+            "oneOf": [
+                {"$ref": "#/components/schemas/WidgetCreateRecurring"},
+                {"$ref": "#/components/schemas/WidgetCreateOneTime"},
+            ]
+        },
+        "WidgetCreateRecurring": {
+            "type": "object",
+            "required": ["name", "prices", "interval"],
+            "properties": {
+                "name": {"type": "string", "description": "The **name**."},
+                "prices": prices,
+                "interval": {
+                    "type": "string",
+                    "enum": ["month", "year"],
+                    "description": "The billing interval.",
+                },
+                "email": {"type": "string", "format": "email"},
+                "organization_id": {
+                    "type": "string",
+                    "description": "The owner. **Required unless you use an organization token.**",
+                },
+            },
+        },
+        "WidgetCreateOneTime": {
+            "type": "object",
+            "required": ["name", "prices"],
+            "properties": {
+                "name": {"type": "string", "description": "The **name**."},
+                "prices": prices,
+                "interval": {
+                    "type": "null",
+                    "description": "One-time widgets have no interval.",
+                },
+                "email": {
+                    "anyOf": [{"type": "string", "format": "email"}, {"type": "null"}]
+                },
+                "organization_id": {
+                    "type": "string",
+                    "description": "The owner. **Required unless you use an organization token.**",
+                },
+            },
+        },
+        "FixedPrice": {
+            "type": "object",
+            "required": ["amount_type", "amount"],
+            "properties": {
+                "amount_type": {"type": "string", "const": "fixed"},
+                "amount": {"type": "integer"},
+                "currency": {"type": "string"},
+            },
+        },
+        "FreePrice": {
+            "type": "object",
+            "properties": {
+                "amount_type": {"type": "string", "const": "free", "default": "free"},
+            },
+        },
+    }
+    return cli_spec
+
+
+def test_flags_required_by_every_variant_are_marked(
+    create_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    _emit(create_spec, tmp_path)
+    source = (tmp_path / "src/widgets/create.ts").read_text()
+    assert 'Flag.withDescription("Required. The name.")' in _flag(source, "name")
+    assert "Required." not in _flag(source, "interval")
+
+
+def test_flag_description_comes_from_the_variant_that_uses_the_field(
+    create_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    _emit(create_spec, tmp_path)
+    source = (tmp_path / "src/widgets/create.ts").read_text()
+    assert "The billing interval." in _flag(source, "interval")
+    assert "One-time widgets" not in source
+
+
+def test_json_flags_describe_their_shape(
+    create_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    _emit(create_spec, tmp_path)
+    source = (tmp_path / "src/widgets/create.ts").read_text()
+    assert (
+        'JSON: array of ({\\"amount_type\\": \\"fixed\\", \\"amount\\": integer, ...}'
+        ' | {\\"amount_type\\": \\"free\\"})'
+    ) in _flag(source, "prices")
+
+
+def test_flag_descriptions_never_contain_square_brackets(
+    create_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    variant = create_spec["components"]["schemas"]["WidgetCreateRecurring"]
+    variant["properties"]["name"]["description"] = (
+        "The name. It uses the `deepObject` style, e.g. `?name[key]=value`."
+    )
+    _emit(create_spec, tmp_path)
+    source = (tmp_path / "src/widgets/create.ts").read_text()
+    descriptions = re.findall(r"Flag\.withDescription\((.*)\)", source)
+    assert 'Flag.withDescription("Required. The name.")' in _flag(source, "name")
+    assert descriptions
+    assert not any("[" in d or "]" in d for d in descriptions)
+
+
+def test_organization_flag_defaults_to_the_active_organization(
+    create_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    _emit(create_spec, tmp_path)
+    source = (tmp_path / "src/widgets/create.ts").read_text()
+    assert (
+        'Flag.withDescription("The owner. Defaults to the active organization.")'
+        in _flag(source, "organization_id")
+    )
+
+
+def test_optional_and_required_strings_merge_into_a_string_flag(
+    create_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    _emit(create_spec, tmp_path)
+    source = (tmp_path / "src/widgets/create.ts").read_text()
+    assert 'email: nullableStringFlag("email")' in source
+
+
+def test_missing_required_flags_fail_locally_with_an_example(
+    create_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    create_spec["components"]["schemas"]["FixedPrice"]["properties"]["currency"] = {
+        "type": "string",
+        "examples": ["usd"],
+    }
+    create_spec["components"]["schemas"]["FixedPrice"]["required"].append("currency")
+    _emit(create_spec, tmp_path)
+    source = (tmp_path / "src/widgets/create.ts").read_text()
+    assert 'const missing = missingFlags(body, ["name", "prices"])' in source
+    assert (
+        "hint: \"Example: polar widgets create --name <name> --prices '"
+        '[{\\"amount_type\\":\\"fixed\\",\\"amount\\":<amount>,\\"currency\\":\\"usd\\"}]\'"'
+    ) in source
+
+
+def test_commands_without_required_input_skip_the_check(
+    cli_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    _emit(cli_spec, tmp_path)
+    assert "missingFlags" not in (tmp_path / "src/widgets/update.ts").read_text()

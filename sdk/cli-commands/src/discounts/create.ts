@@ -2,8 +2,14 @@
 import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
-import { ApiRuntime } from '../runtime'
-import { data, mergeInput, jsonFlag, nullableStringFlag } from '../inputs'
+import { ApiRuntime, ApiCommandError } from '../runtime'
+import {
+  data,
+  mergeInput,
+  missingFlags,
+  jsonFlag,
+  nullableStringFlag,
+} from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['discounts']['create']>[0]>
 
@@ -15,13 +21,13 @@ export const command = Command.make(
       metadata: jsonFlag('metadata').pipe(
         Flag.optional,
         Flag.withDescription(
-          'Key-value object allowing you to store additional information.',
+          'Key-value object allowing you to store additional information. JSON: {"<key>": string | integer | number | boolean}',
         ),
       ),
       name: Flag.String('name').pipe(
         Flag.optional,
         Flag.withDescription(
-          'Name of the discount. Will be displayed to the customer when the discount is applied.',
+          'Required. Name of the discount. Will be displayed to the customer when the discount is applied.',
         ),
       ),
       code: nullableStringFlag('code').pipe(
@@ -63,7 +69,7 @@ export const command = Command.make(
         Flag.withAlias('org'),
         Flag.optional,
         Flag.withDescription(
-          'The ID of the organization owning the discount. **Required unless you use an organization token.**',
+          'The ID of the organization owning the discount. Defaults to the active organization.',
         ),
       ),
       type: Flag.Literals('type', ['fixed', 'percentage']).pipe(
@@ -74,7 +80,12 @@ export const command = Command.make(
         'once',
         'forever',
         'repeating',
-      ]).pipe(Flag.optional, Flag.withDescription('duration')),
+      ]).pipe(
+        Flag.optional,
+        Flag.withDescription(
+          'Required. For subscriptions, determines if the discount should be applied once on the first invoice, forever, or for a certain number of months determined by `duration_in_months`.',
+        ),
+      ),
       duration_in_months: Flag.Int('duration-in-months').pipe(
         Flag.optional,
         Flag.withDescription(
@@ -215,7 +226,7 @@ export const command = Command.make(
       ]).pipe(Flag.optional, Flag.withDescription('currency')),
       amounts: jsonFlag('amounts').pipe(
         Flag.optional,
-        Flag.withDescription('amounts'),
+        Flag.withDescription('amounts JSON: {"<key>": integer}'),
       ),
       basis_points: Flag.Int('basis-points').pipe(
         Flag.optional,
@@ -244,6 +255,13 @@ export const command = Command.make(
         amounts: config.input.amounts,
         basis_points: config.input.basis_points,
       })
+      const missing = missingFlags(body, ['name', 'duration'])
+      if (missing.length > 0) {
+        return yield* new ApiCommandError({
+          message: `Missing required ${missing.length > 1 ? 'flags' : 'flag'} ${missing.join(', ')}`,
+          hint: 'Example: polar discounts create --name <name> --duration once',
+        })
+      }
       yield* api.execute({
         operationId: 'discounts:create',
         method: 'POST',

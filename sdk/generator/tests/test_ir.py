@@ -2841,3 +2841,48 @@ def test_model_preserves_additional_properties_alongside_fields() -> None:
             "composition_kind": "anyOf",
         },
     }
+
+
+def test_field_keeps_a_description_declared_beside_a_reference() -> None:
+    spec = op.OpenAPI.model_validate(
+        {
+            "openapi": "3.1.0",
+            "info": {"title": "Test API", "version": "2026-10"},
+            "paths": {
+                "/widgets": {
+                    "post": {
+                        "operationId": "widgets:create",
+                        "requestBody": {
+                            "required": True,
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/WidgetCreate"
+                                    }
+                                }
+                            },
+                        },
+                        "responses": {"204": {"description": "Success"}},
+                    }
+                }
+            },
+            "components": {
+                "schemas": {
+                    "Visibility": {"type": "string", "enum": ["draft", "public"]},
+                    "WidgetCreate": {
+                        "type": "object",
+                        "properties": {
+                            "visibility": {
+                                "$ref": "#/components/schemas/Visibility",
+                                "description": "The visibility of the widget.",
+                            }
+                        },
+                    },
+                }
+            },
+        }
+    )
+
+    api = generate_ir(spec).versions[0]
+
+    assert api.input_models[0].fields[0].description == "The visibility of the widget."

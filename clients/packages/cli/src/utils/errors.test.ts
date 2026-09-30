@@ -1,3 +1,4 @@
+import { ApiCommandError } from '@polar-sh/cli-commands'
 import { describe, expect, test } from 'vitest'
 import { ListenError } from '@/services/listen'
 import { TriggerError } from '@/services/trigger'
@@ -31,6 +32,23 @@ describe('describeError', () => {
       describeError(new TriggerError({ message: 'Nope', hint: 'Do this' })),
     ).toEqual({ title: 'Nope', hint: 'Do this' })
     expect(describeError(new TriggerError({ message: 'Nope' }))).toEqual({
+      title: 'Nope',
+    })
+  })
+
+  test('describes API command errors with their own hint', () => {
+    expect(
+      describeError(
+        new ApiCommandError({
+          message: 'Missing required flag --prices',
+          hint: 'Example: polar products create',
+        }),
+      ),
+    ).toEqual({
+      title: 'Missing required flag --prices',
+      hint: 'Example: polar products create',
+    })
+    expect(describeError(new ApiCommandError({ message: 'Nope' }))).toEqual({
       title: 'Nope',
     })
   })

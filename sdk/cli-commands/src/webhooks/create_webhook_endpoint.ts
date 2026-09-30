@@ -2,8 +2,8 @@
 import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
-import { ApiRuntime } from '../runtime'
-import { data, mergeInput, nullableStringFlag } from '../inputs'
+import { ApiRuntime, ApiCommandError } from '../runtime'
+import { data, mergeInput, missingFlags, nullableStringFlag } from '../inputs'
 
 type Body = NonNullable<
   Parameters<Polar['webhooks']['createWebhookEndpoint']>[0]
@@ -16,7 +16,9 @@ export const command = Command.make(
     input: {
       url: Flag.String('url').pipe(
         Flag.optional,
-        Flag.withDescription('The URL where the webhook events will be sent.'),
+        Flag.withDescription(
+          'Required. The URL where the webhook events will be sent.',
+        ),
       ),
       name: nullableStringFlag('name').pipe(
         Flag.optional,
@@ -32,7 +34,7 @@ export const command = Command.make(
       ),
       format: Flag.Literals('format', ['raw', 'discord', 'slack']).pipe(
         Flag.optional,
-        Flag.withDescription('format'),
+        Flag.withDescription('Required. The format of the webhook payload.'),
       ),
       events: Flag.Literals('events', [
         'checkout.created',
@@ -81,13 +83,15 @@ export const command = Command.make(
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.optional,
-          Flag.withDescription('The events that will trigger the webhook.'),
+          Flag.withDescription(
+            'Required. The events that will trigger the webhook.',
+          ),
         ),
       organization_id: nullableStringFlag('organization-id').pipe(
         Flag.withAlias('org'),
         Flag.optional,
         Flag.withDescription(
-          'The organization ID associated with the webhook endpoint. **Required unless you use an organization token.**',
+          'The organization ID associated with the webhook endpoint. Defaults to the active organization.',
         ),
       ),
     },
@@ -103,6 +107,13 @@ export const command = Command.make(
         events: config.input.events,
         organization_id: config.input.organization_id,
       })
+      const missing = missingFlags(body, ['url', 'format', 'events'])
+      if (missing.length > 0) {
+        return yield* new ApiCommandError({
+          message: `Missing required ${missing.length > 1 ? 'flags' : 'flag'} ${missing.join(', ')}`,
+          hint: 'Example: polar webhooks create_webhook_endpoint --url https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0 --format raw --events checkout.created',
+        })
+      }
       yield* api.execute({
         operationId: 'webhooks:create_webhook_endpoint',
         method: 'POST',

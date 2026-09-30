@@ -17,7 +17,9 @@ export const command = Command.make(
         .pipe(
           Flag.withAlias('org'),
           Flag.optional,
-          Flag.withDescription('Filter by organization ID.'),
+          Flag.withDescription(
+            'Filter by organization ID. Defaults to the active organization.',
+          ),
         ),
       query: nullableStringFlag('query').pipe(
         Flag.optional,
@@ -51,7 +53,7 @@ export const command = Command.make(
       metadata: jsonFlag('metadata').pipe(
         Flag.optional,
         Flag.withDescription(
-          'Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.',
+          'Filter by metadata key-value pairs. JSON: {"<key>": string | integer | boolean | array of string | array of integer | array of boolean}',
         ),
       ),
     },

@@ -17,7 +17,9 @@ export const command = Command.make(
         .pipe(
           Flag.withAlias('org'),
           Flag.optional,
-          Flag.withDescription('Filter by organization ID.'),
+          Flag.withDescription(
+            'Filter by organization ID. Defaults to the active organization.',
+          ),
         ),
       benefit_id: Flag.String('benefit-id')
         .pipe(Flag.atLeast(1))

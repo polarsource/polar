@@ -2,8 +2,14 @@
 import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
-import { ApiRuntime } from '../runtime'
-import { data, mergeInput, jsonFlag, nullableStringFlag } from '../inputs'
+import { ApiRuntime, ApiCommandError } from '../runtime'
+import {
+  data,
+  mergeInput,
+  missingFlags,
+  jsonFlag,
+  nullableStringFlag,
+} from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['checkoutLinks']['create']>[0]>
 
@@ -15,7 +21,7 @@ export const command = Command.make(
       metadata: jsonFlag('metadata').pipe(
         Flag.optional,
         Flag.withDescription(
-          'Key-value object allowing you to store additional information.',
+          'Key-value object allowing you to store additional information. JSON: {"<key>": string | integer | number | boolean}',
         ),
       ),
       trial_interval: Flag.Literals('trial-interval', [
@@ -36,7 +42,7 @@ export const command = Command.make(
       payment_processor: Flag.Literals('payment-processor', ['stripe']).pipe(
         Flag.optional,
         Flag.withDescription(
-          'Payment processor to use. Currently only Stripe is supported.',
+          'Required. Payment processor to use. Currently only Stripe is supported.',
         ),
       ),
       label: nullableStringFlag('label').pipe(
@@ -123,6 +129,13 @@ export const command = Command.make(
         product_id: config.input.product_id,
         products: config.input.products,
       })
+      const missing = missingFlags(body, ['payment_processor'])
+      if (missing.length > 0) {
+        return yield* new ApiCommandError({
+          message: `Missing required ${missing.length > 1 ? 'flags' : 'flag'} ${missing.join(', ')}`,
+          hint: 'Example: polar checkout_links create --payment-processor stripe',
+        })
+      }
       yield* api.execute({
         operationId: 'checkout-links:create',
         method: 'POST',

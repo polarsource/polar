@@ -18,7 +18,7 @@ export const command = Command.make(
       metadata: jsonFlag('metadata').pipe(
         Flag.optional,
         Flag.withDescription(
-          'Key-value object allowing you to store additional information.',
+          'Key-value object allowing you to store additional information. JSON: {"<key>": string | integer | number | boolean}',
         ),
       ),
       email: nullableStringFlag('email').pipe(
@@ -33,7 +33,9 @@ export const command = Command.make(
       ),
       billing_address: jsonFlag('billing-address').pipe(
         Flag.optional,
-        Flag.withDescription('billing_address'),
+        Flag.withDescription(
+          'billing_address JSON: {"country": "AD" | "AE" | "AF" | "AG" | "AI" | ..., ...}',
+        ),
       ),
       tax_id: nullableStringFlag('tax-id').pipe(
         Flag.optional,

@@ -24,7 +24,7 @@ export const command = Command.make(
       billing_address: jsonFlag('billing-address').pipe(
         Flag.optional,
         Flag.withDescription(
-          'The address of the customer that should appear on the invoice. Country and state fields cannot be updated.',
+          'The address of the customer that should appear on the invoice. Country and state fields cannot be updated. JSON: {"country": "AD" | "AE" | "AF" | "AG" | "AI" | ..., ...}',
         ),
       ),
     },

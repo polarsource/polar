@@ -49,7 +49,7 @@ export const command = Command.make(
       metadata: jsonFlag('metadata').pipe(
         Flag.optional,
         Flag.withDescription(
-          'Additional metadata for the seat (max 10 keys, 1KB total)',
+          'Additional metadata for the seat (max 10 keys, 1KB total) JSON: {"<key>": any}',
         ),
       ),
       immediate_claim: Flag.Boolean('immediate-claim').pipe(

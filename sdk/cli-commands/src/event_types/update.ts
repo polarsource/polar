@@ -2,8 +2,8 @@
 import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
-import { ApiRuntime } from '../runtime'
-import { data, mergeInput, nullableStringFlag } from '../inputs'
+import { ApiRuntime, ApiCommandError } from '../runtime'
+import { data, mergeInput, missingFlags, nullableStringFlag } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['eventTypes']['update']>[1]>
 
@@ -17,7 +17,7 @@ export const command = Command.make(
     input: {
       label: Flag.String('label').pipe(
         Flag.optional,
-        Flag.withDescription('The label for the event type.'),
+        Flag.withDescription('Required. The label for the event type.'),
       ),
       label_property_selector: nullableStringFlag(
         'label-property-selector',
@@ -36,6 +36,13 @@ export const command = Command.make(
         label: config.input.label,
         label_property_selector: config.input.label_property_selector,
       })
+      const missing = missingFlags(body, ['label'])
+      if (missing.length > 0) {
+        return yield* new ApiCommandError({
+          message: `Missing required ${missing.length > 1 ? 'flags' : 'flag'} ${missing.join(', ')}`,
+          hint: 'Example: polar event_types update <id> --label <label>',
+        })
+      }
       yield* api.execute({
         operationId: 'event-types:update',
         method: 'PATCH',

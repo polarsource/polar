@@ -7,6 +7,7 @@ import {
   confirm,
   data,
   mergeInput,
+  missingFlags,
   jsonFlag,
   nullableStringFlag,
 } from '../inputs'
@@ -22,12 +23,12 @@ export const command = Command.make(
       metadata: jsonFlag('metadata').pipe(
         Flag.optional,
         Flag.withDescription(
-          'Key-value object allowing you to store additional information.',
+          'Key-value object allowing you to store additional information. JSON: {"<key>": string | integer | number | boolean}',
         ),
       ),
       order_id: Flag.String('order-id').pipe(
         Flag.optional,
-        Flag.withDescription('order_id'),
+        Flag.withDescription('Required. order_id'),
       ),
       reason: Flag.Literals('reason', [
         'duplicate',
@@ -36,10 +37,15 @@ export const command = Command.make(
         'service_disruption',
         'satisfaction_guarantee',
         'other',
-      ]).pipe(Flag.optional, Flag.withDescription('Reason for the refund.')),
+      ]).pipe(
+        Flag.optional,
+        Flag.withDescription('Required. Reason for the refund.'),
+      ),
       amount: Flag.Int('amount').pipe(
         Flag.optional,
-        Flag.withDescription('Amount to refund in cents. Minimum is 1.'),
+        Flag.withDescription(
+          'Required. Amount to refund in cents. Minimum is 1.',
+        ),
       ),
       comment: nullableStringFlag('comment').pipe(
         Flag.optional,
@@ -64,6 +70,13 @@ export const command = Command.make(
         comment: config.input.comment,
         revoke_benefits: config.input.revoke_benefits,
       })
+      const missing = missingFlags(body, ['order_id', 'reason', 'amount'])
+      if (missing.length > 0) {
+        return yield* new ApiCommandError({
+          message: `Missing required ${missing.length > 1 ? 'flags' : 'flag'} ${missing.join(', ')}`,
+          hint: 'Example: polar refunds create --order-id <order-id> --reason duplicate --amount <amount>',
+        })
+      }
       const confirmationInput = yield* Schema.decodeUnknownEffect(
         Schema.Struct({
           revoke_benefits: Schema.optionalKey(Schema.Boolean),

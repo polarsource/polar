@@ -18,7 +18,7 @@ export const command = Command.make(
       metadata: jsonFlag('metadata').pipe(
         Flag.optional,
         Flag.withDescription(
-          'Key-value object allowing you to store additional information.',
+          'Key-value object allowing you to store additional information. JSON: {"<key>": string | integer | number | boolean}',
         ),
       ),
       name: nullableStringFlag('name').pipe(
@@ -204,7 +204,7 @@ export const command = Command.make(
       ]).pipe(Flag.optional, Flag.withDescription('currency')),
       amounts: jsonFlag('amounts').pipe(
         Flag.optional,
-        Flag.withDescription('amounts'),
+        Flag.withDescription('amounts JSON: {"<key>": integer}'),
       ),
       basis_points: Flag.Int('basis-points').pipe(
         Flag.optional,

@@ -2,8 +2,8 @@
 import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
-import { ApiRuntime, executeRequest } from '../runtime'
-import { data, mergeInput } from '../inputs'
+import { ApiRuntime, ApiCommandError, executeRequest } from '../runtime'
+import { data, mergeInput, missingFlags } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['customerSeats']['claimSeat']>[0]>
 
@@ -18,7 +18,7 @@ export const command = Command.make(
     input: {
       invitation_token: Flag.String('invitation-token').pipe(
         Flag.optional,
-        Flag.withDescription('Invitation token to claim the seat'),
+        Flag.withDescription('Required. Invitation token to claim the seat'),
       ),
     },
   },
@@ -28,6 +28,13 @@ export const command = Command.make(
       const body = mergeInput<Body>(config.data, {
         invitation_token: config.input.invitation_token,
       })
+      const missing = missingFlags(body, ['invitation_token'])
+      if (missing.length > 0) {
+        return yield* new ApiCommandError({
+          message: `Missing required ${missing.length > 1 ? 'flags' : 'flag'} ${missing.join(', ')}`,
+          hint: 'Example: polar customer_seats claim_seat --invitation-token <invitation-token>',
+        })
+      }
       yield* api.execute({
         operationId: 'customer-seats:claim_seat',
         method: 'POST',

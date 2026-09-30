@@ -9,6 +9,7 @@ import {
   LOGO_MARK_ARC_STROKES,
   LOGO_MARK_HUB,
   LOGO_MARK_RAYS_PATH,
+  LOGO_MARK_VIEWBOX,
   LOGO_TYPE_VIEWBOX,
   LOGO_WORDMARK_PATH,
 } from './paths'
@@ -44,12 +45,19 @@ const wordmark: Variants = {
   },
 }
 
+// 'mark' hugs the artwork edge to edge, 'icon' has the same padding as LogoIcon.
+const VIEWBOXES = {
+  mark: LOGO_MARK_VIEWBOX,
+  icon: LOGO_ICON_VIEWBOX,
+  logotype: LOGO_TYPE_VIEWBOX,
+}
+
 const LogoReveal = ({
   variant = 'logotype',
   size,
   className,
 }: {
-  variant?: 'icon' | 'logotype'
+  variant?: 'mark' | 'icon' | 'logotype'
   size?: number
   className?: string
 }) => {
@@ -59,8 +67,8 @@ const LogoReveal = ({
   return (
     <motion.svg
       width={size}
-      height={variant === 'icon' ? size : undefined}
-      viewBox={variant === 'icon' ? LOGO_ICON_VIEWBOX : LOGO_TYPE_VIEWBOX}
+      height={variant === 'logotype' ? undefined : size}
+      viewBox={VIEWBOXES[variant]}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}

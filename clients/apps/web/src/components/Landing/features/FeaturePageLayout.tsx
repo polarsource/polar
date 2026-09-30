@@ -1,7 +1,6 @@
 import GetStartedButton from '@/components/Auth/GetStartedButton'
 import { Button, Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import Link from 'next/link'
 import { ComponentType, PropsWithChildren } from 'react'
 import { FeatureChapter, HairlineRow, SectionTitle } from './FeatureChapter'
 
@@ -45,11 +44,11 @@ export const FeaturePageHeader = ({
         <Box alignItems="center" columnGap="m">
           <GetStartedButton size="lg" text="Get Started" />
           {docsHref ? (
-            <Link href={docsHref}>
+            <a href={docsHref}>
               <Button size="lg" variant="secondary">
                 Documentation
               </Button>
-            </Link>
+            </a>
           ) : null}
         </Box>
       </Box>

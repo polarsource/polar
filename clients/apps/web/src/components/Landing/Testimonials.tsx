@@ -196,7 +196,10 @@ export const Testimonials = () => {
                 type="button"
                 aria-pressed={index === active}
                 aria-label={`${person.name}, ${person.company}`}
-                onClick={() => setActive(index)}
+                onClick={(event) => {
+                  setActive(index)
+                  event.currentTarget.blur()
+                }}
               >
                 <Box
                   flexDirection="column"

@@ -38,6 +38,7 @@ export function PolarPostHogProvider({
 
 const FORCED_DARK_PREFIXES = [
   '/features',
+  '/integrate',
   '/customers',
   '/blog',
   '/resources',

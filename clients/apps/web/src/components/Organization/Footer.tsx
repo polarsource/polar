@@ -86,6 +86,7 @@ const Footer = () => {
           </FooterSection>
 
           <FooterSection title="Resources">
+            <FooterLink href="/integrate">Integrate</FooterLink>
             <FooterLink href="/resources/why">Why Polar</FooterLink>
             <FooterLink href="/resources/merchant-of-record">
               Merchant of Record

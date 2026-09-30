@@ -148,7 +148,7 @@ jobs:
           RELEASE_VERSION: ${{ needs.detect-release.outputs.version }}
         run: |
           delay=5
-          for attempt in $(seq 1 8); do
+          for attempt in $(seq 1 5); do
             if npm view "@polar-sh/sdk@$RELEASE_VERSION" version >/dev/null 2>&1; then
               echo "@polar-sh/sdk@$RELEASE_VERSION is available on npm"
               exit 0

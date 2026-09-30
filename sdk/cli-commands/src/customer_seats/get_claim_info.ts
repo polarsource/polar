@@ -2,6 +2,7 @@
 import { Effect } from 'effect'
 import { Argument, Command, Flag } from 'effect/cli'
 import { ApiRuntime, executeRequest } from '../runtime'
+import { fields } from '../inputs'
 
 export const command = Command.make(
   'get_claim_info',
@@ -10,6 +11,7 @@ export const command = Command.make(
       Flag.withDefault('production'),
       Flag.withDescription('Environment for this unauthenticated request'),
     ),
+    fields,
     path: {
       invitation_token: Argument.String('invitation_token'),
     },
@@ -24,6 +26,7 @@ export const command = Command.make(
         confirm: false,
         requiresAuthentication: false,
         environment: config.environment,
+        fields: config.fields,
         invoke: (_client, core) =>
           executeRequest(
             core,

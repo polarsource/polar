@@ -670,3 +670,43 @@ def test_only_absent_required_fields_count_as_missing(
 ) -> None:
     _emit(create_spec, tmp_path)
     assert "[key] === undefined" in (tmp_path / "src/inputs.ts").read_text()
+
+
+def test_json_commands_take_fields(cli_spec: dict, tmp_path: pathlib.Path) -> None:
+    _emit(cli_spec, tmp_path)
+    assert "fields: config.fields," in (tmp_path / "src/widgets/get.ts").read_text()
+    assert "config.fields" not in (tmp_path / "src/widgets/delete.ts").read_text()
+
+
+def test_commands_that_can_answer_pending_do_not_take_fields(
+    cli_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    cli_spec["paths"]["/widgets/{id}"]["get"]["responses"]["202"] = {
+        "description": "Widget is being prepared."
+    }
+    _emit(cli_spec, tmp_path)
+    get = (tmp_path / "src/widgets/get.ts").read_text()
+    assert "pendingResponse:" in get
+    assert "config.fields" not in get
+
+
+def test_inputs_cannot_shadow_the_fields_flag(
+    cli_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    cli_spec["paths"]["/widgets/{id}"]["get"]["parameters"] = [
+        {"name": "fields", "in": "query", "schema": {"type": "string"}}
+    ]
+    with pytest.raises(ValueError, match="collides with the CLI's own --fields"):
+        _emit(cli_spec, tmp_path)
+
+
+def test_inputs_named_fields_are_fine_without_the_fields_flag(
+    cli_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    cli_spec["components"]["schemas"]["WidgetUpdate"]["properties"]["fields"] = {
+        "type": "string"
+    }
+    _emit(cli_spec, tmp_path)
+    update = (tmp_path / "src/widgets/update.ts").read_text()
+    assert "fields: config.input.fields," in update
+    assert "fields: config.fields," not in update

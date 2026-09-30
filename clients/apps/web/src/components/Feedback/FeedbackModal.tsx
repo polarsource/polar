@@ -25,6 +25,7 @@ export const FeedbackModal = ({
     schemas['FeedbackType'] | null
   >(null)
   const [pendingQuestion, setPendingQuestion] = useState<string | null>(null)
+  const [escalationFailed, setEscalationFailed] = useState(false)
   const [conversationId, setConversationId] = useState<string>(
     generateConversationId,
   )
@@ -35,6 +36,7 @@ export const FeedbackModal = ({
     hide()
     setSubmittedType(null)
     setPendingQuestion(null)
+    setEscalationFailed(false)
     // Reset so the next time the modal opens, it starts a new conversation
     // trace.
     setConversationId(generateConversationId())
@@ -45,13 +47,17 @@ export const FeedbackModal = ({
     message: string,
     type: schemas['FeedbackType'],
   ) => {
+    setEscalationFailed(false)
     const { error } = await submitFeedback.mutateAsync({
       type,
       message,
       organization_id: organization.id,
       client_context: collectClientContext(),
     })
-    if (error) return
+    if (error) {
+      setEscalationFailed(true)
+      return
+    }
     setPendingQuestion(null)
     setSubmittedType(type)
   }
@@ -73,6 +79,7 @@ export const FeedbackModal = ({
           onEscalate={handleEscalate}
           onCancel={handleHide}
           isEscalating={submitFeedback.isPending}
+          escalationFailed={escalationFailed}
         />
       )
     }

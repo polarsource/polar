@@ -16,13 +16,6 @@ import type { ReactNode } from 'react'
 
 type Notification = schemas['NotificationsList']['notifications'][number]
 
-const CADENCE: Record<string, string> = {
-  day: 'daily',
-  week: 'weekly',
-  month: 'monthly',
-  year: 'yearly',
-}
-
 const Row = ({
   icon,
   avatar,
@@ -113,10 +106,6 @@ export const NotificationRow = ({
   switch (n.type) {
     case 'MaintainerNewPaidSubscriptionNotification': {
       const p = n.payload
-      const price =
-        p.tier_price_amount === null
-          ? ''
-          : `${formatCurrency('compact')(p.tier_price_amount, p.currency)} `
       return (
         <Row
           date={n.created_at}
@@ -129,8 +118,12 @@ export const NotificationRow = ({
           }
           avatar={p.subscriber_name}
           title={`${p.subscriber_name} subscribed`}
-          subtitle={`${p.tier_name}, ${price}${CADENCE[p.tier_price_recurring_interval]}`}
-          href={`/dashboard/${p.tier_organization_slug}/sales/subscriptions/${p.subscription_id}`}
+          subtitle={`${p.tier_name}, ${p.formatted_price_with_interval}`}
+          href={
+            p.tier_organization_slug && p.subscription_id
+              ? `/dashboard/${p.tier_organization_slug}/sales/subscriptions/${p.subscription_id}`
+              : null
+          }
         />
       )
     }
@@ -152,12 +145,17 @@ export const NotificationRow = ({
           avatar={p.subscriber_name}
           title={`${p.subscriber_name} started a trial`}
           subtitle={`${p.product_name}${ends}`}
-          href={`/dashboard/${p.organization_slug}/sales/subscriptions/${p.subscription_id}`}
+          href={
+            p.organization_slug && p.subscription_id
+              ? `/dashboard/${p.organization_slug}/sales/subscriptions/${p.subscription_id}`
+              : null
+          }
         />
       )
     }
     case 'MaintainerNewProductSaleNotification': {
       const p = n.payload
+      const customer = p.customer_name || 'A customer'
       return (
         <Row
           date={n.created_at}
@@ -168,15 +166,20 @@ export const NotificationRow = ({
               sx={{ fontSize: 16 }}
             />
           }
-          avatar={p.customer_name}
-          title={`${p.customer_name} purchased`}
+          avatar={customer}
+          title={`${customer} purchased`}
           subtitle={`${p.product_name}, ${formatCurrency('compact')(p.product_price_amount, p.currency)}`}
-          href={`/dashboard/${p.organization_slug}/sales/${p.order_id}`}
+          href={
+            p.organization_slug && p.order_id
+              ? `/dashboard/${p.organization_slug}/sales/${p.order_id}`
+              : null
+          }
         />
       )
     }
     case 'MaintainerSubscriptionRenewalNotification': {
       const p = n.payload
+      const customer = p.customer_name || 'A customer'
       return (
         <Row
           date={n.created_at}
@@ -187,10 +190,14 @@ export const NotificationRow = ({
               sx={{ fontSize: 16 }}
             />
           }
-          avatar={p.customer_name}
-          title={`${p.customer_name} renewed`}
-          subtitle={`${p.product_name}, ${formatCurrency('compact')(p.product_price_amount, p.currency)} ${CADENCE[p.recurring_interval]}`}
-          href={`/dashboard/${p.organization_slug}/sales/subscriptions/${p.subscription_id}`}
+          avatar={customer}
+          title={`${customer} renewed`}
+          subtitle={`${p.product_name}, ${formatCurrency('compact')(p.product_price_amount, p.currency)} ${p.formatted_recurring_interval}`}
+          href={
+            p.organization_slug && p.subscription_id
+              ? `/dashboard/${p.organization_slug}/sales/subscriptions/${p.subscription_id}`
+              : null
+          }
         />
       )
     }

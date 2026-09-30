@@ -1,0 +1,84 @@
+sdk/cli-commands/src/custom_fields/create.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 67
+sdk/cli-commands/src/checkout_links/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 67
+sdk/cli-commands/src/discounts/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 70
+sdk/cli-commands/src/meters/create.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 80
+sdk/cli-commands/src/customers/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 85
+sdk/cli-commands/src/custom_fields/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 81
+sdk/cli-commands/src/metrics/get.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 688
+sdk/generator/cli_commands/emitter.py
+  s_ee8d2f8014dc5b::t_f6e5e27a0eb186 207
+  s_c0a2c247c2e537::t_1f6a39fb23ca54 37,42,47,51,60,63,81,99,112-113,116,122,127,130,147,149,151,157,167,178,198,201,204,208,230,236-237,262,265,269,271,273,278,281,291,297,300,305,312,319,323,330
+sdk/cli-commands/src/files/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 49
+sdk/generator/tests/test_cli_commands.py
+  s_ee8d2f8014dc5b::t_0b8a34e10bbf5b 117,336,348,387
+sdk/cli-commands/src/events/list_names.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 83
+sdk/cli-commands/src/discounts/create.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 251
+sdk/cli-commands/src/customer_meters/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 88
+sdk/cli-commands/src/license_keys/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 56
+sdk/cli-commands/src/products/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 102
+sdk/cli-commands/src/benefit_grants/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 79
+sdk/cli-commands/src/webhooks/create_webhook_endpoint.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 110
+sdk/cli-commands/src/orders/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 143
+sdk/cli-commands/src/event_types/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 98
+sdk/cli-commands/src/subscriptions/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 174
+sdk/cli-commands/src/customers/create.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 88
+sdk/cli-commands/src/meters/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 76
+sdk/cli-commands/src/benefits/create.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 76
+sdk/cli-commands/src/benefits/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 99
+sdk/cli-commands/src/payments/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 87
+sdk/cli-commands/src/webhooks/list_webhook_endpoints.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 47
+sdk/cli-commands/src/checkouts/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 94
+sdk/cli-commands/src/products/create.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 132
+sdk/cli-commands/src/refunds/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 90
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "982655a49c3a482b69b3e9f5191cd9a8bb630991",
+  "prompts": {},
+  "sessions": {
+    "s_c0a2c247c2e537": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "db949023-236a-4dff-9904-9eb6b5c6dc19",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    },
+    "s_ee8d2f8014dc5b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "77dfbcd2-7058-405a-96d6-f943a10eee92",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

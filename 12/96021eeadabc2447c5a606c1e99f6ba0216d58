@@ -1,0 +1,88 @@
+sdk/cli-commands/src/events/list_names.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 82
+sdk/cli-commands/src/checkouts/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 93
+sdk/cli-commands/src/benefits/create.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 75
+sdk/cli-commands/src/metrics/get.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 687
+sdk/cli-commands/src/custom_fields/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 80
+clients/packages/cli/src/commands/api-commands.test.ts
+  s_ee8d2f8014dc5b::t_987185d0876c6f 124,146,159
+sdk/cli-commands/src/orders/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 142
+sdk/cli-commands/src/refunds/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 89
+sdk/cli-commands/src/webhooks/create_webhook_endpoint.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 109
+sdk/generator/cli_commands/emitter.py
+  s_ee8d2f8014dc5b::t_f6e5e27a0eb186 186
+  s_c0a2c247c2e537::t_1f6a39fb23ca54 36,41,46,50,59,62,80,98,109-110,113,119,124,127,142,144,146,152,162,173,177,180,183,187,206,212-213,224,227,231,233,235,240,243,253,259,262,267,274,281,285,292
+sdk/cli-commands/src/meters/create.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 79
+sdk/cli-commands/src/subscriptions/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 173
+sdk/cli-commands/src/files/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 48
+sdk/cli-commands/src/meters/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 75
+sdk/cli-commands/src/discounts/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 69
+sdk/cli-commands/src/checkout_links/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 66
+sdk/cli-commands/src/customers/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 84
+clients/packages/cli/src/services/polar.test.ts
+  s_ee8d2f8014dc5b::t_b87410b3ff0a1a 137
+sdk/cli-commands/src/event_types/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 97
+sdk/cli-commands/src/webhooks/list_webhook_endpoints.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 46
+sdk/cli-commands/src/payments/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 86
+sdk/cli-commands/src/benefits/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 98
+sdk/cli-commands/src/discounts/create.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 250
+sdk/cli-commands/src/license_keys/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 55
+sdk/generator/tests/test_cli_commands.py
+  s_ee8d2f8014dc5b::t_0b8a34e10bbf5b 110,226,238,277
+sdk/cli-commands/src/benefit_grants/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 78
+sdk/cli-commands/src/customers/create.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 87
+sdk/cli-commands/src/customer_meters/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 87
+sdk/cli-commands/src/custom_fields/create.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 66
+sdk/cli-commands/src/products/create.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 131
+sdk/cli-commands/src/products/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 101
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "1296021eeadabc2447c5a606c1e99f6ba0216d58",
+  "prompts": {},
+  "sessions": {
+    "s_c0a2c247c2e537": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "db949023-236a-4dff-9904-9eb6b5c6dc19",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    },
+    "s_ee8d2f8014dc5b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "77dfbcd2-7058-405a-96d6-f943a10eee92",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

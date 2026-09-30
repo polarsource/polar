@@ -4,7 +4,7 @@
 
 **API resources.** Manage your Polar data straight from the terminal: `polar customers`, `products`, `orders`, `subscriptions`, `checkouts`, `discounts`, `benefits`, `meters`, `webhooks` and more.
 
-**`polar trigger`.** Send test webhook events to your app without creating anything real. Run `polar trigger --list` to see what's available.
+**`polar trigger`.** Send test webhook events to your app.
 
 **`polar listen`.** Forward webhooks to a port (`polar listen 3000`) or a URL and see how your server responded to each event.
 

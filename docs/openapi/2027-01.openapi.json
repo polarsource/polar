@@ -58637,6 +58637,54 @@
               }
             ],
             "title": "Expires At"
+          },
+          "subscription_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Id",
+            "description": "The ID of the subscription granting the license key."
+          },
+          "subscription": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LicenseKeySubscription"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The subscription granting the license key, if any."
+          },
+          "order_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id",
+            "description": "The ID of the one-time order granting the license key."
+          },
+          "order": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LicenseKeyOrder"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The one-time order granting the license key, if any."
           }
         },
         "type": "object",
@@ -58647,6 +58695,8 @@
           "organization_id",
           "customer_id",
           "customer",
+          "member_id",
+          "member",
           "benefit_id",
           "key",
           "display_key",
@@ -58656,7 +58706,11 @@
           "limit_usage",
           "validations",
           "last_validated_at",
-          "expires_at"
+          "expires_at",
+          "subscription_id",
+          "subscription",
+          "order_id",
+          "order"
         ],
         "title": "GrantedLicenseKey"
       },
@@ -59950,6 +60004,47 @@
         ],
         "title": "LicenseKeyMember"
       },
+      "LicenseKeyOrder": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object.",
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus",
+            "examples": [
+              "paid"
+            ]
+          },
+          "paid": {
+            "type": "boolean",
+            "title": "Paid",
+            "description": "Whether the order has been paid for.",
+            "examples": [
+              true
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "status",
+          "paid"
+        ],
+        "title": "LicenseKeyOrder"
+      },
       "LicenseKeyRead": {
         "properties": {
           "id": {
@@ -60106,6 +60201,8 @@
           "organization_id",
           "customer_id",
           "customer",
+          "member_id",
+          "member",
           "benefit_id",
           "key",
           "display_key",
@@ -60127,6 +60224,72 @@
           "disabled"
         ],
         "title": "LicenseKeyStatus"
+      },
+      "LicenseKeySubscription": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "status": {
+            "$ref": "#/components/schemas/SubscriptionStatus",
+            "description": "The status of the subscription.",
+            "examples": [
+              "active"
+            ]
+          },
+          "current_period_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Current Period Start",
+            "description": "The start timestamp of the current billing period.",
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
+          },
+          "current_period_end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Current Period End",
+            "description": "The end timestamp of the current billing period.",
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
+          },
+          "cancel_at_period_end": {
+            "type": "boolean",
+            "title": "Cancel At Period End",
+            "description": "Whether the subscription will be canceled at the end of the current period."
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At",
+            "description": "The timestamp when the subscription will end."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "current_period_start",
+          "current_period_end",
+          "cancel_at_period_end",
+          "ends_at"
+        ],
+        "title": "LicenseKeySubscription"
       },
       "LicenseKeyUpdate": {
         "properties": {
@@ -60494,6 +60657,8 @@
           "organization_id",
           "customer_id",
           "customer",
+          "member_id",
+          "member",
           "benefit_id",
           "key",
           "display_key",
@@ -69851,6 +70016,10 @@
             "type": "boolean",
             "title": "New Subscription"
           },
+          "new_trial": {
+            "type": "boolean",
+            "title": "New Trial"
+          },
           "chargeback_prevention": {
             "type": "boolean",
             "title": "Chargeback Prevention"
@@ -69858,6 +70027,10 @@
           "subscription_renewal": {
             "type": "boolean",
             "title": "Subscription Renewal"
+          },
+          "exclude_free_products": {
+            "type": "boolean",
+            "title": "Exclude Free Products"
           }
         },
         "type": "object",
@@ -74474,6 +74647,8 @@
           "organization_id",
           "customer_id",
           "customer",
+          "member_id",
+          "member",
           "benefit_id",
           "key",
           "display_key",
@@ -80676,6 +80851,54 @@
             ],
             "title": "Expires At"
           },
+          "subscription_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Id",
+            "description": "The ID of the subscription granting the license key."
+          },
+          "subscription": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LicenseKeySubscription"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The subscription granting the license key, if any."
+          },
+          "order_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id",
+            "description": "The ID of the one-time order granting the license key."
+          },
+          "order": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LicenseKeyOrder"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The one-time order granting the license key, if any."
+          },
           "activation": {
             "anyOf": [
               {
@@ -80695,6 +80918,8 @@
           "organization_id",
           "customer_id",
           "customer",
+          "member_id",
+          "member",
           "benefit_id",
           "key",
           "display_key",
@@ -80704,7 +80929,11 @@
           "limit_usage",
           "validations",
           "last_validated_at",
-          "expires_at"
+          "expires_at",
+          "subscription_id",
+          "subscription",
+          "order_id",
+          "order"
         ],
         "title": "ValidatedLicenseKey"
       },

@@ -33,10 +33,14 @@ const arc: Variants = {
 }
 
 const wordmark: Variants = {
-  hidden: { opacity: 0 },
+  hidden: { opacity: 0, x: -40 },
   visible: {
     opacity: 1,
-    transition: { duration: 0.85, delay: 0.45, ease: EASE_FADE },
+    x: 0,
+    transition: {
+      x: { duration: 1.1, delay: 0.2, ease: LOGO_REVEAL_EASE },
+      opacity: { duration: 0.65, delay: 0.45, ease: EASE_FADE },
+    },
   },
 }
 

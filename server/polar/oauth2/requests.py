@@ -25,17 +25,11 @@ class RequestPathParamsMixin:
 class StarletteOAuth2Payload(OAuth2Payload):
     def __init__(self, request: Request) -> None:
         # Merge query parameters and form data into a single dictionary
-        datalist = defaultdict(list)
-        sources: list[ImmutableMultiDict[str, str | UploadFile]] = [
-            request.query_params
-        ]
-        if request._form is not None:
-            sources.append(request._form)
-        for source in sources:
-            for key, value in source.multi_items():
-                if not isinstance(value, UploadFile):
-                    datalist[key].append(value)
-        self._datalist: dict[str, list[str]] = dict(datalist)
+        self._form_datalist = self._to_datalist(request._form)
+        datalist = self._to_datalist(request.query_params)
+        for key, values in self._form_datalist.items():
+            datalist.setdefault(key, []).extend(values)
+        self._datalist: dict[str, list[str]] = datalist
         self._data = {k: v[0] for k, v in self._datalist.items()}
 
     @property
@@ -45,6 +39,21 @@ class StarletteOAuth2Payload(OAuth2Payload):
     @property
     def datalist(self) -> dict[str, list[str]]:
         return self._datalist
+
+    @property
+    def form_datalist(self) -> dict[str, list[str]]:
+        return self._form_datalist
+
+    @staticmethod
+    def _to_datalist(
+        source: ImmutableMultiDict[str, str | UploadFile] | None,
+    ) -> dict[str, list[str]]:
+        datalist: dict[str, list[str]] = defaultdict(list)
+        if source is not None:
+            for key, value in source.multi_items():
+                if not isinstance(value, UploadFile):
+                    datalist[key].append(value)
+        return dict(datalist)
 
 
 class StarletteOAuth2Request(RequestPathParamsMixin, OAuth2Request):

@@ -169,7 +169,8 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
 
         try:
             selected = {
-                uuid.UUID(value) for value in payload.datalist.get("organizations", [])
+                uuid.UUID(value)
+                for value in payload.form_datalist.get("organizations", [])
             }
         except ValueError as e:
             raise InvalidRequestError("Invalid 'organizations' UUID") from e

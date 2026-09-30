@@ -878,10 +878,11 @@ class TestOAuth2Consent:
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
             "scope": "openid profile email",
             "sub_type": "user",
-            "organizations": str(organization.id),
         }
         response = await client.post(
-            "/v1/oauth2/consent", params=params, data={"action": "allow"}
+            "/v1/oauth2/consent",
+            params=params,
+            data={"action": "allow", "organizations": str(organization.id)},
         )
 
         assert response.status_code == 302
@@ -924,10 +925,14 @@ class TestOAuth2Consent:
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
             "scope": "openid profile email",
             "sub_type": "user",
-            "organizations": [str(organization.id), str(organization.id)],
         }
         response = await client.post(
-            "/v1/oauth2/consent", params=params, data={"action": "allow"}
+            "/v1/oauth2/consent",
+            params=params,
+            data={
+                "action": "allow",
+                "organizations": [str(organization.id), str(organization.id)],
+            },
         )
 
         assert response.status_code == 302
@@ -972,10 +977,11 @@ class TestOAuth2Consent:
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
             "scope": "openid profile email",
             "sub_type": "organization",
-            "organizations": str(organization.id),
         }
         response = await client.post(
-            "/v1/oauth2/consent", params=params, data={"action": "allow"}
+            "/v1/oauth2/consent",
+            params=params,
+            data={"action": "allow", "organizations": str(organization.id)},
         )
 
         assert response.status_code == 302
@@ -1020,10 +1026,14 @@ class TestOAuth2Consent:
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
             "scope": "openid profile email",
             "sub_type": "organization",
-            "organizations": [str(organization.id), str(organization_second.id)],
         }
         response = await client.post(
-            "/v1/oauth2/consent", params=params, data={"action": "allow"}
+            "/v1/oauth2/consent",
+            params=params,
+            data={
+                "action": "allow",
+                "organizations": [str(organization.id), str(organization_second.id)],
+            },
         )
 
         assert response.status_code == 302
@@ -1179,10 +1189,11 @@ class TestOAuth2Consent:
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
             "scope": "openid profile email",
             "sub_type": "user",
-            "organizations": str(organization.id),
         }
         response = await client.post(
-            "/v1/oauth2/consent", params=params, data={"action": "allow"}
+            "/v1/oauth2/consent",
+            params=params,
+            data={"action": "allow", "organizations": str(organization.id)},
         )
 
         assert response.status_code == 400

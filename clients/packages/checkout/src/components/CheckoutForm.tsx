@@ -30,7 +30,7 @@ import {
   loadStripe,
   Stripe,
   StripeElements,
-  StripeElementsOptions,
+  StripeElementsOptionsMode,
   StripePaymentElementChangeEvent,
 } from '@stripe/stripe-js'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -843,7 +843,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     [checkout.payment_method_type, update],
   )
 
-  const elementsOptions = useMemo<StripeElementsOptions>(() => {
+  const elementsOptions = useMemo<StripeElementsOptionsMode>(() => {
     if (
       checkout.is_payment_setup_required &&
       checkout.is_payment_required &&
@@ -878,6 +878,10 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       stripe={stripePromise}
       options={{
         ...elementsOptions,
+        excludedPaymentMethodTypes:
+          elementsOptions.mode === 'payment'
+            ? undefined
+            : ['bancontact', 'ideal', 'sepa_debit', 'sofort'],
         locale: locale ? convertLocaleToStripeElementLocale(locale) : undefined,
         customerSessionClientSecret: (
           checkout.payment_processor_metadata as {

@@ -1,7 +1,7 @@
 import json
 import uuid
 from collections.abc import AsyncGenerator, AsyncIterator, Sequence
-from typing import TYPE_CHECKING, Any, Literal, Unpack, cast, overload
+from typing import TYPE_CHECKING, Any, Final, Literal, Unpack, cast, overload
 from urllib.parse import urlencode
 
 import stripe as stripe_lib
@@ -46,6 +46,7 @@ if TYPE_CHECKING:
 #: ``polar.order.service``) and the consumer in ``polar.integrations.stripe.payment``
 #: must agree on this string.
 STRIPE_METADATA_PAYMENT_TRIGGER = "payment_trigger"
+SEPA_PAYMENT_METHOD_TYPES: Final = ("bancontact", "ideal", "sepa_debit", "sofort")
 
 
 stripe_lib.api_key = settings.STRIPE_SECRET_KEY
@@ -378,6 +379,11 @@ class StripeService:
     async def create_payment_intent(
         self, **params: Unpack[PaymentIntentCreateParams]
     ) -> stripe_lib.PaymentIntent:
+        if params.get("setup_future_usage") == "off_session":
+            params["excluded_payment_method_types"] = [
+                *params.get("excluded_payment_method_types", []),
+                *SEPA_PAYMENT_METHOD_TYPES,
+            ]
         log.info(
             "stripe.payment_intent.create",
             amount=params.get("amount"),
@@ -396,6 +402,10 @@ class StripeService:
     async def create_setup_intent(
         self, **params: Unpack[SetupIntentCreateParams]
     ) -> stripe_lib.SetupIntent:
+        params["excluded_payment_method_types"] = [
+            *params.get("excluded_payment_method_types", []),
+            *SEPA_PAYMENT_METHOD_TYPES,
+        ]
         log.info(
             "stripe.setup_intent.create",
             customer=params.get("customer"),

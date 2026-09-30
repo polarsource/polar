@@ -133,6 +133,12 @@ export const OrderPaymentRetryModal = ({
                     amount: order.due_amount,
                     currency: order.currency,
                     setupFutureUsage: 'off_session',
+                    excludedPaymentMethodTypes: [
+                      'bancontact',
+                      'ideal',
+                      'sepa_debit',
+                      'sofort',
+                    ],
                     paymentMethodCreation: 'manual',
                     appearance: themingPreset.stripe,
                   }}

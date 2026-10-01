@@ -20,7 +20,6 @@ from .schemas import (
     WebsiteData,
 )
 from .strict_category import (
-    STRICT_SELLING_CATEGORIES,
     is_personal_email,
     is_strict_category,
 )
@@ -962,12 +961,12 @@ class ReviewAnalyzer:
         else:
             parts.append("No webhook endpoints configured.")
 
-        if is_strict_category(org.selling_categories):
+        if org.strict_review_category or is_strict_category(org.selling_categories):
             parts.append("\n## Strict Review Category")
             parts.append(
-                "The merchant declared a strict review category "
-                f"({', '.join(sorted(STRICT_SELLING_CATEGORIES & set(org.selling_categories)))}). "
-                "Apply the strict category requirements."
+                "This organization is in the strict review category (AI image "
+                "or video generation), whether or not it is still declared in "
+                "the selling categories. Apply the strict category requirements."
             )
             parts.append(
                 "Support email on a personal provider: "

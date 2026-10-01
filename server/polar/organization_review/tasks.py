@@ -44,6 +44,7 @@ from .schemas import (
     ReviewContext,
     ReviewVerdict,
 )
+from .strict_category import classify_strict_category
 
 log = structlog.get_logger(__name__)
 
@@ -126,6 +127,41 @@ async def _persist_agent_result(
         reviewed_at=datetime.now(UTC),
     )
     return agent_review.id
+
+
+@actor(
+    actor_name="organization_review.classify_review_category",
+    priority=TaskPriority.LOW,
+    max_retries=2,
+)
+async def classify_review_category(
+    organization_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
+    """Classify the organization's product for the strict review category.
+
+    Runs whenever the product description or selling categories change, so
+    the strict requirements apply to what the merchant actually sells, not
+    only to the category they chose to declare.
+    """
+    if settings.ENV == Environment.sandbox:
+        return
+
+    async with AsyncSessionMaker() as session:
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.get_by_id(organization_id, include_blocked=True)
+        if organization is None:
+            return
+
+        details = organization.details
+        classification = await classify_strict_category(
+            details.get("product_description"), details.get("selling_categories")
+        )
+        if classification.strict_category:
+            await organization_service.escalate_review_category(
+                session,
+                organization,
+                reason=f"AI classification: {classification.reason}",
+            )
 
 
 @actor(
@@ -224,6 +260,12 @@ async def run_review_agent(
         agent_review_id = await _persist_agent_result(
             session, organization, review_context, result
         )
+        if report.strict_category:
+            await organization_service.escalate_review_category(
+                session,
+                organization,
+                reason=f"Flagged by the AI review ({review_context.value})",
+            )
         review_repository = OrganizationReviewRepository.from_session(session)
 
         # For THRESHOLD context with auto-approve eligibility:

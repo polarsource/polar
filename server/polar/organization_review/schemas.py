@@ -239,6 +239,7 @@ class OrganizationData(Schema):
     product_description: str | None = None
     selling_categories: list[str] = Field(default_factory=list)
     pricing_models: list[str] = Field(default_factory=list)
+    strict_review_category: bool = False
     switching_from: str | None = None
     previous_annual_revenue: int | None = None
     socials: list[dict[str, str]] = Field(default_factory=list)

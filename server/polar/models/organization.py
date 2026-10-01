@@ -242,6 +242,18 @@ OrganizationLegalEntity = (
 )
 
 
+class OrganizationReviewCategory(StrEnum):
+    """How strictly the organization is reviewed.
+
+    Owned by Polar, not the merchant: it only escalates to ``strict``
+    automatically (declared selling category, AI classification or the
+    review agent), and only staff can bring it back to ``standard``.
+    """
+
+    STANDARD = "standard"
+    STRICT = "strict"
+
+
 class OrganizationStatus(StrEnum):
     CREATED = "created"
     REVIEW = "review"
@@ -615,6 +627,13 @@ class Organization(RateLimitGroupMixin, RecordModel):
     )
     initially_reviewed_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
+    )
+
+    review_category: Mapped[OrganizationReviewCategory] = mapped_column(
+        StringEnum(OrganizationReviewCategory),
+        nullable=False,
+        default=OrganizationReviewCategory.STANDARD,
+        server_default=OrganizationReviewCategory.STANDARD,
     )
 
     snooze_count: Mapped[int] = mapped_column(

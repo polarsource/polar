@@ -30224,6 +30224,12 @@ export interface components {
        * @description True when `submitted_at` is null AND no preliminary check is `failed` or `pending`. Warnings do not block submission.
        */
       can_submit: boolean
+      /**
+       * Strict Category
+       * @description True when the organization is held to strict review: a business email on the website's own domain and an API integration with a webhook are required to submit.
+       * @default false
+       */
+      strict_category: boolean
       /** Submitted At */
       submitted_at?: string | null
       /** Verdict */

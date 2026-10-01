@@ -40,6 +40,7 @@ from polar.models.order import OrderStatus
 from polar.models.organization import (
     STATUS_CAPABILITIES,
     InvalidStatusTransitionError,
+    OrganizationReviewCategory,
     OrganizationStatus,
     OrganizationSubscriptionSettings,
     SnoozeType,
@@ -73,6 +74,7 @@ from polar.organization.service import (
     CannotCreateOrganizationError,
     OrganizationError,
     PayoutAccountAlreadyLinked,
+    StrictReviewRequirementsNotMet,
 )
 from polar.organization.service import organization as organization_service
 from polar.organization_review.appeal_case import appeal_case as appeal_case_service
@@ -340,6 +342,149 @@ class TestCreate:
 
 
 @pytest.mark.asyncio
+class TestReviewCategory:
+    @pytest.mark.auth
+    async def test_declaring_strict_category_escalates(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        result = await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate(
+                details=OrganizationDetails(
+                    product_description="Generate product photos from prompts.",
+                    selling_categories=[AI_IMAGE_VIDEO_GENERATION_CATEGORY],
+                    pricing_models=["Subscription"],
+                    switching=False,
+                )
+            ),
+        )
+
+        assert result.review_category == OrganizationReviewCategory.STRICT
+        assert result.internal_notes is not None
+        assert "strict review category" in result.internal_notes
+        enqueue_job_mock.assert_not_called()
+
+    @pytest.mark.auth
+    async def test_unselecting_strict_category_keeps_strict_review(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.organization.service.enqueue_job")
+        organization.review_category = OrganizationReviewCategory.STRICT
+        organization.details = {
+            "selling_categories": [AI_IMAGE_VIDEO_GENERATION_CATEGORY]
+        }
+        organization.email = "founder@gmail.com"
+        await save_fixture(organization)
+
+        result = await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate(
+                details=OrganizationDetails(
+                    product_description="A productivity tool for marketers.",
+                    selling_categories=["Software / SaaS"],
+                    pricing_models=["Subscription"],
+                    switching=False,
+                )
+            ),
+        )
+
+        assert result.review_category == OrganizationReviewCategory.STRICT
+        mocker.patch(
+            "polar.organization.service.check_url_reachable",
+            new=AsyncMock(return_value=UrlReachability(reachable=True, status=200)),
+        )
+        state = await organization_service.get_review_state(session, result)
+        assert state.strict_category is True
+        email_step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
+        assert email_step.status == OrganizationReviewCheckStatus.FAILED
+
+    async def test_set_review_category_by_staff(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        organization.review_category = OrganizationReviewCategory.STRICT
+
+        result = await organization_service.set_review_category(
+            session,
+            organization,
+            OrganizationReviewCategory.STANDARD,
+            staff_user=user,
+        )
+
+        assert result.review_category == OrganizationReviewCategory.STANDARD
+        assert result.internal_notes is not None
+        assert user.email in result.internal_notes
+
+    @pytest.mark.auth
+    async def test_submit_rejects_strict_without_requirements(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.organization.service.enqueue_job")
+        organization.review_category = OrganizationReviewCategory.STRICT
+        organization.website = "https://example.com"
+        organization.email = "founder@gmail.com"
+        organization.socials = [{"platform": "x", "url": "https://x.com/polar"}]
+        organization.details = {
+            "product_description": "Generate product photos from prompts.",
+            "selling_categories": ["Software / SaaS"],
+        }
+        await save_fixture(organization)
+
+        with pytest.raises(StrictReviewRequirementsNotMet):
+            await organization_service.submit_for_review(session, organization)
+        assert organization.details_submitted_at is None
+
+    @pytest.mark.auth
+    async def test_submit_accepts_strict_with_requirements(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.organization.service.enqueue_job")
+        organization.review_category = OrganizationReviewCategory.STRICT
+        organization.website = "https://example.com"
+        organization.email = "support@example.com"
+        organization.socials = [{"platform": "x", "url": "https://x.com/polar"}]
+        organization.details = {
+            "product_description": "Generate product photos from prompts.",
+            "selling_categories": ["Software / SaaS"],
+        }
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationAccessToken(
+                comment="test",
+                token="hash",
+                organization=organization,
+                scope="openid",
+            )
+        )
+        await create_webhook_endpoint(save_fixture, organization=organization)
+
+        result = await organization_service.submit_for_review(session, organization)
+
+        assert result.details_submitted_at is not None
+
+
+@pytest.mark.asyncio
 class TestUpdateReviewSubmission:
     @pytest.mark.auth
     async def test_update_details_does_not_submit_for_review(
@@ -376,7 +521,10 @@ class TestUpdateReviewSubmission:
         assert result.details["pricing_models"] == ["Subscription"]
         assert result.details["switching"] is False
         assert result.details_submitted_at is None
-        enqueue_job_mock.assert_not_called()
+        enqueue_job_mock.assert_called_once_with(
+            "organization_review.classify_review_category",
+            organization_id=organization.id,
+        )
 
     @pytest.mark.auth
     async def test_update_with_submit_for_review(

@@ -7,6 +7,7 @@ import {
   isRequiredStep,
 } from '@/components/Finance/Account/sections/stepLabels'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { StrictCategoryNotice } from '@/components/Onboarding/StrictCategoryNotice'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { usePostHog } from '@/hooks/posthog'
 import { useProducts } from '@/hooks/queries'
@@ -145,6 +146,7 @@ export const AccountPageDetailsRequired = ({ organization }: Props) => {
           Verify your business so customers can buy from you. After you submit,
           our team will review your details and get back to you shortly.
         </Text>
+        {reviewState?.strict_category && <StrictCategoryNotice />}
         <ReviewChecklist
           isLoading={isLoading}
           isExiting={isExiting}

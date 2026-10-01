@@ -14,6 +14,7 @@ from polar.models.organization import (
     FIRST_REVIEW_THRESHOLD_CENTS,
     STATUS_CAPABILITIES,
     Organization,
+    OrganizationReviewCategory,
     OrganizationStatus,
 )
 from polar.models.organization_review import OrganizationReview
@@ -42,8 +43,10 @@ from polar.organization_review.schemas import (
     RiskLevel,
     UsageInfo,
 )
+from polar.organization_review.strict_category import StrictCategoryClassification
 from polar.organization_review.tasks import (
     _run_agent_debounce_key,
+    classify_review_category,
     review_appeal,
     run_review_agent,
 )
@@ -54,6 +57,7 @@ from tests.fixtures.database import SaveFixture
 # which requires JobQueueManager / Redis / Dramatiq broker infrastructure.
 _run_review_agent = run_review_agent.__wrapped__  # type: ignore[attr-defined]
 _review_appeal = review_appeal.__wrapped__  # type: ignore[attr-defined]
+_classify_review_category = classify_review_category.__wrapped__  # type: ignore[attr-defined]
 
 
 def _make_agent_result(
@@ -859,3 +863,60 @@ class TestRunAgentDebounceKey:
         )
         # Default context is THRESHOLD — also not debounced.
         assert _run_agent_debounce_key(organization_id) is None
+
+
+@pytest.mark.asyncio
+class TestStrictReviewCategory:
+    async def test_agent_flag_escalates_review_category(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        agent_result = _make_agent_result(verdict=ReviewVerdict.DENY)
+        agent_result.report.strict_category = True
+
+        with (
+            patch(
+                "polar.organization_review.tasks.AsyncSessionMaker",
+                return_value=_mock_session_maker(session),
+            ),
+            patch(
+                "polar.organization_review.tasks.run_organization_review",
+                new_callable=AsyncMock,
+                return_value=agent_result,
+            ),
+        ):
+            await _run_review_agent(organization.id, context=ReviewContext.SUBMISSION)
+
+        assert organization.review_category == OrganizationReviewCategory.STRICT
+
+    @pytest.mark.parametrize(
+        ("strict_category", "expected"),
+        [
+            (True, OrganizationReviewCategory.STRICT),
+            (False, OrganizationReviewCategory.STANDARD),
+        ],
+    )
+    async def test_classifier_sets_review_category(
+        self,
+        strict_category: bool,
+        expected: OrganizationReviewCategory,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        with (
+            patch(
+                "polar.organization_review.tasks.AsyncSessionMaker",
+                return_value=_mock_session_maker(session),
+            ),
+            patch(
+                "polar.organization_review.tasks.classify_strict_category",
+                new_callable=AsyncMock,
+                return_value=StrictCategoryClassification(
+                    strict_category=strict_category, reason="Generates images"
+                ),
+            ),
+        ):
+            await _classify_review_category(organization.id)
+
+        assert organization.review_category == expected

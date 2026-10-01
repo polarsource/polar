@@ -7,9 +7,8 @@ import { useResumeOrganizationAccessTokenCreation } from '@/components/Settings/
 import NewWebhookModal from '@/components/Settings/Webhook/NewWebhookModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useCheckoutLinks } from '@/hooks/queries/checkout_links'
-import { useOrganizationKYC } from '@/hooks/queries/org'
+import { useOrganizationReviewState } from '@/hooks/queries/org'
 import { getQueryClient } from '@/utils/api/query'
-import { isStrictCategory } from '@/utils/productCategories'
 import { schemas } from '@polar-sh/client'
 import {
   Button,
@@ -90,8 +89,8 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
     href: `${productsPath}/${product.id}/edit?return_to=${returnTo}`,
   }))
 
-  const { data: kycData } = useOrganizationKYC(organization.id)
-  const apiOnly = isStrictCategory(kycData?.details?.selling_categories)
+  const { data: reviewState } = useOrganizationReviewState(organization.id)
+  const apiOnly = !!reviewState?.strict_category
   const startedApi =
     accessTokenStatus === 'passed' || webhookStatus === 'passed'
   const [selectedPath, setPath] = useState<Path>(

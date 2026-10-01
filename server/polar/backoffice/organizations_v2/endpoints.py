@@ -58,6 +58,7 @@ from polar.models.organization import (
     CAPABILITY_METADATA,
     CAPABILITY_NAMES,
     CapabilityName,
+    OrganizationReviewCategory,
     OrganizationStatus,
     SnoozeType,
 )
@@ -1463,6 +1464,40 @@ async def run_review_agent(
         "organization_review.run_agent",
         organization_id=organization.id,
         context=ReviewContext.MANUAL,
+    )
+
+    return HXRedirectResponse(
+        request,
+        str(request.url_for("organizations:detail", organization_id=organization_id))
+        + "?section=overview",
+        303,
+    )
+
+
+@router.post(
+    "/{organization_id}/review-category",
+    name="organizations:set_review_category",
+    response_model=None,
+)
+async def set_review_category(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
+) -> HXRedirectResponse:
+    repository = OrganizationRepository.from_session(session)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    data = await request.form()
+    try:
+        review_category = OrganizationReviewCategory(str(data.get("review_category")))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail="Invalid review category") from e
+
+    await organization_service.set_review_category(
+        session, organization, review_category, staff_user=user_session.user
     )
 
     return HXRedirectResponse(

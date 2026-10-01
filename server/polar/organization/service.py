@@ -64,6 +64,7 @@ from polar.models.organization import (
     OrganizationCustomerPortalSettings,
     OrganizationDetails,
     OrganizationDisputeSettings,
+    OrganizationReviewCategory,
     OrganizationStatus,
     SnoozeType,
 )
@@ -195,6 +196,19 @@ def _email_domain_matches_website(email_domain: str, website_domain: str) -> boo
     return website_domain.endswith(f".{email_domain}") or email_domain.endswith(
         f".{website_domain}"
     )
+
+
+def _is_strict_review(organization: Organization) -> bool:
+    return organization.review_category == OrganizationReviewCategory.STRICT or (
+        is_strict_category(organization.details.get("selling_categories"))
+    )
+
+
+def _review_category_inputs(
+    details: OrganizationDetails | None,
+) -> tuple[object, object]:
+    details = details or {}
+    return details.get("product_description"), details.get("selling_categories")
 
 
 def _append_internal_note(
@@ -335,6 +349,16 @@ class BackofficeActivationResult(StrEnum):
     activated = "activated"
     submitted_for_review = "submitted_for_review"
     still_incomplete = "still_incomplete"
+
+
+class StrictReviewRequirementsNotMet(OrganizationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This organization is held to a strict review: a business email on "
+            "the website's own domain, an API key and a webhook endpoint are "
+            "required before submitting for review.",
+            422,
+        )
 
 
 class CannotChangeOwnerError(OrganizationError):
@@ -513,6 +537,8 @@ class OrganizationService:
                     }
                 ]
             ) from e
+        await self._sync_review_category(session, organization, details_changed=True)
+
         owner = auth_subject.subject
         polar_self_service.enqueue_create_customer(
             organization_id=organization.id,
@@ -677,6 +703,7 @@ class OrganizationService:
             },
         )
 
+        previous_review_category_inputs = _review_category_inputs(organization.details)
         if update_schema.details:
             organization.details = cast(
                 OrganizationDetails, update_schema.details.model_dump()
@@ -685,6 +712,13 @@ class OrganizationService:
         previous_website = organization.website
 
         organization = await repository.update(organization, update_dict=update_dict)
+
+        await self._sync_review_category(
+            session,
+            organization,
+            details_changed=_review_category_inputs(organization.details)
+            != previous_review_category_inputs,
+        )
 
         if organization.website != previous_website:
             enqueue_job(
@@ -701,7 +735,11 @@ class OrganizationService:
         return organization
 
     async def submit_for_review(
-        self, session: AsyncSession, organization: Organization
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        *,
+        enforce_strict_requirements: bool = True,
     ) -> Organization:
         try:
             OrganizationReviewSubmissionBody.model_validate({"body": organization})
@@ -709,6 +747,21 @@ class OrganizationService:
             raise PolarRequestValidationError(
                 cast(Sequence[ValidationError], e.errors())
             ) from e
+
+        if (
+            enforce_strict_requirements
+            and organization.details_submitted_at is None
+            and _is_strict_review(organization)
+        ):
+            email_check = self._build_email_check(organization, strict=True)
+            setup_readiness_check = await self._build_setup_readiness_check(
+                session, organization, strict=True
+            )
+            if (
+                email_check.status != OrganizationReviewCheckStatus.PASSED
+                or setup_readiness_check.status != OrganizationReviewCheckStatus.PASSED
+            ):
+                raise StrictReviewRequirementsNotMet()
 
         if organization.details_submitted_at is None:
             organization.details_submitted_at = datetime.now(UTC)
@@ -1151,6 +1204,67 @@ class OrganizationService:
                 )
                 return f"{organization.customer_invoice_prefix}-{invoice_number:04d}"
 
+    async def escalate_review_category(
+        self, session: AsyncSession, organization: Organization, *, reason: str
+    ) -> bool:
+        """Move the organization to the strict review category.
+
+        Never downgrades: once strict, only staff can set it back with
+        `set_review_category`, so a merchant can't drop the strict
+        requirements by editing their selling categories.
+        """
+        if organization.review_category == OrganizationReviewCategory.STRICT:
+            return False
+        organization.review_category = OrganizationReviewCategory.STRICT
+        _append_internal_note(
+            organization, "Moved to the strict review category", reason=reason
+        )
+        session.add(organization)
+        log.info(
+            "organization.review_category.escalated",
+            organization_id=str(organization.id),
+            slug=organization.slug,
+            reason=reason,
+        )
+        return True
+
+    async def set_review_category(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        review_category: OrganizationReviewCategory,
+        *,
+        staff_user: User,
+    ) -> Organization:
+        if organization.review_category != review_category:
+            organization.review_category = review_category
+            _append_internal_note(
+                organization,
+                f"Review category set to {review_category.value} by {staff_user.email}",
+            )
+            session.add(organization)
+        return organization
+
+    async def _sync_review_category(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        *,
+        details_changed: bool,
+    ) -> None:
+        if organization.review_category == OrganizationReviewCategory.STRICT:
+            return
+        if is_strict_category(organization.details.get("selling_categories")):
+            await self.escalate_review_category(
+                session, organization, reason="Declared a strict selling category"
+            )
+            return
+        if details_changed and organization.details.get("product_description"):
+            enqueue_job(
+                "organization_review.classify_review_category",
+                organization_id=organization.id,
+            )
+
     async def _after_update(
         self,
         session: AsyncSession,
@@ -1394,7 +1508,9 @@ class OrganizationService:
 
         submitted_for_review = organization.details_submitted_at is None
         if submitted_for_review:
-            await self.submit_for_review(session, organization)
+            await self.submit_for_review(
+                session, organization, enforce_strict_requirements=False
+            )
 
         if await self.maybe_activate(session, organization):
             return BackofficeActivationResult.activated
@@ -2091,7 +2207,7 @@ class OrganizationService:
         review_repository = OrganizationReviewRepository.from_session(session)
         review = await review_repository.get_by_organization(organization.id)
 
-        strict = is_strict_category(organization.details.get("selling_categories"))
+        strict = _is_strict_review(organization)
 
         # Run the HTTP-bound product-URL check concurrently with the DB-bound
         # builders so the outbound fetch overlaps with the rest of the work.
@@ -2147,6 +2263,7 @@ class OrganizationService:
 
         return OrganizationReviewState(
             can_submit=can_submit,
+            strict_category=strict,
             submitted_at=submitted_at,
             verdict=verdict,
             appeal=appeal,
@@ -2353,7 +2470,7 @@ class OrganizationService:
 
     async def _build_setup_readiness_check(
         self,
-        session: AsyncReadSession,
+        session: AsyncSession | AsyncReadSession,
         organization: Organization,
         *,
         strict: bool = False,

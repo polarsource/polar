@@ -11,7 +11,11 @@ from tagflow import classes, tag, text
 
 from polar.config import settings
 from polar.models import Organization, User
-from polar.models.organization import OrganizationStatus, SnoozeType
+from polar.models.organization import (
+    OrganizationReviewCategory,
+    OrganizationStatus,
+    SnoozeType,
+)
 from polar.organization_review.schemas import ReviewVerdict
 from polar.startup_program.service import StartupProgramStatus
 
@@ -130,6 +134,25 @@ class OrganizationDetailView:
         with tab_nav(tabs):
             pass
         yield
+
+    def _render_review_category_toggle(self, request: Request) -> None:
+        is_strict = self.org.review_category == OrganizationReviewCategory.STRICT
+        target, label = (
+            (OrganizationReviewCategory.STANDARD, "Move to Standard Review")
+            if is_strict
+            else (OrganizationReviewCategory.STRICT, "Move to Strict Review")
+        )
+        with tag.a(
+            hx_post=str(
+                request.url_for(
+                    "organizations:set_review_category",
+                    organization_id=self.org.id,
+                )
+            ),
+            hx_vals=f'{{"review_category": "{target.value}"}}',
+            hx_confirm=f"{label}?",
+        ):
+            text(label)
 
     def _render_create_review_ticket_button(self, request: Request) -> None:
         with tag.div(classes="w-full"):
@@ -875,6 +898,8 @@ class OrganizationDetailView:
                                     hx_confirm="Run organization review agent?",
                                 ):
                                     text("Run Review Agent")
+                            with tag.li():
+                                self._render_review_category_toggle(request)
                             with tag.li():
                                 with tag.a(
                                     href=f"https://app.plain.com/workspace/w_01JE9TRRX9KT61D8P2CH77XDQM/search/?q={self.owner_email or self.org.slug}",

@@ -932,6 +932,14 @@ class OrganizationReviewState(Schema):
             "`failed` or `pending`. Warnings do not block submission."
         )
     )
+    strict_category: bool = Field(
+        default=False,
+        description=(
+            "True when the organization is held to strict review: a business "
+            "email on the website's own domain and an API integration with a "
+            "webhook are required to submit."
+        ),
+    )
     submitted_at: datetime | None = None
     verdict: OrganizationReviewVerdict | None = None
     appeal: OrganizationReviewAppeal | None = None

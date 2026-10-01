@@ -1,4 +1,4 @@
-from polar.models.organization import Organization
+from polar.models.organization import Organization, OrganizationReviewCategory
 
 from ..schemas import OrganizationData
 
@@ -15,6 +15,9 @@ def collect_organization_data(organization: Organization) -> OrganizationData:
         product_description=details.get("product_description"),
         selling_categories=details.get("selling_categories", []),
         pricing_models=details.get("pricing_models", []),
+        strict_review_category=(
+            organization.review_category == OrganizationReviewCategory.STRICT
+        ),
         switching_from=details.get("switching_from"),
         previous_annual_revenue=details.get("previous_annual_revenue"),
         socials=[

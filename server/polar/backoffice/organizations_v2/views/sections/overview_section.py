@@ -10,6 +10,7 @@ from tagflow import tag, text
 
 from polar.enums import PayoutAccountStatus
 from polar.models import Organization, OrganizationReviewFeedback
+from polar.models.organization import OrganizationReviewCategory
 from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.organization_review.report import AnyAgentReport
 from polar.organization_review.schemas import DimensionAssessment, ReviewVerdict
@@ -86,14 +87,15 @@ class OverviewSection(ChecklistMixin):
         )
 
     def _render_strict_category_notice(self) -> None:
-        if not (self.declared_strict_category or self.flagged_strict_category):
+        if self.declared_strict_category:
+            source = "declared by the merchant"
+        elif self.org.review_category == OrganizationReviewCategory.STRICT:
+            source = "not declared by the merchant, see internal notes"
+        elif self.flagged_strict_category:
+            source = "flagged by the AI review, not declared by the merchant"
+        else:
             return
 
-        source = (
-            "declared by the merchant"
-            if self.declared_strict_category
-            else "flagged by the AI review, not declared by the merchant"
-        )
         with tag.div(
             classes="mb-4 rounded-lg border border-warning/40 bg-warning/5 px-4 py-3"
         ):

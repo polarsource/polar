@@ -6,7 +6,10 @@ import { StrictCategoryNotice } from '@/components/Onboarding/StrictCategoryNoti
 import { toast } from '@/components/Toast/use-toast'
 import { usePostHog } from '@/hooks/posthog'
 import { useUpdateOrganization } from '@/hooks/queries'
-import { useOrganizationKYC } from '@/hooks/queries/org'
+import {
+  useOrganizationKYC,
+  useOrganizationReviewState,
+} from '@/hooks/queries/org'
 import { useAupValidation } from '@/hooks/useAupValidation'
 import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { getQueryClient } from '@/utils/api/query'
@@ -62,6 +65,7 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
   const pricingModels = useWatch({ control, name: 'pricing_models' })
 
   const aup = useAupValidation()
+  const { data: reviewState } = useOrganizationReviewState(organization.id)
   const [submitting, setSubmitting] = useState<SubmittingState>(null)
 
   useEffect(() => {
@@ -264,7 +268,10 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
               {blockedSelected.length > 0 && (
                 <AUPBlocker categories={blockedSelected} />
               )}
-              {isStrictCategory(sellingCategories) && <StrictCategoryNotice />}
+              {(reviewState?.strict_category ||
+                isStrictCategory(sellingCategories)) && (
+                <StrictCategoryNotice />
+              )}
             </Box>
 
             <Box flexDirection="column" rowGap="m">

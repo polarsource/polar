@@ -6,3 +6,32 @@
     light --default,
     dark --prefersdark;
 }
+
+#menu a.htmx-request {
+  color: var(--menu-active-fg);
+  background-color: var(--menu-active-bg);
+}
+
+#menu:has(a.htmx-request) a.menu-active:not(.htmx-request) {
+  color: inherit;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  #content,
+  #content > * {
+    transition: opacity 150ms ease-out;
+  }
+
+  /* Delayed so fast responses swap without a dim flash. */
+  #content.htmx-request {
+    opacity: 0.5;
+    transition-delay: 150ms;
+  }
+
+  #content > .htmx-added {
+    opacity: 0;
+  }
+}

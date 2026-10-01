@@ -35,6 +35,25 @@ document.addEventListener("htmx:beforeSwap", (event) => {
   }
 });
 
+// Uses htmx's request class so history snapshots don't keep the loading state.
+document.addEventListener("htmx:beforeSend", (event) => {
+  const { target, elt } = event.detail;
+  if (!target || target.id !== "content") {
+    return;
+  }
+  target.classList.add(htmx.config.requestClass);
+  if (elt.closest(".drawer-side")) {
+    document.getElementById("menu-toggle").checked = false;
+  }
+});
+
+document.addEventListener("htmx:afterRequest", (event) => {
+  const { target } = event.detail;
+  if (target && target.id === "content") {
+    target.classList.remove(htmx.config.requestClass);
+  }
+});
+
 const formPostSSE = (formElement, target) => {
   const eventSource = new EventSourcePlus(formElement.action, {
     method: formElement.method || "GET",

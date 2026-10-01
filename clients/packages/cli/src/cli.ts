@@ -1,13 +1,8 @@
 import { BunRuntime, BunServices } from '@effect/platform-bun'
-import { commands } from '@polar-sh/cli-commands'
 import { Cause, Console, Effect, Layer, Runtime, Stdio } from 'effect'
-import { CliConfig, Command, GlobalFlag } from 'effect/unstable/cli'
+import { CliConfig, Command } from 'effect/unstable/cli'
 import { FetchHttpClient } from 'effect/unstable/http'
-import { listen } from '@/commands/listen'
-import { trigger } from '@/commands/trigger'
-import { auth } from '@/commands/auth'
-import { home } from '@/commands/home'
-import { update } from '@/commands/update'
+import { builtIns, polar } from '@/program'
 import { stdoutConsole } from '@/utils/console'
 import { describeError } from '@/utils/errors'
 import * as ApiRuntime from '@/commands/api-runtime'
@@ -26,14 +21,7 @@ import * as Updater from '@/services/updater'
 import * as ui from '@/utils/ui'
 import { VERSION } from '@/version'
 
-const mainCommand = Command.make('polar', {}, () => home).pipe(
-  Command.withSubcommands([
-    { group: 'CLI COMMANDS', commands: [auth, listen, trigger, update] },
-    { group: 'API RESOURCES', commands },
-  ]),
-)
-
-const cli = Command.run(mainCommand, {
+const cli = Command.run(polar, {
   version: VERSION.replace(/^v/, ''),
 })
 
@@ -69,14 +57,7 @@ const services = Layer.mergeAll(
   BunServices.layer,
   FetchHttpClient.layer,
   Layer.succeed(Console.Console, stdoutConsole),
-  CliConfig.layer({
-    builtIns: [
-      GlobalFlag.Help,
-      GlobalFlag.Version,
-      GlobalFlag.Completions,
-      GlobalFlag.LogLevel,
-    ],
-  }),
+  CliConfig.layer({ builtIns }),
 )
 
 const reportError = (cause: Cause.Cause<unknown>) => {
@@ -100,7 +81,7 @@ const instrumented = Effect.gen(function* () {
     Effect.tapCause(reportError),
     Effect.onExit((exit) =>
       telemetry.record({
-        command: Telemetry.commandPath(mainCommand, args),
+        command: Telemetry.commandPath(polar, args),
         flags: Telemetry.flagNames(args),
         ...Telemetry.outcomeOf(exit),
         durationMs: performance.now() - startedAt,

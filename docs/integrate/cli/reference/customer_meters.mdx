@@ -1,0 +1,50 @@
+---
+title: "polar customer_meters"
+sidebarTitle: "customer_meters"
+---
+
+{/* Generated from the CLI by `pnpm --filter @polar-sh/cli docs:generate`. Do not edit by hand. */}
+
+```bash
+polar customer_meters <subcommand> [flags]
+```
+
+**Subcommands**
+
+- [`polar customer_meters get`](#polar-customer_meters-get) Get a customer meter by ID.
+- [`polar customer_meters list`](#polar-customer_meters-list) List customer meters.
+
+## polar customer_meters get
+
+Get a customer meter by ID.
+
+```bash
+polar customer_meters get [flags] <id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+
+## polar customer_meters list
+
+List customer meters.
+
+```bash
+polar customer_meters list [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--organization-id`, `--org` | `string` | Filter by organization ID. Defaults to the active organization. |
+| `--customer-id` | `string` | Filter by customer ID. |
+| `--external-customer-id` | `string` | Filter by external customer ID. |
+| `--meter-id` | `string` | Filter by meter ID. |
+| `--page` | `integer` | Page number, defaults to 1. |
+| `--limit` | `integer` | Size of a page, defaults to 10. Maximum is 100. |
+| `--sorting` | `choice` | Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. (choices: created_at, -created_at, modified_at, -modified_at, customer_id, -customer_id, customer_name, -customer_name, meter_id, -meter_id, meter_name, -meter_name, consumed_units, -consumed_units, credited_units, -credited_units, balance, -balance) |

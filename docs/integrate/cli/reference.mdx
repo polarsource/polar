@@ -1,0 +1,56 @@
+---
+title: "Command reference"
+sidebarTitle: "Reference"
+description: "Every command, argument and flag of the Polar CLI"
+---
+
+{/* Generated from the CLI by `pnpm --filter @polar-sh/cli docs:generate`. Do not edit by hand. */}
+
+Each command has its own page. Run any command with `--help` to see the same information in your terminal.
+
+```bash
+polar <subcommand> [flags]
+```
+
+## CLI commands
+
+- [`polar auth`](/integrate/cli/reference/auth) Manage your Polar sessions and active organization
+- [`polar listen`](/integrate/cli/reference/listen) Forward webhook events for an organization to a local URL
+- [`polar trigger`](/integrate/cli/reference/trigger) Send a sample webhook event to your local server
+- [`polar update`](/integrate/cli/reference/update) Update the CLI to the latest release
+
+## API resources
+
+- [`polar benefit_grants`](/integrate/cli/reference/benefit_grants)
+- [`polar benefits`](/integrate/cli/reference/benefits)
+- [`polar checkout_links`](/integrate/cli/reference/checkout_links)
+- [`polar checkouts`](/integrate/cli/reference/checkouts)
+- [`polar custom_fields`](/integrate/cli/reference/custom_fields)
+- [`polar customer_meters`](/integrate/cli/reference/customer_meters)
+- [`polar customer_seats`](/integrate/cli/reference/customer_seats)
+- [`polar customers`](/integrate/cli/reference/customers)
+- [`polar discounts`](/integrate/cli/reference/discounts)
+- [`polar event_types`](/integrate/cli/reference/event_types)
+- [`polar events`](/integrate/cli/reference/events)
+- [`polar files`](/integrate/cli/reference/files)
+- [`polar license_keys`](/integrate/cli/reference/license_keys)
+- [`polar meters`](/integrate/cli/reference/meters)
+- [`polar metrics`](/integrate/cli/reference/metrics)
+- [`polar orders`](/integrate/cli/reference/orders)
+- [`polar organizations`](/integrate/cli/reference/organizations)
+- [`polar payments`](/integrate/cli/reference/payments)
+- [`polar products`](/integrate/cli/reference/products)
+- [`polar refunds`](/integrate/cli/reference/refunds)
+- [`polar subscriptions`](/integrate/cli/reference/subscriptions)
+- [`polar webhooks`](/integrate/cli/reference/webhooks)
+
+## Global flags
+
+These flags work with every command.
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--help`, `-h` | `boolean` | Show help information |
+| `--version`, `-v` | `boolean` | Show version information |
+| `--completions` | `<bash\|zsh\|fish\|sh>` | Print shell completion script (choices: bash, zsh, fish, sh) |
+| `--log-level` | `<all\|trace\|debug\|info\|warn\|warning\|error\|fatal\|none>` | Sets the minimum log level (choices: all, trace, debug, info, warn, warning, error, fatal, none) |

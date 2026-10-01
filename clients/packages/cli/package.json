@@ -1,7 +1,7 @@
 {
   "name": "@polar-sh/cli",
   "private": true,
-  "version": "1.3.9",
+  "version": "2.0.1",
   "description": "",
   "bin": "bin/cli.js",
   "type": "module",
@@ -11,6 +11,8 @@
   "scripts": {
     "generate": "pnpm --dir ../../../sdk/cli-commands generate && pnpm --dir ../.. install --filter @polar-sh/cli --ignore-scripts --frozen-lockfile",
     "build": "tsup ./src/cli.ts --format esm --outDir bin",
+    "docs:generate": "bun scripts/docs.ts",
+    "docs:check": "bun scripts/docs.ts --check",
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "test": "bun --bun vitest run --coverage",

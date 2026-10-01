@@ -22,6 +22,7 @@ const getNotificationHref = (notification: PolarNotification): Href | null => {
         : null
     case 'MaintainerNewPaidSubscriptionNotification':
     case 'MaintainerNewTrialNotification':
+    case 'MaintainerSubscriptionCancellationNotification':
     case 'MaintainerSubscriptionRenewalNotification':
       return notification.payload.subscription_id
         ? `/subscriptions/${notification.payload.subscription_id}`

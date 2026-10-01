@@ -1,11 +1,11 @@
 """
-Backfill `exclude_free_products` and `new_trial` into every member's notification
-settings.
+Backfill `exclude_free_products`, `new_trial` and `subscription_cancellation` into
+every member's notification settings.
 
 Rows written before these settings existed lack the keys. `exclude_free_products`
-defaults to false and `new_trial` takes the member's `new_subscription` value.
-Keys already present are left untouched. Once this has run, both keys can become
-required on `OrganizationNotificationSettings`.
+and `subscription_cancellation` default to false, while `new_trial` takes the
+member's `new_subscription` value. Keys already present are left untouched. Once
+this has run, these keys can become required on `OrganizationNotificationSettings`.
 
 Usage:
     cd server
@@ -36,6 +36,8 @@ def backfill_statement() -> Update:
         False,
         "new_trial",
         func.coalesce(settings["new_subscription"], literal(True, JSONB)),
+        "subscription_cancellation",
+        False,
     )
     return (
         update(UserOrganization)
@@ -52,6 +54,7 @@ def backfill_statement() -> Update:
                     or_(
                         ~settings.has_key("exclude_free_products"),
                         ~settings.has_key("new_trial"),
+                        ~settings.has_key("subscription_cancellation"),
                     )
                 )
                 .limit(limit_bindparam())

@@ -99,6 +99,12 @@ class NotificationsService:
             ):
                 continue
 
+            if (
+                notif.type == NotificationType.maintainer_subscription_cancellation
+                and not settings.get("subscription_cancellation", False)
+            ):
+                continue
+
             if is_free_product and settings.get("exclude_free_products", False):
                 continue
 

@@ -381,7 +381,13 @@ const nextConfig = {
       {
         source: '/install.sh',
         destination:
-          'https://raw.githubusercontent.com/polarsource/cli/main/install.sh',
+          'https://raw.githubusercontent.com/polarsource/polar/main/clients/packages/cli/install.sh',
+        permanent: false,
+      },
+      {
+        source: '/install.ps1',
+        destination:
+          'https://raw.githubusercontent.com/polarsource/polar/main/clients/packages/cli/install.ps1',
         permanent: false,
       },
 

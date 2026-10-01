@@ -78,6 +78,9 @@ from polar.organization.service import organization as organization_service
 from polar.organization_review.appeal_case import appeal_case as appeal_case_service
 from polar.organization_review.repository import OrganizationRiskSignalRepository
 from polar.organization_review.schemas import ReviewContext, ReviewVerdict
+from polar.organization_review.strict_category import (
+    AI_IMAGE_VIDEO_GENERATION_CATEGORY,
+)
 from polar.postgres import AsyncSession
 from polar.support_case.repository import SupportCaseMessageRepository
 from polar.user_organization.service import (
@@ -3331,6 +3334,135 @@ class TestGetReviewState:
         assert state.appeal is not None
         assert state.appeal.decision == OrganizationReview.AppealDecision.APPROVED
         assert state.appeal.reviewed_at == appeal_reviewed
+
+    @pytest.mark.parametrize(
+        ("email", "website"),
+        [
+            ("founder@gmail.com", None),
+            ("support@otherdomain.com", "https://example.com"),
+            ("support@example.com", "https://example.framer.com"),
+        ],
+    )
+    async def test_strict_category_email_requires_business_domain(
+        self,
+        email: str,
+        website: str | None,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.details = {
+            "selling_categories": [AI_IMAGE_VIDEO_GENERATION_CATEGORY]
+        }
+        organization.email = email
+        organization.website = website
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
+
+        assert step.status == OrganizationReviewCheckStatus.FAILED
+        assert step.reasons == [
+            OrganizationReviewCheckReason.IDENTITY_BUSINESS_EMAIL_REQUIRED
+        ]
+
+    async def test_strict_category_email_matching_website_passes(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.details = {
+            "selling_categories": [AI_IMAGE_VIDEO_GENERATION_CATEGORY]
+        }
+        organization.email = "support@example.com"
+        organization.website = "https://app.example.com"
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
+
+        assert step.status == OrganizationReviewCheckStatus.PASSED
+
+    async def test_strict_category_checkout_link_alone_is_not_enough(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.details = {
+            "selling_categories": [AI_IMAGE_VIDEO_GENERATION_CATEGORY]
+        }
+        await save_fixture(organization)
+        product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        await create_checkout_link(
+            save_fixture,
+            products=[product],
+            success_url="https://example.com/thank-you",
+        )
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
+
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        assert step.reasons == [
+            OrganizationReviewCheckReason.SETUP_READINESS_API_INTEGRATION_REQUIRED
+        ]
+
+    async def test_strict_category_access_token_without_webhook_blocks(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.details = {
+            "selling_categories": [AI_IMAGE_VIDEO_GENERATION_CATEGORY]
+        }
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationAccessToken(
+                comment="test",
+                token="hash",
+                organization=organization,
+                scope="openid",
+            )
+        )
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
+
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        assert step.reasons == [
+            OrganizationReviewCheckReason.SETUP_READINESS_API_INTEGRATION_REQUIRED
+        ]
+
+    async def test_strict_category_access_token_and_webhook_passes(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.details = {
+            "selling_categories": [AI_IMAGE_VIDEO_GENERATION_CATEGORY]
+        }
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationAccessToken(
+                comment="test",
+                token="hash",
+                organization=organization,
+                scope="openid",
+            )
+        )
+        await create_webhook_endpoint(save_fixture, organization=organization)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
+
+        assert step.status == OrganizationReviewCheckStatus.PASSED
+        assert step.reasons == []
 
 
 @pytest.mark.asyncio

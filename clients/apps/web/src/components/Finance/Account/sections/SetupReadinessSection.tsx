@@ -7,7 +7,9 @@ import { useResumeOrganizationAccessTokenCreation } from '@/components/Settings/
 import NewWebhookModal from '@/components/Settings/Webhook/NewWebhookModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useCheckoutLinks } from '@/hooks/queries/checkout_links'
+import { useOrganizationKYC } from '@/hooks/queries/org'
 import { getQueryClient } from '@/utils/api/query'
+import { isStrictCategory } from '@/utils/productCategories'
 import { schemas } from '@polar-sh/client'
 import {
   Button,
@@ -88,11 +90,14 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
     href: `${productsPath}/${product.id}/edit?return_to=${returnTo}`,
   }))
 
+  const { data: kycData } = useOrganizationKYC(organization.id)
+  const apiOnly = isStrictCategory(kycData?.details?.selling_categories)
   const startedApi =
     accessTokenStatus === 'passed' || webhookStatus === 'passed'
-  const [path, setPath] = useState<Path>(
+  const [selectedPath, setPath] = useState<Path>(
     startedApi && !isFulfillable ? 'api' : 'no-code',
   )
+  const path: Path = apiOnly ? 'api' : selectedPath
 
   const checkoutModal = useModal()
   const editCheckoutLinkModal = useModal()
@@ -122,15 +127,17 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
 
   return (
     <Box flexDirection="column" rowGap="l">
-      <SegmentedControl
-        variant="tabs"
-        value={path}
-        onChange={setPath}
-        options={[
-          { value: 'no-code', label: 'No-code' },
-          { value: 'api', label: 'API integration' },
-        ]}
-      />
+      {!apiOnly && (
+        <SegmentedControl
+          variant="tabs"
+          value={path}
+          onChange={setPath}
+          options={[
+            { value: 'no-code', label: 'No-code' },
+            { value: 'api', label: 'API integration' },
+          ]}
+        />
+      )}
 
       {path === 'no-code' ? (
         <Box flexDirection="column" rowGap="l">
@@ -159,8 +166,9 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
       ) : (
         <Box flexDirection="column" rowGap="l">
           <Text variant="caption" color="muted">
-            Integrate your application with the Polar API to manage orders,
-            customers, and subscriptions programmatically from your own code.{' '}
+            {apiOnly
+              ? 'AI image and video generation is held to a strict review: an API integration with webhooks is required. Checkout links alone are not enough. '
+              : 'Integrate your application with the Polar API to manage orders, customers, and subscriptions programmatically from your own code. '}
             <LearnMore href={DOCS.api} />
           </Text>
           <Box flexDirection="column" rowGap="m">
@@ -175,8 +183,8 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
             <Todo
               status={webhookStatus}
               title="Create a webhook"
-              hint="Recommended"
-              hintColor="blue"
+              hint={apiOnly ? 'Required' : 'Recommended'}
+              hintColor={apiOnly ? 'gray' : 'blue'}
               actionLabel="Create"
               onAction={webhookModal.show}
             />

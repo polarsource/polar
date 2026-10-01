@@ -13,6 +13,10 @@ from polar.models import Organization, OrganizationReviewFeedback
 from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.organization_review.report import AnyAgentReport
 from polar.organization_review.schemas import DimensionAssessment, ReviewVerdict
+from polar.organization_review.strict_category import (
+    is_personal_email,
+    is_strict_category,
+)
 from polar.organization_review.thresholds import (
     AUTH_RATE,
     CHARGEBACK_RATE,
@@ -70,6 +74,44 @@ class OverviewSection(ChecklistMixin):
     # ------------------------------------------------------------------
     # Full-width: Organization Review card (primary content)
     # ------------------------------------------------------------------
+
+    @property
+    def declared_strict_category(self) -> bool:
+        return is_strict_category((self.org.details or {}).get("selling_categories"))
+
+    @property
+    def flagged_strict_category(self) -> bool:
+        return (
+            self.agent_report is not None and self.agent_report.report.strict_category
+        )
+
+    def _render_strict_category_notice(self) -> None:
+        if not (self.declared_strict_category or self.flagged_strict_category):
+            return
+
+        source = (
+            "declared by the merchant"
+            if self.declared_strict_category
+            else "flagged by the AI review, not declared by the merchant"
+        )
+        with tag.div(
+            classes="mb-4 rounded-lg border border-warning/40 bg-warning/5 px-4 py-3"
+        ):
+            with tag.div(classes="flex items-center gap-2 mb-1"):
+                with tag.span(classes="badge badge-warning badge-sm"):
+                    text("Strict category")
+                with tag.span(classes="text-sm font-medium"):
+                    text(f"AI image or video generation ({source})")
+            with tag.p(classes="text-sm text-base-content/70"):
+                text(
+                    "High trust threshold. Deny on a personal email, no own "
+                    "domain, missing API key + webhook, or a vibe-coded / "
+                    "not-established business. Approval may require "
+                    "additional information or contractual terms."
+                )
+            if is_personal_email(self.org.email):
+                with tag.p(classes="text-sm text-error mt-1"):
+                    text(f"Support email is on a personal provider: {self.org.email}")
 
     @staticmethod
     def _render_dimension_card(dim: DimensionAssessment) -> None:
@@ -135,6 +177,8 @@ class OverviewSection(ChecklistMixin):
                         text("View case")
                         with tag.span(classes="icon-arrow-right text-xs"):
                             pass
+
+            self._render_strict_category_notice()
 
             # --- No agent report: show fallback from org.review ---
             if self.agent_report is None:

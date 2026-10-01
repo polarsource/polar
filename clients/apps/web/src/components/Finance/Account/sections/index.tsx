@@ -39,6 +39,8 @@ export const STEP_CONFIG: Partial<
       'identity.personal_email': 'Business email is preferred',
       'identity.domain_mismatch':
         'Email domain does not match your organization website',
+      'identity.business_email_required':
+        'AI image and video generation requires a business email on your website’s own domain',
     },
     render: ({ organization, step, reasonItems }) => (
       <EmailSection
@@ -110,6 +112,8 @@ export const STEP_CONFIG: Partial<
     label: STEP_LABELS.setup_readiness,
     reasonLabels: {
       'setup_readiness.webhook_missing': 'Creating a webhook is recommended',
+      'setup_readiness.api_integration_required':
+        'AI image and video generation requires an API key and a webhook',
     },
     render: ({ organization, step }) => (
       <SetupReadinessSection organization={organization} step={step} />

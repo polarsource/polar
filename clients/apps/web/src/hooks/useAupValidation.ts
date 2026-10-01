@@ -21,6 +21,7 @@ interface ValidateParams {
 interface ValidateResult {
   ok: boolean
   verdict: AupVerdict | null
+  strictCategory: boolean
 }
 
 export const useAupValidation = () => {
@@ -58,7 +59,7 @@ export const useAupValidation = () => {
       } catch (error) {
         Sentry.captureException(error)
         setIsValidating(false)
-        return { ok: false, verdict: null }
+        return { ok: false, verdict: null, strictCategory: false }
       }
 
       if (!res.ok) {
@@ -66,13 +67,14 @@ export const useAupValidation = () => {
           new Error(`AUP validation failed with status ${res.status}`),
         )
         setIsValidating(false)
-        return { ok: false, verdict: null }
+        return { ok: false, verdict: null, strictCategory: false }
       }
 
       const data: {
         verdict: AupVerdict
         confidence: number
         message?: string
+        strict_category?: boolean
       } = await res.json()
 
       if (data.verdict === 'DENY' || data.verdict === 'CLARIFY') {
@@ -92,7 +94,11 @@ export const useAupValidation = () => {
       }
 
       setIsValidating(false)
-      return { ok: true, verdict: data.verdict }
+      return {
+        ok: true,
+        verdict: data.verdict,
+        strictCategory: data.strict_category ?? false,
+      }
     },
     [conversationId, history],
   )

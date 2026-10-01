@@ -840,6 +840,7 @@ class OrganizationReviewCheckReason(StrEnum):
     IDENTITY_REJECTED = "identity.rejected"
     IDENTITY_PERSONAL_EMAIL = "identity.personal_email"
     IDENTITY_DOMAIN_MISMATCH = "identity.domain_mismatch"
+    IDENTITY_BUSINESS_EMAIL_REQUIRED = "identity.business_email_required"
 
     # Product URL
     PRODUCT_URL_UNREACHABLE = "product_url.unreachable"
@@ -852,6 +853,9 @@ class OrganizationReviewCheckReason(StrEnum):
     SETUP_READINESS_WEBHOOK_MISSING = "setup_readiness.webhook_missing"
     SETUP_READINESS_CHECKOUT_LINK_NOT_FULFILLABLE = (
         "setup_readiness.checkout_link_not_fulfillable"
+    )
+    SETUP_READINESS_API_INTEGRATION_REQUIRED = (
+        "setup_readiness.api_integration_required"
     )
 
 

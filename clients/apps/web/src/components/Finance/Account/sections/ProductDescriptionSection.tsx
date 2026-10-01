@@ -2,6 +2,7 @@
 
 import { ChipSelect } from '@/components/Form/ChipSelect'
 import { AUPBlocker } from '@/components/Onboarding/AUPBlocker'
+import { StrictCategoryNotice } from '@/components/Onboarding/StrictCategoryNotice'
 import { toast } from '@/components/Toast/use-toast'
 import { usePostHog } from '@/hooks/posthog'
 import { useUpdateOrganization } from '@/hooks/queries'
@@ -9,7 +10,12 @@ import { useOrganizationKYC } from '@/hooks/queries/org'
 import { useAupValidation } from '@/hooks/useAupValidation'
 import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { getQueryClient } from '@/utils/api/query'
-import { PRICING_MODELS, SELLING_CATEGORIES } from '@/utils/productCategories'
+import {
+  AI_IMAGE_VIDEO_GENERATION_CATEGORY,
+  PRICING_MODELS,
+  SELLING_CATEGORIES,
+  isStrictCategory,
+} from '@/utils/productCategories'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Text, type TextColor } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -131,8 +137,13 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
 
     if (result.verdict === 'DENY' || result.verdict === 'CLARIFY') return
 
+    const sellingCategories =
+      result.strictCategory && !isStrictCategory(values.selling_categories)
+        ? [...values.selling_categories, AI_IMAGE_VIDEO_GENERATION_CATEGORY]
+        : values.selling_categories
+
     setSubmitting('submitting')
-    await persistDetails(values)
+    await persistDetails({ ...values, selling_categories: sellingCategories })
     setSubmitting(null)
   }
 
@@ -253,6 +264,7 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
               {blockedSelected.length > 0 && (
                 <AUPBlocker categories={blockedSelected} />
               )}
+              {isStrictCategory(sellingCategories) && <StrictCategoryNotice />}
             </Box>
 
             <Box flexDirection="column" rowGap="m">

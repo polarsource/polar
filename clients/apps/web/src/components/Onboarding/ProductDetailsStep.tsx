@@ -21,10 +21,16 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { ChipSelect } from '@/components/Form/ChipSelect'
-import { PRICING_MODELS, SELLING_CATEGORIES } from '@/utils/productCategories'
+import {
+  AI_IMAGE_VIDEO_GENERATION_CATEGORY,
+  PRICING_MODELS,
+  SELLING_CATEGORIES,
+  isStrictCategory,
+} from '@/utils/productCategories'
 import { AUPBlocker } from './AUPBlocker'
 import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
+import { StrictCategoryNotice } from './StrictCategoryNotice'
 
 const SELLING_PLATFORMS: [
   NonNullable<schemas['OrganizationDetails']['switching_from']>,
@@ -214,6 +220,19 @@ export function ProductDetailsStep() {
 
     if (result.verdict === 'DENY' || result.verdict === 'CLARIFY') return
 
+    // Surface the strict review requirements before the org is created, so the
+    // seller knows what approval takes before investing in the setup.
+    if (
+      result.strictCategory &&
+      !isStrictCategory(formData.sellingCategories)
+    ) {
+      setValue('sellingCategories', [
+        ...formData.sellingCategories,
+        AI_IMAGE_VIDEO_GENERATION_CATEGORY,
+      ])
+      return
+    }
+
     setLoading('submitting')
     const success = await submitOrg(formData, result.verdict)
     if (!success) {
@@ -304,6 +323,8 @@ export function ProductDetailsStep() {
           {blockedSelected.length > 0 && (
             <AUPBlocker categories={blockedSelected} />
           )}
+
+          {isStrictCategory(sellingCategories) && <StrictCategoryNotice />}
 
           <FormField
             control={control}

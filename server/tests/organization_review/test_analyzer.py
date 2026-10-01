@@ -17,6 +17,7 @@ from polar.organization_review.analyzer import ReviewAnalyzer, _render_scraped_s
 from polar.organization_review.schemas import (
     DataSnapshot,
     HistoryData,
+    IntegrationData,
     OrganizationData,
     PaymentMetrics,
     PayoutAccountData,
@@ -24,8 +25,13 @@ from polar.organization_review.schemas import (
     ReviewContext,
     RiskSignalData,
     RiskSignalEntry,
+    SetupData,
+    WebhookEndpointData,
     WebsiteData,
     WebsitePage,
+)
+from polar.organization_review.strict_category import (
+    AI_IMAGE_VIDEO_GENERATION_CATEGORY,
 )
 
 
@@ -229,6 +235,58 @@ class TestBuildPromptRiskSignals:
         # The old 'highest' signal survives the cap because severity sorts first.
         assert "fraudulent_merchant (risk level: highest)" in prompt
         assert "(5 more signal(s) omitted)" in prompt
+
+
+class TestBuildPromptStrictCategory:
+    def test_no_section_without_strict_category(
+        self, review_analyzer: ReviewAnalyzer
+    ) -> None:
+        snapshot = _minimal_snapshot().model_copy(
+            update={
+                "organization": OrganizationData(
+                    name="Test Org",
+                    slug="test-org",
+                    selling_categories=["Software / SaaS"],
+                )
+            }
+        )
+
+        prompt = review_analyzer._build_prompt(snapshot)
+
+        assert "Selling Categories: Software / SaaS" in prompt
+        assert "## Strict Review Category" not in prompt
+
+    def test_renders_strict_requirements(self, review_analyzer: ReviewAnalyzer) -> None:
+        snapshot = _minimal_snapshot().model_copy(
+            update={
+                "organization": OrganizationData(
+                    name="Test Org",
+                    slug="test-org",
+                    email="founder@gmail.com",
+                    selling_categories=[AI_IMAGE_VIDEO_GENERATION_CATEGORY],
+                ),
+                "setup": SetupData(
+                    integration=IntegrationData(
+                        api_key_count=1,
+                        webhook_endpoints=[
+                            WebhookEndpointData(
+                                url="https://example.com/a", enabled=True
+                            ),
+                            WebhookEndpointData(
+                                url="https://example.com/b", enabled=False
+                            ),
+                        ],
+                    )
+                ),
+            }
+        )
+
+        prompt = review_analyzer._build_prompt(snapshot)
+
+        assert "## Strict Review Category" in prompt
+        assert AI_IMAGE_VIDEO_GENERATION_CATEGORY in prompt
+        assert "Support email on a personal provider: yes" in prompt
+        assert "API keys: 1, enabled webhooks: 1" in prompt
 
 
 @pytest.mark.asyncio

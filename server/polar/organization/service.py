@@ -94,6 +94,7 @@ from polar.organization_review.schemas import (
     ReviewContext,
     ReviewVerdict,
 )
+from polar.organization_review.strict_category import is_strict_category
 from polar.payout_account.repository import PayoutAccountRepository
 from polar.payout_account.service import payout_account as payout_account_service
 from polar.postgres import AsyncReadSession, AsyncSession, sql
@@ -2090,6 +2091,8 @@ class OrganizationService:
         review_repository = OrganizationReviewRepository.from_session(session)
         review = await review_repository.get_by_organization(organization.id)
 
+        strict = is_strict_category(organization.details.get("selling_categories"))
+
         # Run the HTTP-bound product-URL check concurrently with the DB-bound
         # builders so the outbound fetch overlaps with the rest of the work.
         product_url_task = asyncio.create_task(
@@ -2099,7 +2102,7 @@ class OrganizationService:
             session, organization
         )
         setup_readiness_check = await self._build_setup_readiness_check(
-            session, organization
+            session, organization, strict=strict
         )
 
         preliminary_steps = [
@@ -2111,7 +2114,7 @@ class OrganizationService:
             self._build_payout_account_check(payout_account),
             self._build_product_description_check(organization),
             await product_url_task,
-            self._build_email_check(organization),
+            self._build_email_check(organization, strict=strict),
             self._build_socials_check(organization),
         ]
 
@@ -2166,7 +2169,14 @@ class OrganizationService:
             key=key, status=OrganizationReviewCheckStatus.PASSED
         )
 
-    def _build_email_check(self, organization: Organization) -> OrganizationReviewCheck:
+    def _build_email_check(
+        self, organization: Organization, *, strict: bool = False
+    ) -> OrganizationReviewCheck:
+        """Personal emails and emails off the website's domain are a warning,
+        except for strict categories where they block submission: we only
+        accept those from businesses operating on their own domain, so hosted
+        website domains don't get the usual exemption either.
+        """
         key = OrganizationReviewCheckKey.IDENTITY_EMAIL
         if not organization.email:
             return self._not_started_check(key)
@@ -2181,12 +2191,26 @@ class OrganizationService:
         website_domain = _website_domain(organization.website)
         reasons: list[OrganizationReviewCheckReason] = []
 
-        if email_domain in settings.PERSONAL_EMAIL_DOMAINS:
+        is_personal_email = email_domain in settings.PERSONAL_EMAIL_DOMAINS
+        is_domain_mismatch = website_domain is not None and not (
+            _email_domain_matches_website(email_domain, website_domain)
+        )
+
+        if strict and (is_personal_email or is_domain_mismatch):
+            return OrganizationReviewCheck(
+                key=key,
+                status=OrganizationReviewCheckStatus.FAILED,
+                reasons=[
+                    OrganizationReviewCheckReason.IDENTITY_BUSINESS_EMAIL_REQUIRED
+                ],
+            )
+
+        if is_personal_email:
             reasons.append(OrganizationReviewCheckReason.IDENTITY_PERSONAL_EMAIL)
 
         if (
-            website_domain
-            and not _email_domain_matches_website(email_domain, website_domain)
+            is_domain_mismatch
+            and website_domain is not None
             and not _is_hosted_website_domain(website_domain)
         ):
             reasons.append(OrganizationReviewCheckReason.IDENTITY_DOMAIN_MISMATCH)
@@ -2328,7 +2352,11 @@ class OrganizationService:
         return self._passed_check(key)
 
     async def _build_setup_readiness_check(
-        self, session: AsyncReadSession, organization: Organization
+        self,
+        session: AsyncReadSession,
+        organization: Organization,
+        *,
+        strict: bool = False,
     ) -> OrganizationReviewCheck:
         """Setup readiness passes when the merchant has at least one
         checkout link and every live checkout link is auto-fulfillable
@@ -2356,6 +2384,9 @@ class OrganizationService:
         we only recommend. Aggregate checks expose per-component state via
         `sub_checks`; the parent `status` remains the source of truth for
         gating.
+
+        Strict categories only pass on the API path: checkout links alone
+        don't count, and the webhook is required rather than recommended.
         """
         key = OrganizationReviewCheckKey.SETUP_READINESS
 
@@ -2478,6 +2509,12 @@ class OrganizationService:
                         continue
                     seen.add(reason)
                     parent_reasons.append(reason)
+
+        if strict and not api_path_passed:
+            parent_status = OrganizationReviewCheckStatus.PENDING
+            parent_reasons = [
+                OrganizationReviewCheckReason.SETUP_READINESS_API_INTEGRATION_REQUIRED
+            ]
 
         return OrganizationReviewCheck(
             key=key,

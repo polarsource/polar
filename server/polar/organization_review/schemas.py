@@ -591,6 +591,13 @@ class ReviewAgentReport(Schema):
         default_factory=list,
         description="Specific policy sections violated, if any",
     )
+    strict_category: bool = Field(
+        default=False,
+        description=(
+            "True when the business falls in the strict review category "
+            "(AI image or video generation), declared or not"
+        ),
+    )
     dimensions: list[DimensionAssessment] = Field(
         description="Per-dimension risk assessments",
     )

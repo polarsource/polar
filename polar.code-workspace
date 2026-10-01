@@ -19,6 +19,10 @@
     {
       "path": "docs",
       "name": "docs"
+    },
+    {
+      "path": "sdk",
+      "name": "sdk"
     }
   ],
   "settings": {

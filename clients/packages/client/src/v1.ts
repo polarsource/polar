@@ -40002,7 +40002,7 @@ export interface components {
       /**
        * Api Version
        * @description The API version that'll be used in event payloads.
-       * @default 2026-04
+       * @default 2026-10
        * @enum {string}
        */
       api_version: '2026-04' | '2026-10' | '2027-01'

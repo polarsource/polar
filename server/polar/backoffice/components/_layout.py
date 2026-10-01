@@ -4,6 +4,7 @@ from collections.abc import Generator, Sequence
 from fastapi import Request
 from tagflow import tag, text
 
+from ..static_urls import static_url
 from ._base import base, title
 from ._navigation import NavigationItem
 
@@ -106,12 +107,12 @@ def layout(
                         classes="flex justify-center",
                     ):
                         with tag.img(
-                            src=str(request.url_for("static", path="logo.light.svg")),
+                            src=static_url(request, "logo.light.svg"),
                             classes="h-8 dark:hidden",
                         ):
                             pass
                         with tag.img(
-                            src=str(request.url_for("static", path="logo.dark.svg")),
+                            src=static_url(request, "logo.dark.svg"),
                             classes="h-8 dark:block hidden",
                         ):
                             pass

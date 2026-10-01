@@ -265,6 +265,10 @@ class MerchantMigrationRecordTaxUpdate(Schema):
     )
 
 
+class MerchantMigrationTaxBehaviorUpdateResult(Schema):
+    updated: int = Field(description="How many subscriptions were updated.")
+
+
 class MerchantMigrationRecordBillingAddressUpdate(Schema):
     model_config = ConfigDict(extra="forbid")
 

@@ -43,6 +43,7 @@ from polar.models.merchant_migration import (
 from polar.models.merchant_migration_operation import (
     STALL_THRESHOLD,
     MerchantMigrationOperation,
+    MerchantMigrationOperationKind,
     MerchantMigrationOperationSelection,
     MerchantMigrationOperationStatus,
 )
@@ -1231,6 +1232,111 @@ class TestUpdateRecord:
         ).get_by_id(record.id)
         assert reloaded is not None
         assert reloaded.canonical["tax_behavior"] == "exclusive"
+
+
+@pytest.mark.asyncio
+class TestSetTaxBehavior:
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_sets_every_subscription_not_moved(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        other = await _create_migration(save_fixture, organization)
+
+        def subscription(
+            target: MerchantMigration,
+            source_id: str,
+            cutover_status: MerchantMigrationCutoverStatus | None = None,
+        ) -> MerchantMigrationRecord:
+            return MerchantMigrationRecord(
+                merchant_migration=target,
+                organization=organization,
+                type=MerchantMigrationRecordType.subscription,
+                source_id=source_id,
+                cutover_status=cutover_status,
+                canonical=serialize(canonical_subscription(source_id=source_id)),
+            )
+
+        pending = subscription(migration, "sub_pending")
+        already = subscription(migration, "sub_already")
+        already.canonical = {**already.canonical, "tax_behavior": "exclusive"}
+        skipped = subscription(
+            migration, "sub_skipped", MerchantMigrationCutoverStatus.skipped
+        )
+        moved = subscription(
+            migration, "sub_moved", MerchantMigrationCutoverStatus.moved
+        )
+        elsewhere = subscription(other, "sub_elsewhere")
+        customer = MerchantMigrationRecord(
+            merchant_migration=migration,
+            organization=organization,
+            type=MerchantMigrationRecordType.customer,
+            source_id="cus_1",
+            canonical={},
+        )
+        for record in (pending, already, skipped, moved, elsewhere, customer):
+            await save_fixture(record)
+
+        response = await client.post(
+            f"/v1/merchant-migrations/{migration.id}/records/tax-behavior",
+            json={"tax_behavior": "exclusive"},
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"updated": 2}
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        for record, expected in (
+            (pending, "exclusive"),
+            (already, "exclusive"),
+            (skipped, "exclusive"),
+            (moved, None),
+            (elsewhere, None),
+        ):
+            reloaded = await repository.get_by_id(record.id)
+            assert reloaded is not None
+            assert reloaded.canonical.get("tax_behavior") == expected
+        reloaded_customer = await repository.get_by_id(customer.id)
+        assert reloaded_customer is not None
+        assert reloaded_customer.canonical == {}
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    @pytest.mark.parametrize(
+        ("progress_age", "detail"),
+        [
+            (timedelta(0), "Wait for it to finish"),
+            (STALL_THRESHOLD + timedelta(minutes=1), "Start it again"),
+        ],
+        ids=["running", "stalled"],
+    )
+    async def test_active_operation_returns_409(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        progress_age: timedelta,
+        detail: str,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        migration.operation = MerchantMigrationOperation(
+            kind=MerchantMigrationOperationKind.cutover,
+            status=MerchantMigrationOperationStatus.running,
+            last_progress_at=utc_now() - progress_age,
+        )
+        await save_fixture(migration)
+
+        response = await client.post(
+            f"/v1/merchant-migrations/{migration.id}/records/tax-behavior",
+            json={"tax_behavior": "exclusive"},
+        )
+
+        assert response.status_code == 409
+        assert detail in response.json()["detail"]
 
 
 @pytest.mark.asyncio

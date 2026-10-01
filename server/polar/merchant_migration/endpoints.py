@@ -36,7 +36,9 @@ from .schemas import (
     MerchantMigrationImportRequest,
     MerchantMigrationRecordItem,
     MerchantMigrationRecordSummary,
+    MerchantMigrationRecordTaxUpdate,
     MerchantMigrationRecordUpdate,
+    MerchantMigrationTaxBehaviorUpdateResult,
     PanTransferChecklist,
     PanTransferStepComplete,
     PrecheckEntity,
@@ -501,6 +503,37 @@ async def records(
         pagination=pagination,
     )
     return ListResource.from_paginated_results(items, count, pagination)
+
+
+@router.post(
+    "/{id}/records/tax-behavior",
+    response_model=MerchantMigrationTaxBehaviorUpdateResult,
+    summary="Set Tax Behavior on Merchant Migration Subscriptions",
+    responses={
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+        409: {
+            "description": "A pre-check, import or switch is running or stalled.",
+            "model": MigrationOperationInProgress.schema(),
+        },
+    },
+)
+async def set_tax_behavior(
+    id: UUID4,
+    tax_behavior_update: MerchantMigrationRecordTaxUpdate,
+    auth_subject: MerchantMigrationWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> MerchantMigrationTaxBehaviorUpdateResult:
+    """Set the tax behavior on every subscription that hasn't switched yet."""
+    return await merchant_migration_service.set_tax_behavior(
+        session, auth_subject, id, tax_behavior_update
+    )
 
 
 @router.patch(

@@ -18,6 +18,7 @@ describe('isInjectedScriptError', () => {
     ['extension executor', ['app:///executors/200.js'], true],
     ['wallet provider', ['app:///inpage.js', 'app:///inpage.js'], true],
     ['userscript', ['app:///userscript.html'], true],
+    ['wallet background bundle', ['app:///background.bundle.js'], true],
     ['injected bundle', ['app:///out/mises_safe_injected.bundle.js'], true],
     ['our bundle', ['app:///_next/static/chunks/abc.js'], false],
     [

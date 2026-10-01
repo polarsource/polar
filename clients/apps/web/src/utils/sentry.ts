@@ -4,6 +4,7 @@ const INJECTED_SCRIPTS = [
   /^app:\/\/\/executors\//,
   /^app:\/\/\/inpage\.js/,
   /^app:\/\/\/userscript\.html/,
+  /^app:\/\/\/background\.bundle\.js/,
   /_injected[^/]*\.js/,
 ]
 

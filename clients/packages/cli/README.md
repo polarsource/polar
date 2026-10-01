@@ -118,12 +118,13 @@ independent of the changesets-driven npm release workflow for the other packages
 ### Homebrew
 
 Install with `brew install polarsource/tap/polar` and upgrade with
-`brew upgrade polarsource/tap/polar`. Stable CLI releases open a formula PR in
-`polarsource/homebrew-tap` using the monorepo's macOS/Linux arm64/x64 binaries.
+`brew upgrade polarsource/tap/polar`. After npm publishing succeeds, stable CLI
+releases update the formula in `polarsource/homebrew-tap` automatically using
+the monorepo's macOS/Linux arm64/x64 binaries.
 
 Before the first release, create that public tap repository with an initial commit
-and set `HOMEBREW_TAP_TOKEN` in `polarsource/polar`, scoped to Contents and Pull
-requests write access in the tap. Merge the generated tap PR to publish the formula.
+and set `HOMEBREW_TAP_TOKEN` in `polarsource/polar`, scoped to Contents write access
+in the tap. Its default branch must allow direct pushes from that token.
 
 ### npm
 

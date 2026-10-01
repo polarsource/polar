@@ -301,7 +301,7 @@ jobs:
             })
 
   homebrew:
-    needs: [prepare, release]
+    needs: [prepare, npm]
     if: needs.prepare.outputs.publish == 'true'
     uses: ./.github/workflows/publish_homebrew_cli.yml
     with:

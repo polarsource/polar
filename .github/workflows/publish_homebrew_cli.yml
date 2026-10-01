@@ -67,17 +67,14 @@ jobs:
           mkdir -p tap/Formula
           cp generated/Formula/polar.rb tap/Formula/polar.rb
 
-      - name: Open tap update pull request
-        uses: peter-evans/create-pull-request@v7
-        with:
-          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-          path: tap
-          add-paths: Formula/polar.rb
-          branch: homebrew-${{ inputs.tag }}
-          delete-branch: true
-          commit-message: 'polar: update to ${{ inputs.tag }}'
-          title: 'polar: update to ${{ inputs.tag }}'
-          body: |
-            Publish the stable CLI release ${{ inputs.tag }} from polarsource/polar.
-
-            Generated from its checksums.txt. Supports macOS and Linux, arm64 and x64.
+      - name: Publish formula
+        working-directory: tap
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          git add Formula/polar.rb
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m "polar: update to $RELEASE_TAG"
+          git push origin HEAD

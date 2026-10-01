@@ -85,9 +85,14 @@ export const update = Command.make(
         basename(executable) === 'polar' &&
         existsSync(join(dirname(dirname(executable)), 'INSTALL_RECEIPT.json'))
       ) {
+        yield* Console.log(ui.blank)
+        yield* Console.log(ui.warning('Polar is managed by Homebrew'))
         yield* Console.log(
-          'Polar is managed by Homebrew. Run brew upgrade polarsource/tap/polar to update.',
+          ui.step(
+            `Run ${ui.command('brew upgrade polarsource/tap/polar')} to update`,
+          ),
         )
+        yield* Console.log(ui.blank)
         return
       }
 

@@ -20,7 +20,7 @@ export const isTaxEditable = (row: TaxRow): boolean =>
 
 // Stripe left the tax unspecified, so the row reads as inclusive but stays
 // "Needs info" until the merchant saves a choice, even the same one.
-export const needsTaxDecision = (row: TaxRow): boolean =>
+const needsTaxDecision = (row: TaxRow): boolean =>
   row.reason_code === 'subscription_tax_behavior_unspecified'
 
 export const needsTaxUpdate = (row: TaxRow, target: TaxBehavior): boolean =>

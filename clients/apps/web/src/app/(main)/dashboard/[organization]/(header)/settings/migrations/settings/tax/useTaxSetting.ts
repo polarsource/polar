@@ -3,9 +3,9 @@ import { TaxBehavior, TaxBreakdown } from '../../bulkTax/bulkTaxRecords'
 import { useBulkTaxUpdate } from '../../bulkTax/useBulkTaxUpdate'
 import { useTaxBreakdown } from '../../bulkTax/useTaxBreakdown'
 
-export type TaxCurrent = TaxBehavior | 'mixed'
+type TaxCurrent = TaxBehavior | 'mixed'
 
-export interface TaxOptionProps {
+export interface TaxSettingProps {
   current: TaxCurrent
   canApply: (target: TaxBehavior) => boolean
   onApply: (target: TaxBehavior) => void
@@ -37,7 +37,7 @@ export function useTaxSetting(
   }, [controller.busy])
 
   const counts = breakdown.data
-  const option: TaxOptionProps | null = counts
+  const option: TaxSettingProps | null = counts
     ? {
         current: currentTax(counts),
         canApply: (target) => affected(counts, target) > 0,

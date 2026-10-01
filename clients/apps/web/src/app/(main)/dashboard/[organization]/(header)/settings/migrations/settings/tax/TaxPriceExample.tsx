@@ -4,13 +4,15 @@ import { Button, SegmentedControl, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useState } from 'react'
 import { TaxBehavior } from '../../bulkTax/bulkTaxRecords'
-import { APPLIED_LABEL, APPLY_LABEL, TAX_SETTING_MIXED } from './taxSettingCopy'
-import { initialChoice, TaxOptionProps } from './useTaxSetting'
+import { initialChoice, TaxSettingProps } from './useTaxSetting'
 
 const OPTIONS: { value: TaxBehavior; label: string }[] = [
   { value: 'inclusive', label: 'Tax included' },
   { value: 'exclusive', label: 'Tax on top' },
 ]
+
+const MIXED_NOTE =
+  'Right now some subscriptions include tax and some add it on top.'
 
 // Illustration only: a $10.00 price with 20% VAT.
 const EXAMPLE: Record<TaxBehavior, { tax: string; pays: string }> = {
@@ -18,11 +20,11 @@ const EXAMPLE: Record<TaxBehavior, { tax: string; pays: string }> = {
   exclusive: { tax: '+ $2.00', pays: '$12.00' },
 }
 
-export function TaxOptionExample({
+export function TaxPriceExample({
   current,
   canApply,
   onApply,
-}: TaxOptionProps) {
+}: TaxSettingProps) {
   const [choice, setChoice] = useState(initialChoice(current))
   const example = EXAMPLE[choice]
 
@@ -40,7 +42,7 @@ export function TaxOptionExample({
           onClick={() => onApply(choice)}
           disabled={!canApply(choice)}
         >
-          {canApply(choice) ? APPLY_LABEL : APPLIED_LABEL}
+          {canApply(choice) ? 'Apply to all' : 'Already applied'}
         </Button>
       </Box>
       <Box
@@ -63,7 +65,7 @@ export function TaxOptionExample({
       </Box>
       {current === 'mixed' ? (
         <Text variant="caption" color="muted">
-          {TAX_SETTING_MIXED}
+          {MIXED_NOTE}
         </Text>
       ) : null}
     </Box>

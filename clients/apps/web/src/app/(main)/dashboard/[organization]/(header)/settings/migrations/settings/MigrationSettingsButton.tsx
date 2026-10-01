@@ -1,23 +1,10 @@
 'use client'
 
-import {
-  Button,
-  InlineModal,
-  InlineModalHeader,
-  Modal,
-  Text,
-} from '@polar-sh/orbit'
+import { Button, Modal } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { SlidersHorizontal } from 'lucide-react'
-import { useSearchParams } from 'next/navigation'
 import { useCallback, useState } from 'react'
 import { MigrationSettingsPanel } from './MigrationSettingsPanel'
-
-const TITLE = 'Advanced settings'
-
-// Temporary: `?bulkTax=drawer` opens the settings in the side drawer instead
-// of the centered modal, while the two are compared.
-const useDrawer = () => useSearchParams().get('bulkTax') === 'drawer'
 
 export function MigrationSettingsButton({
   migrationId,
@@ -26,7 +13,6 @@ export function MigrationSettingsButton({
   migrationId: string
   disabled?: boolean
 }) {
-  const drawer = useDrawer()
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState<Set<string>>(() => new Set())
 
@@ -43,13 +29,6 @@ export function MigrationSettingsButton({
     if (busy.size === 0) setOpen(false)
   }
 
-  const panel = (
-    <MigrationSettingsPanel
-      migrationId={migrationId}
-      onBusyChange={onBusyChange}
-    />
-  )
-
   return (
     <>
       <Button
@@ -63,35 +42,19 @@ export function MigrationSettingsButton({
           Advanced
         </Box>
       </Button>
-      {drawer ? (
-        <InlineModal
-          isShown={open}
-          hide={hide}
-          modalContent={
-            <Box flexDirection="column" height="100%">
-              <InlineModalHeader hide={hide}>
-                <Text variant="heading-xs" as="h2">
-                  {TITLE}
-                </Text>
-              </InlineModalHeader>
-              <Box flexDirection="column" padding="xl" overflowY="auto">
-                {panel}
-              </Box>
-            </Box>
-          }
-        />
-      ) : (
-        <Modal
-          title={TITLE}
-          isShown={open}
-          hide={hide}
-          modalContent={
-            <Box flexDirection="column" padding="xl">
-              {panel}
-            </Box>
-          }
-        />
-      )}
+      <Modal
+        title="Advanced settings"
+        isShown={open}
+        hide={hide}
+        modalContent={
+          <Box flexDirection="column" padding="xl">
+            <MigrationSettingsPanel
+              migrationId={migrationId}
+              onBusyChange={onBusyChange}
+            />
+          </Box>
+        }
+      />
     </>
   )
 }

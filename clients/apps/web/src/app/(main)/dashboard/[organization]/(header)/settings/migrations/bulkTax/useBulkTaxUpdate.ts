@@ -12,12 +12,12 @@ import {
 
 const CONCURRENCY = 5
 
-export interface BulkTaxFailure {
+interface BulkTaxFailure {
   row: TaxRow
   message: string
 }
 
-export type BulkTaxPhase = 'idle' | 'collecting' | 'running' | 'done'
+type BulkTaxPhase = 'idle' | 'collecting' | 'running' | 'done'
 
 export interface BulkTaxState {
   phase: BulkTaxPhase
@@ -39,7 +39,7 @@ const IDLE: BulkTaxState = {
   error: null,
 }
 
-export type RowFilter = (row: TaxRow) => boolean
+type RowFilter = (row: TaxRow) => boolean
 
 export function useBulkTaxUpdate(migrationId: string) {
   const [state, setState] = useState<BulkTaxState>(IDLE)

@@ -7,13 +7,7 @@ import { BulkTaxController } from './useBulkTaxUpdate'
 
 const SHOWN_FAILURES = 5
 
-export function BulkTaxProgressBar({
-  done,
-  total,
-}: {
-  done: number
-  total: number
-}) {
+function BulkTaxProgressBar({ done, total }: { done: number; total: number }) {
   const percent = total > 0 ? Math.round((done / total) * 100) : 0
   return (
     <Box

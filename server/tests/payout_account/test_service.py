@@ -83,8 +83,11 @@ class TestCreate:
             )
         )
         enqueue_job_mock = mocker.patch("polar.payout_account.service.enqueue_job")
+        organization_enqueue_job_mock = mocker.patch(
+            "polar.organization.service.enqueue_job"
+        )
 
-        payout_account = await payout_account_service.create(
+        await payout_account_service.create(
             auth_subject,
             session,
             PayoutAccountCreate(
@@ -94,11 +97,15 @@ class TestCreate:
             ),
         )
 
-        enqueue_job_mock.assert_any_call(
-            "organization.sync_payout_account_website",
-            organization_id=organization.id,
-            payout_account_id=payout_account.id,
-        )
+        sync_calls = [
+            call
+            for call in (
+                enqueue_job_mock.call_args_list
+                + organization_enqueue_job_mock.call_args_list
+            )
+            if call.args == ("organization.sync_payout_account_website",)
+        ]
+        assert len(sync_calls) == 1
 
     @pytest.mark.auth
     async def test_does_not_unlink_a_ready_account(

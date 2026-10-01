@@ -148,14 +148,14 @@ class PayoutAccountService:
             await organization_service.set_payout_account(
                 session, organization, payout_account
             )
-
-        # Stripe reads the website off the account during onboarding, so the new one
-        # needs it even when the organization stayed on its old account.
-        enqueue_job(
-            "organization.sync_payout_account_website",
-            organization_id=organization.id,
-            payout_account_id=payout_account.id,
-        )
+        else:
+            # Stripe reads the website off the account during onboarding, so the new
+            # one needs it even when the organization stayed on its old account.
+            enqueue_job(
+                "organization.sync_payout_account_website",
+                organization_id=organization.id,
+                payout_account_id=payout_account.id,
+            )
 
         return payout_account
 

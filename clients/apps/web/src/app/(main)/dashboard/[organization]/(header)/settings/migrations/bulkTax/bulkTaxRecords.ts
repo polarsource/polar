@@ -1,4 +1,5 @@
 import { schemas } from '@polar-sh/client'
+import { isSwitched } from '../switch/switchRows'
 
 export type TaxBehavior = schemas['TaxBehavior']
 export type TaxRow = schemas['MerchantMigrationRecordItem']
@@ -12,7 +13,7 @@ export type EditableTaxRow = TaxRow & { record_id: string }
 
 export const isTaxEditable = (row: TaxRow): row is EditableTaxRow =>
   row.record_id != null &&
-  row.cutover_status !== 'moved' &&
+  !isSwitched(row) &&
   row.status !== 'skipped' &&
   row.import_status !== 'skipped'
 

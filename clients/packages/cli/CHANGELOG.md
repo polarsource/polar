@@ -1,5 +1,11 @@
 # @polar-sh/cli
 
+## 2.0.1
+
+### Patch Changes
+
+- 96ac1df: Support detecting and updating CLI installations managed by Vite+ (`vp`).
+
 ## 2.0.0
 
 ### Major Changes

@@ -1,0 +1,99 @@
+.github/workflows/release_cli.yml
+  s_fd528823e8d35d::t_99a58f28b80bcc 63-68,87-90,116,143,168-182,235,285,301-330
+.github/workflows/test_client.yaml
+  s_fd528823e8d35d::t_65b583db91ebfe 103
+clients/apps/app/app/(authenticated)/notifications/index.tsx
+  s_fd528823e8d35d::t_c100e5e0ef3b47 24
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ImportedHandoff.tsx
+  s_fd528823e8d35d::t_37482d2828b7ca 11,27-30,59,62-64,95,98-102,116-120
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/importSummary.test.ts
+  s_fd528823e8d35d::t_7d3f721826f067 8,99-126
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/importSummary.ts
+  s_fd528823e8d35d::t_a90bbbf80baf8b 5-12,20,25,29-40
+clients/apps/web/src/components/Landing/Testimonials.tsx
+  s_fd528823e8d35d::t_f182933d0a821e 199-202
+clients/apps/web/src/components/Landing/chapters/PlatformVignettes.tsx
+  s_fd528823e8d35d::t_49f50888cb0c74 9-11,17-21,32
+clients/apps/web/src/components/Landing/features/FeaturePageLayout.tsx
+  s_fd528823e8d35d::t_38621e7efe6ad5 47,51
+clients/apps/web/src/components/Notifications/NotificationRow.tsx
+  s_fd528823e8d35d::t_c71e33512c0767 1-235
+clients/apps/web/src/components/Notifications/NotificationsPopover.tsx
+  s_fd528823e8d35d::t_a04a105360e2f0 3-4,10-11,14,16,18-30,35,41-44,46-47,51-76,78-89,91-99,101-104,108
+clients/package.json
+  s_fd528823e8d35d::t_284a608b8aec15 18-19
+clients/packages/cli/README.md
+  s_fd528823e8d35d::t_09fa66cee00f6b 30,119,126,131,140-185,222
+clients/packages/cli/package.json
+  s_fd528823e8d35d::t_326f3fe86e7aa0 2,21-28
+clients/packages/cli/scripts/npm-manifest.test.ts
+  s_fd528823e8d35d::t_fecd0a9c60b13d 1-88
+clients/packages/cli/scripts/npm-manifest.ts
+  s_fd528823e8d35d::t_b0ecb765917f64 1-125
+clients/packages/cli/scripts/npm-package.ts
+  s_fd528823e8d35d::t_d8bc1b88690460 1-36
+clients/packages/cli/scripts/npm-postinstall.mjs
+  s_fd528823e8d35d::t_728321e139f2f0 1-123
+clients/packages/cli/scripts/npm-publish.ts
+  s_fd528823e8d35d::t_dc641736e66696 1-86
+clients/packages/cli/src/cli.ts
+  s_fd528823e8d35d::t_7486de12190eca 24,29-32,51-53,66
+clients/packages/cli/src/commands/update.test.ts
+  s_fd528823e8d35d::t_adaea939b8ec61 20,26-61,63-70,72-73,77-120
+clients/packages/cli/src/commands/update.ts
+  s_fd528823e8d35d::t_c152e72ea5bc82 1-2,8-9,20-30,41,44-47,49-53,55-65,67-78,80-88,90-92
+clients/packages/cli/src/services/updater.test.ts
+  s_fd528823e8d35d::t_38a1faf60ec19a 1-324
+clients/packages/cli/src/services/updater.ts
+  s_fd528823e8d35d::t_a8f01fd4fd5c6b 1-254
+clients/packages/cli/src/utils/errors.ts
+  s_fd528823e8d35d::t_536708b7c9ada7 6,13,46,70-71
+clients/packages/client/src/v1.ts
+  s_fd528823e8d35d::t_1da02db3cfcdd9 57066,57076
+docs/integrate/webhooks/endpoints.mdx
+  s_fd528823e8d35d::t_7000c610289043 79-87
+docs/integrate/webhooks/locally.mdx
+  s_fd528823e8d35d::t_72e0a8e61f51b0 15-23
+server/migrations/versions/2026-09-30-0921_drop_product_prices_seat_tiers.py
+  s_fd528823e8d35d::t_5db3b1b2ec7df4 1-45
+server/polar/merchant_migration/endpoints.py
+  s_fd528823e8d35d::t_8e9e5625a63d4b 306-307,310-311
+server/polar/merchant_migration/pan_transfer.py
+  s_fd528823e8d35d::t_7336fb6b9e3f87 369-393
+server/polar/merchant_migration/repository.py
+  s_fd528823e8d35d::t_743d4726e79a63 11,24,239-280,733-758,806
+server/polar/models/product_price.py
+  s_fd528823e8d35d::t_8e6383f07678f3 451
+server/polar/oauth2/grants/authorization_code.py
+  s_fd528823e8d35d::t_4fa8f595859e92 172-173
+server/polar/oauth2/requests.py
+  s_fd528823e8d35d::t_2aa4c8e3741e9e 28-32,43-57
+server/polar/organization/tasks.py
+  s_fd528823e8d35d::t_e58a1488707e8f 529,577,579-584,590-601
+server/scripts/migrate_organizations_members.py
+  s_fd528823e8d35d::t_facbd58d20b907 9,23,38,101-118,129-131,146,834,839,898-900,916-921
+server/tests/merchant_migration/test_pan_transfer.py
+  s_fd528823e8d35d::t_adc5b1606fa15d 166-189
+server/tests/merchant_migration/test_service.py
+  s_fd528823e8d35d::t_a1246cb6998f01 52-53,4420-4664
+server/tests/oauth2/endpoints/test_oauth2.py
+  s_fd528823e8d35d::t_6d172cec664391 883-885,930-935,982-984,1031-1036,1194-1196
+server/tests/organization/test_backfill_members.py
+  s_fd528823e8d35d::t_2246d8c7f2effc 36,3205-3326
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "53378e294beb1c97419e34830e20b70f17f8511e",
+  "prompts": {},
+  "sessions": {
+    "s_fd528823e8d35d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

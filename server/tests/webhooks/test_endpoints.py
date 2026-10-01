@@ -7,6 +7,7 @@ from polar.models.organization import Organization
 from polar.models.user_organization import UserOrganization
 from polar.models.webhook_delivery import WebhookDelivery
 from polar.models.webhook_endpoint import WebhookEndpoint
+from polar.version import V2026_04, V2026_10
 from tests.fixtures.auth import AuthSubjectFixture
 
 
@@ -124,7 +125,8 @@ class TestCreateWebhookEndpoint:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
     )
-    async def test_current_accepts_deprecated_secret(self, client: AsyncClient) -> None:
+    @pytest.mark.api_version(V2026_04)
+    async def test_2026_04_accepts_deprecated_secret(self, client: AsyncClient) -> None:
         custom_secret = "whsec_ovyN6cPrTv56AApvzCaJno08SSmGJmgbWilb33N2JuK"
         params = {
             "url": "https://example.com/hook",
@@ -140,7 +142,8 @@ class TestCreateWebhookEndpoint:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
     )
-    async def test_next_ignores_deprecated_secret(self, client: AsyncClient) -> None:
+    @pytest.mark.api_version(V2026_10)
+    async def test_2026_10_ignores_deprecated_secret(self, client: AsyncClient) -> None:
         custom_secret = "whsec_ovyN6cPrTv56AApvzCaJno08SSmGJmgbWilb33N2JuK"
         params = {
             "url": "https://example.com/hook",
@@ -148,11 +151,7 @@ class TestCreateWebhookEndpoint:
             "events": [],
             "secret": custom_secret,
         }
-        response = await client.post(
-            "/v1/webhooks/endpoints",
-            json=params,
-            headers={"Polar-Version": "2026-10"},
-        )
+        response = await client.post("/v1/webhooks/endpoints", json=params)
 
         assert response.status_code == 201
         assert response.json()["secret"] != custom_secret
@@ -214,7 +213,8 @@ class TestUpdateWebhookEndpoint:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
     )
-    async def test_current_accepts_deprecated_secret(
+    @pytest.mark.api_version(V2026_04)
+    async def test_2026_04_accepts_deprecated_secret(
         self, client: AsyncClient, webhook_endpoint_organization: WebhookEndpoint
     ) -> None:
         custom_secret = "whsec_ovyN6cPrTv56AApvzCaJno08SSmGJmgbWilb33N2JuK"
@@ -229,7 +229,8 @@ class TestUpdateWebhookEndpoint:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
     )
-    async def test_next_ignores_deprecated_secret(
+    @pytest.mark.api_version(V2026_10)
+    async def test_2026_10_ignores_deprecated_secret(
         self, client: AsyncClient, webhook_endpoint_organization: WebhookEndpoint
     ) -> None:
         old_secret = webhook_endpoint_organization.secret
@@ -239,7 +240,6 @@ class TestUpdateWebhookEndpoint:
                 "secret": "whsec_ovyN6cPrTv56AApvzCaJno08SSmGJmgbWilb33N2JuK",
                 "url": "https://example.com/hook-updated",
             },
-            headers={"Polar-Version": "2026-10"},
         )
 
         assert response.status_code == 200

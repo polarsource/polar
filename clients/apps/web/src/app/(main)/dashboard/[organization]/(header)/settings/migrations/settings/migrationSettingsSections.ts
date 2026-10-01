@@ -1,17 +1,11 @@
 import { ComponentType } from 'react'
-import { TaxAfterSwitchSection } from './tax/TaxAfterSwitchSection'
-
-export interface MigrationSettingsSectionProps {
-  migrationId: string
-  // A section mid-run keeps the panel open, so its progress isn't lost.
-  onBusyChange: (busy: boolean) => void
-}
+import { TaxAfterSwitchSection } from './TaxAfterSwitchSection'
 
 export interface MigrationSettingsSection {
   key: string
   title: string
   description: string
-  Component: ComponentType<MigrationSettingsSectionProps>
+  Component: ComponentType<{ migrationId: string }>
 }
 
 export const MIGRATION_SETTINGS_SECTIONS: MigrationSettingsSection[] = [

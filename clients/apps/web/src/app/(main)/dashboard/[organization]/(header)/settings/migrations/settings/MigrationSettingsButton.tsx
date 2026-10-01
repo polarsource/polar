@@ -3,7 +3,7 @@
 import { Button, Modal } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { SlidersHorizontal } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 import { MigrationSettingsPanel } from './MigrationSettingsPanel'
 
 export function MigrationSettingsButton({
@@ -14,20 +14,6 @@ export function MigrationSettingsButton({
   disabled: boolean
 }) {
   const [open, setOpen] = useState(false)
-  const [busy, setBusy] = useState<Set<string>>(() => new Set())
-
-  const onBusyChange = useCallback((key: string, value: boolean) => {
-    setBusy((prev) => {
-      if (prev.has(key) === value) return prev
-      const next = new Set(prev)
-      if (value) next.add(key)
-      else next.delete(key)
-      return next
-    })
-  }, [])
-  const hide = () => {
-    if (busy.size === 0) setOpen(false)
-  }
 
   return (
     <>
@@ -45,13 +31,10 @@ export function MigrationSettingsButton({
       <Modal
         title="Advanced settings"
         isShown={open}
-        hide={hide}
+        hide={() => setOpen(false)}
         modalContent={
           <Box flexDirection="column" padding="xl">
-            <MigrationSettingsPanel
-              migrationId={migrationId}
-              onBusyChange={onBusyChange}
-            />
+            <MigrationSettingsPanel migrationId={migrationId} />
           </Box>
         }
       />

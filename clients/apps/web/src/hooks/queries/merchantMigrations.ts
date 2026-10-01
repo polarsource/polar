@@ -259,40 +259,6 @@ export const useMigrationRecords = (
     refetchInterval: refetchInterval ?? false,
   })
 
-// The records endpoint caps a page at 100 and has no "not switched" filter, so
-// callers that need the whole list walk every page and narrow it themselves.
-export const fetchAllMigrationRecords = async (
-  id: string,
-  entity: schemas['PrecheckEntity'],
-) => {
-  const items: schemas['MerchantMigrationRecordItem'][] = []
-  for (let page = 1; ; page++) {
-    const result = await unwrap(
-      api.GET('/v1/merchant-migrations/{id}/records', {
-        params: { path: { id }, query: { entity, page, limit: 100 } },
-      }),
-    )
-    items.push(...result.items)
-    if (page >= result.pagination.max_page) {
-      return items
-    }
-  }
-}
-
-// Under the records key, so `invalidateMigrationRecords` refreshes it too.
-export const useAllMigrationRecords = <T>(
-  id: string,
-  entity: schemas['PrecheckEntity'],
-  select: (items: schemas['MerchantMigrationRecordItem'][]) => T,
-) =>
-  useQuery({
-    queryKey: ['merchantMigrationRecords', { id, entity, all: true }],
-    queryFn: () => fetchAllMigrationRecords(id, entity),
-    select,
-    retry: defaultRetry,
-    enabled: !!id,
-  })
-
 const switchKey = (id: string) => ['merchantMigrationSwitch', { id }]
 
 export const useMigrationSwitch = (id: string) =>
@@ -347,18 +313,20 @@ export const useMerchantMigrationRecordSummary = (
     refetchInterval: refetchInterval ?? false,
   })
 
-export const updateMigrationRecord = (
-  id: string,
-  recordId: string,
-  update: schemas['MerchantMigrationRecordUpdate'],
-) =>
-  dataOrThrow(
-    api.PATCH('/v1/merchant-migrations/{id}/records/{record_id}', {
-      params: { path: { id, record_id: recordId } },
-      body: update,
-    }),
-    "We couldn't save the migration record.",
-  )
+export const useSetMigrationTaxBehavior = (id: string) =>
+  useMutation({
+    mutationFn: (taxBehavior: schemas['TaxBehavior']) =>
+      dataOrThrow(
+        api.POST('/v1/merchant-migrations/{id}/records/tax-behavior', {
+          params: { path: { id } },
+          body: { tax_behavior: taxBehavior },
+        }),
+        "We couldn't update the tax setting.",
+      ),
+    onSuccess: () => {
+      invalidateMigrationRecords(id)
+    },
+  })
 
 export const useUpdateMigrationRecord = (id: string) =>
   useMutation({
@@ -368,7 +336,14 @@ export const useUpdateMigrationRecord = (id: string) =>
     }: {
       recordId: string
       update: schemas['MerchantMigrationRecordUpdate']
-    }) => updateMigrationRecord(id, recordId, update),
+    }) =>
+      dataOrThrow(
+        api.PATCH('/v1/merchant-migrations/{id}/records/{record_id}', {
+          params: { path: { id, record_id: recordId } },
+          body: update,
+        }),
+        "We couldn't save the migration record.",
+      ),
     onSuccess: () => {
       invalidateMigrationRecords(id)
     },

@@ -2,7 +2,7 @@ import { extractApiErrorMessage } from '@/utils/api/errors'
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useIsMutating, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 const ACTIVE_OPERATION_STATUSES = new Set(['pending', 'running'])
@@ -313,8 +313,11 @@ export const useMerchantMigrationRecordSummary = (
     refetchInterval: refetchInterval ?? false,
   })
 
+const setTaxBehaviorKey = (id: string) => ['setMigrationTaxBehavior', { id }]
+
 export const useSetMigrationTaxBehavior = (id: string) =>
   useMutation({
+    mutationKey: setTaxBehaviorKey(id),
     mutationFn: (taxBehavior: schemas['TaxBehavior']) =>
       dataOrThrow(
         api.POST('/v1/merchant-migrations/{id}/records/tax-behavior', {
@@ -327,6 +330,9 @@ export const useSetMigrationTaxBehavior = (id: string) =>
       invalidateMigrationRecords(id)
     },
   })
+
+export const useIsSettingMigrationTaxBehavior = (id: string) =>
+  useIsMutating({ mutationKey: setTaxBehaviorKey(id) }) > 0
 
 export const useUpdateMigrationRecord = (id: string) =>
   useMutation({

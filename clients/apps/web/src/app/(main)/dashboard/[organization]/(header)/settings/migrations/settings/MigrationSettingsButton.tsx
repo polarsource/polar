@@ -1,6 +1,7 @@
 'use client'
 
 import { useModal } from '@/components/Modal/useModal'
+import { useIsSettingMigrationTaxBehavior } from '@/hooks/queries/merchantMigrations'
 import { Button, Modal } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { SlidersHorizontal } from 'lucide-react'
@@ -14,6 +15,8 @@ export function MigrationSettingsButton({
   disabled: boolean
 }) {
   const { isShown, show, hide } = useModal()
+  // Closing mid-request would drop its result and allow a second apply.
+  const busy = useIsSettingMigrationTaxBehavior(migrationId)
 
   return (
     <>
@@ -26,7 +29,9 @@ export function MigrationSettingsButton({
       <Modal
         title="Advanced settings"
         isShown={isShown}
-        hide={hide}
+        hide={() => {
+          if (!busy) hide()
+        }}
         modalContent={
           <Box flexDirection="column" padding="xl">
             <MigrationSettingsPanel migrationId={migrationId} />

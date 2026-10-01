@@ -46,6 +46,7 @@ export function TaxAfterSwitchSection({
           size="sm"
           value={choice}
           onChange={(next) => {
+            if (setTaxBehavior.isPending) return
             setChoice(next)
             setTaxBehavior.reset()
           }}

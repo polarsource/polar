@@ -122,6 +122,9 @@ _IMPORT_TASK = "merchant_migration.import_catalog"
 _PRECHECK_KINDS = {None, MerchantMigrationOperationKind.precheck}
 _IMPORT_FAILURE = "We couldn't prepare these subscriptions. Please try again."
 _STALLED_CUTOVER_ERROR = "Switch stalled with no progress; start it again to resume."
+_STALLED_OPERATION_ERROR = (
+    "The last migration job stalled. Start it again, then try once it finishes."
+)
 _CARDS_ALREADY_ON_POLAR = "Every card was already on Polar, so nothing had to move."
 
 
@@ -257,11 +260,11 @@ class CatalogImportNotReady(MerchantMigrationError):
 
 
 class MigrationOperationInProgress(MerchantMigrationError):
-    def __init__(self) -> None:
-        super().__init__(
-            "This migration already has a job running. Wait for it to finish.",
-            409,
-        )
+    def __init__(
+        self,
+        message: str = "This migration already has a job running. Wait for it to finish.",
+    ) -> None:
+        super().__init__(message, 409)
 
 
 class CutoverNotStarted(MerchantMigrationError):
@@ -1648,8 +1651,13 @@ class MerchantMigrationService:
         # Stalled counts too: a slow switch worker still holds record locks this
         # UPDATE would wait on, and a pre-check re-stages records from tax values
         # it saved before this write.
-        if migration.operation is not None and migration.operation.is_active:
-            raise MigrationOperationInProgress()
+        operation = migration.operation
+        if operation is not None and operation.is_active:
+            raise (
+                MigrationOperationInProgress(_STALLED_OPERATION_ERROR)
+                if operation.is_stalled()
+                else MigrationOperationInProgress()
+            )
         updated = await MerchantMigrationRecordRepository.from_session(
             session
         ).set_subscription_tax_behavior(migration.id, update.tax_behavior)

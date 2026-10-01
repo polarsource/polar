@@ -85,7 +85,11 @@ export function MigrationSettingsButton({
           title={TITLE}
           isShown={open}
           hide={hide}
-          modalContent={<Box padding="xl">{panel}</Box>}
+          modalContent={
+            <Box flexDirection="column" padding="xl">
+              {panel}
+            </Box>
+          }
         />
       )}
     </>

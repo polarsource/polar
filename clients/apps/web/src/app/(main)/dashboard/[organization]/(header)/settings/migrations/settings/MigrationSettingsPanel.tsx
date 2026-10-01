@@ -22,7 +22,7 @@ export function MigrationSettingsPanel({
             ) : null}
             <Box as="section" flexDirection="column" rowGap="l">
               <Box flexDirection="column" rowGap="xs">
-                <Text variant="heading-xs" as="h3">
+                <Text variant="heading-xxs" as="h3">
                   {title}
                 </Text>
                 <Text variant="caption" color="muted">

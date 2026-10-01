@@ -1,0 +1,47 @@
+---
+title: "polar organizations"
+sidebarTitle: "organizations"
+---
+
+{/* Generated from the CLI by `pnpm --filter @polar-sh/cli docs:generate`. Do not edit by hand. */}
+
+```bash
+polar organizations <subcommand> [flags]
+```
+
+**Subcommands**
+
+- [`polar organizations get`](#polar-organizations-get) Get an organization by ID.
+- [`polar organizations list`](#polar-organizations-list) List organizations.
+
+## polar organizations get
+
+Get an organization by ID.
+
+```bash
+polar organizations get [flags] <id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+
+## polar organizations list
+
+List organizations.
+
+```bash
+polar organizations list [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--slug` | `string` | Filter by slug. |
+| `--page` | `integer` | Page number, defaults to 1. |
+| `--limit` | `integer` | Size of a page, defaults to 10. Maximum is 100. |
+| `--sorting` | `choice` | Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. (choices: created_at, -created_at, slug, -slug, name, -name, next_review_threshold, -next_review_threshold, days_in_status, -days_in_status) |

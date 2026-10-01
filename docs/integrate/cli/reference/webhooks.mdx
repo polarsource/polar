@@ -1,0 +1,170 @@
+---
+title: "polar webhooks"
+sidebarTitle: "webhooks"
+---
+
+{/* Generated from the CLI by `pnpm --filter @polar-sh/cli docs:generate`. Do not edit by hand. */}
+
+```bash
+polar webhooks <subcommand> [flags]
+```
+
+**Subcommands**
+
+- [`polar webhooks create_webhook_endpoint`](#polar-webhooks-create_webhook_endpoint) Create a webhook endpoint.
+- [`polar webhooks delete_webhook_endpoint`](#polar-webhooks-delete_webhook_endpoint) Delete a webhook endpoint.
+- [`polar webhooks get_webhook_endpoint`](#polar-webhooks-get_webhook_endpoint) Get a webhook endpoint by ID.
+- [`polar webhooks list_webhook_deliveries`](#polar-webhooks-list_webhook_deliveries) List webhook deliveries.
+- [`polar webhooks list_webhook_endpoints`](#polar-webhooks-list_webhook_endpoints) List webhook endpoints.
+- [`polar webhooks redeliver_webhook_event`](#polar-webhooks-redeliver_webhook_event) Schedule the re-delivery of a webhook event.
+- [`polar webhooks reset_webhook_endpoint_secret`](#polar-webhooks-reset_webhook_endpoint_secret) Regenerate a webhook endpoint secret.
+- [`polar webhooks update_webhook_endpoint`](#polar-webhooks-update_webhook_endpoint) Update a webhook endpoint.
+
+## polar webhooks create_webhook_endpoint
+
+Create a webhook endpoint.
+
+```bash
+polar webhooks create_webhook_endpoint [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--url` | `string` | Required. The URL where the webhook events will be sent. |
+| `--name` | `string` | An optional name for the webhook endpoint to help organize and identify it. |
+| `--api-version` | `choice` | The API version that'll be used in event payloads. (choices: 2026-04, 2026-10) |
+| `--format` | `choice` | Required. The format of the webhook payload. (choices: raw, discord, slack) |
+| `--events` | `choice` | Required. The events that will trigger the webhook. (choices: checkout.created, checkout.updated, checkout.expired, customer.created, customer.updated, customer.deleted, customer.state_changed, customer_seat.assigned, customer_seat.claimed, customer_seat.revoked, member.created, member.updated, member.deleted, order.created, order.updated, order.paid, order.refunded, subscription.created, subscription.updated, subscription.active, subscription.canceled, subscription.uncanceled, subscription.cycled, subscription.revoked, subscription.past_due, subscription.paused, subscription.resumed, subscription.migrated, refund.created, refund.updated, product.created, product.updated, discount.created, discount.updated, discount.deleted, benefit.created, benefit.updated, benefit_grant.created, benefit_grant.cycled, benefit_grant.updated, benefit_grant.revoked, organization.updated) |
+| `--organization-id`, `--org` | `string` | The organization ID associated with the webhook endpoint. Defaults to the active organization. |
+
+## polar webhooks delete_webhook_endpoint
+
+Delete a webhook endpoint.
+
+```bash
+polar webhooks delete_webhook_endpoint [flags] <id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--confirm`, `-c` | `boolean` | Skip the confirmation prompt for destructive requests |
+
+## polar webhooks get_webhook_endpoint
+
+Get a webhook endpoint by ID.
+
+```bash
+polar webhooks get_webhook_endpoint [flags] <id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+
+## polar webhooks list_webhook_deliveries
+
+List webhook deliveries.
+
+```bash
+polar webhooks list_webhook_deliveries [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--endpoint-id` | `string` | Filter by webhook endpoint ID. |
+| `--start-timestamp` | `string` | Filter deliveries after this timestamp. |
+| `--end-timestamp` | `string` | Filter deliveries before this timestamp. |
+| `--succeeded` | `boolean` | Filter by delivery success status. |
+| `--query` | `string` | Query to filter webhook deliveries. |
+| `--http-code-class` | `choice` | Filter by HTTP response code class (2xx, 3xx, 4xx, 5xx). (choices: 2xx, 3xx, 4xx, 5xx) |
+| `--event-type` | `choice` | Filter by webhook event type. (choices: checkout.created, checkout.updated, checkout.expired, customer.created, customer.updated, customer.deleted, customer.state_changed, customer_seat.assigned, customer_seat.claimed, customer_seat.revoked, member.created, member.updated, member.deleted, order.created, order.updated, order.paid, order.refunded, subscription.created, subscription.updated, subscription.active, subscription.canceled, subscription.uncanceled, subscription.cycled, subscription.revoked, subscription.past_due, subscription.paused, subscription.resumed, subscription.migrated, refund.created, refund.updated, product.created, product.updated, discount.created, discount.updated, discount.deleted, benefit.created, benefit.updated, benefit_grant.created, benefit_grant.cycled, benefit_grant.updated, benefit_grant.revoked, organization.updated) |
+| `--page` | `integer` | Page number, defaults to 1. |
+| `--limit` | `integer` | Size of a page, defaults to 10. Maximum is 100. |
+
+## polar webhooks list_webhook_endpoints
+
+List webhook endpoints.
+
+```bash
+polar webhooks list_webhook_endpoints [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--organization-id`, `--org` | `string` | Filter by organization ID. Defaults to the active organization. |
+| `--page` | `integer` | Page number, defaults to 1. |
+| `--limit` | `integer` | Size of a page, defaults to 10. Maximum is 100. |
+
+## polar webhooks redeliver_webhook_event
+
+Schedule the re-delivery of a webhook event.
+
+```bash
+polar webhooks redeliver_webhook_event [flags] <id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+
+## polar webhooks reset_webhook_endpoint_secret
+
+Regenerate a webhook endpoint secret.
+
+```bash
+polar webhooks reset_webhook_endpoint_secret [flags] <id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+
+## polar webhooks update_webhook_endpoint
+
+Update a webhook endpoint.
+
+```bash
+polar webhooks update_webhook_endpoint [flags] <id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--confirm`, `-c` | `boolean` | Skip the confirmation prompt for destructive requests |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--url` | `string` | url |
+| `--name` | `string` | An optional name for the webhook endpoint to help organize and identify it. |
+| `--api-version` | `choice` | The API version that'll be used in event payloads. (choices: 2026-04, 2026-10) |
+| `--format` | `choice` | format (choices: raw, discord, slack) |
+| `--events` | `choice` | events (choices: checkout.created, checkout.updated, checkout.expired, customer.created, customer.updated, customer.deleted, customer.state_changed, customer_seat.assigned, customer_seat.claimed, customer_seat.revoked, member.created, member.updated, member.deleted, order.created, order.updated, order.paid, order.refunded, subscription.created, subscription.updated, subscription.active, subscription.canceled, subscription.uncanceled, subscription.cycled, subscription.revoked, subscription.past_due, subscription.paused, subscription.resumed, subscription.migrated, refund.created, refund.updated, product.created, product.updated, discount.created, discount.updated, discount.deleted, benefit.created, benefit.updated, benefit_grant.created, benefit_grant.cycled, benefit_grant.updated, benefit_grant.revoked, organization.updated) |
+| `--enabled` | `boolean` | Whether the webhook endpoint is enabled. |

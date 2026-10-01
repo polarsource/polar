@@ -141,7 +141,7 @@ async def _render_list(
     )
     if feedback_type is not None:
         statement = statement.where(Feedback.type == feedback_type)
-    items, count = await repository.paginate(
+    items, has_more = await repository.paginate_has_more(
         statement, limit=pagination.limit, page=pagination.page
     )
     type_counts = await repository.get_type_counts(status)
@@ -175,7 +175,9 @@ async def _render_list(
             else:
                 with tag.div(classes="text-center py-12 text-gray-500"):
                     text("No feedback in this view.")
-            with datatable.pagination(request, pagination, count):
+            with datatable.pagination_has_more(
+                request, pagination, len(items), has_more
+            ):
                 pass
 
 

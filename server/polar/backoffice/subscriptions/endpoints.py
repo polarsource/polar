@@ -140,7 +140,10 @@ async def list(
         try:
             parsed_uuid = uuid.UUID(query)
             statement = statement.where(
-                or_(Subscription.id == parsed_uuid, Organization.id == parsed_uuid)
+                or_(
+                    Subscription.id == parsed_uuid,
+                    Subscription.organization_id == parsed_uuid,
+                )
             )
         except ValueError:
             ts_query_simple = func.websearch_to_tsquery("simple", query)
@@ -156,7 +159,7 @@ async def list(
         statement = statement.where(Subscription.status == status)
 
     statement = repository.apply_sorting(statement, sorting)
-    items, count = await repository.paginate(
+    items, has_more = await repository.paginate_has_more(
         statement, limit=pagination.limit, page=pagination.page
     )
 
@@ -220,7 +223,9 @@ async def list(
                 ),
             ).render(request, items, sorting=sorting):
                 pass
-            with datatable.pagination(request, pagination, count):
+            with datatable.pagination_has_more(
+                request, pagination, len(items), has_more
+            ):
                 pass
 
 

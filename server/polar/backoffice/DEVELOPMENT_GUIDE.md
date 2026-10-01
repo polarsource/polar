@@ -101,7 +101,7 @@ async def list(
     if query:
         statement = statement.where(MyEntity.name.icontains(query, autoescape=True))
 
-    items, count = await repository.paginate(
+    items, has_more = await repository.paginate_has_more(
         statement, limit=pagination.limit, page=pagination.page
     )
 
@@ -147,7 +147,9 @@ async def list(
                 pass
 
             # Pagination
-            with datatable.pagination(request, pagination, count):
+            with datatable.pagination_has_more(
+                request, pagination, len(items), has_more
+            ):
                 pass
 
 
@@ -334,9 +336,9 @@ async def list(
     if sorting:
         statement = repository.apply_sorting(statement, sorting)
 
-    # 4. Paginate
-    items, count = await repository.paginate(
-        statement, pagination.limit, pagination.page
+    # 4. Paginate (no COUNT(*): list pages sit on large tables)
+    items, has_more = await repository.paginate_has_more(
+        statement, limit=pagination.limit, page=pagination.page
     )
 
     # 5. Render

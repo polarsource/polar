@@ -1,0 +1,25 @@
+.github/workflows/release_cli.yml
+  s_ad7b0a6fd50099::t_5020f718d08596 304
+clients/packages/cli/src/commands/update.ts
+  s_ad7b0a6fd50099::t_165bae192cbb06 88-89,91,93,95
+clients/packages/cli/README.md
+  s_ad7b0a6fd50099::t_5020f718d08596 121-123,126-127
+.github/workflows/publish_homebrew_cli.yml
+  s_ad7b0a6fd50099::t_5020f718d08596 70-80
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "5edd2d888a76b3fbfb56d9727078ebd5500021e0",
+  "prompts": {},
+  "sessions": {
+    "s_ad7b0a6fd50099": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f78c-27ee-7a91-abfc-70f5938d41c7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

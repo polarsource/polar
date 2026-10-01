@@ -12,7 +12,11 @@ from polar.models import Organization, PayoutAccount, User
 from polar.models.user_session import UserSession
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_payout_account
+from tests.fixtures.random_objects import (
+    create_account,
+    create_payout,
+    create_payout_account,
+)
 
 
 @pytest_asyncio.fixture
@@ -166,6 +170,37 @@ class TestDelete:
         # Only an orphaned (unlinked) account may be deleted from this page.
         organization.payout_account = None
         await save_fixture(organization)
+
+        stripe_mock = mocker.patch("polar.payout_account.service.stripe")
+        stripe_mock.account_exists = mocker.AsyncMock(return_value=True)
+        stripe_mock.retrieve_balance = mocker.AsyncMock(return_value=(0, 0))
+        stripe_mock.delete_account = mocker.AsyncMock(return_value=None)
+
+        response = await backoffice_client.post(
+            f"/payout-accounts/{payout_account.id}/delete",
+            data={"reason": "Merchant closed account"},
+        )
+
+        assert response.status_code in (200, 303)
+        stripe_mock.delete_account.assert_awaited_once_with(payout_account.stripe_id)
+
+    async def test_post_deletes_a_paid_out_payout_account(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, stripe_id="acct_todelete"
+        )
+        organization.payout_account = None
+        await save_fixture(organization)
+        account = await create_account(save_fixture, user)
+        await create_payout(
+            save_fixture, payout_account=payout_account, account=account
+        )
 
         stripe_mock = mocker.patch("polar.payout_account.service.stripe")
         stripe_mock.account_exists = mocker.AsyncMock(return_value=True)

@@ -1,0 +1,54 @@
+name: Test CLI Homebrew formula
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/*homebrew_cli.yml'
+      - '.github/workflows/release_cli.yml'
+      - 'clients/packages/cli/scripts/homebrew*.ts'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/*homebrew_cli.yml'
+      - '.github/workflows/release_cli.yml'
+      - 'clients/packages/cli/scripts/homebrew*.ts'
+
+permissions:
+  contents: read
+
+jobs:
+  formula:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+      HOMEBREW_NO_INSTALL_CLEANUP: '1'
+      POLAR_CLI_TELEMETRY_OPTOUT: '1'
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: clients/packages/cli/package.json
+
+      - uses: Homebrew/actions/setup-homebrew@e99025eb970cfa124b8284a35463d87426917478
+
+      - name: Generate formula from a stable CLI release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download '@polar-sh/cli@2.0.1' --repo polarsource/polar --pattern checksums.txt --dir release
+          brew tap-new polarsource/cli-validation --no-git
+          validation_tap=$(brew --repository polarsource/cli-validation)
+          bun clients/packages/cli/scripts/homebrew.ts '@polar-sh/cli@2.0.1' release/checksums.txt "$validation_tap/Formula/polar.rb"
+          brew trust --formula polarsource/cli-validation/polar
+
+      - name: Install and validate formula
+        run: |
+          brew install --build-from-source --skip-link polarsource/cli-validation/polar
+          brew test --force polarsource/cli-validation/polar
+          brew style --formula polarsource/cli-validation/polar
+          brew audit --strict polarsource/cli-validation/polar

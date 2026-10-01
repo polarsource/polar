@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path'
 import { Effect } from 'effect'
 import { VERSION } from '@/version'
 import { getLatestRelease, isNewerVersion } from '@/services/github-releases'
+import { isHomebrewInstallation } from '@/services/installation'
 
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000
 
@@ -15,6 +16,7 @@ interface UpdateCheckState {
 
 export interface UpdateCheckOptions {
   home?: string
+  executable?: string
 }
 
 const stateFile = (home: string) => join(home, '.polar', 'update-check.json')
@@ -33,10 +35,12 @@ const checkedRecently = (state: UpdateCheckState | undefined) =>
   state !== undefined &&
   Date.now() - new Date(state.lastChecked).getTime() < CHECK_INTERVAL_MS
 
-export const availableUpdate = ({ home = homedir() }: UpdateCheckOptions = {}):
-  | string
-  | undefined => {
+export const availableUpdate = ({
+  home = homedir(),
+  executable,
+}: UpdateCheckOptions = {}): string | undefined => {
   try {
+    if (isHomebrewInstallation(executable)) return undefined
     const latest = readState(stateFile(home))?.latestVersion
     return latest && isNewerVersion(latest, VERSION) ? latest : undefined
   } catch {
@@ -44,8 +48,12 @@ export const availableUpdate = ({ home = homedir() }: UpdateCheckOptions = {}):
   }
 }
 
-export const checkForUpdate = ({ home = homedir() }: UpdateCheckOptions = {}) =>
+export const checkForUpdate = ({
+  home = homedir(),
+  executable,
+}: UpdateCheckOptions = {}) =>
   Effect.gen(function* () {
+    if (isHomebrewInstallation(executable)) return
     const file = stateFile(home)
     if (checkedRecently(readState(file))) return
     const release = yield* getLatestRelease

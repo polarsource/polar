@@ -1,0 +1,83 @@
+name: Publish CLI to Homebrew
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+    secrets:
+      HOMEBREW_TAP_TOKEN:
+        required: true
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing stable CLI release tag, e.g. @polar-sh/cli@2.0.1'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-homebrew-cli
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: clients/packages/cli/package.json
+
+      - name: Validate configuration and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          test -n "$TAP_TOKEN" || { echo "Configure HOMEBREW_TAP_TOKEN; see clients/packages/cli/HOMEBREW.md"; exit 1; }
+          [[ "$RELEASE_TAG" =~ ^@polar-sh/cli@[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Only stable CLI tags can be published"; exit 1; }
+          gh release view "$RELEASE_TAG" --repo polarsource/polar --json isDraft,isPrerelease \
+            | jq -e '.isDraft == false and .isPrerelease == false'
+
+      - name: Download release checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: gh release download "$RELEASE_TAG" --repo polarsource/polar --pattern checksums.txt --dir release
+
+      - name: Generate formula
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: bun clients/packages/cli/scripts/homebrew.ts "$RELEASE_TAG" release/checksums.txt generated/Formula/polar.rb
+
+      - name: Check out tap
+        uses: actions/checkout@v7.0.1
+        with:
+          repository: polarsource/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: tap
+
+      - name: Copy formula
+        run: |
+          mkdir -p tap/Formula
+          cp generated/Formula/polar.rb tap/Formula/polar.rb
+
+      - name: Open tap update pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: tap
+          add-paths: Formula/polar.rb
+          branch: homebrew-${{ inputs.tag }}
+          delete-branch: true
+          commit-message: 'polar: update to ${{ inputs.tag }}'
+          title: 'polar: update to ${{ inputs.tag }}'
+          body: |
+            Publish the stable CLI release ${{ inputs.tag }} from polarsource/polar.
+
+            Generated from its checksums.txt. Supports macOS and Linux, arm64 and x64.

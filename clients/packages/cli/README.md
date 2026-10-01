@@ -115,6 +115,17 @@ do not become the monorepo's generic GitHub "latest" release: the updater and
 filter stable `@polar-sh/cli@` tags, and compare semantic versions. Publishing is
 independent of the changesets-driven npm release workflow for the other packages.
 
+### Homebrew
+
+Stable CLI releases also open a formula update PR in `polarsource/homebrew-tap`.
+Once the initial formula is published, install with `brew install polarsource/tap/polar`
+and upgrade with `brew upgrade polarsource/tap/polar`. The formula uses the monorepo's
+macOS and Linux binaries for both arm64 and x64. `polar update` delegates Homebrew
+installations to `brew upgrade` without replacing their binaries.
+
+See [HOMEBREW.md](HOMEBREW.md) for tap setup, publishing permissions, validation,
+and retries. Homebrew publishing needs a separate token scoped to the tap.
+
 ### npm
 
 The same binaries (signed and notarized on macOS, unsigned elsewhere) are also
@@ -175,7 +186,8 @@ Configure these repository secrets in `polarsource/polar` before the first run:
 - `APP_STORE_CONNECT_ISSUER_ID`
 
 The workflow uses the monorepo's `GITHUB_TOKEN` to upload releases; no npm token
-or cross-repository token is needed for normal CLI publishing. Both the test and
+is needed. Publishing to the separate Homebrew tap requires `HOMEBREW_TAP_TOKEN`.
+Both the test and
 release workflows read Bun `1.4.2` from `engines.bun` in the CLI's `package.json`.
 
 ### Verification and retries

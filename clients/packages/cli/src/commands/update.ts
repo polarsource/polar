@@ -7,6 +7,10 @@ import {
 } from '@/services/github-releases'
 import { install, type InstallStep, UpdateError } from '@/services/update'
 import { type PackageManager, Updater, methods } from '@/services/updater'
+import {
+  HOMEBREW_UPGRADE_COMMAND,
+  isHomebrewInstallation,
+} from '@/services/installation'
 import * as ui from '@/utils/ui'
 import { VERSION } from '@/version'
 
@@ -76,6 +80,13 @@ export const update = Command.make(
   },
   ({ method }) =>
     Effect.gen(function* () {
+      if (isHomebrewInstallation()) {
+        yield* Console.log(
+          `Polar is managed by Homebrew. Run ${HOMEBREW_UPGRADE_COMMAND} to update.`,
+        )
+        return
+      }
+
       yield* Console.log(ui.blank)
       yield* Console.log(ui.step('Checking for updates...'))
 

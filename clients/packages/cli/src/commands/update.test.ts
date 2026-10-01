@@ -21,6 +21,7 @@ import { type Method, Updater, UpdaterError } from '@/services/updater'
 import { captureConsole, runCli } from '@/utils/test-utils/cli'
 import { fakeHttp } from '@/utils/test-utils/http'
 import { VERSION } from '@/version'
+import * as Installation from '@/services/installation'
 
 describe('update command', () => {
   const upgrades: [string, string][] = []
@@ -57,6 +58,24 @@ describe('update command', () => {
   beforeEach(() => {
     upgrades.length = 0
   })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  test.each([[], ['--method', 'binary'], ['--method', 'npm']])(
+    'delegates Homebrew updates without downloading or invoking another package manager (%j)',
+    async (...args) => {
+      vi.spyOn(Installation, 'isHomebrewInstallation').mockReturnValue(true)
+      const { cli, promise, http } = runUpdate(args, fakeUpdater('binary'))
+      await promise
+
+      expect(cli.output()).toContain('brew upgrade polarsource/tap/polar')
+      expect(cli.output()).not.toContain('Checking for updates...')
+      expect(http.urls()).toEqual([])
+      expect(upgrades).toEqual([])
+    },
+  )
 
   test('reports when the standalone binary is already up to date', async () => {
     const http = fakeHttp({

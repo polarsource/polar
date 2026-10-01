@@ -14,6 +14,7 @@ import { PanTransferPanel } from '../cards/PanTransferPanel'
 import { ImportedStep } from '../ImportedStep'
 import { MigrationStepper } from '../MigrationStepper'
 import { PrecheckPanel } from '../PrecheckPanel'
+import { SwitchCompletePage } from '../complete/SwitchCompletePage'
 import { ReviewTable } from '../review/ReviewTable'
 import {
   currentStepDef,
@@ -70,7 +71,7 @@ export default function MigrationDetailPage({
         ) : !migration ? (
           <Text color="muted">This migration no longer exists.</Text>
         ) : (
-          <MigrationLoaded migration={migration} />
+          <MigrationLoaded migration={migration} organization={organization} />
         )}
       </Box>
     </DashboardBody>
@@ -109,8 +110,10 @@ function SourceHeader({
 
 function MigrationLoaded({
   migration,
+  organization,
 }: {
   migration: schemas['MerchantMigration']
+  organization: schemas['Organization']
 }) {
   const needsPan = migration.step === 'copy_cards'
   const pan = usePanTransfer(needsPan ? migration.id : '')
@@ -136,6 +139,7 @@ function MigrationLoaded({
       />
       <StepContent
         migration={migration}
+        organization={organization}
         panCurrentStepKey={panCurrentStepKey}
       />
     </Box>
@@ -144,9 +148,11 @@ function MigrationLoaded({
 
 function StepContent({
   migration,
+  organization,
   panCurrentStepKey,
 }: {
   migration: schemas['MerchantMigration']
+  organization: schemas['Organization']
   panCurrentStepKey: string | null
 }) {
   if (!migration.source_connected) {
@@ -184,15 +190,23 @@ function StepContent({
           />
         </Box>
       )
-    // The switch runs here, and stays reachable at cleanup so the merchant can
-    // switch the ones an earlier run left on Stripe.
     case 'activate_subscriptions':
-    case 'cleanup':
       return (
         <Box flexDirection="column" rowGap="l">
           {def && <StepHeading def={def} />}
           <SwitchPanel migrationId={migration.id} />
         </Box>
+      )
+    // The summary links back to the switch so the merchant can still switch
+    // the ones an earlier run left on Stripe.
+    case 'cleanup':
+    case 'completed':
+      return (
+        <SwitchCompletePage
+          migrationId={migration.id}
+          organizationId={organization.id}
+          organizationSlug={organization.slug}
+        />
       )
   }
 

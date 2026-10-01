@@ -7,13 +7,13 @@ import {
   patchRecordTax,
   runWithConcurrency,
   TaxBehavior,
-  TaxRow,
+  EditableTaxRow,
 } from './bulkTaxRecords'
 
 const CONCURRENCY = 5
 
 interface BulkTaxFailure {
-  row: TaxRow
+  row: EditableTaxRow
   message: string
 }
 
@@ -39,18 +39,14 @@ const IDLE: BulkTaxState = {
   error: null,
 }
 
-type RowFilter = (row: TaxRow) => boolean
-
 export function useBulkTaxUpdate(migrationId: string) {
   const [state, setState] = useState<BulkTaxState>(IDLE)
   const running = useRef(false)
-  // A failed load retries with the same scope, not every subscription.
-  const lastInclude = useRef<RowFilter>(() => true)
 
   const apply = useCallback(
     async (
       target: TaxBehavior,
-      rows: TaxRow[],
+      rows: EditableTaxRow[],
       progress: Pick<BulkTaxState, 'total' | 'updated' | 'alreadySet'>,
     ) => {
       setState({
@@ -63,7 +59,7 @@ export function useBulkTaxUpdate(migrationId: string) {
       })
       await runWithConcurrency(rows, CONCURRENCY, async (row) => {
         try {
-          await patchRecordTax(migrationId, row.record_id as string, target)
+          await patchRecordTax(migrationId, row.record_id, target)
           setState((prev) => ({ ...prev, updated: prev.updated + 1 }))
         } catch (error) {
           const message =
@@ -81,15 +77,14 @@ export function useBulkTaxUpdate(migrationId: string) {
   )
 
   const start = useCallback(
-    async (target: TaxBehavior, include: RowFilter = () => true) => {
+    async (target: TaxBehavior) => {
       if (running.current) return
       running.current = true
-      lastInclude.current = include
       setState({ ...IDLE, phase: 'collecting', target })
       try {
-        const candidates = (await fetchAllSubscriptionRecords(migrationId))
-          .filter(isTaxEditable)
-          .filter(include)
+        const candidates = (
+          await fetchAllSubscriptionRecords(migrationId)
+        ).filter(isTaxEditable)
         const pending = candidates.filter((row) => needsTaxUpdate(row, target))
         await apply(target, pending, {
           total: pending.length,
@@ -118,7 +113,7 @@ export function useBulkTaxUpdate(migrationId: string) {
       return
     }
     if (state.error) {
-      await start(state.target, lastInclude.current)
+      await start(state.target)
       return
     }
     if (state.failures.length === 0) {

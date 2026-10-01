@@ -12,7 +12,9 @@ export const effectiveTax = (row: TaxRow): TaxBehavior =>
 
 // Switched subscriptions are locked server-side (`RecordTaxLocked`), and rows
 // staying on Stripe never bill on Polar, so neither is worth a request.
-export const isTaxEditable = (row: TaxRow): boolean =>
+export type EditableTaxRow = TaxRow & { record_id: string }
+
+export const isTaxEditable = (row: TaxRow): row is EditableTaxRow =>
   row.record_id != null &&
   row.cutover_status !== 'moved' &&
   row.status !== 'skipped' &&

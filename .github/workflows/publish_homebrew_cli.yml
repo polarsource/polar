@@ -39,7 +39,7 @@ jobs:
           TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
-          test -n "$TAP_TOKEN" || { echo "Configure HOMEBREW_TAP_TOKEN; see clients/packages/cli/HOMEBREW.md"; exit 1; }
+          test -n "$TAP_TOKEN" || { echo "Configure HOMEBREW_TAP_TOKEN; see clients/packages/cli/README.md"; exit 1; }
           [[ "$RELEASE_TAG" =~ ^@polar-sh/cli@[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Only stable CLI tags can be published"; exit 1; }
           gh release view "$RELEASE_TAG" --repo polarsource/polar --json isDraft,isPrerelease \
             | jq -e '.isDraft == false and .isPrerelease == false'

@@ -117,14 +117,13 @@ independent of the changesets-driven npm release workflow for the other packages
 
 ### Homebrew
 
-Stable CLI releases also open a formula update PR in `polarsource/homebrew-tap`.
-Once the initial formula is published, install with `brew install polarsource/tap/polar`
-and upgrade with `brew upgrade polarsource/tap/polar`. The formula uses the monorepo's
-macOS and Linux binaries for both arm64 and x64. `polar update` delegates Homebrew
-installations to `brew upgrade` without replacing their binaries.
+Install with `brew install polarsource/tap/polar` and upgrade with
+`brew upgrade polarsource/tap/polar`. Stable CLI releases open a formula PR in
+`polarsource/homebrew-tap` using the monorepo's macOS/Linux arm64/x64 binaries.
 
-See [HOMEBREW.md](HOMEBREW.md) for tap setup, publishing permissions, validation,
-and retries. Homebrew publishing needs a separate token scoped to the tap.
+Before the first release, create that public tap repository with an initial commit
+and set `HOMEBREW_TAP_TOKEN` in `polarsource/polar`, scoped to Contents and Pull
+requests write access in the tap. Merge the generated tap PR to publish the formula.
 
 ### npm
 
@@ -187,8 +186,7 @@ Configure these repository secrets in `polarsource/polar` before the first run:
 
 The workflow uses the monorepo's `GITHUB_TOKEN` to upload releases; no npm token
 is needed. Publishing to the separate Homebrew tap requires `HOMEBREW_TAP_TOKEN`.
-Both the test and
-release workflows read Bun `1.4.2` from `engines.bun` in the CLI's `package.json`.
+Both the test and release workflows read Bun `1.4.2` from `engines.bun` in the CLI's `package.json`.
 
 ### Verification and retries
 

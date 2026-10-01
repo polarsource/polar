@@ -16,7 +16,6 @@ interface UpdateCheckState {
 
 export interface UpdateCheckOptions {
   home?: string
-  executable?: string
 }
 
 const stateFile = (home: string) => join(home, '.polar', 'update-check.json')
@@ -35,12 +34,11 @@ const checkedRecently = (state: UpdateCheckState | undefined) =>
   state !== undefined &&
   Date.now() - new Date(state.lastChecked).getTime() < CHECK_INTERVAL_MS
 
-export const availableUpdate = ({
-  home = homedir(),
-  executable,
-}: UpdateCheckOptions = {}): string | undefined => {
+export const availableUpdate = ({ home = homedir() }: UpdateCheckOptions = {}):
+  | string
+  | undefined => {
   try {
-    if (isHomebrewInstallation(executable)) return undefined
+    if (isHomebrewInstallation()) return undefined
     const latest = readState(stateFile(home))?.latestVersion
     return latest && isNewerVersion(latest, VERSION) ? latest : undefined
   } catch {
@@ -48,12 +46,9 @@ export const availableUpdate = ({
   }
 }
 
-export const checkForUpdate = ({
-  home = homedir(),
-  executable,
-}: UpdateCheckOptions = {}) =>
+export const checkForUpdate = ({ home = homedir() }: UpdateCheckOptions = {}) =>
   Effect.gen(function* () {
-    if (isHomebrewInstallation(executable)) return
+    if (isHomebrewInstallation()) return
     const file = stateFile(home)
     if (checkedRecently(readState(file))) return
     const release = yield* getLatestRelease

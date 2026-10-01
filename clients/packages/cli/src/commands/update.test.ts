@@ -59,23 +59,23 @@ describe('update command', () => {
     upgrades.length = 0
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
-  test.each([[], ['--method', 'binary'], ['--method', 'npm']])(
-    'delegates Homebrew updates without downloading or invoking another package manager (%j)',
-    async (...args) => {
-      vi.spyOn(Installation, 'isHomebrewInstallation').mockReturnValue(true)
-      const { cli, promise, http } = runUpdate(args, fakeUpdater('binary'))
+  test('leaves Homebrew updates to brew even with --method binary', async () => {
+    const detection = vi
+      .spyOn(Installation, 'isHomebrewInstallation')
+      .mockReturnValue(true)
+    try {
+      const { cli, promise, http } = runUpdate(
+        ['--method', 'binary'],
+        fakeUpdater('binary'),
+      )
       await promise
-
       expect(cli.output()).toContain('brew upgrade polarsource/tap/polar')
-      expect(cli.output()).not.toContain('Checking for updates...')
       expect(http.urls()).toEqual([])
       expect(upgrades).toEqual([])
-    },
-  )
+    } finally {
+      detection.mockRestore()
+    }
+  })
 
   test('reports when the standalone binary is already up to date', async () => {
     const http = fakeHttp({

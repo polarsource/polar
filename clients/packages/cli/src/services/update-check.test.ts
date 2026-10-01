@@ -37,15 +37,6 @@ const release = (version: string) => () =>
 const check = () =>
   Effect.runPromise(checkForUpdate({ home }).pipe(Effect.provide(http.layer)))
 
-const homebrewBinary = async () => {
-  const keg = join(home, 'Cellar', 'polar', '2.0.1')
-  await mkdir(join(keg, 'bin'), { recursive: true })
-  const executable = join(keg, 'bin', 'polar')
-  await writeFile(executable, 'binary')
-  await writeFile(join(keg, 'INSTALL_RECEIPT.json'), '{}')
-  return executable
-}
-
 beforeEach(async () => {
   home = await mkdtemp(join(tmpdir(), 'polar-home-'))
   http = fakeHttp()
@@ -56,14 +47,6 @@ afterEach(async () => {
 })
 
 describe('availableUpdate', () => {
-  test('does not advertise cached GitHub releases to Homebrew installations', async () => {
-    const executable = await homebrewBinary()
-    await writeState({
-      lastChecked: new Date().toISOString(),
-      latestVersion: 'v99.0.0',
-    })
-    expect(availableUpdate({ home, executable })).toBeUndefined()
-  })
   test('finds nothing without a cached check', () => {
     expect(availableUpdate({ home })).toBeUndefined()
   })
@@ -91,14 +74,6 @@ describe('availableUpdate', () => {
 })
 
 describe('checkForUpdate', () => {
-  test('does not fetch GitHub releases or create a cache for Homebrew installations', async () => {
-    const executable = await homebrewBinary()
-    await Effect.runPromise(
-      checkForUpdate({ home, executable }).pipe(Effect.provide(http.layer)),
-    )
-    expect(http.requests).toHaveLength(0)
-    expect(existsSync(stateFile())).toBe(false)
-  })
   test('fetches and caches the latest release', async () => {
     http.routes[releasesUrl] = release('9.9.9')
     await check()

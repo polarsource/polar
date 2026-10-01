@@ -126,6 +126,7 @@ from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
 from polar.webhook.service import generate_webhook_secret
 from polar.worker import JobQueueManager
+from scripts.db import assert_dev_or_testing
 from scripts.seed_polar_for_polar import (
     BENEFITS as POLAR_SELF_BENEFITS,
 )
@@ -3034,6 +3035,7 @@ def seeds_load(
     ),
 ) -> None:
     """Load sample/test data into the database."""
+    assert_dev_or_testing()
     if ctx.invoked_subcommand is not None:
         return
     if new_org is not None and phase is not SeedPhase.all:

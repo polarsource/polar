@@ -195,9 +195,18 @@ def reparent(
     _reparent(force=force)
 
 
+LOCAL_POSTGRES_HOSTS = {"127.0.0.1", "localhost", "::1", "db", "host.docker.internal"}
+
+
 def assert_dev_or_testing() -> None:
     if not (settings.is_development() or settings.is_testing()):
         raise RuntimeError(f"DANGER! You cannot run this script in {settings.ENV}!")
+    for host in (settings.POSTGRES_HOST, settings.POSTGRES_HOST_FALLBACK):
+        if host is not None and host not in LOCAL_POSTGRES_HOSTS:
+            raise RuntimeError(
+                f"DANGER! The Postgres host '{host}' is not a local database."
+                " Refusing to touch what looks like a remote environment."
+            )
 
 
 if __name__ == "__main__":

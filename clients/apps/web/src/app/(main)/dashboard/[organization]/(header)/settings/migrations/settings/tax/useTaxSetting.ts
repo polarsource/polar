@@ -1,7 +1,11 @@
+import { useAllMigrationRecords } from '@/hooks/queries/merchantMigrations'
 import { useEffect, useEffectEvent } from 'react'
-import { TaxBehavior, TaxBreakdown } from '../../bulkTax/bulkTaxRecords'
+import {
+  TaxBehavior,
+  TaxBreakdown,
+  taxBreakdown,
+} from '../../bulkTax/bulkTaxRecords'
 import { useBulkTaxUpdate } from '../../bulkTax/useBulkTaxUpdate'
-import { useTaxBreakdown } from '../../bulkTax/useTaxBreakdown'
 
 type TaxCurrent = TaxBehavior | 'mixed'
 
@@ -28,7 +32,11 @@ export function useTaxSetting(
   migrationId: string,
   onBusyChange: (busy: boolean) => void,
 ) {
-  const breakdown = useTaxBreakdown(migrationId)
+  const breakdown = useAllMigrationRecords(
+    migrationId,
+    'subscriptions',
+    taxBreakdown,
+  )
   const controller = useBulkTaxUpdate(migrationId)
   const notifyBusy = useEffectEvent(onBusyChange)
 

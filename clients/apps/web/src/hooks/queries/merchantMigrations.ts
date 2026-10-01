@@ -347,7 +347,6 @@ export const useMerchantMigrationRecordSummary = (
     refetchInterval: refetchInterval ?? false,
   })
 
-// A plain call so bulk runs can update many records and invalidate once.
 export const updateMigrationRecord = (
   id: string,
   recordId: string,

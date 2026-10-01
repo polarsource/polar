@@ -2,7 +2,7 @@
 
 import { Alert, Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { formatCount, subscriptionsLabel, TAX_NAMES } from './bulkTaxCopy'
+import { formatCount, subscriptionsLabel } from './bulkTaxCopy'
 import { BulkTaxController } from './useBulkTaxUpdate'
 
 const SHOWN_FAILURES = 5
@@ -41,7 +41,7 @@ export function BulkTaxProgress({
 }) {
   const { state, retry } = controller
   const target = state.target
-  if (state.phase === 'idle' || target === null) {
+  if (target === null) {
     return null
   }
 
@@ -67,7 +67,6 @@ export function BulkTaxProgress({
     )
   }
 
-  const label = TAX_NAMES[target]
   if (state.error) {
     return (
       <Alert
@@ -84,7 +83,7 @@ export function BulkTaxProgress({
     return (
       <Alert
         variant="success"
-        title={`Every subscription is already ${label}`}
+        title={`Every subscription is already ${target}`}
         description="Nothing needed to change."
         onDismiss={onDismiss}
       />
@@ -94,7 +93,7 @@ export function BulkTaxProgress({
   const title = `Updated ${formatCount(state.updated)} of ${subscriptionsLabel(state.total)}`
   const already =
     state.alreadySet > 0
-      ? ` ${subscriptionsLabel(state.alreadySet)} were already ${label}.`
+      ? ` ${subscriptionsLabel(state.alreadySet)} were already ${target}.`
       : ''
 
   if (state.failures.length === 0) {
@@ -102,7 +101,7 @@ export function BulkTaxProgress({
       <Alert
         variant="success"
         title={title}
-        description={`They're now ${label}.${already}`}
+        description={`They're now ${target}.${already}`}
         onDismiss={onDismiss}
       />
     )

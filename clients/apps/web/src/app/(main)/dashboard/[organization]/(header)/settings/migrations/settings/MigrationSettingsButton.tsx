@@ -8,10 +8,10 @@ import { MigrationSettingsPanel } from './MigrationSettingsPanel'
 
 export function MigrationSettingsButton({
   migrationId,
-  disabled = false,
+  disabled,
 }: {
   migrationId: string
-  disabled?: boolean
+  disabled: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState<Set<string>>(() => new Set())

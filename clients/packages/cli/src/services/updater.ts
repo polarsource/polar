@@ -5,7 +5,7 @@ import { HttpClient, HttpClientResponse } from 'effect/unstable/http'
 export const PACKAGE_NAME = '@polar-sh/cli'
 export const REGISTRY_URL = `https://registry.npmjs.org/${PACKAGE_NAME.replaceAll('/', '%2F')}/latest`
 
-export const methods = ['binary', 'npm', 'pnpm', 'bun', 'yarn'] as const
+export const methods = ['binary', 'npm', 'pnpm', 'bun', 'yarn', 'vp'] as const
 export type Method = (typeof methods)[number]
 export type PackageManager = Exclude<Method, 'binary'>
 
@@ -105,6 +105,7 @@ const listCommands: ReadonlyArray<{
   },
   { method: 'bun', command: ['bun', 'pm', 'ls', '--global'] },
   { method: 'yarn', command: ['yarn', 'global', 'list'] },
+  { method: 'vp', command: ['vp', 'list', '--global', PACKAGE_NAME] },
 ]
 
 // Platform packages share the prefix, so require the name to end right after it.
@@ -172,6 +173,8 @@ export const upgradeCommand = (
       return ['bun', 'install', '--global', '--trust', target]
     case 'yarn':
       return ['yarn', 'global', 'add', target]
+    case 'vp':
+      return ['vp', 'install', '--global', target]
   }
 }
 

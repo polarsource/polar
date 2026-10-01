@@ -70,7 +70,7 @@ export const update = Command.make(
     method: Flag.Literals('method', methods).pipe(
       Flag.optional,
       Flag.withDescription(
-        'How the CLI was installed: binary (install.sh), npm, pnpm, bun or yarn. Detected when omitted',
+        'How the CLI was installed: binary (install.sh), npm, pnpm, bun, yarn or vp (Vite+). Detected when omitted',
       ),
     ),
   },

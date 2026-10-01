@@ -57486,6 +57486,15 @@ export interface operations {
           'application/json': components['schemas']['MerchantMigrationNotFound']
         }
       }
+      /** @description A pre-check, import or switch is running. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MigrationOperationInProgress']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {

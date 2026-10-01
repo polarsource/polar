@@ -1646,6 +1646,11 @@ class MerchantMigrationService:
         migration = await self._get_manageable(
             session, auth_subject, migration_id, for_update=True
         )
+        # A running switch skips rows this UPDATE has locked and can stop early,
+        # and a running pre-check re-stages records from tax values it saved
+        # before this write.
+        if self._operation_blocks_new_work(migration):
+            raise MigrationOperationInProgress()
         updated = await MerchantMigrationRecordRepository.from_session(
             session
         ).set_subscription_tax_behavior(migration.id, update.tax_behavior)

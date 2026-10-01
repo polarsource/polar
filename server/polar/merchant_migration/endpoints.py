@@ -518,6 +518,10 @@ async def records(
             "description": "Merchant migration not found.",
             "model": MerchantMigrationNotFound.schema(),
         },
+        409: {
+            "description": "A pre-check, import or switch is running.",
+            "model": MigrationOperationInProgress.schema(),
+        },
     },
 )
 async def set_tax_behavior(

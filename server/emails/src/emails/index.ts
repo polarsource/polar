@@ -9,6 +9,7 @@ import { NotificationFileFlaggedMalicious } from './notification_file_flagged_ma
 import { NotificationNewSale } from './notification_new_sale'
 import { NotificationNewSubscription } from './notification_new_subscription'
 import { NotificationNewTrial } from './notification_new_trial'
+import { NotificationSubscriptionCancellation } from './notification_subscription_cancellation'
 import { NotificationSubscriptionRenewal } from './notification_subscription_renewal'
 import { OAuth2LeakedClient } from './oauth2_leaked_client'
 import { OAuth2LeakedToken } from './oauth2_leaked_token'
@@ -75,6 +76,7 @@ const TEMPLATES: Record<string, React.FC<never>> = {
   notification_subscription_renewal: NotificationSubscriptionRenewal,
   notification_new_subscription: NotificationNewSubscription,
   notification_new_trial: NotificationNewTrial,
+  notification_subscription_cancellation: NotificationSubscriptionCancellation,
   notification_credits_granted: NotificationCreditsGranted,
   notification_file_flagged_malicious: NotificationFileFlaggedMalicious,
   chargeback_prevention_refund: ChargebackPreventionRefund,

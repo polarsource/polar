@@ -67,7 +67,11 @@ from polar.models.organization import OrganizationStatus
 from polar.models.product_price import ProductPriceAmountType, ProductPriceSeatUnit
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
-from polar.notifications.notification import NotificationType
+from polar.notifications.notification import (
+    MaintainerSubscriptionCancellationNotificationPayload,
+    NotificationType,
+)
+from polar.notifications.service import PartialNotification
 from polar.order.repository import OrderRepository
 from polar.order.service import PaymentFailed, PaymentFailedReason
 from polar.order.service import order as order_service
@@ -10719,3 +10723,130 @@ class TestNewSubscriptionNotification:
         send_to_org_members_mock.assert_called_once()
         notif = send_to_org_members_mock.call_args.kwargs["notif"]
         assert notif.type == NotificationType.maintainer_new_paid_subscription
+
+
+def _cancellation_payloads(
+    send_to_org_members_mock: MagicMock,
+) -> list[MaintainerSubscriptionCancellationNotificationPayload]:
+    payloads = []
+    for call_args in send_to_org_members_mock.call_args_list:
+        notif: PartialNotification = call_args.kwargs["notif"]
+        if notif.type == NotificationType.maintainer_subscription_cancellation:
+            assert isinstance(
+                notif.payload, MaintainerSubscriptionCancellationNotificationPayload
+            )
+            payloads.append(notif.payload)
+    return payloads
+
+
+@pytest.mark.asyncio
+class TestCancellationNotification:
+    async def test_cancel_at_period_end(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        send_to_org_members_mock = mocker.patch(
+            "polar.subscription.service.notifications_service.send_to_org_members"
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service, customer_initiated=True
+        ) as ctx:
+            await subscription_service.cancel(
+                session,
+                ctx,
+                subscription,
+                customer_reason=CustomerCancellationReason.too_expensive,
+                customer_comment="Too pricey for us",
+            )
+
+        [payload] = _cancellation_payloads(send_to_org_members_mock)
+        assert payload.subject() == (
+            f"{customer.display_name} canceled their {product.name} subscription"
+        )
+        assert payload.cancellation_reason == (CustomerCancellationReason.too_expensive)
+        assert payload.cancellation_comment == "Too pricey for us"
+        assert payload.cancel_at_period_end is True
+        assert payload.ends_at == subscription.current_period_end
+
+    async def test_revoke_immediately(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        send_to_org_members_mock = mocker.patch(
+            "polar.subscription.service.notifications_service.send_to_org_members"
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service, customer_initiated=True
+        ) as ctx:
+            await subscription_service.revoke(session, ctx, subscription)
+
+        [payload] = _cancellation_payloads(send_to_org_members_mock)
+        assert payload.cancellation_reason is None
+        assert payload.cancellation_comment is None
+        assert payload.cancel_at_period_end is False
+
+    async def test_revoke_scheduled_cancellation_does_not_notify_again(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        send_to_org_members_mock = mocker.patch(
+            "polar.subscription.service.notifications_service.send_to_org_members"
+        )
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            cancel_at_period_end=True,
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service, customer_initiated=True
+        ) as ctx:
+            await subscription_service.revoke(session, ctx, subscription)
+
+        assert _cancellation_payloads(send_to_org_members_mock) == []
+
+    async def test_not_customer_initiated(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        send_to_org_members_mock = mocker.patch(
+            "polar.subscription.service.notifications_service.send_to_org_members"
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service, notify_customer=False
+        ) as ctx:
+            await subscription_service.revoke(session, ctx, subscription)
+
+        assert _cancellation_payloads(send_to_org_members_mock) == []

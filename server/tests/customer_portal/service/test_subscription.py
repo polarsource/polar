@@ -2,6 +2,7 @@ import uuid
 from datetime import UTC, datetime
 
 import pytest
+from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.customer_portal.schemas.subscription import (
@@ -35,6 +36,7 @@ from polar.models import (
     Subscription,
 )
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
+from polar.notifications.notification import NotificationType
 from polar.postgres import AsyncSession
 from polar.subscription.service import AlreadyCanceledSubscription
 from polar.subscription.update import generate_subscription_update
@@ -473,11 +475,15 @@ class TestCancel:
     @pytest.mark.auth
     async def test_valid(
         self,
+        mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
     ) -> None:
+        send_to_org_members_mock = mocker.patch(
+            "polar.subscription.service.notifications_service.send_to_org_members"
+        )
         subscription = await create_active_subscription(
             save_fixture,
             product=product,
@@ -496,6 +502,10 @@ class TestCancel:
         assert updated_subscription.ended_at is None
         assert updated_subscription.cancel_at_period_end
         assert updated_subscription.ends_at == updated_subscription.current_period_end
+        assert [
+            call.kwargs["notif"].type
+            for call in send_to_org_members_mock.call_args_list
+        ] == [NotificationType.maintainer_subscription_cancellation]
 
 
 @pytest.mark.asyncio

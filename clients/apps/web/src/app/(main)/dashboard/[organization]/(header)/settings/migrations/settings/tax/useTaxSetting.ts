@@ -49,7 +49,7 @@ export function useTaxSetting(
     ? {
         current: currentTax(counts),
         canApply: (target) => affected(counts, target) > 0,
-        onApply: (target) => controller.start(target),
+        onApply: controller.start,
       }
     : null
 

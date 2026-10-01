@@ -1,0 +1,15 @@
+---
+'@polar-sh/cli': major
+---
+
+**API resources.** Manage your Polar data straight from the terminal: `polar customers`, `products`, `orders`, `subscriptions`, `checkouts`, `discounts`, `benefits`, `meters`, `webhooks` and more.
+
+**`polar trigger`.** Send test webhook events to your app.
+
+**`polar listen`.** Forward webhooks to a port (`polar listen 3000`) or a URL and see how your server responded to each event.
+
+**Auth.** `polar login` and `polar logout` are now `polar auth login` and `polar auth logout`. Use `polar auth whoami` to see who you're logged in as and `polar auth org` to switch organizations.
+
+**Agentic experience.** JSON output (by default for API resources, with `--json` everywhere else), no hanging prompts, and errors that tell an agent exactly what to fix.
+
+**Everything else.** Type `polar` to see your account and active org. Windows works without WSL.

@@ -4,9 +4,12 @@ from enum import StrEnum
 from typing import Any, Literal, Protocol, Self, overload
 
 from sqlalchemy import Select, UnaryExpression, asc, desc, func, select
-from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import Mapped, class_mapper
 from sqlalchemy.sql.base import ExecutableOption
+from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 from sqlalchemy.sql.expression import ColumnExpressionArgument
+from sqlalchemy.sql.operators import and_, eq
+from sqlalchemy.sql.selectable import Alias, FromClause, Join, TableClause
 
 from polar.config import settings
 from polar.kit.crypto import get_current_secret_id
@@ -32,6 +35,45 @@ class ModelDeletedAtIDProtocol[ID_TYPE](Protocol):
 type Options = Sequence[ExecutableOption]
 
 
+def _may_duplicate_rows(statement: Select[Any], table: FromClause) -> bool:
+    froms = statement.get_final_froms()
+    return len(froms) != 1 or not _keeps_rows_unique(froms[0], table)
+
+
+def _keeps_rows_unique(from_clause: FromClause, table: FromClause) -> bool:
+    if isinstance(from_clause, Join):
+        return _keeps_rows_unique(
+            from_clause.left, table
+        ) and _is_joined_on_primary_key(from_clause)
+    return from_clause is table
+
+
+def _is_joined_on_primary_key(join: Join) -> bool:
+    right = join.right.element if isinstance(join.right, Alias) else join.right
+    if not isinstance(right, TableClause):
+        return False
+    primary_key = set(join.right.primary_key)
+    if join.onclause is None or not primary_key:
+        return False
+    onclause = join.onclause
+    conditions = (
+        onclause.clauses
+        if isinstance(onclause, BooleanClauseList) and onclause.operator is and_
+        else [onclause]
+    )
+    matched_columns = {
+        column
+        for condition in conditions
+        if isinstance(condition, BinaryExpression) and condition.operator is eq
+        for column, other in (
+            (condition.left, condition.right),
+            (condition.right, condition.left),
+        )
+        if column in primary_key and not join.right.c.contains_column(other)
+    }
+    return len(matched_columns) == len(primary_key)
+
+
 class RepositoryProtocol[M](Protocol):
     model: type[M]
 
@@ -44,6 +86,10 @@ class RepositoryProtocol[M](Protocol):
     async def paginate(
         self, statement: Select[tuple[M]], *, limit: int, page: int
     ) -> tuple[list[M], int]: ...
+
+    async def paginate_has_more(
+        self, statement: Select[tuple[M]], *, limit: int, page: int
+    ) -> tuple[list[M], bool]: ...
 
     def get_base_statement(self) -> Select[tuple[M]]: ...
 
@@ -117,6 +163,38 @@ class RepositoryBase[M: ModelIDProtocol[Any]]:
         results = await self.session.execute(paginated_statement)
         items = list(results.unique().scalars().all())
         return items, count
+
+    async def paginate_has_more(
+        self, statement: Select[tuple[M]], *, limit: int, page: int
+    ) -> tuple[list[M], bool]:
+        """
+        Paginate without counting the total number of rows.
+
+        Fetches one extra row to know whether a next page exists. Use it on
+        large tables, where the `COUNT(*)` of `paginate` scans every matching
+        row and costs far more than fetching the page itself.
+
+        LIMIT and OFFSET count rows, not entities, so a join that can match
+        several rows per entity is deduplicated with DISTINCT first. Eager-load
+        collections with `joinedload`, which SQLAlchemy limits in a subquery,
+        rather than with `contains_eager` over such a join.
+
+        The primary key is appended to the ORDER BY: rows tied on the sort key
+        come back in an arbitrary order for each page query, which would repeat
+        some rows and skip others across pages.
+        """
+        offset = (page - 1) * limit
+        if _may_duplicate_rows(
+            statement.with_only_columns(self.model.id),
+            class_mapper(self.model).local_table,
+        ):
+            statement = statement.distinct()
+        paginated_statement = (
+            statement.order_by(self.model.id).limit(limit + 1).offset(offset)
+        )
+        results = await self.session.execute(paginated_statement)
+        items = list(results.unique().scalars().all())
+        return items[:limit], len(items) > limit
 
     def get_base_statement(self) -> Select[tuple[M]]:
         return select(self.model)

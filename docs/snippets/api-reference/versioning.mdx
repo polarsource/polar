@@ -1,6 +1,6 @@
 Polar uses date-based API versions to evolve the API without unexpectedly changing
 the contract your integration depends on. Versions use the `YYYY-MM` format, such
-as `2026-10`, and apply to API requests, responses, webhook payloads, and SDK types.
+as {version}, and apply to API requests, responses, webhook payloads, and SDK types.
 
 <Warning>
   Pin a version in every production integration. If you don't, your requests use
@@ -58,14 +58,14 @@ paths remain the same:
 ```bash
 curl -i https://api.polar.sh/v1/products/ \
   -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
-  -H "Polar-Version: 2026-10" \
+  -H "Polar-Version: {version}" \
   -H "Accept: application/json"
 ```
 
 Responses include the version used to process the request:
 
 ```http
-Polar-Version: 2026-10
+Polar-Version: {version}
 ```
 
 If the header is omitted, Polar uses Current. A malformed, unknown, or removed
@@ -81,7 +81,7 @@ remain stable across release cycles. Set `api_version` when you create an endpoi
   "url": "https://example.com/webhooks",
   "format": "raw",
   "events": ["order.created"],
-  "api_version": "2026-10"
+  "api_version": "{version}"
 }
 ```
 
@@ -111,14 +111,14 @@ matching `Polar-Version` header:
   <Tab title="Python">
 
     ```py
-    from polar.v2026_10 import Polar
+    from polar.v{pythonVersion} import Polar
     ```
 
   </Tab>
   <Tab title="JavaScript">
 
     ```ts
-    import { createPolar } from "@polar-sh/sdk/2026-10";
+    import { createPolar } from "@polar-sh/sdk/{version}";
     ```
 
   </Tab>

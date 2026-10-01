@@ -1,15 +1,16 @@
 import argparse
+import json
 import pathlib
 import sys
 
-from authlib.jose import JsonWebKey, KeySet
+from joserfc.errors import JoseError
+from joserfc.jwk import KeyParameters, KeySet, RSAKey
 
 
 def generate_jwks(kid: str, size: int = 2048) -> str:
-    options = {"kid": kid, "use": "sig"}
-    key = JsonWebKey.generate_key("RSA", size, options, is_private=True)
-    keyset = KeySet(keys=[key])
-    return keyset.as_json(is_private=True)
+    options: KeyParameters = {"kid": kid, "use": "sig"}
+    key = RSAKey.generate_key(size, options, private=True)
+    return json.dumps(KeySet([key]).as_dict(private=True))
 
 
 TIP_MESSAGE = (
@@ -26,8 +27,8 @@ def load_jwks(value: str) -> KeySet:
     # hosts where keys come from an environment variable (e.g. Vercel).
     if raw.startswith("{"):
         try:
-            return JsonWebKey.import_key_set(raw)
-        except ValueError as e:
+            return KeySet.import_key_set(json.loads(raw))
+        except (ValueError, KeyError, TypeError, JoseError) as e:
             raise ValueError(
                 f"The provided JWKS value is not a valid JWKS document.\n{TIP_MESSAGE}"
             ) from e
@@ -41,9 +42,8 @@ def load_jwks(value: str) -> KeySet:
 
     try:
         with open(path) as f:
-            content = f.read().strip()
-            return JsonWebKey.import_key_set(content)
-    except ValueError as e:
+            return KeySet.import_key_set(json.load(f))
+    except (ValueError, KeyError, TypeError, JoseError) as e:
         raise ValueError(
             f"The provided JWKS file {value} is not a valid JWKS file.\n{TIP_MESSAGE}"
         ) from e

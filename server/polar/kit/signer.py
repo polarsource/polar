@@ -16,10 +16,10 @@ import json
 from typing import Any, Protocol
 
 import boto3
-from authlib.jose import JsonWebKey, KeySet
 from botocore.config import Config
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
+from joserfc.jwk import KeySet, RSAKey
 
 from polar.config import settings
 from polar.kit.jwk import load_jwks
@@ -85,7 +85,7 @@ class KMSSigner:
                 serialization.Encoding.PEM,
                 serialization.PublicFormat.SubjectPublicKeyInfo,
             )
-            self._public_jwk = JsonWebKey.import_key(
+            self._public_jwk = RSAKey.import_key(
                 pem, {"kid": self.kid, "use": "sig", "alg": self.algorithm}
             ).as_dict()
         return self._public_jwk
@@ -97,15 +97,18 @@ class LocalSigner:
     def __init__(self, jwks: KeySet, kid: str) -> None:
         self.algorithm = ALGORITHM
         self.kid = kid
-        self._key = jwks.find_by_kid(kid)
+        self._key = jwks.get_by_kid(kid)
+        private_key = self._key.private_key
+        assert isinstance(private_key, rsa.RSAPrivateKey)
+        self._private_key = private_key
 
     def sign(self, signing_input: bytes) -> bytes:
-        return self._key.get_private_key().sign(
+        return self._private_key.sign(
             signing_input, padding.PKCS1v15(), hashes.SHA256()
         )
 
     def public_jwk(self) -> dict[str, Any]:
-        return self._key.as_dict(is_private=False)
+        return self._key.as_dict(private=False)
 
 
 @functools.cache

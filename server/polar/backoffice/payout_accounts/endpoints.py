@@ -93,7 +93,7 @@ async def list(
 
     statement = statement.order_by(PayoutAccount.created_at.desc())
 
-    items, count = await repository.paginate(
+    items, has_more = await repository.paginate_has_more(
         statement, limit=pagination.limit, page=pagination.page
     )
 
@@ -142,7 +142,9 @@ async def list(
             ).render(request, items):
                 pass
 
-            with datatable.pagination(request, pagination, count):
+            with datatable.pagination_has_more(
+                request, pagination, len(items), has_more
+            ):
                 pass
 
 
@@ -328,7 +330,9 @@ async def delete(
             account_type = payout_account.type
             stripe_id = payout_account.stripe_id
 
-            await payout_account_service.delete(session, payout_account)
+            await payout_account_service.delete(
+                session, payout_account, allow_paid_out=True
+            )
 
             timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
             note = (

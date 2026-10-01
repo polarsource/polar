@@ -90,6 +90,7 @@ inline subquery silently bypasses it. Enforced by `uv run task lint_org_scope`.
 - `get_one_or_none(statement)` - Single result or None (calls `.unique()` — safe with `joinedload`)
 - `get_all(statement)` - All matching results (calls `.unique()` — safe with `joinedload`)
 - `paginate(statement, limit, page)` - Returns (results, count)
+- `paginate_has_more(statement, limit, page)` - Returns (results, has_more), no `COUNT(*)`; use on large tables
 - `create(object, flush=False)` - Add to session
 - `update(object, update_dict)` - Update fields
 - `from_session(session)` - Factory method

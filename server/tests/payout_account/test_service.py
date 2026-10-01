@@ -13,6 +13,7 @@ from polar.payout_account.schemas import (
     StripeAccountCountry,
 )
 from polar.payout_account.service import (
+    PayoutAccountHasPayouts,
     PayoutAccountHasPendingPayouts,
     PayoutAccountLinkedToOrganization,
     PayoutAccountNonZeroBalance,
@@ -83,8 +84,11 @@ class TestCreate:
             )
         )
         enqueue_job_mock = mocker.patch("polar.payout_account.service.enqueue_job")
+        organization_enqueue_job_mock = mocker.patch(
+            "polar.organization.service.enqueue_job"
+        )
 
-        payout_account = await payout_account_service.create(
+        await payout_account_service.create(
             auth_subject,
             session,
             PayoutAccountCreate(
@@ -94,11 +98,15 @@ class TestCreate:
             ),
         )
 
-        enqueue_job_mock.assert_any_call(
-            "organization.sync_payout_account_website",
-            organization_id=organization.id,
-            payout_account_id=payout_account.id,
-        )
+        sync_calls = [
+            call
+            for call in (
+                enqueue_job_mock.call_args_list
+                + organization_enqueue_job_mock.call_args_list
+            )
+            if call.args == ("organization.sync_payout_account_website",)
+        ]
+        assert len(sync_calls) == 1
 
     @pytest.mark.auth
     async def test_does_not_unlink_a_ready_account(
@@ -164,6 +172,64 @@ class TestCreate:
             payout_account_id=payout_account.id,
         )
 
+    @pytest.mark.auth
+    async def test_cancels_held_payouts_when_replacing_an_account(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        previous = await create_payout_account(
+            save_fixture, organization, user, is_payouts_enabled=False
+        )
+        stripe_service_mock.create_account.return_value = _stripe_account("acct_new")  # type: ignore[attr-defined]
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        await payout_account_service.create(
+            auth_subject,
+            session,
+            PayoutAccountCreate(
+                type=PayoutAccountType.stripe,
+                organization_id=organization.id,
+                country=StripeAccountCountry.US,
+            ),
+        )
+
+        enqueue_job_mock.assert_any_call(
+            "payout.cancel_held_payouts",
+            account_id=organization.account_id,
+            payout_account_id=previous.id,
+        )
+
+
+@pytest.mark.asyncio
+class TestCreateManualAccount:
+    async def test_cancels_held_payouts_when_replacing_an_account(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        previous = await create_payout_account(save_fixture, organization, user)
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        await payout_account_service.create_manual_account(
+            session, organization, user, country="US", currency="usd"
+        )
+
+        enqueue_job_mock.assert_any_call(
+            "payout.cancel_held_payouts",
+            account_id=organization.account_id,
+            payout_account_id=previous.id,
+        )
+
 
 @pytest.mark.asyncio
 class TestDelete:
@@ -185,36 +251,30 @@ class TestDelete:
             await payout_account_service.delete(session, payout_account)
 
     @pytest.mark.auth
-    @pytest.mark.parametrize(
-        "attempt_status", [PayoutAttemptStatus.pending, PayoutAttemptStatus.in_transit]
-    )
-    async def test_pending_payouts_raises_error(
+    async def test_paid_out_raises_error(
         self,
-        attempt_status: PayoutAttemptStatus,
         session: AsyncSession,
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
         user: User,
+        stripe_service_mock: StripeService,
     ) -> None:
-        """Cannot delete a payout account that has pending or in-transit payouts."""
         payout_account = await create_payout_account(
             save_fixture, organization, user, type=PayoutAccountType.stripe
         )
-        # Unlink from org first so we get past the linked check
         organization.payout_account = None
         await save_fixture(organization)
 
         account = await create_account(save_fixture, user)
         await create_payout(
-            save_fixture,
-            payout_account=payout_account,
-            account=account,
-            attempts=[attempt_status],
+            save_fixture, payout_account=payout_account, account=account
         )
 
-        with pytest.raises(PayoutAccountHasPendingPayouts):
+        with pytest.raises(PayoutAccountHasPayouts):
             await payout_account_service.delete(session, payout_account)
+
+        stripe_service_mock.delete_account.assert_not_called()  # type: ignore[attr-defined]
 
     @pytest.mark.auth
     async def test_stripe_account_does_not_exist_raises_error(
@@ -283,14 +343,6 @@ class TestDelete:
         # Unlink from org so we get past the linked check
         organization.payout_account = None
         await save_fixture(organization)
-
-        account = await create_account(save_fixture, user)
-        await create_payout(
-            save_fixture,
-            payout_account=payout_account,
-            account=account,
-            attempts=[PayoutAttemptStatus.succeeded],
-        )
 
         stripe_service_mock.account_exists.return_value = True  # type: ignore[attr-defined]
         stripe_service_mock.retrieve_balance.return_value = ("usd", 0)  # type: ignore[attr-defined]

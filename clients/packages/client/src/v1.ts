@@ -25708,11 +25708,6 @@ export interface components {
       | 'activate_subscriptions'
       | 'cleanup'
       | 'completed'
-    /** MerchantMigrationTaxBehaviorUpdate */
-    MerchantMigrationTaxBehaviorUpdate: {
-      /** @description Polar tax after the switch, set on every subscription that hasn't switched yet: `inclusive` or `exclusive`. */
-      tax_behavior: components['schemas']['TaxBehavior']
-    }
     /** MerchantMigrationTaxBehaviorUpdateResult */
     MerchantMigrationTaxBehaviorUpdateResult: {
       /**
@@ -57506,7 +57501,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['MerchantMigrationTaxBehaviorUpdate']
+        'application/json': components['schemas']['MerchantMigrationRecordTaxUpdate']
       }
     }
     responses: {

@@ -36,8 +36,8 @@ from .schemas import (
     MerchantMigrationImportRequest,
     MerchantMigrationRecordItem,
     MerchantMigrationRecordSummary,
+    MerchantMigrationRecordTaxUpdate,
     MerchantMigrationRecordUpdate,
-    MerchantMigrationTaxBehaviorUpdate,
     MerchantMigrationTaxBehaviorUpdateResult,
     PanTransferChecklist,
     PanTransferStepComplete,
@@ -526,7 +526,7 @@ async def records(
 )
 async def set_tax_behavior(
     id: UUID4,
-    tax_behavior_update: MerchantMigrationTaxBehaviorUpdate,
+    tax_behavior_update: MerchantMigrationRecordTaxUpdate,
     auth_subject: MerchantMigrationWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> MerchantMigrationTaxBehaviorUpdateResult:

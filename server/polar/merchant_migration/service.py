@@ -101,7 +101,6 @@ from .schemas import (
     MerchantMigrationRecordSummaryEntity,
     MerchantMigrationRecordTaxUpdate,
     MerchantMigrationRecordUpdate,
-    MerchantMigrationTaxBehaviorUpdate,
     MerchantMigrationTaxBehaviorUpdateResult,
     PanTransferChecklist,
     PrecheckEntity,
@@ -1641,7 +1640,7 @@ class MerchantMigrationService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         migration_id: UUID,
-        update: MerchantMigrationTaxBehaviorUpdate,
+        update: MerchantMigrationRecordTaxUpdate,
     ) -> MerchantMigrationTaxBehaviorUpdateResult:
         migration = await self._get_manageable(
             session, auth_subject, migration_id, for_update=True

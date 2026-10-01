@@ -14,7 +14,7 @@ STATIC_DIRECTORY = (
 
 
 @pytest_asyncio.fixture
-async def client() -> AsyncGenerator[httpx.AsyncClient]:
+async def backoffice_client() -> AsyncGenerator[httpx.AsyncClient]:
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=backoffice_app), base_url="http://test"
     ) as client:
@@ -22,23 +22,20 @@ async def client() -> AsyncGenerator[httpx.AsyncClient]:
 
 
 @pytest.mark.asyncio
-class TestVersionedStaticFiles:
-    async def test_current_version_is_cached_and_compressed(
-        self, client: httpx.AsyncClient
+class TestFileResponse:
+    async def test_current_version_is_cached_immutably(
+        self, backoffice_client: httpx.AsyncClient
     ) -> None:
         version = get_file_version(str(STATIC_DIRECTORY), "logo.light.svg")
 
-        response = await client.get(
-            "/static/logo.light.svg",
-            params={"v": version},
-            headers={"Accept-Encoding": "gzip"},
+        response = await backoffice_client.get(
+            "/static/logo.light.svg", params={"v": version}
         )
 
         assert response.status_code == 200
         assert response.headers["Cache-Control"] == (
             "public, max-age=31536000, immutable"
         )
-        assert response.headers["Content-Encoding"] == "gzip"
 
     @pytest.mark.parametrize(
         "params",
@@ -48,9 +45,22 @@ class TestVersionedStaticFiles:
         ],
     )
     async def test_other_requests_revalidate(
-        self, params: dict[str, str], client: httpx.AsyncClient
+        self, params: dict[str, str], backoffice_client: httpx.AsyncClient
     ) -> None:
-        response = await client.get("/static/logo.light.svg", params=params)
+        response = await backoffice_client.get("/static/logo.light.svg", params=params)
 
         assert response.status_code == 200
         assert response.headers["Cache-Control"] == "no-cache"
+
+
+@pytest.mark.asyncio
+class TestCall:
+    async def test_compresses_static_files(
+        self, backoffice_client: httpx.AsyncClient
+    ) -> None:
+        response = await backoffice_client.get(
+            "/static/logo.light.svg", headers={"Accept-Encoding": "gzip"}
+        )
+
+        assert response.status_code == 200
+        assert response.headers["Content-Encoding"] == "gzip"

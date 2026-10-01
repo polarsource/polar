@@ -2,8 +2,8 @@ import hashlib
 import os
 from functools import lru_cache
 from pathlib import Path
-from urllib.parse import parse_qs
 
+from starlette.datastructures import QueryParams
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
@@ -45,12 +45,14 @@ class VersionedStaticFiles(StaticFiles):
         status_code: int = 200,
     ) -> Response:
         response = super().file_response(full_path, stat_result, scope, status_code)
-        requested_version = parse_qs(scope.get("query_string", b"").decode()).get("v")
-        is_current_version = requested_version is not None and requested_version == [
-            self.get_file_version(os.path.relpath(full_path, self.directory or ""))
-        ]
+        requested_version = QueryParams(scope["query_string"]).get("v")
+        served_version = self.get_file_version(
+            os.path.relpath(full_path, self.directory or "")
+        )
         response.headers["Cache-Control"] = (
-            VERSIONED_CACHE_CONTROL if is_current_version else REVALIDATE_CACHE_CONTROL
+            VERSIONED_CACHE_CONTROL
+            if requested_version == served_version
+            else REVALIDATE_CACHE_CONTROL
         )
         return response
 

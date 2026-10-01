@@ -1306,8 +1306,11 @@ class TestSetTaxBehavior:
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     @pytest.mark.parametrize(
-        "progress_age",
-        [timedelta(0), STALL_THRESHOLD + timedelta(minutes=1)],
+        ("progress_age", "detail"),
+        [
+            (timedelta(0), "Wait for it to finish"),
+            (STALL_THRESHOLD + timedelta(minutes=1), "Start it again"),
+        ],
         ids=["running", "stalled"],
     )
     async def test_active_operation_returns_409(
@@ -1317,6 +1320,7 @@ class TestSetTaxBehavior:
         organization: Organization,
         user_organization: UserOrganization,
         progress_age: timedelta,
+        detail: str,
     ) -> None:
         migration = await _create_migration(save_fixture, organization)
         migration.operation = MerchantMigrationOperation(
@@ -1332,6 +1336,7 @@ class TestSetTaxBehavior:
         )
 
         assert response.status_code == 409
+        assert detail in response.json()["detail"]
 
 
 @pytest.mark.asyncio

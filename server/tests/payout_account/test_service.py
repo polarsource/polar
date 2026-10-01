@@ -164,6 +164,64 @@ class TestCreate:
             payout_account_id=payout_account.id,
         )
 
+    @pytest.mark.auth
+    async def test_cancels_held_payouts_when_replacing_an_account(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        previous = await create_payout_account(
+            save_fixture, organization, user, is_payouts_enabled=False
+        )
+        stripe_service_mock.create_account.return_value = _stripe_account("acct_new")  # type: ignore[attr-defined]
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        await payout_account_service.create(
+            auth_subject,
+            session,
+            PayoutAccountCreate(
+                type=PayoutAccountType.stripe,
+                organization_id=organization.id,
+                country=StripeAccountCountry.US,
+            ),
+        )
+
+        enqueue_job_mock.assert_any_call(
+            "payout.cancel_held_payouts",
+            account_id=organization.account_id,
+            payout_account_id=previous.id,
+        )
+
+
+@pytest.mark.asyncio
+class TestCreateManualAccount:
+    async def test_cancels_held_payouts_when_replacing_an_account(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        previous = await create_payout_account(save_fixture, organization, user)
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        await payout_account_service.create_manual_account(
+            session, organization, user, country="US", currency="usd"
+        )
+
+        enqueue_job_mock.assert_any_call(
+            "payout.cancel_held_payouts",
+            account_id=organization.account_id,
+            payout_account_id=previous.id,
+        )
+
 
 @pytest.mark.asyncio
 class TestDelete:

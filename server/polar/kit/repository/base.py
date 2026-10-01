@@ -178,6 +178,10 @@ class RepositoryBase[M: ModelIDProtocol[Any]]:
         several rows per entity is deduplicated with DISTINCT first. Eager-load
         collections with `joinedload`, which SQLAlchemy limits in a subquery,
         rather than with `contains_eager` over such a join.
+
+        The primary key is appended to the ORDER BY: rows tied on the sort key
+        come back in an arbitrary order for each page query, which would repeat
+        some rows and skip others across pages.
         """
         offset = (page - 1) * limit
         if _may_duplicate_rows(
@@ -185,7 +189,9 @@ class RepositoryBase[M: ModelIDProtocol[Any]]:
             class_mapper(self.model).local_table,
         ):
             statement = statement.distinct()
-        paginated_statement = statement.limit(limit + 1).offset(offset)
+        paginated_statement = (
+            statement.order_by(self.model.id).limit(limit + 1).offset(offset)
+        )
         results = await self.session.execute(paginated_statement)
         items = list(results.unique().scalars().all())
         return items[:limit], len(items) > limit

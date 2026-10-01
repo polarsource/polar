@@ -142,17 +142,20 @@ class PayoutAccountService:
 
         # Don't make it active while a ready account is still paying them out.
         if current is None or not current.is_payout_ready:
-            organization_repository = OrganizationRepository.from_session(session)
-            organization.payout_account = payout_account
-            await organization_repository.update(organization)
+            # Late import: organization.service imports payout_account.service.
+            from polar.organization.service import organization as organization_service
 
-        # Stripe reads the website off the account during onboarding, so the new one
-        # needs it even when the organization stayed on its old account.
-        enqueue_job(
-            "organization.sync_payout_account_website",
-            organization_id=organization.id,
-            payout_account_id=payout_account.id,
-        )
+            await organization_service.set_payout_account(
+                session, organization, payout_account
+            )
+        else:
+            # Stripe reads the website off the account during onboarding, so the new
+            # one needs it even when the organization stayed on its old account.
+            enqueue_job(
+                "organization.sync_payout_account_website",
+                organization_id=organization.id,
+                payout_account_id=payout_account.id,
+            )
 
         return payout_account
 
@@ -372,17 +375,16 @@ class PayoutAccountService:
                 is_details_submitted=True,
                 is_charges_enabled=True,
                 is_payouts_enabled=True,
-            )
+            ),
+            flush=True,
         )
-
-        organization_repository = OrganizationRepository.from_session(session)
-        organization.payout_account = payout_account
-        await organization_repository.update(organization)
 
         # Late import: organization.service imports payout_account.service.
         from polar.organization.service import organization as organization_service
 
-        await organization_service.maybe_activate(session, organization)
+        await organization_service.set_payout_account(
+            session, organization, payout_account
+        )
 
         return payout_account
 
@@ -413,7 +415,8 @@ class PayoutAccountService:
                 is_payouts_enabled=stripe_account.payouts_enabled,
                 business_type=stripe_account.business_type,
                 data=stripe_account.to_dict(),
-            )
+            ),
+            flush=True,
         )
 
 

@@ -1234,6 +1234,74 @@ class TestUpdateRecord:
 
 
 @pytest.mark.asyncio
+class TestSetTaxBehavior:
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_sets_every_subscription_not_moved(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        other = await _create_migration(save_fixture, organization)
+
+        def subscription(
+            target: MerchantMigration,
+            source_id: str,
+            cutover_status: MerchantMigrationCutoverStatus | None = None,
+        ) -> MerchantMigrationRecord:
+            return MerchantMigrationRecord(
+                merchant_migration=target,
+                organization=organization,
+                type=MerchantMigrationRecordType.subscription,
+                source_id=source_id,
+                cutover_status=cutover_status,
+                canonical=serialize(canonical_subscription(source_id=source_id)),
+            )
+
+        pending = subscription(migration, "sub_pending")
+        skipped = subscription(
+            migration, "sub_skipped", MerchantMigrationCutoverStatus.skipped
+        )
+        moved = subscription(
+            migration, "sub_moved", MerchantMigrationCutoverStatus.moved
+        )
+        elsewhere = subscription(other, "sub_elsewhere")
+        customer = MerchantMigrationRecord(
+            merchant_migration=migration,
+            organization=organization,
+            type=MerchantMigrationRecordType.customer,
+            source_id="cus_1",
+            canonical={},
+        )
+        for record in (pending, skipped, moved, elsewhere, customer):
+            await save_fixture(record)
+
+        response = await client.post(
+            f"/v1/merchant-migrations/{migration.id}/records/tax-behavior",
+            json={"tax_behavior": "exclusive"},
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"updated": 2}
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        for record, expected in (
+            (pending, "exclusive"),
+            (skipped, "exclusive"),
+            (moved, None),
+            (elsewhere, None),
+        ):
+            reloaded = await repository.get_by_id(record.id)
+            assert reloaded is not None
+            assert reloaded.canonical.get("tax_behavior") == expected
+        reloaded_customer = await repository.get_by_id(customer.id)
+        assert reloaded_customer is not None
+        assert reloaded_customer.canonical == {}
+
+
+@pytest.mark.asyncio
 class TestUpdateBillingAddress:
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_updates_staged_customer(

@@ -265,6 +265,21 @@ class MerchantMigrationRecordTaxUpdate(Schema):
     )
 
 
+class MerchantMigrationTaxBehaviorUpdate(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    tax_behavior: TaxBehavior = Field(
+        description=(
+            "Polar tax after the switch, set on every subscription that hasn't "
+            "switched yet: `inclusive` or `exclusive`."
+        ),
+    )
+
+
+class MerchantMigrationTaxBehaviorUpdateResult(Schema):
+    updated: int = Field(description="How many subscriptions were updated.")
+
+
 class MerchantMigrationRecordBillingAddressUpdate(Schema):
     model_config = ConfigDict(extra="forbid")
 

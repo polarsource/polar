@@ -47,7 +47,7 @@ class VersionedStaticFiles(StaticFiles):
         response = super().file_response(full_path, stat_result, scope, status_code)
         requested_version = QueryParams(scope["query_string"]).get("v")
         served_version = self.get_file_version(
-            os.path.relpath(full_path, self.directory or "")
+            os.path.relpath(full_path, self.directory)
         )
         response.headers["Cache-Control"] = (
             VERSIONED_CACHE_CONTROL

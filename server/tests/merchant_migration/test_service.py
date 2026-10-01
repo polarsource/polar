@@ -4519,6 +4519,60 @@ class TestStartCutover:
             "merchant_migration.cutover", merchant_migration_id=migration.id
         )
 
+    @pytest.mark.auth
+    async def test_one_then_ten_in_a_second_batch(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        runner = _fake_cutover(mocker)
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_CUTOVER
+        )
+        await save_fixture(migration)
+        first, *rest = [
+            await _imported_subscription(
+                save_fixture,
+                migration,
+                organization,
+                product,
+                source_id=f"sub_{index}",
+                email=f"customer{index}@example.com",
+            )
+            for index in range(11)
+        ]
+
+        async def run_batch(record_ids: list[UUID]) -> None:
+            await service.start_cutover(
+                session, auth_subject, migration.id, record_ids=record_ids
+            )
+            # One subscription per run, plus the run that finds none left.
+            for _ in range(len(record_ids) + 1):
+                await service.run_cutover(session, migration.id)
+                await session.flush()
+            await session.refresh(migration)
+
+        await run_batch([first.id])
+
+        assert migration.step == MerchantMigrationStep.activate_subscriptions
+        report = await service.get_cutover_report(session, auth_subject, migration.id)
+        assert (report.moved, report.pending, report.running) == (1, 10, False)
+
+        await run_batch([record.id for record in rest])
+
+        assert migration.step == MerchantMigrationStep.cleanup
+        report = await service.get_cutover_report(session, auth_subject, migration.id)
+        assert (report.moved, report.pending) == (11, 0)
+        # The first batch's subscription isn't switched a second time.
+        assert runner.run.await_count == 11
+
 
 @pytest.mark.asyncio
 class TestStartPanTransfer:

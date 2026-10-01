@@ -1,0 +1,117 @@
+---
+title: "polar custom_fields"
+sidebarTitle: "custom_fields"
+---
+
+{/* Generated from the CLI by `pnpm --filter @polar-sh/cli docs:generate`. Do not edit by hand. */}
+
+```bash
+polar custom_fields <subcommand> [flags]
+```
+
+**Subcommands**
+
+- [`polar custom_fields create`](#polar-custom_fields-create) Create a custom field.
+- [`polar custom_fields delete`](#polar-custom_fields-delete) Delete a custom field.
+- [`polar custom_fields get`](#polar-custom_fields-get) Get a custom field by ID.
+- [`polar custom_fields list`](#polar-custom_fields-list) List custom fields.
+- [`polar custom_fields update`](#polar-custom_fields-update) Update a custom field.
+
+## polar custom_fields create
+
+Create a custom field.
+
+```bash
+polar custom_fields create [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--metadata` | `string` | Key-value object allowing you to store additional information. JSON: &#123;"&lt;key&gt;": string \| integer \| number \| boolean&#125; |
+| `--type` | `choice` | Required. type (choices: text, number, date, checkbox, select) |
+| `--slug` | `string` | Required. Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens. |
+| `--name` | `string` | Required. Name of the custom field. |
+| `--organization-id`, `--org` | `string` | The ID of the organization owning the custom field. Defaults to the active organization. |
+| `--properties` | `string` | Required. properties JSON: &#123;...&#125; \| &#123;"options": array of &#123;"value": string, "label": string&#125;, ...&#125; |
+
+## polar custom_fields delete
+
+Delete a custom field.
+
+```bash
+polar custom_fields delete [flags] <id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--confirm`, `-c` | `boolean` | Skip the confirmation prompt for destructive requests |
+
+## polar custom_fields get
+
+Get a custom field by ID.
+
+```bash
+polar custom_fields get [flags] <id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+
+## polar custom_fields list
+
+List custom fields.
+
+```bash
+polar custom_fields list [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--organization-id`, `--org` | `string` | Filter by organization ID. Defaults to the active organization. |
+| `--query` | `string` | Filter by custom field name or slug. |
+| `--type` | `choice` | Filter by custom field type. (choices: text, number, date, checkbox, select) |
+| `--page` | `integer` | Page number, defaults to 1. |
+| `--limit` | `integer` | Size of a page, defaults to 10. Maximum is 100. |
+| `--sorting` | `choice` | Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. (choices: created_at, -created_at, slug, -slug, name, -name, type, -type) |
+
+## polar custom_fields update
+
+Update a custom field.
+
+```bash
+polar custom_fields update [flags] <id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--metadata` | `string` | Key-value object allowing you to store additional information. JSON: &#123;"&lt;key&gt;": string \| integer \| number \| boolean&#125; |
+| `--name` | `string` | name |
+| `--slug` | `string` | slug |
+| `--type` | `choice` | Required. type (choices: text, number, date, checkbox, select) |
+| `--properties` | `string` | properties JSON: &#123;...&#125; \| &#123;"options": array of &#123;"value": string, "label": string&#125;, ...&#125; |

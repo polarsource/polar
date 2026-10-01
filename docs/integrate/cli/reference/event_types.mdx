@@ -1,0 +1,61 @@
+---
+title: "polar event_types"
+sidebarTitle: "event_types"
+---
+
+{/* Generated from the CLI by `pnpm --filter @polar-sh/cli docs:generate`. Do not edit by hand. */}
+
+```bash
+polar event_types <subcommand> [flags]
+```
+
+**Subcommands**
+
+- [`polar event_types list`](#polar-event_types-list) List event types with aggregated statistics.
+- [`polar event_types update`](#polar-event_types-update) Update an event type's label.
+
+## polar event_types list
+
+List event types with aggregated statistics.
+
+```bash
+polar event_types list [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--organization-id`, `--org` | `string` | Filter by organization ID. Defaults to the active organization. |
+| `--customer-id` | `string` | Filter by customer ID. |
+| `--external-customer-id` | `string` | Filter by external customer ID. |
+| `--query` | `string` | Query to filter event types by name or label. |
+| `--root-events` | `boolean` | When true, only return event types with root events (parent_id IS NULL). |
+| `--parent-id` | `string` | Filter by specific parent event ID. |
+| `--source` | `choice` | Filter by event source (system or user). (choices: system, user) |
+| `--page` | `integer` | Page number, defaults to 1. |
+| `--limit` | `integer` | Size of a page, defaults to 10. Maximum is 100. |
+| `--sorting` | `choice` | Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. (choices: name, -name, label, -label, occurrences, -occurrences, first_seen, -first_seen, last_seen, -last_seen) |
+
+## polar event_types update
+
+Update an event type's label.
+
+```bash
+polar event_types update [flags] <id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--label` | `string` | Required. The label for the event type. |
+| `--label-property-selector` | `string` | Property path to extract dynamic label from event metadata (e.g., 'subject' or 'metadata.subject'). |

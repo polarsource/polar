@@ -24961,6 +24961,54 @@ export interface components {
       /** Trial End */
       trial_end: string | null
     }
+    /** MaintainerSubscriptionCancellationNotification */
+    MaintainerSubscriptionCancellationNotification: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'MaintainerSubscriptionCancellationNotification'
+      payload: components['schemas']['MaintainerSubscriptionCancellationNotificationPayload']
+    }
+    /** MaintainerSubscriptionCancellationNotificationPayload */
+    MaintainerSubscriptionCancellationNotificationPayload: {
+      /** Subscriber Name */
+      subscriber_name: string
+      /** Subscriber Email */
+      subscriber_email: string | null
+      /** Product Name */
+      product_name: string
+      /** Organization Name */
+      organization_name: string
+      /** Organization Slug */
+      organization_slug: string | null
+      /** Subscription Id */
+      subscription_id: string | null
+      cancellation_reason:
+        | components['schemas']['CustomerCancellationReason']
+        | null
+      /** Cancellation Comment */
+      cancellation_comment: string | null
+      /** Cancel At Period End */
+      cancel_at_period_end: boolean
+      /** Ends At */
+      ends_at: string | null
+      /** Formatted Cancellation Reason */
+      readonly formatted_cancellation_reason: string | null
+      /** Subscription Url */
+      readonly subscription_url: string | null
+    }
     /** MaintainerSubscriptionRenewalNotification */
     MaintainerSubscriptionRenewalNotification: {
       /**
@@ -25660,11 +25708,6 @@ export interface components {
       | 'activate_subscriptions'
       | 'cleanup'
       | 'completed'
-    /** MerchantMigrationTaxBehaviorUpdate */
-    MerchantMigrationTaxBehaviorUpdate: {
-      /** @description Polar tax after the switch, set on every subscription that hasn't switched yet: `inclusive` or `exclusive`. */
-      tax_behavior: components['schemas']['TaxBehavior']
-    }
     /** MerchantMigrationTaxBehaviorUpdateResult */
     MerchantMigrationTaxBehaviorUpdateResult: {
       /**
@@ -26689,6 +26732,7 @@ export interface components {
       notifications: (
         | components['schemas']['MaintainerNewPaidSubscriptionNotification']
         | components['schemas']['MaintainerNewTrialNotification']
+        | components['schemas']['MaintainerSubscriptionCancellationNotification']
         | components['schemas']['MaintainerNewProductSaleNotification']
         | components['schemas']['MaintainerSubscriptionRenewalNotification']
         | components['schemas']['MaintainerAccountCreditsGrantedNotification']
@@ -29923,6 +29967,8 @@ export interface components {
       chargeback_prevention: boolean
       /** Subscription Renewal */
       subscription_renewal: boolean
+      /** Subscription Cancellation */
+      subscription_cancellation?: boolean
       /** Exclude Free Products */
       exclude_free_products?: boolean
     }
@@ -57455,7 +57501,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['MerchantMigrationTaxBehaviorUpdate']
+        'application/json': components['schemas']['MerchantMigrationRecordTaxUpdate']
       }
     }
     responses: {
@@ -57484,6 +57530,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description A pre-check, import or switch is running. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MigrationOperationInProgress']
         }
       }
       /** @description Validation Error */
@@ -70914,6 +70969,9 @@ export const maintainerNewProductSaleNotificationTypeValues: ReadonlyArray<
 export const maintainerNewTrialNotificationTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MaintainerNewTrialNotification']['type']
 > = ['MaintainerNewTrialNotification']
+export const maintainerSubscriptionCancellationNotificationTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MaintainerSubscriptionCancellationNotification']['type']
+> = ['MaintainerSubscriptionCancellationNotification']
 export const maintainerSubscriptionRenewalNotificationTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MaintainerSubscriptionRenewalNotification']['type']
 > = ['MaintainerSubscriptionRenewalNotification']

@@ -139,7 +139,22 @@ describe('detectMethod', () => {
       'pnpm',
       'bun',
       'yarn',
+      'vp',
     ])
+  })
+
+  test('recognises Vite+ global package listings', async () => {
+    const calls: string[][] = []
+    const exec = fakeExec(
+      {
+        npm: new Error('npm: command not found'),
+        vp: `Package               Node version   Binaries\n---                   ---            ---\n${PACKAGE_NAME}@2.0.0   24.21.0        polar\n`,
+      },
+      calls,
+    )
+
+    await expect(run(detectMethod(exec, executable))).resolves.toBe('vp')
+    expect(calls).toContainEqual(['vp', 'list', '--global', PACKAGE_NAME])
   })
 
   test('does not mistake a platform package for the CLI package', async () => {
@@ -194,6 +209,12 @@ describe('upgradeCommand', () => {
       'yarn',
       'global',
       'add',
+      `${PACKAGE_NAME}@1.4.0`,
+    ])
+    expect(upgradeCommand('vp', 'v1.4.0')).toEqual([
+      'vp',
+      'install',
+      '--global',
       `${PACKAGE_NAME}@1.4.0`,
     ])
   })

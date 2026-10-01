@@ -35,6 +35,30 @@ document.addEventListener("htmx:beforeSwap", (event) => {
   }
 });
 
+let pendingContentRequest = null;
+
+// Latest navigation wins, like a full page load. Completion is tracked on the
+// XHR because htmx:afterRequest doesn't bubble once a swap detaches the link.
+// Uses htmx's request class so history snapshots don't keep the loading state.
+document.addEventListener("htmx:beforeSend", (event) => {
+  const { target, elt, xhr } = event.detail;
+  if (!target || target.id !== "content") {
+    return;
+  }
+  pendingContentRequest?.abort();
+  pendingContentRequest = xhr;
+  target.classList.add(htmx.config.requestClass);
+  xhr.addEventListener("loadend", () => {
+    if (pendingContentRequest === xhr) {
+      pendingContentRequest = null;
+      target.classList.remove(htmx.config.requestClass);
+    }
+  });
+  if (elt.closest(".drawer-side")) {
+    document.getElementById("menu-toggle").checked = false;
+  }
+});
+
 const formPostSSE = (formElement, target) => {
   const eventSource = new EventSourcePlus(formElement.action, {
     method: formElement.method || "GET",

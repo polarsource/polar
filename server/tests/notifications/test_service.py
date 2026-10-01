@@ -7,6 +7,7 @@ from polar.notifications.notification import (
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
     MaintainerNewTrialNotificationPayload,
+    MaintainerSubscriptionCancellationNotificationPayload,
     NotificationType,
 )
 from polar.notifications.service import PartialNotification
@@ -50,6 +51,24 @@ def _new_trial_notif() -> PartialNotification:
             organization_slug=None,
             subscription_id=None,
             trial_end=None,
+        ),
+    )
+
+
+def _subscription_cancellation_notif() -> PartialNotification:
+    return PartialNotification(
+        type=NotificationType.maintainer_subscription_cancellation,
+        payload=MaintainerSubscriptionCancellationNotificationPayload(
+            subscriber_name="Subscriber",
+            subscriber_email=None,
+            product_name="Product",
+            organization_name="Test",
+            organization_slug=None,
+            subscription_id=None,
+            cancellation_reason=None,
+            cancellation_comment=None,
+            cancel_at_period_end=True,
+            ends_at=None,
         ),
     )
 
@@ -267,3 +286,43 @@ class TestSendToOrgMembers:
 
         notified = {c.kwargs["user_id"] for c in send_to_user_mock.call_args_list}
         assert notified == {trial_on.id, legacy_subscription_on.id}
+
+    async def test_subscription_cancellation_setting_defaults_to_false(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        send_to_user_mock = mocker.patch(
+            "polar.notifications.service.NotificationsService.send_to_user"
+        )
+
+        cancellation_on = await create_user(save_fixture)
+        cancellation_off = await create_user(save_fixture)
+        legacy = await create_user(save_fixture)
+        for user, settings in (
+            (
+                cancellation_on,
+                {"new_subscription": False, "subscription_cancellation": True},
+            ),
+            (
+                cancellation_off,
+                {"new_subscription": True, "subscription_cancellation": False},
+            ),
+            (legacy, {"new_subscription": True}),
+        ):
+            await save_fixture(
+                UserOrganization(
+                    user=user,
+                    organization=organization,
+                    notification_settings={"new_order": True, **settings},
+                )
+            )
+
+        await notifications_service.send_to_org_members(
+            session, org_id=organization.id, notif=_subscription_cancellation_notif()
+        )
+
+        notified = {c.kwargs["user_id"] for c in send_to_user_mock.call_args_list}
+        assert notified == {cancellation_on.id}

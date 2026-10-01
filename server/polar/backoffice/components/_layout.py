@@ -100,7 +100,9 @@ def layout(
                     pass
 
                 with tag.div(
-                    classes="bg-base-200 text-base-content min-h-full w-60 p-4 flex flex-col gap-4"
+                    classes="bg-base-200 text-base-content min-h-full w-60 p-4 flex flex-col gap-4",
+                    hx_boost="true",
+                    hx_target="#content",
                 ):
                     with tag.a(
                         href=str(request.url_for("index")),

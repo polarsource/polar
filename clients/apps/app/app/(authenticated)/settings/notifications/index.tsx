@@ -135,8 +135,20 @@ export default function NotificationsPage() {
           />
         </SettingsItem>
         <SettingsItem
+          title="Subscription Cancellations"
+          description="Send a notification when a customer cancels a subscription"
+          variant="static"
+        >
+          <Switch
+            value={notificationSettings?.subscription_cancellation ?? false}
+            onValueChange={createNotificationSettingHandler(
+              'subscription_cancellation',
+            )}
+          />
+        </SettingsItem>
+        <SettingsItem
           title="Exclude Free Products"
-          description="Skip subscription, trial and renewal notifications for free products."
+          description="Skip subscription, trial, renewal and cancellation notifications for free products."
           variant="static"
         >
           <Switch

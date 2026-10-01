@@ -201,7 +201,8 @@ class MerchantMigrationRecordRepository(
     async def set_subscription_tax_behavior(
         self, migration_id: UUID, tax_behavior: TaxBehavior
     ) -> int:
-        """Set the tax behavior on every subscription the cutover hasn't moved.
+        """Set the tax behavior on every subscription the cutover hasn't moved,
+        returning how many changed.
 
         One statement, so the `moved` check and the write happen per row under
         the row lock: a subscription the switch moves concurrently is skipped,
@@ -219,6 +220,9 @@ class MerchantMigrationRecordRepository(
                     MerchantMigrationRecord.cutover_status
                     != MerchantMigrationCutoverStatus.moved,
                 ),
+                MerchantMigrationRecord.canonical[
+                    "tax_behavior"
+                ].astext.is_distinct_from(tax_behavior.value),
             )
             .values(
                 canonical=MerchantMigrationRecord.canonical.op("||")(

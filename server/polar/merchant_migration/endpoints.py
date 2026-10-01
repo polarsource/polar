@@ -36,8 +36,8 @@ from .schemas import (
     MerchantMigrationImportRequest,
     MerchantMigrationRecordItem,
     MerchantMigrationRecordSummary,
+    MerchantMigrationRecordTaxUpdate,
     MerchantMigrationRecordUpdate,
-    MerchantMigrationTaxBehaviorUpdate,
     MerchantMigrationTaxBehaviorUpdateResult,
     PanTransferChecklist,
     PanTransferStepComplete,
@@ -518,11 +518,15 @@ async def records(
             "description": "Merchant migration not found.",
             "model": MerchantMigrationNotFound.schema(),
         },
+        409: {
+            "description": "A pre-check, import or switch is running.",
+            "model": MigrationOperationInProgress.schema(),
+        },
     },
 )
 async def set_tax_behavior(
     id: UUID4,
-    tax_behavior_update: MerchantMigrationTaxBehaviorUpdate,
+    tax_behavior_update: MerchantMigrationRecordTaxUpdate,
     auth_subject: MerchantMigrationWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> MerchantMigrationTaxBehaviorUpdateResult:

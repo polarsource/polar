@@ -1,28 +1,40 @@
 # Polar CLI
 
-A Polar CLI for your terminal.
+The Polar CLI brings your Polar organization to your terminal. Work with
+products, customers, orders and the rest of the API, receive webhooks on your
+local machine, and send sample events to your handler.
 
-- Tunnel Webhooks to your local environment
-- Initialize Polar boilerplate with a single command
-- And much more...
+How to use it is covered in the
+[documentation](https://polar.sh/docs/integrate/cli/introduction). This README
+covers installing the CLI and working on it.
 
-Currently in development.
+## Install
 
-## Telemetry
+macOS and Linux:
 
-Every command reports one anonymous `cli_command` event straight to PostHog when
-it finishes: the command path (for example `auth login`), the names of the flags
-used (never their values), whether it succeeded, failed or was interrupted, the
-error type, the duration, the CLI version, OS, architecture, Bun version, whether
-it ran in CI, and which AI coding agent (if any) invoked it. Events are keyed by a
-random install id stored in `~/.polar/telemetry.json`. Access tokens,
-organization IDs, URLs and payloads are never sent. The PostHog project key is a
-public write-only token, the same one the website uses.
+```bash
+curl -fsSL https://polar.sh/install.sh | bash
+```
 
-Telemetry is wired around the root command in `src/cli.ts`, so new commands are
-covered automatically. Only the compiled release binary sends events; running
-from source or from `bin/cli.js` sends nothing. Opt out with
-`POLAR_CLI_TELEMETRY_OPTOUT=1` (`DO_NOT_TRACK=1` is honoured too).
+Windows, from PowerShell. Only x64 is supported:
+
+```powershell
+irm https://polar.sh/install.ps1 | iex
+```
+
+The installer puts `polar.exe` in `%USERPROFILE%\.polar\bin` and adds that
+folder to your user `PATH`. Restart any other open terminals so they pick it up.
+
+Or with a package manager, on any platform. pnpm and bun block install scripts
+by default, and the flags below allow the one that unpacks the binary:
+
+```bash
+npm install -g @polar-sh/cli
+pnpm add -g --allow-build=@polar-sh/cli @polar-sh/cli
+bun install -g --trust @polar-sh/cli
+```
+
+Check that it works with `polar --version`.
 
 ## Development
 
@@ -42,84 +54,47 @@ flow and no environment to choose:
 ```bash
 export POLAR_API_URL=http://127.0.0.1:8000
 export POLAR_ACCESS_TOKEN=polar_oat_...
-bun src/cli.ts listen http://localhost:4321/webhooks
-bun src/cli.ts trigger order.created
+bun src/cli.ts <command>
 ```
 
-The URL passed to `listen` is the app you are integrating Polar into, the one
-that receives webhooks.
-
-### Testing webhook triggers
-
-This walks through the full loop against sandbox or production. Against a local
-Polar API, set the two variables from the section above instead and skip step 1;
-everything else is the same.
-
-**1. Sign in and pick an organization.** Use `--sandbox` or `--production`. The browser opens for consent, then you choose an organization. Every command after this uses that organization's environment.
-
-```bash
-bun src/cli.ts auth login --sandbox
-bun src/cli.ts auth whoami
-```
-
-**2. Start a webhook receiver** in its own terminal. This stands in for your
-own app's webhook route; if you have one, point the tunnel at that instead.
-The one-liner logs each event it receives:
-
-```bash
-bun -e 'Bun.serve({ port: 4321, fetch: async (req) => { const b = await req.json(); console.log(b.type, "triggered:", req.headers.get("x-polar-triggered"), "customer:", b.data?.customer?.email ?? b.data?.email); return new Response("ok") } })'
-```
-
-**3. Open the tunnel** in a second terminal. You should see the connection banner with the organization name and the signing secret:
-
-```bash
-bun src/cli.ts listen http://localhost:4321/webhooks
-```
-
-**4. Trigger events** from a third terminal. Start with the catalog, then send a few:
-
-```bash
-bun src/cli.ts trigger --list
-bun src/cli.ts trigger order.created
-bun src/cli.ts trigger
-bun src/cli.ts trigger order.paid --override data.customer.email=astrid.lindgren@polar.sh --override data.subtotal_amount=99900 --seed 7
-bun src/cli.ts trigger customer_seat.assigned --seed 1 && bun src/cli.ts trigger customer_seat.claimed --seed 1 && bun src/cli.ts trigger customer_seat.revoked --seed 1
-bun src/cli.ts trigger customer.created --json --seed 3
-```
-
-Each trigger prints a confirmation, the listen terminal logs the forwarded event with your server's status code, and the receiver prints the payload type with `triggered: true`. Nothing is created in the organization: the dashboard shows no new orders, customers, or webhook deliveries.
-
-## Generated customer commands prototype
+### Generated API commands
 
 The CLI imports its API command tree from the private `@polar-sh/cli-commands`
-package in `sdk/cli-commands` through a local `file:` dependency. The generator and templates live in
-`sdk/generator/cli_commands`; the CLI supplies the Effect runtime implementation
-in `src/services/api-runtime.ts`.
+package in `sdk/cli-commands` through a local `file:` dependency. The generator
+and templates live in `sdk/generator/cli_commands`; the CLI supplies the Effect
+runtime implementation in `src/commands/api-runtime.ts`.
 
-```bash
-pnpm generate
-bun src/cli.ts customers --help
-bun src/cli.ts customers list --email=alice@example.com --limit=20
-bun src/cli.ts customers create --email=alice@example.com --org=<organization-id>
-bun src/cli.ts customers update <id> -d '{"name":"Alice"}'
-```
+Regenerate the commands after an API change with `pnpm generate`. Generation is
+explicit, and the generated files are committed. See
+[the package README](../../../sdk/cli-commands/README.md) for the generated
+files, setup, and limitations.
 
-These make real requests using the organization selected with `polar auth org`,
-or the one given with `--org`, in that organization's environment. Authenticated
-requests send its ID in the `Polar-Organization` header, so the API only returns
-and changes that organization's data. The CLI does not fill in organization inputs:
-`--org` is the alias for the `organization_id` input and does not change the saved
-selection. Repeated `--org` values are sent as filters without the header. See [the package README](../../../sdk/cli-commands/README.md)
-for the generated files, setup, and limitations. Generation is explicit for now, and generated files
-are committed. Start with `sdk/cli-commands/src/customers/list.ts` to inspect the
-emitted Effect command.
+### Telemetry
+
+Every command reports one anonymous `cli_command` event straight to PostHog when
+it finishes: the command path (for example `auth login`), the names of the flags
+used (never their values), whether it succeeded, failed or was interrupted, the
+error type and status code, the name of the flag or argument behind a usage
+mistake, the environment (sandbox or production), the duration, the CLI version,
+OS, architecture, Bun version, whether it ran in CI, and which AI coding agent
+(if any) invoked it. Events are keyed by a random install id stored in
+`~/.polar/telemetry.json`. Access tokens, organization IDs, URLs and payloads
+are never sent. The PostHog project key is a public write-only token, the same
+one the website uses.
+
+Telemetry is wired around the root command in `src/cli.ts`, so new commands are
+covered automatically. Only the compiled release binary sends events, which the
+release workflow marks with `--define POLAR_CLI_BUILD='"release"'`; running
+from source or from `bin/cli.js` sends nothing. Opt out with
+`POLAR_CLI_TELEMETRY_OPTOUT=1` (`DO_NOT_TRACK=1` is honoured too).
 
 ## Releases
 
 Add a changeset from `clients/` with `pnpm exec changeset` and select `@polar-sh/cli`.
 Changesets updates `package.json` and `CHANGELOG.md` in the existing release PR.
-The CLI is private to npm, but Changesets still versions it. The binary embeds
-its version from `package.json`; do not edit `src/version.ts` for releases.
+This `package.json` is marked private because the npm packages are generated by
+the release workflow (see [npm](#npm)); Changesets still versions it. The binary
+embeds its version from `package.json`; do not edit `src/version.ts` for releases.
 
 Merging a CLI version bump into `main` starts
 [Release CLI](../../../.github/workflows/release_cli.yml). It tests the CLI,
@@ -167,11 +142,12 @@ missing. The `npm` job runs it with `--dry-run` for verification builds.
 `polar update` follows opencode's updater. `src/services/updater.ts` resolves the
 running executable through its symlink and reads the `package.json` two levels
 up: if it names `@polar-sh/cli` and one of its `bin` entries is the executable,
-the CLI was installed from npm. It then asks `npm`, `pnpm`, `bun` and `yarn`
-concurrently which one lists the package globally and reruns that package
-manager (`npm install --global @polar-sh/cli@<version>`, `pnpm add --global
---allow-build=@polar-sh/cli ...`, `bun install --global --trust ...`, `yarn
-global add ...`) against the latest version on the npm registry, so postinstall
+the CLI was installed from npm. It then asks `npm`, `pnpm`, `bun`, `yarn` and
+`vp` (Vite+) concurrently which one lists the package globally and reruns that
+package manager (`npm install --global @polar-sh/cli@<version>`, `pnpm add
+--global --allow-build=@polar-sh/cli ...`, `bun install --global --trust ...`,
+`yarn global add ...`, `vp install --global ...`) against the latest version on
+the npm registry, so postinstall
 runs again and the binary is swapped consistently. Anything else is treated as
 the standalone binary and updated from GitHub Releases as before. `--method`
 overrides detection. On Windows a second hard link to the running executable is

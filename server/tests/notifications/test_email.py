@@ -8,12 +8,14 @@ import pytest
 
 from polar.email.react import render_email_template
 from polar.models.order import OrderBillingReasonInternal
+from polar.models.subscription import CustomerCancellationReason
 from polar.notifications.notification import (
     MaintainerAccountCreditsGrantedNotificationPayload,
     MaintainerFileFlaggedMaliciousNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
     MaintainerNewTrialNotificationPayload,
+    MaintainerSubscriptionCancellationNotificationPayload,
     NotificationPayloadBase,
 )
 
@@ -116,6 +118,42 @@ async def test_MaintainerNewTrialNotification() -> None:
 
 
 @pytest.mark.asyncio
+async def test_MaintainerSubscriptionCancellationNotification() -> None:
+    n = MaintainerSubscriptionCancellationNotificationPayload(
+        subscriber_name="John Doe",
+        subscriber_email="john.doe@example.com",
+        product_name="Pro",
+        organization_name="Test Org",
+        organization_slug="test-org",
+        subscription_id="7e4b1c3a-0f5d-4d2e-9b8a-1c2d3e4f5a6b",
+        cancellation_reason=CustomerCancellationReason.too_expensive,
+        cancellation_comment="We are cutting costs this quarter.",
+        cancel_at_period_end=True,
+        ends_at=datetime(2026, 10, 12, tzinfo=UTC),
+    )
+
+    await check_diff(n)
+
+
+@pytest.mark.asyncio
+async def test_MaintainerSubscriptionCancellationNotification_immediately() -> None:
+    n = MaintainerSubscriptionCancellationNotificationPayload(
+        subscriber_name="John Doe",
+        subscriber_email=None,
+        product_name="Pro",
+        organization_name="Test Org",
+        organization_slug="test-org",
+        subscription_id="7e4b1c3a-0f5d-4d2e-9b8a-1c2d3e4f5a6b",
+        cancellation_reason=None,
+        cancellation_comment=None,
+        cancel_at_period_end=False,
+        ends_at=datetime(2026, 9, 30, tzinfo=UTC),
+    )
+
+    await check_diff(n)
+
+
+@pytest.mark.asyncio
 async def test_MaintainerFileFlaggedMaliciousNotification() -> None:
     n = MaintainerFileFlaggedMaliciousNotificationPayload(
         file_name="whitepaper.pdf",
@@ -158,6 +196,18 @@ async def test_MaintainerFileFlaggedMaliciousNotification() -> None:
             organization_slug="{{ 123456 * 9 }}",
             subscription_id="{{ 123456 * 9 }}",
             trial_end=None,
+        ),
+        MaintainerSubscriptionCancellationNotificationPayload(
+            subscriber_name="{{ 123456 * 9 }}",
+            subscriber_email="{{ 123456 * 9 }}",
+            product_name="{{ 123456 * 9 }}",
+            organization_name="{{ 123456 * 9 }}",
+            organization_slug="{{ 123456 * 9 }}",
+            subscription_id="{{ 123456 * 9 }}",
+            cancellation_reason=CustomerCancellationReason.other,
+            cancellation_comment="{{ 123456 * 9 }}",
+            cancel_at_period_end=True,
+            ends_at=None,
         ),
         MaintainerAccountCreditsGrantedNotificationPayload(
             organization_name="{{ 123456 * 9 }}",

@@ -366,7 +366,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         comment: str | None = None,
     ) -> Subscription:
         async with SubscriptionUpdateContext(
-            session, subscription, subscription_service
+            session, subscription, subscription_service, customer_initiated=True
         ) as ctx:
             return await subscription_service.cancel(
                 session,
@@ -394,7 +394,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
             raise RevokeNotAllowed()
 
         async with SubscriptionUpdateContext(
-            session, subscription, subscription_service
+            session, subscription, subscription_service, customer_initiated=True
         ) as ctx:
             return await subscription_service.revoke(
                 session,

@@ -1270,6 +1270,34 @@ export interface components {
       /** Trial End */
       trial_end: string | null
     }
+    /** MaintainerSubscriptionCancellationNotificationPayload */
+    MaintainerSubscriptionCancellationNotificationPayload: {
+      /** Subscriber Name */
+      subscriber_name: string
+      /** Subscriber Email */
+      subscriber_email: string | null
+      /** Product Name */
+      product_name: string
+      /** Organization Name */
+      organization_name: string
+      /** Organization Slug */
+      organization_slug: string | null
+      /** Subscription Id */
+      subscription_id: string | null
+      cancellation_reason:
+        | components['schemas']['CustomerCancellationReason']
+        | null
+      /** Cancellation Comment */
+      cancellation_comment: string | null
+      /** Cancel At Period End */
+      cancel_at_period_end: boolean
+      /** Ends At */
+      ends_at: string | null
+      /** Formatted Cancellation Reason */
+      readonly formatted_cancellation_reason: string | null
+      /** Subscription Url */
+      readonly subscription_url: string | null
+    }
     /** MaintainerSubscriptionRenewalNotificationPayload */
     MaintainerSubscriptionRenewalNotificationPayload: {
       /** Product Name */
@@ -1365,6 +1393,16 @@ export interface components {
        */
       template: 'notification_new_trial'
       props: components['schemas']['MaintainerNewTrialNotificationPayload']
+    }
+    /** NotificationSubscriptionCancellationEmail */
+    NotificationSubscriptionCancellationEmail: {
+      /**
+       * Template
+       * @default notification_subscription_cancellation
+       * @constant
+       */
+      template: 'notification_subscription_cancellation'
+      props: components['schemas']['MaintainerSubscriptionCancellationNotificationPayload']
     }
     /** NotificationSubscriptionRenewalEmail */
     NotificationSubscriptionRenewalEmail: {

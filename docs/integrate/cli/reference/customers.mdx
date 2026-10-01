@@ -1,0 +1,505 @@
+---
+title: "polar customers"
+sidebarTitle: "customers"
+---
+
+{/* Generated from the CLI by `pnpm --filter @polar-sh/cli docs:generate`. Do not edit by hand. */}
+
+```bash
+polar customers <subcommand> [flags]
+```
+
+**Subcommands**
+
+- [`polar customers create`](#polar-customers-create) Create a customer.
+- [`polar customers delete`](#polar-customers-delete) Delete a customer.
+- [`polar customers delete_external`](#polar-customers-delete_external) Delete a customer by external ID.
+- [`polar customers get`](#polar-customers-get) Get a customer by ID.
+- [`polar customers get_external`](#polar-customers-get_external) Get a customer by external ID.
+- [`polar customers get_state`](#polar-customers-get_state) Get a customer state by ID.
+- [`polar customers get_state_external`](#polar-customers-get_state_external) Get a customer state by external ID.
+- [`polar customers list`](#polar-customers-list) List customers.
+- [`polar customers list_payment_methods`](#polar-customers-list_payment_methods) Get saved payment methods of a customer.
+- [`polar customers list_payment_methods_external`](#polar-customers-list_payment_methods_external) Get saved payment methods of a customer by external ID.
+- [`polar customers update`](#polar-customers-update) Update a customer.
+- [`polar customers update_external`](#polar-customers-update_external) Update a customer by external ID.
+- [`polar customers members`](#polar-customers-members) 
+
+## polar customers create
+
+Create a customer.
+
+```bash
+polar customers create [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--metadata` | `string` | Key-value object allowing you to store additional information. JSON: &#123;"&lt;key&gt;": string \| integer \| number \| boolean&#125; |
+| `--external-id` | `string` | The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated. |
+| `--name` | `string` | name |
+| `--billing-address` | `string` | billing_address JSON: &#123;"country": "AD" \| "AE" \| "AF" \| "AG" \| "AI" \| ..., ...&#125; |
+| `--tax-id` | `string` | tax_id |
+| `--locale` | `string` | locale |
+| `--organization-id`, `--org` | `string` | The ID of the organization owning the customer. Defaults to the active organization. |
+| `--owner` | `string` | Optional owner member to create with the customer. If not provided, an owner member will be automatically created using the customer's email and name. JSON: &#123;"email": string, ...&#125; |
+| `--type` | `choice` | type (choices: individual, team) |
+| `--email` | `string` | The email address of the customer. This must be unique within the organization. The email address of the team customer. Optional for team customers — if omitted, an owner with an email must be provided. |
+
+## polar customers delete
+
+Delete a customer.
+
+```bash
+polar customers delete [flags] <id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--confirm`, `-c` | `boolean` | Skip the confirmation prompt for destructive requests |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--anonymize` | `boolean` | If true, also anonymize the customer's personal data for GDPR compliance. This replaces email with a hashed version, hashes name and billing name (name preserved for businesses with tax_id), clears billing address, and removes OAuth account data. |
+
+## polar customers delete_external
+
+Delete a customer by external ID.
+
+```bash
+polar customers delete_external [flags] <external_id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `external_id` | `string` |  |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--confirm`, `-c` | `boolean` | Skip the confirmation prompt for destructive requests |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--anonymize` | `boolean` | If true, also anonymize the customer's personal data for GDPR compliance. |
+
+## polar customers get
+
+Get a customer by ID.
+
+```bash
+polar customers get [flags] <id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+
+## polar customers get_external
+
+Get a customer by external ID.
+
+```bash
+polar customers get_external [flags] <external_id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `external_id` | `string` |  |
+
+## polar customers get_state
+
+Get a customer state by ID.
+
+```bash
+polar customers get_state [flags] <id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+
+## polar customers get_state_external
+
+Get a customer state by external ID.
+
+```bash
+polar customers get_state_external [flags] <external_id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `external_id` | `string` |  |
+
+## polar customers list
+
+List customers.
+
+```bash
+polar customers list [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--organization-id`, `--org` | `string` | Filter by organization ID. Defaults to the active organization. |
+| `--email` | `string` | Filter by exact email. |
+| `--query` | `string` | Filter by name, email, or external ID. |
+| `--active` | `boolean` | Filter by active customers, i.e. customers with at least one trialing, active or past_due subscription. |
+| `--page` | `integer` | Page number, defaults to 1. |
+| `--limit` | `integer` | Size of a page, defaults to 10. Maximum is 100. |
+| `--sorting` | `choice` | Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. (choices: created_at, -created_at, email, -email, name, -name) |
+| `--metadata` | `string` | Filter by metadata key-value pairs. JSON: &#123;"&lt;key&gt;": string \| integer \| boolean \| array of string \| array of integer \| array of boolean&#125; |
+
+## polar customers list_payment_methods
+
+Get saved payment methods of a customer.
+
+```bash
+polar customers list_payment_methods [flags] <id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--page` | `integer` | Page number, defaults to 1. |
+| `--limit` | `integer` | Size of a page, defaults to 10. Maximum is 100. |
+
+## polar customers list_payment_methods_external
+
+Get saved payment methods of a customer by external ID.
+
+```bash
+polar customers list_payment_methods_external [flags] <external_id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `external_id` | `string` |  |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--page` | `integer` | Page number, defaults to 1. |
+| `--limit` | `integer` | Size of a page, defaults to 10. Maximum is 100. |
+
+## polar customers update
+
+Update a customer.
+
+```bash
+polar customers update [flags] <id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--metadata` | `string` | Key-value object allowing you to store additional information. JSON: &#123;"&lt;key&gt;": string \| integer \| number \| boolean&#125; |
+| `--email` | `string` | The email address of the customer. This must be unique within the organization. |
+| `--name` | `string` | name |
+| `--billing-address` | `string` | billing_address JSON: &#123;"country": "AD" \| "AE" \| "AF" \| "AG" \| "AI" \| ..., ...&#125; |
+| `--tax-id` | `string` | tax_id |
+| `--locale` | `string` | locale |
+| `--external-id` | `string` | The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated. |
+| `--type` | `choice` | The customer type. Can only be upgraded from 'individual' to 'team', never downgraded. (choices: individual, team) |
+
+## polar customers update_external
+
+Update a customer by external ID.
+
+```bash
+polar customers update_external [flags] <external_id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `external_id` | `string` |  |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--metadata` | `string` | Key-value object allowing you to store additional information. JSON: &#123;"&lt;key&gt;": string \| integer \| number \| boolean&#125; |
+| `--email` | `string` | The email address of the customer. This must be unique within the organization. |
+| `--name` | `string` | name |
+| `--billing-address` | `string` | billing_address JSON: &#123;"country": "AD" \| "AE" \| "AF" \| "AG" \| "AI" \| ..., ...&#125; |
+| `--tax-id` | `string` | tax_id |
+| `--locale` | `string` | locale |
+
+## polar customers members
+
+```bash
+polar customers members <subcommand> [flags]
+```
+
+**Subcommands**
+
+- [`polar customers members create`](#polar-customers-members-create) Create a new member for a customer.
+- [`polar customers members create_external`](#polar-customers-members-create_external) Create a new member for a customer identified by its external ID.
+- [`polar customers members delete`](#polar-customers-members-delete) Delete a member of a customer.
+- [`polar customers members delete_external`](#polar-customers-members-delete_external) Delete a member by external ID for a customer identified by its external ID.
+- [`polar customers members get`](#polar-customers-members-get) Get a member of a customer by its ID.
+- [`polar customers members get_external`](#polar-customers-members-get_external) Get a member by external ID for a customer identified by its external ID.
+- [`polar customers members list`](#polar-customers-members-list) List the members of a customer.
+- [`polar customers members list_external`](#polar-customers-members-list_external) List the members of a customer identified by its external ID.
+- [`polar customers members update`](#polar-customers-members-update) Update a member of a customer.
+- [`polar customers members update_external`](#polar-customers-members-update_external) Update a member by external ID for a customer identified by its external ID.
+
+## polar customers members create
+
+Create a new member for a customer.
+
+```bash
+polar customers members create [flags] <id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--email` | `string` | Required. The email address of the member. |
+| `--name` | `string` | name |
+| `--external-id` | `string` | The ID of the member in your system. This must be unique within the customer.  |
+| `--role` | `choice` | The role of the member within the customer. To assign or transfer ownership, use the member update endpoint. (choices: member, billing_manager) |
+
+## polar customers members create_external
+
+Create a new member for a customer identified by its external ID.
+
+```bash
+polar customers members create_external [flags] <external_id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `external_id` | `string` |  |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--email` | `string` | Required. The email address of the member. |
+| `--name` | `string` | name |
+| `--external-id` | `string` | The ID of the member in your system. This must be unique within the customer.  |
+| `--role` | `choice` | The role of the member within the customer. To assign or transfer ownership, use the member update endpoint. (choices: member, billing_manager) |
+
+## polar customers members delete
+
+Delete a member of a customer.
+
+```bash
+polar customers members delete [flags] <id> <member_id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+| `member_id` | `string` |  |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--confirm`, `-c` | `boolean` | Skip the confirmation prompt for destructive requests |
+
+## polar customers members delete_external
+
+Delete a member by external ID for a customer identified by its external ID.
+
+```bash
+polar customers members delete_external [flags] <external_id> <member_external_id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `external_id` | `string` |  |
+| `member_external_id` | `string` |  |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--confirm`, `-c` | `boolean` | Skip the confirmation prompt for destructive requests |
+
+## polar customers members get
+
+Get a member of a customer by its ID.
+
+```bash
+polar customers members get [flags] <id> <member_id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+| `member_id` | `string` |  |
+
+## polar customers members get_external
+
+Get a member by external ID for a customer identified by its external ID.
+
+```bash
+polar customers members get_external [flags] <external_id> <member_external_id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `external_id` | `string` |  |
+| `member_external_id` | `string` |  |
+
+## polar customers members list
+
+List the members of a customer.
+
+```bash
+polar customers members list [flags] <id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--role` | `choice` | Filter by member role. (choices: owner, billing_manager, member) |
+| `--page` | `integer` | Page number, defaults to 1. |
+| `--limit` | `integer` | Size of a page, defaults to 10. Maximum is 100. |
+| `--sorting` | `choice` | Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. (choices: created_at, -created_at) |
+
+## polar customers members list_external
+
+List the members of a customer identified by its external ID.
+
+```bash
+polar customers members list_external [flags] <external_id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `external_id` | `string` |  |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--role` | `choice` | Filter by member role. (choices: owner, billing_manager, member) |
+| `--page` | `integer` | Page number, defaults to 1. |
+| `--limit` | `integer` | Size of a page, defaults to 10. Maximum is 100. |
+| `--sorting` | `choice` | Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. (choices: created_at, -created_at) |
+
+## polar customers members update
+
+Update a member of a customer.
+
+```bash
+polar customers members update [flags] <id> <member_id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+| `member_id` | `string` |  |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--name` | `string` | name |
+| `--email` | `string` | email |
+| `--role` | `choice` | The role of the member within the customer. (choices: owner, billing_manager, member) |
+
+## polar customers members update_external
+
+Update a member by external ID for a customer identified by its external ID.
+
+```bash
+polar customers members update_external [flags] <external_id> <member_external_id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `external_id` | `string` |  |
+| `member_external_id` | `string` |  |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--name` | `string` | name |
+| `--email` | `string` | email |
+| `--role` | `choice` | The role of the member within the customer. (choices: owner, billing_manager, member) |

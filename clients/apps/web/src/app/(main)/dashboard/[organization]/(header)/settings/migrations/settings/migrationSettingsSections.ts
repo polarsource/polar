@@ -1,5 +1,5 @@
 import { ComponentType } from 'react'
-import { TaxAfterSwitchSection } from './TaxAfterSwitchSection'
+import { TaxAfterSwitchSection } from './tax/TaxAfterSwitchSection'
 
 export interface MigrationSettingsSectionProps {
   migrationId: string

@@ -1,0 +1,28 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": ["node_modules/**", "dist/**"],
+  "extends": ["../oxlint-config/oxlint-base.json"],
+  "plugins": ["typescript", "import"],
+  "rules": {
+    "import/no-cycle": "error",
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": ["@polar-sh/sdk", "@polar-sh/sdk/*"],
+            "message": "Import the generated SDK through src/polar.ts, the only module allowed to depend on @polar-sh/sdk. It pins the API version in one place."
+          }
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["src/polar.ts"],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    }
+  ]
+}

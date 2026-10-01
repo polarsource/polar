@@ -1,9 +1,9 @@
 'use client'
 
+import { useModal } from '@/components/Modal/useModal'
 import { Button, Modal } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { SlidersHorizontal } from 'lucide-react'
-import { useState } from 'react'
 import { MigrationSettingsPanel } from './MigrationSettingsPanel'
 
 export function MigrationSettingsButton({
@@ -13,16 +13,11 @@ export function MigrationSettingsButton({
   migrationId: string
   disabled: boolean
 }) {
-  const [open, setOpen] = useState(false)
+  const { isShown, show, hide } = useModal()
 
   return (
     <>
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={() => setOpen(true)}
-        disabled={disabled}
-      >
+      <Button size="sm" variant="ghost" onClick={show} disabled={disabled}>
         <Box as="span" display="inline-flex" alignItems="center" columnGap="xs">
           <SlidersHorizontal size={14} />
           Advanced
@@ -30,8 +25,8 @@ export function MigrationSettingsButton({
       </Button>
       <Modal
         title="Advanced settings"
-        isShown={open}
-        hide={() => setOpen(false)}
+        isShown={isShown}
+        hide={hide}
         modalContent={
           <Box flexDirection="column" padding="xl">
             <MigrationSettingsPanel migrationId={migrationId} />

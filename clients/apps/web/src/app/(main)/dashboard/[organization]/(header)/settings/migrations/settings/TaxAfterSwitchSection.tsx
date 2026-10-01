@@ -25,6 +25,11 @@ const RESULT: Record<TaxBehavior, string> = {
 
 const numberFormat = new Intl.NumberFormat('en-US')
 
+const updatedTitle = (count: number) =>
+  count === 0
+    ? 'Already up to date'
+    : `Updated ${numberFormat.format(count)} ${count === 1 ? 'subscription' : 'subscriptions'}`
+
 export function TaxAfterSwitchSection({
   migrationId,
 }: {
@@ -75,7 +80,7 @@ export function TaxAfterSwitchSection({
       {setTaxBehavior.isSuccess ? (
         <Alert
           variant="success"
-          title={`Updated ${numberFormat.format(setTaxBehavior.data.updated)} subscriptions`}
+          title={updatedTitle(setTaxBehavior.data.updated)}
           description={RESULT[setTaxBehavior.variables]}
           onDismiss={setTaxBehavior.reset}
         />

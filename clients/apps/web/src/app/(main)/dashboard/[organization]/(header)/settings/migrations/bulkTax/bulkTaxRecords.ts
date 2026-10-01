@@ -1,10 +1,7 @@
-import { api } from '@/utils/client'
-import { schemas, unwrap } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 
 export type TaxBehavior = schemas['TaxBehavior']
 export type TaxRow = schemas['MerchantMigrationRecordItem']
-
-const PAGE_LIMIT = 100
 
 export const effectiveTax = (row: TaxRow): TaxBehavior =>
   row.tax_behavior ?? 'inclusive'
@@ -45,26 +42,4 @@ export function taxBreakdown(rows: TaxRow[]): TaxBreakdown {
     }
   }
   return breakdown
-}
-
-// The records endpoint has no "not moved" filter and caps a page at 100, so
-// the whole subscription list is walked and narrowed client-side.
-export async function fetchAllSubscriptionRecords(
-  migrationId: string,
-): Promise<TaxRow[]> {
-  const rows: TaxRow[] = []
-  for (let page = 1; ; page++) {
-    const result = await unwrap(
-      api.GET('/v1/merchant-migrations/{id}/records', {
-        params: {
-          path: { id: migrationId },
-          query: { entity: 'subscriptions', page, limit: PAGE_LIMIT },
-        },
-      }),
-    )
-    rows.push(...result.items)
-    if (page >= result.pagination.max_page) {
-      return rows
-    }
-  }
 }

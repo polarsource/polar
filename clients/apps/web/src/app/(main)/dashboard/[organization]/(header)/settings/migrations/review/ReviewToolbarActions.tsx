@@ -1,9 +1,8 @@
 import { Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { subscriptionsLabel } from '../bulkTax/bulkTaxCopy'
 import { MigrationSettingsButton } from '../settings/MigrationSettingsButton'
 import { ReviewPrimaryAction } from './reviewCatalog'
-
-const numberFormat = new Intl.NumberFormat('en-US')
 
 export function ReviewToolbarActions({
   migrationId,
@@ -29,9 +28,7 @@ export function ReviewToolbarActions({
   const prepareLabel = importing
     ? 'Preparing…'
     : importCount > 0
-      ? `Prepare ${numberFormat.format(importCount)} ${
-          importCount === 1 ? 'subscription' : 'subscriptions'
-        }`
+      ? `Prepare ${subscriptionsLabel(importCount)}`
       : 'Prepare subscriptions'
 
   return (

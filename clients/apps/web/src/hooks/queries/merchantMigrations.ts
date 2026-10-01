@@ -259,6 +259,40 @@ export const useMigrationRecords = (
     refetchInterval: refetchInterval ?? false,
   })
 
+// The records endpoint caps a page at 100 and has no "not switched" filter, so
+// callers that need the whole list walk every page and narrow it themselves.
+export const fetchAllMigrationRecords = async (
+  id: string,
+  entity: schemas['PrecheckEntity'],
+) => {
+  const items: schemas['MerchantMigrationRecordItem'][] = []
+  for (let page = 1; ; page++) {
+    const result = await unwrap(
+      api.GET('/v1/merchant-migrations/{id}/records', {
+        params: { path: { id }, query: { entity, page, limit: 100 } },
+      }),
+    )
+    items.push(...result.items)
+    if (page >= result.pagination.max_page) {
+      return items
+    }
+  }
+}
+
+// Under the records key, so `invalidateMigrationRecords` refreshes it too.
+export const useAllMigrationRecords = <T>(
+  id: string,
+  entity: schemas['PrecheckEntity'],
+  select: (items: schemas['MerchantMigrationRecordItem'][]) => T,
+) =>
+  useQuery({
+    queryKey: ['merchantMigrationRecords', { id, entity, all: true }],
+    queryFn: () => fetchAllMigrationRecords(id, entity),
+    select,
+    retry: defaultRetry,
+    enabled: !!id,
+  })
+
 const switchKey = (id: string) => ['merchantMigrationSwitch', { id }]
 
 export const useMigrationSwitch = (id: string) =>

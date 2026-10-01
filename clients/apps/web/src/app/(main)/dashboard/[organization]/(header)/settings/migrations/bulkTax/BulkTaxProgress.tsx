@@ -2,7 +2,7 @@
 
 import { Alert, Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { formatCount, subscriptionsLabel, TAX_LABELS } from './bulkTaxCopy'
+import { formatCount, subscriptionsLabel, TAX_NAMES } from './bulkTaxCopy'
 import { BulkTaxController } from './useBulkTaxUpdate'
 
 const SHOWN_FAILURES = 5
@@ -67,7 +67,7 @@ export function BulkTaxProgress({
     )
   }
 
-  const label = TAX_LABELS[target].toLowerCase()
+  const label = TAX_NAMES[target]
   if (state.error) {
     return (
       <Alert

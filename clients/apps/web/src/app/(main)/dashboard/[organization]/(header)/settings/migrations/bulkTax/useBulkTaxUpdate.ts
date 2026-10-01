@@ -1,4 +1,5 @@
 import {
+  fetchAllMigrationRecords,
   invalidateMigrationRecords,
   updateMigrationRecord,
 } from '@/hooks/queries/merchantMigrations'
@@ -6,7 +7,6 @@ import { runBulk } from '@/utils/bulk'
 import { useCallback, useRef, useState } from 'react'
 import {
   EditableTaxRow,
-  fetchAllSubscriptionRecords,
   isTaxEditable,
   needsTaxUpdate,
   TaxBehavior,
@@ -99,7 +99,7 @@ export function useBulkTaxUpdate(migrationId: string) {
       setState({ ...IDLE, phase: 'collecting', target })
       try {
         const candidates = (
-          await fetchAllSubscriptionRecords(migrationId)
+          await fetchAllMigrationRecords(migrationId, 'subscriptions')
         ).filter(isTaxEditable)
         const pending = candidates.filter((row) => needsTaxUpdate(row, target))
         await apply(target, pending, {
@@ -141,9 +141,7 @@ export function useBulkTaxUpdate(migrationId: string) {
     }
   }, [apply, start, state])
 
-  const reset = useCallback(() => {
-    if (!running.current) setState(IDLE)
-  }, [])
+  const reset = useCallback(() => setState(IDLE), [])
 
   return {
     state,

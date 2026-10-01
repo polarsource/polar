@@ -1,8 +1,8 @@
 import { TaxBehavior } from './bulkTaxRecords'
 
-export const TAX_LABELS: Record<TaxBehavior, string> = {
-  inclusive: 'Inclusive',
-  exclusive: 'Exclusive',
+export const TAX_NAMES: Record<TaxBehavior, string> = {
+  inclusive: 'inclusive',
+  exclusive: 'exclusive',
 }
 
 const numberFormat = new Intl.NumberFormat('en-US')

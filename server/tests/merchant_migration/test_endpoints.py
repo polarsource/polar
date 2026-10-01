@@ -1305,18 +1305,24 @@ class TestSetTaxBehavior:
         assert reloaded_customer.canonical == {}
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
-    async def test_running_operation_returns_409(
+    @pytest.mark.parametrize(
+        "progress_age",
+        [timedelta(0), STALL_THRESHOLD + timedelta(minutes=1)],
+        ids=["running", "stalled"],
+    )
+    async def test_active_operation_returns_409(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
+        progress_age: timedelta,
     ) -> None:
         migration = await _create_migration(save_fixture, organization)
         migration.operation = MerchantMigrationOperation(
             kind=MerchantMigrationOperationKind.cutover,
             status=MerchantMigrationOperationStatus.running,
-            last_progress_at=utc_now(),
+            last_progress_at=utc_now() - progress_age,
         )
         await save_fixture(migration)
 

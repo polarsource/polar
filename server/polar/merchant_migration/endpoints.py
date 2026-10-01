@@ -519,7 +519,7 @@ async def records(
             "model": MerchantMigrationNotFound.schema(),
         },
         409: {
-            "description": "A pre-check, import or switch is running.",
+            "description": "A pre-check, import or switch is running or stalled.",
             "model": MigrationOperationInProgress.schema(),
         },
     },

@@ -1645,10 +1645,10 @@ class MerchantMigrationService:
         migration = await self._get_manageable(
             session, auth_subject, migration_id, for_update=True
         )
-        # A running switch skips rows this UPDATE has locked and can stop early,
-        # and a running pre-check re-stages records from tax values it saved
-        # before this write.
-        if self._operation_blocks_new_work(migration):
+        # Stalled counts too: a slow switch worker still holds record locks this
+        # UPDATE would wait on, and a pre-check re-stages records from tax values
+        # it saved before this write.
+        if migration.operation is not None and migration.operation.is_active:
             raise MigrationOperationInProgress()
         updated = await MerchantMigrationRecordRepository.from_session(
             session

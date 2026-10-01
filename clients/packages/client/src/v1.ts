@@ -57532,7 +57532,7 @@ export interface operations {
           'application/json': components['schemas']['MerchantMigrationNotFound']
         }
       }
-      /** @description A pre-check, import or switch is running. */
+      /** @description A pre-check, import or switch is running or stalled. */
       409: {
         headers: {
           [name: string]: unknown

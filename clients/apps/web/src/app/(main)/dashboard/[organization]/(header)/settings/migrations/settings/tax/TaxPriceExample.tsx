@@ -14,7 +14,6 @@ const OPTIONS: { value: TaxBehavior; label: string }[] = [
 const MIXED_NOTE =
   'Right now some subscriptions include tax and some add it on top.'
 
-// Illustration only: a $10.00 price with 20% VAT.
 const EXAMPLE: Record<TaxBehavior, { tax: string; pays: string }> = {
   inclusive: { tax: '$1.67 (included)', pays: '$10.00' },
   exclusive: { tax: '+ $2.00', pays: '$12.00' },

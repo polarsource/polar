@@ -3,7 +3,6 @@ import {
   effectiveTax,
   isTaxEditable,
   needsTaxUpdate,
-  runWithConcurrency,
   taxBreakdown,
   type TaxRow,
 } from './bulkTaxRecords'
@@ -68,7 +67,7 @@ describe('needsTaxUpdate', () => {
 })
 
 describe('taxBreakdown', () => {
-  it('counts editable rows by tax and switched rows as locked', () => {
+  it('counts editable rows by tax and leaves switched rows out', () => {
     expect(
       taxBreakdown([
         row({}),
@@ -77,31 +76,6 @@ describe('taxBreakdown', () => {
         row({ tax_behavior: 'exclusive', cutover_status: 'moved' }),
         row({ status: 'skipped' }),
       ]),
-    ).toEqual({ inclusive: 1, exclusive: 1, locked: 1, undecided: 1 })
-  })
-})
-
-describe('runWithConcurrency', () => {
-  it('processes every item without exceeding the limit', async () => {
-    let active = 0
-    let peak = 0
-    const seen: number[] = []
-    await runWithConcurrency([1, 2, 3, 4, 5, 6, 7], 3, async (item) => {
-      active++
-      peak = Math.max(peak, active)
-      await new Promise((resolve) => setTimeout(resolve, 1))
-      seen.push(item)
-      active--
-    })
-    expect(seen.toSorted()).toEqual([1, 2, 3, 4, 5, 6, 7])
-    expect(peak).toBe(3)
-  })
-
-  it('does nothing for an empty list', async () => {
-    let calls = 0
-    await runWithConcurrency([], 5, async () => {
-      calls++
-    })
-    expect(calls).toBe(0)
+    ).toEqual({ inclusive: 1, exclusive: 1, undecided: 1 })
   })
 })

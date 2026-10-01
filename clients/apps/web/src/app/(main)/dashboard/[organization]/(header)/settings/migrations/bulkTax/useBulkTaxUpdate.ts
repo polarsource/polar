@@ -1,13 +1,15 @@
-import { invalidateMigrationRecords } from '@/hooks/queries/merchantMigrations'
+import {
+  invalidateMigrationRecords,
+  updateMigrationRecord,
+} from '@/hooks/queries/merchantMigrations'
+import { runBulk } from '@/utils/bulk'
 import { useCallback, useRef, useState } from 'react'
 import {
+  EditableTaxRow,
   fetchAllSubscriptionRecords,
   isTaxEditable,
   needsTaxUpdate,
-  patchRecordTax,
-  runWithConcurrency,
   TaxBehavior,
-  EditableTaxRow,
 } from './bulkTaxRecords'
 
 const CONCURRENCY = 5
@@ -23,6 +25,7 @@ export interface BulkTaxState {
   phase: BulkTaxPhase
   target: TaxBehavior | null
   total: number
+  settled: number
   updated: number
   alreadySet: number
   failures: BulkTaxFailure[]
@@ -33,11 +36,15 @@ const IDLE: BulkTaxState = {
   phase: 'idle',
   target: null,
   total: 0,
+  settled: 0,
   updated: 0,
   alreadySet: 0,
   failures: [],
   error: null,
 }
+
+const errorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error && error.message ? error.message : fallback
 
 export function useBulkTaxUpdate(migrationId: string) {
   const [state, setState] = useState<BulkTaxState>(IDLE)
@@ -54,23 +61,32 @@ export function useBulkTaxUpdate(migrationId: string) {
         phase: 'running',
         target,
         total: progress.total,
+        settled: progress.updated,
         updated: progress.updated,
         alreadySet: progress.alreadySet,
       })
-      await runWithConcurrency(rows, CONCURRENCY, async (row) => {
-        try {
-          await patchRecordTax(migrationId, row.record_id, target)
-          setState((prev) => ({ ...prev, updated: prev.updated + 1 }))
-        } catch (error) {
-          const message =
-            error instanceof Error ? error.message : 'Something went wrong.'
-          setState((prev) => ({
-            ...prev,
-            failures: [...prev.failures, { row, message }],
-          }))
-        }
-      })
-      setState((prev) => ({ ...prev, phase: 'done' }))
+      const result = await runBulk(
+        rows,
+        async (row) => {
+          try {
+            await updateMigrationRecord(migrationId, row.record_id, {
+              tax_behavior: target,
+            })
+          } finally {
+            setState((prev) => ({ ...prev, settled: prev.settled + 1 }))
+          }
+        },
+        { concurrency: CONCURRENCY },
+      )
+      setState((prev) => ({
+        ...prev,
+        phase: 'done',
+        updated: prev.updated + result.succeeded.length,
+        failures: result.failed.map(({ item, error }) => ({
+          row: item,
+          message: errorMessage(error, 'Something went wrong.'),
+        })),
+      }))
       invalidateMigrationRecords(migrationId)
     },
     [migrationId],
@@ -96,10 +112,7 @@ export function useBulkTaxUpdate(migrationId: string) {
           ...IDLE,
           phase: 'done',
           target,
-          error:
-            error instanceof Error && error.message
-              ? error.message
-              : 'Something went wrong. Please try again.',
+          error: errorMessage(error, 'Something went wrong. Please try again.'),
         })
       } finally {
         running.current = false
@@ -114,9 +127,6 @@ export function useBulkTaxUpdate(migrationId: string) {
     }
     if (state.error) {
       await start(state.target)
-      return
-    }
-    if (state.failures.length === 0) {
       return
     }
     running.current = true

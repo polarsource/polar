@@ -313,6 +313,20 @@ export const useMerchantMigrationRecordSummary = (
     refetchInterval: refetchInterval ?? false,
   })
 
+// A plain call so bulk runs can update many records and invalidate once.
+export const updateMigrationRecord = (
+  id: string,
+  recordId: string,
+  update: schemas['MerchantMigrationRecordUpdate'],
+) =>
+  dataOrThrow(
+    api.PATCH('/v1/merchant-migrations/{id}/records/{record_id}', {
+      params: { path: { id, record_id: recordId } },
+      body: update,
+    }),
+    "We couldn't save the migration record.",
+  )
+
 export const useUpdateMigrationRecord = (id: string) =>
   useMutation({
     mutationFn: ({
@@ -321,14 +335,7 @@ export const useUpdateMigrationRecord = (id: string) =>
     }: {
       recordId: string
       update: schemas['MerchantMigrationRecordUpdate']
-    }) =>
-      dataOrThrow(
-        api.PATCH('/v1/merchant-migrations/{id}/records/{record_id}', {
-          params: { path: { id, record_id: recordId } },
-          body: update,
-        }),
-        "We couldn't save the migration record.",
-      ),
+    }) => updateMigrationRecord(id, recordId, update),
     onSuccess: () => {
       invalidateMigrationRecords(id)
     },

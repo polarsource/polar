@@ -1,4 +1,3 @@
-import { extractApiErrorMessage } from '@/utils/api/errors'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 
@@ -31,7 +30,6 @@ export const needsTaxUpdate = (row: TaxRow, target: TaxBehavior): boolean =>
 export interface TaxBreakdown {
   inclusive: number
   exclusive: number
-  locked: number
   undecided: number
 }
 
@@ -39,14 +37,11 @@ export function taxBreakdown(rows: TaxRow[]): TaxBreakdown {
   const breakdown: TaxBreakdown = {
     inclusive: 0,
     exclusive: 0,
-    locked: 0,
     undecided: 0,
   }
   for (const row of rows) {
     if (isTaxEditable(row)) {
       breakdown[needsTaxDecision(row) ? 'undecided' : effectiveTax(row)] += 1
-    } else if (row.cutover_status === 'moved') {
-      breakdown.locked += 1
     }
   }
   return breakdown
@@ -72,42 +67,4 @@ export async function fetchAllSubscriptionRecords(
       return rows
     }
   }
-}
-
-export async function patchRecordTax(
-  migrationId: string,
-  recordId: string,
-  taxBehavior: TaxBehavior,
-): Promise<void> {
-  const result = await api
-    .PATCH('/v1/merchant-migrations/{id}/records/{record_id}', {
-      params: { path: { id: migrationId, record_id: recordId } },
-      body: { tax_behavior: taxBehavior },
-    })
-    .catch(() => null)
-  if (!result || result.error) {
-    throw new Error(
-      extractApiErrorMessage(
-        result?.error ?? {},
-        "We couldn't save the tax setting.",
-      ),
-    )
-  }
-}
-
-export async function runWithConcurrency<T>(
-  items: readonly T[],
-  concurrency: number,
-  worker: (item: T) => Promise<void>,
-): Promise<void> {
-  let next = 0
-  const lane = async () => {
-    while (next < items.length) {
-      const item = items[next++]
-      await worker(item)
-    }
-  }
-  await Promise.all(
-    Array.from({ length: Math.min(concurrency, items.length) }, lane),
-  )
 }

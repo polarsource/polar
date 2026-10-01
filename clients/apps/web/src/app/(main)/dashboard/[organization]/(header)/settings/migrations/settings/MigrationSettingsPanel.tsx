@@ -18,7 +18,11 @@ export function MigrationSettingsPanel({
         ({ key, title, description, Component }, index) => (
           <Fragment key={key}>
             {index > 0 ? (
-              <Box height={1} backgroundColor="background-secondary" />
+              <Box
+                borderTopWidth={1}
+                borderStyle="solid"
+                borderColor="border-secondary"
+              />
             ) : null}
             <Box as="section" flexDirection="column" rowGap="l">
               <Box flexDirection="column" rowGap="xs">

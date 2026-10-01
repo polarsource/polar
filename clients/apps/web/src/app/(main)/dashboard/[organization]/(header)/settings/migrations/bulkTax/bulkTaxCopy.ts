@@ -1,6 +1,4 @@
-import { schemas } from '@polar-sh/client'
-
-type TaxBehavior = schemas['TaxBehavior']
+import { TaxBehavior } from './bulkTaxRecords'
 
 export const TAX_LABELS: Record<TaxBehavior, string> = {
   inclusive: 'Inclusive',

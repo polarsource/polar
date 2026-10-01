@@ -37,7 +37,7 @@ export function BulkTaxProgress({
   onDismiss,
 }: {
   controller: BulkTaxController
-  onDismiss?: () => void
+  onDismiss: () => void
 }) {
   const { state, retry } = controller
   const target = state.target
@@ -56,14 +56,13 @@ export function BulkTaxProgress({
     )
   }
 
-  const settled = state.updated + state.failures.length
   if (state.phase === 'running') {
     return (
       <Box flexDirection="column" rowGap="s" width="100%">
         <Text variant="caption" tabularNums>
-          Updating {formatCount(settled)} of {formatCount(state.total)}…
+          Updating {formatCount(state.settled)} of {formatCount(state.total)}…
         </Text>
-        <BulkTaxProgressBar done={settled} total={state.total} />
+        <BulkTaxProgressBar done={state.settled} total={state.total} />
       </Box>
     )
   }

@@ -1,0 +1,24 @@
+server/polar/backoffice/components/_layout.py
+  s_192ea2764de87d::t_3ea0def110fab0 102-104
+server/polar/backoffice/scripts.mjs
+  s_192ea2764de87d::t_48d859564c72da 38-56
+server/polar/backoffice/styles.css
+  s_192ea2764de87d::t_75e93e4a1ea89c 9-17,20-37
+  s_192ea2764de87d::t_11755865b9b152 18-19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b741c07999bc021e15fa6f8bc34c61d038250e8a",
+  "prompts": {},
+  "sessions": {
+    "s_192ea2764de87d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "bb9966bc-289e-45b5-85f6-dae340231df8",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

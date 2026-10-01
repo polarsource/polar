@@ -101,6 +101,8 @@ from .schemas import (
     MerchantMigrationRecordSummaryEntity,
     MerchantMigrationRecordTaxUpdate,
     MerchantMigrationRecordUpdate,
+    MerchantMigrationTaxBehaviorUpdate,
+    MerchantMigrationTaxBehaviorUpdateResult,
     PanTransferChecklist,
     PrecheckEntity,
     PrecheckIssue,
@@ -1633,6 +1635,21 @@ class MerchantMigrationService:
         if organization is None:
             raise MerchantMigrationNotFound()
         return organization
+
+    async def set_tax_behavior(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+        update: MerchantMigrationTaxBehaviorUpdate,
+    ) -> MerchantMigrationTaxBehaviorUpdateResult:
+        migration = await self._get_manageable(
+            session, auth_subject, migration_id, for_update=True
+        )
+        updated = await MerchantMigrationRecordRepository.from_session(
+            session
+        ).set_subscription_tax_behavior(migration.id, update.tax_behavior)
+        return MerchantMigrationTaxBehaviorUpdateResult(updated=updated)
 
     async def update_record(
         self,

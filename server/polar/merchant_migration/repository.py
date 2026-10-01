@@ -1,19 +1,23 @@
 from collections.abc import AsyncGenerator, Mapping, Sequence
 from dataclasses import replace
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
 from sqlalchemy import (
     ColumnElement,
+    CursorResult,
     Select,
     and_,
     delete,
     distinct,
     exists,
     func,
+    literal,
     or_,
     select,
+    update,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import aliased, joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
@@ -193,6 +197,38 @@ class MerchantMigrationRecordRepository(
             MerchantMigrationRecord.source_id == source_id,
         )
         return await self.get_one_or_none(statement)
+
+    async def set_subscription_tax_behavior(
+        self, migration_id: UUID, tax_behavior: TaxBehavior
+    ) -> int:
+        """Set the tax behavior on every subscription the cutover hasn't moved.
+
+        One statement, so the `moved` check and the write happen per row under
+        the row lock: a subscription the switch moves concurrently is skipped,
+        never rewritten.
+        """
+        statement = (
+            update(MerchantMigrationRecord)
+            .where(
+                MerchantMigrationRecord.merchant_migration_id == migration_id,
+                MerchantMigrationRecord.type
+                == MerchantMigrationRecordType.subscription,
+                MerchantMigrationRecord.deleted_at.is_(None),
+                or_(
+                    MerchantMigrationRecord.cutover_status.is_(None),
+                    MerchantMigrationRecord.cutover_status
+                    != MerchantMigrationCutoverStatus.moved,
+                ),
+            )
+            .values(
+                canonical=MerchantMigrationRecord.canonical.op("||")(
+                    literal({"tax_behavior": tax_behavior.value}, JSONB)
+                )
+            )
+            .execution_options(synchronize_session=False)
+        )
+        result = cast(CursorResult[Any], await self.session.execute(statement))
+        return result.rowcount
 
     async def list_by_migration(
         self, migration_id: UUID

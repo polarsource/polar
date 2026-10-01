@@ -5602,6 +5602,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/merchant-migrations/{id}/records/tax-behavior': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Set Tax Behavior on Merchant Migration Subscriptions
+     * @description Set the tax behavior on every subscription that hasn't switched yet.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['merchant-migrations:set_tax_behavior']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/merchant-migrations/{id}/records/{record_id}': {
     parameters: {
       query?: never
@@ -25638,6 +25660,19 @@ export interface components {
       | 'activate_subscriptions'
       | 'cleanup'
       | 'completed'
+    /** MerchantMigrationTaxBehaviorUpdate */
+    MerchantMigrationTaxBehaviorUpdate: {
+      /** @description Polar tax after the switch, set on every subscription that hasn't switched yet: `inclusive` or `exclusive`. */
+      tax_behavior: components['schemas']['TaxBehavior']
+    }
+    /** MerchantMigrationTaxBehaviorUpdateResult */
+    MerchantMigrationTaxBehaviorUpdateResult: {
+      /**
+       * Updated
+       * @description How many subscriptions were updated.
+       */
+      updated: number
+    }
     MetadataOutputType: {
       [key: string]: string | number | boolean
     }
@@ -57378,6 +57413,59 @@ export interface operations {
           'application/json':
             | components['schemas']['SourceNotConnected']
             | components['schemas']['UnsupportedMigrationSource']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:set_tax_behavior': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MerchantMigrationTaxBehaviorUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationTaxBehaviorUpdateResult']
         }
       }
       /** @description Not allowed to manage this organization. */

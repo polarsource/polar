@@ -14,6 +14,7 @@ from polar.benefit.strategies.license_keys.schemas import (
 )
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import generate_uuid, utc_now
+from polar.kit.versioning import APIVersion
 from polar.license_key.repository import LicenseKeyRepository
 from polar.license_key.service import license_key as license_key_service
 from polar.models import (
@@ -27,7 +28,7 @@ from polar.models import (
 from polar.models.license_key import LicenseKeyStatus
 from polar.postgres import AsyncSession
 from polar.redis import Redis
-from polar.version import NEXT_API_VERSION, V2027_01
+from polar.version import V2026_04, V2026_10, V2027_01
 from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT, AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.license_key import TestLicenseKey
@@ -947,8 +948,10 @@ class TestValidateLicenseKey:
         data = response.json()
         assert data["usage"] == 0
 
+    @pytest.mark.api_version(V2026_04, V2026_10)
     async def test_returns_seat_member(
         self,
+        api_version: APIVersion,
         session: AsyncSession,
         redis: Redis,
         client: AsyncClient,
@@ -981,22 +984,17 @@ class TestValidateLicenseKey:
         response = await client.post(
             "/v1/customer-portal/license-keys/validate",
             json={"key": lk.key, "organization_id": str(lk.organization_id)},
-            headers={"Polar-Version": str(NEXT_API_VERSION)},
         )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["member_id"] == str(member.id)
-        assert data["member"]["email"] == "seat-member@example.com"
-        assert data["customer"]["email"] == customer.email
 
-        response = await client.post(
-            "/v1/customer-portal/license-keys/validate",
-            json={"key": lk.key, "organization_id": str(lk.organization_id)},
-        )
-
-        assert response.status_code == 200
-        assert "member" not in response.json()
+        if api_version >= V2026_10:
+            assert data["member_id"] == str(member.id)
+            assert data["member"]["email"] == "seat-member@example.com"
+            assert data["customer"]["email"] == customer.email
+        else:
+            assert "member" not in response.json()
 
     async def test_returns_subscription(
         self,

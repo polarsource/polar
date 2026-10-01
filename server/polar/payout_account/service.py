@@ -192,6 +192,8 @@ class PayoutAccountService:
         self,
         session: AsyncSession,
         payout_account: PayoutAccount,
+        *,
+        allow_paid_out: bool = False,
     ) -> None:
         organization_repository = OrganizationRepository.from_session(session)
         linked_organizations = await organization_repository.get_all_by_payout_account(
@@ -202,7 +204,10 @@ class PayoutAccountService:
 
         # Deleting it on Stripe takes the merchant's payout history with it.
         payout_repository = PayoutRepository.from_session(session)
-        if await payout_repository.count_by_payout_account(payout_account.id) > 0:
+        if (
+            not allow_paid_out
+            and await payout_repository.count_by_payout_account(payout_account.id) > 0
+        ):
             raise PayoutAccountHasPayouts(payout_account.id)
 
         await self._delete(session, payout_account)

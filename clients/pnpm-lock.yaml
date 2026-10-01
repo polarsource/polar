@@ -1251,6 +1251,25 @@ importers:
 
   packages/oxlint-config: {}
 
+  packages/polar:
+    dependencies:
+      '@polar-sh/sdk':
+        specifier: 1.0.1
+        version: 1.0.1
+    devDependencies:
+      '@polar-sh/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@typescript/native':
+        specifier: 'catalog:'
+        version: typescript@7.0.2
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.1(@typescript/typescript6@6.0.2)(jiti@2.7.0)(postcss@8.5.28)(tsx@4.23.15)(yaml@2.9.1)
+      typescript:
+        specifier: 'catalog:'
+        version: '@typescript/typescript6@6.0.2'
+
   packages/typescript-config: {}
 
   packages/ui:

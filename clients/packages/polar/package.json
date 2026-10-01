@@ -1,0 +1,48 @@
+{
+  "name": "@polar-sh/polar",
+  "description": "We really need to remember to change this package name.",
+  "author": "Polar",
+  "license": "Apache-2.0",
+  "type": "module",
+  "private": true,
+  "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/polarsource/polar.git",
+    "directory": "clients/packages/polar"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    "import": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "require": {
+      "types": "./dist/index.d.cts",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean --outDir dist",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@polar-sh/sdk": "1.0.1"
+  },
+  "devDependencies": {
+    "@polar-sh/typescript-config": "workspace:*",
+    "@typescript/native": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:"
+  }
+}

@@ -89,7 +89,7 @@ export const update = Command.make(
         yield* Console.log(ui.warning('Polar is managed by Homebrew'))
         yield* Console.log(
           ui.step(
-            `Run ${ui.command('brew upgrade polarsource/tap/polar')} to update`,
+            `Run ${ui.command('brew upgrade polarsource/tap/cli')} to update`,
           ),
         )
         yield* Console.log(ui.blank)

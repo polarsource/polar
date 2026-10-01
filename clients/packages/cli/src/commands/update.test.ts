@@ -72,7 +72,7 @@ describe('update command', () => {
         fakeUpdater('binary'),
       )
       await promise
-      expect(cli.output()).toContain('brew upgrade polarsource/tap/polar')
+      expect(cli.output()).toContain('brew upgrade polarsource/tap/cli')
       expect(http.urls()).toEqual([])
       expect(upgrades).toEqual([])
     } finally {

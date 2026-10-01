@@ -3,6 +3,7 @@ import json
 import pathlib
 import sys
 
+from joserfc.errors import JoseError
 from joserfc.jwk import KeyParameters, KeySet, RSAKey
 
 
@@ -27,7 +28,7 @@ def load_jwks(value: str) -> KeySet:
     if raw.startswith("{"):
         try:
             return KeySet.import_key_set(json.loads(raw))
-        except (ValueError, KeyError) as e:
+        except (ValueError, KeyError, TypeError, JoseError) as e:
             raise ValueError(
                 f"The provided JWKS value is not a valid JWKS document.\n{TIP_MESSAGE}"
             ) from e
@@ -42,7 +43,7 @@ def load_jwks(value: str) -> KeySet:
     try:
         with open(path) as f:
             return KeySet.import_key_set(json.load(f))
-    except (ValueError, KeyError) as e:
+    except (ValueError, KeyError, TypeError, JoseError) as e:
         raise ValueError(
             f"The provided JWKS file {value} is not a valid JWKS file.\n{TIP_MESSAGE}"
         ) from e

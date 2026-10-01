@@ -15,13 +15,9 @@ export const TAX_OPTIONS: { value: TaxBehavior; label: string }[] = [
 export const TAX_DESCRIPTIONS: Record<TaxBehavior, string> = {
   inclusive:
     'Customers keep paying the listed price. Polar takes tax out of it.',
-  exclusive: 'Customers pay the listed price plus tax.',
+  exclusive:
+    'Customers pay the price plus tax, so they pay more than they do on Stripe today.',
 }
-
-export const EXCLUSIVE_WARNING_TITLE = 'Customers will pay more'
-
-export const EXCLUSIVE_WARNING =
-  'Exclusive means customers pay the price plus tax. Once switched, their Polar invoices will be higher than what they pay on Stripe today.'
 
 const numberFormat = new Intl.NumberFormat('en-US')
 

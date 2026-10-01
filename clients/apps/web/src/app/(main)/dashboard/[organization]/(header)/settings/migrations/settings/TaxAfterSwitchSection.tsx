@@ -3,7 +3,7 @@
 import { Button, Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useEffect, useEffectEvent, useState } from 'react'
-import { BulkTaxChoice } from '../bulkTax/BulkTaxChoice'
+import { BulkTaxChoice, BulkTaxChoiceHint } from '../bulkTax/BulkTaxChoice'
 import { applyLabel, formatCount } from '../bulkTax/bulkTaxCopy'
 import { BulkTaxProgress } from '../bulkTax/BulkTaxProgress'
 import { TaxBehavior, TaxBreakdown } from '../bulkTax/bulkTaxRecords'
@@ -41,29 +41,24 @@ export function TaxAfterSwitchSection({
 
   const affected = affectedCount(counts, target)
   return (
-    <Box flexDirection="column" rowGap="l">
-      <Box columnGap="xl" rowGap="s" flexWrap="wrap">
-        <Stat label="Inclusive" value={counts.inclusive} />
-        <Stat label="Exclusive" value={counts.exclusive} />
-        <Stat label="Unset on Stripe" value={counts.undecided} warning />
-        <Stat label="Switched, locked" value={counts.locked} muted />
-      </Box>
-
+    <Box flexDirection="column" rowGap="m">
+      <Text variant="caption" color="muted" tabularNums>
+        {summary(counts)}
+      </Text>
       {controller.state.phase === 'idle' ? (
-        <>
-          <BulkTaxChoice value={target} onChange={setTarget} />
-          <Box justifyContent="end">
+        <Box flexDirection="column" rowGap="s">
+          <Box alignItems="center" justifyContent="between" columnGap="m">
+            <BulkTaxChoice value={target} onChange={setTarget} />
             <Button
               size="sm"
               onClick={() => controller.start(target)}
               disabled={affected === 0}
             >
-              {affected === 0
-                ? `Every subscription is ${target}`
-                : applyLabel(target, affected)}
+              {affected === 0 ? 'Nothing to change' : applyLabel(target, affected)}
             </Button>
           </Box>
-        </>
+          <BulkTaxChoiceHint value={target} />
+        </Box>
       ) : (
         <BulkTaxProgress controller={controller} onDismiss={controller.reset} />
       )}
@@ -71,29 +66,16 @@ export function TaxAfterSwitchSection({
   )
 }
 
-function Stat({
-  label,
-  value,
-  muted = false,
-  warning = false,
-}: {
-  label: string
-  value: number
-  muted?: boolean
-  warning?: boolean
-}) {
-  return (
-    <Box flexDirection="column">
-      <Text variant="caption" color="muted">
-        {label}
-      </Text>
-      <Text
-        variant="heading-xs"
-        tabularNums
-        color={warning && value > 0 ? 'warning' : muted ? 'muted' : 'default'}
-      >
-        {formatCount(value)}
-      </Text>
-    </Box>
-  )
+function summary(counts: TaxBreakdown): string {
+  const parts = [
+    `${formatCount(counts.inclusive)} inclusive`,
+    `${formatCount(counts.exclusive)} exclusive`,
+  ]
+  if (counts.undecided > 0) {
+    parts.push(`${formatCount(counts.undecided)} unset on Stripe`)
+  }
+  if (counts.locked > 0) {
+    parts.push(`${formatCount(counts.locked)} already switched`)
+  }
+  return parts.join(' · ')
 }

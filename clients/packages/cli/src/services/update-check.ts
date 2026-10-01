@@ -5,7 +5,6 @@ import { dirname, join } from 'node:path'
 import { Effect } from 'effect'
 import { VERSION } from '@/version'
 import { getLatestRelease, isNewerVersion } from '@/services/github-releases'
-import { isHomebrewInstallation } from '@/services/installation'
 
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000
 
@@ -38,7 +37,6 @@ export const availableUpdate = ({ home = homedir() }: UpdateCheckOptions = {}):
   | string
   | undefined => {
   try {
-    if (isHomebrewInstallation()) return undefined
     const latest = readState(stateFile(home))?.latestVersion
     return latest && isNewerVersion(latest, VERSION) ? latest : undefined
   } catch {
@@ -48,7 +46,6 @@ export const availableUpdate = ({ home = homedir() }: UpdateCheckOptions = {}):
 
 export const checkForUpdate = ({ home = homedir() }: UpdateCheckOptions = {}) =>
   Effect.gen(function* () {
-    if (isHomebrewInstallation()) return
     const file = stateFile(home)
     if (checkedRecently(readState(file))) return
     const release = yield* getLatestRelease

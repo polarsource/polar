@@ -10,7 +10,7 @@ import {
 } from 'vitest'
 import { createHash } from 'node:crypto'
 import { writeFileSync } from 'node:fs'
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { BunFileSystem } from '@effect/platform-bun'
@@ -21,7 +21,6 @@ import { type Method, Updater, UpdaterError } from '@/services/updater'
 import { captureConsole, runCli } from '@/utils/test-utils/cli'
 import { fakeHttp } from '@/utils/test-utils/http'
 import { VERSION } from '@/version'
-import * as Installation from '@/services/installation'
 
 describe('update command', () => {
   const upgrades: [string, string][] = []
@@ -60,9 +59,13 @@ describe('update command', () => {
   })
 
   test('leaves Homebrew updates to brew even with --method binary', async () => {
-    const detection = vi
-      .spyOn(Installation, 'isHomebrewInstallation')
-      .mockReturnValue(true)
+    const directory = await mkdtemp(join(tmpdir(), 'polar-homebrew-'))
+    const executable = join(directory, 'bin', 'polar')
+    await mkdir(join(directory, 'bin'))
+    await writeFile(executable, '')
+    await writeFile(join(directory, 'INSTALL_RECEIPT.json'), '{}')
+    const original = process.execPath
+    Object.defineProperty(process, 'execPath', { value: executable })
     try {
       const { cli, promise, http } = runUpdate(
         ['--method', 'binary'],
@@ -73,7 +76,8 @@ describe('update command', () => {
       expect(http.urls()).toEqual([])
       expect(upgrades).toEqual([])
     } finally {
-      detection.mockRestore()
+      Object.defineProperty(process, 'execPath', { value: original })
+      await rm(directory, { recursive: true, force: true })
     }
   })
 

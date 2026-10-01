@@ -1,17 +1,13 @@
 'use client'
 
-import { Alert, Button, DataTable, InlineModal, Text } from '@polar-sh/orbit'
+import { DataTable, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { OnChangeFn, PaginationState } from '@tanstack/react-table'
 import { useMemo, useState } from 'react'
-import {
-  ReviewBulkTaxSlot,
-  reviewTaxColumns,
-  useBulkTaxVariant,
-} from '../bulkTax/ReviewBulkTaxSlot'
-import { CATALOG_READ_STALLED } from '../catalogReadCopy'
 import { CatalogEmptyPanel } from './CatalogEmptyPanel'
+import { ReviewAlerts } from './ReviewAlerts'
 import { ReviewRecordModal } from './ReviewRecordModal'
+import { ReviewToolbarActions } from './ReviewToolbarActions'
 import {
   EMPTY_MESSAGES,
   ReviewFilter,
@@ -26,14 +22,11 @@ import {
   SelectionState,
 } from '../selection'
 import {
-  CATALOG_REFRESH_COPY,
   remainingSubscriptionCount,
   reviewCatalogEmptyKind,
   reviewPrimaryAction,
 } from './reviewCatalog'
 import { ReviewRow } from './reviewRows'
-
-const numberFormat = new Intl.NumberFormat('en-US')
 
 interface Props {
   migrationId: string
@@ -97,24 +90,16 @@ export function ReviewTableView({
   )
   const selectableTotal = counts.subscriptions.selectable
   const importCount = selectedCount(selection, selectableTotal)
-  const prepareLabel = importing
-    ? 'Preparing…'
-    : importCount > 0
-      ? `Prepare ${numberFormat.format(importCount)} ${
-          importCount === 1 ? 'subscription' : 'subscriptions'
-        }`
-      : 'Prepare subscriptions'
   const canPrepare = filter === 'all' || filter === 'to_prepare'
   const primaryAction = reviewPrimaryAction(
     selectableTotal,
     counts.subscriptions.ready,
   )
   const [openRow, setOpenRow] = useState<ReviewRow | null>(null)
-  const bulkTaxVariant = useBulkTaxVariant()
 
   const columns = useMemo(
-    () => [
-      ...buildReviewColumns({
+    () =>
+      buildReviewColumns({
         isSelected: (id) => isRowSelected(selection, id),
         // The opt-out default reads as "all" even when no row can be picked,
         // which would show as ticked-but-disabled.
@@ -125,16 +110,7 @@ export function ReviewTableView({
         onToggle,
         onToggleAll,
       }),
-      ...reviewTaxColumns(bulkTaxVariant, migrationId),
-    ],
-    [
-      selectableTotal,
-      selection,
-      onToggle,
-      onToggleAll,
-      bulkTaxVariant,
-      migrationId,
-    ],
+    [selectableTotal, selection, onToggle, onToggleAll],
   )
 
   const pagination: PaginationState = { pageIndex: page - 1, pageSize }
@@ -162,34 +138,11 @@ export function ReviewTableView({
 
   return (
     <Box as="section" flexDirection="column" rowGap="xl">
-      {rerunning && !refreshError && (
-        <Alert
-          variant="info"
-          loading
-          title={CATALOG_REFRESH_COPY.title}
-          description={
-            stalled ? CATALOG_READ_STALLED : CATALOG_REFRESH_COPY.description
-          }
-        />
-      )}
-      {refreshError && (
-        <Alert
-          variant="danger"
-          title="We couldn't refresh from Stripe"
-          description={refreshError}
-        />
-      )}
-      {importError && (
-        <Alert
-          variant="danger"
-          title="We couldn't prepare these subscriptions"
-          description={importError}
-        />
-      )}
-      <ReviewBulkTaxSlot
-        variant={bulkTaxVariant}
-        placement="above-table"
-        migrationId={migrationId}
+      <ReviewAlerts
+        rerunning={rerunning}
+        stalled={stalled}
+        refreshError={refreshError}
+        importError={importError}
       />
 
       <Box flexDirection="column" rowGap="m">
@@ -213,41 +166,17 @@ export function ReviewTableView({
               onChange={onFilterChange}
             />
           </Box>
-          <Box alignItems="center" columnGap="s" rowGap="s" flexWrap="wrap">
-            <ReviewBulkTaxSlot
-              variant={bulkTaxVariant}
-              placement="toolbar"
-              migrationId={migrationId}
-              disabled={importing}
-            />
-            {onRerunPrecheck && (
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={onRerunPrecheck}
-                disabled={refreshing || importing}
-              >
-                {refreshing ? 'Refreshing…' : 'Refresh from Stripe'}
-              </Button>
-            )}
-            {primaryAction === 'continue' ? (
-              <Button
-                size="sm"
-                onClick={onContinue}
-                disabled={importing || refreshing}
-              >
-                {importing ? 'Continuing…' : 'Continue'}
-              </Button>
-            ) : canPrepare ? (
-              <Button
-                size="sm"
-                onClick={onImport}
-                disabled={importing || importCount <= 0}
-              >
-                {prepareLabel}
-              </Button>
-            ) : null}
-          </Box>
+          <ReviewToolbarActions
+            migrationId={migrationId}
+            primaryAction={primaryAction}
+            canPrepare={canPrepare}
+            importCount={importCount}
+            importing={importing}
+            refreshing={refreshing}
+            onRerunPrecheck={onRerunPrecheck}
+            onContinue={onContinue}
+            onImport={onImport}
+          />
         </Box>
 
         <Text variant="caption" color="muted">

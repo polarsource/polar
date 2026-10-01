@@ -33,7 +33,10 @@ export function ReviewToolbarActions({
 
   return (
     <Box alignItems="center" columnGap="s" rowGap="s" flexWrap="wrap">
-      <MigrationSettingsButton migrationId={migrationId} disabled={importing} />
+      <MigrationSettingsButton
+        migrationId={migrationId}
+        disabled={importing || refreshing}
+      />
       {onRerunPrecheck && (
         <Button
           size="sm"

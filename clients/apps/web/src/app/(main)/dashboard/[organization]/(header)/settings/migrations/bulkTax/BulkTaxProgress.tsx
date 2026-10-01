@@ -109,35 +109,35 @@ export function BulkTaxProgress({
 
   const hidden = state.failures.length - SHOWN_FAILURES
   return (
-    <Alert
-      variant="warning"
-      title={title}
-      description={
-        <Box flexDirection="column" rowGap="xs">
-          <Text variant="caption">
-            {subscriptionsLabel(state.failures.length)} couldn&apos;t be
-            updated.{already}
-          </Text>
-          <Box as="ul" flexDirection="column" rowGap="xs">
-            {state.failures.slice(0, SHOWN_FAILURES).map(({ row, message }) => (
-              <Box as="li" key={row.record_id} columnGap="xs">
-                <Text variant="caption" truncate>
-                  {row.customer_email || row.title}: {message}
-                </Text>
-              </Box>
-            ))}
+    <Box flexDirection="column" rowGap="s">
+      <Alert
+        variant="warning"
+        title={title}
+        description={`${subscriptionsLabel(state.failures.length)} couldn't be updated.${already}`}
+        actions={[
+          {
+            text: `Retry ${formatCount(state.failures.length)}`,
+            onClick: retry,
+          },
+        ]}
+        onDismiss={onDismiss}
+      />
+      <Box as="ul" flexDirection="column" rowGap="xs" paddingHorizontal="l">
+        {state.failures.slice(0, SHOWN_FAILURES).map(({ row, message }) => (
+          <Box as="li" key={row.record_id}>
+            <Text variant="caption" color="muted" truncate>
+              {row.customer_email || row.title}: {message}
+            </Text>
           </Box>
-          {hidden > 0 ? (
+        ))}
+        {hidden > 0 ? (
+          <Box as="li">
             <Text variant="caption" color="muted">
               and {formatCount(hidden)} more
             </Text>
-          ) : null}
-        </Box>
-      }
-      actions={[
-        { text: `Retry ${formatCount(state.failures.length)}`, onClick: retry },
-      ]}
-      onDismiss={onDismiss}
-    />
+          </Box>
+        ) : null}
+      </Box>
+    </Box>
   )
 }

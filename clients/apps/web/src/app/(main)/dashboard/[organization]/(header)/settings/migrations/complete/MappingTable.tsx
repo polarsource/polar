@@ -23,14 +23,16 @@ interface Props {
   mapping: Record<MappingKind, MappingRow[]>
   organizationSlug: string
   showExport?: boolean
+  kinds?: MappingKind[]
 }
 
 export function MappingTable({
   mapping,
   organizationSlug,
   showExport = true,
+  kinds = MAPPING_KINDS,
 }: Props) {
-  const [kind, setKind] = useState<MappingKind>('customers')
+  const [kind, setKind] = useState<MappingKind>(kinds[0])
   const [query, setQuery] = useState('')
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -67,7 +69,7 @@ export function MappingTable({
               setKind(next as MappingKind)
               resetPage()
             }}
-            options={MAPPING_KINDS.map((value) => ({
+            options={kinds.map((value) => ({
               value,
               label: `${KIND_LABELS[value]} ${numberFormat.format(mapping[value].length)}`,
             }))}

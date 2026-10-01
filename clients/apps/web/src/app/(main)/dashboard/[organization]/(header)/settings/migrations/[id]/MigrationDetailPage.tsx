@@ -22,7 +22,6 @@ import {
   OWNER_LABELS,
   visibleMigrationStep,
 } from '../steps'
-import { SwitchPanel } from '../switch/SwitchPanel'
 import { StripeMark } from '../StripeMark'
 
 interface Props {
@@ -190,15 +189,20 @@ function StepContent({
           />
         </Box>
       )
+    // Batches: the switch stays open until nothing is left to switch, and the
+    // summary is reachable from the first moved subscription onwards.
     case 'activate_subscriptions':
       return (
         <Box flexDirection="column" rowGap="l">
           {def && <StepHeading def={def} />}
-          <SwitchPanel migrationId={migration.id} />
+          <SwitchCompletePage
+            migrationId={migration.id}
+            organizationId={organization.id}
+            organizationSlug={organization.slug}
+            phase="in_progress"
+          />
         </Box>
       )
-    // The summary links back to the switch so the merchant can still switch
-    // the ones an earlier run left on Stripe.
     case 'cleanup':
     case 'completed':
       return (
@@ -206,6 +210,7 @@ function StepContent({
           migrationId={migration.id}
           organizationId={organization.id}
           organizationSlug={organization.slug}
+          phase="complete"
         />
       )
   }

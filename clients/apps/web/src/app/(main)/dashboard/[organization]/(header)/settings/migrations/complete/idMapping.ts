@@ -1,81 +1,15 @@
-import { schemas } from '@polar-sh/client'
+import {
+  MAPPING_KINDS,
+  MappingKind,
+  MappingRow,
+  MappingSources,
+  MappingState,
+  MigrationRecord,
+  PolarProductRef,
+  PolarSubscriptionRef,
+} from './mappingTypes'
 
-type MigrationRecord = schemas['MerchantMigrationRecordItem']
-
-export type MappingKind =
-  | 'customers'
-  | 'products'
-  | 'prices'
-  | 'discounts'
-  | 'subscriptions'
-
-export const MAPPING_KINDS: MappingKind[] = [
-  'customers',
-  'products',
-  'prices',
-  'discounts',
-  'subscriptions',
-]
-
-export type MappingState =
-  | 'moved'
-  | 'in_polar'
-  | 'not_switched'
-  | 'left_on_stripe'
-  | 'failed'
-  | 'not_imported'
-
-export interface MappingRow {
-  kind: MappingKind
-  stripeId: string
-  polarId: string | null
-  label: string
-  detail: string | null
-  state: MappingState
-  note: string | null
-}
-
-export interface PolarSubscriptionRef {
-  id: string
-  customer: { id: string }
-  product: {
-    id: string
-    recurring_interval: string | null
-    recurring_interval_count: number | null
-  }
-  metadata: Record<string, unknown>
-}
-
-export interface PolarProductRef {
-  id: string
-  name: string
-  recurring_interval: string | null
-  recurring_interval_count: number | null
-  prices: {
-    id: string
-    amount_type: string
-    price_amount?: number
-    price_currency?: string
-  }[]
-}
-
-export interface PolarCustomerRef {
-  id: string
-  email?: string | null
-}
-
-export interface PolarDiscountRef {
-  id: string
-  metadata: Record<string, unknown>
-}
-
-export interface MappingSources {
-  records: Record<MappingKind, MigrationRecord[]>
-  subscriptions: PolarSubscriptionRef[]
-  customers: PolarCustomerRef[]
-  products: PolarProductRef[]
-  discounts: PolarDiscountRef[]
-}
+export * from './mappingTypes'
 
 // A Stripe product becomes one Polar product per billing interval, so the
 // Stripe product ID alone doesn't pick a Polar product.
@@ -97,7 +31,9 @@ const recordState = (record: MigrationRecord): MappingState => {
       case 'failed':
         return 'failed'
     }
-    return record.import_status === 'imported' ? 'not_switched' : 'not_imported'
+    return record.import_status === 'imported' || record.dependencies_imported
+      ? 'not_switched'
+      : 'not_imported'
   }
   return record.import_status === 'imported' ? 'in_polar' : 'not_imported'
 }
@@ -241,6 +177,11 @@ export function buildIdMapping({
       label: record.title,
       detail: record.subtitle ?? null,
       note: recordNote(record),
+      switchedAt:
+        kind === 'subscriptions' && record.cutover_status === 'moved'
+          ? (subscriptionByStripeId.get(record.source_id)?.created_at ?? null)
+          : null,
+      record,
       ...resolve(kind, record),
     }))
   }

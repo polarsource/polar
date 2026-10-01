@@ -49,10 +49,26 @@ export function polarResourceHref(
   }
 }
 
-export const COMPLETE_TITLE = 'Your subscriptions are billed by Polar'
+export type SwitchPhase = 'in_progress' | 'complete'
 
-export const COMPLETE_INTRO =
-  'Polar now charges the subscriptions below on their next renewal. Use the ID map to point your own database, webhooks and links at Polar.'
+const numberFormat = new Intl.NumberFormat('en-US')
+
+export function phaseTitle(
+  phase: SwitchPhase,
+  moved: number,
+  subscriptions: number,
+): string {
+  return phase === 'complete'
+    ? 'Your subscriptions are billed by Polar'
+    : `${numberFormat.format(moved)} of ${numberFormat.format(subscriptions)} subscriptions switched so far`
+}
+
+export const PHASE_INTRO: Record<SwitchPhase, string> = {
+  complete:
+    'Polar now charges these subscriptions on their next renewal. Use the ID map to point your own database, webhooks and links at Polar.',
+  in_progress:
+    'You can switch in batches. The Polar IDs of everything already switched are ready now, so you can update your systems batch by batch.',
+}
 
 export interface NextStep {
   key: string

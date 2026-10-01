@@ -1,4 +1,5 @@
 import { MAPPING_KINDS, MappingKind, MappingRow } from './idMapping'
+import { CustomerRow } from './viewModels'
 
 interface MappingEntry {
   type: MappingKind
@@ -50,7 +51,43 @@ export function mappingCsv(mapping: Record<MappingKind, MappingRow[]>): string {
   return `${lines.join('\n')}\n`
 }
 
-function downloadFile(filename: string, contents: string, type: string): void {
+const CUSTOMER_CSV_COLUMNS = [
+  'email',
+  'stripe_customer_id',
+  'polar_customer_id',
+  'stripe_subscription_id',
+  'polar_subscription_id',
+  'subscription_status',
+]
+
+// One line per subscription, keyed the way a merchant's `users` table is:
+// both customer IDs next to both subscription IDs.
+export function customerCsv(rows: CustomerRow[]): string {
+  const lines = [CUSTOMER_CSV_COLUMNS.join(',')]
+  for (const row of rows) {
+    const customer = [row.label, row.stripeId, row.customer?.polarId ?? null]
+    const subscriptions = row.subscriptions.length ? row.subscriptions : [null]
+    for (const subscription of subscriptions) {
+      lines.push(
+        [
+          ...customer,
+          subscription?.stripeId ?? null,
+          subscription?.polarId ?? null,
+          subscription?.state ?? null,
+        ]
+          .map(csvCell)
+          .join(','),
+      )
+    }
+  }
+  return `${lines.join('\n')}\n`
+}
+
+export function downloadFile(
+  filename: string,
+  contents: string,
+  type: string,
+): void {
   const url = URL.createObjectURL(new Blob([contents], { type }))
   const link = document.createElement('a')
   link.href = url

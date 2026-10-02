@@ -70,16 +70,19 @@ export const command = Command.make(
   (config) =>
     Effect.gen(function* () {
       const api = yield* ApiRuntime
-      const body = mergeInput<Body>(config.data, {
-        metadata: config.input.metadata,
-        name: config.input.name,
-        unit: config.input.unit,
-        custom_label: config.input.custom_label,
-        custom_multiplier: config.input.custom_multiplier,
-        filter: config.input.filter,
-        aggregation: config.input.aggregation,
-        organization_id: config.input.organization_id,
-      })
+      const { organization_id: organizationId, ...body } = mergeInput<Body>(
+        config.data,
+        {
+          metadata: config.input.metadata,
+          name: config.input.name,
+          unit: config.input.unit,
+          custom_label: config.input.custom_label,
+          custom_multiplier: config.input.custom_multiplier,
+          filter: config.input.filter,
+          aggregation: config.input.aggregation,
+          organization_id: config.input.organization_id,
+        },
+      )
       const missing = missingFlags(body, ['name', 'filter', 'aggregation'])
       if (missing.length > 0) {
         return yield* new ApiCommandError({
@@ -92,7 +95,7 @@ export const command = Command.make(
         method: 'POST',
         requiresConfirmation: false,
         confirm: false,
-        organizationId: body.organization_id,
+        organizationId,
         invoke: (client) => client.meters.create(body),
       })
     }),

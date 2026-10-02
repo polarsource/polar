@@ -576,20 +576,29 @@ describe('organization resolution', () => {
     expect(scope(requests.at(-1)!)).toBeNull()
   })
 
-  test('preserves explicit null and scopes the request to the selected organization', async () => {
-    await run([
-      'customers',
-      'create',
-      '-d',
-      '{"organization_id":null,"email":"test@example.com"}',
-    ]).promise
-    expect(await requests.at(-1)!.json()).toEqual({
-      organization_id: null,
-      email: 'test@example.com',
-    })
-    expect(new URL(requests.at(-1)!.url).hostname).toBe('api.polar.sh')
-    expect(scope(requests.at(-1)!)).toBe(production.id)
-  })
+  test.each([
+    { args: ['--org=org-sandbox'], organization: sandbox },
+    {
+      args: ['-d', '{"organization_id":"org-sandbox"}'],
+      organization: sandbox,
+    },
+    { args: ['-d', '{"organization_id":null}'], organization: production },
+  ])(
+    'create sends organization input $args only as the Polar-Organization header',
+    async ({ args, organization }) => {
+      await run(['customers', 'create', '--email=test@example.com', ...args])
+        .promise
+      expect(await requests.at(-1)!.json()).toEqual({
+        email: 'test@example.com',
+      })
+      expect(new URL(requests.at(-1)!.url).hostname).toBe(
+        organization.environment === 'sandbox'
+          ? 'sandbox-api.polar.sh'
+          : 'api.polar.sh',
+      )
+      expect(scope(requests.at(-1)!)).toBe(organization.id)
+    },
+  )
 
   test('previews and mutations share the selected organization environment', async () => {
     const cli = run(

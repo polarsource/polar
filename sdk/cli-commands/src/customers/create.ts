@@ -70,24 +70,27 @@ export const command = Command.make(
   (config) =>
     Effect.gen(function* () {
       const api = yield* ApiRuntime
-      const body = mergeInput<Body>(config.data, {
-        metadata: config.input.metadata,
-        external_id: config.input.external_id,
-        name: config.input.name,
-        billing_address: config.input.billing_address,
-        tax_id: config.input.tax_id,
-        locale: config.input.locale,
-        organization_id: config.input.organization_id,
-        owner: config.input.owner,
-        type: config.input.type,
-        email: config.input.email,
-      })
+      const { organization_id: organizationId, ...body } = mergeInput<Body>(
+        config.data,
+        {
+          metadata: config.input.metadata,
+          external_id: config.input.external_id,
+          name: config.input.name,
+          billing_address: config.input.billing_address,
+          tax_id: config.input.tax_id,
+          locale: config.input.locale,
+          organization_id: config.input.organization_id,
+          owner: config.input.owner,
+          type: config.input.type,
+          email: config.input.email,
+        },
+      )
       yield* api.execute({
         operationId: 'customers:create',
         method: 'POST',
         requiresConfirmation: false,
         confirm: false,
-        organizationId: body.organization_id,
+        organizationId,
         invoke: (client) => client.customers.create(body),
       })
     }),

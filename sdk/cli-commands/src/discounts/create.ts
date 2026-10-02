@@ -237,24 +237,28 @@ export const command = Command.make(
   (config) =>
     Effect.gen(function* () {
       const api = yield* ApiRuntime
-      const body = mergeInput<Body>(config.data, {
-        metadata: config.input.metadata,
-        name: config.input.name,
-        code: config.input.code,
-        starts_at: config.input.starts_at,
-        ends_at: config.input.ends_at,
-        max_redemptions: config.input.max_redemptions,
-        max_redemptions_per_customer: config.input.max_redemptions_per_customer,
-        products: config.input.products,
-        organization_id: config.input.organization_id,
-        type: config.input.type,
-        duration: config.input.duration,
-        duration_in_months: config.input.duration_in_months,
-        amount: config.input.amount,
-        currency: config.input.currency,
-        amounts: config.input.amounts,
-        basis_points: config.input.basis_points,
-      })
+      const { organization_id: organizationId, ...body } = mergeInput<Body>(
+        config.data,
+        {
+          metadata: config.input.metadata,
+          name: config.input.name,
+          code: config.input.code,
+          starts_at: config.input.starts_at,
+          ends_at: config.input.ends_at,
+          max_redemptions: config.input.max_redemptions,
+          max_redemptions_per_customer:
+            config.input.max_redemptions_per_customer,
+          products: config.input.products,
+          organization_id: config.input.organization_id,
+          type: config.input.type,
+          duration: config.input.duration,
+          duration_in_months: config.input.duration_in_months,
+          amount: config.input.amount,
+          currency: config.input.currency,
+          amounts: config.input.amounts,
+          basis_points: config.input.basis_points,
+        },
+      )
       const missing = missingFlags(body, ['name', 'duration'])
       if (missing.length > 0) {
         return yield* new ApiCommandError({
@@ -267,7 +271,7 @@ export const command = Command.make(
         method: 'POST',
         requiresConfirmation: false,
         confirm: false,
-        organizationId: body.organization_id,
+        organizationId,
         invoke: (client) => client.discounts.create(body),
       })
     }),

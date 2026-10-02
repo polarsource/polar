@@ -119,22 +119,25 @@ export const command = Command.make(
   (config) =>
     Effect.gen(function* () {
       const api = yield* ApiRuntime
-      const body = mergeInput<Body>(config.data, {
-        metadata: config.input.metadata,
-        name: config.input.name,
-        description: config.input.description,
-        visibility: config.input.visibility,
-        prices: config.input.prices,
-        medias: config.input.medias,
-        attached_custom_fields: config.input.attached_custom_fields,
-        organization_id: config.input.organization_id,
-        trial_interval: config.input.trial_interval,
-        trial_interval_count: config.input.trial_interval_count,
-        recurring_interval: config.input.recurring_interval,
-        recurring_interval_count: config.input.recurring_interval_count,
-        meter_interval: config.input.meter_interval,
-        meter_interval_count: config.input.meter_interval_count,
-      })
+      const { organization_id: organizationId, ...body } = mergeInput<Body>(
+        config.data,
+        {
+          metadata: config.input.metadata,
+          name: config.input.name,
+          description: config.input.description,
+          visibility: config.input.visibility,
+          prices: config.input.prices,
+          medias: config.input.medias,
+          attached_custom_fields: config.input.attached_custom_fields,
+          organization_id: config.input.organization_id,
+          trial_interval: config.input.trial_interval,
+          trial_interval_count: config.input.trial_interval_count,
+          recurring_interval: config.input.recurring_interval,
+          recurring_interval_count: config.input.recurring_interval_count,
+          meter_interval: config.input.meter_interval,
+          meter_interval_count: config.input.meter_interval_count,
+        },
+      )
       const missing = missingFlags(body, ['name', 'prices'])
       if (missing.length > 0) {
         return yield* new ApiCommandError({
@@ -147,7 +150,7 @@ export const command = Command.make(
         method: 'POST',
         requiresConfirmation: false,
         confirm: false,
-        organizationId: body.organization_id,
+        organizationId,
         invoke: (client) => client.products.create(body),
       })
     }),

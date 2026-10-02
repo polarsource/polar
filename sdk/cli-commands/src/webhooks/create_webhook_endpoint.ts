@@ -99,14 +99,17 @@ export const command = Command.make(
   (config) =>
     Effect.gen(function* () {
       const api = yield* ApiRuntime
-      const body = mergeInput<Body>(config.data, {
-        url: config.input.url,
-        name: config.input.name,
-        api_version: config.input.api_version,
-        format: config.input.format,
-        events: config.input.events,
-        organization_id: config.input.organization_id,
-      })
+      const { organization_id: organizationId, ...body } = mergeInput<Body>(
+        config.data,
+        {
+          url: config.input.url,
+          name: config.input.name,
+          api_version: config.input.api_version,
+          format: config.input.format,
+          events: config.input.events,
+          organization_id: config.input.organization_id,
+        },
+      )
       const missing = missingFlags(body, ['url', 'format', 'events'])
       if (missing.length > 0) {
         return yield* new ApiCommandError({
@@ -119,7 +122,7 @@ export const command = Command.make(
         method: 'POST',
         requiresConfirmation: false,
         confirm: false,
-        organizationId: body.organization_id,
+        organizationId,
         invoke: (client) => client.webhooks.createWebhookEndpoint(body),
       })
     }),

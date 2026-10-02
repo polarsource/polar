@@ -59,14 +59,17 @@ export const command = Command.make(
   (config) =>
     Effect.gen(function* () {
       const api = yield* ApiRuntime
-      const body = mergeInput<Body>(config.data, {
-        metadata: config.input.metadata,
-        type: config.input.type,
-        slug: config.input.slug,
-        name: config.input.name,
-        organization_id: config.input.organization_id,
-        properties: config.input.properties,
-      })
+      const { organization_id: organizationId, ...body } = mergeInput<Body>(
+        config.data,
+        {
+          metadata: config.input.metadata,
+          type: config.input.type,
+          slug: config.input.slug,
+          name: config.input.name,
+          organization_id: config.input.organization_id,
+          properties: config.input.properties,
+        },
+      )
       const missing = missingFlags(body, ['type', 'slug', 'name', 'properties'])
       if (missing.length > 0) {
         return yield* new ApiCommandError({
@@ -79,7 +82,7 @@ export const command = Command.make(
         method: 'POST',
         requiresConfirmation: false,
         confirm: false,
-        organizationId: body.organization_id,
+        organizationId,
         invoke: (client) => client.customFields.create(body),
       })
     }),

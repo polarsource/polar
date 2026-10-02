@@ -300,11 +300,12 @@ def attention(migration: MerchantMigration, failed_records: int) -> Attention:
     if step is not None:
         return _pan_attention(step)
     if migration.pan_transfer_steps:
-        # Every card step is done but the migration hasn't been closed out.
+        # The merchant switched a subset: the rest still bill on the source until
+        # they run the switch again, which finishes the migration on its own.
         return Attention(
-            AttentionLevel.ops_action,
-            "Ops action",
-            "Card transfer finished — close the migration out",
+            AttentionLevel.waiting_merchant,
+            "With merchant",
+            "Some subscriptions still bill on the source — merchant switches the rest",
             None,
         )
 

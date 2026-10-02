@@ -25,6 +25,7 @@ export function PaymentMethodTooltip({
           cursor="default"
           color={warn ? 'text-warning' : 'text-tertiary'}
           aria-label={`${label}: ${note.title}`}
+          tabIndex={0}
         >
           {children}
           <Info size={14} />

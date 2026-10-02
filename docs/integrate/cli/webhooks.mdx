@@ -81,8 +81,8 @@ sent as text unless you pass `null`, a JSON object, an array or a quoted string:
 
 ```bash Terminal
 polar trigger order.created \
-  --override customer.email=jane@example.com \
-  --override amount=4900
+  --override data.customer.email=jane@example.com \
+  --override data.net_amount=4900
 ```
 
 Generated IDs and values are random on every run. Pass any integer as

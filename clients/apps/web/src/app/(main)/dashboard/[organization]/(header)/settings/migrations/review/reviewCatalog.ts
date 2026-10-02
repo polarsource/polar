@@ -17,7 +17,7 @@ export function remainingSubscriptionCount(
 export function reviewCatalogEmptyKind(
   total: number,
   imported: number,
-  hasConnectedAccounts = false,
+  hasConnectedAccounts: boolean,
 ): ReviewCatalogEmptyKind | null {
   if (total <= 0) {
     return hasConnectedAccounts

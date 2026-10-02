@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BANK_DEBITS_COPIED, rowPaymentMethod } from './paymentMethod'
+import { BANK_DEBITS_STAY_BEHIND, rowPaymentMethod } from './paymentMethod'
 import type { ReviewRow } from './reviewRows'
 
 function row(overrides: Partial<ReviewRow>): ReviewRow {
@@ -40,7 +40,7 @@ describe('rowPaymentMethod', () => {
     'follows the bank-debit switch for %s',
     (type) => {
       expect(rowPaymentMethod(row({ payment_method_type: type }))?.kind).toBe(
-        BANK_DEBITS_COPIED ? 'bank_debit' : 'no_card',
+        BANK_DEBITS_STAY_BEHIND ? 'no_card' : 'bank_debit',
       )
     },
   )

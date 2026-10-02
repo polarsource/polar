@@ -3,10 +3,10 @@ import { ReviewRow } from './reviewRows'
 
 type PaymentMethodType = NonNullable<ReviewRow['payment_method_type']>
 
-// Whether the copy from Stripe carries SEPA and ACH mandates over. Unconfirmed:
-// `true` mirrors the pre-check's current note, `false` treats bank debits like
-// Link and the other methods that stay behind.
-export const BANK_DEBITS_COPIED = true
+// Unconfirmed whether the copy from Stripe carries SEPA and ACH mandates over.
+// `false` keeps bank debits in their own state that claims neither; `true`
+// treats them like Link and the other methods that stay behind.
+export const BANK_DEBITS_STAY_BEHIND = false
 
 const BANK_DEBITS = new Set<PaymentMethodType>([
   'sepa_debit',
@@ -18,9 +18,9 @@ const NO_CARD_CONSEQUENCE =
 
 const PAYMENT_METHOD_COPY = {
   noCardTitle: 'Moves without a payment method',
-  bankDebitTitle: 'Bank debit, not checked yet',
+  bankDebitTitle: 'Bank debit, check before it renews',
   bankDebit:
-    'Bank debits are copied without a check, so the first renewal on Polar is the first real charge. If it fails, the subscription goes to dunning.',
+    "The subscription still moves, but Polar hasn't confirmed this bank debit can be charged. If its first renewal on Polar fails, it goes to dunning until the customer adds a card.",
   notCopied: (label: string) =>
     `${label} can't be copied to Polar. ${NO_CARD_CONSEQUENCE}`,
   none: `This customer has no saved payment method on Stripe. ${NO_CARD_CONSEQUENCE}`,
@@ -49,7 +49,7 @@ export function rowPaymentMethod(row: ReviewRow): RowPaymentMethod | null {
   if (type === 'card') {
     return { label: getPaymentMethodTypeLabel(type), kind: 'card', note: null }
   }
-  if (type && BANK_DEBITS.has(type) && BANK_DEBITS_COPIED) {
+  if (type && BANK_DEBITS.has(type) && !BANK_DEBITS_STAY_BEHIND) {
     return {
       label: getPaymentMethodTypeLabel(type),
       kind: 'bank_debit',

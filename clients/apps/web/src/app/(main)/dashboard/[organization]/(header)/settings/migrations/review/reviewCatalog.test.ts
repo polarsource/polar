@@ -29,15 +29,17 @@ describe('remainingSubscriptionCount', () => {
 
 describe('reviewCatalogEmptyKind', () => {
   it('treats a zero catalog as nothing in Stripe', () => {
-    expect(reviewCatalogEmptyKind(0, 0)).toBe('no_stripe_subscriptions')
+    expect(reviewCatalogEmptyKind(0, 0, false)).toBe('no_stripe_subscriptions')
   })
 
   it('does not claim Stripe is empty when every subscription is already switched', () => {
-    expect(reviewCatalogEmptyKind(58, 58)).toBe('all_switched')
-    expect(reviewCatalogEmptyKind(58, 58)).not.toBe('no_stripe_subscriptions')
+    expect(reviewCatalogEmptyKind(58, 58, false)).toBe('all_switched')
+    expect(reviewCatalogEmptyKind(58, 58, false)).not.toBe(
+      'no_stripe_subscriptions',
+    )
   })
 
   it('shows the table when any subscription still needs work', () => {
-    expect(reviewCatalogEmptyKind(58, 20)).toBeNull()
+    expect(reviewCatalogEmptyKind(58, 20, false)).toBeNull()
   })
 })

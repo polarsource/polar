@@ -165,6 +165,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
       onFilterChange={onFilterChange}
       counts={counts}
       attentionCount={attentionCount}
+      hasConnectedAccounts={migration?.source?.has_connected_accounts === true}
       rows={records.data?.items ?? []}
       page={page}
       pageSize={pageSize}

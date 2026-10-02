@@ -1,6 +1,9 @@
 import { CATALOG_READ_DURATION } from '../catalogReadCopy'
 
-export type ReviewCatalogEmptyKind = 'no_stripe_subscriptions' | 'all_switched'
+export type ReviewCatalogEmptyKind =
+  | 'no_stripe_subscriptions'
+  | 'subscriptions_on_connected_accounts'
+  | 'all_switched'
 
 export function remainingSubscriptionCount(
   total: number,
@@ -9,12 +12,17 @@ export function remainingSubscriptionCount(
   return Math.max(total - imported, 0)
 }
 
+// Only the Stripe account's own data is read, so a Connect platform with no
+// subscriptions of its own most likely bills through its connected accounts.
 export function reviewCatalogEmptyKind(
   total: number,
   imported: number,
+  hasConnectedAccounts: boolean,
 ): ReviewCatalogEmptyKind | null {
   if (total <= 0) {
-    return 'no_stripe_subscriptions'
+    return hasConnectedAccounts
+      ? 'subscriptions_on_connected_accounts'
+      : 'no_stripe_subscriptions'
   }
   if (remainingSubscriptionCount(total, imported) <= 0) {
     return 'all_switched'
@@ -47,6 +55,11 @@ export const CATALOG_EMPTY_COPY: Record<
     title: 'Nothing to import',
     description:
       'We found no subscriptions in Stripe that can move to Polar. If you have added some since, scan again.',
+  },
+  subscriptions_on_connected_accounts: {
+    title: 'No subscriptions on this Stripe account',
+    description:
+      "If you bill your customers through connected accounts, those subscriptions can't be migrated automatically. Contact us at support@polar.sh and we'll look at it with you.",
   },
 }
 

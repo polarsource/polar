@@ -255,6 +255,7 @@ class TestCreate:
         credentials = migration.source_credentials
         assert credentials["stripe_user_id"] == "acct_test"
         assert credentials["livemode"] is False
+        assert credentials["has_connected_accounts"] is False
         assert credentials["api_key_encrypted"].startswith("v1.")
         assert await service._decrypt_stripe_api_key(migration) == "rk_test_123"
 
@@ -547,7 +548,33 @@ class TestCreate:
         enqueue.assert_not_called()
 
     @pytest.mark.auth
-    async def test_source_with_connected_accounts_raises_and_persists_nothing(
+    async def test_non_migratable_source_raises_and_persists_nothing(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await _enable_feature(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(
+                source_account=CanonicalAccount(
+                    country="IN", has_connected_accounts=False
+                )
+            ),
+        )
+
+        with pytest.raises(SourceAccountNotMigratable) as exc_info:
+            await service.create(session, auth_subject, _create_schema(organization))
+
+        assert exc_info.value.blockers == ["india_account"]
+        await assert_no_migrations(session, organization)
+
+    @pytest.mark.auth
+    async def test_source_with_connected_accounts_is_accepted(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -566,11 +593,12 @@ class TestCreate:
             ),
         )
 
-        with pytest.raises(SourceAccountNotMigratable) as exc_info:
-            await service.create(session, auth_subject, _create_schema(organization))
+        migration = await service.create(
+            session, auth_subject, _create_schema(organization)
+        )
 
-        assert exc_info.value.blockers == ["source_has_connected_accounts"]
-        await assert_no_migrations(session, organization)
+        assert migration.source is not None
+        assert migration.source["has_connected_accounts"] is True
 
     @pytest.mark.auth
     async def test_invalid_key_raises(
@@ -2003,7 +2031,7 @@ class TestImportCatalog:
             "polar.merchant_migration.service.StripeAdapter",
             return_value=_FakeAdapter(
                 source_account=CanonicalAccount(
-                    country="US", has_connected_accounts=True
+                    country="IN", has_connected_accounts=False
                 )
             ),
         )
@@ -2011,7 +2039,7 @@ class TestImportCatalog:
         with pytest.raises(CatalogImportBlocked) as exc_info:
             await service.import_catalog(session, auth_subject, migration.id)
 
-        assert exc_info.value.blockers == ["source_has_connected_accounts"]
+        assert exc_info.value.blockers == ["india_account"]
         assert await _products(session, organization) == []
 
     @pytest.mark.auth

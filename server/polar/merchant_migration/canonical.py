@@ -137,8 +137,6 @@ class CanonicalSubscriptionAddOn:
     quantity: int
     pricing_scheme: CanonicalPricingScheme
     price_tax_behavior: TaxBehavior | None = None
-    # The two items are taxed by different rates: an item's own rates replace
-    # the subscription's defaults, so either item can diverge.
     tax_rates_differ: bool = False
 
 

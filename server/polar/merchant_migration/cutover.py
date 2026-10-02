@@ -625,12 +625,10 @@ class SubscriptionCutover:
         add_on_price: ProductPriceUnit | None = None
         if staged.add_on is not None:
             add_on_product = await self._staged_add_on_product(staged.add_on)
-            unit_amount = (
-                add_on_unit_amount(staged, [add_on_product])
-                if add_on_product is not None
-                else None
-            )
-            if add_on_product is None or unit_amount is None:
+            if add_on_product is None:
+                return _skip(_SUBSCRIPTION_ADD_ON_PRICE_MISSING_REASON)
+            unit_amount = add_on_unit_amount(staged, [add_on_product])
+            if unit_amount is None:
                 return _skip(_SUBSCRIPTION_ADD_ON_PRICE_MISSING_REASON)
             product, price, add_on_price = await find_or_create_add_on_product(
                 self.session,

@@ -54,8 +54,8 @@ from .canonical import (
     customer_country_fallbacks,
     discount_started_at_for,
     polar_discount_amounts,
-    price_key,
     subscription_price_key,
+    subscription_price_key_values,
 )
 from .schemas import (
     MerchantMigrationRecordItem,
@@ -1897,9 +1897,13 @@ def add_on_unit_amount(
     subscription: CanonicalSubscription, products: Iterable[CanonicalProduct]
 ) -> int | None:
     """The add-on's per-unit amount in the subscription's currency."""
-    if subscription.add_on is None or subscription.currency is None:
+    if subscription.add_on is None:
         return None
-    key = price_key(subscription.add_on.price_source_id, subscription.currency)
+    key = subscription_price_key_values(
+        subscription.add_on.price_source_id, subscription.currency
+    )
+    if key is None:
+        return None
     return next(
         (
             price.amount

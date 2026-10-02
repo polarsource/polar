@@ -54,7 +54,7 @@ interface Props {
   stalled?: boolean
   refreshError?: string
   attentionCount: number
-  hasConnectedAccounts?: boolean
+  hasConnectedAccounts: boolean
 }
 
 export function ReviewTableView({
@@ -81,7 +81,7 @@ export function ReviewTableView({
   stalled = false,
   refreshError,
   attentionCount,
-  hasConnectedAccounts = false,
+  hasConnectedAccounts,
 }: Props) {
   const refreshing = rerunning && !stalled
   const rowTotal = remainingSubscriptionCount(

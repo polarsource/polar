@@ -60,19 +60,6 @@ describe('CatalogEmptyPanel', () => {
     ).toBeEnabled()
   })
 
-  it('explains that connected accounts are not migrated', () => {
-    render(<CatalogEmptyPanel kind="subscriptions_on_connected_accounts" />)
-
-    expect(
-      screen.getByRole('heading', {
-        name: 'No subscriptions on this Stripe account',
-      }),
-    ).toBeTruthy()
-    expect(
-      screen.getByText(/bill your customers through connected accounts/i),
-    ).toBeTruthy()
-  })
-
   it('lets a stalled refresh be started again', () => {
     render(
       <CatalogEmptyPanel

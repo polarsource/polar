@@ -12,7 +12,7 @@ WORKDIR /app
 
 FROM node-builder AS build-emails-bin
 
-COPY emails/pnpm-lock.yaml emails/package.json ./
+COPY emails/pnpm-lock.yaml emails/package.json emails/pnpm-workspace.yaml ./
 RUN --mount=type=cache,target=/pnpm/store \
   pnpm install --frozen-lockfile --store-dir=/pnpm/store
 

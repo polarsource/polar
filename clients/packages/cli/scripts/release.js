@@ -36,16 +36,18 @@ export default async ({
   const tag = publish
     ? `@polar-sh/cli@${version}`
     : `@polar-sh/cli-verify-${context.runId}-${process.env.GITHUB_RUN_ATTEMPT}`
+  let released = false
+  let ref = context.sha
   try {
     const { data } = await github.rest.repos.getReleaseByTag({
       ...context.repo,
       tag,
     })
     if (!data.draft) {
-      core.info(`${tag} is already published`)
-      return
-    }
-    if (data.target_commitish !== context.sha) {
+      core.info(`${tag} is already published; publishing what is still missing`)
+      released = true
+      ref = data.target_commitish
+    } else if (data.target_commitish !== context.sha) {
       throw new Error(
         'Retry the original workflow run to finish this draft release',
       )
@@ -56,4 +58,6 @@ export default async ({
   core.setOutput('enabled', true)
   core.setOutput('tag', tag)
   core.setOutput('publish', publish)
+  core.setOutput('released', released)
+  core.setOutput('ref', ref)
 }

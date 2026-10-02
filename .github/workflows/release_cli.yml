@@ -27,6 +27,8 @@ jobs:
       enabled: ${{ steps.release.outputs.enabled }}
       tag: ${{ steps.release.outputs.tag }}
       publish: ${{ steps.release.outputs.publish }}
+      released: ${{ steps.release.outputs.released }}
+      ref: ${{ steps.release.outputs.ref }}
     steps:
       - uses: actions/checkout@v7.0.1
 
@@ -41,7 +43,7 @@ jobs:
 
   test:
     needs: prepare
-    if: needs.prepare.outputs.enabled == 'true'
+    if: needs.prepare.outputs.enabled == 'true' && needs.prepare.outputs.released != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
@@ -172,15 +174,6 @@ jobs:
           POLAR_CLI_TELEMETRY_OPTOUT: '1'
         run: ./polar --version
 
-      - name: Package npm platform package
-        run: bun scripts/npm-package.ts --target=${{ matrix.target }}
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: npm-${{ matrix.target }}
-          path: clients/packages/cli/dist/npm
-          if-no-files-found: error
-
       - name: Package Windows binary
         if: runner.os == 'Windows'
         shell: pwsh
@@ -302,15 +295,19 @@ jobs:
 
   npm:
     needs: [prepare, release]
+    if: ${{ !cancelled() && needs.prepare.outputs.enabled == 'true' && (needs.release.result == 'success' || needs.prepare.outputs.released == 'true') }}
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      # Draft releases (verification builds) are only visible with write access.
+      contents: write
       id-token: write
     defaults:
       run:
         working-directory: clients/packages/cli
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.ref }}
 
       - uses: actions/setup-node@v7.0.0
         with:
@@ -321,11 +318,29 @@ jobs:
         with:
           bun-version-file: clients/packages/cli/package.json
 
-      - uses: actions/download-artifact@v8
-        with:
-          pattern: npm-*
-          path: clients/packages/cli/dist/npm
-          merge-multiple: true
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          gh release download "$RELEASE_TAG" --dir release-assets
+          cd release-assets && sha256sum --check --strict checksums.txt
+
+      - name: Package release binaries for npm
+        run: |
+          for target in darwin-arm64 darwin-x64 linux-arm64 linux-x64 windows-x64; do
+            mkdir -p "release-assets/$target"
+            case "$target" in
+              linux-*) tar -xzf "release-assets/polar-$target.tar.gz" -C "release-assets/$target" ;;
+              *) unzip -q "release-assets/polar-$target.zip" -d "release-assets/$target" ;;
+            esac
+            case "$target" in
+              windows-*) binary=polar.exe ;;
+              *) binary=polar ;;
+            esac
+            bun scripts/npm-package.ts --target="bun-$target" --binary="release-assets/$target/$binary"
+          done
 
       - name: Publish to npm
         run: bun scripts/npm-publish.ts ${{ needs.prepare.outputs.publish != 'true' && '--dry-run' || '' }}

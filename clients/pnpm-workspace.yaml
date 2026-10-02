@@ -14,8 +14,8 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
   openapi-typescript: true
+  '@shopify/react-native-skia': true
   '@google/genai': false
-  '@shopify/react-native-skia': false
   core-js: false
   msw: false
   protobufjs: false

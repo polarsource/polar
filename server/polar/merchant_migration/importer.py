@@ -62,7 +62,6 @@ from .canonical import (
     CanonicalDiscountType,
     CanonicalProduct,
     CanonicalSubscription,
-    CanonicalSubscriptionAddOn,
     PriceKey,
     canonical_price_key,
     customer_country_fallbacks,
@@ -225,8 +224,9 @@ async def find_or_create_add_on_product(
     session: AsyncSession,
     plan: Product,
     plan_price: ProductPriceFixed,
-    add_on: CanonicalSubscriptionAddOn,
     *,
+    add_on_price_source_id: str,
+    unit_amount: int,
     name: str,
 ) -> tuple[Product, ProductPriceFixed, ProductPriceUnit]:
     """The product a plan-plus-add-on subscription moves onto: the plan's price
@@ -237,9 +237,8 @@ async def find_or_create_add_on_product(
     product's own quantity: on the plan itself, every new buyer and every
     subscriber without the add-on would have to take at least one unit.
     """
-    assert add_on.unit_amount is not None
     repository = ProductRepository.from_session(session)
-    reference = f"{plan.id}:{add_on.price_source_id}"
+    reference = f"{plan.id}:{add_on_price_source_id}"
     product = await repository.get_by_organization_and_metadata(
         plan.organization_id,
         ADD_ON_PRODUCT_METADATA_KEY,
@@ -289,7 +288,7 @@ async def find_or_create_add_on_product(
         product.all_prices.append(fixed)
     tiers = Tiers(
         type=TierType.volume,
-        tiers=[Tier(bound=None, unit_amount=Decimal(add_on.unit_amount))],
+        tiers=[Tier(bound=None, unit_amount=Decimal(unit_amount))],
     )
     unit = next(
         (

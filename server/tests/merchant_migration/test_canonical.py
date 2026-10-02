@@ -259,7 +259,7 @@ class TestDeserialize:
             add_on=replace(
                 canonical_add_on(),
                 price_tax_behavior=TaxBehavior.exclusive,
-                has_tax_rates=True,
+                tax_rates_differ=True,
             ),
         )
 

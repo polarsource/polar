@@ -259,16 +259,11 @@ def canonical_subscription(
 
 
 def canonical_add_on(
-    *,
-    price_source_id: str = "price_slot",
-    quantity: int = 2,
-    unit_amount: int | None = 250,
+    *, price_source_id: str = "price_slot", quantity: int = 2
 ) -> CanonicalSubscriptionAddOn:
     return CanonicalSubscriptionAddOn(
         price_source_id=price_source_id,
-        product_source_id="prod_slot",
         quantity=quantity,
-        unit_amount=unit_amount,
         pricing_scheme=CanonicalPricingScheme.fixed,
     )
 

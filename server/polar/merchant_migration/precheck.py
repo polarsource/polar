@@ -54,6 +54,7 @@ from .canonical import (
     customer_country_fallbacks,
     discount_started_at_for,
     polar_discount_amounts,
+    price_key,
     subscription_price_key,
 )
 from .schemas import (
@@ -251,6 +252,10 @@ _SUBSCRIPTION_ADD_ON_DISCOUNT_REASON = (
     "This subscription's coupon only applies to some of its items on the "
     "source, and Polar discounts the plan and its add-on together. It stays on "
     "the source rather than renewing at a different price."
+)
+_SUBSCRIPTION_ADD_ON_PRICE_MISSING_REASON = (
+    "The add-on's price in this subscription's currency wasn't in the catalog "
+    "Polar read from the source, so it stays there."
 )
 _SUBSCRIPTION_ADD_ON_REASON = (
     "Its add-on moves as units billed on top of the plan, on a separate "
@@ -788,17 +793,14 @@ class PrecheckEngine:
         self, subscription: CanonicalSubscription, add_on: CanonicalSubscriptionAddOn
     ) -> Iterable[PrecheckIssue]:
         source_id = subscription.source_id
-        if (
-            add_on.pricing_scheme != CanonicalPricingScheme.fixed
-            or add_on.unit_amount is None
-        ):
+        if add_on.pricing_scheme != CanonicalPricingScheme.fixed:
             yield PrecheckIssue(
                 level=PrecheckIssueLevel.warning,
                 code="unsupported_add_on_price",
                 message=(
-                    "The add-on on this subscription isn't a flat price per unit "
-                    "in its currency, so Polar can't bill it the same way; it "
-                    "won't be imported."
+                    "The add-on on this subscription isn't a flat price per "
+                    "unit, so Polar can't bill it the same way; it won't be "
+                    "imported."
                 ),
                 source_id=source_id,
             )
@@ -814,7 +816,7 @@ class PrecheckEngine:
                 source_id=source_id,
             )
         if (
-            add_on.has_tax_rates
+            add_on.tax_rates_differ
             or add_on.price_tax_behavior != subscription.price_tax_behavior
         ):
             yield PrecheckIssue(
@@ -1878,8 +1880,35 @@ def plan_subscription_imports(
                     "subscription_customer_not_importable",
                     _SUBSCRIPTION_CUSTOMER_REASON,
                 )
+        if (
+            skip is None
+            and subscription.add_on is not None
+            and add_on_unit_amount(subscription, products) is None
+        ):
+            skip = Reason(
+                "subscription_add_on_price_missing",
+                _SUBSCRIPTION_ADD_ON_PRICE_MISSING_REASON,
+            )
         plans[subscription.source_id] = skip
     return plans
+
+
+def add_on_unit_amount(
+    subscription: CanonicalSubscription, products: Iterable[CanonicalProduct]
+) -> int | None:
+    """The add-on's per-unit amount in the subscription's currency."""
+    if subscription.add_on is None or subscription.currency is None:
+        return None
+    key = price_key(subscription.add_on.price_source_id, subscription.currency)
+    return next(
+        (
+            price.amount
+            for product in products
+            for price in product.prices
+            if canonical_price_key(price) == key
+        ),
+        None,
+    )
 
 
 def summarize_records(

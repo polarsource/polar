@@ -5,15 +5,13 @@ from polar.merchant_migration.importer import (
     add_on_product_name,
     find_or_create_add_on_product,
 )
-from polar.models import Benefit, Product
-from polar.models.product_price import ProductPriceFixed
+from polar.models import Benefit, Product, ProductPriceFixed
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_product_price_fixed,
     set_product_benefits,
 )
-from tests.merchant_migration._helpers import canonical_add_on
 
 
 class TestAddOnProductName:
@@ -47,7 +45,12 @@ class TestFindOrCreateAddOnProduct:
         assert isinstance(plan_price, ProductPriceFixed)
 
         combined, fixed, unit = await find_or_create_add_on_product(
-            session, product, plan_price, canonical_add_on(), name="Pro + Slot"
+            session,
+            product,
+            plan_price,
+            add_on_price_source_id="price_slot",
+            unit_amount=250,
+            name="Pro + Slot",
         )
 
         assert combined.id != product.id
@@ -75,11 +78,21 @@ class TestFindOrCreateAddOnProduct:
             save_fixture, product=product, amount=800, is_archived=True
         )
         first, _, first_unit = await find_or_create_add_on_product(
-            session, product, plan_price, canonical_add_on(), name="Pro + Slot"
+            session,
+            product,
+            plan_price,
+            add_on_price_source_id="price_slot",
+            unit_amount=250,
+            name="Pro + Slot",
         )
 
         second, legacy_fixed, second_unit = await find_or_create_add_on_product(
-            session, product, legacy_price, canonical_add_on(), name="Pro + Slot"
+            session,
+            product,
+            legacy_price,
+            add_on_price_source_id="price_slot",
+            unit_amount=250,
+            name="Pro + Slot",
         )
 
         assert second.id == first.id
@@ -95,14 +108,20 @@ class TestFindOrCreateAddOnProduct:
         plan_price = product.prices[0]
         assert isinstance(plan_price, ProductPriceFixed)
         first, _, first_unit = await find_or_create_add_on_product(
-            session, product, plan_price, canonical_add_on(), name="Pro + Slot"
+            session,
+            product,
+            plan_price,
+            add_on_price_source_id="price_slot",
+            unit_amount=250,
+            name="Pro + Slot",
         )
 
         second, _, second_unit = await find_or_create_add_on_product(
             session,
             product,
             plan_price,
-            canonical_add_on(unit_amount=300),
+            add_on_price_source_id="price_slot",
+            unit_amount=300,
             name="Pro + Slot",
         )
 

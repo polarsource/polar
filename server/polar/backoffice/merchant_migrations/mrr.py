@@ -224,13 +224,16 @@ def breakdown(
         if monthly is None:
             continue
         add_on = canonical.get("add_on") or {}
+        add_on_price = prices.get(
+            price_key(add_on.get("price_source_id", ""), currency)
+        )
         if (
             add_on.get("pricing_scheme") == CanonicalPricingScheme.fixed
-            and add_on.get("unit_amount") is not None
+            and add_on_price is not None
         ):
             monthly += (
                 _monthly_amount(
-                    add_on["unit_amount"],
+                    add_on_price[0],
                     add_on.get("quantity") or 0,
                     interval,
                     interval_count,

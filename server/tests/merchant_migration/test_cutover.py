@@ -2455,7 +2455,12 @@ class TestAddOn:
         plan_price = product.prices[0]
         assert isinstance(plan_price, ProductPriceFixed)
         existing, _, _ = await find_or_create_add_on_product(
-            session, product, plan_price, canonical_add_on(), name="Product + Slot"
+            session,
+            product,
+            plan_price,
+            add_on_price_source_id="price_slot",
+            unit_amount=250,
+            name="Product + Slot",
         )
         existing_id = existing.id
         # What the next subscriber's run sees: a row with nothing loaded yet.
@@ -2467,6 +2472,27 @@ class TestAddOn:
         assert outcome.status == MerchantMigrationCutoverStatus.moved
         subscription = await _created(session, pending_record)
         assert subscription.product_id == existing_id
+
+    async def test_add_on_price_missing_from_the_catalog_stays_on_the_source(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        add_on = canonical_add_on(price_source_id="price_gone")
+        pending_record.canonical = serialize(
+            canonical_subscription(line_item_count=2, add_on=add_on)
+        )
+        await save_fixture(pending_record)
+        adapter = _source(line_item_count=2, add_on=add_on)
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.skipped
+        assert "wasn't in the catalog" in (outcome.message or "")
+        _assert_left_alone(adapter, pending_record)
 
     async def test_add_on_changed_on_the_source_stays_there(
         self, cutover: RunCutover, pending_record: MerchantMigrationRecord

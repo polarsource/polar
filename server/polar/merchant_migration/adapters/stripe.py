@@ -740,7 +740,7 @@ class StripeAdapter:
             tax_rate_behavior=self._tax_rate_behavior(subscription, plan_item),
             customer_balance=self._customer_balance(subscription),
             managed_payments=self._managed_payments(subscription),
-            add_on=self._map_add_on(add_on_item, subscription.currency)
+            add_on=self._map_add_on(subscription, plan_item, add_on_item)
             if add_on_item is not None
             else None,
         )
@@ -759,35 +759,34 @@ class StripeAdapter:
             return second, first
         return first, second
 
-    def _interval(self, item: Any) -> tuple[str, int] | None:
-        recurring = item["price"].get("recurring")
-        if recurring is None:
-            return None
-        return recurring.get("interval"), recurring.get("interval_count") or 1
+    def _interval(self, item: Any) -> tuple[str, int]:
+        recurring = item["price"]["recurring"]
+        return recurring["interval"], recurring.get("interval_count") or 1
 
-    def _map_add_on(self, item: Any, currency: str) -> CanonicalSubscriptionAddOn:
+    def _map_add_on(
+        self, subscription: stripe_lib.Subscription, plan_item: Any, item: Any
+    ) -> CanonicalSubscriptionAddOn:
         price = item["price"]
-        product = price.get("product")
         transform = price.get("transform_quantity")
         return CanonicalSubscriptionAddOn(
             price_source_id=self._id_of(price),
-            product_source_id=self._id_of(product) if product is not None else None,
             quantity=self._quantity(item),
-            unit_amount=self._unit_amount_in(price, currency),
             # Bought in quantity, a package price bills per package however it
             # rounds, so it can't move as a per-unit price.
             pricing_scheme=CanonicalPricingScheme.package
             if transform is not None and (transform.get("divide_by") or 1) > 1
             else self._map_pricing_scheme(price),
             price_tax_behavior=self._price_tax_behavior(price),
-            has_tax_rates=bool(item.get("tax_rates")),
+            tax_rates_differ=self._tax_rate_ids(subscription, plan_item)
+            != self._tax_rate_ids(subscription, item),
         )
 
-    def _unit_amount_in(self, price: stripe_lib.Price, currency: str) -> int | None:
-        if price.currency == currency:
-            return price.unit_amount
-        option = (price.get("currency_options") or {}).get(currency)
-        return option.get("unit_amount") if option is not None else None
+    def _tax_rate_ids(
+        self, subscription: stripe_lib.Subscription, item: Any
+    ) -> set[str]:
+        # An item's own rates replace the subscription's defaults.
+        rates = item.get("tax_rates") or subscription.get("default_tax_rates")
+        return {self._id_of(rate) for rate in rates or []}
 
     def _managed_payments(self, subscription: stripe_lib.Subscription) -> bool:
         settings = subscription.get("managed_payments")

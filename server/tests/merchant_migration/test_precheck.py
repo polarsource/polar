@@ -1364,6 +1364,11 @@ def classify_subscription(
 ) -> list[MerchantMigrationRecordItem]:
     records: list[CanonicalRecord] = [
         build_product(prices=[build_price(source_id="price_1")]),
+        build_product(
+            product_source_id="prod_slot",
+            name="+ 1 Project",
+            prices=[build_price(source_id="price_slot", amount=250)],
+        ),
         build_customer(),
         *extra,
         subscription,
@@ -1391,7 +1396,10 @@ class TestClassifyAddOns:
                 id="tiered",
             ),
             pytest.param(
-                {}, {"unit_amount": None}, "unsupported_add_on_price", id="no-amount"
+                {},
+                {"price_source_id": "price_gone"},
+                "subscription_add_on_price_missing",
+                id="price-not-in-the-catalog",
             ),
             pytest.param(
                 {}, {"quantity": 0}, "unsupported_add_on_quantity", id="zero-units"
@@ -1403,7 +1411,10 @@ class TestClassifyAddOns:
                 id="taxed-differently",
             ),
             pytest.param(
-                {}, {"has_tax_rates": True}, "add_on_tax_mismatch", id="own-tax-rates"
+                {},
+                {"tax_rates_differ": True},
+                "add_on_tax_mismatch",
+                id="different-tax-rates",
             ),
         ],
     )

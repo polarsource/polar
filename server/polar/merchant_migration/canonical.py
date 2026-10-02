@@ -128,18 +128,18 @@ class CanonicalCustomer:
 @dataclass
 class CanonicalSubscriptionAddOn:
     """A second item billed per unit on top of the plan, like extra project
-    slots. It moves as a unit-based price next to the plan's fixed price."""
+    slots. It moves as a unit-based price next to the plan's fixed price.
+
+    Its amount comes from the staged catalog, like the plan's: a subscription
+    item's price carries no ``currency_options``."""
 
     price_source_id: str
-    product_source_id: str | None
     quantity: int
-    # Per unit, in the subscription's currency. None when the source has no
-    # flat amount for it there.
-    unit_amount: int | None
     pricing_scheme: CanonicalPricingScheme
     price_tax_behavior: TaxBehavior | None = None
-    # The item's own tax rates, which replace the subscription's defaults.
-    has_tax_rates: bool = False
+    # The two items are taxed by different rates: an item's own rates replace
+    # the subscription's defaults, so either item can diverge.
+    tax_rates_differ: bool = False
 
 
 @dataclass
@@ -605,14 +605,12 @@ def deserialize(
                 managed_payments=data.get("managed_payments", False),
                 add_on=CanonicalSubscriptionAddOn(
                     price_source_id=add_on["price_source_id"],
-                    product_source_id=add_on["product_source_id"],
                     quantity=add_on["quantity"],
-                    unit_amount=add_on["unit_amount"],
                     pricing_scheme=CanonicalPricingScheme(add_on["pricing_scheme"]),
                     price_tax_behavior=parse_tax_behavior(
                         add_on.get("price_tax_behavior")
                     ),
-                    has_tax_rates=bool(add_on.get("has_tax_rates", False)),
+                    tax_rates_differ=bool(add_on.get("tax_rates_differ", False)),
                 )
                 if add_on is not None
                 else None,

@@ -199,11 +199,12 @@ class TestNormalization:
     def test_an_add_on_adds_its_units_over_the_plan_interval(self) -> None:
         rows = [
             _product("price_1", 12000, interval="year"),
+            _product("price_slot", 2400, interval="year"),
             _subscription(
                 "sub_1",
                 "price_1",
                 MerchantMigrationRecordStatus.imported,
-                add_on=canonical_add_on(quantity=2, unit_amount=2400),
+                add_on=canonical_add_on(quantity=2),
             ),
         ]
 

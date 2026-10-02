@@ -62,7 +62,12 @@ from .importer import (
     find_imported_price,
     find_or_create_add_on_product,
 )
-from .precheck import kept_discount_source_id, subscription_import_reason
+from .precheck import (
+    _SUBSCRIPTION_ADD_ON_PRICE_MISSING_REASON,
+    add_on_unit_amount,
+    kept_discount_source_id,
+    subscription_import_reason,
+)
 from .repository import MerchantMigrationRecordRepository
 
 log: Logger = structlog.get_logger()
@@ -609,20 +614,28 @@ class SubscriptionCutover:
         price = find_imported_price(product, canonical_product, staged)
         if price is None:
             return _skip(_NOT_IMPORTED)
+
+        if already_stopped and self._period_is_lapsed(source, product):
+            return _fail(_LAPSED)
+
         add_on_price: ProductPriceUnit | None = None
         if staged.add_on is not None:
+            add_on_product = await self._staged_add_on_product(staged.add_on)
+            unit_amount = (
+                add_on_unit_amount(staged, [add_on_product])
+                if add_on_product is not None
+                else None
+            )
+            if add_on_product is None or unit_amount is None:
+                return _skip(_SUBSCRIPTION_ADD_ON_PRICE_MISSING_REASON)
             product, price, add_on_price = await find_or_create_add_on_product(
                 self.session,
                 product,
                 price,
-                staged.add_on,
-                name=add_on_product_name(
-                    product.name, await self._add_on_name(staged.add_on)
-                ),
+                add_on_price_source_id=staged.add_on.price_source_id,
+                unit_amount=unit_amount,
+                name=add_on_product_name(product.name, add_on_product.name),
             )
-
-        if already_stopped and self._period_is_lapsed(source, product):
-            return _fail(_LAPSED)
 
         customer = await self.customer_repository.get_by_id(
             customer.id, include_deleted=True, for_update=True
@@ -667,7 +680,9 @@ class SubscriptionCutover:
             scheduled_end=scheduled_end,
         )
 
-    async def _add_on_name(self, add_on: CanonicalSubscriptionAddOn) -> str | None:
+    async def _staged_add_on_product(
+        self, add_on: CanonicalSubscriptionAddOn
+    ) -> CanonicalProduct | None:
         record = await self.record_repository.get_product_by_price(
             self.migration.organization_id, add_on.price_source_id
         )
@@ -677,7 +692,7 @@ class SubscriptionCutover:
             product = deserialize(record.type, record.canonical)
         except KeyError, TypeError, ValueError:
             return None
-        return product.name if isinstance(product, CanonicalProduct) else None
+        return product if isinstance(product, CanonicalProduct) else None
 
     async def _reconcile_active(
         self, record: MerchantMigrationRecord

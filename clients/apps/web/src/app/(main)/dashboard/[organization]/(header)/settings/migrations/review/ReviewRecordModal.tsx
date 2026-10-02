@@ -11,6 +11,7 @@ import {
   TaxAfterSwitchField,
 } from './ReviewRecordFields'
 import { PaymentMethodLabel } from './PaymentMethodLabel'
+import { rowPaymentMethod } from './paymentMethod'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
 import { ReviewRow } from './reviewRows'
 
@@ -24,6 +25,7 @@ export function ReviewRecordModal({
   onClose: () => void
 }) {
   const facts = assessmentFacts(row)
+  const paymentMethod = rowPaymentMethod(row)
   const discount = row.discount_name
     ? row.discount_code
       ? `${row.discount_name} (${row.discount_code})`
@@ -121,10 +123,10 @@ export function ReviewRecordModal({
               <DetailCell label="Status" value={facts.status} />
             ) : null}
             {discount ? <DetailCell label="Discount" value={discount} /> : null}
-            {row.status !== 'skipped' ? (
+            {paymentMethod ? (
               <DetailCell
                 label="Payment method"
-                value={<PaymentMethodLabel row={row} />}
+                value={<PaymentMethodLabel method={paymentMethod} />}
               />
             ) : null}
             {facts.renewal ? (

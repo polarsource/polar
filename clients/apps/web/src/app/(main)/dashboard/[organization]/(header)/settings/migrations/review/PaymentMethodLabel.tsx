@@ -2,8 +2,7 @@ import { Text, Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Info } from 'lucide-react'
 import { ReactNode } from 'react'
-import { PaymentMethodNote, rowPaymentMethod } from './paymentMethod'
-import { ReviewRow } from './reviewRows'
+import { PaymentMethodNote, RowPaymentMethod } from './paymentMethod'
 
 // `children` followed by an info icon that explains the note on hover.
 export function PaymentMethodTooltip({
@@ -44,9 +43,7 @@ export function PaymentMethodTooltip({
   )
 }
 
-export function PaymentMethodLabel({ row }: { row: ReviewRow }) {
-  const method = rowPaymentMethod(row)
-  if (!method) return null
+export function PaymentMethodLabel({ method }: { method: RowPaymentMethod }) {
   const warn = method.kind === 'no_card'
   const text = (
     <Text as="span" color={warn ? 'warning' : 'default'}>

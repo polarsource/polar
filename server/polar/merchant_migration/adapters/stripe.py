@@ -784,9 +784,13 @@ class StripeAdapter:
     def _tax_rate_ids(
         self, subscription: stripe_lib.Subscription, item: Any
     ) -> set[str]:
+        return {self._id_of(rate) for rate in self._item_tax_rates(subscription, item)}
+
+    def _item_tax_rates(
+        self, subscription: stripe_lib.Subscription, item: Any
+    ) -> list[Any]:
         # An item's own rates replace the subscription's defaults.
-        rates = item.get("tax_rates") or subscription.get("default_tax_rates")
-        return {self._id_of(rate) for rate in rates or []}
+        return item.get("tax_rates") or subscription.get("default_tax_rates") or []
 
     def _managed_payments(self, subscription: stripe_lib.Subscription) -> bool:
         settings = subscription.get("managed_payments")
@@ -1256,9 +1260,10 @@ class StripeAdapter:
     def _tax_rate_behavior(
         self, subscription: stripe_lib.Subscription, plan_item: Any
     ) -> TaxBehavior | None:
-        # An item's own rates replace the subscription's defaults.
-        rates = plan_item.get("tax_rates") or subscription.get("default_tax_rates")
-        inclusive = {rate.get("inclusive") for rate in rates or []}
+        inclusive = {
+            rate.get("inclusive")
+            for rate in self._item_tax_rates(subscription, plan_item)
+        }
         if inclusive == {True}:
             return TaxBehavior.inclusive
         if inclusive == {False}:

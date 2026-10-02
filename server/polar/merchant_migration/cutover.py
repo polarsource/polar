@@ -587,8 +587,12 @@ class SubscriptionCutover:
             if reason is not None:
                 return _skip(reason)
 
-        if await self.subscription_repository.exists_live_by_customer_and_product(
-            customer.id, product.id
+        # An add-on subscription lands on its combined product, checked below.
+        if (
+            staged.add_on is None
+            and await self.subscription_repository.exists_live_by_customer_and_product(
+                customer.id, product.id
+            )
         ):
             return _skip(_CUSTOMER_ALREADY_SUBSCRIBED.message)
 

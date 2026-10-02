@@ -2473,6 +2473,30 @@ class TestAddOn:
         subscription = await _created(session, pending_record)
         assert subscription.product_id == existing_id
 
+    async def test_moves_beside_a_plain_subscription_to_the_same_plan(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+        product: Product,
+        imported_customer: Customer,
+    ) -> None:
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=imported_customer,
+            status=SubscriptionStatus.active,
+        )
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+
+        outcome = await cutover(_source(line_item_count=2, add_on=canonical_add_on()))
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.product_id != product.id
+
     async def test_add_on_price_missing_from_the_catalog_stays_on_the_source(
         self,
         mocker: MockerFixture,

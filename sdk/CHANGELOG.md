@@ -10,6 +10,16 @@ History up to [1.0.0-alpha.22] is available in the existing GitHub releases.
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-10-02
+
+### Changed
+
+- 2027-01 (preview): breaking change to seat-based prices, which now use the shared `tiers` contract instead of `seat_tiers` and `price_per_seat`. Seat quantity bounds use `minimum_units` and `maximum_units` instead of `minimum_seats` and `maximum_seats`.
+
+### Fixed
+
+- TypeScript: expose the HTTP `statusCode` on `PolarServerError` so server errors can be distinguished from network failures.
+
 ## [1.0.1] - 2026-09-30
 
 ### Added
@@ -31,7 +41,8 @@ History up to [1.0.0-alpha.22] is available in the existing GitHub releases.
 
 - Generate next 2027-01 version.
 
-[Unreleased]: https://github.com/polarsource/polar/compare/sdk%2F1.0.1...HEAD
+[Unreleased]: https://github.com/polarsource/polar/compare/sdk%2F1.0.2...HEAD
+[1.0.2]: https://github.com/polarsource/polar/compare/sdk%2F1.0.1...sdk%2F1.0.2
 [1.0.1]: https://github.com/polarsource/polar/compare/sdk%2F1.0.0...sdk%2F1.0.1
 [1.0.0]: https://github.com/polarsource/polar/compare/sdk%2F1.0.0-alpha.22...sdk%2F1.0.0
 [1.0.0-alpha.22]: https://github.com/polarsource/polar/releases/tag/sdk%2F1.0.0-alpha.22

@@ -1561,6 +1561,7 @@ class CustomerOrderConfirmPayment(typing.TypedDict):
     """ID of an existing saved payment method."""
 
     payment_processor: typing.NotRequired[PaymentProcessor]
+    """Payment processor used."""
 
 
 class CustomerOrderUpdate(typing.TypedDict):
@@ -1611,6 +1612,7 @@ class CustomerPortalMemberCreate(typing.TypedDict):
     """The name of the new member (optional)."""
 
     role: typing.NotRequired[MemberRole]
+    """The role for the new member. Defaults to 'member'."""
 
 
 class CustomerPortalMemberUpdate(typing.TypedDict):
@@ -1896,6 +1898,7 @@ You can store up to **50 key-value pairs**."""
     type: typing.NotRequired[typing.Literal["fixed"]]
 
     duration: DiscountDuration
+    """For subscriptions, determines if the discount should be applied once on the first invoice, forever, or for a certain number of months determined by `duration_in_months`."""
 
     duration_in_months: typing.NotRequired[int | None]
     """Number of months the discount should be applied.
@@ -1954,6 +1957,7 @@ You can store up to **50 key-value pairs**."""
     type: typing.NotRequired[typing.Literal["percentage"]]
 
     duration: DiscountDuration
+    """For subscriptions, determines if the discount should be applied once on the first invoice, forever, or for a certain number of months determined by `duration_in_months`."""
 
     duration_in_months: typing.NotRequired[int | None]
     """Number of months the discount should be applied.
@@ -2057,6 +2061,17 @@ class EventCreateCustomer(typing.TypedDict):
     """The ID of the parent event. Can be either a Polar event ID (UUID) or an external event ID."""
 
     metadata: typing.NotRequired[EventMetadataInput]
+    """Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**."""
 
     customer_id: str
     """ID of the customer in your Polar organization associated with the event."""
@@ -2082,6 +2097,17 @@ class EventCreateExternalCustomer(typing.TypedDict):
     """The ID of the parent event. Can be either a Polar event ID (UUID) or an external event ID."""
 
     metadata: typing.NotRequired[EventMetadataInput]
+    """Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**."""
 
     external_customer_id: str
     """ID of the customer in your system associated with the event."""
@@ -2312,6 +2338,7 @@ You can store up to **50 key-value pairs**."""
     """The name of the meter. Will be shown on customer's invoices and usage."""
 
     unit: typing.NotRequired[MeterUnit]
+    """The unit of the meter."""
 
     custom_label: typing.NotRequired[str | None]
     """The label for the custom unit, e.g. 'request'. Required when unit is 'custom'."""
@@ -2320,6 +2347,7 @@ You can store up to **50 key-value pairs**."""
     """The multiplier to convert from the base unit to display scale, e.g. 1000 to display per 1000 units. Defaults to 1 when not provided."""
 
     filter: Filter
+    """The filter to apply on events that'll be used to calculate the meter."""
 
     aggregation: CountAggregation | PropertyAggregation | UniqueAggregation
     """The aggregation to apply on the filtered events to calculate the meter."""
@@ -2574,8 +2602,10 @@ class OrganizationCreate(typing.TypedDict):
     ]
 
     default_presentment_currency: typing.NotRequired[PresentmentCurrency]
+    """Default presentment currency for the organization"""
 
     default_tax_behavior: typing.NotRequired[TaxBehaviorOption]
+    """Default tax behavior applied on products."""
 
 
 class OrganizationCustomerEmailSettings(typing.TypedDict):
@@ -2677,6 +2707,7 @@ class OrganizationIndividualLegalEntitySchema(typing.TypedDict):
 
 class OrganizationSocialLink(typing.TypedDict):
     platform: OrganizationSocialPlatforms
+    """The social platform of the URL"""
 
     url: str
     """The URL to the organization profile"""
@@ -2768,6 +2799,7 @@ You can store up to **50 key-value pairs**."""
     """The description of the product."""
 
     visibility: typing.NotRequired[ProductVisibility]
+    """The visibility of the product."""
 
     prices: list[
         ProductPriceFixedCreate
@@ -2816,6 +2848,7 @@ You can store up to **50 key-value pairs**."""
     """The description of the product."""
 
     visibility: typing.NotRequired[ProductVisibility]
+    """The visibility of the product."""
 
     prices: list[
         ProductPriceFixedCreate
@@ -2843,6 +2876,7 @@ You can store up to **50 key-value pairs**."""
     """The number of interval units for the trial period."""
 
     recurring_interval: RecurringInterval
+    """The recurring interval of the product."""
 
     recurring_interval_count: typing.NotRequired[int]
     """Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on."""
@@ -2882,6 +2916,7 @@ class ProductPriceCustomCreate(typing.TypedDict):
     amount_type: typing.Literal["custom"]
 
     price_currency: typing.NotRequired[PresentmentCurrency]
+    """The currency in which the customer will be charged."""
 
     tax_behavior: typing.NotRequired[TaxBehaviorOption | None]
     """The tax behavior of the price. If not set, it will default to the organization's default tax behavior."""
@@ -3172,6 +3207,7 @@ class ProductPriceFixedCreate(typing.TypedDict):
     amount_type: typing.Literal["fixed"]
 
     price_currency: typing.NotRequired[PresentmentCurrency]
+    """The currency in which the customer will be charged."""
 
     tax_behavior: typing.NotRequired[TaxBehaviorOption | None]
     """The tax behavior of the price. If not set, it will default to the organization's default tax behavior."""
@@ -3314,6 +3350,7 @@ class ProductPriceMeteredTiersCreate(typing.TypedDict):
     amount_type: typing.Literal["metered_tiers"]
 
     price_currency: typing.NotRequired[PresentmentCurrency]
+    """The currency in which the customer will be charged."""
 
     tax_behavior: typing.NotRequired[TaxBehaviorOption | None]
     """The tax behavior of the price. If not set, it will default to the organization's default tax behavior."""
@@ -3322,6 +3359,7 @@ class ProductPriceMeteredTiersCreate(typing.TypedDict):
     """The ID of the meter associated to the price."""
 
     tiers: TiersInput
+    """Tiered pricing based on consumed units."""
 
     cap_amount: typing.NotRequired[int | None]
     """Optional maximum amount in cents that can be charged, regardless of the number of units consumed."""
@@ -3333,6 +3371,7 @@ class ProductPriceMeteredUnitCreate(typing.TypedDict):
     amount_type: typing.Literal["metered_unit"]
 
     price_currency: typing.NotRequired[PresentmentCurrency]
+    """The currency in which the customer will be charged."""
 
     tax_behavior: typing.NotRequired[TaxBehaviorOption | None]
     """The tax behavior of the price. If not set, it will default to the organization's default tax behavior."""
@@ -3353,11 +3392,13 @@ class ProductPriceSeatBasedCreate(typing.TypedDict):
     amount_type: typing.Literal["seat_based"]
 
     price_currency: typing.NotRequired[PresentmentCurrency]
+    """The currency in which the customer will be charged."""
 
     tax_behavior: typing.NotRequired[TaxBehaviorOption | None]
     """The tax behavior of the price. If not set, it will default to the organization's default tax behavior."""
 
     seat_tiers: ProductPriceSeatTiersInput
+    """Tiered pricing based on seat quantity"""
 
 
 class ProductPriceSeatTier(typing.TypedDict):
@@ -3381,6 +3422,7 @@ class ProductPriceSeatTiersInput(typing.TypedDict):
     - maximum_seats = last tier's max_seats (None for unlimited)"""
 
     seat_tier_type: typing.NotRequired[SeatTierType]
+    """How tiers are applied. 'volume' prices all seats at the matching tier's rate. 'graduated' prices each tier's range independently."""
 
     tiers: list[ProductPriceSeatTier]
     """List of pricing tiers"""
@@ -3393,11 +3435,13 @@ class ProductPriceUnitBasedCreate(typing.TypedDict):
     amount_type: typing.Literal["unit_based"]
 
     price_currency: typing.NotRequired[PresentmentCurrency]
+    """The currency in which the customer will be charged."""
 
     tax_behavior: typing.NotRequired[TaxBehaviorOption | None]
     """The tax behavior of the price. If not set, it will default to the organization's default tax behavior."""
 
     tiers: TiersInput
+    """Tiered pricing based on the purchased unit quantity."""
 
     minimum_units: typing.NotRequired[int | None]
     """The minimum purchasable quantity (inclusive). Defaults to 1 when not set."""
@@ -3816,6 +3860,7 @@ class WebhookEndpointCreate(typing.TypedDict):
     """The API version that'll be used in event payloads."""
 
     format: WebhookFormat
+    """The format of the webhook payload."""
 
     events: list[WebhookEventType]
     """The events that will trigger the webhook."""

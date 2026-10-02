@@ -1,3 +1,4 @@
+import { getPaymentMethodTypeLabel } from '@/components/PaymentMethodDisplay'
 import { ReviewRow } from './reviewRows'
 
 type PaymentMethodType = NonNullable<ReviewRow['payment_method_type']>
@@ -6,16 +7,6 @@ type PaymentMethodType = NonNullable<ReviewRow['payment_method_type']>
 // `true` mirrors the pre-check's current note, `false` treats bank debits like
 // Link and the other methods that stay behind.
 export const BANK_DEBITS_COPIED = true
-
-const LABELS: Record<PaymentMethodType, string> = {
-  card: 'Card',
-  kr_card: 'Korean card',
-  us_bank_account: 'ACH Debit',
-  sepa_debit: 'SEPA Debit',
-  bacs_debit: 'Bacs Debit',
-  link: 'Link',
-  other: 'Other method',
-}
 
 const BANK_DEBITS = new Set<PaymentMethodType>([
   'sepa_debit',
@@ -45,7 +36,6 @@ export interface PaymentMethodNote {
 export interface RowPaymentMethod {
   label: string
   kind: PaymentMethodKind
-  // Set when the merchant should know something; null for a plain card.
   note: PaymentMethodNote | null
 }
 
@@ -53,13 +43,15 @@ export interface RowPaymentMethod {
 // Stripe, so there is nothing to say about it.
 export function rowPaymentMethod(row: ReviewRow): RowPaymentMethod | null {
   if (row.entity !== 'subscriptions' || row.status === 'skipped') return null
-  const type = row.payment_method_type ?? null
+  const type = row.payment_method_type
+  // An API that predates the field omits it; that isn't "no payment method".
+  if (type === undefined) return null
   if (type === 'card') {
-    return { label: LABELS.card, kind: 'card', note: null }
+    return { label: getPaymentMethodTypeLabel(type), kind: 'card', note: null }
   }
   if (type && BANK_DEBITS.has(type) && BANK_DEBITS_COPIED) {
     return {
-      label: LABELS[type],
+      label: getPaymentMethodTypeLabel(type),
       kind: 'bank_debit',
       note: {
         title: PAYMENT_METHOD_COPY.bankDebitTitle,
@@ -67,7 +59,12 @@ export function rowPaymentMethod(row: ReviewRow): RowPaymentMethod | null {
       },
     }
   }
-  const label = type ? LABELS[type] : 'No method'
+  const label =
+    type === null
+      ? 'No method'
+      : type === 'other'
+        ? 'Other method'
+        : getPaymentMethodTypeLabel(type)
   return {
     label,
     kind: 'no_card',

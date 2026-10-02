@@ -45,6 +45,10 @@ describe('rowPaymentMethod', () => {
     },
   )
 
+  it('says nothing when the API omits the field', () => {
+    expect(rowPaymentMethod(row({ payment_method_type: undefined }))).toBeNull()
+  })
+
   it('says nothing for skipped rows and other entities', () => {
     expect(rowPaymentMethod(row({ status: 'skipped' }))).toBeNull()
     expect(rowPaymentMethod(row({ entity: 'customers' }))).toBeNull()

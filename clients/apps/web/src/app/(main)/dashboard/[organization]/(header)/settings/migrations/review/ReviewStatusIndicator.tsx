@@ -1,6 +1,4 @@
 import { Status } from '@polar-sh/orbit'
-import { Box } from '@polar-sh/orbit/Box'
-import { Info } from 'lucide-react'
 import { PaymentMethodTooltip } from './PaymentMethodLabel'
 import { ReviewRow } from './reviewRows'
 import { reviewStatus } from './reviewStatus'
@@ -12,18 +10,8 @@ export function ReviewStatusIndicator({ row }: { row: ReviewRow }) {
   const chip = <Status status={label} color={color} size="small" />
   if (!paymentMethod?.note) return chip
   return (
-    <PaymentMethodTooltip note={paymentMethod.note}>
-      <Box
-        display="inline-flex"
-        alignItems="center"
-        columnGap="xs"
-        cursor="default"
-        color="text-tertiary"
-        aria-label={`${label}: ${paymentMethod.note.title}`}
-      >
-        {chip}
-        <Info className="size-3" />
-      </Box>
+    <PaymentMethodTooltip note={paymentMethod.note} label={label}>
+      {chip}
     </PaymentMethodTooltip>
   )
 }

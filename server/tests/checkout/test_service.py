@@ -37,6 +37,7 @@ from polar.checkout.service import (
 )
 from polar.checkout.service import checkout as checkout_service
 from polar.config import Environment
+from polar.customer.repository import CustomerRepository
 from polar.customer_seat.service import SeatService
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.repository import DiscountRedemptionRepository
@@ -5865,6 +5866,61 @@ class TestConfirm:
         assert checkout.customer == customer
         assert checkout.customer.user_metadata == {"key": "updated", "key2": "value2"}
         stripe_service_mock.update_customer.assert_called_once()
+
+    async def test_new_customer_locks_email(
+        self,
+        mocker: MockerFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_free: Checkout,
+    ) -> None:
+        mocker.patch("polar.checkout.service.enqueue_job")
+        lock_email_spy = mocker.spy(CustomerRepository, "lock_email")
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+
+        await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout_one_time_free,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                }
+            ),
+        )
+
+        lock_email_spy.assert_called_once_with(
+            ANY, checkout_one_time_free.organization.id, "customer@example.com"
+        )
+
+    async def test_existing_customer_does_not_lock_email(
+        self,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_free: Checkout,
+        customer: Customer,
+    ) -> None:
+        mocker.patch("polar.checkout.service.enqueue_job")
+        lock_email_spy = mocker.spy(CustomerRepository, "lock_email")
+        checkout_one_time_free.customer = customer
+        checkout_one_time_free.customer_email = customer.email
+        await save_fixture(checkout_one_time_free)
+
+        await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout_one_time_free,
+            CheckoutConfirmStripe.model_validate({"customer_name": "Customer Name"}),
+        )
+
+        lock_email_spy.assert_not_called()
 
     async def test_valid_stripe_new_customer_external_id(
         self,

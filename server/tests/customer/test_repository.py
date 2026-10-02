@@ -52,6 +52,22 @@ async def test_get_by_id(
 
 
 @pytest.mark.asyncio
+async def test_lock_email_is_case_insensitive(
+    mocker: MockerFixture,
+    session: AsyncSession,
+    organization: Organization,
+    repository: CustomerRepository,
+) -> None:
+    lock_mock = mocker.patch("polar.customer.repository.pg_advisory_xact_lock")
+
+    await repository.lock_email(organization.id, "Customer@Example.COM")
+
+    lock_mock.assert_awaited_once_with(
+        session, "customer.email", f"{organization.id}:customer@example.com"
+    )
+
+
+@pytest.mark.asyncio
 async def test_resolve_customer_identifiers(
     save_fixture: SaveFixture,
     repository: CustomerRepository,

@@ -246,13 +246,13 @@ class TestPrecheckEngine:
         report = await run([build_product()], account=build_account(country="IN"))
         assert "india_account" in codes(report, PrecheckIssueLevel.blocker)
 
-    async def test_connected_accounts_block(self) -> None:
+    async def test_connected_accounts_do_not_block(self) -> None:
         report = await run(
-            [build_product()], account=build_account(has_connected_accounts=True)
+            [build_product(), build_customer(), build_subscription()],
+            account=build_account(has_connected_accounts=True),
         )
-        assert "source_has_connected_accounts" in codes(
-            report, PrecheckIssueLevel.blocker
-        )
+        assert report.can_start is True
+        assert report.issues == []
 
     async def test_non_fixed_pricing_warns_and_can_start(self) -> None:
         report = await run(

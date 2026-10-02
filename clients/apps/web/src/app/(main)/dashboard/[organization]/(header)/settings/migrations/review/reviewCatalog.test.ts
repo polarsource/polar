@@ -32,6 +32,17 @@ describe('reviewCatalogEmptyKind', () => {
     expect(reviewCatalogEmptyKind(0, 0)).toBe('no_stripe_subscriptions')
   })
 
+  it('points a Connect platform with no subscriptions at its connected accounts', () => {
+    expect(reviewCatalogEmptyKind(0, 0, true)).toBe(
+      'subscriptions_on_connected_accounts',
+    )
+  })
+
+  it('ignores connected accounts once the account has subscriptions', () => {
+    expect(reviewCatalogEmptyKind(58, 20, true)).toBeNull()
+    expect(reviewCatalogEmptyKind(58, 58, true)).toBe('all_switched')
+  })
+
   it('does not claim Stripe is empty when every subscription is already switched', () => {
     expect(reviewCatalogEmptyKind(58, 58)).toBe('all_switched')
     expect(reviewCatalogEmptyKind(58, 58)).not.toBe('no_stripe_subscriptions')

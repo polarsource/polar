@@ -25224,7 +25224,7 @@ export interface components {
       source_connected: boolean
       /**
        * Source
-       * @description Non-secret metadata about the connected source. The shape varies by provider (e.g. Stripe exposes `stripe_user_id`, `livemode`).
+       * @description Non-secret metadata about the connected source. The shape varies by provider (e.g. Stripe exposes `stripe_user_id`, `livemode`, `has_connected_accounts`).
        */
       source: {
         [key: string]: unknown

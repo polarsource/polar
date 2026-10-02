@@ -393,16 +393,6 @@ class PrecheckEngine:
                 ),
                 source_id=None,
             )
-        if account.has_connected_accounts:
-            yield PrecheckIssue(
-                level=PrecheckIssueLevel.blocker,
-                code="source_has_connected_accounts",
-                message=(
-                    "The source has Connect accounts. Only data on the platform "
-                    "account can be copied, so it can't be migrated automatically."
-                ),
-                source_id=None,
-            )
 
     def _check_default_currency(
         self, products: Sequence[CanonicalProduct], default_currency: str

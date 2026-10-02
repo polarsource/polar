@@ -117,4 +117,7 @@ class MerchantMigration(RecordModel):
         return {
             "stripe_user_id": self.source_credentials.get("stripe_user_id"),
             "livemode": self.source_credentials.get("livemode"),
+            "has_connected_accounts": self.source_credentials.get(
+                "has_connected_accounts", False
+            ),
         }

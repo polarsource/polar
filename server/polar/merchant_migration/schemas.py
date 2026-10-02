@@ -462,7 +462,8 @@ class MerchantMigration(IDSchema, TimestampedSchema):
     source: dict[str, Any] | None = Field(
         description=(
             "Non-secret metadata about the connected source. The shape varies by "
-            "provider (e.g. Stripe exposes `stripe_user_id`, `livemode`)."
+            "provider (e.g. Stripe exposes `stripe_user_id`, `livemode`, "
+            "`has_connected_accounts`)."
         ),
     )
     operation: MerchantMigrationOperation | None = Field(

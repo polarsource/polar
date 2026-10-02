@@ -77,6 +77,7 @@ async def build_stripe_credentials(
         api_key_encrypted=encrypted.encrypted_value,
         stripe_user_id=stripe_user_id,
         livemode=api_key.startswith(("rk_live_", "sk_live_")),
+        has_connected_accounts=False,
     )
 
 

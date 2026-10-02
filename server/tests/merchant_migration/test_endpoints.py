@@ -86,7 +86,7 @@ def _mock_stripe_adapter(
     *,
     missing_scopes: list[str] | None = None,
     auth_error: Exception | None = None,
-    has_connected_accounts: bool = False,
+    country: str = "US",
 ) -> None:
     adapter = mocker.MagicMock()
     if auth_error is not None:
@@ -95,9 +95,7 @@ def _mock_stripe_adapter(
         adapter.verify_scopes = mocker.AsyncMock(return_value=missing_scopes or [])
     adapter.get_account_id = mocker.AsyncMock(return_value="acct_test")
     adapter.get_source_account = mocker.AsyncMock(
-        return_value=CanonicalAccount(
-            country="US", has_connected_accounts=has_connected_accounts
-        )
+        return_value=CanonicalAccount(country=country, has_connected_accounts=False)
     )
     mocker.patch("polar.merchant_migration.service.StripeAdapter", return_value=adapter)
 
@@ -188,7 +186,7 @@ class TestCreate:
         assert response.status_code == 400
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
-    async def test_source_with_connected_accounts_returns_400(
+    async def test_non_migratable_source_returns_400(
         self,
         client: AsyncClient,
         session: AsyncSession,
@@ -198,13 +196,13 @@ class TestCreate:
         mocker: MockerFixture,
     ) -> None:
         await _enable_feature(save_fixture, organization)
-        _mock_stripe_adapter(mocker, has_connected_accounts=True)
+        _mock_stripe_adapter(mocker, country="IN")
 
         response = await client.post(
             "/v1/merchant-migrations/", json=_body(organization)
         )
         assert response.status_code == 400
-        assert "Connect accounts" in response.text
+        assert "India" in response.text
 
         await assert_no_migrations(session, organization)
 

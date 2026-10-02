@@ -182,6 +182,7 @@ class StripeSourceCredentials(TypedDict):
     api_key_encrypted: str
     stripe_user_id: str | None
     livemode: bool
+    has_connected_accounts: bool
 
 
 class MerchantMigrationNotFound(MerchantMigrationError):
@@ -502,7 +503,8 @@ class MerchantMigrationService:
 
         # An account we can never migrate is rejected here rather than at the
         # import, so the merchant hears it while they're still connecting the key.
-        blockers = account_blockers(await adapter.get_source_account())
+        source_account = await adapter.get_source_account()
+        blockers = account_blockers(source_account)
         if blockers:
             raise SourceAccountNotMigratable(blockers)
 
@@ -517,7 +519,10 @@ class MerchantMigrationService:
         stripe_account_id = await adapter.get_account_id()
         migration.source_credentials = dict(
             await self._build_stripe_credentials(
-                migration, create_schema.api_key, stripe_account_id
+                migration,
+                create_schema.api_key,
+                stripe_account_id,
+                has_connected_accounts=source_account.has_connected_accounts,
             )
         )
         repository = MerchantMigrationRepository.from_session(session)
@@ -2032,6 +2037,8 @@ class MerchantMigrationService:
         migration: MerchantMigration,
         api_key: str,
         stripe_account_id: str | None,
+        *,
+        has_connected_accounts: bool,
     ) -> StripeSourceCredentials:
         encrypted = await EncryptedString.encrypt(
             api_key,
@@ -2041,6 +2048,7 @@ class MerchantMigrationService:
             api_key_encrypted=encrypted.encrypted_value,
             stripe_user_id=stripe_account_id,
             livemode=_is_live_key(api_key),
+            has_connected_accounts=has_connected_accounts,
         )
 
     async def _assert_feature_enabled(

@@ -180,15 +180,15 @@ class TestAttention:
         assert result.label == "Done"
         assert not result.needs_ops
 
-    def test_finished_checklist_on_an_open_migration_needs_closing_out(self) -> None:
+    def test_partial_cutover_waits_on_the_merchant(self) -> None:
         migration = _migration(
-            step=MerchantMigrationStep.copy_cards, steps=_finish_all()
+            step=MerchantMigrationStep.activate_subscriptions, steps=_finish_all()
         )
 
         result = attention(migration, NO_FAILURES)
 
-        assert result.level == AttentionLevel.ops_action
-        assert "close the migration out" in result.detail
+        assert result.level == AttentionLevel.waiting_merchant
+        assert not result.needs_ops
 
 
 class TestFinished:

@@ -102,9 +102,10 @@ class OAuth2FactorMixin:
     async def get_email(
         self, callback_result: OAuth2EnrollmentDataclass | OAuth2Account
     ) -> str:
-        raise NotImplementedError()
+        email, _ = await self.get_email_and_verified(callback_result)
+        return email
 
     async def get_email_and_verified(
         self, callback_result: OAuth2EnrollmentDataclass | OAuth2Account
     ) -> tuple[str, bool]:
-        return await self.get_email(callback_result), False
+        raise NotImplementedError()

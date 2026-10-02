@@ -25,7 +25,7 @@ const BANK_DEBITS = new Set<PaymentMethodType>([
 const NO_CARD_CONSEQUENCE =
   'The subscription still moves, but its first renewal on Polar fails and goes to dunning until the customer adds a card. Ask them to add one before it renews.'
 
-export const PAYMENT_METHOD_COPY = {
+const PAYMENT_METHOD_COPY = {
   noCardTitle: 'Moves without a payment method',
   bankDebitTitle: 'Bank debit, not checked yet',
   bankDebit:
@@ -35,14 +35,18 @@ export const PAYMENT_METHOD_COPY = {
   none: `This customer has no saved payment method on Stripe. ${NO_CARD_CONSEQUENCE}`,
 }
 
-export type PaymentMethodKind = 'card' | 'bank_debit' | 'no_card'
+type PaymentMethodKind = 'card' | 'bank_debit' | 'no_card'
+
+export interface PaymentMethodNote {
+  title: string
+  body: string
+}
 
 export interface RowPaymentMethod {
-  type: PaymentMethodType | null
   label: string
   kind: PaymentMethodKind
   // Set when the merchant should know something; null for a plain card.
-  note: { title: string; body: string } | null
+  note: PaymentMethodNote | null
 }
 
 // Only for rows that will move: a skipped subscription keeps its method on
@@ -51,11 +55,10 @@ export function rowPaymentMethod(row: ReviewRow): RowPaymentMethod | null {
   if (row.entity !== 'subscriptions' || row.status === 'skipped') return null
   const type = row.payment_method_type ?? null
   if (type === 'card') {
-    return { type, label: LABELS.card, kind: 'card', note: null }
+    return { label: LABELS.card, kind: 'card', note: null }
   }
   if (type && BANK_DEBITS.has(type) && BANK_DEBITS_COPIED) {
     return {
-      type,
       label: LABELS[type],
       kind: 'bank_debit',
       note: {
@@ -66,7 +69,6 @@ export function rowPaymentMethod(row: ReviewRow): RowPaymentMethod | null {
   }
   const label = type ? LABELS[type] : 'No method'
   return {
-    type,
     label,
     kind: 'no_card',
     note: {

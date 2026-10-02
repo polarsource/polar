@@ -15,6 +15,7 @@ const baseRow = {
   reason_code: null,
   reason_level: null,
   dependencies_imported: null,
+  payment_method_type: 'card' as const,
 }
 
 function row(overrides: Partial<ReviewRow>): ReviewRow {
@@ -98,8 +99,14 @@ describe('reviewStatus', () => {
     })
   })
 
-  describe('preparation', () => {
-    it('shows "Ready" when a pending subscription has imported dependencies', () => {
+  describe('moving subscriptions', () => {
+    it('shows "Moves with card" for a pending subscription with a card', () => {
+      expect(
+        reviewStatus(row({ status: 'importable', import_status: 'pending' })),
+      ).toMatchObject({ label: 'Moves with card' })
+    })
+
+    it('shows "Moves with card" once dependencies are prepared', () => {
       expect(
         reviewStatus(
           row({
@@ -108,22 +115,10 @@ describe('reviewStatus', () => {
             dependencies_imported: true,
           }),
         ),
-      ).toMatchObject({ label: 'Ready' })
+      ).toMatchObject({ label: 'Moves with card' })
     })
 
-    it('shows "To prepare" when importable and pending with no reason', () => {
-      expect(
-        reviewStatus(row({ status: 'importable', import_status: 'pending' })),
-      ).toMatchObject({ label: 'To prepare' })
-    })
-
-    it('shows "To prepare" when import_status is null', () => {
-      expect(
-        reviewStatus(row({ status: 'importable', import_status: null })),
-      ).toMatchObject({ label: 'To prepare' })
-    })
-
-    it('shows "To prepare" for an info-level reason that does not need attention', () => {
+    it('shows "Moves with card" for an info-level reason that does not need attention', () => {
       expect(
         reviewStatus(
           row({
@@ -132,7 +127,64 @@ describe('reviewStatus', () => {
             reason_level: 'info',
           }),
         ),
-      ).toMatchObject({ label: 'To prepare' })
+      ).toMatchObject({ label: 'Moves with card' })
+    })
+
+    it.each(['link', null] as const)(
+      'shows "Moves, no card" (yellow) for %s',
+      (type) => {
+        expect(
+          reviewStatus(
+            row({ status: 'importable', payment_method_type: type }),
+          ),
+        ).toMatchObject({ label: 'Moves, no card', color: 'yellow' })
+      },
+    )
+
+    it('names the missing card on a row that needs info', () => {
+      expect(
+        reviewStatus(
+          row({
+            status: 'importable',
+            import_status: 'pending',
+            reason_level: 'action_required',
+            payment_method_type: 'link',
+          }),
+        ),
+      ).toMatchObject({ label: 'Needs info, no card', color: 'yellow' })
+    })
+
+    it('drops the payment method for rows that stay on Stripe', () => {
+      expect(
+        reviewStatus(row({ status: 'skipped', payment_method_type: 'link' })),
+      ).toMatchObject({ label: 'Stays on Stripe', paymentMethod: null })
+    })
+  })
+
+  describe('other entities', () => {
+    it('shows "Ready" when a pending record has imported dependencies', () => {
+      expect(
+        reviewStatus(
+          row({
+            entity: 'customers',
+            status: 'importable',
+            import_status: 'pending',
+            dependencies_imported: true,
+          }),
+        ),
+      ).toMatchObject({ label: 'Ready', paymentMethod: null })
+    })
+
+    it('shows "To prepare" when importable and pending', () => {
+      expect(
+        reviewStatus(
+          row({
+            entity: 'customers',
+            status: 'importable',
+            import_status: null,
+          }),
+        ),
+      ).toMatchObject({ label: 'To prepare', paymentMethod: null })
     })
   })
 })

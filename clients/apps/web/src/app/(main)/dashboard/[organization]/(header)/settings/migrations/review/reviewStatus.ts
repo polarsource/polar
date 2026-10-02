@@ -1,7 +1,19 @@
 import { StatusColor } from '@polar-sh/orbit'
+import { RowPaymentMethod, rowPaymentMethod } from './paymentMethod'
 import { isImported, needsAttention, ReviewRow } from './reviewRows'
 
-export type ReviewStage =
+export interface ReviewStatus {
+  label: string
+  // Undefined renders a neutral, untinted chip. Colour marks the exceptions
+  // only: most rows import as they are, and tinting those too would leave
+  // nothing standing out.
+  color?: StatusColor
+  // What moves with the subscription. Null for rows that stay on Stripe or
+  // have already switched, and for every other entity.
+  paymentMethod: RowPaymentMethod | null
+}
+
+type Stage =
   | 'switched'
   | 'failed'
   | 'stays'
@@ -9,16 +21,7 @@ export type ReviewStage =
   | 'ready'
   | 'to_prepare'
 
-export interface ReviewStatus {
-  stage: ReviewStage
-  label: string
-  // Undefined renders a neutral, untinted chip. Colour marks the exceptions
-  // only: most rows import as they are, and tinting those too would leave
-  // nothing standing out.
-  color?: StatusColor
-}
-
-const STAGES: Record<ReviewStage, Omit<ReviewStatus, 'stage'>> = {
+const STAGES: Record<Stage, { label: string; color?: StatusColor }> = {
   switched: { label: 'Switched', color: 'gray' },
   failed: { label: 'Failed', color: 'red' },
   stays: { label: 'Stays on Stripe', color: 'red' },
@@ -27,7 +30,7 @@ const STAGES: Record<ReviewStage, Omit<ReviewStatus, 'stage'>> = {
   to_prepare: { label: 'To prepare' },
 }
 
-function reviewStage(row: ReviewRow): ReviewStage {
+function reviewStage(row: ReviewRow): Stage {
   if (isImported(row)) return 'switched'
   if (row.import_status === 'failed') return 'failed'
   // A record can be marked "won't import" at two stages: precheck classifies
@@ -46,9 +49,34 @@ function reviewStage(row: ReviewRow): ReviewStage {
 }
 
 // One question, asked the same way for every entity: what happens to this
-// record at import. The source lifecycle (Active, Trialing, Past due) is a
-// property of the Stripe record, so it lives in the row's detail modal.
+// record when it moves. For a subscription that will move, the answer names
+// its payment method, since that decides whether its first Polar renewal can
+// be charged. The source lifecycle (Active, Trialing, Past due) is a property
+// of the Stripe record, so it lives in the row's detail modal.
 export function reviewStatus(row: ReviewRow): ReviewStatus {
   const stage = reviewStage(row)
-  return { stage, ...STAGES[stage] }
+  const base = STAGES[stage]
+  const paymentMethod =
+    stage === 'stays' || stage === 'switched' ? null : rowPaymentMethod(row)
+  if (!paymentMethod || stage === 'failed') {
+    return { ...base, paymentMethod }
+  }
+  const noCard = paymentMethod.kind === 'no_card'
+  if (stage === 'needs_info') {
+    return {
+      label: noCard ? 'Needs info, no card' : base.label,
+      color: base.color,
+      paymentMethod,
+    }
+  }
+  if (noCard) {
+    return { label: 'Moves, no card', color: 'yellow', paymentMethod }
+  }
+  return {
+    label:
+      paymentMethod.kind === 'bank_debit'
+        ? 'Moves, bank debit'
+        : 'Moves with card',
+    paymentMethod,
+  }
 }

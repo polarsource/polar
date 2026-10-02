@@ -1,8 +1,7 @@
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { DataTableColumnDef } from '@polar-sh/orbit'
-import { MoveStatusCell } from './MoveStatusCell'
-import { PaymentMethodVariant } from './paymentMethodVariant'
+import { ReviewStatusIndicator } from './ReviewStatusIndicator'
 import { SelectCheckbox } from '../SelectCheckbox'
 import { HeaderCheckState } from '../selection'
 import { renewsLabel } from '../recordFormat'
@@ -14,7 +13,6 @@ interface ColumnContext {
   canSelectAll: boolean
   onToggle: (id: string) => void
   onToggleAll: () => void
-  paymentMethodVariant: PaymentMethodVariant
 }
 
 export function buildReviewColumns({
@@ -23,7 +21,6 @@ export function buildReviewColumns({
   canSelectAll,
   onToggle,
   onToggleAll,
-  paymentMethodVariant,
 }: ColumnContext): DataTableColumnDef<ReviewRow>[] {
   return [
     {
@@ -58,11 +55,9 @@ export function buildReviewColumns({
     },
     {
       id: 'status',
-      size: 220,
+      size: 200,
       header: 'Status',
-      cell: ({ row }) => (
-        <MoveStatusCell row={row.original} variant={paymentMethodVariant} />
-      ),
+      cell: ({ row }) => <ReviewStatusIndicator row={row.original} />,
     },
     {
       id: 'renews',

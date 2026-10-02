@@ -39,15 +39,18 @@
   },
   "dependencies": {
     "@polar-sh/adapter-utils": "workspace:*",
-    "@polar-sh/sdk": "1.0.2",
-    "@tanstack/react-start": "^1.168.57"
+    "@polar-sh/sdk": "1.0.2"
   },
   "devDependencies": {
     "@polar-sh/typescript-config": "workspace:*",
+    "@tanstack/react-start": "^1.168.60",
     "@typescript/native": "catalog:",
     "tsup": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "@tanstack/react-start": "^1.168.0"
   },
   "ava": {
     "extensions": {

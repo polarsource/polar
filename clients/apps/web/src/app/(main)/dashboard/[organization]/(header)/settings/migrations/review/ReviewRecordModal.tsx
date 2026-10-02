@@ -10,6 +10,7 @@ import {
   RecordReason,
   TaxAfterSwitchField,
 } from './ReviewRecordFields'
+import { PaymentMethodLabel } from './PaymentMethodLabel'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
 import { ReviewRow } from './reviewRows'
 
@@ -120,6 +121,12 @@ export function ReviewRecordModal({
               <DetailCell label="Status" value={facts.status} />
             ) : null}
             {discount ? <DetailCell label="Discount" value={discount} /> : null}
+            {row.status !== 'skipped' ? (
+              <DetailCell
+                label="Payment method"
+                value={<PaymentMethodLabel row={row} />}
+              />
+            ) : null}
             {facts.renewal ? (
               <DetailCell label="Renewal" value={facts.renewal} />
             ) : null}

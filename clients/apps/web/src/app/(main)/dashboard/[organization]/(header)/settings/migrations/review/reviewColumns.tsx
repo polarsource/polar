@@ -1,6 +1,8 @@
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { DataTableColumnDef } from '@polar-sh/orbit'
+import { PaymentMethodLabel } from './PaymentMethodLabel'
+import { PaymentMethodVariant } from './paymentMethodVariant'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
 import { SelectCheckbox } from '../SelectCheckbox'
 import { HeaderCheckState } from '../selection'
@@ -13,6 +15,7 @@ interface ColumnContext {
   canSelectAll: boolean
   onToggle: (id: string) => void
   onToggleAll: () => void
+  paymentMethodVariant: PaymentMethodVariant
 }
 
 export function buildReviewColumns({
@@ -21,8 +24,10 @@ export function buildReviewColumns({
   canSelectAll,
   onToggle,
   onToggleAll,
+  paymentMethodVariant,
 }: ColumnContext): DataTableColumnDef<ReviewRow>[] {
-  return [
+  const paymentColumn = paymentMethodVariant === 'column'
+  const columns: DataTableColumnDef<ReviewRow>[] = [
     {
       id: 'select',
       size: 44,
@@ -45,7 +50,9 @@ export function buildReviewColumns({
       id: 'name',
       size: 280,
       header: 'Customer',
-      cell: ({ row }) => <NameCell row={row.original} />,
+      cell: ({ row }) => (
+        <NameCell row={row.original} showPaymentMethod={!paymentColumn} />
+      ),
     },
     {
       id: 'product',
@@ -53,6 +60,16 @@ export function buildReviewColumns({
       header: 'Product',
       cell: ({ row }) => <ProductCell row={row.original} />,
     },
+    ...(paymentColumn
+      ? [
+          {
+            id: 'payment_method',
+            size: 140,
+            header: 'Payment',
+            cell: ({ row }) => <PaymentMethodLabel row={row.original} />,
+          } satisfies DataTableColumnDef<ReviewRow>,
+        ]
+      : []),
     {
       id: 'status',
       size: 160,
@@ -78,14 +95,24 @@ export function buildReviewColumns({
       cell: ({ row }) => <AmountCell row={row.original} />,
     },
   ]
+  return columns
 }
 
-function NameCell({ row }: { row: ReviewRow }) {
+function NameCell({
+  row,
+  showPaymentMethod,
+}: {
+  row: ReviewRow
+  showPaymentMethod: boolean
+}) {
   return (
-    <Box minWidth={0}>
+    <Box minWidth={0} alignItems="center" columnGap="s">
       <Text truncate color={row.status === 'skipped' ? 'muted' : 'default'}>
         {row.customer_email || row.title}
       </Text>
+      {showPaymentMethod ? (
+        <PaymentMethodLabel row={row} exceptionsOnly />
+      ) : null}
     </Box>
   )
 }

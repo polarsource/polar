@@ -3,9 +3,11 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.email_update.service import email_update as email_update_service
+from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession
+from polar.user.oauth_service import oauth_account_service
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_user
+from tests.fixtures.random_objects import create_oauth_account, create_user
 
 
 @pytest.mark.asyncio
@@ -27,3 +29,22 @@ class TestVerify:
 
         assert updated_user.email == "new.email@example.com"
         assert updated_user.email_verified is True
+
+    async def test_allows_disconnecting_sole_oauth_account(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+    ) -> None:
+        mocker.patch("polar.email_update.service.resend_service")
+        user = await create_user(save_fixture, email_verified=False)
+        await create_oauth_account(save_fixture, user, OAuthPlatform.google)
+
+        _, token = await email_update_service.request_email_update(
+            "new.email@example.com", session, AuthSubject(user, set(), None)
+        )
+        updated_user = await email_update_service.verify(session, token, user)
+
+        await oauth_account_service.disconnect_platform(
+            session, updated_user, OAuthPlatform.google
+        )

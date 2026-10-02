@@ -10,7 +10,7 @@ import {
 } from 'vitest'
 import { createHash } from 'node:crypto'
 import { writeFileSync } from 'node:fs'
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { BunFileSystem } from '@effect/platform-bun'
@@ -56,6 +56,29 @@ describe('update command', () => {
 
   beforeEach(() => {
     upgrades.length = 0
+  })
+
+  test('leaves Homebrew updates to brew even with --method binary', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'polar-homebrew-'))
+    const executable = join(directory, 'bin', 'polar')
+    await mkdir(join(directory, 'bin'))
+    await writeFile(executable, '')
+    await writeFile(join(directory, 'INSTALL_RECEIPT.json'), '{}')
+    const original = process.execPath
+    Object.defineProperty(process, 'execPath', { value: executable })
+    try {
+      const { cli, promise, http } = runUpdate(
+        ['--method', 'binary'],
+        fakeUpdater('binary'),
+      )
+      await promise
+      expect(cli.output()).toContain('brew upgrade polarsource/tap/cli')
+      expect(http.urls()).toEqual([])
+      expect(upgrades).toEqual([])
+    } finally {
+      Object.defineProperty(process, 'execPath', { value: original })
+      await rm(directory, { recursive: true, force: true })
+    }
   })
 
   test('reports when the standalone binary is already up to date', async () => {

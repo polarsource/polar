@@ -175,8 +175,8 @@ Configure these repository secrets in `polarsource/polar` before the first run:
 - `APP_STORE_CONNECT_ISSUER_ID`
 
 The workflow uses the monorepo's `GITHUB_TOKEN` to upload releases; no npm token
-or cross-repository token is needed for normal CLI publishing. Both the test and
-release workflows read Bun `1.4.2` from `engines.bun` in the CLI's `package.json`.
+is needed. Publishing to the separate Homebrew tap requires `HOMEBREW_TAP_TOKEN`.
+Both the test and release workflows read Bun `1.4.2` from `engines.bun` in the CLI's `package.json`.
 
 ### Verification and retries
 

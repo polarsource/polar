@@ -300,6 +300,15 @@ jobs:
               make_latest: 'false',
             })
 
+  homebrew:
+    needs: [prepare, npm]
+    if: needs.prepare.outputs.publish == 'true'
+    uses: ./.github/workflows/publish_homebrew_cli.yml
+    with:
+      tag: ${{ needs.prepare.outputs.tag }}
+    secrets:
+      HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
   npm:
     needs: [prepare, release]
     runs-on: ubuntu-latest

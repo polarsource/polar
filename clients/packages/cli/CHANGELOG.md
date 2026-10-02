@@ -1,5 +1,13 @@
 # @polar-sh/cli
 
+## 2.0.2
+
+### Patch Changes
+
+- 77b0d35: Fix `create` commands failing with organization access tokens when `--org` is passed. The CLI sent `organization_id` in the request body, which organization tokens reject; it now sends the organization only in the `Polar-Organization` header.
+- 9d2f5c8: Require confirmation when resuming a paused subscription with the CLI, since resuming starts a new billing period and charges the customer immediately.
+- 4155d8e: Update `@polar-sh/sdk` to version 1.0.2.
+
 ## 2.0.1
 
 ### Patch Changes

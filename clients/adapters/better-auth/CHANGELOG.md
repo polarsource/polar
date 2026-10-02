@@ -1,5 +1,15 @@
 # @polar-sh/hono
 
+## 2.0.1
+
+### Patch Changes
+
+- 4e582f4: Update `@polar-sh/sdk` to version 1.0.2.
+- Updated dependencies [4e75d95]
+- Updated dependencies [4e582f4]
+  - @polar-sh/checkout@0.4.2
+  - @polar-sh/adapter-utils@1.0.1
+
 ## 2.0.0
 
 ### Major Changes

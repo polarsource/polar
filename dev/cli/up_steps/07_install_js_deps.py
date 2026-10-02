@@ -3,12 +3,12 @@
 from shared import (
     CLIENTS_DIR,
     Context,
-    check_command_exists,
     ensure_pnpm,
     print_output_tail,
     run_command,
     step_spinner,
     step_status,
+    working_pnpm_version,
 )
 
 NAME = "Installing JavaScript dependencies"
@@ -16,7 +16,7 @@ NAME = "Installing JavaScript dependencies"
 
 def run(ctx: Context) -> bool:
     """Run pnpm install to install JS dependencies."""
-    if not check_command_exists("pnpm") and not ensure_pnpm():
+    if working_pnpm_version() is None and not ensure_pnpm():
         return False
 
     with step_spinner("Running pnpm install..."):

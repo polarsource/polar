@@ -8,7 +8,10 @@ export class PolarNetworkError extends PolarError {
 }
 
 export class PolarServerError extends PolarError {
-  constructor(statusCode: number, message: string) {
+  constructor(
+    public readonly statusCode: number,
+    message: string,
+  ) {
     super(`Polar API returned a server error: ${statusCode} - ${message}`);
     this.name = "PolarServerError";
   }

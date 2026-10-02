@@ -34,15 +34,18 @@
     "build": "tsup src/index.ts --format esm,cjs --dts --clean --outDir dist",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "typecheck": "tsc --noEmit"
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.lint.json"
   },
   "dependencies": {
     "@polar-sh/sdk": "1.0.1"
   },
   "devDependencies": {
     "@polar-sh/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "tsup": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

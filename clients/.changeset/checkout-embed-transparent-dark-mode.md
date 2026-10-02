@@ -1,5 +1,5 @@
 ---
-'@polar-sh/checkout': minor
+'@polar-sh/checkout': patch
 ---
 
 Fix the embedded checkout and payment method showing a solid white or black box instead of a transparent overlay on some host pages.

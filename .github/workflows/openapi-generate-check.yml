@@ -31,6 +31,8 @@ jobs:
               - 'server/emails/pnpm-lock.yaml'
               - 'clients/packages/client/src/v1.ts'
               - 'clients/packages/client/package.json'
+              - 'docs/openapi/**'
+              - 'sdk/generator/**'
               - '.github/workflows/openapi-generate-check.yml'
 
   check:
@@ -113,12 +115,23 @@ jobs:
         working-directory: ./server/emails
         run: pnpm run types
 
+      - name: Install SDK generator dependencies
+        working-directory: ./sdk/generator
+        run: uv sync --frozen
+
+      - name: Regenerate docs OpenAPI specs
+        working-directory: ./sdk/generator
+        run: |
+          uv run -m cli openapi
+          uv run -m cli docs-openapi openapi/*
+
       - name: Build PR comment body
         id: body
         run: |
           stale=false
           client_stale=false
           emails_stale=false
+          docs_stale=false
           if [[ -n "$(git status --porcelain clients/packages/client/src/v1.ts)" ]]; then
             client_stale=true
             stale=true
@@ -128,6 +141,11 @@ jobs:
             emails_stale=true
             stale=true
             echo "::warning::Generated email types (server/emails/src/types/openapi.ts) are out of date. Run 'pnpm run types' in server/emails/."
+          fi
+          if [[ -n "$(git status --porcelain docs/openapi)" ]]; then
+            docs_stale=true
+            stale=true
+            echo "::warning::Docs OpenAPI specs (docs/openapi/) are out of date. Run 'just openapi && just docs-openapi' in sdk/generator/."
           fi
           echo "stale=$stale" >> "$GITHUB_OUTPUT"
           if [[ "$stale" == "true" ]]; then
@@ -175,6 +193,27 @@ jobs:
                 echo ''
                 echo '</details>'
               fi
+              if [[ "$docs_stale" == "true" ]]; then
+                echo ''
+                echo '⚠️ **`docs/openapi/` is out of date.**'
+                echo ''
+                echo 'The public API schema has changed but the docs OpenAPI specs have not been regenerated. Please run:'
+                echo ''
+                echo '```bash'
+                echo 'cd sdk/generator && just openapi && just docs-openapi'
+                echo '```'
+                echo ''
+                echo 'and commit the updated `docs/openapi/*.openapi.json`.'
+                echo ''
+                echo '<details><summary>Diff</summary>'
+                echo ''
+                echo '```diff'
+                git status --porcelain --untracked-files=all docs/openapi
+                git diff -- docs/openapi | head -n 300
+                echo '```'
+                echo ''
+                echo '</details>'
+              fi
               echo 'COMMENT_EOF'
             } >> "$GITHUB_OUTPUT"
           fi
@@ -210,5 +249,5 @@ jobs:
       - name: Fail if generated files are out of date
         if: steps.body.outputs.stale == 'true'
         run: |
-          echo "Generated OpenAPI files are out of date. Run 'pnpm generate' in clients/ and/or 'pnpm run types' in server/emails/ and commit the result."
+          echo "Generated OpenAPI files are out of date. Run 'pnpm generate' in clients/, 'pnpm run types' in server/emails/ and/or 'just openapi && just docs-openapi' in sdk/generator/, and commit the result."
           exit 1

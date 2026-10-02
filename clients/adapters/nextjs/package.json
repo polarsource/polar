@@ -49,15 +49,6 @@
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
-  "ava": {
-    "extensions": {
-      "ts": "module",
-      "tsx": "module"
-    },
-    "nodeArguments": [
-      "--loader=ts-node/esm"
-    ]
-  },
   "peerDependencies": {
     "next": "^15.0.0 || ^16.0.0"
   }

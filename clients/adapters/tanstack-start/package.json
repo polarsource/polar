@@ -51,14 +51,5 @@
   },
   "peerDependencies": {
     "@tanstack/react-start": "^1.168.0"
-  },
-  "ava": {
-    "extensions": {
-      "ts": "module",
-      "tsx": "module"
-    },
-    "nodeArguments": [
-      "--loader=ts-node/esm"
-    ]
   }
 }

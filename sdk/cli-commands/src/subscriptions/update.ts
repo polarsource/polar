@@ -164,6 +164,7 @@ export const command = Command.make(
           cancel_at_period_end: Schema.optionalKey(Schema.Boolean),
           revoke: Schema.optionalKey(Schema.Literal(true)),
           pause_at_period_end: Schema.optionalKey(Schema.Boolean),
+          resume: Schema.optionalKey(Schema.Literal(true)),
         }),
       )(body).pipe(
         Effect.mapError(
@@ -176,7 +177,8 @@ export const command = Command.make(
         requiresConfirmation:
           confirmationInput['cancel_at_period_end'] === true ||
           confirmationInput['revoke'] === true ||
-          confirmationInput['pause_at_period_end'] === true,
+          confirmationInput['pause_at_period_end'] === true ||
+          confirmationInput['resume'] === true,
         confirm: config.confirm,
         preview: {
           fields: [

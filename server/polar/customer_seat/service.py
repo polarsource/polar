@@ -65,7 +65,7 @@ class InvalidInvitationToken(SeatError):
 class SeatAlreadyAssigned(SeatError):
     def __init__(self, customer_email: str) -> None:
         self.customer_email = customer_email
-        message = f"Seat already assigned to customer {customer_email}"
+        message = "Seat is already assigned to this customer."
         super().__init__(message, 400)
 
 
@@ -102,7 +102,7 @@ class MemberEmailMismatch(SeatError):
         self.expected_email = expected_email
         message = (
             f"Member with external_member_id '{external_member_id}' exists but "
-            f"has a different email than '{expected_email}'"
+            "has a different email."
         )
         super().__init__(message, 400)
 

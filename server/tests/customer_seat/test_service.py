@@ -199,11 +199,10 @@ class TestAssignSeat:
         customer: Customer,
         customer_seat_claimed: CustomerSeat,
     ) -> None:
-        with pytest.raises(SeatAlreadyAssigned) as exc_info:
+        with pytest.raises(SeatAlreadyAssigned):
             await seat_service.assign_seat(
                 session, subscription_with_seats, customer_id=customer.id
             )
-        assert str(customer.id) in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_assign_seat_with_metadata(
@@ -611,13 +610,14 @@ class TestAssignSeat:
         await session.flush()
 
         # Second assignment should fail
-        with pytest.raises(SeatAlreadyAssigned):
+        with pytest.raises(SeatAlreadyAssigned) as exc_info:
             await seat_service.assign_seat(
                 session,
                 subscription_with_seats,
                 email="test@example.com",
                 immediate_claim=True,
             )
+        assert "test@example.com" not in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_assign_seat_immediate_claim_publishes_event(
@@ -1300,13 +1300,14 @@ class TestAssignSeat:
         member.external_id = "ext_mismatch"
         await save_fixture(member)
 
-        with pytest.raises(MemberEmailMismatch):
+        with pytest.raises(MemberEmailMismatch) as exc_info:
             await seat_service.assign_seat(
                 session,
                 subscription,
                 external_member_id="ext_mismatch",
                 email="different@example.com",
             )
+        assert "different@example.com" not in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_assign_seat_with_member_id(

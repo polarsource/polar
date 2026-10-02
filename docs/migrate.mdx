@@ -505,7 +505,7 @@ At migration cutover, for each subscription, expect:
   match the Polar subscription to its source
 - `customer.state_changed` asynchronously after activation
 - Relevant `benefit_grant.*` events, if you attached benefits to the imported
-  products
+  products. Seat-based products grant benefits only when seats are claimed.
 - `customer.updated` if the cutover sets the copied card as the default
 - Stripe `customer.subscription.deleted` when Polar cancels the source
   subscription. Its `cancellation_details.comment` starts with
@@ -524,9 +524,10 @@ period arrives with `cancel_at_period_end` and `ends_at` set, but without a
 Polar sends `subscription.canceled` and `subscription.revoked` as usual.
 
 After cutover, a moved subscription renews like any other Polar subscription:
-`subscription.cycled`, `subscription.updated`, `order.created`, `order.paid`,
-and `benefit_grant.cycled`, or `subscription.past_due` if the first charge
-fails.
+`subscription.cycled`, `subscription.updated`, `order.created`,
+`order.updated`, `order.paid`, `customer.state_changed`, and
+`benefit_grant.cycled`. If the first charge fails, you get
+`subscription.past_due` instead of `order.paid` and `benefit_grant.cycled`.
 
 This list is not delivery order. Polar enqueues `subscription.updated` before
 `subscription.migrated`, but retries can reorder them, and Stripe and Polar

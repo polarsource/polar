@@ -73,6 +73,16 @@ const reportError = (cause: Cause.Cause<unknown>) => {
   })
 }
 
+const updateNotice = availableUpdate().pipe(
+  Effect.flatMap((latestVersion) =>
+    latestVersion
+      ? Effect.sync(() => {
+          process.stderr.write(ui.updateNotice(VERSION, latestVersion))
+        })
+      : Effect.void,
+  ),
+)
+
 const instrumented = Effect.gen(function* () {
   const args = yield* (yield* Stdio.Stdio).args
   const telemetry = yield* Telemetry.Telemetry
@@ -97,12 +107,13 @@ if (process.argv[2] === Telemetry.SENDER_COMMAND) {
   )
 } else {
   removeRetiredBinary()
-  const latestVersion = availableUpdate()
-  if (latestVersion) {
-    process.stderr.write(ui.updateNotice(VERSION, latestVersion))
-  }
-  Effect.runFork(checkForUpdate().pipe(Effect.provide(FetchHttpClient.layer)))
-  instrumented.pipe(
+  Effect.runFork(
+    checkForUpdate().pipe(
+      Effect.provide(Layer.mergeAll(BunServices.layer, FetchHttpClient.layer)),
+    ),
+  )
+  updateNotice.pipe(
+    Effect.andThen(instrumented),
     Effect.provide(services),
     BunRuntime.runMain({ disableErrorReporting: true }),
   )

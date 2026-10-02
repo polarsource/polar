@@ -136,7 +136,7 @@ fi
 
 # --- Frontend dependencies ---
 # next dev resolves packages through their source or dist JS, never their
-# type declarations, so skip the tsup DTS pass: it dominates the build.
+# type declarations, so skip the tsdown DTS pass: it dominates the build.
 export POLAR_SKIP_DTS=1
 cd "${CHECKOUT}/clients"
 if changed '^clients/(pnpm-lock\.yaml|pnpm-workspace\.yaml|package\.json|patches/|.*/package\.json)' || [[ ! -d node_modules ]]; then

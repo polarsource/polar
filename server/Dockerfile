@@ -17,7 +17,7 @@ RUN --mount=type=cache,target=/pnpm/store \
   pnpm install --frozen-lockfile --store-dir=/pnpm/store
 
 COPY emails/src src/
-COPY emails/tsconfig.json emails/tsup.config.js ./
+COPY emails/tsconfig.json emails/tsdown.config.mjs ./
 RUN pnpm run build
 
 FROM node-builder AS build-backoffice

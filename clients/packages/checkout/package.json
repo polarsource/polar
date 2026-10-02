@@ -11,7 +11,7 @@
     "directory": "clients/packages/checkout"
   },
   "scripts": {
-    "build": "rm -rf dist/ && tsup",
+    "build": "rm -rf dist/ && tsdown",
     "test": "vitest run --coverage",
     "typecheck": "tsc --noEmit"
   },
@@ -96,8 +96,7 @@
     "@vitest/coverage-v8": "catalog:",
     "jsdom": "catalog:",
     "react": "^19.3.0",
-    "terser": "^5.51.2",
-    "tsup": "catalog:",
+    "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "@polar-sh/currency": "workspace:^",

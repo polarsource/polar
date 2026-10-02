@@ -10,7 +10,7 @@
   },
   "scripts": {
     "generate": "pnpm --dir ../../../sdk/cli-commands generate && pnpm --dir ../.. install --filter @polar-sh/cli --ignore-scripts --frozen-lockfile",
-    "build": "tsup ./src/cli.ts --format esm --outDir bin",
+    "build": "tsdown",
     "docs:generate": "bun scripts/docs.ts",
     "docs:check": "bun scripts/docs.ts --check",
     "dev": "tsc --watch",
@@ -52,7 +52,7 @@
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "@vitest/coverage-istanbul": "^5.0.1",
-    "tsup": "^8.5.1",
+    "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

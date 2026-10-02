@@ -21,6 +21,7 @@
   "devDependencies": {
     "@changesets/cli": "^2.31.1",
     "@manypkg/cli": "^0.25.1",
+    "esbuild": "^0.28.2",
     "knip": "^5.88.1",
     "only-allow": "1.2.2",
     "oxfmt": "^0.41.0",

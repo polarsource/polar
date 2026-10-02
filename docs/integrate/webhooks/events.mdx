@@ -278,7 +278,7 @@ When Polar takes over billing of a subscription imported from another provider, 
 - `subscription.updated`
 - `subscription.migrated`
 - `customer.state_changed`
-- `benefit_grant.created`, for any benefits attached to the product
+- `benefit_grant.created`, for any benefits attached to the product (seat-based products grant them when seats are claimed)
 
 Polar enqueues `subscription.updated` before `subscription.migrated`, but delivery order isn't guaranteed.
 

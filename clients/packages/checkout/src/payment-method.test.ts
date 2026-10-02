@@ -82,6 +82,7 @@ describe('PolarEmbedPaymentMethod', () => {
       expect(src.searchParams.get('embed')).toBe('true')
       expect(src.searchParams.get('embed_origin')).toBe(window.location.origin)
       expect(src.searchParams.get('mode')).toBe('modal')
+      expect(iframe!.style.colorScheme).toBe('light')
 
       embed.close()
     })
@@ -98,6 +99,7 @@ describe('PolarEmbedPaymentMethod', () => {
       const iframe = document.querySelector('iframe')
       const src = new URL(iframe!.src)
       expect(src.searchParams.get('theme')).toBe('dark')
+      expect(iframe!.style.colorScheme).toBe('dark')
 
       embed.close()
     })

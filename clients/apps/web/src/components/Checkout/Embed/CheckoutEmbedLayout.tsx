@@ -10,10 +10,12 @@ const CheckoutEmbedLayout = ({
   checkout: schemas['CheckoutPublic']
   theme?: 'light' | 'dark'
 }>) => {
+  const colorScheme = theme === 'dark' ? 'dark' : 'light'
   return (
     <div
-      className={theme === 'dark' ? 'dark' : 'light'}
+      className={colorScheme}
       id="polar-embed-layout"
+      data-polar-embed-theme={colorScheme}
     >
       <div className="flex h-full w-full items-center justify-center p-0 md:p-6 dark:text-white">
         <div className="h-full w-full max-w-lg" id="polar-embed-content">

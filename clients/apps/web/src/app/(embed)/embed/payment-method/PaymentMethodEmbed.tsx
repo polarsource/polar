@@ -49,6 +49,7 @@ export const PaymentMethodEmbed = ({
 }: Props) => {
   const t = useTranslations(locale)
   const themePreset = useMemo(() => getThemePreset(theme), [theme])
+  const colorScheme = theme === 'dark' ? 'dark' : 'light'
   const api = useMemo(
     () => createClient(serverURL, sessionToken),
     [serverURL, sessionToken],
@@ -141,7 +142,7 @@ export const PaymentMethodEmbed = ({
 
   if (redirectStatus) {
     return (
-      <div className={theme === 'dark' ? 'dark' : 'light'}>
+      <div className={colorScheme} data-polar-embed-theme={colorScheme}>
         <div className="flex h-screen w-full items-center justify-center dark:text-white">
           {form}
         </div>
@@ -150,13 +151,18 @@ export const PaymentMethodEmbed = ({
   }
 
   if (mode === 'inline') {
-    return <div className={theme === 'dark' ? 'dark' : 'light'}>{form}</div>
+    return (
+      <div className={colorScheme} data-polar-embed-theme={colorScheme}>
+        {form}
+      </div>
+    )
   }
 
   return (
     <div
-      className={theme === 'dark' ? 'dark' : 'light'}
+      className={colorScheme}
       id="polar-embed-layout"
+      data-polar-embed-theme={colorScheme}
     >
       <div className="flex h-full w-full items-center justify-center p-0 md:p-12 dark:text-white">
         <div

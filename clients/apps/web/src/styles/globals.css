@@ -262,8 +262,12 @@
     @apply text-gray-200;
   }
 
-  html:has(#polar-embed-layout) {
-    color-scheme: normal;
+  html:has([data-polar-embed-theme='light']) {
+    color-scheme: light;
+  }
+
+  html:has([data-polar-embed-theme='dark']) {
+    color-scheme: dark;
   }
 
   html:not(.dark) {

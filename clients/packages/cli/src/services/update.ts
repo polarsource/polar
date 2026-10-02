@@ -140,10 +140,6 @@ function detectPlatform(): { os: string; arch: string } {
       throw new Error(`Unsupported architecture: ${arch}`)
   }
 
-  if (os === 'linux' && normalizedArch === 'arm64') {
-    throw new Error('Linux arm64 is not yet supported')
-  }
-
   if (os === 'windows' && normalizedArch === 'arm64') {
     throw new Error('Windows arm64 is not yet supported')
   }

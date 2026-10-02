@@ -22,7 +22,7 @@ SQL >
     ) + 1 AS diff
     SELECT
         arrayJoin(
-            arrayMap(x -> toDateTime(start + toIntervalDay(x), {{ String(tz, 'UTC') }}), range(0, diff))
+            arrayMap(x -> toDateTime(toDate(start) + x, {{ String(tz, 'UTC') }}), range(0, diff))
         ) AS interval
 
 NODE week_intervals

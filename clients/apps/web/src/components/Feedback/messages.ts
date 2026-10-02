@@ -21,7 +21,7 @@ export const buildTranscript = (messages: UIMessage[]): string =>
     .filter((line): line is string => line !== null)
     .join('\n\n')
 
-export const MAX_FEEDBACK_MESSAGE_LENGTH = 5000
+export const MAX_FEEDBACK_MESSAGE_LENGTH = 9000
 export const MAX_ESCALATION_NOTE_LENGTH = 2000
 
 const TRUNCATION_MARKER = '\n\n[… transcript truncated …]\n\n'

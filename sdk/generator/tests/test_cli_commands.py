@@ -410,7 +410,13 @@ def test_organization_inputs_are_passed_through_for_resolution(
         'organization_id: Flag.String("organization-id").pipe(\n'
         "      Flag.withAlias('org'),"
     ) in source
-    assert f"organizationId: {input_name}.organization_id," in source
+    if method == "get":
+        assert "organizationId: query.organization_id," in source
+    else:
+        assert "const { organization_id: organizationId, ...body } = mergeInput" in (
+            source
+        )
+        assert "      organizationId,\n" in source
     assert (
         f"invoke: (client) => client.widgets.{command}(config.path.id, {input_name}),"
         in source

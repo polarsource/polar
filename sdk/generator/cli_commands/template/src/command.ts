@@ -52,7 +52,7 @@ export const command = Command.make(
   ({% if method.path_params or input_type or needs_confirmation or not method.requires_authentication %}config{% endif %}) => Effect.gen(function* () {
     const api = yield* ApiRuntime
 {% if input_type %}
-    const {{ input_type | lower }} = mergeInput<{{ input_type }}>(config.data, {
+    const {% if has_organization and input_type == 'Body' %}{ organization_id: organizationId, ...{{ input_type | lower }} }{% else %}{{ input_type | lower }}{% endif %} = mergeInput<{{ input_type }}>(config.data, {
 {% for field in fields %}
       {{ field.name }}: config.input.{{ field.name }},
 {% endfor %}
@@ -88,7 +88,11 @@ export const command = Command.make(
       environment: config.environment,
 {% endif %}
 {% if has_organization %}
+{% if input_type == 'Body' %}
+      organizationId,
+{% else %}
       organizationId: {{ input_type | lower }}.organization_id,
+{% endif %}
 {% endif %}
 {% if preview %}
       preview: {

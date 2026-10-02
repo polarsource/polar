@@ -38,7 +38,6 @@ class TestGetEmbedPolicy:
         save_fixture: SaveFixture,
     ) -> None:
         organization.embed_hosts = ["example.com", "*.shop.example.com"]
-        organization.feature_settings = {"frame_ancestors_enforced": True}
         await save_fixture(organization)
 
         response = await client.get("/v1/customer-portal/customers/me/embed-policy")
@@ -56,28 +55,12 @@ class TestGetEmbedPolicy:
         organization: Organization,
         save_fixture: SaveFixture,
     ) -> None:
-        organization.feature_settings = {"frame_ancestors_enforced": True}
         await save_fixture(organization)
 
         response = await client.get("/v1/customer-portal/customers/me/embed-policy")
 
         assert response.status_code == 200
         assert response.json()["frame_ancestors"] == ["'none'"]
-
-    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
-    async def test_not_enforced(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        save_fixture: SaveFixture,
-    ) -> None:
-        organization.embed_hosts = ["example.com"]
-        await save_fixture(organization)
-
-        response = await client.get("/v1/customer-portal/customers/me/embed-policy")
-
-        assert response.status_code == 200
-        assert response.json()["frame_ancestors"] == ["*"]
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT, MEMBER_AUTH_SUBJECT)
     @pytest.mark.parametrize(

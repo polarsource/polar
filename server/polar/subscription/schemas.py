@@ -229,6 +229,14 @@ class PendingSubscriptionUpdate(IDSchema, TimestampedSchema):
     units: int | None = Field(
         description="Number of units to apply to the subscription. If `null`, the number of units won't be changed."
     )
+    discount_id: UUID4 | None = Field(
+        default=None,
+        description="ID of the discount to apply to the subscription. If `null`, the discount won't be changed unless `discount_unset` is `true`.",
+    )
+    discount_unset: bool = Field(
+        default=False,
+        description="Whether the subscription's current discount will be removed.",
+    )
 
 
 class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, SubscriptionBase):

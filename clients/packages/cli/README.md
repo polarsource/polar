@@ -131,10 +131,11 @@ after install the `polar` command runs the Bun executable directly with no Node
 launcher in between. If installation scripts are disabled, the placeholder
 prints an error explaining that and points at `install.sh`.
 
-`scripts/npm-package.ts` turns a compiled `polar` binary into a platform package
-under `dist/npm/`, run by each build matrix job after signing and uploaded as an
-`npm-<target>` artifact. `scripts/npm-publish.ts` collects those directories,
-generates the main package from `scripts/npm-manifest.ts` and
+The `npm` job downloads the archives from the GitHub release, verifies them
+against `checksums.txt`, and runs `scripts/npm-package.ts` to turn each extracted
+`polar` binary into a platform package under `dist/npm/`, so npm always ships
+the exact bytes of the GitHub release. `scripts/npm-publish.ts` collects those
+directories, generates the main package from `scripts/npm-manifest.ts` and
 `scripts/npm-postinstall.mjs`, and publishes platform packages before the main
 one. It checks `npm view` first, so rerunning a workflow only publishes what is
 missing. The `npm` job runs it with `--dry-run` for verification builds.
@@ -160,8 +161,8 @@ empty `0.0.1` release published by hand, then `release_cli.yml` was added as
 their trusted publisher on npmjs.com. Deprecate the `0.0.1` versions once the
 first real release is out so `npm install` never resolves to them.
 
-The workflow skips metadata-only changes and already-published versions. It does
-not publish the imported `1.3.9` version just because the CLI moved repositories.
+The workflow skips metadata-only changes. It does not publish the imported
+`1.3.9` version just because the CLI moved repositories.
 
 ### Signing secrets
 
@@ -183,10 +184,14 @@ release workflows read Bun `1.4.2` from `engines.bun` in the CLI's `package.json
 Manually run **Release CLI** with `publish` unchecked to build and upload a
 verification draft. Its `@polar-sh/cli-verify-...` tag is ignored by the updater.
 
-To retry a failed stable release, rerun the original workflow run. If no draft
-exists yet, you can also dispatch the workflow on `main` with `publish` checked.
-An existing draft can only be resumed from its original source commit. Published
-releases are never overwritten; corrections require a new changeset/version.
+The workflow is idempotent: every job only produces what does not exist yet. To
+retry a failed stable release, rerun the original workflow run, or dispatch the
+workflow on `main` with `publish` checked. If the GitHub release is already
+published, the test, build and release jobs are skipped and the `npm` job checks
+out the release's commit, repackages the release's own archives and publishes
+only the npm packages that are still missing. An existing draft can only be
+resumed from its original source commit. Published releases are never
+overwritten; corrections require a new changeset/version.
 
 ### One-time bridge release
 

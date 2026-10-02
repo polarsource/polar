@@ -39,6 +39,8 @@ describe('CLI release planning', () => {
     expect(outputs.get('enabled')).toBe(true)
     expect(outputs.get('publish')).toBe(true)
     expect(outputs.get('tag')).toBe('@polar-sh/cli@1.4.0')
+    expect(outputs.get('released')).toBe(false)
+    expect(outputs.get('ref')).toBe(context.sha)
     expect(getContent).toHaveBeenCalledWith({
       ...context.repo,
       path: 'clients/packages/cli/package.json',
@@ -67,14 +69,27 @@ describe('CLI release planning', () => {
     expect(outputs.get('enabled')).toBe(false)
   })
 
-  test('skips a version that has already been published', async () => {
+  test('completes a published version from its release commit without rebuilding', async () => {
     getReleaseByTag.mockResolvedValueOnce({
-      data: { draft: false, target_commitish: context.sha },
+      data: { draft: false, target_commitish: 'released-commit' },
     })
 
-    await release({ github, context, core, version: '1.4.0' })
+    await release({
+      github,
+      context: {
+        ...context,
+        eventName: 'workflow_dispatch',
+        payload: { inputs: { publish: 'true' } },
+      },
+      core,
+      version: '1.4.0',
+    })
 
-    expect(outputs.get('enabled')).toBe(false)
+    expect(outputs.get('enabled')).toBe(true)
+    expect(outputs.get('publish')).toBe(true)
+    expect(outputs.get('released')).toBe(true)
+    expect(outputs.get('tag')).toBe('@polar-sh/cli@1.4.0')
+    expect(outputs.get('ref')).toBe('released-commit')
   })
 
   test('resumes a draft only from its original source commit', async () => {

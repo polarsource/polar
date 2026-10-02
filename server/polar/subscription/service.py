@@ -894,13 +894,19 @@ class SubscriptionService:
         tax_exempted: bool = False,
         discount: Discount | None = None,
         discount_applied_at: datetime | None = None,
+        unit_price: ProductPriceUnit | None = None,
+        units: int | None = None,
     ) -> Subscription:
         """Create a subscription migrated from another provider. It starts paused
         so nothing bills until the merchant cuts over, and grants no benefits.
 
         Without an ``anchor_day`` we fall back to the period start, which reads
         as 28 for a 31st anchor caught during a February period.
+
+        A ``unit_price`` bills ``units`` on top of ``price``, like an add-on the
+        source billed as a second item.
         """
+        assert (unit_price is None) == (units is None)
         assert product.recurring_interval is not None
         recurring_interval = product.recurring_interval
         recurring_interval_count = product.recurring_interval_count or 1
@@ -932,8 +938,16 @@ class SubscriptionService:
             organization=product.organization,
             product=product,
             customer=customer,
-            subscription_product_prices=[SubscriptionProductPrice.from_price(price)],
+            subscription_product_prices=[
+                SubscriptionProductPrice.from_price(price),
+                *(
+                    [SubscriptionProductPrice.from_price(unit_price, units=units)]
+                    if unit_price is not None
+                    else []
+                ),
+            ],
             currency=price.price_currency,
+            units=units,
             user_metadata=user_metadata,
             pending_update=None,
             tax_behavior=tax_behavior,

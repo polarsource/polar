@@ -8,6 +8,7 @@ from polar.merchant_migration.canonical import (
     CanonicalPricingScheme,
     CanonicalProduct,
     CanonicalSubscription,
+    CanonicalSubscriptionAddOn,
     CanonicalSubscriptionStatus,
     serialize,
 )
@@ -17,6 +18,7 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
 )
+from tests.merchant_migration._helpers import canonical_add_on
 
 MIGRATION = MerchantMigration.generate_id()
 OTHER_MIGRATION = MerchantMigration.generate_id()
@@ -64,6 +66,7 @@ def _subscription(
     paused_collection: bool = False,
     migration_id: UUID = MIGRATION,
     currency: str = "usd",
+    add_on: CanonicalSubscriptionAddOn | None = None,
 ) -> CanonicalRow:
     subscription = CanonicalSubscription(
         source_id=source_id,
@@ -79,6 +82,7 @@ def _subscription(
         quantity=quantity,
         payment_method=None,
         currency=currency,
+        add_on=add_on,
     )
     return (
         migration_id,
@@ -191,6 +195,19 @@ class TestNormalization:
         ]
 
         assert _usd(rows)["on_polar"] == 14500
+
+    def test_an_add_on_adds_its_units_over_the_plan_interval(self) -> None:
+        rows = [
+            _product("price_1", 12000, interval="year"),
+            _subscription(
+                "sub_1",
+                "price_1",
+                MerchantMigrationRecordStatus.imported,
+                add_on=canonical_add_on(quantity=2, unit_amount=2400),
+            ),
+        ]
+
+        assert _usd(rows)["on_polar"] == 1400
 
     def test_a_one_off_price_contributes_nothing(self) -> None:
         rows = [

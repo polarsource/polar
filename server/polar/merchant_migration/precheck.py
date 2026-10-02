@@ -46,6 +46,7 @@ from .canonical import (
     CanonicalProduct,
     CanonicalRecord,
     CanonicalSubscription,
+    CanonicalSubscriptionAddOn,
     CanonicalSubscriptionStatus,
     PriceKey,
     SubscriptionDiscountBlock,
@@ -91,6 +92,9 @@ PRICE_DROP_CODES = {
 }
 SUBSCRIPTION_DROP_CODES = {
     "multiple_line_items",
+    "unsupported_add_on_price",
+    "unsupported_add_on_quantity",
+    "add_on_tax_mismatch",
     "unsupported_quantity",
     "send_invoice_collection",
     "subscription_not_importable",
@@ -242,6 +246,15 @@ _SUBSCRIPTION_DISCOUNT_CURRENCY_REASON = (
     "This coupon takes a fixed amount off in a currency Polar can't apply to "
     "this subscription. It stays on Stripe rather than renewing at a different "
     "price."
+)
+_SUBSCRIPTION_ADD_ON_DISCOUNT_REASON = (
+    "This subscription's coupon only applies to some of its items on the "
+    "source, and Polar discounts the plan and its add-on together. It stays on "
+    "the source rather than renewing at a different price."
+)
+_SUBSCRIPTION_ADD_ON_REASON = (
+    "Its add-on moves as units billed on top of the plan, on a separate "
+    "archived product, so the customer keeps paying the same."
 )
 _SUBSCRIPTION_DISCOUNT_START_REASON = (
     "The source doesn't say when this coupon was applied, so Polar can't "
@@ -656,13 +669,15 @@ class PrecheckEngine:
         block_issue = _discount_block_issue(subscription)
         if block_issue is not None:
             yield block_issue
-        if subscription.line_item_count > 1:
+        if subscription.add_on is not None:
+            yield from self._check_add_on(subscription, subscription.add_on)
+        elif subscription.line_item_count > 1:
             yield PrecheckIssue(
                 level=PrecheckIssueLevel.warning,
                 code="multiple_line_items",
                 message=(
-                    "Subscription has multiple line items, which can't be "
-                    "represented; it won't be imported."
+                    "Subscription has items Polar can't carry as a plan and one "
+                    "add-on billed with it; it won't be imported."
                 ),
                 source_id=source_id,
             )
@@ -766,6 +781,50 @@ class PrecheckEngine:
                 level=PrecheckIssueLevel.warning,
                 code=payment_method_note.code,
                 message=payment_method_note.message,
+                source_id=source_id,
+            )
+
+    def _check_add_on(
+        self, subscription: CanonicalSubscription, add_on: CanonicalSubscriptionAddOn
+    ) -> Iterable[PrecheckIssue]:
+        source_id = subscription.source_id
+        if (
+            add_on.pricing_scheme != CanonicalPricingScheme.fixed
+            or add_on.unit_amount is None
+        ):
+            yield PrecheckIssue(
+                level=PrecheckIssueLevel.warning,
+                code="unsupported_add_on_price",
+                message=(
+                    "The add-on on this subscription isn't a flat price per unit "
+                    "in its currency, so Polar can't bill it the same way; it "
+                    "won't be imported."
+                ),
+                source_id=source_id,
+            )
+        if add_on.quantity < 1:
+            yield PrecheckIssue(
+                level=PrecheckIssueLevel.warning,
+                code="unsupported_add_on_quantity",
+                message=(
+                    f"The add-on on this subscription has quantity "
+                    f"{add_on.quantity}; Polar bills at least one unit, so it "
+                    "won't be imported."
+                ),
+                source_id=source_id,
+            )
+        if (
+            add_on.has_tax_rates
+            or add_on.price_tax_behavior != subscription.price_tax_behavior
+        ):
+            yield PrecheckIssue(
+                level=PrecheckIssueLevel.warning,
+                code="add_on_tax_mismatch",
+                message=(
+                    "The add-on is taxed differently from the plan on the source, "
+                    "and Polar taxes the whole subscription one way; it won't be "
+                    "imported."
+                ),
                 source_id=source_id,
             )
 
@@ -1287,6 +1346,9 @@ def _subscription_items(
             Reason("subscription_multiple_discounts", _MULTIPLE_DISCOUNTS_REASON)
             if len(subscription.discount_source_ids) > 1
             else None,
+            Reason("subscription_add_on", _SUBSCRIPTION_ADD_ON_REASON)
+            if subscription.add_on is not None
+            else None,
         )
         product = _product_for_subscription(
             subscription, product_by_price, product_by_price_id
@@ -1745,6 +1807,10 @@ def _subscription_discount_skip(
     if discount is None:
         return Reason(
             "subscription_discount_not_importable", _SUBSCRIPTION_DISCOUNT_REASON
+        )
+    if subscription.add_on is not None and discount.product_source_ids:
+        return Reason(
+            "subscription_add_on_discount", _SUBSCRIPTION_ADD_ON_DISCOUNT_REASON
         )
     if discount.discount_type == CanonicalDiscountType.fixed:
         amounts = _importable_fixed_amounts(discount.amounts)

@@ -27,6 +27,7 @@ from polar.merchant_migration.canonical import (
     serialize,
 )
 from polar.merchant_migration.cutover import CutoverOutcome, SubscriptionCutover
+from polar.merchant_migration.importer import find_or_create_add_on_product
 from polar.merchant_migration.repository import MerchantMigrationRecordRepository
 from polar.models import (
     Customer,
@@ -34,6 +35,7 @@ from polar.models import (
     MerchantMigrationRecord,
     Organization,
     Product,
+    ProductPriceFixed,
     Subscription,
 )
 from polar.models.discount import Discount, DiscountDuration, DiscountType
@@ -45,6 +47,7 @@ from polar.models.merchant_migration_record import (
 from polar.models.organization import OrganizationStatus
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.postgres import AsyncSession
+from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
@@ -58,6 +61,7 @@ from tests.fixtures.random_objects import (
 from tests.fixtures.stripe import build_stripe_payment_method
 from tests.merchant_migration._helpers import (
     build_connected_migration,
+    canonical_add_on,
     canonical_discount,
     canonical_subscription,
     copied_cards,
@@ -2369,3 +2373,148 @@ class TestFailures:
         assert outcome.status == MerchantMigrationCutoverStatus.failed
         assert "no longer exists" in (outcome.message or "")
         assert adapter.stopped == []
+
+
+@pytest.mark.asyncio
+class TestAddOn:
+    @pytest_asyncio.fixture(autouse=True)
+    async def add_on_record(
+        self,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        organization: Organization,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=migration,
+                organization=organization,
+                type=MerchantMigrationRecordType.product,
+                status=MerchantMigrationRecordStatus.pending,
+                source_id="prod_slot:month:1",
+                canonical=serialize(
+                    CanonicalProduct(
+                        source_id="prod_slot:month:1",
+                        product_source_id="prod_slot",
+                        name="+ 1 Project",
+                        recurring_interval="month",
+                        recurring_interval_count=1,
+                        prices=[
+                            CanonicalPrice(
+                                source_id="price_slot",
+                                currency="usd",
+                                amount=250,
+                                pricing_scheme=CanonicalPricingScheme.fixed,
+                            )
+                        ],
+                    )
+                ),
+            )
+        )
+        pending_record.canonical = serialize(
+            canonical_subscription(line_item_count=2, add_on=canonical_add_on())
+        )
+        await save_fixture(pending_record)
+
+    async def test_moves_onto_a_combined_product_billing_the_add_on_per_unit(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+        product: Product,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        adapter = _source(line_item_count=2, add_on=canonical_add_on())
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert adapter.stopped == ["sub_1"]
+        subscription = await _created(session, pending_record)
+        assert subscription.product_id != product.id
+        assert subscription.units == 2
+        assert sorted(
+            price.amount for price in subscription.subscription_product_prices
+        ) == [500, 1000]
+        combined = await ProductRepository.from_session(session).get_by_id(
+            subscription.product_id
+        )
+        assert combined is not None
+        assert combined.name == "Product + 1 Project"
+        assert combined.is_archived is True
+
+    async def test_a_later_subscriber_joins_the_existing_combined_product(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+        product: Product,
+    ) -> None:
+        plan_price = product.prices[0]
+        assert isinstance(plan_price, ProductPriceFixed)
+        existing, _, _ = await find_or_create_add_on_product(
+            session, product, plan_price, canonical_add_on(), name="Product + Slot"
+        )
+        existing_id = existing.id
+        # What the next subscriber's run sees: a row with nothing loaded yet.
+        session.expire(existing)
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+
+        outcome = await cutover(_source(line_item_count=2, add_on=canonical_add_on()))
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.product_id == existing_id
+
+    async def test_add_on_changed_on_the_source_stays_there(
+        self, cutover: RunCutover, pending_record: MerchantMigrationRecord
+    ) -> None:
+        adapter = _source(line_item_count=2, add_on=canonical_add_on(quantity=3))
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.skipped
+        assert "plan changed on the source" in (outcome.message or "")
+        _assert_left_alone(adapter, pending_record)
+
+    async def test_coupon_restricted_to_some_products_stays_on_the_source(
+        self,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+        migration: MerchantMigration,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        polar_discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=2000,
+            duration=DiscountDuration.forever,
+            organization=organization,
+            products=[product],
+        )
+        await stage_discount_record(
+            save_fixture, migration, organization, target_id=polar_discount.id
+        )
+        await _discounted_pending(
+            save_fixture,
+            pending_record,
+            discount_source_ids=["coupon_1"],
+            line_item_count=2,
+            add_on=canonical_add_on(),
+        )
+        adapter = _source(
+            has_discount=True,
+            discount_source_ids=["coupon_1"],
+            line_item_count=2,
+            add_on=canonical_add_on(),
+        )
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.skipped
+        assert "only applies to some products" in (outcome.message or "")
+        _assert_left_alone(adapter, pending_record)

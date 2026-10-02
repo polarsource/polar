@@ -458,23 +458,41 @@ class MerchantMigrationRecordRepository(
     async def get_imported_product_dependency(
         self, organization_id: UUID, price_source_id: str
     ) -> MerchantMigrationRecord | None:
-        statement = self.get_base_statement().where(
-            MerchantMigrationRecord.organization_id == organization_id,
-            MerchantMigrationRecord.type == MerchantMigrationRecordType.product,
+        statement = self._product_by_price_statement(
+            organization_id, price_source_id
+        ).where(
             MerchantMigrationRecord.status == MerchantMigrationRecordStatus.imported,
             MerchantMigrationRecord.target_id.is_not(None),
-            MerchantMigrationRecord.canonical["prices"].op("@>")(
-                func.jsonb_build_array(
-                    func.jsonb_build_object("source_id", price_source_id)
-                )
-            ),
         )
-        # An archived price can sit on two imported rows; the oldest is the one
-        # earlier moves used.
-        statement = statement.order_by(
-            MerchantMigrationRecord.created_at, MerchantMigrationRecord.id
-        ).limit(1)
         return await self.get_one_or_none(statement)
+
+    async def get_product_by_price(
+        self, organization_id: UUID, price_source_id: str
+    ) -> MerchantMigrationRecord | None:
+        """The staged product holding a price, whether or not it was imported."""
+        return await self.get_one_or_none(
+            self._product_by_price_statement(organization_id, price_source_id)
+        )
+
+    def _product_by_price_statement(
+        self, organization_id: UUID, price_source_id: str
+    ) -> Select[tuple[MerchantMigrationRecord]]:
+        # An archived price can sit on two rows; the oldest is the one earlier
+        # moves used.
+        return (
+            self.get_base_statement()
+            .where(
+                MerchantMigrationRecord.organization_id == organization_id,
+                MerchantMigrationRecord.type == MerchantMigrationRecordType.product,
+                MerchantMigrationRecord.canonical["prices"].op("@>")(
+                    func.jsonb_build_array(
+                        func.jsonb_build_object("source_id", price_source_id)
+                    )
+                ),
+            )
+            .order_by(MerchantMigrationRecord.created_at, MerchantMigrationRecord.id)
+            .limit(1)
+        )
 
     async def get_imported_discount_dependency(
         self, organization_id: UUID, discount_source_id: str

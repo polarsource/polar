@@ -354,10 +354,33 @@ def _stripe_item(
     price_id: str = "price_1",
     product_id: str = "prod_1",
     discounts: list[dict[str, Any] | str] | None = None,
+    quantity: int = 1,
+    unit_amount: int | None = 1000,
+    billing_scheme: str = "per_unit",
+    price_tax_behavior: str | None = None,
+    currency_options: dict[str, Any] | None = None,
+    interval: str = "month",
+    transform_quantity: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    price: dict[str, Any] = {
+        "id": price_id,
+        "currency": "usd",
+        "product": product_id,
+        "unit_amount": unit_amount,
+        "billing_scheme": billing_scheme,
+        "recurring": {
+            "interval": interval,
+            "interval_count": 1,
+            "usage_type": "licensed",
+        },
+        "tax_behavior": price_tax_behavior,
+        "transform_quantity": transform_quantity,
+    }
+    if currency_options is not None:
+        price["currency_options"] = currency_options
     return {
-        "price": {"id": price_id, "currency": "usd", "product": product_id},
-        "quantity": 1,
+        "price": price,
+        "quantity": quantity,
         "tax_rates": [],
         "current_period_start": 1_700_000_000,
         "current_period_end": 1_702_000_000,
@@ -2416,3 +2439,147 @@ class TestDiscountAttachments:
 
         assert record.discount_block is None
         assert record.discount_source_ids == ["coupon_now"]
+
+
+@pytest.mark.asyncio
+class TestAddOn:
+    async def test_second_item_maps_as_add_on(self, mocker: MockerFixture) -> None:
+        record = await _extracted_subscription(
+            mocker,
+            _stripe_subscription(
+                items=[
+                    _stripe_item(unit_amount=4900, price_tax_behavior="exclusive"),
+                    _stripe_item(
+                        price_id="price_slot",
+                        product_id="prod_slot",
+                        quantity=2,
+                        unit_amount=2500,
+                        price_tax_behavior="exclusive",
+                    ),
+                ]
+            ),
+        )
+
+        assert record.price_source_id == "price_1"
+        assert record.quantity == 1
+        assert record.line_item_count == 2
+        assert record.add_on is not None
+        assert record.add_on.price_source_id == "price_slot"
+        assert record.add_on.product_source_id == "prod_slot"
+        assert record.add_on.quantity == 2
+        assert record.add_on.unit_amount == 2500
+        assert record.add_on.pricing_scheme == CanonicalPricingScheme.fixed
+        assert record.add_on.price_tax_behavior == TaxBehavior.exclusive
+        assert record.add_on.has_tax_rates is False
+
+    async def test_item_bought_in_quantity_is_the_add_on_wherever_it_sits(
+        self, mocker: MockerFixture
+    ) -> None:
+        record = await _extracted_subscription(
+            mocker,
+            _stripe_subscription(
+                items=[
+                    _stripe_item(price_id="price_slot", quantity=3, unit_amount=2500),
+                    _stripe_item(unit_amount=4900),
+                ]
+            ),
+        )
+
+        assert record.price_source_id == "price_1"
+        assert record.quantity == 1
+        assert record.add_on is not None
+        assert record.add_on.price_source_id == "price_slot"
+        assert record.add_on.quantity == 3
+
+    async def test_add_on_is_priced_in_the_subscription_currency(
+        self, mocker: MockerFixture
+    ) -> None:
+        record = await _extracted_subscription(
+            mocker,
+            _stripe_subscription(
+                currency="eur",
+                items=[
+                    _stripe_item(),
+                    _stripe_item(
+                        price_id="price_slot",
+                        unit_amount=2500,
+                        currency_options={"eur": {"unit_amount": 2300}},
+                    ),
+                ],
+            ),
+        )
+
+        assert record.add_on is not None
+        assert record.add_on.unit_amount == 2300
+
+    async def test_tiered_add_on_has_no_flat_amount(
+        self, mocker: MockerFixture
+    ) -> None:
+        record = await _extracted_subscription(
+            mocker,
+            _stripe_subscription(
+                items=[
+                    _stripe_item(),
+                    _stripe_item(
+                        price_id="price_leads",
+                        unit_amount=None,
+                        billing_scheme="tiered",
+                    ),
+                ]
+            ),
+        )
+
+        assert record.add_on is not None
+        assert record.add_on.pricing_scheme == CanonicalPricingScheme.tiered
+        assert record.add_on.unit_amount is None
+
+    async def test_package_add_on_is_not_a_per_unit_price(
+        self, mocker: MockerFixture
+    ) -> None:
+        record = await _extracted_subscription(
+            mocker,
+            _stripe_subscription(
+                items=[
+                    _stripe_item(),
+                    _stripe_item(
+                        price_id="price_pack",
+                        quantity=25,
+                        transform_quantity={"divide_by": 10, "round": "up"},
+                    ),
+                ]
+            ),
+        )
+
+        assert record.add_on is not None
+        assert record.add_on.pricing_scheme == CanonicalPricingScheme.package
+
+    async def test_items_on_different_intervals_have_no_add_on(
+        self, mocker: MockerFixture
+    ) -> None:
+        record = await _extracted_subscription(
+            mocker,
+            _stripe_subscription(
+                items=[
+                    _stripe_item(),
+                    _stripe_item(price_id="price_slot", quantity=2, interval="year"),
+                ]
+            ),
+        )
+
+        assert record.line_item_count == 2
+        assert record.add_on is None
+
+    async def test_three_items_have_no_add_on(self, mocker: MockerFixture) -> None:
+        record = await _extracted_subscription(
+            mocker,
+            _stripe_subscription(
+                items=[
+                    _stripe_item(),
+                    _stripe_item(price_id="price_2"),
+                    _stripe_item(price_id="price_3"),
+                ]
+            ),
+        )
+
+        assert record.line_item_count == 3
+        assert record.add_on is None

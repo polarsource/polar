@@ -16,6 +16,7 @@ from uuid import UUID
 from polar.kit.currency import get_currency_decimal_factor
 from polar.kit.math import polar_round
 from polar.merchant_migration.canonical import (
+    CanonicalPricingScheme,
     CanonicalSubscriptionStatus,
     PriceKey,
     price_key,
@@ -222,6 +223,20 @@ def breakdown(
         )
         if monthly is None:
             continue
+        add_on = canonical.get("add_on") or {}
+        if (
+            add_on.get("pricing_scheme") == CanonicalPricingScheme.fixed
+            and add_on.get("unit_amount") is not None
+        ):
+            monthly += (
+                _monthly_amount(
+                    add_on["unit_amount"],
+                    add_on.get("quantity") or 0,
+                    interval,
+                    interval_count,
+                )
+                or 0
+            )
 
         amounts = bucket[_BUCKETS.get(status, _DEFAULT_BUCKET)]
         amounts[currency] = amounts.get(currency, 0) + monthly

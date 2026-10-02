@@ -126,6 +126,23 @@ class CanonicalCustomer:
 
 
 @dataclass
+class CanonicalSubscriptionAddOn:
+    """A second item billed per unit on top of the plan, like extra project
+    slots. It moves as a unit-based price next to the plan's fixed price."""
+
+    price_source_id: str
+    product_source_id: str | None
+    quantity: int
+    # Per unit, in the subscription's currency. None when the source has no
+    # flat amount for it there.
+    unit_amount: int | None
+    pricing_scheme: CanonicalPricingScheme
+    price_tax_behavior: TaxBehavior | None = None
+    # The item's own tax rates, which replace the subscription's defaults.
+    has_tax_rates: bool = False
+
+
+@dataclass
 class CanonicalSubscription:
     source_id: str
     customer_source_id: str
@@ -210,6 +227,9 @@ class CanonicalSubscription:
     # Sold through Stripe Managed Payments: Link is the seller and holds the card
     # authorization, so the merchant can't hand it to Polar.
     managed_payments: bool = False
+    # Set on a two-item subscription when the second item reads as an add-on.
+    # ``price_source_id`` and the fields above then describe the plan.
+    add_on: CanonicalSubscriptionAddOn | None = None
 
     type = MerchantMigrationRecordType.subscription
 
@@ -524,6 +544,7 @@ def deserialize(
             )
         case MerchantMigrationRecordType.subscription:
             payment_method = data["payment_method"]
+            add_on = data.get("add_on")
             return CanonicalSubscription(
                 source_id=data["source_id"],
                 customer_source_id=data["customer_source_id"],
@@ -582,6 +603,19 @@ def deserialize(
                 tax_behavior=parse_tax_behavior(data.get("tax_behavior")),
                 customer_balance=data.get("customer_balance"),
                 managed_payments=data.get("managed_payments", False),
+                add_on=CanonicalSubscriptionAddOn(
+                    price_source_id=add_on["price_source_id"],
+                    product_source_id=add_on["product_source_id"],
+                    quantity=add_on["quantity"],
+                    unit_amount=add_on["unit_amount"],
+                    pricing_scheme=CanonicalPricingScheme(add_on["pricing_scheme"]),
+                    price_tax_behavior=parse_tax_behavior(
+                        add_on.get("price_tax_behavior")
+                    ),
+                    has_tax_rates=bool(add_on.get("has_tax_rates", False)),
+                )
+                if add_on is not None
+                else None,
             )
         case MerchantMigrationRecordType.discount:
             return CanonicalDiscount(

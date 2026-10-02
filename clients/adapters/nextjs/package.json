@@ -39,7 +39,7 @@
   },
   "dependencies": {
     "@polar-sh/adapter-utils": "workspace:*",
-    "@polar-sh/sdk": "1.0.0"
+    "@polar-sh/sdk": "1.0.2"
   },
   "devDependencies": {
     "@polar-sh/typescript-config": "workspace:*",

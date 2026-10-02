@@ -91,13 +91,16 @@ jobs:
           fetch-depth: 0
 
       - uses: pnpm/action-setup@v6.1.0
+        with:
+          package_json_file: sdk/typescript/package.json
 
       - name: Setup Node.js
         uses: actions/setup-node@v7.0.0
         with:
-          node-version: "24"
+          node-version-file: .nvmrc
           registry-url: "https://registry.npmjs.org"
           cache: "pnpm"
+          cache-dependency-path: "sdk/typescript/pnpm-lock.yaml"
 
       - name: Install dependencies
         working-directory: sdk/typescript
@@ -134,7 +137,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v7.0.0
         with:
-          node-version-file: clients/.node-version
+          node-version-file: .nvmrc
           cache: "pnpm"
           cache-dependency-path: "clients/pnpm-lock.yaml"
 

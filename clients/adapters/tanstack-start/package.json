@@ -1,6 +1,6 @@
 {
   "name": "@polar-sh/tanstack-start",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/polarsource/polar.git",
@@ -21,7 +21,7 @@
   },
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "scripts": {
     "build": "tsup ./src/index.ts --format esm,cjs --dts --clean --sourcemap",
@@ -39,23 +39,17 @@
   },
   "dependencies": {
     "@polar-sh/adapter-utils": "workspace:*",
-    "@polar-sh/sdk": "1.0.2",
-    "@tanstack/react-start": "^1.168.57"
+    "@polar-sh/sdk": "1.0.2"
   },
   "devDependencies": {
     "@polar-sh/typescript-config": "workspace:*",
+    "@tanstack/react-start": "^1.168.60",
     "@typescript/native": "catalog:",
     "tsup": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
-  "ava": {
-    "extensions": {
-      "ts": "module",
-      "tsx": "module"
-    },
-    "nodeArguments": [
-      "--loader=ts-node/esm"
-    ]
+  "peerDependencies": {
+    "@tanstack/react-start": "^1.168.0"
   }
 }

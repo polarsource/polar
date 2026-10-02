@@ -34,13 +34,13 @@ def get_timestamp_series_cte(
     end_timestamp: datetime | SQLColumnExpression[datetime],
     interval: TimeInterval,
 ) -> CTE:
-    return cte(
-        select(
-            func.generate_series(
-                start_timestamp, end_timestamp, interval.sql_interval()
-            ).column_valued("timestamp")
-        )
-    )
+    # generate_series steps by wall-clock time: after a DST gap at midnight
+    # (e.g. America/Santiago) every later value sits at 01:00, no longer at the
+    # bucket start other queries truncate to.
+    series = func.generate_series(
+        start_timestamp, end_timestamp, interval.sql_interval()
+    ).column_valued("timestamp")
+    return cte(select(interval.sql_date_trunc(series).label("timestamp")))
 
 
 MIN_DATETIME = datetime(

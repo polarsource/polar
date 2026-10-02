@@ -17,6 +17,7 @@ from shared import (
     step_failed,
     step_spinner,
     step_status,
+    working_pnpm_version,
 )
 
 NAME = "Checking prerequisites"
@@ -195,8 +196,7 @@ def run(ctx: Context) -> bool:
 
     # pnpm - just report status, step 02 handles installation after Node is set up
     if check_command_exists("pnpm"):
-        version = get_command_version("pnpm")
-        step_status(True, "pnpm", version or "")
+        step_status(True, "pnpm", working_pnpm_version() or "outdated (will update after Node setup)")
     else:
         step_status(True, "pnpm", "not found (will install after Node setup)")
 

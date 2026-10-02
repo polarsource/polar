@@ -51,7 +51,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v7.0.0
         with:
-          node-version-file: server/emails/.node-version
+          node-version-file: .nvmrc
 
       - name: Build config artifacts
         working-directory: ./server

@@ -261,24 +261,50 @@ def install_pnpm() -> subprocess.CompletedProcess | None:
     return run_command(["npm", "install", "-g", spec], capture=True)
 
 
+def working_pnpm_version() -> str | None:
+    """The version pnpm reports inside clients/, or None when it isn't the pinned one.
+
+    A current pnpm switches itself to the pinned `packageManager` version on every
+    call. One too old to bootstrap that version fails here, and one that doesn't
+    switch at all reports its own version instead.
+    """
+    result = run_command(["pnpm", "--version"], cwd=CLIENTS_DIR, capture=True)
+    if result is None or result.returncode != 0:
+        return None
+    version = result.stdout.strip()
+    pinned = required_pnpm_version()
+    if not version or (pinned and version != pinned):
+        return None
+    return version
+
+
 def ensure_pnpm() -> bool:
-    """Make sure pnpm is available, installing it when Node is present but pnpm is not."""
-    if check_command_exists("pnpm"):
-        step_status(True, "pnpm", get_command_version("pnpm") or "installed")
+    """Make sure pnpm can run the pinned version, installing it when it can't."""
+    version = working_pnpm_version()
+    if version:
+        step_status(True, "pnpm", version)
         return True
 
-    console.print("  [yellow]pnpm not found, installing...[/yellow]")
+    pinned = required_pnpm_version() or "latest"
+    stale = shutil.which("pnpm")
+    if stale:
+        console.print(f"  [yellow]pnpm at {stale} can't run the pinned {pinned}, installing it...[/yellow]")
+    else:
+        console.print("  [yellow]pnpm not found, installing...[/yellow]")
+
     result = install_pnpm()
-    if result is not None and result.returncode == 0 and check_command_exists("pnpm"):
-        step_status(True, "pnpm", f"installed ({get_command_version('pnpm') or ''})".replace(" ()", ""))
+    version = working_pnpm_version()
+    if version:
+        step_status(True, "pnpm", f"installed ({version})")
         return True
 
-    step_status(False, "pnpm", "installation failed")
-    print_output_tail(result)
-    console.print(
-        f"  [dim]Install manually: npm install -g pnpm@{required_pnpm_version() or 'latest'},"
-        " then run dev up again[/dim]"
-    )
+    resolved = shutil.which("pnpm")
+    hints = [f"Install it manually: [bold]npm install -g pnpm@{pinned}[/bold], then run dev up again"]
+    if resolved and "homebrew" in resolved.lower():
+        hints.insert(0, f"Your shell picks the Homebrew pnpm at {resolved} first: [bold]brew upgrade pnpm[/bold]")
+    elif resolved:
+        hints.insert(0, f"Your shell picks {resolved} first: upgrade or remove that install")
+    step_failed("pnpm", f"can't run the pinned {pinned}", result, tuple(hints))
     return False
 
 

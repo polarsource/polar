@@ -1,6 +1,6 @@
 {
   "name": "@polar-sh/adapter-utils",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Core package for Polar adapters",
   "repository": {
     "type": "git",
@@ -12,7 +12,7 @@
   "types": "./dist/index.d.ts",
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "exports": {
     "import": {

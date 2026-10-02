@@ -2,7 +2,7 @@
   "name": "backoffice",
   "private": true,
   "version": "1.0.0",
-  "packageManager": "pnpm@11.0.9",
+  "packageManager": "pnpm@12.8.0",
   "scripts": {
     "build:css": "tailwindcss -i ./styles.css -o ./static/styles.css && cp $(pnpm root)/lucide-static/font/lucide.* static/",
     "build:js": "esbuild scripts.mjs --bundle --minify --outfile=./static/scripts.js",

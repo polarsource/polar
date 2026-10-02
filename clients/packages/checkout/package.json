@@ -4,7 +4,7 @@
   "author": "Polar",
   "license": "Apache-2.0",
   "type": "module",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "repository": {
     "type": "git",
     "url": "https://github.com/polarsource/polar.git",
@@ -89,7 +89,7 @@
     "@stripe/react-stripe-js": "catalog:",
     "@stripe/stripe-js": "catalog:",
     "@testing-library/jest-dom": "^7.0.1",
-    "@types/node": "^24.13.6",
+    "@types/node": "catalog:",
     "@testing-library/react": "catalog:",
     "@types/react": "catalog:",
     "@vitejs/plugin-react": "catalog:",

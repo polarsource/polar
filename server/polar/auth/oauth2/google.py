@@ -29,16 +29,22 @@ class GoogleFactor(OAuth2FactorMixin, GoogleOAuth2FactorBase):
     async def get_email(
         self, callback_result: OAuth2EnrollmentDataclass | OAuth2Account
     ) -> str:
+        email, _ = await self.get_email_and_verified(callback_result)
+        return email
+
+    async def get_email_and_verified(
+        self, callback_result: OAuth2EnrollmentDataclass | OAuth2Account
+    ) -> tuple[str, bool]:
         if callback_result.id_token is not None:
             try:
                 claims = await self.get_id_token_claims(callback_result.id_token)
-                return claims["email"]
+                return claims["email"], claims.get("email_verified") is True
             except KeyError as e:
                 raise GetEmailError() from e
 
         try:
             profile = await self.get_profile(callback_result.access_token)
-            return profile["email"]
+            return profile["email"], profile.get("email_verified") is True
         except (KeyError, OAuth2GetProfileException) as e:
             raise GetEmailError() from e
 

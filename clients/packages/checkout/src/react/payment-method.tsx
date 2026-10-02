@@ -173,7 +173,7 @@ export const PolarPaymentMethod = ({
     iframe.style.width = '100%'
     iframe.style.height = '0'
     iframe.style.border = 'none'
-    iframe.style.colorScheme = 'light'
+    iframe.style.colorScheme = theme === 'dark' ? 'dark' : 'light'
     iframe.allow = buildIframeAllow()
 
     container.replaceChildren(iframe)

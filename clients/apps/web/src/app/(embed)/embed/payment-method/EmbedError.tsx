@@ -22,12 +22,14 @@ interface Props {
   code: EmbedPaymentMethodErrorCode
   embedOrigin?: string
   locale?: AcceptedLocale
+  theme?: 'light' | 'dark'
 }
 
 export const EmbedError = ({
   code,
   embedOrigin,
   locale = DEFAULT_LOCALE,
+  theme,
 }: Props) => {
   const t = useTranslations(locale)
 
@@ -38,7 +40,11 @@ export const EmbedError = ({
   }, [code, embedOrigin])
 
   return (
-    <p role="alert" className="p-4 text-center text-sm text-red-500">
+    <p
+      role="alert"
+      className="p-4 text-center text-sm text-red-500"
+      data-polar-embed-theme={theme === 'dark' ? 'dark' : 'light'}
+    >
       {t(ERROR_TRANSLATION_KEYS[code])}
     </p>
   )

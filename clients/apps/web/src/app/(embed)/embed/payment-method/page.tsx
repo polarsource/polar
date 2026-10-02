@@ -64,7 +64,7 @@ export default async function Page(props: {
   const locale = resolveLocale(localeParam)
 
   if (!sessionToken || !embed_origin) {
-    return <EmbedError code="invalid_request" locale={locale} />
+    return <EmbedError code="invalid_request" locale={locale} theme={theme} />
   }
 
   const embedOrigin = (await headers()).get(POLAR_EMBED_ORIGIN_HEADER)
@@ -85,12 +85,13 @@ export default async function Page(props: {
         }
         embedOrigin={embedOrigin ?? undefined}
         locale={locale}
+        theme={theme}
       />
     )
   }
 
   if (!embedOrigin) {
-    return <EmbedError code="invalid_request" locale={locale} />
+    return <EmbedError code="invalid_request" locale={locale} theme={theme} />
   }
 
   const embedReturnUrl = resolveEmbedReturnUrl(embed_return_url, embedOrigin)

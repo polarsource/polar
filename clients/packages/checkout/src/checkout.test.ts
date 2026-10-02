@@ -81,6 +81,7 @@ describe('PolarEmbedCheckout', () => {
       expect(src.pathname).toBe('/polar_cl_123')
       expect(src.searchParams.get('embed')).toBe('true')
       expect(src.searchParams.get('embed_origin')).toBe(window.location.origin)
+      expect(iframe!.style.colorScheme).toBe('light')
 
       checkout.close()
     })
@@ -103,6 +104,7 @@ describe('PolarEmbedCheckout', () => {
       const iframe = document.querySelector('iframe')
       const src = new URL(iframe!.src)
       expect(src.searchParams.get('theme')).toBe('dark')
+      expect(iframe!.style.colorScheme).toBe('dark')
 
       checkout.close()
     })

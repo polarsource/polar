@@ -10,7 +10,7 @@ export default function EmbedLayout({
   children: React.ReactNode
 }) {
   return (
-    <div translate="no" data-polar-embed>
+    <div translate="no">
       <link
         rel="preload"
         href="https://js.stripe.com/clover/stripe.js"

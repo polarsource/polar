@@ -71,14 +71,17 @@ export function reviewStatus(row: ReviewRow): ReviewStatus {
       paymentMethod,
     }
   }
+  // A prepared subscription says so, so the merchant can still tell what an
+  // import would add.
+  const verb = stage === 'ready' ? 'Ready' : 'Moves'
   if (noCard) {
-    return { label: 'Moves, no card', color: 'yellow', paymentMethod }
+    return { label: `${verb}, no card`, color: 'yellow', paymentMethod }
   }
   return {
     label:
       paymentMethod.kind === 'bank_debit'
-        ? 'Moves, bank debit'
-        : 'Moves with card',
+        ? `${verb}, bank debit`
+        : `${verb} with card`,
     paymentMethod,
   }
 }

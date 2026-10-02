@@ -106,7 +106,7 @@ describe('reviewStatus', () => {
       ).toMatchObject({ label: 'Moves with card' })
     })
 
-    it('shows "Moves with card" once dependencies are prepared', () => {
+    it('shows "Ready with card" once dependencies are prepared', () => {
       expect(
         reviewStatus(
           row({
@@ -115,7 +115,20 @@ describe('reviewStatus', () => {
             dependencies_imported: true,
           }),
         ),
-      ).toMatchObject({ label: 'Moves with card' })
+      ).toMatchObject({ label: 'Ready with card' })
+    })
+
+    it('shows "Ready, no card" (yellow) for a prepared subscription without a card', () => {
+      expect(
+        reviewStatus(
+          row({
+            status: 'importable',
+            import_status: 'pending',
+            dependencies_imported: true,
+            payment_method_type: 'link',
+          }),
+        ),
+      ).toMatchObject({ label: 'Ready, no card', color: 'yellow' })
     })
 
     it('shows "Moves with card" for an info-level reason that does not need attention', () => {

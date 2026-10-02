@@ -168,7 +168,7 @@ class EmbedCheckout {
     iframe.style.border = 'none'
     iframe.style.zIndex = '2147483647'
     iframe.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
-    iframe.style.colorScheme = 'normal'
+    iframe.style.colorScheme = 'light'
 
     // Opt the overlay out of smooth-scroll libraries (Lenis) on the embedding
     // page, which would otherwise scroll it behind the checkout.

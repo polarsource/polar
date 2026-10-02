@@ -318,7 +318,7 @@ class EmbedPaymentMethod {
     iframe.style.border = 'none'
     iframe.style.zIndex = '2147483647'
     iframe.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
-    iframe.style.colorScheme = 'normal'
+    iframe.style.colorScheme = 'light'
 
     // Opt the overlay out of smooth-scroll libraries (Lenis) on the embedding
     // page, which would otherwise swallow the scroll inside the modal.
@@ -369,7 +369,7 @@ class EmbedPaymentMethod {
     iframe.style.width = '100%'
     iframe.style.height = '0'
     iframe.style.border = 'none'
-    iframe.style.colorScheme = 'normal'
+    iframe.style.colorScheme = 'light'
     iframe.allow = buildIframeAllow()
 
     element.replaceChildren(iframe)

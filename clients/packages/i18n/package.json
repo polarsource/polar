@@ -15,7 +15,7 @@
     "translate": "tsx scripts/translate.ts",
     "validate": "tsx scripts/validate.ts",
     "typecheck": "tsc --noEmit",
-    "build": "rm -rf dist && tsup",
+    "build": "rm -rf dist && tsdown",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -45,7 +45,7 @@
     "ai": "catalog:",
     "dotenv": "^16.6.1",
     "react": "^19.3.0",
-    "tsup": "catalog:",
+    "tsdown": "catalog:",
     "tsx": "^4.23.15",
     "typescript": "catalog:",
     "vitest": "catalog:"

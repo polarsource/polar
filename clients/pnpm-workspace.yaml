@@ -81,7 +81,7 @@ catalog:
   'shiki': '^3.23.0'
   'tailwind-merge': '^3.7.0'
   'tailwindcss': '^4.3.3'
-  'tsup': '^8.5.1'
+  'tsdown': '0.23.0'
   'typescript': 'npm:@typescript/typescript6@6.0.2'
   'vitest': '^5.0.1'
   'zod': '^4.6.5'

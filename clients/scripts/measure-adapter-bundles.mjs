@@ -1,12 +1,11 @@
-import { createRequire } from 'node:module'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { gzipSync } from 'node:zlib'
 
+import { build, version } from 'esbuild'
+
 const clients = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const require = createRequire(resolve(clients, 'adapters/nextjs/package.json'))
-const { build, version } = createRequire(require.resolve('tsup'))('esbuild')
 const [label, outputDirectory, clientFactory = 'createPolarCore'] =
   process.argv.slice(2)
 if (!label || !outputDirectory) {

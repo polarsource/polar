@@ -31,7 +31,7 @@
     }
   },
   "scripts": {
-    "build": "tsup src/index.ts --format esm,cjs --dts --clean --outDir dist",
+    "build": "tsdown",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "test": "vitest run",
@@ -44,7 +44,7 @@
     "@polar-sh/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
-    "tsup": "catalog:",
+    "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

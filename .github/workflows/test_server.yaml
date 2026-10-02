@@ -444,7 +444,7 @@ jobs:
         uses: actions/cache@v6.1.0
         with:
           path: server/emails/bin
-          key: emails-renderer-${{ runner.os }}-${{ hashFiles('server/emails/src/**', 'server/emails/package.json', 'server/emails/pnpm-lock.yaml', 'server/emails/tsup.config.js', '.nvmrc') }}
+          key: emails-renderer-${{ runner.os }}-${{ hashFiles('server/emails/src/**', 'server/emails/package.json', 'server/emails/pnpm-lock.yaml', 'server/emails/tsdown.config.mjs', '.nvmrc') }}
 
       - uses: pnpm/action-setup@v6.1.0
         if: steps.emails.outputs.cache-hit != 'true'

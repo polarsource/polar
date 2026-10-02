@@ -1,0 +1,58 @@
+server/tests/merchant_migration/test_precheck.py
+  s_7019daae9ae40d::t_05c1d1a742eac7 249
+  s_7019daae9ae40d::t_5a39e43b41be43 251-252,254-255
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewCatalog.ts
+  s_7019daae9ae40d::t_b37e9e1df8eaff 3-6
+  s_7019daae9ae40d::t_ba40cbb610c72d 59-63
+  s_7019daae9ae40d::t_07f9c28cacb138 15-16,20,23-25
+server/tests/merchant_migration/test_endpoints.py
+  s_7019daae9ae40d::t_2b8f3ca6e26936 98
+  s_7019daae9ae40d::t_761c083fccee4a 189,199,205
+  s_7019daae9ae40d::t_bf418ea8b0138e 89
+server/tests/merchant_migration/_helpers.py
+  s_7019daae9ae40d::t_6cf0aa87c60d76 80
+server/polar/models/merchant_migration.py
+  s_7019daae9ae40d::t_68172bd98841c7 120-122
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewTable.tsx
+  s_7019daae9ae40d::t_0497a0829b3a36 168
+server/tests/merchant_migration/test_service.py
+  s_7019daae9ae40d::t_e98d7baa781344 600-601
+  s_7019daae9ae40d::t_afa77dd943645c 258
+  s_7019daae9ae40d::t_e80e1250b7f934 551,565,573,576-599
+  s_7019daae9ae40d::t_4f1ad6f68464ed 2034,2042
+  s_7019daae9ae40d::t_95a69fef553b20 602
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/CatalogEmptyPanel.test.tsx
+  s_7019daae9ae40d::t_ca46c2ee9a24e4 63-70,74-75
+  s_7019daae9ae40d::t_85e6f1ca71ed20 71-73
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewTableView.tsx
+  s_7019daae9ae40d::t_e266f4f147dfbd 94
+  s_7019daae9ae40d::t_fcd6e9bfc8496f 84
+  s_7019daae9ae40d::t_4dbe4ac022acbd 57
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewCatalog.test.ts
+  s_7019daae9ae40d::t_61923feb7c8d48 35-45
+server/polar/merchant_migration/schemas.py
+  s_7019daae9ae40d::t_59666aaec988d1 465-466
+server/polar/merchant_migration/service.py
+  s_7019daae9ae40d::t_c18460c1ad0686 185
+  s_7019daae9ae40d::t_5ff5b0cd27a2ae 506-507
+  s_7019daae9ae40d::t_70143c57ec66e1 522-525
+  s_7019daae9ae40d::t_89e4ea2a7c9110 2040-2041,2051
+clients/packages/client/src/v1.ts
+  s_7019daae9ae40d::t_c717f0cfa02634 25227
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1c8e0d0c71ccc07fd641e5b62156a01c1282326e",
+  "prompts": {},
+  "sessions": {
+    "s_7019daae9ae40d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5b4b5d08-2a72-4ae4-9b1a-883c1c505ecb",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

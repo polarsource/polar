@@ -1,0 +1,20 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewTableView.tsx
+  s_7019daae9ae40d::t_83e333054ca503 57
+  s_7019daae9ae40d::t_58d76e4ffdff06 84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "02d08c822a5546a6f59277859c6068797d2a7bce",
+  "prompts": {},
+  "sessions": {
+    "s_7019daae9ae40d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5b4b5d08-2a72-4ae4-9b1a-883c1c505ecb",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -25609,7 +25609,7 @@ export interface components {
        * @description Whether Polar already has a card to charge for this subscription's customer. Null for non-subscription rows.
        */
       has_payment_method: boolean | null
-      /** @description The kind of payment method the subscription renews with on the source. Only cards are copied to Polar. Null for non-subscription rows, or when the source has none. */
+      /** @description The type of payment method the subscription renews with on the source. Null for non-subscription rows, or when the source has none. */
       payment_method_type:
         | components['schemas']['CanonicalPaymentMethodType']
         | null

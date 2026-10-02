@@ -246,9 +246,8 @@ class MerchantMigrationRecordItem(Schema):
     )
     payment_method_type: CanonicalPaymentMethodType | None = Field(
         description=(
-            "The kind of payment method the subscription renews with on the "
-            "source. Only cards are copied to Polar. Null for non-subscription "
-            "rows, or when the source has none."
+            "The type of payment method the subscription renews with on the "
+            "source. Null for non-subscription rows, or when the source has none."
         ),
     )
     dependencies_imported: bool | None = Field(

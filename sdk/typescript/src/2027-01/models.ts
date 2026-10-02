@@ -1211,10 +1211,6 @@ export type Scope =
  */
 export type SeatStatus = "pending" | "claimed" | "revoked";
 /**
- * SeatTierType
- */
-export type SeatTierType = "volume" | "graduated";
-/**
  * Status
  */
 export type Status = "granted" | "disabled";
@@ -2924,7 +2920,7 @@ export interface BenefitCustom {
    */
   metadata: MetadataOutputType;
   /**
-   * visibility
+   * The visibility of the benefit in the customer portal.
    */
   visibility: BenefitVisibility;
   /**
@@ -3244,7 +3240,7 @@ export interface BenefitDiscord {
    */
   metadata: MetadataOutputType;
   /**
-   * visibility
+   * The visibility of the benefit in the customer portal.
    */
   visibility: BenefitVisibility;
   /**
@@ -3594,7 +3590,7 @@ export interface BenefitDownloadables {
    */
   metadata: MetadataOutputType;
   /**
-   * visibility
+   * The visibility of the benefit in the customer portal.
    */
   visibility: BenefitVisibility;
   /**
@@ -3857,7 +3853,7 @@ export interface BenefitFeatureFlag {
    */
   metadata: MetadataOutputType;
   /**
-   * visibility
+   * The visibility of the benefit in the customer portal.
    */
   visibility: BenefitVisibility;
   /**
@@ -4100,7 +4096,7 @@ export interface BenefitGitHubRepository {
    */
   metadata: MetadataOutputType;
   /**
-   * visibility
+   * The visibility of the benefit in the customer portal.
    */
   visibility: BenefitVisibility;
   /**
@@ -5355,7 +5351,7 @@ export interface BenefitLicenseKeys {
    */
   metadata: MetadataOutputType;
   /**
-   * visibility
+   * The visibility of the benefit in the customer portal.
    */
   visibility: BenefitVisibility;
   /**
@@ -5649,7 +5645,7 @@ export interface BenefitMeterCredit {
    */
   metadata: MetadataOutputType;
   /**
-   * visibility
+   * The visibility of the benefit in the customer portal.
    */
   visibility: BenefitVisibility;
   /**
@@ -6011,7 +6007,7 @@ export interface BenefitSlackSharedChannel {
    */
   metadata: MetadataOutputType;
   /**
-   * visibility
+   * The visibility of the benefit in the customer portal.
    */
   visibility: BenefitVisibility;
   /**
@@ -6282,7 +6278,7 @@ export interface BenefitSubscriberOrganization {
    */
   avatar_url: string | null;
   /**
-   * proration_behavior
+   * Proration behavior applied when customer updates their subscription from the portal.
    */
   proration_behavior: SubscriptionProrationBehavior;
   /**
@@ -6384,11 +6380,11 @@ export interface CardPayment {
    */
   id: string;
   /**
-   * processor
+   * The payment processor.
    */
   processor: PaymentProcessor;
   /**
-   * status
+   * The payment status.
    */
   status: PaymentStatus;
   /**
@@ -6432,7 +6428,7 @@ export interface CardPayment {
    */
   processor_metadata?: Record<string, unknown>;
   /**
-   * method_metadata
+   * Additional metadata for the card payment method.
    */
   method_metadata: CardPaymentMetadata;
 }
@@ -6472,11 +6468,19 @@ export interface Checkout {
    */
   custom_field_data?: Record<string, string | number | boolean | null>;
   /**
-   * payment_processor
+   * Payment processor used.
    */
   payment_processor: PaymentProcessor;
   /**
-   * status
+   * 
+        Status of the checkout session.
+
+        - Open: the checkout session was opened.
+        - Expired: the checkout session was expired and is no more accessible.
+        - Confirmed: the user on the checkout session clicked Pay. This is not indicative of the payment's success status.
+        - Failed: the checkout definitely failed for technical reasons and cannot be retried. In most cases, this state is never reached.
+        - Succeeded: the payment on the checkout was performed successfully.
+        
    */
   status: CheckoutStatus;
   /**
@@ -6660,7 +6664,7 @@ export interface Checkout {
    */
   payment_processor_metadata: Record<string, string>;
   /**
-   * billing_address_fields
+   * Determine which billing address fields should be disabled, optional or required in the checkout form.
    */
   billing_address_fields: CheckoutBillingAddressFields;
   /**
@@ -7251,7 +7255,7 @@ export interface CheckoutLink {
    */
   metadata: MetadataOutputType;
   /**
-   * payment_processor
+   * Payment processor used.
    */
   payment_processor: PaymentProcessor;
   /**
@@ -7560,7 +7564,7 @@ export interface CheckoutLinkProduct {
    */
   description: string | null;
   /**
-   * visibility
+   * The visibility of the product.
    */
   visibility: ProductVisibility;
   /**
@@ -7712,7 +7716,7 @@ export interface CheckoutOrganization {
    */
   avatar_url: string | null;
   /**
-   * proration_behavior
+   * Proration behavior applied when customer updates their subscription from the portal.
    */
   proration_behavior: SubscriptionProrationBehavior;
   /**
@@ -7754,7 +7758,7 @@ export interface CheckoutProduct {
    */
   description: string | null;
   /**
-   * visibility
+   * The visibility of the product.
    */
   visibility: ProductVisibility;
   /**
@@ -7820,11 +7824,19 @@ export interface CheckoutPublic {
    */
   custom_field_data?: Record<string, string | number | boolean | null>;
   /**
-   * payment_processor
+   * Payment processor used.
    */
   payment_processor: PaymentProcessor;
   /**
-   * status
+   * 
+        Status of the checkout session.
+
+        - Open: the checkout session was opened.
+        - Expired: the checkout session was expired and is no more accessible.
+        - Confirmed: the user on the checkout session clicked Pay. This is not indicative of the payment's success status.
+        - Failed: the checkout definitely failed for technical reasons and cannot be retried. In most cases, this state is never reached.
+        - Succeeded: the payment on the checkout was performed successfully.
+        
    */
   status: CheckoutStatus;
   /**
@@ -8008,7 +8020,7 @@ export interface CheckoutPublic {
    */
   payment_processor_metadata: Record<string, string>;
   /**
-   * billing_address_fields
+   * Determine which billing address fields should be disabled, optional or required in the checkout form.
    */
   billing_address_fields: CheckoutBillingAddressFields;
   /**
@@ -8072,7 +8084,7 @@ export interface CheckoutPublicConfirmed {
    */
   custom_field_data?: Record<string, string | number | boolean | null>;
   /**
-   * payment_processor
+   * Payment processor used.
    */
   payment_processor: PaymentProcessor;
   /**
@@ -8260,7 +8272,7 @@ export interface CheckoutPublicConfirmed {
    */
   payment_processor_metadata: Record<string, string>;
   /**
-   * billing_address_fields
+   * Determine which billing address fields should be disabled, optional or required in the checkout form.
    */
   billing_address_fields: CheckoutBillingAddressFields;
   /**
@@ -10434,11 +10446,11 @@ export interface CustomerMeter {
    */
   balance: number;
   /**
-   * customer
+   * The customer associated with this meter.
    */
   customer: Customer;
   /**
-   * meter
+   * The meter associated with this customer.
    */
   meter: Meter;
 }
@@ -10616,7 +10628,7 @@ export interface CustomerOrderConfirmPayment {
    */
   payment_method_id?: string | null;
   /**
-   * payment_processor
+   * Payment processor used.
    */
   payment_processor?: PaymentProcessor;
 }
@@ -10696,7 +10708,7 @@ export interface CustomerOrderProduct {
    */
   description: string | null;
   /**
-   * visibility
+   * The visibility of the product.
    */
   visibility: ProductVisibility;
   /**
@@ -10780,7 +10792,7 @@ export interface CustomerOrderSubscription {
    */
   currency: string;
   /**
-   * recurring_interval
+   * The interval at which the subscription recurs.
    */
   recurring_interval: RecurringInterval;
   /**
@@ -10788,7 +10800,7 @@ export interface CustomerOrderSubscription {
    */
   recurring_interval_count: number;
   /**
-   * status
+   * The status of the subscription.
    */
   status: SubscriptionStatus;
   /**
@@ -10928,7 +10940,7 @@ export interface CustomerOrganization {
    */
   avatar_url: string | null;
   /**
-   * proration_behavior
+   * Proration behavior applied when customer updates their subscription from the portal.
    */
   proration_behavior: SubscriptionProrationBehavior;
   /**
@@ -10936,11 +10948,11 @@ export interface CustomerOrganization {
    */
   allow_customer_updates: boolean;
   /**
-   * customer_portal_settings
+   * Settings related to the customer portal
    */
   customer_portal_settings: OrganizationCustomerPortalSettings;
   /**
-   * organization_features
+   * Feature flags for the customer portal.
    */
   organization_features?: CustomerOrganizationFeatureSettings;
 }
@@ -11258,7 +11270,7 @@ export interface CustomerPortalMember {
    */
   name: string | null;
   /**
-   * role
+   * The role of the member within the team.
    */
   role: MemberRole;
 }
@@ -11276,7 +11288,7 @@ export interface CustomerPortalMemberCreate {
    */
   name?: string | null;
   /**
-   * role
+   * The role for the new member. Defaults to 'member'.
    */
   role?: MemberRole;
 }
@@ -11374,7 +11386,7 @@ export interface CustomerProduct {
    */
   description: string | null;
   /**
-   * visibility
+   * The visibility of the product.
    */
   visibility: ProductVisibility;
   /**
@@ -11444,7 +11456,7 @@ export interface CustomerSeat {
    */
   order_id: string | null;
   /**
-   * status
+   * Status of the seat
    */
   status: SeatStatus;
   /**
@@ -11536,7 +11548,7 @@ export interface CustomerSeatAssign {
  */
 export interface CustomerSeatClaimResponse {
   /**
-   * seat
+   * The claimed seat
    */
   seat: CustomerSeat;
   /**
@@ -11656,11 +11668,11 @@ export interface CustomerStateBenefitGrant {
    */
   benefit_id: string;
   /**
-   * benefit_type
+   * The type of the benefit concerned by this grant.
    */
   benefit_type: BenefitType;
   /**
-   * benefit_metadata
+   * The metadata of the benefit concerned by this grant.
    */
   benefit_metadata: MetadataOutputType;
   /**
@@ -11841,7 +11853,7 @@ export interface CustomerStateSubscription {
    */
   currency: string;
   /**
-   * recurring_interval
+   * The interval at which the subscription recurs.
    */
   recurring_interval: RecurringInterval;
   /**
@@ -12051,7 +12063,7 @@ export interface CustomerSubscription {
    */
   currency: string;
   /**
-   * recurring_interval
+   * The interval at which the subscription recurs.
    */
   recurring_interval: RecurringInterval;
   /**
@@ -12059,7 +12071,7 @@ export interface CustomerSubscription {
    */
   recurring_interval_count: number;
   /**
-   * status
+   * The status of the subscription.
    */
   status: SubscriptionStatus;
   /**
@@ -12311,7 +12323,7 @@ export interface CustomerSubscriptionProduct {
    */
   description: string | null;
   /**
-   * visibility
+   * The visibility of the product.
    */
   visibility: ProductVisibility;
   /**
@@ -12837,7 +12849,7 @@ You can store up to **50 key-value pairs**.
    */
   type?: "fixed";
   /**
-   * duration
+   * For subscriptions, determines if the discount should be applied once on the first invoice, forever, or for a certain number of months determined by `duration_in_months`.
    */
   duration: DiscountDuration;
   /**
@@ -13231,7 +13243,7 @@ You can store up to **50 key-value pairs**.
    */
   type?: "percentage";
   /**
-   * duration
+   * For subscriptions, determines if the discount should be applied once on the first invoice, forever, or for a certain number of months determined by `duration_in_months`.
    */
   duration: DiscountDuration;
   /**
@@ -13570,7 +13582,7 @@ export interface DiscountProduct {
    */
   description: string | null;
   /**
-   * visibility
+   * The visibility of the product.
    */
   visibility: ProductVisibility;
   /**
@@ -13712,7 +13724,7 @@ export interface Dispute {
    */
   id: string;
   /**
-   * status
+   * Status of the dispute. `prevented` means we issued a refund before the dispute was escalated, avoiding any fees.
    */
   status: DisputeStatus;
   /**
@@ -13756,7 +13768,7 @@ export interface Dispute {
    */
   payment_id: string;
   /**
-   * customer
+   * The customer who was charged for the disputed payment.
    */
   customer: DisputeCustomer;
   /**
@@ -13812,7 +13824,7 @@ export interface DisputeCustomer {
    */
   email_verified: boolean;
   /**
-   * type
+   * The type of customer: 'individual' for single users, 'team' for customers with multiple members.
    */
   type: CustomerType;
   /**
@@ -14026,7 +14038,17 @@ export interface EventCreateCustomer {
    */
   parent_id?: string | null;
   /**
-   * metadata
+   * Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
    */
   metadata?: EventMetadataInput;
   /**
@@ -14064,7 +14086,17 @@ export interface EventCreateExternalCustomer {
    */
   parent_id?: string | null;
   /**
-   * metadata
+   * Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
    */
   metadata?: EventMetadataInput;
   /**
@@ -14120,7 +14152,7 @@ export interface EventName {
    */
   label: string;
   /**
-   * source
+   * The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
    */
   source: EventSource;
   /**
@@ -14218,7 +14250,7 @@ export interface EventTypeWithStats {
    */
   organization_id: string;
   /**
-   * source
+   * The source of the events (system or user).
    */
   source: EventSource;
   /**
@@ -14506,11 +14538,11 @@ export interface GenericPayment {
    */
   id: string;
   /**
-   * processor
+   * The payment processor.
    */
   processor: PaymentProcessor;
   /**
-   * status
+   * The payment status.
    */
   status: PaymentStatus;
   /**
@@ -14740,11 +14772,11 @@ export interface KrCardPayment {
    */
   id: string;
   /**
-   * processor
+   * The payment processor.
    */
   processor: PaymentProcessor;
   /**
-   * status
+   * The payment status.
    */
   status: PaymentStatus;
   /**
@@ -14788,7 +14820,7 @@ export interface KrCardPayment {
    */
   processor_metadata?: Record<string, unknown>;
   /**
-   * method_metadata
+   * Additional metadata for the South Korean card payment method.
    */
   method_metadata: KrCardPaymentMetadata;
 }
@@ -14864,7 +14896,7 @@ export interface LegacyRecurringProductPriceCustom {
    */
   id: string;
   /**
-   * source
+   * The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session.
    */
   source: ProductPriceSource;
   /**
@@ -14892,7 +14924,7 @@ export interface LegacyRecurringProductPriceCustom {
    */
   type: "recurring";
   /**
-   * recurring_interval
+   * The recurring interval of the price.
    */
   recurring_interval: RecurringInterval;
   /**
@@ -14932,7 +14964,7 @@ export interface LegacyRecurringProductPriceFixed {
    */
   id: string;
   /**
-   * source
+   * The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session.
    */
   source: ProductPriceSource;
   /**
@@ -14960,7 +14992,7 @@ export interface LegacyRecurringProductPriceFixed {
    */
   type: "recurring";
   /**
-   * recurring_interval
+   * The recurring interval of the price.
    */
   recurring_interval: RecurringInterval;
   /**
@@ -15150,7 +15182,7 @@ export interface LicenseKeyCustomer {
    */
   email_verified: boolean;
   /**
-   * type
+   * The type of customer: 'individual' for single users, 'team' for customers with multiple members.
    */
   type: CustomerType;
   /**
@@ -15340,7 +15372,7 @@ export interface LicenseKeySubscription {
    */
   id: string;
   /**
-   * status
+   * The status of the subscription.
    */
   status: SubscriptionStatus;
   /**
@@ -16050,7 +16082,7 @@ export interface Member {
    */
   external_id: string | null;
   /**
-   * role
+   * The role of the member within the customer.
    */
   role: MemberRole;
 }
@@ -16145,7 +16177,7 @@ export interface Meter {
    */
   name: string;
   /**
-   * unit
+   * The unit of the meter.
    */
   unit: MeterUnit;
   /**
@@ -16157,7 +16189,7 @@ export interface Meter {
    */
   custom_multiplier?: number | null;
   /**
-   * filter
+   * The filter to apply on events that'll be used to calculate the meter.
    */
   filter: Filter;
   /**
@@ -16197,7 +16229,7 @@ You can store up to **50 key-value pairs**.
    */
   name: string;
   /**
-   * unit
+   * The unit of the meter.
    */
   unit?: MeterUnit;
   /**
@@ -16209,7 +16241,7 @@ You can store up to **50 key-value pairs**.
    */
   custom_multiplier?: number | null;
   /**
-   * filter
+   * The filter to apply on events that'll be used to calculate the meter.
    */
   filter: Filter;
   /**
@@ -16463,7 +16495,7 @@ export interface Metric {
    */
   display_name: string;
   /**
-   * type
+   * Type of the metric, useful to know the unit or format of the value.
    */
   type: MetricType;
 }
@@ -17005,23 +17037,23 @@ export interface MetricsIntervalLimit {
  */
 export interface MetricsIntervalsLimits {
   /**
-   * hour
+   * Limits for the hour interval.
    */
   hour: MetricsIntervalLimit;
   /**
-   * day
+   * Limits for the day interval.
    */
   day: MetricsIntervalLimit;
   /**
-   * week
+   * Limits for the week interval.
    */
   week: MetricsIntervalLimit;
   /**
-   * month
+   * Limits for the month interval.
    */
   month: MetricsIntervalLimit;
   /**
-   * year
+   * Limits for the year interval.
    */
   year: MetricsIntervalLimit;
 }
@@ -17035,7 +17067,7 @@ export interface MetricsLimits {
    */
   min_date: string;
   /**
-   * intervals
+   * Limits for each interval.
    */
   intervals: MetricsIntervalsLimits;
 }
@@ -17049,11 +17081,11 @@ export interface MetricsResponse {
    */
   periods: MetricPeriod[];
   /**
-   * totals
+   * Totals for the whole selected period.
    */
   totals: MetricsTotals;
   /**
-   * metrics
+   * Information about the returned metrics.
    */
   metrics: Metrics;
 }
@@ -17744,7 +17776,7 @@ export interface OrderCustomer {
    */
   email_verified: boolean;
   /**
-   * type
+   * The type of customer: 'individual' for single users, 'team' for customers with multiple members.
    */
   type: CustomerType;
   /**
@@ -18058,7 +18090,7 @@ export interface OrderProduct {
    */
   description: string | null;
   /**
-   * visibility
+   * The visibility of the product.
    */
   visibility: ProductVisibility;
   /**
@@ -18210,7 +18242,7 @@ export interface OrderSubscription {
    */
   currency: string;
   /**
-   * recurring_interval
+   * The interval at which the subscription recurs.
    */
   recurring_interval: RecurringInterval;
   /**
@@ -18218,7 +18250,7 @@ export interface OrderSubscription {
    */
   recurring_interval_count: number;
   /**
-   * status
+   * The status of the subscription.
    */
   status: SubscriptionStatus;
   /**
@@ -18518,7 +18550,7 @@ export interface Organization {
    */
   avatar_url: string | null;
   /**
-   * proration_behavior
+   * Proration behavior applied when customer updates their subscription from the portal.
    */
   proration_behavior: SubscriptionProrationBehavior;
   /**
@@ -18538,7 +18570,7 @@ export interface Organization {
    */
   socials: OrganizationSocialLink[];
   /**
-   * status
+   * Current organization status
    */
   status: OrganizationStatus;
   /**
@@ -18558,7 +18590,7 @@ export interface Organization {
    */
   default_presentment_currency: string;
   /**
-   * default_tax_behavior
+   * Default tax behavior applied on products.
    */
   default_tax_behavior: TaxBehaviorOption;
   /**
@@ -18566,19 +18598,19 @@ export interface Organization {
    */
   feature_settings: OrganizationFeatureSettings | null;
   /**
-   * subscription_settings
+   * Settings related to subscriptions management
    */
   subscription_settings: OrganizationSubscriptionSettings;
   /**
-   * customer_email_settings
+   * Settings related to customer emails
    */
   customer_email_settings: OrganizationCustomerEmailSettings;
   /**
-   * customer_portal_settings
+   * Settings related to the customer portal
    */
   customer_portal_settings: OrganizationCustomerPortalSettings;
   /**
-   * dispute_settings
+   * Settings related to disputes
    */
   dispute_settings: OrganizationDisputeSettings;
   /**
@@ -18598,7 +18630,7 @@ export interface Organization {
    */
   payout_account_id: string | null;
   /**
-   * capabilities
+   * Capabilities currently granted to the organization.
    */
   capabilities: OrganizationCapabilities;
 }
@@ -18818,11 +18850,11 @@ export interface OrganizationCreate {
    */
   customer_portal_settings?: OrganizationCustomerPortalSettings | null;
   /**
-   * default_presentment_currency
+   * Default presentment currency for the organization
    */
   default_presentment_currency?: PresentmentCurrency;
   /**
-   * default_tax_behavior
+   * Default tax behavior applied on products.
    */
   default_tax_behavior?: TaxBehaviorOption;
 }
@@ -19093,7 +19125,7 @@ export interface OrganizationNotReadyForPayments {
  */
 export interface OrganizationSocialLink {
   /**
-   * platform
+   * The social platform of the URL
    */
   platform: OrganizationSocialPlatforms;
   /**
@@ -19573,7 +19605,7 @@ export interface Product {
    */
   description: string | null;
   /**
-   * visibility
+   * The visibility of the product.
    */
   visibility: ProductVisibility;
   /**
@@ -19667,7 +19699,7 @@ You can store up to **50 key-value pairs**.
    */
   description?: string | null;
   /**
-   * visibility
+   * The visibility of the product.
    */
   visibility?: ProductVisibility;
   /**
@@ -19730,7 +19762,7 @@ You can store up to **50 key-value pairs**.
    */
   description?: string | null;
   /**
-   * visibility
+   * The visibility of the product.
    */
   visibility?: ProductVisibility;
   /**
@@ -19765,7 +19797,7 @@ You can store up to **50 key-value pairs**.
    */
   trial_interval_count?: number | null;
   /**
-   * recurring_interval
+   * The recurring interval of the product.
    */
   recurring_interval: RecurringInterval;
   /**
@@ -19925,7 +19957,7 @@ export interface ProductPriceCustom {
    */
   id: string;
   /**
-   * source
+   * The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session.
    */
   source: ProductPriceSource;
   /**
@@ -19971,7 +20003,7 @@ export interface ProductPriceCustomCreate {
    */
   amount_type: "custom";
   /**
-   * price_currency
+   * The currency in which the customer will be charged.
    */
   price_currency?: PresentmentCurrency;
   /**
@@ -20279,7 +20311,7 @@ export interface ProductPriceFixed {
    */
   id: string;
   /**
-   * source
+   * The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session.
    */
   source: ProductPriceSource;
   /**
@@ -20317,7 +20349,7 @@ export interface ProductPriceFixedCreate {
    */
   amount_type: "fixed";
   /**
-   * price_currency
+   * The currency in which the customer will be charged.
    */
   price_currency?: PresentmentCurrency;
   /**
@@ -20471,7 +20503,7 @@ export interface ProductPriceMeter {
    */
   name: string;
   /**
-   * unit
+   * The unit of the meter.
    */
   unit: MeterUnit;
   /**
@@ -20501,7 +20533,7 @@ export interface ProductPriceMeteredTiers {
    */
   id: string;
   /**
-   * source
+   * The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session.
    */
   source: ProductPriceSource;
   /**
@@ -20533,11 +20565,11 @@ export interface ProductPriceMeteredTiers {
    */
   meter_id: string;
   /**
-   * meter
+   * The meter associated to the price.
    */
   meter: ProductPriceMeter;
   /**
-   * tiers
+   * The pricing tiers based on consumed units.
    */
   tiers: Tiers;
 }
@@ -20551,7 +20583,7 @@ export interface ProductPriceMeteredTiersCreate {
    */
   amount_type: "metered_tiers";
   /**
-   * price_currency
+   * The currency in which the customer will be charged.
    */
   price_currency?: PresentmentCurrency;
   /**
@@ -20563,7 +20595,7 @@ export interface ProductPriceMeteredTiersCreate {
    */
   meter_id: string;
   /**
-   * tiers
+   * Tiered pricing based on consumed units.
    */
   tiers: TiersInput;
   /**
@@ -20589,7 +20621,7 @@ export interface ProductPriceMeteredUnit {
    */
   id: string;
   /**
-   * source
+   * The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session.
    */
   source: ProductPriceSource;
   /**
@@ -20621,7 +20653,7 @@ export interface ProductPriceMeteredUnit {
    */
   meter_id: string;
   /**
-   * meter
+   * The meter associated to the price.
    */
   meter: ProductPriceMeter;
   /**
@@ -20639,7 +20671,7 @@ export interface ProductPriceMeteredUnitCreate {
    */
   amount_type: "metered_unit";
   /**
-   * price_currency
+   * The currency in which the customer will be charged.
    */
   price_currency?: PresentmentCurrency;
   /**
@@ -20677,7 +20709,7 @@ export interface ProductPriceSeatBased {
    */
   id: string;
   /**
-   * source
+   * The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session.
    */
   source: ProductPriceSource;
   /**
@@ -20701,9 +20733,17 @@ export interface ProductPriceSeatBased {
    */
   product_id: string;
   /**
-   * seat_tiers
+   * Tiered pricing based on the purchased seat quantity.
    */
-  seat_tiers: ProductPriceSeatTiersOutput;
+  tiers: Tiers;
+  /**
+   * The minimum purchasable seat quantity (inclusive).
+   */
+  minimum_units: number | null;
+  /**
+   * The maximum purchasable seat quantity, from the last tier's bound. `null` for unlimited.
+   */
+  maximum_units: number | null;
 }
 
 /**
@@ -20715,7 +20755,7 @@ export interface ProductPriceSeatBasedCreate {
    */
   amount_type: "seat_based";
   /**
-   * price_currency
+   * The currency in which the customer will be charged.
    */
   price_currency?: PresentmentCurrency;
   /**
@@ -20723,71 +20763,13 @@ export interface ProductPriceSeatBasedCreate {
    */
   tax_behavior?: TaxBehaviorOption | null;
   /**
-   * seat_tiers
+   * Tiered pricing based on the purchased seat quantity.
    */
-  seat_tiers: ProductPriceSeatTiersInput;
-}
-
-/**
- * A pricing tier for seat-based pricing.
- */
-export interface ProductPriceSeatTier {
+  tiers: TiersInput;
   /**
-   * Minimum number of seats (inclusive)
+   * The minimum purchasable seat quantity (inclusive). Defaults to 1 when not set.
    */
-  min_seats: number;
-  /**
-   * Maximum number of seats (inclusive). None for unlimited.
-   */
-  max_seats?: number | null;
-  /**
-   * Price per seat in cents for this tier
-   */
-  price_per_seat: number;
-}
-
-/**
- * List of pricing tiers for seat-based pricing.
-
-The minimum and maximum seat limits are derived from the tiers:
-- minimum_seats = first tier's min_seats
-- maximum_seats = last tier's max_seats (None for unlimited)
- */
-export interface ProductPriceSeatTiersInput {
-  /**
-   * seat_tier_type
-   */
-  seat_tier_type?: SeatTierType;
-  /**
-   * List of pricing tiers
-   */
-  tiers: ProductPriceSeatTier[];
-}
-
-/**
- * List of pricing tiers for seat-based pricing.
-
-The minimum and maximum seat limits are derived from the tiers:
-- minimum_seats = first tier's min_seats
-- maximum_seats = last tier's max_seats (None for unlimited)
- */
-export interface ProductPriceSeatTiersOutput {
-  /**
-   * seat_tier_type
-   */
-  seat_tier_type?: SeatTierType;
-  /**
-   * List of pricing tiers
-   */
-  tiers: ProductPriceSeatTier[];
-  /**
-   * Minimum number of seats required for purchase, derived from first tier.
-   */
-  minimum_seats: number;
-  /**
-   * Maximum number of seats allowed for purchase, derived from last tier. None for unlimited.
-   */
-  maximum_seats: number | null;
+  minimum_units?: number | null;
 }
 
 /**
@@ -20808,7 +20790,7 @@ export interface ProductPriceUnitBased {
    */
   id: string;
   /**
-   * source
+   * The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session.
    */
   source: ProductPriceSource;
   /**
@@ -20832,7 +20814,7 @@ export interface ProductPriceUnitBased {
    */
   product_id: string;
   /**
-   * tiers
+   * Tiered pricing based on the purchased unit quantity.
    */
   tiers: Tiers;
   /**
@@ -20859,7 +20841,7 @@ export interface ProductPriceUnitBasedCreate {
    */
   amount_type: "unit_based";
   /**
-   * price_currency
+   * The currency in which the customer will be charged.
    */
   price_currency?: PresentmentCurrency;
   /**
@@ -20867,7 +20849,7 @@ export interface ProductPriceUnitBasedCreate {
    */
   tax_behavior?: TaxBehaviorOption | null;
   /**
-   * tiers
+   * Tiered pricing based on the purchased unit quantity.
    */
   tiers: TiersInput;
   /**
@@ -21099,7 +21081,7 @@ export interface RefundDispute {
    */
   id: string;
   /**
-   * status
+   * Status of the dispute. `prevented` means we issued a refund before the dispute was escalated, avoiding any fees.
    */
   status: DisputeStatus;
   /**
@@ -21529,7 +21511,7 @@ export interface Subscription {
    */
   currency: string;
   /**
-   * recurring_interval
+   * The interval at which the subscription recurs.
    */
   recurring_interval: RecurringInterval;
   /**
@@ -21537,7 +21519,7 @@ export interface Subscription {
    */
   recurring_interval_count: number;
   /**
-   * status
+   * The status of the subscription.
    */
   status: SubscriptionStatus;
   /**
@@ -22094,7 +22076,7 @@ export interface SubscriptionCustomer {
    */
   email_verified: boolean;
   /**
-   * type
+   * The type of customer: 'individual' for single users, 'team' for customers with multiple members.
    */
   type: CustomerType;
   /**
@@ -22278,7 +22260,7 @@ export interface SubscriptionMeter {
    */
   meter_id: string;
   /**
-   * meter
+   * The meter associated with this subscription.
    */
   meter: Meter;
 }
@@ -24158,7 +24140,7 @@ export interface WebhookDelivery {
    */
   response: string | null;
   /**
-   * webhook_event
+   * The webhook event sent by this delivery.
    */
   webhook_event: WebhookEvent;
 }
@@ -24192,7 +24174,7 @@ export interface WebhookEndpoint {
    */
   api_version: string;
   /**
-   * format
+   * The format of the webhook payload.
    */
   format: WebhookFormat;
   /**
@@ -24234,7 +24216,7 @@ export interface WebhookEndpointCreate {
    */
   api_version?: ApiVersion;
   /**
-   * format
+   * The format of the webhook payload.
    */
   format: WebhookFormat;
   /**
@@ -24320,7 +24302,7 @@ export interface WebhookEvent {
    */
   payload: string | null;
   /**
-   * type
+   * The type of the webhook event.
    */
   type: WebhookEventType;
   /**

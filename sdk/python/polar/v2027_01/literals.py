@@ -810,6 +810,7 @@ PaymentTrigger: typing.TypeAlias = typing.Literal[
 Permission: typing.TypeAlias = typing.Literal[
     "pull", "triage", "push", "maintain", "admin"
 ]
+"""The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role)."""
 PresentmentCurrency: typing.TypeAlias = typing.Literal[
     "aed",
     "all",
@@ -1047,7 +1048,6 @@ Scope: typing.TypeAlias = typing.Literal[
     "organization_access_tokens:write",
 ]
 SeatStatus: typing.TypeAlias = typing.Literal["pending", "claimed", "revoked"]
-SeatTierType: typing.TypeAlias = typing.Literal["volume", "graduated"]
 Status: typing.TypeAlias = typing.Literal["granted", "disabled"]
 SubType: typing.TypeAlias = typing.Literal["user", "organization"]
 SubscriptionExportColumn: typing.TypeAlias = typing.Literal[

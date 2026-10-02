@@ -42,7 +42,6 @@ from polar.v2027_01.literals import (
     RefundStatus,
     Scope,
     SeatStatus,
-    SeatTierType,
     Status,
     SubscriptionProrationBehavior,
     SubscriptionStatus,
@@ -751,6 +750,7 @@ class BenefitCustom:
     metadata: MetadataOutputType
 
     visibility: BenefitVisibility
+    """The visibility of the benefit in the customer portal."""
 
     properties: BenefitCustomProperties
 
@@ -914,6 +914,7 @@ class BenefitDiscord:
     metadata: MetadataOutputType
 
     visibility: BenefitVisibility
+    """The visibility of the benefit in the customer portal."""
 
     properties: BenefitDiscordProperties
 
@@ -1079,6 +1080,7 @@ class BenefitDownloadables:
     metadata: MetadataOutputType
 
     visibility: BenefitVisibility
+    """The visibility of the benefit in the customer portal."""
 
     properties: BenefitDownloadablesProperties
 
@@ -1195,6 +1197,7 @@ class BenefitFeatureFlag:
     metadata: MetadataOutputType
 
     visibility: BenefitVisibility
+    """The visibility of the benefit in the customer portal."""
 
     properties: BenefitFeatureFlagProperties
 
@@ -1310,6 +1313,7 @@ class BenefitGitHubRepository:
     metadata: MetadataOutputType
 
     visibility: BenefitVisibility
+    """The visibility of the benefit in the customer portal."""
 
     properties: BenefitGitHubRepositoryProperties
 
@@ -2058,6 +2062,7 @@ class BenefitLicenseKeys:
     metadata: MetadataOutputType
 
     visibility: BenefitVisibility
+    """The visibility of the benefit in the customer portal."""
 
     properties: BenefitLicenseKeysProperties
 
@@ -2183,6 +2188,7 @@ class BenefitMeterCredit:
     metadata: MetadataOutputType
 
     visibility: BenefitVisibility
+    """The visibility of the benefit in the customer portal."""
 
     properties: BenefitMeterCreditProperties
 
@@ -2365,6 +2371,7 @@ class BenefitSlackSharedChannel:
     metadata: MetadataOutputType
 
     visibility: BenefitVisibility
+    """The visibility of the benefit in the customer portal."""
 
     properties: BenefitSlackSharedChannelProperties
 
@@ -2479,6 +2486,7 @@ class BenefitSubscriberOrganization:
     """Avatar URL shown in checkout, customer portal, emails etc."""
 
     proration_behavior: SubscriptionProrationBehavior
+    """Proration behavior applied when customer updates their subscription from the portal."""
 
     allow_customer_updates: bool
     """Whether customers can update their subscriptions from the customer portal."""
@@ -2551,8 +2559,10 @@ class CardPayment:
     """The ID of the object."""
 
     processor: PaymentProcessor
+    """The payment processor."""
 
     status: PaymentStatus
+    """The payment status."""
 
     amount: int
     """The payment amount in cents."""
@@ -2585,6 +2595,7 @@ class CardPayment:
     """Additional metadata from the payment processor for internal use."""
 
     method_metadata: CardPaymentMetadata
+    """Additional metadata for the card payment method."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -2615,8 +2626,18 @@ class Checkout:
     """Key-value object storing custom field values."""
 
     payment_processor: PaymentProcessor
+    """Payment processor used."""
 
     status: CheckoutStatus
+    """
+        Status of the checkout session.
+
+        - Open: the checkout session was opened.
+        - Expired: the checkout session was expired and is no more accessible.
+        - Confirmed: the user on the checkout session clicked Pay. This is not indicative of the payment's success status.
+        - Failed: the checkout definitely failed for technical reasons and cannot be retried. In most cases, this state is never reached.
+        - Succeeded: the payment on the checkout was performed successfully.
+        """
 
     client_secret: str
     """Client secret used to update and complete the checkout session from the client."""
@@ -2747,6 +2768,7 @@ class Checkout:
     payment_processor_metadata: dict[str, str]
 
     billing_address_fields: CheckoutBillingAddressFields
+    """Determine which billing address fields should be disabled, optional or required in the checkout form."""
 
     trial_interval: TrialInterval | None
     """The interval unit for the trial period."""
@@ -2968,6 +2990,7 @@ class CheckoutLink:
     metadata: MetadataOutputType
 
     payment_processor: PaymentProcessor
+    """Payment processor used."""
 
     client_secret: str
     """Client secret used to access the checkout link."""
@@ -3040,6 +3063,7 @@ class CheckoutLinkProduct:
     """The description of the product."""
 
     visibility: ProductVisibility
+    """The visibility of the product."""
 
     recurring_interval: RecurringInterval | None
     """The recurring interval of the product. If `None`, the product is a one-time purchase."""
@@ -3100,6 +3124,7 @@ class CheckoutOrganization:
     """Avatar URL shown in checkout, customer portal, emails etc."""
 
     proration_behavior: SubscriptionProrationBehavior
+    """Proration behavior applied when customer updates their subscription from the portal."""
 
     allow_customer_updates: bool
     """Whether customers can update their subscriptions from the customer portal."""
@@ -3131,6 +3156,7 @@ class CheckoutProduct:
     """The description of the product."""
 
     visibility: ProductVisibility
+    """The visibility of the product."""
 
     recurring_interval: RecurringInterval | None
     """The recurring interval of the product. If `None`, the product is a one-time purchase."""
@@ -3180,8 +3206,18 @@ class CheckoutPublic:
     """Key-value object storing custom field values."""
 
     payment_processor: PaymentProcessor
+    """Payment processor used."""
 
     status: CheckoutStatus
+    """
+        Status of the checkout session.
+
+        - Open: the checkout session was opened.
+        - Expired: the checkout session was expired and is no more accessible.
+        - Confirmed: the user on the checkout session clicked Pay. This is not indicative of the payment's success status.
+        - Failed: the checkout definitely failed for technical reasons and cannot be retried. In most cases, this state is never reached.
+        - Succeeded: the payment on the checkout was performed successfully.
+        """
 
     client_secret: str
     """Client secret used to update and complete the checkout session from the client."""
@@ -3312,6 +3348,7 @@ class CheckoutPublic:
     payment_processor_metadata: dict[str, str]
 
     billing_address_fields: CheckoutBillingAddressFields
+    """Determine which billing address fields should be disabled, optional or required in the checkout form."""
 
     products: list[CheckoutProduct]
     """List of products available to select."""
@@ -3358,6 +3395,7 @@ class CheckoutPublicConfirmed:
     """Key-value object storing custom field values."""
 
     payment_processor: PaymentProcessor
+    """Payment processor used."""
 
     status: typing.Literal["confirmed"]
 
@@ -3490,6 +3528,7 @@ class CheckoutPublicConfirmed:
     payment_processor_metadata: dict[str, str]
 
     billing_address_fields: CheckoutBillingAddressFields
+    """Determine which billing address fields should be disabled, optional or required in the checkout form."""
 
     products: list[CheckoutProduct]
     """List of products available to select."""
@@ -4323,8 +4362,10 @@ class CustomerMeter:
     """The balance of the meter, i.e. the difference between credited and consumed units."""
 
     customer: Customer
+    """The customer associated with this meter."""
 
     meter: Meter
+    """The meter associated with this customer."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -4488,6 +4529,7 @@ class CustomerOrderProduct:
     """The description of the product."""
 
     visibility: ProductVisibility
+    """The visibility of the product."""
 
     recurring_interval: RecurringInterval | None
     """The recurring interval of the product. If `None`, the product is a one-time purchase."""
@@ -4548,11 +4590,13 @@ class CustomerOrderSubscription:
     """The currency of the subscription."""
 
     recurring_interval: RecurringInterval
+    """The interval at which the subscription recurs."""
 
     recurring_interval_count: int
     """Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on."""
 
     status: SubscriptionStatus
+    """The status of the subscription."""
 
     current_period_start: str
     """The start timestamp of the current billing period."""
@@ -4642,13 +4686,16 @@ class CustomerOrganization:
     """Avatar URL shown in checkout, customer portal, emails etc."""
 
     proration_behavior: SubscriptionProrationBehavior
+    """Proration behavior applied when customer updates their subscription from the portal."""
 
     allow_customer_updates: bool
     """Whether customers can update their subscriptions from the customer portal."""
 
     customer_portal_settings: OrganizationCustomerPortalSettings
+    """Settings related to the customer portal"""
 
     organization_features: CustomerOrganizationFeatureSettings | None = None
+    """Feature flags for the customer portal."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -4809,6 +4856,7 @@ class CustomerPortalMember:
     """The name of the member."""
 
     role: MemberRole
+    """The role of the member within the team."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -4860,6 +4908,7 @@ class CustomerProduct:
     """The description of the product."""
 
     visibility: ProductVisibility
+    """The visibility of the product."""
 
     recurring_interval: RecurringInterval | None
     """The recurring interval of the product. If `None`, the product is a one-time purchase."""
@@ -4910,6 +4959,7 @@ class CustomerSeat:
     """The order ID (for one-time purchase seats)"""
 
     status: SeatStatus
+    """Status of the seat"""
 
     customer_id: str | None
     """The customer ID. When member_model_enabled is true, this is the billing customer (purchaser). When false, this is the seat member customer."""
@@ -4944,6 +4994,7 @@ class CustomerSeatClaimResponse:
     """Response after successfully claiming a seat."""
 
     seat: CustomerSeat
+    """The claimed seat"""
 
     customer_session_token: str
     """Session token for immediate customer portal access"""
@@ -4995,8 +5046,10 @@ class CustomerStateBenefitGrant:
     """The ID of the benefit concerned by this grant."""
 
     benefit_type: BenefitType
+    """The type of the benefit concerned by this grant."""
 
     benefit_metadata: MetadataOutputType
+    """The metadata of the benefit concerned by this grant."""
 
     properties: (
         BenefitGrantDiscordProperties
@@ -5129,6 +5182,7 @@ class CustomerStateSubscription:
     """The currency of the subscription."""
 
     recurring_interval: RecurringInterval
+    """The interval at which the subscription recurs."""
 
     current_period_start: str
     """The start timestamp of the current billing period."""
@@ -5281,11 +5335,13 @@ class CustomerSubscription:
     """The currency of the subscription."""
 
     recurring_interval: RecurringInterval
+    """The interval at which the subscription recurs."""
 
     recurring_interval_count: int
     """Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on."""
 
     status: SubscriptionStatus
+    """The status of the subscription."""
 
     current_period_start: str
     """The start timestamp of the current billing period."""
@@ -5430,6 +5486,7 @@ class CustomerSubscriptionProduct:
     """The description of the product."""
 
     visibility: ProductVisibility
+    """The visibility of the product."""
 
     recurring_interval: RecurringInterval | None
     """The recurring interval of the product. If `None`, the product is a one-time purchase."""
@@ -6047,6 +6104,7 @@ class DiscountProduct:
     """The description of the product."""
 
     visibility: ProductVisibility
+    """The visibility of the product."""
 
     recurring_interval: RecurringInterval | None
     """The recurring interval of the product. If `None`, the product is a one-time purchase."""
@@ -6093,6 +6151,7 @@ class Dispute:
     """The ID of the object."""
 
     status: DisputeStatus
+    """Status of the dispute. `prevented` means we issued a refund before the dispute was escalated, avoiding any fees."""
 
     resolved: bool
     """Whether the dispute has been resolved (won or lost)."""
@@ -6125,6 +6184,7 @@ class Dispute:
     """The ID of the payment associated with the dispute."""
 
     customer: DisputeCustomer
+    """The customer who was charged for the disputed payment."""
 
     case_id: str | None
     """The ID of the support case for this dispute, if one was opened."""
@@ -6160,6 +6220,7 @@ class DisputeCustomer:
     """Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address."""
 
     type: CustomerType
+    """The type of customer: 'individual' for single users, 'team' for customers with multiple members."""
 
     name: str | None
     """The name of the customer."""
@@ -6262,6 +6323,7 @@ class EventName:
     """Human readable label of the event."""
 
     source: EventSource
+    """The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."""
 
     occurrences: int
     """Number of times the event has occurred."""
@@ -6321,6 +6383,7 @@ class EventTypeWithStats:
     """The ID of the organization owning the event type."""
 
     source: EventSource
+    """The source of the events (system or user)."""
 
     occurrences: int
     """Number of times the event has occurred."""
@@ -6450,8 +6513,10 @@ class GenericPayment:
     """The ID of the object."""
 
     processor: PaymentProcessor
+    """The payment processor."""
 
     status: PaymentStatus
+    """The payment status."""
 
     amount: int
     """The payment amount in cents."""
@@ -6592,8 +6657,10 @@ class KrCardPayment:
     """The ID of the object."""
 
     processor: PaymentProcessor
+    """The payment processor."""
 
     status: PaymentStatus
+    """The payment status."""
 
     amount: int
     """The payment amount in cents."""
@@ -6626,6 +6693,7 @@ class KrCardPayment:
     """Additional metadata from the payment processor for internal use."""
 
     method_metadata: KrCardPaymentMetadata
+    """Additional metadata for the South Korean card payment method."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -6682,6 +6750,7 @@ class LegacyRecurringProductPriceCustom:
     """The ID of the price."""
 
     source: ProductPriceSource
+    """The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session."""
 
     amount_type: typing.Literal["custom"]
 
@@ -6701,6 +6770,7 @@ class LegacyRecurringProductPriceCustom:
     """The type of the price."""
 
     recurring_interval: RecurringInterval
+    """The recurring interval of the price."""
 
     minimum_amount: int
     """The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'."""
@@ -6730,6 +6800,7 @@ class LegacyRecurringProductPriceFixed:
     """The ID of the price."""
 
     source: ProductPriceSource
+    """The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session."""
 
     amount_type: typing.Literal["fixed"]
 
@@ -6749,6 +6820,7 @@ class LegacyRecurringProductPriceFixed:
     """The type of the price."""
 
     recurring_interval: RecurringInterval
+    """The recurring interval of the price."""
 
     price_amount: int
     """The price in cents."""
@@ -6828,6 +6900,7 @@ class LicenseKeyCustomer:
     """Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address."""
 
     type: CustomerType
+    """The type of customer: 'individual' for single users, 'team' for customers with multiple members."""
 
     name: str | None
     """The name of the customer."""
@@ -6933,6 +7006,7 @@ class LicenseKeySubscription:
     """The ID of the object."""
 
     status: SubscriptionStatus
+    """The status of the subscription."""
 
     current_period_start: str
     """The start timestamp of the current billing period."""
@@ -7272,6 +7346,7 @@ class Member:
     """The ID of the member in your system. This must be unique within the customer. """
 
     role: MemberRole
+    """The role of the member within the customer."""
 
 
 MetadataOutputType: typing.TypeAlias = dict[str, str | int | float | bool]
@@ -7294,6 +7369,7 @@ class Meter:
     """The name of the meter. Will be shown on customer's invoices and usage."""
 
     unit: MeterUnit
+    """The unit of the meter."""
 
     custom_label: str | None = None
     """The label for the custom unit."""
@@ -7302,6 +7378,7 @@ class Meter:
     """The multiplier to convert from base unit to display scale."""
 
     filter: Filter
+    """The filter to apply on events that'll be used to calculate the meter."""
 
     aggregation: CountAggregation | PropertyAggregation | UniqueAggregation
     """The aggregation to apply on the filtered events to calculate the meter."""
@@ -7447,6 +7524,7 @@ class Metric:
     """Human-readable name for the metric."""
 
     type: MetricType
+    """Type of the metric, useful to know the unit or format of the value."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -7717,14 +7795,19 @@ class MetricsIntervalsLimits:
     """Date interval limits to get metrics for each interval."""
 
     hour: MetricsIntervalLimit
+    """Limits for the hour interval."""
 
     day: MetricsIntervalLimit
+    """Limits for the day interval."""
 
     week: MetricsIntervalLimit
+    """Limits for the week interval."""
 
     month: MetricsIntervalLimit
+    """Limits for the month interval."""
 
     year: MetricsIntervalLimit
+    """Limits for the year interval."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -7735,6 +7818,7 @@ class MetricsLimits:
     """Minimum date to get metrics."""
 
     intervals: MetricsIntervalsLimits
+    """Limits for each interval."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -7745,8 +7829,10 @@ class MetricsResponse:
     """List of data for each timestamp."""
 
     totals: MetricsTotals
+    """Totals for the whole selected period."""
 
     metrics: Metrics
+    """Information about the returned metrics."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -8052,6 +8138,7 @@ class OrderCustomer:
     """Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address."""
 
     type: CustomerType
+    """The type of customer: 'individual' for single users, 'team' for customers with multiple members."""
 
     name: str | None
     """The name of the customer."""
@@ -8247,6 +8334,7 @@ class OrderProduct:
     """The description of the product."""
 
     visibility: ProductVisibility
+    """The visibility of the product."""
 
     recurring_interval: RecurringInterval | None
     """The recurring interval of the product. If `None`, the product is a one-time purchase."""
@@ -8353,11 +8441,13 @@ class OrderSubscription:
     """The currency of the subscription."""
 
     recurring_interval: RecurringInterval
+    """The interval at which the subscription recurs."""
 
     recurring_interval_count: int
     """Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on."""
 
     status: SubscriptionStatus
+    """The status of the subscription."""
 
     current_period_start: str
     """The start timestamp of the current billing period."""
@@ -8557,6 +8647,7 @@ class Organization:
     """Avatar URL shown in checkout, customer portal, emails etc."""
 
     proration_behavior: SubscriptionProrationBehavior
+    """Proration behavior applied when customer updates their subscription from the portal."""
 
     allow_customer_updates: bool
     """Whether customers can update their subscriptions from the customer portal."""
@@ -8571,6 +8662,7 @@ class Organization:
     """Links to social profiles."""
 
     status: OrganizationStatus
+    """Current organization status"""
 
     details_submitted_at: str | None
     """When the business details were submitted for review."""
@@ -8585,17 +8677,22 @@ class Organization:
     """Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available."""
 
     default_tax_behavior: TaxBehaviorOption
+    """Default tax behavior applied on products."""
 
     feature_settings: OrganizationFeatureSettings | None
     """Organization feature settings"""
 
     subscription_settings: OrganizationSubscriptionSettings
+    """Settings related to subscriptions management"""
 
     customer_email_settings: OrganizationCustomerEmailSettings
+    """Settings related to customer emails"""
 
     customer_portal_settings: OrganizationCustomerPortalSettings
+    """Settings related to the customer portal"""
 
     dispute_settings: OrganizationDisputeSettings
+    """Settings related to disputes"""
 
     embed_hosts: list[str]
     """Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts — `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on."""
@@ -8610,6 +8707,7 @@ class Organization:
     """ID of the payout account."""
 
     capabilities: OrganizationCapabilities
+    """Capabilities currently granted to the organization."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -8781,6 +8879,7 @@ class OrganizationNotReadyForPayments:
 @dataclasses.dataclass(kw_only=True, slots=True)
 class OrganizationSocialLink:
     platform: OrganizationSocialPlatforms
+    """The social platform of the URL"""
 
     url: str
     """The URL to the organization profile"""
@@ -9022,6 +9121,7 @@ class Product:
     """The description of the product."""
 
     visibility: ProductVisibility
+    """The visibility of the product."""
 
     recurring_interval: RecurringInterval | None
     """The recurring interval of the product. If `None`, the product is a one-time purchase."""
@@ -9123,6 +9223,7 @@ class ProductPriceCustom:
     """The ID of the price."""
 
     source: ProductPriceSource
+    """The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session."""
 
     amount_type: typing.Literal["custom"]
 
@@ -9162,6 +9263,7 @@ class ProductPriceFixed:
     """The ID of the price."""
 
     source: ProductPriceSource
+    """The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session."""
 
     amount_type: typing.Literal["fixed"]
 
@@ -9192,6 +9294,7 @@ class ProductPriceMeter:
     """The name of the meter."""
 
     unit: MeterUnit
+    """The unit of the meter."""
 
     custom_label: str | None
     """The label for the custom unit."""
@@ -9214,6 +9317,7 @@ class ProductPriceMeteredTiers:
     """The ID of the price."""
 
     source: ProductPriceSource
+    """The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session."""
 
     amount_type: typing.Literal["metered_tiers"]
 
@@ -9236,8 +9340,10 @@ class ProductPriceMeteredTiers:
     """The ID of the meter associated to the price."""
 
     meter: ProductPriceMeter
+    """The meter associated to the price."""
 
     tiers: Tiers
+    """The pricing tiers based on consumed units."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -9254,6 +9360,7 @@ class ProductPriceMeteredUnit:
     """The ID of the price."""
 
     source: ProductPriceSource
+    """The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session."""
 
     amount_type: typing.Literal["metered_unit"]
 
@@ -9276,6 +9383,7 @@ class ProductPriceMeteredUnit:
     """The ID of the meter associated to the price."""
 
     meter: ProductPriceMeter
+    """The meter associated to the price."""
 
     unit_amount: str
     """The price per unit in cents."""
@@ -9295,6 +9403,7 @@ class ProductPriceSeatBased:
     """The ID of the price."""
 
     source: ProductPriceSource
+    """The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session."""
 
     amount_type: typing.Literal["seat_based"]
 
@@ -9310,41 +9419,14 @@ class ProductPriceSeatBased:
     product_id: str
     """The ID of the product owning the price."""
 
-    seat_tiers: ProductPriceSeatTiersOutput
+    tiers: Tiers
+    """Tiered pricing based on the purchased seat quantity."""
 
+    minimum_units: int | None
+    """The minimum purchasable seat quantity (inclusive)."""
 
-@dataclasses.dataclass(kw_only=True, slots=True)
-class ProductPriceSeatTier:
-    """A pricing tier for seat-based pricing."""
-
-    min_seats: int
-    """Minimum number of seats (inclusive)"""
-
-    max_seats: int | None = None
-    """Maximum number of seats (inclusive). None for unlimited."""
-
-    price_per_seat: int
-    """Price per seat in cents for this tier"""
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class ProductPriceSeatTiersOutput:
-    """List of pricing tiers for seat-based pricing.
-
-    The minimum and maximum seat limits are derived from the tiers:
-    - minimum_seats = first tier's min_seats
-    - maximum_seats = last tier's max_seats (None for unlimited)"""
-
-    seat_tier_type: SeatTierType | None = None
-
-    tiers: list[ProductPriceSeatTier]
-    """List of pricing tiers"""
-
-    minimum_seats: int
-    """Minimum number of seats required for purchase, derived from first tier."""
-
-    maximum_seats: int | None
-    """Maximum number of seats allowed for purchase, derived from last tier. None for unlimited."""
+    maximum_units: int | None
+    """The maximum purchasable seat quantity, from the last tier's bound. `null` for unlimited."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -9362,6 +9444,7 @@ class ProductPriceUnitBased:
     """The ID of the price."""
 
     source: ProductPriceSource
+    """The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session."""
 
     amount_type: typing.Literal["unit_based"]
 
@@ -9378,6 +9461,7 @@ class ProductPriceUnitBased:
     """The ID of the product owning the price."""
 
     tiers: Tiers
+    """Tiered pricing based on the purchased unit quantity."""
 
     minimum_units: int | None
     """The minimum purchasable quantity (inclusive)."""
@@ -9447,6 +9531,7 @@ class RefundDispute:
     """The ID of the object."""
 
     status: DisputeStatus
+    """Status of the dispute. `prevented` means we issued a refund before the dispute was escalated, avoiding any fees."""
 
     resolved: bool
     """Whether the dispute has been resolved (won or lost)."""
@@ -9645,11 +9730,13 @@ class Subscription:
     """The currency of the subscription."""
 
     recurring_interval: RecurringInterval
+    """The interval at which the subscription recurs."""
 
     recurring_interval_count: int
     """Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on."""
 
     status: SubscriptionStatus
+    """The status of the subscription."""
 
     current_period_start: str
     """The start timestamp of the current billing period."""
@@ -9956,6 +10043,7 @@ class SubscriptionCustomer:
     """Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address."""
 
     type: CustomerType
+    """The type of customer: 'individual' for single users, 'team' for customers with multiple members."""
 
     name: str | None
     """The name of the customer."""
@@ -10078,6 +10166,7 @@ class SubscriptionMeter:
     """The ID of the meter."""
 
     meter: Meter
+    """The meter associated with this subscription."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -11144,6 +11233,7 @@ class WebhookDelivery:
     """The response body returned by the URL, or the error message if the endpoint was unreachable."""
 
     webhook_event: WebhookEvent
+    """The webhook event sent by this delivery."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -11169,6 +11259,7 @@ class WebhookEndpoint:
     """The API version that'll be used in event payloads."""
 
     format: WebhookFormat
+    """The format of the webhook payload."""
 
     secret: str
     """The secret used to sign the webhook events."""
@@ -11221,6 +11312,7 @@ class WebhookEvent:
     """The payload of the webhook event."""
 
     type: WebhookEventType
+    """The type of the webhook event."""
 
     is_archived: bool
     """Whether this event is archived. Archived events can't be redelivered, and the payload is not accessible anymore."""

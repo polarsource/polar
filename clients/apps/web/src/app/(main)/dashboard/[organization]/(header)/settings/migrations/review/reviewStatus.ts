@@ -57,9 +57,7 @@ export function reviewStatus(row: ReviewRow): ReviewStatus {
   const stage = reviewStage(row)
   const base = STAGES[stage]
   const paymentMethod =
-    stage === 'stays' || stage === 'switched' || stage === 'failed'
-      ? null
-      : rowPaymentMethod(row)
+    stage === 'switched' || stage === 'failed' ? null : rowPaymentMethod(row)
   if (!paymentMethod) {
     return { ...base, paymentMethod }
   }

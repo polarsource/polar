@@ -4,7 +4,6 @@ import { Info } from 'lucide-react'
 import { ReactNode } from 'react'
 import { PaymentMethodNote, RowPaymentMethod } from './paymentMethod'
 
-// `children` followed by an info icon that explains the note on hover.
 export function PaymentMethodTooltip({
   note,
   label,
@@ -28,7 +27,7 @@ export function PaymentMethodTooltip({
           aria-label={`${label}: ${note.title}`}
         >
           {children}
-          <Info className="size-3.5" />
+          <Info size={14} />
         </Box>
       </TooltipTrigger>
       <TooltipContent className="max-w-xs">

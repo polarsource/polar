@@ -193,7 +193,7 @@ jobs:
           printf '%s\n' \
             "Update all adapters and the CLI to @polar-sh/sdk@$RELEASE_VERSION after its successful npm release." \
             "" \
-            "Includes updated SDK dependencies and peer dependencies, the pnpm lockfile, and a patch changeset for every adapter and polar-cli." \
+            "Includes updated SDK dependencies and peer dependencies, the pnpm lockfile, and patch changesets for the updated adapters and CLI." \
             > "$body_file"
           gh pr create --base main --head "$branch" --draft --title "$title" --body-file "$body_file"
 

@@ -13,11 +13,12 @@ const packagePaths = directories
   .filter((directory) => directory.isDirectory())
   .sort((a, b) => a.name.localeCompare(b.name))
   .map((directory) => join('adapters', directory.name, 'package.json'))
-packagePaths.push(join('packages', 'cli', 'package.json'))
+const cliPackagePath = join('packages', 'cli', 'package.json')
+packagePaths.push(cliPackagePath)
 
 for (const packagePath of packagePaths) {
   const packageJson = JSON.parse(await readFile(packagePath, 'utf8'))
-  if (packageJson.private && packageJson.name !== 'polar-cli') continue
+  if (packageJson.private && packagePath !== cliPackagePath) continue
 
   let packageUpdated = false
   for (const section of [

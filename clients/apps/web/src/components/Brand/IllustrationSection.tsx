@@ -1,17 +1,19 @@
-import React from 'react'
+import { Grid } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
+import type { ComponentType } from 'react'
+import { Chapter } from '../Landing/Chapter'
+import { Compass } from '../Landing/graphics/Compass'
 import { ConcentricDraw } from '../Landing/graphics/ConcentricDraw'
 import { CycleArrow } from '../Landing/graphics/CycleArrow'
 import { GaugeSweep } from '../Landing/graphics/GaugeSweep'
 import { LinkedRings } from '../Landing/graphics/LinkedRings'
 import { OrbitingSpheres } from '../Landing/graphics/OrbitingSpheres'
-import { VennCluster } from '../Landing/graphics/VennCluster'
-import { BrandSection } from './BrandSection'
-import { brandSections } from './brand'
-import { SteppedRadial } from '../Landing/graphics/SteppedRadial'
-import { Compass } from '../Landing/graphics/Compass'
 import { RadialSpinner } from '../Landing/graphics/RadialSpinner'
+import { SteppedRadial } from '../Landing/graphics/SteppedRadial'
+import { VennCluster } from '../Landing/graphics/VennCluster'
+import { brandSections } from './brand'
 
-const illustrations: { name: string; Graphic: React.ComponentType }[] = [
+const illustrations: { name: string; Graphic: ComponentType }[] = [
   { name: 'Radial Spinner', Graphic: RadialSpinner },
   { name: 'Stepped Radial', Graphic: SteppedRadial },
   { name: 'Compass', Graphic: Compass },
@@ -23,32 +25,36 @@ const illustrations: { name: string; Graphic: React.ComponentType }[] = [
   { name: 'Concentric', Graphic: ConcentricDraw },
 ]
 
-// Recolor the shared landing graphics for the dark brand surface. The canvas
-// components read these inherited CSS custom properties at draw time.
-const graphicTheme = {
-  '--color-graphic-stroke': '#adadad',
-  '--color-graphic-dim': '#2e2e2e',
-} as React.CSSProperties
-
 export function IllustrationSection() {
   return (
-    <BrandSection
-      meta={brandSections[3]}
+    <Chapter
+      id={brandSections[3].id}
+      index={brandSections[3].index}
+      name={brandSections[3].label}
       title="A geometric system in motion"
-      lead="A family of line illustrations built from clear primitives and thin strokes. Quiet, exact, and legible at any size."
+      subtitle="Clear primitives, thin strokes"
+      description="A family of line illustrations that stays quiet, exact and legible at any size."
     >
-      <div
-        style={graphicTheme}
-        className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-3"
+      <Grid
+        templateColumns={{
+          base: '1fr',
+          sm: 'repeat(2, 1fr)',
+          md: 'repeat(3, 1fr)',
+        }}
+        gap="l"
       >
         {illustrations.map(({ name, Graphic }) => (
-          <div key={name} className="bg-brand-raised flex flex-col gap-6 p-8">
-            <div className="aspect-square w-full">
+          <Box
+            key={name}
+            padding={{ base: 'xl', md: '3xl' }}
+            backgroundColor="background-secondary"
+          >
+            <Box display="block" width="100%" aspectRatio="1 / 1">
               <Graphic />
-            </div>
-          </div>
+            </Box>
+          </Box>
         ))}
-      </div>
-    </BrandSection>
+      </Grid>
+    </Chapter>
   )
 }

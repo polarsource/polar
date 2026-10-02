@@ -516,7 +516,8 @@ class SubscriptionResume(Schema):
         description=(
             "Resume a paused subscription immediately, "
             "starting a new billing period and charging the customer."
-        )
+        ),
+        json_schema_extra=cli_confirm_equals(True),
     )
 
 

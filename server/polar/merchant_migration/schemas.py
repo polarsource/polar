@@ -319,13 +319,6 @@ class MerchantMigrationRecordSummaryEntity(PrecheckEntitySummary):
         "importable by the pre-check, pending in the ledger, and not already backed "
         "by an imported customer and product. Zero for other entities."
     )
-    payment_method_not_copied: int = Field(
-        description=(
-            "How many importable subscriptions renew with something other than a "
-            "card, or nothing, so no payment method moves with them. Zero for "
-            "other entities."
-        ),
-    )
 
 
 class MerchantMigrationRecordSummary(Schema):

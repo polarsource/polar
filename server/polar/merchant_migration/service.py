@@ -51,7 +51,6 @@ from .adapters import PaginatedSourceAdapter, StripeAdapter
 from .canonical import (
     CanonicalCustomer,
     CanonicalPaymentMethod,
-    CanonicalPaymentMethodType,
     CanonicalProduct,
     CanonicalRecord,
     CanonicalSubscription,
@@ -382,7 +381,6 @@ def _summarize_entities(
             "ready": 0,
             "action_required": 0,
             "selectable": 0,
-            "payment_method_not_copied": 0,
         }
         for entity in entities
     }
@@ -413,12 +411,6 @@ def _summarize_entities(
             and not item.dependencies_imported
         ):
             tally["selectable"] += 1
-        if (
-            item.entity == PrecheckEntity.subscriptions
-            and item.import_status != MerchantMigrationRecordStatus.imported
-            and item.payment_method_type != CanonicalPaymentMethodType.card
-        ):
-            tally["payment_method_not_copied"] += 1
 
     return [
         MerchantMigrationRecordSummaryEntity(
@@ -430,7 +422,6 @@ def _summarize_entities(
             ready=tally["ready"],
             action_required=tally["action_required"],
             selectable=tally["selectable"],
-            payment_method_not_copied=tally["payment_method_not_copied"],
         )
         for entity, tally in tallies.items()
     ]

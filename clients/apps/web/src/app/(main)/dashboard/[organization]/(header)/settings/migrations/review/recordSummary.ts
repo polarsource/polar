@@ -26,7 +26,6 @@ const empty = (entity: CountEntity): EntityCount => ({
   ready: 0,
   action_required: 0,
   selectable: 0,
-  payment_method_not_copied: 0,
 })
 
 export const useRecordSummary = (

@@ -50,8 +50,8 @@ if [[ "${1:-api}" == "api" ]] && [[ ! -f "$EMAIL_MARKER" ]]; then
     export pnpm_config_store_dir=/root/.local/share/pnpm/store
     # Install dependencies (uses shared pnpm store for speed)
     pnpm install --frozen-lockfile
-    # Build: tsup compiles TypeScript, pkg creates standalone binary
-    pnpm exec tsup
+    # Build: tsdown compiles TypeScript, pkg creates standalone binary
+    pnpm exec tsdown
     pnpm exec pkg package.json
     # Mark as built for this architecture
     touch "bin/.built-${ARCH}"

@@ -20,7 +20,7 @@
     }
   },
   "scripts": {
-    "build": "rm -rf dist && tsup",
+    "build": "rm -rf dist && tsdown",
     "format": "oxfmt ./src",
     "format:check": "oxfmt --check ./src",
     "typecheck": "tsc --noEmit"
@@ -62,7 +62,7 @@
     "@typescript/native": "catalog:",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "tsup": "catalog:",
+    "tsdown": "catalog:",
     "typescript": "catalog:"
   },
   "peerDependencies": {

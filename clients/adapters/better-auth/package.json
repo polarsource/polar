@@ -40,7 +40,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "build": "tsup ./src/index.ts ./src/client.ts --format esm,cjs --dts --clean --sourcemap",
+    "build": "tsdown",
     "dev": "npm run build -- --watch",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
@@ -64,7 +64,7 @@
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "better-auth": "^1.7.0",
-    "tsup": "catalog:",
+    "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "zod": "^3.25.0 || ^4.0.0"

@@ -51,6 +51,7 @@ describe('rowPaymentMethod', () => {
 
   it('says nothing for skipped rows and other entities', () => {
     expect(rowPaymentMethod(row({ status: 'skipped' }))).toBeNull()
+    expect(rowPaymentMethod(row({ import_status: 'skipped' }))).toBeNull()
     expect(rowPaymentMethod(row({ entity: 'customers' }))).toBeNull()
   })
 })

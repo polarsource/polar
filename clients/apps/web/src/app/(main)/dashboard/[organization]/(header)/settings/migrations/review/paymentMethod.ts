@@ -42,7 +42,13 @@ export interface RowPaymentMethod {
 // Only for rows that will move: a skipped subscription keeps its method on
 // Stripe, so there is nothing to say about it.
 export function rowPaymentMethod(row: ReviewRow): RowPaymentMethod | null {
-  if (row.entity !== 'subscriptions' || row.status === 'skipped') return null
+  if (
+    row.entity !== 'subscriptions' ||
+    row.status === 'skipped' ||
+    row.import_status === 'skipped'
+  ) {
+    return null
+  }
   const type = row.payment_method_type
   // An API that predates the field omits it; that isn't "no payment method".
   if (type === undefined) return null

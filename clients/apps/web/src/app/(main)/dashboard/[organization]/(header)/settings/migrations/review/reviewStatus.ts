@@ -8,8 +8,8 @@ export interface ReviewStatus {
   // only: most rows import as they are, and tinting those too would leave
   // nothing standing out.
   color?: StatusColor
-  // What moves with the subscription. Null for rows that stay on Stripe or
-  // have already switched, and for every other entity.
+  // What moves with the subscription. Null for rows that stay on Stripe,
+  // failed or have already switched, and for every other entity.
   paymentMethod: RowPaymentMethod | null
 }
 
@@ -57,8 +57,10 @@ export function reviewStatus(row: ReviewRow): ReviewStatus {
   const stage = reviewStage(row)
   const base = STAGES[stage]
   const paymentMethod =
-    stage === 'stays' || stage === 'switched' ? null : rowPaymentMethod(row)
-  if (!paymentMethod || stage === 'failed') {
+    stage === 'stays' || stage === 'switched' || stage === 'failed'
+      ? null
+      : rowPaymentMethod(row)
+  if (!paymentMethod) {
     return { ...base, paymentMethod }
   }
   const noCard = paymentMethod.kind === 'no_card'

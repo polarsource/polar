@@ -154,6 +154,14 @@ describe('reviewStatus', () => {
       ).toMatchObject({ label: 'Needs info, no card', color: 'yellow' })
     })
 
+    it('drops the payment method for failed rows', () => {
+      expect(
+        reviewStatus(
+          row({ import_status: 'failed', payment_method_type: 'link' }),
+        ),
+      ).toMatchObject({ label: 'Failed', paymentMethod: null })
+    })
+
     it('drops the payment method for rows that stay on Stripe', () => {
       expect(
         reviewStatus(row({ status: 'skipped', payment_method_type: 'link' })),

@@ -50,7 +50,7 @@ publishes **no host ports** — reach it with `dev docker exec <service> ...`.
 - Waits for api before starting.
 
 ### web (Next.js frontend)
-- `node:22-slim` + Turbopack, hot-reload on.
+- `node:24-slim` + Turbopack, hot-reload on.
 - Host port: `3000` (instance 0) or `3100+N`. Memory limit: 6 GB.
 - Healthcheck via Node's built-in `fetch` (the image has no curl/wget).
 - Waits for api to be **healthy** before starting (it proxies SSR to api).

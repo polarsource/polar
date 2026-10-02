@@ -14,7 +14,7 @@
     "format": "oxfmt src",
     "lint": "oxfmt --check src && oxlint ."
   },
-  "packageManager": "pnpm@10.28.1",
+  "packageManager": "pnpm@12.8.0",
   "dependencies": {
     "commander": "^15.0.0",
     "react": "^19.2.8",
@@ -39,11 +39,5 @@
       "host"
     ],
     "outputPath": "bin"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "sharp"
-    ]
   }
 }

@@ -31,7 +31,7 @@
     "@stylexjs/postcss-plugin": "catalog:",
     "@tailwindcss/forms": "catalog:",
     "@tailwindcss/postcss": "catalog:",
-    "@types/node": "^22.20.4",
+    "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@typescript/native": "catalog:",

@@ -89,7 +89,7 @@
     "@stripe/react-stripe-js": "catalog:",
     "@stripe/stripe-js": "catalog:",
     "@testing-library/jest-dom": "^7.0.1",
-    "@types/node": "^24.13.6",
+    "@types/node": "catalog:",
     "@testing-library/react": "catalog:",
     "@types/react": "catalog:",
     "@vitejs/plugin-react": "catalog:",

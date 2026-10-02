@@ -49,7 +49,7 @@
     "@effect/tsgo": "0.45.0",
     "@sindresorhus/tsconfig": "^8.1.0",
     "@types/bun": "^1.4.2",
-    "@types/node": "^24.13.6",
+    "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "@vitest/coverage-istanbul": "^5.0.1",
     "tsup": "^8.5.1",

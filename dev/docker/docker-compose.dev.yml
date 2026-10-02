@@ -175,7 +175,7 @@ services:
       # to it, so starting web before api is healthy yields 500s on first load.
       api:
         condition: service_healthy
-    # node:22-slim ships no curl/wget, so probe with Node's built-in fetch.
+    # node:24-slim ships no curl/wget, so probe with Node's built-in fetch.
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 10s

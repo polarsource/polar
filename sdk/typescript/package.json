@@ -197,7 +197,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
+    "@types/node": "^24.13.6",
     "oxfmt": "^0.56.0",
     "oxlint": "^1.71.0",
     "standardwebhooks": "^1.0.0",
@@ -206,7 +206,7 @@
     "vitest": "^4.1.9"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
-  "packageManager": "pnpm@11.13.1"
+  "packageManager": "pnpm@12.8.0"
 }

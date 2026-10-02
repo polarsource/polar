@@ -109,7 +109,7 @@
     "@types/big.js": "^6.2.2",
     "@types/dom-to-image": "^2.6.7",
     "@types/mdx": "^2.0.14",
-    "@types/node": "^24.13.6",
+    "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@types/web": "^0.0.357",

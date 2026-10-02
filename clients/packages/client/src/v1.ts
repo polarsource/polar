@@ -12823,6 +12823,18 @@ export interface components {
       detail: string
     }
     /**
+     * CanonicalPaymentMethodType
+     * @enum {string}
+     */
+    CanonicalPaymentMethodType:
+      | 'card'
+      | 'kr_card'
+      | 'us_bank_account'
+      | 'sepa_debit'
+      | 'bacs_debit'
+      | 'link'
+      | 'other'
+    /**
      * CardPayment
      * @description Schema of a payment with a card payment method.
      */
@@ -25597,6 +25609,10 @@ export interface components {
        * @description Whether Polar already has a card to charge for this subscription's customer. Null for non-subscription rows.
        */
       has_payment_method: boolean | null
+      /** @description The kind of payment method the subscription renews with on the source. Only cards are copied to Polar. Null for non-subscription rows, or when the source has none. */
+      payment_method_type:
+        | components['schemas']['CanonicalPaymentMethodType']
+        | null
       /**
        * Dependencies Imported
        * @description Whether this subscription's customer and product are already in Polar, so it can be created at cutover. Null for non-subscription rows.
@@ -25682,6 +25698,11 @@ export interface components {
        * @description How many subscriptions an import would still prepare: importable by the pre-check, pending in the ledger, and not already backed by an imported customer and product. Zero for other entities.
        */
       selectable: number
+      /**
+       * Payment Method Not Copied
+       * @description How many importable subscriptions renew with something other than a card, or nothing, so no payment method moves with them. Zero for other entities.
+       */
+      payment_method_not_copied: number
     }
     /** MerchantMigrationRecordTaxUpdate */
     MerchantMigrationRecordTaxUpdate: {
@@ -70035,6 +70056,17 @@ export const billingAddressFieldModeValues: ReadonlyArray<
 export const body_oauth2_consentActionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Body_oauth2_consent']['action']
 > = ['allow', 'deny']
+export const canonicalPaymentMethodTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['CanonicalPaymentMethodType']
+> = [
+  'card',
+  'kr_card',
+  'us_bank_account',
+  'sepa_debit',
+  'bacs_debit',
+  'link',
+  'other',
+]
 export const checkoutCreatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CheckoutCreatedEvent']['name']
 > = ['checkout.created']

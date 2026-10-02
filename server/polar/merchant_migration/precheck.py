@@ -977,6 +977,7 @@ def _item(
     discount_name: str | None = None,
     discount_code: str | None = None,
     cancels_at_period_end: bool | None = None,
+    payment_method_type: CanonicalPaymentMethodType | None = None,
 ) -> MerchantMigrationRecordItem:
     """One review row. ``skip`` means it won't import; ``note`` only annotates a
     row that will."""
@@ -1018,6 +1019,7 @@ def _item(
         discount_name=discount_name,
         discount_code=discount_code,
         has_payment_method=None,
+        payment_method_type=payment_method_type,
         dependencies_imported=None,
         cancels_at_period_end=cancels_at_period_end,
     )
@@ -1330,6 +1332,11 @@ def _subscription_items(
                 discount_name=kept_discount.name if kept_discount is not None else None,
                 discount_code=kept_discount.code if kept_discount is not None else None,
                 cancels_at_period_end=subscription.cancel_at_period_end,
+                payment_method_type=(
+                    subscription.payment_method.type
+                    if subscription.payment_method is not None
+                    else None
+                ),
             )
         )
     return items

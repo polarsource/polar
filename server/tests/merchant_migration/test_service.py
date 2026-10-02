@@ -3700,6 +3700,7 @@ class TestSummarizeRecords:
         subscriptions = by_entity[PrecheckEntity.subscriptions]
         assert subscriptions.ready == 0
         assert subscriptions.selectable == 1
+        assert subscriptions.payment_method_not_copied == 1
 
 
 def _canonical_subscription(

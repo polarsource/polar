@@ -21,6 +21,7 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
 )
 
+from .canonical import CanonicalPaymentMethodType
 from .pan_transfer import PanTransferMethod, PanTransferStep
 
 
@@ -243,6 +244,13 @@ class MerchantMigrationRecordItem(Schema):
             "customer. Null for non-subscription rows."
         ),
     )
+    payment_method_type: CanonicalPaymentMethodType | None = Field(
+        description=(
+            "The kind of payment method the subscription renews with on the "
+            "source. Only cards are copied to Polar. Null for non-subscription "
+            "rows, or when the source has none."
+        ),
+    )
     dependencies_imported: bool | None = Field(
         description=(
             "Whether this subscription's customer and product are already in Polar, "
@@ -310,6 +318,13 @@ class MerchantMigrationRecordSummaryEntity(PrecheckEntitySummary):
         description="How many subscriptions an import would still prepare: "
         "importable by the pre-check, pending in the ledger, and not already backed "
         "by an imported customer and product. Zero for other entities."
+    )
+    payment_method_not_copied: int = Field(
+        description=(
+            "How many importable subscriptions renew with something other than a "
+            "card, or nothing, so no payment method moves with them. Zero for "
+            "other entities."
+        ),
     )
 
 

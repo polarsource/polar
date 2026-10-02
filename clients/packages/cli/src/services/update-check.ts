@@ -5,16 +5,21 @@ import { dirname, join } from 'node:path'
 import { Effect } from 'effect'
 import { VERSION } from '@/version'
 import { getLatestRelease, isNewerVersion } from '@/services/github-releases'
+import { installedPackage, latestPackageVersion } from '@/services/updater'
 
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000
+
+type UpdateSource = 'github' | 'npm'
 
 interface UpdateCheckState {
   lastChecked: string
   latestVersion: string
+  source?: UpdateSource
 }
 
 export interface UpdateCheckOptions {
   home?: string
+  executable?: string
 }
 
 const stateFile = (home: string) => join(home, '.polar', 'update-check.json')
@@ -29,29 +34,52 @@ const readState = (file: string): UpdateCheckState | undefined => {
   }
 }
 
-const checkedRecently = (state: UpdateCheckState | undefined) =>
-  state !== undefined &&
+const updateSource = (executable?: string) =>
+  installedPackage(executable).pipe(
+    Effect.map((pkg): UpdateSource => (pkg ? 'npm' : 'github')),
+  )
+
+const fetchLatestVersion = (source: UpdateSource) =>
+  source === 'npm'
+    ? latestPackageVersion
+    : getLatestRelease.pipe(Effect.map((release) => release.version))
+
+const checkedRecently = (
+  state: UpdateCheckState | undefined,
+  source: UpdateSource,
+) =>
+  state?.source === source &&
   Date.now() - new Date(state.lastChecked).getTime() < CHECK_INTERVAL_MS
 
-export const availableUpdate = ({ home = homedir() }: UpdateCheckOptions = {}):
-  | string
-  | undefined => {
-  try {
-    const latest = readState(stateFile(home))?.latestVersion
-    return latest && isNewerVersion(latest, VERSION) ? latest : undefined
-  } catch {
-    return undefined
-  }
-}
+export const availableUpdate = ({
+  home = homedir(),
+  executable,
+}: UpdateCheckOptions = {}) =>
+  updateSource(executable).pipe(
+    Effect.map((source) => {
+      try {
+        const state = readState(stateFile(home))
+        const latest =
+          state?.source === source ? state.latestVersion : undefined
+        return latest && isNewerVersion(latest, VERSION) ? latest : undefined
+      } catch {
+        return undefined
+      }
+    }),
+  )
 
-export const checkForUpdate = ({ home = homedir() }: UpdateCheckOptions = {}) =>
+export const checkForUpdate = ({
+  home = homedir(),
+  executable,
+}: UpdateCheckOptions = {}) =>
   Effect.gen(function* () {
     const file = stateFile(home)
-    if (checkedRecently(readState(file))) return
-    const release = yield* getLatestRelease
+    const source = yield* updateSource(executable)
+    if (checkedRecently(readState(file), source)) return
     const state: UpdateCheckState = {
       lastChecked: new Date().toISOString(),
-      latestVersion: release.version,
+      latestVersion: yield* fetchLatestVersion(source),
+      source,
     }
     yield* Effect.tryPromise(() => {
       mkdirSync(dirname(file), { recursive: true })

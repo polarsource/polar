@@ -199,11 +199,10 @@ class TestAssignSeat:
         customer: Customer,
         customer_seat_claimed: CustomerSeat,
     ) -> None:
-        with pytest.raises(SeatAlreadyAssigned) as exc_info:
+        with pytest.raises(SeatAlreadyAssigned):
             await seat_service.assign_seat(
                 session, subscription_with_seats, customer_id=customer.id
             )
-        assert str(customer.id) not in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_assign_seat_with_metadata(

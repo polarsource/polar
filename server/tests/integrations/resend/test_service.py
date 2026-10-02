@@ -1,12 +1,12 @@
 import json
 from uuid import uuid4
 
-import httpx
 import pytest
 import respx
 from pytest_mock import MockerFixture
 
 from polar.config import settings
+from polar.integrations.resend.client import ResendAPIError
 from polar.integrations.resend.service import UserDoesNotExist
 from polar.integrations.resend.service import resend as resend_service
 from polar.kit.utils import utc_now
@@ -149,7 +149,7 @@ class TestSyncUser:
                 500
             )
 
-        with pytest.raises(httpx.HTTPStatusError):
+        with pytest.raises(ResendAPIError):
             await resend_service.sync_user(
                 session, user.id, previous_email=previous_email
             )

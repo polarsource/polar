@@ -38,3 +38,30 @@ class TriggerResponse(Schema):
     event: WebhookEventType
     delivered: bool
     payload: dict[str, Any]
+
+
+class SearchRequest(Schema):
+    query: str = Field(
+        min_length=1,
+        max_length=300,
+        description="Natural language question, e.g. `How can I create a customer?`",
+    )
+    limit: int = Field(default=3, ge=1, le=10)
+
+
+class SearchResult(Schema):
+    operation_id: str
+    method: str
+    path: str
+    summary: str
+    cli_command: str | None = Field(
+        description="Equivalent CLI command, when the operation is exposed by the CLI."
+    )
+    probability: float
+
+
+class SearchResponse(Schema):
+    query: str
+    model: str
+    confidence: float
+    results: list[SearchResult]

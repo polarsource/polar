@@ -9,9 +9,22 @@ from sse_starlette.sse import EventSourceResponse
 from standardwebhooks.webhooks import Webhook as StandardWebhook
 
 from polar.cli import auth
+from polar.cli.catalog import build_catalog
 from polar.cli.listener import mark_active, mark_inactive
-from polar.cli.schemas import TriggerEvent, TriggerRequest, TriggerResponse
-from polar.cli.service import NoActiveListener, list_trigger_events, trigger_event
+from polar.cli.schemas import (
+    SearchRequest,
+    SearchResponse,
+    TriggerEvent,
+    TriggerRequest,
+    TriggerResponse,
+)
+from polar.cli.service import (
+    NoActiveListener,
+    SearchUnavailable,
+    list_trigger_events,
+    search_routes,
+    trigger_event,
+)
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import ResourceNotFound
@@ -22,6 +35,7 @@ from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
+from polar.version import CURRENT_API_VERSION
 
 log = structlog.get_logger()
 
@@ -127,6 +141,25 @@ async def listen(
 @router.get("/events")
 async def events(auth_subject: auth.CLIRead) -> list[TriggerEvent]:
     return list(list_trigger_events())
+
+
+SearchNotAvailable = {
+    "description": "The API search backend is not configured or not reachable.",
+    "model": SearchUnavailable.schema(),
+}
+
+
+@router.post("/search", responses={503: SearchNotAvailable})
+async def search(
+    request: Request,
+    search_request: SearchRequest,
+    auth_subject: auth.CLIRead,
+) -> SearchResponse:
+    catalog = build_catalog(
+        request.app.routes,
+        getattr(request.state, "api_version", CURRENT_API_VERSION),
+    )
+    return await search_routes(catalog, search_request.query, search_request.limit)
 
 
 OrganizationNotFound = {

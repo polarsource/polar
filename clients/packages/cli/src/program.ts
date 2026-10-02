@@ -3,12 +3,16 @@ import { Command, GlobalFlag } from 'effect/unstable/cli'
 import { auth } from '@/commands/auth'
 import { home } from '@/commands/home'
 import { listen } from '@/commands/listen'
+import { search } from '@/commands/search'
 import { trigger } from '@/commands/trigger'
 import { update } from '@/commands/update'
 
 export const polar = Command.make('polar', {}, () => home).pipe(
   Command.withSubcommands([
-    { group: 'CLI COMMANDS', commands: [auth, listen, trigger, update] },
+    {
+      group: 'CLI COMMANDS',
+      commands: [auth, listen, search, trigger, update],
+    },
     { group: 'API RESOURCES', commands },
   ]),
 )

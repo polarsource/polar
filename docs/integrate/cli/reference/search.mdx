@@ -1,0 +1,42 @@
+---
+title: "polar search"
+sidebarTitle: "search"
+description: "Experimental: find the API operation for a task, described in plain words"
+---
+
+{/* Generated from the CLI by `pnpm --filter @polar-sh/cli docs:generate`. Do not edit by hand. */}
+
+```bash
+polar search [flags] <query...>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `query...` | `string` | What you want to do, in plain words, e.g. "create a customer" |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--limit` | `integer` | How many matching operations to show |
+| `--json` | `boolean` | Print the result as JSON |
+| `--org` | `string` | Organization ID for this invocation only |
+
+**Examples**
+
+Find the operation and CLI command that create a customer
+```bash
+polar search how do I create a customer
+```
+
+Show the five closest operations
+```bash
+polar search "refund an order" --limit 5
+```
+
+Print the ranked operations as JSON
+```bash
+polar search cancel a subscription --json
+```

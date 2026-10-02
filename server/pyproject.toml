@@ -72,6 +72,7 @@ dependencies = [
   "google-auth[requests]>=2.38.0",
   "tld>=0.13.2",
   "joserfc>=1.7.4",
+  "typesafe-sdk>=0.6.0",
 ]
 
 [dependency-groups]

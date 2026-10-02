@@ -13,6 +13,7 @@ import * as Config from '@/services/config'
 import * as Organizations from '@/services/organizations'
 import * as OAuth from '@/services/oauth'
 import * as Polar from '@/services/polar'
+import * as Search from '@/services/search'
 import * as Telemetry from '@/services/telemetry'
 import * as Trigger from '@/services/trigger'
 import { removeRetiredBinary } from '@/services/update'
@@ -37,6 +38,9 @@ const organizationsLayer = Organizations.layer.pipe(
 const triggerLayer = Trigger.layer.pipe(
   Layer.provide(Layer.mergeAll(authLayer, FetchHttpClient.layer)),
 )
+const searchLayer = Search.layer.pipe(
+  Layer.provide(Layer.mergeAll(authLayer, FetchHttpClient.layer)),
+)
 const updaterLayer = Updater.layer.pipe(
   Layer.provide(Layer.mergeAll(BunServices.layer, FetchHttpClient.layer)),
 )
@@ -51,6 +55,7 @@ const services = Layer.mergeAll(
   Deliveries.layer,
   polarLayer,
   organizationsLayer,
+  searchLayer,
   triggerLayer,
   updaterLayer,
   telemetryLayer,

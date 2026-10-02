@@ -5,7 +5,9 @@ from typing import Any
 from uuid import UUID
 
 from pydantic import ValidationError
+from typesafe_sdk import AsyncTypeSafeClient, Choice, TypeSafeError
 
+from polar.config import settings
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.utils import generate_uuid
 from polar.models import Organization
@@ -14,9 +16,16 @@ from polar.redis import Redis
 from polar.webhook.eventstream import publish_webhook_event
 from polar.webhook.webhooks import WebhookPayload, WebhookPayloadTypeAdapter
 
+from .catalog import CatalogEntry
 from .fixtures import SUPPORTED_EVENTS, TriggerFixtures
 from .listener import has_active_listener
-from .schemas import TriggerEvent, TriggerRequest, TriggerResponse
+from .schemas import (
+    SearchResponse,
+    SearchResult,
+    TriggerEvent,
+    TriggerRequest,
+    TriggerResponse,
+)
 
 
 class NoActiveListener(PolarError):
@@ -27,6 +36,89 @@ class NoActiveListener(PolarError):
             "Run `polar listen <url>` in another terminal first.",
             status_code=409,
         )
+
+
+class SearchUnavailable(PolarError):
+    def __init__(self, reason: str) -> None:
+        super().__init__(f"API search is unavailable: {reason}", status_code=503)
+
+
+NO_MATCH = "none"
+NO_MATCH_DESCRIPTION = (
+    "None of the listed operations answers the question, "
+    "or the question is not about the Polar API."
+)
+SEARCH_INSTRUCTIONS = (
+    "A developer integrating Polar, a payments and billing API, asked the question "
+    "in the state. Which single API operation should they call to do what they ask?"
+)
+SEARCH_TIMEOUT_SECONDS = 10.0
+
+
+async def search_routes(
+    catalog: Sequence[CatalogEntry], query: str, limit: int
+) -> SearchResponse:
+    if not settings.VERCEL_AI_GATEWAY_API_KEY:
+        raise SearchUnavailable("VERCEL_AI_GATEWAY_API_KEY is not configured")
+
+    entries = {entry.operation_id: entry for entry in catalog}
+    criteria: dict[str, str] = {
+        operation_id: entry.criteria for operation_id, entry in entries.items()
+    }
+    criteria[NO_MATCH] = NO_MATCH_DESCRIPTION
+
+    try:
+        async with AsyncTypeSafeClient(
+            api_key=settings.VERCEL_AI_GATEWAY_API_KEY,
+            base_url=settings.TYPESAFE_BASE_URL,
+            timeout=SEARCH_TIMEOUT_SECONDS,
+        ) as client:
+            response = await client.system_one(
+                state=query,
+                questions={
+                    "operation": Choice(
+                        instructions=SEARCH_INSTRUCTIONS, criteria=criteria
+                    )
+                },
+                model=settings.TYPESAFE_MODEL,
+            )
+    except TypeSafeError as e:
+        raise SearchUnavailable(str(e)) from e
+
+    answer = response.answers["operation"]
+    if answer.type != "choice":
+        raise SearchUnavailable("unexpected answer type")
+
+    ranked = sorted(
+        (
+            (entries[operation_id], probability)
+            for operation_id, probability in answer.probabilities.items()
+            if operation_id in entries
+        ),
+        key=lambda item: item[1],
+        reverse=True,
+    )
+    results = (
+        []
+        if answer.choice == NO_MATCH
+        else [
+            SearchResult(
+                operation_id=entry.operation_id,
+                method=entry.method,
+                path=entry.path,
+                summary=entry.summary,
+                cli_command=entry.cli_command,
+                probability=probability,
+            )
+            for entry, probability in ranked[:limit]
+        ]
+    )
+    return SearchResponse(
+        query=query,
+        model=response.model,
+        confidence=answer.confidence,
+        results=results,
+    )
 
 
 def _event_descriptions() -> dict[WebhookEventType, str]:

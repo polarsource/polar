@@ -1,5 +1,6 @@
 import type { ApiCommandError } from '@polar-sh/cli-commands'
 import type { ListenError } from '@/services/listen'
+import type { SearchError } from '@/services/search'
 import type { TriggerError } from '@/services/trigger'
 import type { UpdateError } from '@/services/update'
 import type { AuthError } from '@/schemas/Auth'
@@ -10,6 +11,7 @@ export type CommandError =
   | ApiCommandError
   | AuthError
   | ListenError
+  | SearchError
   | TriggerError
   | UpdateError
   | UpdaterError
@@ -44,6 +46,7 @@ const isCommandError = (error: unknown): error is CommandError =>
     'ApiCommandError',
     'AuthError',
     'ListenError',
+    'SearchError',
     'TriggerError',
     'UpdateError',
     'UpdaterError',
@@ -61,6 +64,7 @@ export const describeError = (error: unknown): ErrorDescription => {
     case 'AuthError':
       return { title: error.message }
     case 'ApiCommandError':
+    case 'SearchError':
     case 'TriggerError':
       return error.hint
         ? { title: error.message, hint: error.hint }

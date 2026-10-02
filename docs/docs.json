@@ -184,6 +184,7 @@
                     "pages": [
                       "integrate/cli/reference/auth",
                       "integrate/cli/reference/listen",
+                      "integrate/cli/reference/search",
                       "integrate/cli/reference/trigger",
                       "integrate/cli/reference/update"
                     ]

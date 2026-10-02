@@ -306,6 +306,11 @@ class Settings(BaseSettings):
     PYDANTIC_AI_GATEWAY_API_KEY: str = "DummyKey"
     PYDANTIC_AI_GATEWAY_MODEL: str = "openai:gpt-5.5"
 
+    # TypeSafe Jev through Vercel AI Gateway, backs `polar search`
+    VERCEL_AI_GATEWAY_API_KEY: str = ""
+    TYPESAFE_BASE_URL: str = "https://ai-gateway.vercel.sh/typesafe"
+    TYPESAFE_MODEL: str = "typesafe-ai/jev"
+
     # Organization review website scraping. Firecrawl Cloud backs the JS-render
     # path of the collector: it renders JavaScript, follows redirects, and
     # egresses from Firecrawl's network rather than ours.

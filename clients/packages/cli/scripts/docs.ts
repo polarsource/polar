@@ -13,6 +13,7 @@ import { builtIns, polar } from '@/program'
 import { Auth } from '@/services/auth'
 import { Deliveries } from '@/services/deliveries'
 import { Organizations } from '@/services/organizations'
+import { Search } from '@/services/search'
 import { Trigger } from '@/services/trigger'
 import { Updater } from '@/services/updater'
 import { captureConsole } from '@/utils/test-utils/cli'
@@ -24,6 +25,7 @@ const helpOnlyServices = Layer.mergeAll(
   Layer.succeed(Auth, fakeAuth().auth),
   Layer.succeed(Organizations, fakeOrganizations().organizations),
   Layer.succeed(Trigger, Trigger.of({ listEvents: unused, send: unused })),
+  Layer.succeed(Search, Search.of({ search: unused })),
   Layer.succeed(ApiRuntime, ApiRuntime.of({ execute: unused })),
   Layer.succeed(Deliveries, Deliveries.of({ record: unused, await: unused })),
   Layer.succeed(

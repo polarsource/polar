@@ -2,7 +2,10 @@ from fastapi import Depends
 from reauth.factors.oauth2.base import OAuth2Account
 from reauth.factors.oauth2.base import OAuth2Enrollment as OAuth2EnrollmentDataclass
 from reauth.factors.oauth2.github import GitHubOAuth2Factor as GitHubOAuth2FactorBase
-from reauth.factors.oauth2.github import GitHubOAuth2GetEmailsException
+from reauth.factors.oauth2.github import (
+    GitHubOAuth2GetEmailsException,
+    get_primary_email,
+)
 
 from polar.config import settings
 from polar.postgres import AsyncSession, get_db_session
@@ -27,18 +30,14 @@ class GitHubFactor(OAuth2FactorMixin, GitHubOAuth2FactorBase):
             client_secret=settings.GITHUB_CLIENT_SECRET,
         )
 
-    async def get_email_and_verified(
+    async def get_email(
         self, callback_result: OAuth2EnrollmentDataclass | OAuth2Account
-    ) -> tuple[str, bool]:
+    ) -> str:
         try:
             emails = await self.get_emails(callback_result.access_token)
+            return get_primary_email(emails)
         except (KeyError, GitHubOAuth2GetEmailsException) as e:
             raise GetEmailError() from e
-
-        for email in emails:
-            if email.get("primary"):
-                return email["email"], email.get("verified") is True
-        raise GetEmailError()
 
 
 async def get_github_factor(

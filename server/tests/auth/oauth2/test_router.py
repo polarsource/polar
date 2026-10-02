@@ -41,7 +41,6 @@ async def google_callback(
     callback_result: OAuth2Enrollment | OAuth2Account,
     *,
     sso_discovery: bool = True,
-    email_verified: bool = True,
 ) -> httpx.Response:
     start = await client.post(
         "/v1/auth/start",
@@ -59,11 +58,7 @@ async def google_callback(
     else:
         result = (None, callback_result, MagicMock())
     mocker.patch.object(GoogleFactor, "callback", return_value=result)
-    mocker.patch.object(
-        GoogleFactor,
-        "get_email_and_verified",
-        return_value=("jane@acme.com", email_verified),
-    )
+    mocker.patch.object(GoogleFactor, "get_email", return_value="jane@acme.com")
     mocker.patch.object(GoogleFactor, "enroll", return_value=MagicMock())
 
     return await client.get(
@@ -98,25 +93,7 @@ class TestLoginCallback:
         result = await session.execute(
             select(User).where(User.email == "jane@acme.com")
         )
-        user = result.scalars().unique().one()
-        assert user.email_verified is True
-
-    async def test_new_user_email_not_verified(
-        self,
-        login_client: httpx.AsyncClient,
-        mocker: MockerFixture,
-        session: AsyncSession,
-    ) -> None:
-        response = await google_callback(
-            login_client, mocker, google_account(), email_verified=False
-        )
-
-        assert response.status_code == 303
-        result = await session.execute(
-            select(User).where(User.email == "jane@acme.com")
-        )
-        user = result.scalars().unique().one()
-        assert user.email_verified is False
+        assert result.scalars().unique().one_or_none() is not None
 
     async def test_new_user_with_sso(
         self,

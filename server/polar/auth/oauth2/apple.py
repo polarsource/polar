@@ -80,19 +80,17 @@ class AppleFactor(OAuth2FactorMixin, AppleOAuth2FactorBase):
         await self.session.execute(statement)
         await self.session.flush()
 
-    async def get_email_and_verified(
+    async def get_email(
         self, callback_result: OAuth2EnrollmentDataclass | OAuth2Account
-    ) -> tuple[str, bool]:
+    ) -> str:
         if callback_result.id_token is None:
             raise GetEmailError()
 
         claims = await self.get_id_token_claims(callback_result.id_token)
         try:
-            email = claims["email"]
+            return claims["email"]
         except KeyError as e:
             raise GetEmailError() from e
-        # Apple may encode the claim as a boolean or as the string "true"
-        return email, claims.get("email_verified") in (True, "true")
 
 
 async def get_apple_factor(

@@ -175,9 +175,9 @@ def get_oauth_login_router(
             assert oauth_account is not None
 
             try:
-                email, email_verified = await typing.cast(
-                    OAuth2FactorMixin, factor
-                ).get_email_and_verified(oauth_account)
+                email = await typing.cast(OAuth2FactorMixin, factor).get_email(
+                    oauth_account
+                )
             except GetEmailError as e:
                 raise PolarAuthRedirectionError(e.message) from e
 
@@ -186,9 +186,6 @@ def get_oauth_login_router(
                 return sso_redirect
 
             user, _ = await user_service.get_by_email_or_create(session, email)
-            if email_verified and not user.email_verified:
-                user.email_verified = True
-                session.add(user)
             try:
                 enrollment = await factor.enroll(user.id, oauth_account)
             except OAuth2GetProfileException as e:

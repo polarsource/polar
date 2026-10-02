@@ -24,7 +24,7 @@ function row(overrides: Partial<ReviewRow>): ReviewRow {
 describe('reviewStatus', () => {
   describe('switched', () => {
     it('shows "Switched" (gray) when import_status is imported', () => {
-      expect(reviewStatus(row({ import_status: 'imported' }))).toEqual({
+      expect(reviewStatus(row({ import_status: 'imported' }))).toMatchObject({
         label: 'Switched',
         color: 'gray',
       })
@@ -36,39 +36,39 @@ describe('reviewStatus', () => {
     it('prefers "Switched" over a precheck-skipped status', () => {
       expect(
         reviewStatus(row({ status: 'skipped', import_status: 'imported' })),
-      ).toEqual({ label: 'Switched', color: 'gray' })
+      ).toMatchObject({ label: 'Switched', color: 'gray' })
     })
   })
 
   describe('failed', () => {
-    it('shows "Import failed" (red) when import_status is failed', () => {
-      expect(reviewStatus(row({ import_status: 'failed' }))).toEqual({
-        label: 'Import failed',
+    it('shows "Failed" (red) when import_status is failed', () => {
+      expect(reviewStatus(row({ import_status: 'failed' }))).toMatchObject({
+        label: 'Failed',
         color: 'red',
       })
     })
   })
 
   describe("won't import", () => {
-    it('shows "Won\'t import" (red) when precheck status is skipped', () => {
+    it('shows "Stays on Stripe" (red) when precheck status is skipped', () => {
       expect(
         reviewStatus(row({ status: 'skipped', import_status: null })),
-      ).toEqual({ label: "Won't import", color: 'red' })
+      ).toMatchObject({ label: 'Stays on Stripe', color: 'red' })
     })
 
-    it('shows "Won\'t import" (red) when precheck status is skipped and import is pending', () => {
+    it('shows "Stays on Stripe" (red) when precheck status is skipped and import is pending', () => {
       expect(
         reviewStatus(row({ status: 'skipped', import_status: 'pending' })),
-      ).toEqual({ label: "Won't import", color: 'red' })
+      ).toMatchObject({ label: 'Stays on Stripe', color: 'red' })
     })
 
     // Regression test for the reported bug: a record classified `importable`
     // by precheck but skipped at import time (e.g. its dependency wasn't
-    // selected) must show "Won't import", not "Ready".
-    it('shows "Won\'t import" (red) when import_status is skipped even if status is importable', () => {
+    // selected) must show "Stays on Stripe", not "Ready".
+    it('shows "Stays on Stripe" (red) when import_status is skipped even if status is importable', () => {
       expect(
         reviewStatus(row({ status: 'importable', import_status: 'skipped' })),
-      ).toEqual({ label: "Won't import", color: 'red' })
+      ).toMatchObject({ label: 'Stays on Stripe', color: 'red' })
     })
   })
 
@@ -82,7 +82,7 @@ describe('reviewStatus', () => {
             reason_level: 'action_required',
           }),
         ),
-      ).toEqual({ label: 'Needs info', color: 'yellow' })
+      ).toMatchObject({ label: 'Needs info', color: 'yellow' })
     })
 
     it('does not show "Needs info" when the row is imported', () => {
@@ -94,12 +94,12 @@ describe('reviewStatus', () => {
             reason_level: 'action_required',
           }),
         ),
-      ).toEqual({ label: 'Switched', color: 'gray' })
+      ).toMatchObject({ label: 'Switched', color: 'gray' })
     })
   })
 
   describe('preparation', () => {
-    it('shows "Ready to switch" when a pending subscription has imported dependencies', () => {
+    it('shows "Ready" when a pending subscription has imported dependencies', () => {
       expect(
         reviewStatus(
           row({
@@ -108,19 +108,19 @@ describe('reviewStatus', () => {
             dependencies_imported: true,
           }),
         ),
-      ).toEqual({ label: 'Ready to switch' })
+      ).toMatchObject({ label: 'Ready' })
     })
 
     it('shows "To prepare" when importable and pending with no reason', () => {
       expect(
         reviewStatus(row({ status: 'importable', import_status: 'pending' })),
-      ).toEqual({ label: 'To prepare' })
+      ).toMatchObject({ label: 'To prepare' })
     })
 
     it('shows "To prepare" when import_status is null', () => {
       expect(
         reviewStatus(row({ status: 'importable', import_status: null })),
-      ).toEqual({ label: 'To prepare' })
+      ).toMatchObject({ label: 'To prepare' })
     })
 
     it('shows "To prepare" for an info-level reason that does not need attention', () => {
@@ -132,7 +132,7 @@ describe('reviewStatus', () => {
             reason_level: 'info',
           }),
         ),
-      ).toEqual({ label: 'To prepare' })
+      ).toMatchObject({ label: 'To prepare' })
     })
   })
 })

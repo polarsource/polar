@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { rowPaymentMethod } from './paymentMethod'
+import { BANK_DEBITS_COPIED, rowPaymentMethod } from './paymentMethod'
 import type { ReviewRow } from './reviewRows'
 
 function row(overrides: Partial<ReviewRow>): ReviewRow {
@@ -12,31 +12,38 @@ function row(overrides: Partial<ReviewRow>): ReviewRow {
 }
 
 describe('rowPaymentMethod', () => {
-  it('moves a card', () => {
-    expect(rowPaymentMethod(row({}))).toEqual({
+  it('moves a card without a note', () => {
+    expect(rowPaymentMethod(row({}))).toMatchObject({
       label: 'Card',
-      moves: true,
-      explanation: null,
+      kind: 'card',
+      note: null,
     })
   })
 
   it.each([
     ['link', 'Link'],
-    ['sepa_debit', 'SEPA Debit'],
-    ['other', 'Other'],
-  ] as const)('keeps %s behind', (type, label) => {
+    ['bacs_debit', 'Bacs Debit'],
+    ['other', 'Other method'],
+  ] as const)('flags %s as moving without a card', (type, label) => {
     const method = rowPaymentMethod(row({ payment_method_type: type }))
-    expect(method?.label).toBe(label)
-    expect(method?.moves).toBe(false)
-    expect(method?.explanation).toContain("can't be copied")
+    expect(method).toMatchObject({ label, kind: 'no_card' })
+    expect(method?.note?.body).toContain("can't be copied")
   })
 
-  it('explains a subscription with no payment method', () => {
+  it('flags a subscription with no payment method', () => {
     const method = rowPaymentMethod(row({ payment_method_type: null }))
-    expect(method?.label).toBe('None')
-    expect(method?.moves).toBe(false)
-    expect(method?.explanation).toContain('no saved payment method')
+    expect(method).toMatchObject({ label: 'No method', kind: 'no_card' })
+    expect(method?.note?.body).toContain('no saved payment method')
   })
+
+  it.each(['sepa_debit', 'us_bank_account'] as const)(
+    'follows the bank-debit switch for %s',
+    (type) => {
+      expect(rowPaymentMethod(row({ payment_method_type: type }))?.kind).toBe(
+        BANK_DEBITS_COPIED ? 'bank_debit' : 'no_card',
+      )
+    },
+  )
 
   it('says nothing for skipped rows and other entities', () => {
     expect(rowPaymentMethod(row({ status: 'skipped' }))).toBeNull()

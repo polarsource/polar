@@ -16,7 +16,7 @@ const OPTIONS: { value: ReviewFilter; label: string }[] = [
   { value: 'to_prepare', label: 'To prepare' },
   { value: 'ready', label: 'Ready to switch' },
   { value: 'attention', label: 'Needs attention' },
-  { value: 'skipped', label: "Won't import" },
+  { value: 'skipped', label: 'Stays on Stripe' },
 ]
 
 export const EMPTY_MESSAGES: Record<ReviewFilter, string> = {

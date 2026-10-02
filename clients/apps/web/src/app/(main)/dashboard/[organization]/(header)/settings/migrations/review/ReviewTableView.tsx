@@ -5,7 +5,6 @@ import { Box } from '@polar-sh/orbit/Box'
 import { OnChangeFn, PaginationState } from '@tanstack/react-table'
 import { useMemo, useState } from 'react'
 import { CatalogEmptyPanel } from './CatalogEmptyPanel'
-import { PaymentMethodSummary } from './PaymentMethodLabel'
 import { usePaymentMethodVariant } from './paymentMethodVariant'
 import { ReviewAlerts } from './ReviewAlerts'
 import { ReviewRecordModal } from './ReviewRecordModal'
@@ -151,11 +150,6 @@ export function ReviewTableView({
         refreshError={refreshError}
         importError={importError}
       />
-      {paymentMethodVariant === 'summary' ? (
-        <PaymentMethodSummary
-          count={counts.subscriptions.payment_method_not_copied}
-        />
-      ) : null}
 
       <Box flexDirection="column" rowGap="m">
         <Box

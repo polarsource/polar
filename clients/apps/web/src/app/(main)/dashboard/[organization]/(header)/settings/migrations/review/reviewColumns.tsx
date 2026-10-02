@@ -1,9 +1,8 @@
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { DataTableColumnDef } from '@polar-sh/orbit'
-import { PaymentMethodLabel } from './PaymentMethodLabel'
+import { MoveStatusCell } from './MoveStatusCell'
 import { PaymentMethodVariant } from './paymentMethodVariant'
-import { ReviewStatusIndicator } from './ReviewStatusIndicator'
 import { SelectCheckbox } from '../SelectCheckbox'
 import { HeaderCheckState } from '../selection'
 import { renewsLabel } from '../recordFormat'
@@ -26,8 +25,7 @@ export function buildReviewColumns({
   onToggleAll,
   paymentMethodVariant,
 }: ColumnContext): DataTableColumnDef<ReviewRow>[] {
-  const paymentColumn = paymentMethodVariant === 'column'
-  const columns: DataTableColumnDef<ReviewRow>[] = [
+  return [
     {
       id: 'select',
       size: 44,
@@ -50,9 +48,7 @@ export function buildReviewColumns({
       id: 'name',
       size: 280,
       header: 'Customer',
-      cell: ({ row }) => (
-        <NameCell row={row.original} showPaymentMethod={!paymentColumn} />
-      ),
+      cell: ({ row }) => <NameCell row={row.original} />,
     },
     {
       id: 'product',
@@ -60,21 +56,13 @@ export function buildReviewColumns({
       header: 'Product',
       cell: ({ row }) => <ProductCell row={row.original} />,
     },
-    ...(paymentColumn
-      ? [
-          {
-            id: 'payment_method',
-            size: 140,
-            header: 'Payment',
-            cell: ({ row }) => <PaymentMethodLabel row={row.original} />,
-          } satisfies DataTableColumnDef<ReviewRow>,
-        ]
-      : []),
     {
       id: 'status',
-      size: 160,
-      header: 'Import',
-      cell: ({ row }) => <ReviewStatusIndicator row={row.original} />,
+      size: 220,
+      header: 'Status',
+      cell: ({ row }) => (
+        <MoveStatusCell row={row.original} variant={paymentMethodVariant} />
+      ),
     },
     {
       id: 'renews',
@@ -95,24 +83,14 @@ export function buildReviewColumns({
       cell: ({ row }) => <AmountCell row={row.original} />,
     },
   ]
-  return columns
 }
 
-function NameCell({
-  row,
-  showPaymentMethod,
-}: {
-  row: ReviewRow
-  showPaymentMethod: boolean
-}) {
+function NameCell({ row }: { row: ReviewRow }) {
   return (
-    <Box minWidth={0} alignItems="center" columnGap="s">
+    <Box minWidth={0}>
       <Text truncate color={row.status === 'skipped' ? 'muted' : 'default'}>
         {row.customer_email || row.title}
       </Text>
-      {showPaymentMethod ? (
-        <PaymentMethodLabel row={row} exceptionsOnly />
-      ) : null}
     </Box>
   )
 }

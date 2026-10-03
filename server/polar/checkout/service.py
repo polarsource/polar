@@ -2950,6 +2950,9 @@ class CheckoutService:
 
         if customer is None:
             assert checkout.customer_email is not None
+            await repository.lock_email(
+                checkout.organization.id, checkout.customer_email
+            )
             customer = await repository.get_by_email_and_organization(
                 checkout.customer_email, checkout.organization.id
             )

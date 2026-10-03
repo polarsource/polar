@@ -21,6 +21,7 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
 )
 
+from .canonical import CanonicalPaymentMethodType
 from .pan_transfer import PanTransferMethod, PanTransferStep
 
 
@@ -241,6 +242,12 @@ class MerchantMigrationRecordItem(Schema):
         description=(
             "Whether Polar already has a card to charge for this subscription's "
             "customer. Null for non-subscription rows."
+        ),
+    )
+    payment_method_type: CanonicalPaymentMethodType | None = Field(
+        description=(
+            "The type of payment method the subscription renews with on the "
+            "source. Null for non-subscription rows, or when the source has none."
         ),
     )
     dependencies_imported: bool | None = Field(

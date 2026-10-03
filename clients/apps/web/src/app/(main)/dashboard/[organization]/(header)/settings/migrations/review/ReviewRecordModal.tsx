@@ -10,8 +10,11 @@ import {
   RecordReason,
   TaxAfterSwitchField,
 } from './ReviewRecordFields'
+import { isPaymentMethodReason, rowPaymentMethod } from './paymentMethod'
+import { PaymentMethodNotice } from './PaymentMethodNotice'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
 import { ReviewRow } from './reviewRows'
+import { reviewStatus } from './reviewStatus'
 
 export function ReviewRecordModal({
   row,
@@ -23,6 +26,15 @@ export function ReviewRecordModal({
   onClose: () => void
 }) {
   const facts = assessmentFacts(row)
+  const paymentMethod = rowPaymentMethod(row)
+  // Same gate as the chip: no renewal warning for a row that failed or has
+  // already switched.
+  const notice = reviewStatus(row).paymentMethod
+  // The notice owns payment guidance whenever the API sends the type; the
+  // pre-check's own note is only a fallback for an API that predates it.
+  const hidePaymentReason =
+    row.payment_method_type !== undefined &&
+    isPaymentMethodReason(row.reason_code)
   const discount = row.discount_name
     ? row.discount_code
       ? `${row.discount_name} (${row.discount_code})`
@@ -64,7 +76,8 @@ export function ReviewRecordModal({
               </Text>
               <ReviewStatusIndicator row={row} />
             </Box>
-            <RecordReason row={row} />
+            {notice ? <PaymentMethodNotice method={notice} /> : null}
+            <RecordReason row={row} hidden={hidePaymentReason} />
             <BillingCountryField row={row} migrationId={migrationId} />
             <TaxAfterSwitchField row={row} migrationId={migrationId} />
           </Box>
@@ -120,6 +133,9 @@ export function ReviewRecordModal({
               <DetailCell label="Status" value={facts.status} />
             ) : null}
             {discount ? <DetailCell label="Discount" value={discount} /> : null}
+            {paymentMethod ? (
+              <DetailCell label="Payment method" value={paymentMethod.label} />
+            ) : null}
             {facts.renewal ? (
               <DetailCell label="Renewal" value={facts.renewal} />
             ) : null}

@@ -47,7 +47,7 @@ from polar.models import (
     User,
 )
 from polar.models.event import EventSource
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 from polar.worker import enqueue_events, enqueue_job
 
 from .repository import EventRepository
@@ -84,7 +84,7 @@ class EventIngestValidationError(EventError):
 class EventService:
     async def list(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         filter: Filter | None = None,
@@ -233,7 +233,7 @@ class EventService:
 
     async def get(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
         aggregate_fields: Sequence[str] = (),
@@ -285,7 +285,7 @@ class EventService:
 
     async def list_statistics_timeseries(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         start_date: date,
@@ -475,7 +475,7 @@ class EventService:
 
     async def list_property_group_stats(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         property: str,
@@ -541,7 +541,7 @@ class EventService:
 
     async def list_customer_stats(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         start_date: date,
@@ -647,7 +647,7 @@ class EventService:
 
     async def list_variance_events(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         start_date: date,
@@ -719,7 +719,7 @@ class EventService:
 
     async def list_names(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
@@ -835,7 +835,7 @@ class EventService:
 
     async def _resolve_tinybird_filters(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         organization_ids: set[AccessibleOrganizationID],
         *,
@@ -1320,7 +1320,7 @@ class EventService:
 
     async def _get_organization_ids_for_subject(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         organization_id: Sequence[uuid.UUID] | None,
     ) -> set[AccessibleOrganizationID]:

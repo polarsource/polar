@@ -1,5 +1,11 @@
 # @polar-sh/tanstack-start
 
+## 1.0.2
+
+### Patch Changes
+
+- 7a14052: Move `@tanstack/react-start` from `dependencies` to `peerDependencies` so the adapter uses the app's installed TanStack Start version
+
 ## 1.0.1
 
 ### Patch Changes

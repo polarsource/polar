@@ -5,6 +5,7 @@ from polar.observability.task_logging import LoggableField
 from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
+    RedisMiddleware,
     TaskPriority,
     actor,
     enqueue_job,
@@ -55,4 +56,4 @@ async def check_invariant(invariant_cls_name: Annotated[str, LoggableField]) -> 
         raise InvariantDoesNotExistError(invariant_cls_name) from e
 
     async with AsyncSessionMaker() as session:
-        await invariant_service.check(session, invariant_cls)
+        await invariant_service.check(session, RedisMiddleware.get(), invariant_cls)

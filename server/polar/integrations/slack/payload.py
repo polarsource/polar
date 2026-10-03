@@ -13,6 +13,7 @@ class SlackText(TypedDict):
 class SlackPayload(TypedDict):
     text: str
     blocks: NotRequired[list[dict[str, Any]]]
+    thread_ts: NotRequired[str]
 
 
 def escape_slack_text(text: str) -> str:

@@ -196,11 +196,12 @@ class InvariantService:
         if alert is None:
             return
 
+        payload = _format_invariant_resolved_payload(invariant_cls)
+        payload["thread_ts"] = alert["thread_ts"]
         await slack_client.chat_post_message(
             bot_token=settings.SLACK_BOT_TOKEN,
             channel=settings.SLACK_CHANNEL,
-            thread_ts=alert["thread_ts"],
-            **_format_invariant_resolved_payload(invariant_cls),
+            **payload,
         )
         await redis.delete(key)
 

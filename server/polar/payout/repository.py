@@ -105,7 +105,8 @@ class PayoutRepository(
 
     async def count_by_payout_account(self, payout_account_id: UUID) -> int:
         statement = self.get_base_statement().where(
-            Payout.payout_account_id == payout_account_id
+            Payout.payout_account_id == payout_account_id,
+            Payout.status != PayoutStatus.canceled,
         )
         return await self.count(statement)
 

@@ -205,20 +205,14 @@ class PayoutAccountService:
         if linked_organizations:
             raise PayoutAccountLinkedToOrganization(payout_account.id)
 
-        # Deleting it on Stripe takes the merchant's payout history with it.
-        payout_repository = PayoutRepository.from_session(session)
-        if (
-            not allow_paid_out
-            and await payout_repository.count_by_payout_account(payout_account.id) > 0
-        ):
-            raise PayoutAccountHasPayouts(payout_account.id)
-
-        await self._delete(session, payout_account)
+        await self._delete(session, payout_account, allow_paid_out=allow_paid_out)
 
     async def unlink_and_maybe_delete(
         self,
         session: AsyncSession,
         organization: Organization,
+        *,
+        allow_paid_out: bool = False,
     ) -> None:
         payout_account_id = organization.payout_account_id
         if payout_account_id is None:
@@ -244,14 +238,18 @@ class PayoutAccountService:
         repository = PayoutAccountRepository.from_session(session)
         payout_account = await repository.get_by_id(payout_account_id)
         if payout_account is not None:
-            await self._delete(session, payout_account)
+            await self._delete(session, payout_account, allow_paid_out=allow_paid_out)
 
         await organization_repository.remove_payout_account(
             organization.id, payout_account_id
         )
 
     async def _delete(
-        self, session: AsyncSession, payout_account: PayoutAccount
+        self,
+        session: AsyncSession,
+        payout_account: PayoutAccount,
+        *,
+        allow_paid_out: bool,
     ) -> None:
         # Verify there are no pending payouts for this account
         payout_repository = PayoutRepository.from_session(session)
@@ -260,6 +258,13 @@ class PayoutAccountService:
         )
         if pending_payouts_count > 0:
             raise PayoutAccountHasPendingPayouts(payout_account.id)
+
+        # Deleting it on Stripe takes the merchant's payout history with it.
+        if (
+            not allow_paid_out
+            and await payout_repository.count_by_payout_account(payout_account.id) > 0
+        ):
+            raise PayoutAccountHasPayouts(payout_account.id)
 
         # Delete the account on Stripe
         if payout_account.type == PayoutAccountType.stripe:

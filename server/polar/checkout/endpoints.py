@@ -4,12 +4,11 @@ import structlog
 from fastapi import Depends, Header, Path, Query, Request
 from pydantic import UUID4
 from sqlalchemy.orm import joinedload
-from sse_starlette.sse import EventSourceResponse
 
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_resource_permission
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
-from polar.eventstream.endpoints import subscribe
+from polar.eventstream.endpoints import SubscribeResponse, subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import NotPermitted, PaymentNotReady, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -442,13 +441,13 @@ async def client_stream(
     client_secret: CheckoutClientSecret,
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
-) -> EventSourceResponse:
+) -> SubscribeResponse:
     checkout = await checkout_service.get_by_client_secret(session, client_secret)
     # Release the DB session before entering the long-lived SSE stream.
     # The session is no longer needed after the checkout lookup.
     await session.commit()
     receivers = Receivers(checkout_client_secret=checkout.client_secret)
-    return EventSourceResponse(subscribe(redis, receivers.get_channels(), request))
+    return SubscribeResponse(subscribe(redis, receivers.get_channels(), request))
 
 
 router = APIRouter(prefix="/checkouts")

@@ -2,10 +2,9 @@ from typing import Annotated
 
 from fastapi import Depends, Query, Request
 from pydantic import UUID4
-from sse_starlette import EventSourceResponse
 
 from polar.authz.service import get_accessible_org_ids
-from polar.eventstream.endpoints import subscribe
+from polar.eventstream.endpoints import SubscribeResponse, subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import BadRequest, ResourceNotFound
 from polar.models import CustomerSeat, Order, Subscription
@@ -286,7 +285,7 @@ async def claim_stream(
     invitation_token: str,
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
-) -> EventSourceResponse:
+) -> SubscribeResponse:
     seat = await seat_service.get_seat_by_token(session, invitation_token)
 
     if not seat or not seat.customer_id or seat.status != SeatStatus.pending:
@@ -296,7 +295,7 @@ async def claim_stream(
     # The session is no longer needed after the seat lookup.
     await session.commit()
     receivers = Receivers(customer_id=seat.customer_id)
-    return EventSourceResponse(subscribe(redis, receivers.get_channels(), request))
+    return SubscribeResponse(subscribe(redis, receivers.get_channels(), request))
 
 
 @router.post(

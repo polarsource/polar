@@ -3,18 +3,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 from pytest_mock import MockerFixture
+from sse_starlette.sse import AppStatus
 
 from polar.eventstream.endpoints import subscribe
 from polar.redis import Redis
-
-
-@pytest.fixture(autouse=True)
-def _no_uvicorn_exit(mocker: MockerFixture) -> None:
-    """Ensure _uvicorn_should_exit always returns False during tests."""
-    mocker.patch(
-        "polar.eventstream.endpoints._uvicorn_should_exit",
-        return_value=False,
-    )
 
 
 def _make_request(disconnect_after: int) -> AsyncMock:
@@ -97,3 +89,16 @@ class TestSubscribeOnIteration:
 
         # callback should have been called even though no messages arrived
         assert "callback" in call_order
+
+
+@pytest.mark.asyncio
+class TestSubscribeShutdown:
+    async def test_reconnects_on_server_shutdown(
+        self, mocker: MockerFixture, redis: Redis
+    ) -> None:
+        mocker.patch.object(AppStatus, "should_exit", True)
+        request = _make_request(disconnect_after=10)
+
+        messages = [msg async for msg in subscribe(redis, ["test:shutdown"], request)]
+
+        assert messages == ['{"type": "reconnect"}']

@@ -5,14 +5,13 @@ from typing import Any
 
 import structlog
 from fastapi import Depends, Request
-from sse_starlette.sse import EventSourceResponse
 from standardwebhooks.webhooks import Webhook as StandardWebhook
 
 from polar.cli import auth
 from polar.cli.listener import mark_active, mark_inactive
 from polar.cli.schemas import TriggerEvent, TriggerRequest, TriggerResponse
 from polar.cli.service import NoActiveListener, list_trigger_events, trigger_event
-from polar.eventstream.endpoints import subscribe
+from polar.eventstream.endpoints import SubscribeResponse, subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import ResourceNotFound
 from polar.kit.utils import utc_now
@@ -83,7 +82,7 @@ async def listen(
     auth_subject: auth.CLIRead,
     redis: Redis = Depends(get_redis),
     session: AsyncSession = Depends(get_db_session),
-) -> EventSourceResponse:
+) -> SubscribeResponse:
     org = await organization_service.get(session, auth_subject, id)
 
     if org is None:
@@ -121,7 +120,7 @@ async def listen(
         finally:
             await mark_inactive(redis, org.id)
 
-    return EventSourceResponse(first_event_wrapper())
+    return SubscribeResponse(first_event_wrapper())
 
 
 @router.get("/events")

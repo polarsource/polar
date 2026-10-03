@@ -32,6 +32,7 @@ from polar.kit.db.postgres import (
 )
 from polar.kit.hash_secrets import get_hash_secrets
 from polar.kit.http import HSTSMiddleware
+from polar.kit.sse import install_sse_shutdown_hook
 from polar.kit.versioning import VERSION_HEADER, add_versioned_routers
 from polar.logfire import (
     configure_logfire,
@@ -268,6 +269,7 @@ configure_sentry()
 configure_logfire("server")
 configure_logging(logfire=True)
 configure_posthog()
+install_sse_shutdown_hook()
 
 app = create_app()
 instrument_fastapi(app)

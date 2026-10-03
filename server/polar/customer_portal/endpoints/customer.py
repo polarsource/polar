@@ -5,10 +5,9 @@ import structlog
 from fastapi import Depends, Query, Request
 from fastapi.responses import Response
 from pydantic import UUID4
-from sse_starlette import EventSourceResponse
 
 from polar.customer.service import customer as main_customer_service
-from polar.eventstream.endpoints import subscribe
+from polar.eventstream.endpoints import SubscribeResponse, subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import ResourceNotFound
 from polar.kit.http import get_content_disposition
@@ -60,11 +59,11 @@ async def stream(
     auth_subject: auth.CustomerPortalUnionRead,
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
-) -> EventSourceResponse:
+) -> SubscribeResponse:
     await session.commit()
     receivers = Receivers(customer_id=get_customer_id(auth_subject))
     channels = receivers.get_channels()
-    return EventSourceResponse(subscribe(redis, channels, request))
+    return SubscribeResponse(subscribe(redis, channels, request))
 
 
 @router.get("/me", summary="Get Customer", response_model=CustomerPortalCustomer)

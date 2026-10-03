@@ -1455,6 +1455,34 @@ async def metered_subscription(
 
 
 @pytest.mark.asyncio
+class TestEnqueueBilling:
+    async def test_only_meters_with_unbilled_events(
+        self,
+        enqueue_job_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        events: list[Event],
+        meter: Meter,
+    ) -> None:
+        await create_meter(
+            save_fixture, organization=organization, id=uuid.uuid4(), name="Empty"
+        )
+
+        await meter_service.enqueue_billing(session)
+        assert [call.args[:2] for call in enqueue_job_mock.call_args_list] == [
+            ("meter.billing_entries", meter.id)
+        ]
+
+        await meter_service.create_billing_entries(session, meter)
+        await session.flush()
+        enqueue_job_mock.reset_mock()
+
+        await meter_service.enqueue_billing(session)
+        enqueue_job_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
 class TestCreateBillingEntries:
     async def test_no_subscription(
         self,

@@ -119,6 +119,9 @@ class TestCheck:
 
         post_message_mock.assert_called_once()
         assert "thread_ts" not in post_message_mock.call_args.kwargs
+        keys = await redis.keys("observability:invariants:alert:*")
+        assert len(keys) == 1
+        assert 23 * 3600 < await redis.ttl(keys[0]) <= 24 * 3600
 
     @pytest.mark.usefixtures("slack_configured")
     async def test_same_failure_is_not_posted_again(
@@ -204,20 +207,3 @@ class TestCheck:
         await invariant_service.check(session, redis, _ToggleInvariant)
 
         post_message_mock.assert_not_called()
-
-    @pytest.mark.usefixtures("slack_configured")
-    async def test_alert_expires_after_reminder_interval(
-        self, session: AsyncSession, redis: Redis, mocker: MockerFixture
-    ) -> None:
-        mocker.patch.object(_ToggleInvariant, "context", {"ids": ["a"]})
-        mocker.patch(
-            "polar.observability.invariants.service.slack_client.chat_post_message",
-            return_value={"ok": True, "ts": "1.0"},
-        )
-
-        await invariant_service.check(session, redis, _ToggleInvariant)
-
-        keys = await redis.keys("observability:invariants:alert:*")
-        assert len(keys) == 1
-        ttl = await redis.ttl(keys[0])
-        assert 23 * 3600 < ttl <= 24 * 3600

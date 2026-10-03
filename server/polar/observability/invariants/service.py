@@ -8,6 +8,7 @@ import structlog
 from polar.config import settings
 from polar.integrations.slack.client import client as slack_client
 from polar.integrations.slack.payload import SlackPayload, get_branded_slack_payload
+from polar.locker import Locker
 from polar.logging import Logger
 from polar.postgres import AsyncReadSession
 from polar.redis import Redis
@@ -17,6 +18,7 @@ from .rules import Invariant, InvariantError
 log: Logger = structlog.get_logger()
 
 REMINDER_INTERVAL = timedelta(hours=24)
+NOTIFY_LOCK_TIMEOUT = 30
 
 
 class InvariantAlert(TypedDict):
@@ -150,30 +152,33 @@ class InvariantService:
             return
 
         key = _get_alert_key(error.invariant)
-        fingerprint = _get_fingerprint(error)
-        alert = await _get_alert(redis, key)
-        if alert is not None and alert["fingerprint"] == fingerprint:
-            log.info(
-                "Invariant failure already notified",
-                invariant=error.invariant.__name__,
+        async with Locker(redis).lock(
+            key, timeout=NOTIFY_LOCK_TIMEOUT, blocking_timeout=NOTIFY_LOCK_TIMEOUT
+        ):
+            fingerprint = _get_fingerprint(error)
+            alert = await _get_alert(redis, key)
+            if alert is not None and alert["fingerprint"] == fingerprint:
+                log.info(
+                    "Invariant failure already notified",
+                    invariant=error.invariant.__name__,
+                )
+                return
+
+            payload = _format_invariant_failure_payload(error)
+            if alert is not None:
+                payload["thread_ts"] = alert["thread_ts"]
+            response = await slack_client.chat_post_message(
+                bot_token=settings.SLACK_BOT_TOKEN,
+                channel=settings.SLACK_CHANNEL,
+                **payload,
             )
-            return
 
-        payload = _format_invariant_failure_payload(error)
-        if alert is not None:
-            payload["thread_ts"] = alert["thread_ts"]
-        response = await slack_client.chat_post_message(
-            bot_token=settings.SLACK_BOT_TOKEN,
-            channel=settings.SLACK_CHANNEL,
-            **payload,
-        )
-
-        if alert is None:
-            alert = {"fingerprint": fingerprint, "thread_ts": response["ts"]}
-            await redis.set(key, json.dumps(alert), ex=REMINDER_INTERVAL, nx=True)
-        else:
-            alert["fingerprint"] = fingerprint
-            await redis.set(key, json.dumps(alert), keepttl=True, xx=True)
+            if alert is None:
+                alert = {"fingerprint": fingerprint, "thread_ts": response["ts"]}
+                await redis.set(key, json.dumps(alert), ex=REMINDER_INTERVAL)
+            else:
+                alert["fingerprint"] = fingerprint
+                await redis.set(key, json.dumps(alert), keepttl=True, xx=True)
 
     async def _notify_resolved(
         self, redis: Redis, invariant_cls: type[Invariant]
@@ -182,18 +187,21 @@ class InvariantService:
             return
 
         key = _get_alert_key(invariant_cls)
-        alert = await _get_alert(redis, key)
-        if alert is None:
-            return
+        async with Locker(redis).lock(
+            key, timeout=NOTIFY_LOCK_TIMEOUT, blocking_timeout=NOTIFY_LOCK_TIMEOUT
+        ):
+            alert = await _get_alert(redis, key)
+            if alert is None:
+                return
 
-        payload = _format_invariant_resolved_payload(invariant_cls)
-        payload["thread_ts"] = alert["thread_ts"]
-        await slack_client.chat_post_message(
-            bot_token=settings.SLACK_BOT_TOKEN,
-            channel=settings.SLACK_CHANNEL,
-            **payload,
-        )
-        await redis.delete(key)
+            payload = _format_invariant_resolved_payload(invariant_cls)
+            payload["thread_ts"] = alert["thread_ts"]
+            await slack_client.chat_post_message(
+                bot_token=settings.SLACK_BOT_TOKEN,
+                channel=settings.SLACK_CHANNEL,
+                **payload,
+            )
+            await redis.delete(key)
 
 
 invariant = InvariantService()

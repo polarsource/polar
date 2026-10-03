@@ -406,6 +406,7 @@ class CustomerService:
                     owner_email=owner_email,
                     owner_name=owner_name,
                     owner_external_id=owner_external_id,
+                    send_webhook=False,
                 )
         except IntegrityError as e:
             error_str = str(e)

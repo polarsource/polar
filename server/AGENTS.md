@@ -284,6 +284,17 @@ keyword arguments, mark individual fields on their `TypedDict` or runtime dict
 class; annotations must be available at runtime. Logging paths are cached when
 the actor is registered.
 
+### Scheduled tasks
+
+An actor with a `cron_trigger` is picked up by the scheduler. Daily tasks run staggered in the
+**04:00–05:00 UTC maintenance window** (ADR-0014): declare them with
+`cron_trigger=MaintenanceWindow()`. At startup, the scheduler sorts the actor names and
+spreads them evenly between 04:00 and 05:00 UTC. Past 59 jobs, some minutes run more than one.
+Hourly and sub-hourly tasks keep their own schedules.
+
+Import `CronTrigger` from `polar.worker`, never from `apscheduler` — ours defaults to UTC, while
+APScheduler's falls back to the machine's timezone.
+
 ## Testing
 
 Test files mirror the source layout: `polar/{module}/endpoints.py` → `tests/{module}/test_endpoints.py`.

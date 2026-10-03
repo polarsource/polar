@@ -2,7 +2,7 @@ from logging import Logger
 
 import structlog
 
-from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor
+from polar.worker import AsyncSessionMaker, MaintenanceWindow, TaskPriority, actor
 
 from .service import email_update as email_update_service
 
@@ -11,7 +11,7 @@ log: Logger = structlog.get_logger()
 
 @actor(
     actor_name="email_update.delete_expired_record",
-    cron_trigger=CronTrigger(hour=0, minute=0),
+    cron_trigger=MaintenanceWindow(),
     priority=TaskPriority.LOW,
     max_retries=0,
 )

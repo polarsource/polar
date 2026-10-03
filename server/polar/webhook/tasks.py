@@ -9,7 +9,6 @@ import httpx
 import idna
 import sentry_sdk
 import structlog
-from apscheduler.triggers.cron import CronTrigger
 from dramatiq import Retry
 from dramatiq.common import compute_backoff
 from standardwebhooks.webhooks import Webhook as StandardWebhook
@@ -25,6 +24,7 @@ from polar.webhook.repository import WebhookDeliveryRepository, WebhookEventRepo
 from polar.worker import (
     AsyncSessionMaker,
     HTTPXMiddleware,
+    MaintenanceWindow,
     TaskPriority,
     TaskQueue,
     actor,
@@ -280,7 +280,7 @@ async def webhook_event_failed(
 
 @actor(
     actor_name="webhook_event.archive",
-    cron_trigger=CronTrigger(hour=0, minute=0),
+    cron_trigger=MaintenanceWindow(),
     priority=TaskPriority.LOW,
 )
 async def webhook_event_archive() -> None:
@@ -292,7 +292,7 @@ async def webhook_event_archive() -> None:
 
 @actor(
     actor_name="webhook_delivery.archive",
-    cron_trigger=CronTrigger(hour=0, minute=30),
+    cron_trigger=MaintenanceWindow(),
     priority=TaskPriority.LOW,
 )
 async def webhook_delivery_archive() -> None:

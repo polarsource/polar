@@ -1,0 +1,84 @@
+---
+title: "ADR-0014: Daily scheduled jobs run staggered in a 04:00–05:00 UTC maintenance window"
+description: "Daily cron tasks are spread across the 04:00–05:00 UTC window."
+---
+
+<Info>
+**Status**: Accepted
+
+**Area**: Backend
+
+**Date**: 2026-09-21
+</Info>
+
+## Context
+
+Daily cron tasks were declared independently, each one picking its own schedule. Twelve of
+the fourteen present when this decision was proposed picked `CronTrigger(hour=0, minute=0)` —
+the obvious default. Those twelve fired at the same instant, most of them bulk `DELETE`s over
+session, token and event tables.
+That put a spike on the primary database that nothing in our traffic caused: we made it
+ourselves, and it grew every time someone added another "prune expired rows" task.
+
+Midnight UTC is also not a quiet moment for us. 04:00–05:00 UTC is our lowest-traffic hour —
+not by a wide margin, but consistently the trough.
+
+## Decision
+
+Daily scheduled tasks run in a **maintenance window between 04:00 and 05:00 UTC**, spread
+evenly. Declare them with `MaintenanceWindow()` from `polar.worker`. At scheduler
+startup, the jobs are sorted by actor name and spread evenly through the interior minutes of
+the window. For N jobs, job i (starting at 1) runs at minute `floor(60 × i / (N + 1))` after
+04:00 UTC. Registration order does not affect the schedule. Up to 59 jobs, each gets its own minute;
+beyond that, some minutes run more than one job.
+
+This covers *daily* jobs only. Hourly and sub-hourly tasks keep their own schedules: they are
+already spread across the hour, and pinning them to the window would defeat the point of
+running them frequently.
+
+## Consequences
+
+- The database sees daily maintenance jobs spread over an hour instead of many firing at
+  midnight, during the hour when it has the most headroom to absorb them.
+- As jobs are added, the gap between them shrinks. Past 59 jobs, some minutes run two jobs
+  at once rather than the scheduler refusing to start. That still beats everything at midnight,
+  but if it happens, revisit the window bounds.
+- Adding or removing a maintenance actor changes the spacing and can shift any job. Renaming
+  one can change the order. A deployment between a job's old and new slots may run it twice or
+  skip it that day. Deploy after 05:00 UTC when changing the set of jobs. Today's jobs tolerate
+  a double run.
+- Anything genuinely time-of-day sensitive (a report a human reads in the morning, a job that
+  must close a financial day) does not belong in the window and should not be forced into it.
+- A missed run stays missed, and the window widens the odds. Cron jobs live in a
+  `MemoryJobStore` with APScheduler's default one-second misfire grace, so a worker restart
+  recomputes the next run from now and silently drops any slot it stepped over. The daily jobs
+  used to occupy a few instants; they now occupy most of the hour, so more restart times drop a
+  run. We accept that rather than add catch-up: every job in the window is a periodic cleanup
+  that the next day's run subsumes. A job for which a skipped day matters needs its own
+  liveness check, not a slot.
+- A slot is a start time, not an exclusive lease: a long job can overlap the next one. That is
+  fine for the pruning work we run today. Closer spacing as the set grows makes overlap more
+  likely.
+- "UTC" is enforced rather than assumed. APScheduler resolves an unspecified trigger timezone to
+  the machine's, so `polar.worker` exports a `CronTrigger` subclass defaulting to UTC and the
+  scheduler is built with `timezone=datetime.UTC`. A task importing `CronTrigger` straight from
+  `apscheduler` opts back out of that, which is why declarations go through `polar.worker`.
+
+## Alternatives considered
+
+- **Leave them all at midnight**: the status quo, and a self-inflicted spike on the hour we
+  least want one.
+- **Spread jobs across the whole day**: lowest peak load, but daily maintenance could then land
+  in peak traffic, and there is no window to reason about during an incident.
+- **Derive the slot from a hash of the actor name**: stable for unrelated additions, but hashes
+  can collide and would need a collision-resolution policy to preserve spacing.
+- **Assign slots manually**: keeps existing times stable when a new job is added, but requires
+  each new declaration to coordinate with every other one.
+- **One "daily maintenance" task calling each job in sequence**: one slot and no overlap, but it
+  couples unrelated modules and one failure stalls everything behind it.
+
+## References
+
+- `server/polar/worker/scheduler.py` (APScheduler wiring),
+  `server/polar/worker/_broker.py` (`SchedulerMiddleware`).
+- Example declarations: `server/polar/auth/tasks.py`, `server/polar/organization/tasks.py`.

@@ -1,8 +1,6 @@
-from apscheduler.triggers.cron import CronTrigger
-
 from polar.config import settings
 from polar.kit.utils import utc_now
-from polar.worker import AsyncSessionMaker, TaskPriority, actor
+from polar.worker import AsyncSessionMaker, MaintenanceWindow, TaskPriority, actor
 
 from .repository import ExternalEventRepository
 
@@ -10,7 +8,7 @@ from .repository import ExternalEventRepository
 @actor(
     actor_name="external_event.prune",
     priority=TaskPriority.LOW,
-    cron_trigger=CronTrigger(hour=0, minute=0),
+    cron_trigger=MaintenanceWindow(),
     max_retries=0,
 )
 async def external_event_prune() -> None:

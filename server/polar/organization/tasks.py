@@ -30,6 +30,7 @@ from polar.user_organization.service import (
 from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
+    MaintenanceWindow,
     TaskPriority,
     actor,
     enqueue_job,
@@ -99,7 +100,7 @@ async def organization_unsnooze_expired() -> None:
 
 @actor(
     actor_name="organization.offboard_expired",
-    cron_trigger=CronTrigger.from_crontab("0 4 * * *"),
+    cron_trigger=MaintenanceWindow(),
     priority=TaskPriority.LOW,
     max_retries=0,
 )
@@ -125,7 +126,7 @@ async def organization_offboard_expired_one(
 
 @actor(
     actor_name="organization.cancel_expired_subscriptions",
-    cron_trigger=CronTrigger.from_crontab("0 5 * * *"),
+    cron_trigger=MaintenanceWindow(),
     priority=TaskPriority.LOW,
     max_retries=0,
 )

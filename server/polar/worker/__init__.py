@@ -4,7 +4,6 @@ from collections.abc import Awaitable, Callable
 from typing import Any, ParamSpec
 
 import dramatiq
-from apscheduler.triggers.cron import CronTrigger
 from dramatiq import actor as _actor
 from dramatiq import middleware
 
@@ -15,6 +14,7 @@ from polar.observability import metrics as _prometheus_metrics
 from polar.observability.task_logging import register_task_logging
 
 from ._broker import get_broker
+from ._cron import CronTrigger, MaintenanceWindow
 from ._encoder import JSONEncoder
 from ._enqueue import (
     BulkJobDelayCalculator,
@@ -123,6 +123,7 @@ __all__ = [
     "CronTrigger",
     "HTTPXMiddleware",
     "JobQueueManager",
+    "MaintenanceWindow",
     "RedisMiddleware",
     "TaskPriority",
     "TaskQueue",

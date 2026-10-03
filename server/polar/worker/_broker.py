@@ -8,7 +8,6 @@ import logfire
 import redis
 import sentry_sdk
 import structlog
-from apscheduler.triggers.cron import CronTrigger
 from dramatiq import middleware
 from dramatiq.brokers.redis import RedisBroker
 from dramatiq.middleware.group_callbacks import GroupCallbacks
@@ -26,6 +25,7 @@ from polar.redis import REDIS_RETRY_ON_ERRROR, SyncFailoverRedis
 
 from . import _sqs
 from ._asyncio import MonitoredAsyncIO
+from ._cron import CronTrigger, MaintenanceWindow, resolve_cron_triggers
 from ._debounce import DebounceMiddleware
 from ._encoder import JSONEncoder
 from ._enqueue import should_route_to_sqs
@@ -72,7 +72,17 @@ class SchedulerMiddleware(dramatiq.Middleware):
     """Middleware to manage scheduled jobs using APScheduler."""
 
     def __init__(self) -> None:
-        self.cron_triggers: list[tuple[Callable[..., Any], CronTrigger]] = []
+        self.cron_triggers: dict[
+            str, tuple[Callable[..., Any], CronTrigger | MaintenanceWindow]
+        ] = {}
+
+    def resolved_cron_triggers(self) -> list[tuple[Callable[..., Any], CronTrigger]]:
+        resolved = resolve_cron_triggers(
+            (name, trigger) for name, (_, trigger) in self.cron_triggers.items()
+        )
+        return [
+            (send, resolved[name]) for name, (send, _) in self.cron_triggers.items()
+        ]
 
     @property
     def actor_options(self) -> set[str]:
@@ -82,7 +92,7 @@ class SchedulerMiddleware(dramatiq.Middleware):
         self, broker: dramatiq.Broker, actor: dramatiq.Actor[Any, Any]
     ) -> None:
         if cron_trigger := actor.options.get("cron_trigger"):
-            self.cron_triggers.append((actor.send, cron_trigger))
+            self.cron_triggers[actor.actor_name] = (actor.send, cron_trigger)
 
 
 scheduler_middleware = SchedulerMiddleware()

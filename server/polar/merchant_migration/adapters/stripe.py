@@ -31,6 +31,7 @@ from ..canonical import (
     CanonicalProduct,
     CanonicalRecord,
     CanonicalSubscription,
+    CanonicalSubscriptionAddOn,
     CanonicalSubscriptionStatus,
     SubscriptionDiscountBlock,
     apply_customer_discount,
@@ -592,7 +593,8 @@ class StripeAdapter:
         items = subscription["items"]["data"]
         if not items:
             return None
-        price = items[0].get("price")
+        plan_item, _ = self._split_items(items)
+        price = plan_item.get("price")
         if price is None or isinstance(price, str):
             return None
         product = price.get("product")
@@ -686,25 +688,25 @@ class StripeAdapter:
         with_latest_invoice: bool = False,
     ) -> CanonicalSubscription:
         items = subscription["items"]["data"]
-        first_item = items[0]
+        plan_item, add_on_item = self._split_items(items)
         discounts = self._map_discount_attachments(subscription)
-        current_period_end = first_item.get("current_period_end")
+        current_period_end = plan_item.get("current_period_end")
         return CanonicalSubscription(
             source_id=subscription.id,
             customer_source_id=self._id_of(subscription.customer),
-            price_source_id=self._id_of(first_item["price"]),
+            price_source_id=self._id_of(plan_item["price"]),
             status=self._map_status(subscription.status),
             collection_method=self._map_collection_method(
                 subscription.collection_method
             ),
             current_period_start=self._to_datetime(
-                first_item.get("current_period_start")
+                plan_item.get("current_period_start")
             ),
             current_period_end=self._to_datetime(current_period_end),
             trialing=subscription.status == "trialing",
             paused_collection=subscription.pause_collection is not None,
             line_item_count=len(items),
-            quantity=self._quantity(first_item),
+            quantity=self._quantity(plan_item),
             payment_method=self._resolve_payment_method(subscription),
             has_discount=discounts.has_discount,
             discount_source_ids=discounts.source_ids,
@@ -733,12 +735,62 @@ class StripeAdapter:
             anchor_day=self._anchor_day(subscription),
             currency=subscription.currency,
             automatic_tax=self._automatic_tax(subscription),
-            price_tax_behavior=self._price_tax_behavior(first_item.get("price")),
-            has_tax_rates=self._has_tax_rates(subscription, first_item),
-            tax_rate_behavior=self._tax_rate_behavior(subscription, first_item),
+            price_tax_behavior=self._price_tax_behavior(plan_item.get("price")),
+            has_tax_rates=self._has_tax_rates(subscription, plan_item),
+            tax_rate_behavior=self._tax_rate_behavior(subscription, plan_item),
             customer_balance=self._customer_balance(subscription),
             managed_payments=self._managed_payments(subscription),
+            add_on=self._map_add_on(subscription, plan_item, add_on_item)
+            if add_on_item is not None
+            else None,
         )
+
+    def _split_items(self, items: Sequence[Any]) -> tuple[Any, Any | None]:
+        """The plan, and on a two-item subscription the add-on billed on top of
+        it. The add-on is the item bought in quantity; when neither or both
+        are, Stripe's order decides and the first item is the plan. Items on
+        different intervals have no add-on: Polar bills both on the plan's."""
+        if len(items) != 2:
+            return items[0], None
+        first, second = items
+        if self._interval(first) != self._interval(second):
+            return first, None
+        if self._quantity(first) > 1 and self._quantity(second) == 1:
+            return second, first
+        return first, second
+
+    def _interval(self, item: Any) -> tuple[str, int]:
+        recurring = item["price"]["recurring"]
+        return recurring["interval"], recurring.get("interval_count") or 1
+
+    def _map_add_on(
+        self, subscription: stripe_lib.Subscription, plan_item: Any, item: Any
+    ) -> CanonicalSubscriptionAddOn:
+        price = item["price"]
+        transform = price.get("transform_quantity")
+        return CanonicalSubscriptionAddOn(
+            price_source_id=self._id_of(price),
+            quantity=self._quantity(item),
+            # Bought in quantity, a package price bills per package however it
+            # rounds, so it can't move as a per-unit price.
+            pricing_scheme=CanonicalPricingScheme.package
+            if transform is not None and (transform.get("divide_by") or 1) > 1
+            else self._map_pricing_scheme(price),
+            price_tax_behavior=self._price_tax_behavior(price),
+            tax_rates_differ=self._tax_rate_ids(subscription, plan_item)
+            != self._tax_rate_ids(subscription, item),
+        )
+
+    def _tax_rate_ids(
+        self, subscription: stripe_lib.Subscription, item: Any
+    ) -> set[str]:
+        return {self._id_of(rate) for rate in self._item_tax_rates(subscription, item)}
+
+    def _item_tax_rates(
+        self, subscription: stripe_lib.Subscription, item: Any
+    ) -> list[Any]:
+        # An item's own rates replace the subscription's defaults.
+        return item.get("tax_rates") or subscription.get("default_tax_rates") or []
 
     def _managed_payments(self, subscription: stripe_lib.Subscription) -> bool:
         settings = subscription.get("managed_payments")
@@ -1194,10 +1246,10 @@ class StripeAdapter:
         return parse_tax_behavior(price.get("tax_behavior"))
 
     def _has_tax_rates(
-        self, subscription: stripe_lib.Subscription, first_item: Any
+        self, subscription: stripe_lib.Subscription, plan_item: Any
     ) -> bool:
         return bool(subscription.get("default_tax_rates")) or bool(
-            first_item.get("tax_rates")
+            plan_item.get("tax_rates")
         )
 
     def _has_scheduled_changes(self, subscription: stripe_lib.Subscription) -> bool:
@@ -1206,11 +1258,12 @@ class StripeAdapter:
         return bool(subscription.get("schedule"))
 
     def _tax_rate_behavior(
-        self, subscription: stripe_lib.Subscription, first_item: Any
+        self, subscription: stripe_lib.Subscription, plan_item: Any
     ) -> TaxBehavior | None:
-        # An item's own rates replace the subscription's defaults.
-        rates = first_item.get("tax_rates") or subscription.get("default_tax_rates")
-        inclusive = {rate.get("inclusive") for rate in rates or []}
+        inclusive = {
+            rate.get("inclusive")
+            for rate in self._item_tax_rates(subscription, plan_item)
+        }
         if inclusive == {True}:
             return TaxBehavior.inclusive
         if inclusive == {False}:

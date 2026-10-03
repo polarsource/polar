@@ -28,6 +28,7 @@ from polar.models import (
     MerchantMigrationRecord,
     PaymentMethod,
     Product,
+    ProductPriceUnit,
     Subscription,
 )
 from polar.models.discount import DiscountDuration
@@ -48,6 +49,7 @@ from .adapters import SourceAdapter
 from .canonical import (
     CanonicalProduct,
     CanonicalSubscription,
+    CanonicalSubscriptionAddOn,
     CanonicalSubscriptionStatus,
     deserialize,
     discount_started_at_for,
@@ -55,10 +57,17 @@ from .canonical import (
 from .cards import CARD_TYPE, AmbiguousCopiedCard, link_payment_method
 from .importer import (
     _CUSTOMER_ALREADY_SUBSCRIBED,
+    add_on_product_name,
     create_imported_subscription,
     find_imported_price,
+    find_or_create_add_on_product,
 )
-from .precheck import kept_discount_source_id, subscription_import_reason
+from .precheck import (
+    _SUBSCRIPTION_ADD_ON_PRICE_MISSING_REASON,
+    add_on_unit_amount,
+    kept_discount_source_id,
+    subscription_import_reason,
+)
 from .repository import MerchantMigrationRecordRepository
 
 log: Logger = structlog.get_logger()
@@ -91,6 +100,11 @@ _PLAN_CHANGED = (
 _DISCOUNT_CHANGED = (
     "The coupon on the source changed since the import, so Polar won't take "
     "billing over at a different price. Re-run the import for this customer."
+)
+_ADD_ON_DISCOUNT_RESTRICTED = (
+    "This subscription's coupon only applies to some products, and Polar would "
+    "discount the plan and its add-on together. It stays on the source rather "
+    "than renewing at a different price."
 )
 _DISCOUNT_NOT_IMPORTED = (
     "This subscription's coupon was never imported into Polar, so taking it "
@@ -218,6 +232,13 @@ def _imported_discount_at(
     if not discount.is_repetition_expired(applied_at, renewal):
         return ImportedDiscount(skip=_DISCOUNT_END_UNREPRESENTABLE)
     return ImportedDiscount(discount=discount, applied_at=applied_at)
+
+
+def _add_on_terms(subscription: CanonicalSubscription) -> tuple[str, int] | None:
+    add_on = subscription.add_on
+    if add_on is None:
+        return None
+    return add_on.price_source_id, add_on.quantity
 
 
 def _moved(message: str | None = None) -> CutoverOutcome:
@@ -566,8 +587,12 @@ class SubscriptionCutover:
             if reason is not None:
                 return _skip(reason)
 
-        if await self.subscription_repository.exists_live_by_customer_and_product(
-            customer.id, product.id
+        # An add-on subscription lands on its combined product, checked below.
+        if (
+            staged.add_on is None
+            and await self.subscription_repository.exists_live_by_customer_and_product(
+                customer.id, product.id
+            )
         ):
             return _skip(_CUSTOMER_ALREADY_SUBSCRIBED.message)
 
@@ -597,6 +622,23 @@ class SubscriptionCutover:
         if already_stopped and self._period_is_lapsed(source, product):
             return _fail(_LAPSED)
 
+        add_on_price: ProductPriceUnit | None = None
+        if staged.add_on is not None:
+            add_on_product = await self._staged_add_on_product(staged.add_on)
+            if add_on_product is None:
+                return _skip(_SUBSCRIPTION_ADD_ON_PRICE_MISSING_REASON)
+            unit_amount = add_on_unit_amount(staged, [add_on_product])
+            if unit_amount is None:
+                return _skip(_SUBSCRIPTION_ADD_ON_PRICE_MISSING_REASON)
+            product, price, add_on_price = await find_or_create_add_on_product(
+                self.session,
+                product,
+                price,
+                add_on_price_source_id=staged.add_on.price_source_id,
+                unit_amount=unit_amount,
+                name=add_on_product_name(product.name, add_on_product.name),
+            )
+
         customer = await self.customer_repository.get_by_id(
             customer.id, include_deleted=True, for_update=True
         )
@@ -617,6 +659,7 @@ class SubscriptionCutover:
             customer,
             provider=self.migration.source_platform,
             discount=imported.discount,
+            add_on_price=add_on_price,
         )
         await self.record_repository.update(
             record,
@@ -638,6 +681,20 @@ class SubscriptionCutover:
             already_stopped=already_stopped,
             scheduled_end=scheduled_end,
         )
+
+    async def _staged_add_on_product(
+        self, add_on: CanonicalSubscriptionAddOn
+    ) -> CanonicalProduct | None:
+        record = await self.record_repository.get_product_by_price(
+            self.migration.organization_id, add_on.price_source_id
+        )
+        if record is None:
+            return None
+        try:
+            product = deserialize(record.type, record.canonical)
+        except KeyError, TypeError, ValueError:
+            return None
+        return product if isinstance(product, CanonicalProduct) else None
 
     async def _reconcile_active(
         self, record: MerchantMigrationRecord
@@ -712,6 +769,8 @@ class SubscriptionCutover:
         if isinstance(staged, CanonicalSubscription):
             if staged.price_source_id != source.price_source_id:
                 return _PLAN_CHANGED
+            if _add_on_terms(staged) != _add_on_terms(source):
+                return _PLAN_CHANGED
             if (
                 source.currency is not None
                 and imported_currency is not None
@@ -782,6 +841,8 @@ class SubscriptionCutover:
         discount = await self.discount_repository.get_by_id(record.target_id)
         if discount is None:
             return ImportedDiscount(skip=_DISCOUNT_NOT_IMPORTED)
+        if staged.add_on is not None and discount.discount_products:
+            return ImportedDiscount(skip=_ADD_ON_DISCOUNT_RESTRICTED)
         started_at = discount_started_at_for(source, kept)
         if discount.duration != DiscountDuration.forever and started_at is None:
             return ImportedDiscount(skip=_DISCOUNT_MISSING_START)

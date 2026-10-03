@@ -14,7 +14,9 @@ from polar.merchant_migration.canonical import (
     CanonicalDiscountDuration,
     CanonicalDiscountType,
     CanonicalPaymentMethod,
+    CanonicalPricingScheme,
     CanonicalSubscription,
+    CanonicalSubscriptionAddOn,
     CanonicalSubscriptionStatus,
     serialize,
 )
@@ -211,6 +213,7 @@ def canonical_subscription(
     tax_behavior: TaxBehavior | None = None,
     customer_balance: int | None = None,
     managed_payments: bool = False,
+    add_on: CanonicalSubscriptionAddOn | None = None,
 ) -> CanonicalSubscription:
     """Renews outside the safety window, so a test only states its own field."""
     return CanonicalSubscription(
@@ -251,6 +254,17 @@ def canonical_subscription(
         tax_behavior=tax_behavior,
         customer_balance=customer_balance,
         managed_payments=managed_payments,
+        add_on=add_on,
+    )
+
+
+def canonical_add_on(
+    *, price_source_id: str = "price_slot", quantity: int = 2
+) -> CanonicalSubscriptionAddOn:
+    return CanonicalSubscriptionAddOn(
+        price_source_id=price_source_id,
+        quantity=quantity,
+        pricing_scheme=CanonicalPricingScheme.fixed,
     )
 
 

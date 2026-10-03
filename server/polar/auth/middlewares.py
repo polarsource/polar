@@ -264,6 +264,10 @@ class AuthSubjectMiddleware:
             request.state.transaction_failed = True
             return await response(scope, receive, send)
 
+        # Release the primary connection to the pool: the handler checks out a new one
+        # only if it queries the session, while the loaded objects stay attached.
+        await session.commit()
+
         scope["state"]["auth_subject"] = auth_subject
 
         cookie = request.cookies.get(settings.USER_SESSION_COOKIE_KEY)

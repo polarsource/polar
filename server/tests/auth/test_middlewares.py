@@ -498,6 +498,41 @@ class TestGetAuthSubjectRequestedOrganization:
 
 
 @pytest.mark.asyncio
+class TestAuthSubjectMiddleware:
+    async def test_releases_connection_before_app(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        user: User,
+    ) -> None:
+        access_token = f"{ACCESS_TOKEN_PREFIX[SubType.user]}test"
+        await _create_oauth2_token(save_fixture, access_token, user=user)
+        session.expunge_all()
+
+        state: dict[str, object] = {}
+
+        async def app(scope: Scope, receive: Receive, send: Send) -> None:
+            state["in_transaction"] = session.in_transaction()
+            state["subject_attached"] = (
+                scope["state"]["auth_subject"].subject in session
+            )
+
+        async def send(message: Message) -> None:
+            pass
+
+        async def receive() -> Message:
+            return {"type": "http.request", "body": b""}
+
+        request = _request_with_bearer_token(access_token)
+        await AuthSubjectMiddleware(app, redis)(
+            {**request.scope, "state": {"async_session": session}}, receive, send
+        )
+
+        assert state == {"in_transaction": False, "subject_attached": True}
+
+
+@pytest.mark.asyncio
 class TestAuthSubjectMiddlewareRequestedOrganization:
     async def test_inaccessible_organization_returns_403(
         self,

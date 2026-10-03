@@ -196,6 +196,102 @@ const getEmbedPolicy = async (
   return undefined
 }
 
+const STATIC_FILE = /\.\w+$/
+const CUSTOMER_SESSION_ROUTES = [/^\/embed(\/|$)/, /^\/[^/]+\/portal(\/|$)/]
+const IPV4_ADDRESS = /^\d+\.\d+\.\d+\.\d+$/
+
+const shouldFetchUser = (request: NextRequest): boolean => {
+  if (!request.cookies.has(POLAR_AUTH_COOKIE_KEY)) {
+    return false
+  }
+
+  if (requiresAuthentication(request)) {
+    return true
+  }
+
+  const { pathname } = request.nextUrl
+  return (
+    !STATIC_FILE.test(pathname) &&
+    !CUSTOMER_SESSION_ROUTES.some((route) => route.test(pathname))
+  )
+}
+
+interface UserLookup {
+  user?: schemas['UserRead']
+  sessionExpired: boolean
+}
+
+const getUser = async (request: NextRequest): Promise<UserLookup> => {
+  if (!shouldFetchUser(request)) {
+    return { sessionExpired: false }
+  }
+
+  const api = await createServerSideAPI(
+    request.headers,
+    RequestCookiesAdapter.seal(request.cookies),
+  )
+  const { data, response } = await api.GET('/v1/users/me', {
+    cache: 'no-cache',
+  })
+
+  // A 429 means resolving the session was rate-limited upstream (the session
+  // cookie is being counted in the API's `pending_auth` bucket). We can't
+  // determine the user, so we proceed as anonymous rather than turning a
+  // transient rate-limit into a hard 500 for the user. It's still logged so
+  // we keep visibility on how often this happens.
+  if (response.status === 429) {
+    console.error(
+      `Rate limited while fetching authenticated user: status=429, headers=${JSON.stringify(Object.fromEntries(response.headers.entries()))}`,
+    )
+  } else if (!response.ok && response.status !== 401) {
+    console.error(
+      `Error response: status=${response.status}, headers=${JSON.stringify(Object.fromEntries(response.headers.entries()))}`,
+    )
+    throw new Error(
+      'Unexpected response status while fetching authenticated user',
+    )
+  }
+
+  return { user: data, sessionExpired: response.status === 401 }
+}
+
+const getCookieDomains = (hostname: string): string[] => {
+  const labels = hostname.split('.')
+  if (labels.length < 2 || IPV4_ADDRESS.test(hostname)) {
+    return [hostname]
+  }
+  return labels.slice(0, -1).map((_, index) => labels.slice(index).join('.'))
+}
+
+// The API sets the session cookie on a domain this app isn't configured with,
+// so expire it on the host and on every parent domain the browser accepts.
+const expireSessionCookie = (
+  request: NextRequest,
+  response: NextResponse,
+): NextResponse => {
+  const attributes = [
+    'Path=/',
+    'Max-Age=0',
+    'Expires=Thu, 01 Jan 1970 00:00:00 GMT',
+  ]
+  if (request.nextUrl.protocol === 'https:') {
+    attributes.push('Secure')
+  }
+
+  const domains = [undefined, ...getCookieDomains(request.nextUrl.hostname)]
+  for (const domain of domains) {
+    response.headers.append(
+      'Set-Cookie',
+      [
+        `${POLAR_AUTH_COOKIE_KEY}=`,
+        ...attributes,
+        ...(domain ? [`Domain=${domain}`] : []),
+      ].join('; '),
+    )
+  }
+  return response
+}
+
 const getLoginResponse = (request: NextRequest): NextResponse => {
   const redirectURL = request.nextUrl.clone()
   redirectURL.pathname = '/auth'
@@ -345,40 +441,16 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(redirectURL, { status: 308 })
   }
 
-  let user: schemas['UserRead'] | undefined = undefined
-
-  if (request.cookies.has(POLAR_AUTH_COOKIE_KEY)) {
-    const api = await createServerSideAPI(
-      request.headers,
-      RequestCookiesAdapter.seal(request.cookies),
-    )
-    const { data, response } = await api.GET('/v1/users/me', {
-      cache: 'no-cache',
-    })
-
-    // A 429 means resolving the session was rate-limited upstream (the session
-    // cookie is being counted in the API's `pending_auth` bucket). We can't
-    // determine the user, so we proceed as anonymous rather than turning a
-    // transient rate-limit into a hard 500 for the user. It's still logged so
-    // we keep visibility on how often this happens.
-    if (response.status === 429) {
-      console.error(
-        `Rate limited while fetching authenticated user: status=429, headers=${JSON.stringify(Object.fromEntries(response.headers.entries()))}`,
-      )
-    } else if (!response.ok && response.status !== 401) {
-      console.error(
-        `Error response: status=${response.status}, headers=${JSON.stringify(Object.fromEntries(response.headers.entries()))}`,
-      )
-      throw new Error(
-        'Unexpected response status while fetching authenticated user',
-      )
-    }
-
-    user = data
-  }
+  const [{ user, sessionExpired }, embedPolicy] = await Promise.all([
+    getUser(request),
+    getEmbedPolicy(request),
+  ])
 
   if (requiresAuthentication(request) && !user) {
-    return getLoginResponse(request)
+    const loginResponse = getLoginResponse(request)
+    return sessionExpired
+      ? expireSessionCookie(request, loginResponse)
+      : loginResponse
   }
 
   const { id: distinctId, isNew: isNewDistinctId } =
@@ -392,7 +464,6 @@ export async function proxy(request: NextRequest) {
     )
   }
 
-  const embedPolicy = await getEmbedPolicy(request)
   if (embedPolicy?.embed_origin) {
     requestHeaders.set(POLAR_EMBED_ORIGIN_HEADER, embedPolicy.embed_origin)
   }
@@ -419,7 +490,7 @@ export async function proxy(request: NextRequest) {
     })
   }
 
-  return response
+  return sessionExpired ? expireSessionCookie(request, response) : response
 }
 
 export const config = {

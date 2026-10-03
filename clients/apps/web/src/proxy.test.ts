@@ -353,6 +353,99 @@ describe('middleware function', () => {
     consoleErrorSpy.mockRestore()
   })
 
+  const mockUserResponse = (status: number, data?: object) =>
+    createServerSideAPI.mockResolvedValue({
+      GET: vi.fn().mockResolvedValue({
+        data,
+        response: { ok: status < 400, status, headers: new Headers() },
+      }),
+    })
+
+  const getSessionCookies = (response: Response): string[] =>
+    response.headers
+      .getSetCookie()
+      .filter((cookie) => cookie.startsWith('polar_session='))
+
+  it('expires a rejected session cookie on the host and its parent domains', async () => {
+    mockUserResponse(401)
+
+    const request = new NextRequest('https://sandbox.polar.sh/dashboard')
+    request.cookies.set('polar_session', 'expired-session-token')
+
+    const response = await proxy(request)
+
+    expect(response.status).toBe(307)
+    expect(getSessionCookies(response)).toEqual([
+      'polar_session=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure',
+      'polar_session=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; Domain=sandbox.polar.sh',
+      'polar_session=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; Domain=polar.sh',
+    ])
+  })
+
+  it('expires a rejected session cookie on public routes', async () => {
+    mockUserResponse(401)
+
+    const request = new NextRequest('https://polar.sh/pricing')
+    request.cookies.set('polar_session', 'expired-session-token')
+
+    const response = await proxy(request)
+
+    expect(response.status).toBe(200)
+    expect(getForwardedRequestHeader(response, 'x-polar-user')).toBeNull()
+    expect(getSessionCookies(response)).toHaveLength(2)
+  })
+
+  it.each([
+    [200, { id: '123' }],
+    [429, undefined],
+  ])(
+    'keeps the session cookie when the API answers %i',
+    async (status, data) => {
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      mockUserResponse(status, data)
+
+      const request = new NextRequest('https://polar.sh/pricing')
+      request.cookies.set('polar_session', 'valid-session-token')
+
+      const response = await proxy(request)
+
+      expect(getSessionCookies(response)).toEqual([])
+      consoleErrorSpy.mockRestore()
+    },
+  )
+
+  it.each([
+    '/favicon-dark.png',
+    '/humans.txt',
+    '/acme/portal',
+    '/acme/portal/orders',
+    '/embed/payment-method',
+  ])('does not look up the user for %s', async (path) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
+
+    const request = new NextRequest(`https://polar.sh${path}`)
+    request.cookies.set('polar_session', 'valid-session-token')
+
+    await proxy(request)
+
+    expect(createServerSideAPI).not.toHaveBeenCalled()
+    vi.unstubAllGlobals()
+  })
+
+  it('looks up the user on authenticated routes that resemble portal paths', async () => {
+    mockUserResponse(200, { id: '123' })
+
+    const request = new NextRequest('https://polar.sh/dashboard/portal')
+    request.cookies.set('polar_session', 'valid-session-token')
+
+    const response = await proxy(request)
+
+    expect(createServerSideAPI).toHaveBeenCalledOnce()
+    expect(response.status).toBe(200)
+  })
+
   it('should redirect unauthenticated /to/* requests to login preserving the deep link', async () => {
     const request = new NextRequest(
       'https://example.com/to/dashboard/settings/billing',
@@ -531,6 +624,27 @@ describe('checkout frame ancestors', () => {
     await proxy(new NextRequest('https://polar.sh/checkout/polar_c_123'))
 
     expect(mockFetch).toHaveBeenCalledOnce()
+  })
+
+  it('looks up the user and the policy concurrently', async () => {
+    const { createServerSideAPI } = await import('./utils/client')
+    let resolveUser: (value: unknown) => void = () => {}
+    vi.mocked(createServerSideAPI).mockResolvedValue({
+      GET: vi.fn(() => new Promise((resolve) => (resolveUser = resolve))),
+    } as never)
+
+    const request = framedRequest('https://polar.sh/checkout/polar_c_123')
+    request.cookies.set('polar_session', 'valid-session-token')
+    const pending = proxy(request)
+
+    await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledOnce())
+    resolveUser({
+      data: { id: '123' },
+      response: { ok: true, status: 200, headers: new Headers() },
+    })
+
+    const response = await pending
+    expect(getForwardedRequestHeader(response, 'x-polar-user')).not.toBeNull()
   })
 
   it('asks nothing outside checkout', async () => {

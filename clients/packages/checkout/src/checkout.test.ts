@@ -109,6 +109,51 @@ describe('PolarEmbedCheckout', () => {
       checkout.close()
     })
 
+    it('matches the iframe color-scheme to a theme already on the link', async () => {
+      const promise = PolarEmbedCheckout.create(
+        'https://buy.polar.sh/polar_cl_123?theme=dark',
+      )
+
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          origin: ALLOWED_ORIGIN,
+          data: { type: 'POLAR_CHECKOUT', event: 'loaded' },
+        }),
+      )
+
+      const checkout = await promise
+
+      const iframe = document.querySelector('iframe')
+      const src = new URL(iframe!.src)
+      expect(src.searchParams.get('theme')).toBe('dark')
+      expect(iframe!.style.colorScheme).toBe('dark')
+
+      checkout.close()
+    })
+
+    it('lets the theme option override a theme on the link', async () => {
+      const promise = PolarEmbedCheckout.create(
+        'https://buy.polar.sh/polar_cl_123?theme=dark',
+        { theme: 'light' },
+      )
+
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          origin: ALLOWED_ORIGIN,
+          data: { type: 'POLAR_CHECKOUT', event: 'loaded' },
+        }),
+      )
+
+      const checkout = await promise
+
+      const iframe = document.querySelector('iframe')
+      const src = new URL(iframe!.src)
+      expect(src.searchParams.get('theme')).toBe('light')
+      expect(iframe!.style.colorScheme).toBe('light')
+
+      checkout.close()
+    })
+
     it('adds polar-no-scroll class to body', async () => {
       const promise = PolarEmbedCheckout.create(
         'https://buy.polar.sh/polar_cl_123',

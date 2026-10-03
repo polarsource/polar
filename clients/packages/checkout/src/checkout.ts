@@ -111,14 +111,28 @@ class EmbedCheckout {
       options = { theme: options }
     }
 
+    // Add query parameters to the Checkout Link
+    const parsedURL = new URL(url)
+    parsedURL.searchParams.set('embed', 'true')
+    parsedURL.searchParams.set('embed_origin', window.location.origin)
+    if (options?.theme) {
+      parsedURL.searchParams.set('theme', options.theme)
+    }
+    const embedURL = parsedURL.toString()
+
+    // The embedded page reads its theme from the URL, which may carry one
+    // the options didn't set; the iframe must use the same color-scheme.
+    const theme =
+      parsedURL.searchParams.get('theme') === 'dark' ? 'dark' : 'light'
+
     const styleSheet = document.createElement('style')
     styleSheet.innerText = `
       .polar-loader-spinner {
         width: 20px;
         aspect-ratio: 1;
         border-radius: 50%;
-        background: ${options?.theme === 'dark' ? '#000' : '#fff'};
-        box-shadow: 0 0 0 0 ${options?.theme === 'dark' ? '#fff' : '#000'};
+        background: ${theme === 'dark' ? '#000' : '#fff'};
+        box-shadow: 0 0 0 0 ${theme === 'dark' ? '#fff' : '#000'};
         animation: polar-loader-spinner-animation 1s infinite;
       }
       @keyframes polar-loader-spinner-animation {
@@ -148,15 +162,6 @@ class EmbedCheckout {
     document.body.classList.add('polar-no-scroll')
     document.body.appendChild(loader)
 
-    // Add query parameters to the Checkout Link
-    const parsedURL = new URL(url)
-    parsedURL.searchParams.set('embed', 'true')
-    parsedURL.searchParams.set('embed_origin', window.location.origin)
-    if (options?.theme) {
-      parsedURL.searchParams.set('theme', options.theme)
-    }
-    const embedURL = parsedURL.toString()
-
     // Create iframe
     const iframe = document.createElement('iframe')
     iframe.src = embedURL
@@ -168,7 +173,7 @@ class EmbedCheckout {
     iframe.style.border = 'none'
     iframe.style.zIndex = '2147483647'
     iframe.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
-    iframe.style.colorScheme = options?.theme === 'dark' ? 'dark' : 'light'
+    iframe.style.colorScheme = theme
 
     // Opt the overlay out of smooth-scroll libraries (Lenis) on the embedding
     // page, which would otherwise scroll it behind the checkout.

@@ -54,66 +54,58 @@ def slack_configured(mocker: MockerFixture) -> None:
 
 
 @pytest.mark.asyncio
-async def test_skips_invariant_outside_its_environments(
-    session: AsyncSession, redis: Redis, mocker: MockerFixture
-) -> None:
-    mocker.patch.object(settings, "ENV", Environment.sandbox)
-    check_spy = mocker.spy(_ProductionOnlyInvariant, "check")
+class TestCheck:
+    async def test_skips_invariant_outside_its_environments(
+        self, session: AsyncSession, redis: Redis, mocker: MockerFixture
+    ) -> None:
+        mocker.patch.object(settings, "ENV", Environment.sandbox)
+        check_spy = mocker.spy(_ProductionOnlyInvariant, "check")
 
-    await invariant_service.check(session, redis, _ProductionOnlyInvariant)
+        await invariant_service.check(session, redis, _ProductionOnlyInvariant)
 
-    check_spy.assert_not_called()
+        check_spy.assert_not_called()
 
+    async def test_runs_invariant_within_its_environments(
+        self, session: AsyncSession, redis: Redis, mocker: MockerFixture
+    ) -> None:
+        mocker.patch.object(settings, "ENV", Environment.production)
+        mocker.patch(
+            "polar.observability.invariants.service.slack_client.chat_post_message"
+        )
+        check_spy = mocker.spy(_ProductionOnlyInvariant, "check")
 
-@pytest.mark.asyncio
-async def test_runs_invariant_within_its_environments(
-    session: AsyncSession, redis: Redis, mocker: MockerFixture
-) -> None:
-    mocker.patch.object(settings, "ENV", Environment.production)
-    mocker.patch(
-        "polar.observability.invariants.service.slack_client.chat_post_message"
-    )
-    check_spy = mocker.spy(_ProductionOnlyInvariant, "check")
+        await invariant_service.check(session, redis, _ProductionOnlyInvariant)
 
-    await invariant_service.check(session, redis, _ProductionOnlyInvariant)
+        check_spy.assert_called_once()
 
-    check_spy.assert_called_once()
+    async def test_runs_invariant_with_no_environment_restriction(
+        self, session: AsyncSession, redis: Redis, mocker: MockerFixture
+    ) -> None:
+        mocker.patch.object(settings, "ENV", Environment.sandbox)
+        mocker.patch(
+            "polar.observability.invariants.service.slack_client.chat_post_message"
+        )
+        check_spy = mocker.spy(_AllEnvironmentsInvariant, "check")
 
+        await invariant_service.check(session, redis, _AllEnvironmentsInvariant)
 
-@pytest.mark.asyncio
-async def test_runs_invariant_with_no_environment_restriction(
-    session: AsyncSession, redis: Redis, mocker: MockerFixture
-) -> None:
-    mocker.patch.object(settings, "ENV", Environment.sandbox)
-    mocker.patch(
-        "polar.observability.invariants.service.slack_client.chat_post_message"
-    )
-    check_spy = mocker.spy(_AllEnvironmentsInvariant, "check")
+        check_spy.assert_called_once()
 
-    await invariant_service.check(session, redis, _AllEnvironmentsInvariant)
+    @pytest.mark.usefixtures("slack_configured")
+    async def test_notifies_when_context_is_not_natively_serializable(
+        self, session: AsyncSession, redis: Redis, mocker: MockerFixture
+    ) -> None:
+        post_message_mock = mocker.patch(
+            "polar.observability.invariants.service.slack_client.chat_post_message",
+            return_value={"ok": True, "ts": "1.0"},
+        )
 
-    check_spy.assert_called_once()
+        await invariant_service.check(session, redis, _DecimalContextInvariant)
 
+        post_message_mock.assert_called_once()
+        assert "1234" in str(post_message_mock.call_args.kwargs["blocks"])
 
-@pytest.mark.asyncio
-@pytest.mark.usefixtures("slack_configured")
-async def test_notifies_when_context_is_not_natively_serializable(
-    session: AsyncSession, redis: Redis, mocker: MockerFixture
-) -> None:
-    post_message_mock = mocker.patch(
-        "polar.observability.invariants.service.slack_client.chat_post_message",
-        return_value={"ok": True, "ts": "1.0"},
-    )
-
-    await invariant_service.check(session, redis, _DecimalContextInvariant)
-
-    post_message_mock.assert_called_once()
-    assert "1234" in str(post_message_mock.call_args.kwargs["blocks"])
-
-
-@pytest.mark.asyncio
-@pytest.mark.usefixtures("slack_configured")
-class TestAlertDeduplication:
+    @pytest.mark.usefixtures("slack_configured")
     async def test_first_failure_posts_new_message(
         self, session: AsyncSession, redis: Redis, mocker: MockerFixture
     ) -> None:
@@ -128,6 +120,7 @@ class TestAlertDeduplication:
         post_message_mock.assert_called_once()
         assert "thread_ts" not in post_message_mock.call_args.kwargs
 
+    @pytest.mark.usefixtures("slack_configured")
     async def test_same_failure_is_not_posted_again(
         self, session: AsyncSession, redis: Redis, mocker: MockerFixture
     ) -> None:
@@ -142,6 +135,7 @@ class TestAlertDeduplication:
 
         post_message_mock.assert_called_once()
 
+    @pytest.mark.usefixtures("slack_configured")
     async def test_changed_failure_replies_in_thread(
         self, session: AsyncSession, redis: Redis, mocker: MockerFixture
     ) -> None:
@@ -158,7 +152,10 @@ class TestAlertDeduplication:
 
         assert post_message_mock.call_count == 2
         assert post_message_mock.call_args.kwargs["thread_ts"] == "1.0"
+        keys = await redis.keys("observability:invariants:alert:*")
+        assert await redis.ttl(keys[0]) > 0
 
+    @pytest.mark.usefixtures("slack_configured")
     async def test_resolved_failure_replies_in_thread(
         self, session: AsyncSession, redis: Redis, mocker: MockerFixture
     ) -> None:
@@ -177,6 +174,7 @@ class TestAlertDeduplication:
         assert post_message_mock.call_args.kwargs["thread_ts"] == "1.0"
         assert "passes again" in post_message_mock.call_args.kwargs["text"]
 
+    @pytest.mark.usefixtures("slack_configured")
     async def test_failure_after_resolution_posts_new_message(
         self, session: AsyncSession, redis: Redis, mocker: MockerFixture
     ) -> None:
@@ -195,6 +193,7 @@ class TestAlertDeduplication:
         assert post_message_mock.call_count == 3
         assert "thread_ts" not in post_message_mock.call_args.kwargs
 
+    @pytest.mark.usefixtures("slack_configured")
     async def test_passing_without_previous_failure_posts_nothing(
         self, session: AsyncSession, redis: Redis, mocker: MockerFixture
     ) -> None:
@@ -206,6 +205,7 @@ class TestAlertDeduplication:
 
         post_message_mock.assert_not_called()
 
+    @pytest.mark.usefixtures("slack_configured")
     async def test_alert_expires_after_reminder_interval(
         self, session: AsyncSession, redis: Redis, mocker: MockerFixture
     ) -> None:

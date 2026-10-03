@@ -1,6 +1,6 @@
 import hashlib
 import json
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any, TypedDict
 
 import structlog
@@ -8,7 +8,6 @@ import structlog
 from polar.config import settings
 from polar.integrations.slack.client import client as slack_client
 from polar.integrations.slack.payload import SlackPayload, get_branded_slack_payload
-from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.postgres import AsyncReadSession
 from polar.redis import Redis
@@ -23,7 +22,6 @@ REMINDER_INTERVAL = timedelta(hours=24)
 class InvariantAlert(TypedDict):
     fingerprint: str
     thread_ts: str
-    notified_at: str
 
 
 def _get_alert_key(invariant_cls: type[Invariant]) -> str:
@@ -47,11 +45,6 @@ async def _get_alert(redis: Redis, key: str) -> InvariantAlert | None:
     if value is None:
         return None
     return json.loads(value)
-
-
-async def _save_alert(redis: Redis, key: str, alert: InvariantAlert) -> None:
-    expires_at = datetime.fromisoformat(alert["notified_at"]) + REMINDER_INTERVAL
-    await redis.set(key, json.dumps(alert), exat=expires_at)
 
 
 def _format_invariant_failure_payload(error: InvariantError) -> SlackPayload:
@@ -176,14 +169,11 @@ class InvariantService:
         )
 
         if alert is None:
-            alert = {
-                "fingerprint": fingerprint,
-                "thread_ts": response["ts"],
-                "notified_at": utc_now().isoformat(),
-            }
+            alert = {"fingerprint": fingerprint, "thread_ts": response["ts"]}
+            await redis.set(key, json.dumps(alert), ex=REMINDER_INTERVAL, nx=True)
         else:
             alert["fingerprint"] = fingerprint
-        await _save_alert(redis, key, alert)
+            await redis.set(key, json.dumps(alert), keepttl=True, xx=True)
 
     async def _notify_resolved(
         self, redis: Redis, invariant_cls: type[Invariant]

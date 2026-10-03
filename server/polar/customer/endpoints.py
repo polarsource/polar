@@ -78,7 +78,9 @@ CustomerNotFound = {
     summary="List Customers",
     response_model=ListResource[CustomerSchema],
     tags=[APITag.mcp, APITag.cli],
-    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
+    openapi_extra={
+        "parameters": [get_metadata_query_openapi_schema()],
+    },
 )
 async def list(
     auth_subject: auth.CustomerRead,
@@ -449,6 +451,12 @@ async def list_payment_methods_external(
     summary="Create Customer",
     tags=[APITag.mcp, APITag.cli],
     responses={201: {"description": "Customer created."}},
+    openapi_extra={
+        "x-tool-description": (
+            "Create a new customer record with email, name, metadata, and optional "
+            "external_id for reconciliation."
+        ),
+    },
 )
 async def create(
     customer_create: CustomerCreate,

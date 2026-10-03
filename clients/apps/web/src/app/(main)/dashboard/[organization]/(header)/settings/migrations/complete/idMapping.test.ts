@@ -1,88 +1,129 @@
+import { schemas } from '@polar-sh/client'
 import { describe, expect, it } from 'vitest'
 import { buildIdMapping } from './idMapping'
-import { sources } from './mappingFixtures'
-import { mappingCsv, mappingEntries } from './mappingExport'
-import { kindForStripeId, lookupStripeIds, matchesQuery } from './mappingSearch'
+import { mappingCsv } from './mappingExport'
+
+type Item = schemas['MerchantMigrationRecordItem']
+
+const item = (
+  entity: Item['entity'],
+  source_id: string,
+  extra: Partial<Item> = {},
+) =>
+  ({
+    entity,
+    source_id,
+    title: source_id,
+    import_status: 'imported',
+    ...extra,
+  }) as Item
+
+const product = (interval: string) => ({
+  product_source_id: 'prod_pro',
+  product_name: 'Pro',
+  recurring_interval: interval,
+})
+const subscription = (id: string, created_at: string) => ({
+  id: `pol_${id}`,
+  created_at,
+  customer_id: 'pol_cus',
+  product_id: 'pol_prod_m',
+  metadata: { provider_subscription_id: id },
+})
+
+const mapping = buildIdMapping(
+  {
+    customers: [
+      item('customers', 'cus_ada', { title: 'Ada@example.com' }),
+      item('customers', 'cus_eve', { import_status: 'skipped' }),
+    ],
+    products: [
+      item('products', 'prod_pro', product('month')),
+      item('products', 'prod_pro', product('year')),
+    ],
+    prices: [
+      item('prices', 'price_m', {
+        ...product('month'),
+        amount: 2900,
+        currency: 'USD',
+      }),
+    ],
+    discounts: [item('discounts', 'LAUNCH20')],
+    subscriptions: [
+      item('subscriptions', 'sub_moved', {
+        ...product('month'),
+        cutover_status: 'moved',
+      }),
+      item('subscriptions', 'sub_left', {
+        import_status: 'pending',
+        cutover_status: 'skipped',
+      }),
+      item('subscriptions', 'sub_ready', {
+        import_status: 'pending',
+        dependencies_imported: true,
+      }),
+    ],
+  },
+  {
+    subscriptions: [subscription('sub_moved', '2026-09-28T10:00:00Z')],
+    customers: [{ id: 'pol_cus_ada', email: 'ada@example.com' }],
+    products: [
+      {
+        id: 'pol_prod_m',
+        name: 'Pro',
+        recurring_interval: 'month',
+        prices: [
+          { id: 'pol_price_m', price_amount: 2900, price_currency: 'usd' },
+        ],
+      },
+      { id: 'pol_prod_y', name: 'Pro', recurring_interval: 'year', prices: [] },
+    ],
+    discounts: [{ id: 'pol_disc', metadata: { stripe_coupon_id: 'LAUNCH20' } }],
+  },
+)
+
+const ids = (rows: { polarId: string | null; state: string }[]) =>
+  rows.map((row) => [row.polarId, row.state])
 
 describe('buildIdMapping', () => {
-  const mapping = buildIdMapping(sources())
-
-  it('maps subscriptions through provider_subscription_id metadata', () => {
-    expect(
-      mapping.subscriptions.map((row) => [row.polarId, row.state, row.note]),
-    ).toEqual([
-      ['pol_sub_ada', 'moved', null],
-      [null, 'left_on_stripe', 'Renews too soon'],
-    ])
-  })
-
-  it('maps customers by email, even when their subscription stayed on Stripe', () => {
-    expect(mapping.customers.map((row) => [row.polarId, row.state])).toEqual([
+  it('maps customers by email and leaves skipped ones on Stripe', () => {
+    expect(ids(mapping.customers)).toEqual([
       ['pol_cus_ada', 'in_polar'],
-      ['pol_cus_bob', 'in_polar'],
       [null, 'not_imported'],
     ])
   })
 
-  it('picks the Polar product per interval, falling back to a unique name match', () => {
-    expect(mapping.products.map((row) => row.polarId)).toEqual([
-      'pol_prod_m',
-      'pol_prod_y',
+  it('maps a Stripe product split per interval to each Polar product, and its prices by amount', () => {
+    expect(ids(mapping.products)).toEqual([
+      ['pol_prod_m', 'in_polar'],
+      ['pol_prod_y', 'in_polar'],
+    ])
+    expect(ids(mapping.prices)).toEqual([['pol_price_m', 'in_polar']])
+  })
+
+  it('maps discounts and switched subscriptions through their metadata', () => {
+    expect(ids(mapping.discounts)).toEqual([['pol_disc', 'in_polar']])
+    expect(ids(mapping.subscriptions)).toEqual([
+      ['pol_sub_moved', 'moved'],
+      [null, 'left_on_stripe'],
+      [null, 'ready'],
     ])
   })
 
-  it('maps prices by amount and currency on the mapped product', () => {
-    expect(mapping.prices[0]).toMatchObject({
-      polarId: 'pol_price_m',
-      state: 'in_polar',
-    })
-  })
-
-  it('maps discounts through stripe_coupon_id metadata', () => {
-    expect(mapping.discounts[0].polarId).toBe('pol_disc')
+  it('dates a switched subscription by when Polar created it', () => {
+    expect(mapping.subscriptions.map((row) => row.switchedAt)).toEqual([
+      '2026-09-28T10:00:00Z',
+      null,
+      null,
+    ])
   })
 })
 
-describe('search and lookup', () => {
-  const mapping = buildIdMapping(sources())
-
-  it('matches on either ID or the label', () => {
-    const [ada] = mapping.customers
-    expect(matchesQuery(ada, 'POL_CUS')).toBe(true)
-    expect(matchesQuery(ada, 'cus_ada')).toBe(true)
-    expect(matchesQuery(ada, 'bob')).toBe(false)
-  })
-
-  it('detects the kind from the Stripe prefix', () => {
-    expect(kindForStripeId('sub_1')).toBe('subscriptions')
-    expect(kindForStripeId('LAUNCH20')).toBeNull()
-  })
-
-  it('looks up several pasted IDs, coupons across every kind', () => {
-    const results = lookupStripeIds(mapping, 'sub_ada, LAUNCH20\ncus_nope')
-    expect(
-      results.map((result) => result.rows.map((row) => row.polarId)),
-    ).toEqual([['pol_sub_ada'], ['pol_disc'], []])
-  })
-})
-
-describe('export', () => {
-  const mapping = buildIdMapping(sources())
-
-  it('writes one CSV row per record with a header', () => {
+describe('mappingCsv', () => {
+  it('writes a header and one row per record', () => {
     const lines = mappingCsv(mapping).trim().split('\n')
     expect(lines[0]).toBe('type,stripe_id,polar_id,name,detail,status')
-    expect(lines).toContain('customers,cus_eve,,eve@example.com,,not_imported')
-    expect(lines).toHaveLength(1 + 3 + 2 + 1 + 1 + 2)
-  })
-
-  it('keeps every Polar product a split Stripe product became', () => {
-    const products = mappingEntries(mapping).filter(
-      (entry) => entry.stripe_id === 'prod_pro',
-    )
-    expect(products.map((entry) => [entry.polar_id, entry.detail])).toEqual([
-      ['pol_prod_m', 'Every month'],
-      ['pol_prod_y', 'Every year'],
-    ])
+    expect(lines).toContain('customers,cus_eve,,cus_eve,,not_imported')
+    expect(lines).toHaveLength(1 + 2 + 2 + 1 + 1 + 3)
   })
 })

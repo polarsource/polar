@@ -1,101 +1,76 @@
 'use client'
 
 import { useMigrationSwitch } from '@/hooks/queries/merchantMigrations'
-import { Alert, SegmentedControl, Spinner, Text } from '@polar-sh/orbit'
+import { Alert, Button, Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ChevronLeft } from 'lucide-react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { SwitchPanel } from '../switch/SwitchPanel'
-import { SwitchPhase } from './completeCopy'
-import { CustomersLayout } from './layouts/CustomersLayout'
-import { GoLiveLayout } from './layouts/GoLiveLayout'
-import { LedgerLayout } from './layouts/LedgerLayout'
-import { MinimalLayout } from './layouts/MinimalLayout'
-import { ProgressLayout } from './layouts/ProgressLayout'
-import { LayoutProps } from './layouts/shared'
-import { SwitchedSoFarBanner } from './SwitchedSoFarBanner'
+import { SwitchSummary } from './SwitchSummary'
 import { useIdMapping } from './useIdMapping'
 
-// `?layout=` is a temporary switch between design versions under review.
-const LAYOUTS = {
-  progress: ProgressLayout,
-  minimal: MinimalLayout,
-  ledger: LedgerLayout,
-  customers: CustomersLayout,
-  golive: GoLiveLayout,
-} satisfies Record<string, (props: LayoutProps) => React.ReactNode>
+const numberFormat = new Intl.NumberFormat('en-US')
 
-type LayoutKey = keyof typeof LAYOUTS
-
-const isLayoutKey = (value: string | null): value is LayoutKey =>
-  value !== null && value in LAYOUTS
-
-function BackLink({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <Box
-      alignItems="center"
-      columnGap="xs"
-      color={{ base: 'text-secondary', hover: 'text-primary' }}
-      cursor={{ hover: 'pointer' }}
-      onClick={onClick}
-    >
-      <ChevronLeft size={14} />
-      <Text variant="caption" color="inherit">
-        {label}
-      </Text>
-    </Box>
-  )
-}
-
-// One page for the Switch step and after it. While batches remain, the switch
-// table leads and the summary is a click away; once nothing is left to
-// switch, the summary leads and the switch table is the click away.
+// While batches remain, the switch table leads and the summary is a click
+// away; once nothing is left to switch, it's the other way round.
 export function SwitchCompletePage({
   migrationId,
   organizationId,
   organizationSlug,
-  phase,
+  complete,
 }: {
   migrationId: string
   organizationId: string
   organizationSlug: string
-  phase: SwitchPhase
+  complete: boolean
 }) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
-  const report = useMigrationSwitch(migrationId)
-  const defaultView = phase === 'complete' ? 'summary' : 'switch'
+  const defaultView = complete ? 'summary' : 'switch'
   const view = searchParams.get('view') ?? defaultView
+  const report = useMigrationSwitch(migrationId)
   const mapping = useIdMapping(
     view === 'summary' ? migrationId : '',
     organizationId,
   )
 
-  const setParam = (key: string, value: string | null) => {
-    const params = new URLSearchParams(searchParams.toString())
-    if (value) params.set(key, value)
-    else params.delete(key)
-    const query = params.toString()
-    router.push(query ? `${pathname}?${query}` : pathname)
-  }
-  const openView = (next: 'switch' | 'summary') =>
-    setParam('view', next === defaultView ? null : next)
+  const openView = (next: string) =>
+    router.push(next === defaultView ? pathname : `${pathname}?view=${next}`)
 
   if (view === 'switch') {
+    const moved = report.data?.moved ?? 0
     return (
       <Box flexDirection="column" rowGap="l">
-        {phase === 'complete' ? (
+        {complete ? (
           <BackLink
             label="Back to summary"
             onClick={() => openView('summary')}
           />
         ) : (
-          report.data && (
-            <SwitchedSoFarBanner
-              report={report.data}
-              onOpenSummary={() => openView('summary')}
-            />
+          moved > 0 && (
+            <Box
+              alignItems="center"
+              justifyContent="between"
+              columnGap="m"
+              padding="m"
+              borderRadius="m"
+              borderWidth={1}
+              borderStyle="solid"
+              borderColor="border-primary"
+            >
+              <Text variant="caption">
+                {numberFormat.format(moved)} subscriptions already bill on
+                Polar, and their Polar IDs are ready.
+              </Text>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => openView('summary')}
+              >
+                View ID map
+              </Button>
+            </Box>
           )
         )}
         <SwitchPanel migrationId={migrationId} />
@@ -110,7 +85,6 @@ export function SwitchCompletePage({
       </Box>
     )
   }
-
   if (!report.data || !mapping.data) {
     return (
       <Alert
@@ -120,39 +94,38 @@ export function SwitchCompletePage({
       />
     )
   }
-
-  const layoutParam = searchParams.get('layout')
-  const layout: LayoutKey = isLayoutKey(layoutParam) ? layoutParam : 'progress'
-  const Layout = LAYOUTS[layout]
   return (
     <Box flexDirection="column" rowGap="xl">
-      {phase === 'in_progress' && (
+      {!complete && (
         <BackLink
           label="Back to switching"
           onClick={() => openView('switch')}
         />
       )}
-      {layoutParam !== null && (
-        <Box>
-          <SegmentedControl
-            value={layout}
-            onChange={(next) => setParam('layout', next)}
-            options={Object.keys(LAYOUTS).map((key) => ({
-              value: key,
-              label: key,
-            }))}
-          />
-        </Box>
-      )}
-      <Layout
-        migrationId={migrationId}
-        organizationId={organizationId}
-        organizationSlug={organizationSlug}
-        phase={phase}
+      <SwitchSummary
+        complete={complete}
         report={report.data}
         mapping={mapping.data}
+        organizationSlug={organizationSlug}
         onOpenSwitch={() => openView('switch')}
       />
+    </Box>
+  )
+}
+
+function BackLink({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <Box
+      alignItems="center"
+      columnGap="xs"
+      color={{ base: 'text-secondary', hover: 'text-primary' }}
+      cursor={{ hover: 'pointer' }}
+      onClick={onClick}
+    >
+      <ChevronLeft size={14} />
+      <Text variant="caption" color="inherit">
+        {label}
+      </Text>
     </Box>
   )
 }

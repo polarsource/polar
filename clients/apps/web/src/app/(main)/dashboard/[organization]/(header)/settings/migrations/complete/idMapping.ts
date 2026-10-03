@@ -1,189 +1,164 @@
-import {
-  MAPPING_KINDS,
-  MappingKind,
-  MappingRow,
-  MappingSources,
-  MappingState,
-  MigrationRecord,
-  PolarProductRef,
-  PolarSubscriptionRef,
-} from './mappingTypes'
+import { schemas } from '@polar-sh/client'
 
-export * from './mappingTypes'
+type MigrationRecord = schemas['MerchantMigrationRecordItem']
 
-// A Stripe product becomes one Polar product per billing interval, so the
-// Stripe product ID alone doesn't pick a Polar product.
-const productKey = (
-  stripeProductId: string,
-  interval: string | null | undefined,
-  count: number | null | undefined,
-) => `${stripeProductId}:${interval ?? ''}:${count ?? 1}`
+export const MAPPING_KINDS = [
+  'customers',
+  'products',
+  'prices',
+  'discounts',
+  'subscriptions',
+] as const
 
-// Subscriptions are only created in Polar when the switch moves them, so the
-// switch outcome decides their state before the import status does.
-const recordState = (record: MigrationRecord): MappingState => {
-  if (record.entity === 'subscriptions') {
-    switch (record.cutover_status) {
-      case 'moved':
-        return 'moved'
-      case 'skipped':
-        return 'left_on_stripe'
-      case 'failed':
-        return 'failed'
-    }
-    return record.import_status === 'imported' || record.dependencies_imported
-      ? 'not_switched'
-      : 'not_imported'
-  }
-  return record.import_status === 'imported' ? 'in_polar' : 'not_imported'
+export type MappingKind = (typeof MAPPING_KINDS)[number]
+
+export type MappingState =
+  | 'moved'
+  | 'in_polar'
+  | 'ready'
+  | 'left_on_stripe'
+  | 'failed'
+  | 'not_imported'
+
+export interface MappingRow {
+  kind: MappingKind
+  stripeId: string
+  polarId: string | null
+  label: string
+  detail: string | null
+  state: MappingState
+  // The switch creates the Polar subscription, so this is when its batch ran.
+  switchedAt: string | null
 }
 
-const recordNote = (record: MigrationRecord): string | null =>
-  record.cutover_error ?? (record.status === 'skipped' ? record.reason : null)
+export type IdMapping = Record<MappingKind, MappingRow[]>
 
-export function buildIdMapping({
-  records,
-  subscriptions,
-  customers,
-  products,
-  discounts,
-}: MappingSources): Record<MappingKind, MappingRow[]> {
-  const subscriptionByStripeId = new Map<string, PolarSubscriptionRef>()
-  for (const subscription of subscriptions) {
-    const stripeId = subscription.metadata.provider_subscription_id
-    if (typeof stripeId === 'string') {
-      subscriptionByStripeId.set(stripeId, subscription)
-    }
+export interface PolarObjects {
+  subscriptions: {
+    id: string
+    created_at: string
+    customer_id: string
+    product_id: string
+    metadata: Record<string, unknown>
+  }[]
+  customers: { id: string; email?: string | null }[]
+  products: {
+    id: string
+    name: string
+    recurring_interval: string | null
+    prices: { id: string; price_amount?: number; price_currency?: string }[]
+  }[]
+  discounts: { id: string; metadata: Record<string, unknown> }[]
+}
+
+// Subscriptions only exist in Polar once the switch moves them, so their
+// switch outcome comes before their import status.
+function recordState(record: MigrationRecord): MappingState {
+  if (record.entity !== 'subscriptions') {
+    return record.import_status === 'imported' ? 'in_polar' : 'not_imported'
   }
+  if (record.cutover_status === 'moved') return 'moved'
+  if (record.cutover_status === 'skipped') return 'left_on_stripe'
+  if (record.cutover_status === 'failed') return 'failed'
+  return record.dependencies_imported || record.import_status === 'imported'
+    ? 'ready'
+    : 'not_imported'
+}
 
-  const customerByStripeId = new Map<string, string>()
-  // Email is unique per organization, and reaches customers whose
-  // subscription stayed on Stripe and so has no Polar subscription to join on.
-  const customerByEmail = new Map(
-    customers.flatMap((customer) =>
-      customer.email ? [[customer.email.toLowerCase(), customer.id]] : [],
-    ),
+// Joins migration records to the Polar objects they became, through the
+// back-links the import leaves: `provider_subscription_id` on subscriptions,
+// `stripe_coupon_id` on discounts, the email on customers, and for products
+// the switched subscriptions (a Stripe product splits per interval) or the
+// name and interval.
+export function buildIdMapping(
+  records: Record<MappingKind, MigrationRecord[]>,
+  polar: PolarObjects,
+): IdMapping {
+  const byMetadata = <T extends { metadata: Record<string, unknown> }>(
+    objects: T[],
+    key: string,
+  ) => new Map(objects.map((object) => [String(object.metadata[key]), object]))
+  const subscriptions = byMetadata(
+    polar.subscriptions,
+    'provider_subscription_id',
   )
-  const productByKey = new Map<string, string>()
+  const discounts = byMetadata(polar.discounts, 'stripe_coupon_id')
+  const customers = new Map(
+    polar.customers.map((customer) => [
+      customer.email?.toLowerCase(),
+      customer.id,
+    ]),
+  )
+  const products = new Map(
+    polar.products.map((product) => [product.id, product]),
+  )
+  const productIds = new Map(
+    polar.products.map((p) => [`${p.name}:${p.recurring_interval}`, p.id]),
+  )
   for (const record of records.subscriptions) {
-    const polar = subscriptionByStripeId.get(record.source_id)
-    if (!polar) continue
-    if (record.customer_source_id) {
-      customerByStripeId.set(record.customer_source_id, polar.customer.id)
-    }
-    if (record.product_source_id) {
-      productByKey.set(
-        productKey(
-          record.product_source_id,
-          polar.product.recurring_interval,
-          polar.product.recurring_interval_count,
-        ),
-        polar.product.id,
+    const subscription = subscriptions.get(record.source_id)
+    if (subscription && record.product_source_id) {
+      productIds.set(
+        `${record.product_source_id}:${record.recurring_interval}`,
+        subscription.product_id,
       )
     }
   }
 
-  const productsByNameInterval = new Map<string, PolarProductRef[]>()
-  for (const product of products) {
-    const key = productKey(
-      product.name.toLowerCase(),
-      product.recurring_interval,
-      product.recurring_interval_count,
-    )
-    productsByNameInterval.set(key, [
-      ...(productsByNameInterval.get(key) ?? []),
-      product,
-    ])
-  }
-  const productById = new Map(products.map((product) => [product.id, product]))
+  const productFor = (record: MigrationRecord) =>
+    productIds.get(
+      `${record.product_source_id}:${record.recurring_interval}`,
+    ) ??
+    productIds.get(`${record.product_name}:${record.recurring_interval}`) ??
+    null
+  const priceFor = (record: MigrationRecord) =>
+    products
+      .get(productFor(record) ?? '')
+      ?.prices.find(
+        (price) =>
+          price.price_amount === record.amount &&
+          price.price_currency?.toLowerCase() ===
+            record.currency?.toLowerCase(),
+      )?.id ?? null
 
-  const polarProductFor = (record: MigrationRecord): string | null => {
-    const stripeProductId = record.product_source_id ?? record.source_id
-    const interval = record.recurring_interval
-    const count = record.recurring_interval_count
-    const viaSubscription = productByKey.get(
-      productKey(stripeProductId, interval, count),
-    )
-    if (viaSubscription) return viaSubscription
-    const byName = productsByNameInterval.get(
-      productKey(
-        (record.product_name ?? record.title).toLowerCase(),
-        interval,
-        count,
-      ),
-    )
-    return byName?.length === 1 ? byName[0].id : null
-  }
-
-  const polarPriceFor = (record: MigrationRecord): string | null => {
-    const product = productById.get(polarProductFor(record) ?? '')
-    if (!product || record.amount == null || !record.currency) return null
-    const currency = record.currency.toLowerCase()
-    const price = product.prices.find(
-      (candidate) =>
-        candidate.amount_type === 'fixed' &&
-        candidate.price_amount === record.amount &&
-        candidate.price_currency?.toLowerCase() === currency,
-    )
-    return price?.id ?? null
-  }
-
-  const discountByCoupon = new Map<string, string>()
-  for (const discount of discounts) {
-    const couponId = discount.metadata.stripe_coupon_id
-    if (typeof couponId === 'string') {
-      discountByCoupon.set(couponId, discount.id)
-    }
-  }
-
-  const resolvers: Record<
-    Exclude<MappingKind, 'prices'>,
+  const resolve: Record<
+    MappingKind,
     (record: MigrationRecord) => string | null
   > = {
     customers: (record) =>
-      customerByStripeId.get(record.source_id) ??
-      customerByEmail.get(
-        (record.customer_email ?? record.title).toLowerCase(),
-      ) ??
+      customers.get((record.customer_email ?? record.title).toLowerCase()) ??
       null,
-    products: polarProductFor,
-    discounts: (record) => discountByCoupon.get(record.source_id) ?? null,
-    subscriptions: (record) =>
-      subscriptionByStripeId.get(record.source_id)?.id ?? null,
+    products: productFor,
+    prices: priceFor,
+    discounts: (record) => discounts.get(record.source_id)?.id ?? null,
+    subscriptions: (record) => subscriptions.get(record.source_id)?.id ?? null,
   }
 
-  const resolve = (
-    kind: MappingKind,
-    record: MigrationRecord,
-  ): Pick<MappingRow, 'state' | 'polarId'> => {
-    // Prices live inside a product record and carry no import status, so
-    // finding the Polar price is what says it moved.
-    if (kind === 'prices') {
-      const polarId = polarPriceFor(record)
-      return { state: polarId ? 'in_polar' : 'not_imported', polarId }
-    }
-    const state = recordState(record)
-    return {
-      state,
-      polarId: state === 'not_imported' ? null : resolvers[kind](record),
-    }
-  }
-
-  const result = {} as Record<MappingKind, MappingRow[]>
-  for (const kind of MAPPING_KINDS) {
-    result[kind] = records[kind].map((record) => ({
+  return Object.fromEntries(
+    MAPPING_KINDS.map((kind) => [
       kind,
-      stripeId: record.source_id,
-      label: record.title,
-      detail: record.subtitle ?? null,
-      note: recordNote(record),
-      switchedAt:
-        kind === 'subscriptions' && record.cutover_status === 'moved'
-          ? (subscriptionByStripeId.get(record.source_id)?.created_at ?? null)
-          : null,
-      record,
-      ...resolve(kind, record),
-    }))
-  }
-  return result
+      records[kind].map((record): MappingRow => {
+        const polarId = resolve[kind](record)
+        // Prices live inside a product record and carry no import status.
+        const state =
+          kind === 'prices'
+            ? polarId
+              ? 'in_polar'
+              : 'not_imported'
+            : recordState(record)
+        return {
+          kind,
+          stripeId: record.source_id,
+          polarId: state === 'not_imported' ? null : polarId,
+          label: record.title,
+          detail: record.subtitle ?? null,
+          state,
+          switchedAt:
+            state === 'moved'
+              ? (subscriptions.get(record.source_id)?.created_at ?? null)
+              : null,
+        }
+      }),
+    ]),
+  ) as IdMapping
 }

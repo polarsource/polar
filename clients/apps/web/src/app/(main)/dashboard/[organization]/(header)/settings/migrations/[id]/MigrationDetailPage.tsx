@@ -199,7 +199,7 @@ function StepContent({
             migrationId={migration.id}
             organizationId={organization.id}
             organizationSlug={organization.slug}
-            phase="in_progress"
+            complete={false}
           />
         </Box>
       )
@@ -210,7 +210,7 @@ function StepContent({
           migrationId={migration.id}
           organizationId={organization.id}
           organizationSlug={organization.slug}
-          phase="complete"
+          complete
         />
       )
   }

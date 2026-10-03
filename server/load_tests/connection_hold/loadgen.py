@@ -13,7 +13,9 @@ import statistics
 import sys
 import time
 import uuid
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import aiohttp
 import asyncpg
@@ -29,7 +31,7 @@ def pct(values: list[float], p: float) -> float:
     return values[min(len(values) - 1, int(p / 100 * len(values)))]
 
 
-async def run(args: argparse.Namespace, seed: dict[str, str]) -> dict:
+async def run(args: argparse.Namespace, seed: dict[str, str]) -> dict[str, Any]:
     cookie = {"Cookie": f"{seed['cookie_name']}={seed['user_session_cookie']}"}
     bearer = {"Authorization": f"Bearer {seed['organization_token']}"}
 
@@ -48,7 +50,7 @@ async def run(args: argparse.Namespace, seed: dict[str, str]) -> dict:
         },
     }
     results: dict[str, list[tuple[float, float, int]]] = {k: [] for k in streams}
-    samples: list[dict[str, int]] = []
+    samples: list[dict[str, float]] = []
     stop = asyncio.Event()
 
     pg = await asyncpg.connect(args.admin_dsn)
@@ -61,7 +63,7 @@ async def run(args: argparse.Namespace, seed: dict[str, str]) -> dict:
                 "GROUP BY 1, 2",
                 args.database,
             )
-            sample = {"t": time.monotonic()}
+            sample: dict[str, float] = {"t": time.monotonic()}
             for row in rows:
                 sample[f"{row['usename']}|{row['state']}"] = row["n"]
             samples.append(sample)
@@ -72,7 +74,7 @@ async def run(args: argparse.Namespace, seed: dict[str, str]) -> dict:
     async with aiohttp.ClientSession(connector=connector, timeout=timeout) as http:
 
         async def fire(
-            name: str, stream: dict, scheduled: float, measured: bool
+            name: str, stream: dict[str, Any], scheduled: float, measured: bool
         ) -> None:
             body = None
             if stream["method"] == "POST":
@@ -91,7 +93,7 @@ async def run(args: argparse.Namespace, seed: dict[str, str]) -> dict:
             if measured:
                 results[name].append((scheduled, time.monotonic() - scheduled, status))
 
-        async def driver(name: str, stream: dict, start: float) -> None:
+        async def driver(name: str, stream: dict[str, Any], start: float) -> None:
             if stream["rate"] <= 0:
                 return
             interval = 1 / stream["rate"]
@@ -125,7 +127,7 @@ async def run(args: argparse.Namespace, seed: dict[str, str]) -> dict:
         if start + args.warmup <= s["t"] <= start + args.warmup + args.duration
     ]
 
-    def series(key_filter) -> list[int]:
+    def series(key_filter: Callable[[str], bool]) -> list[float]:
         return [
             sum(v for k, v in s.items() if k != "t" and key_filter(k)) for s in window
         ]

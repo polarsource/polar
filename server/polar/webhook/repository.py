@@ -107,6 +107,7 @@ class WebhookEventRepository(
             )
             .where(
                 ~WebhookEvent.is_deleted,
+                ~WebhookEvent.skipped,
                 WebhookEvent.webhook_endpoint_id == event.webhook_endpoint_id,
                 WebhookEvent.id != event.id,
                 WebhookDelivery.id.is_(None),

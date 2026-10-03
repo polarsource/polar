@@ -26,6 +26,18 @@ const PAYMENT_METHOD_COPY = {
   none: `This customer has no saved payment method on Stripe. ${NO_CARD_CONSEQUENCE}`,
 }
 
+// The pre-check's own payment notes. The side panel shows the payment method
+// notice instead, so a row doesn't explain the same thing twice.
+const PAYMENT_REASON_CODES = new Set([
+  'payment_method_missing',
+  'payment_method_requires_reentry',
+  'payment_method_not_card',
+])
+
+export function isPaymentMethodReason(code: string | null): boolean {
+  return code !== null && PAYMENT_REASON_CODES.has(code)
+}
+
 type PaymentMethodKind = 'card' | 'bank_debit' | 'no_card'
 
 export interface PaymentMethodNote {

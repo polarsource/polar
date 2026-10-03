@@ -10,8 +10,8 @@ import {
   RecordReason,
   TaxAfterSwitchField,
 } from './ReviewRecordFields'
-import { PaymentMethodLabel } from './PaymentMethodLabel'
-import { rowPaymentMethod } from './paymentMethod'
+import { isPaymentMethodReason, rowPaymentMethod } from './paymentMethod'
+import { PaymentMethodNotice } from './PaymentMethodNotice'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
 import { ReviewRow } from './reviewRows'
 
@@ -26,6 +26,8 @@ export function ReviewRecordModal({
 }) {
   const facts = assessmentFacts(row)
   const paymentMethod = rowPaymentMethod(row)
+  const paymentNoticeShown =
+    paymentMethod?.note != null && isPaymentMethodReason(row.reason_code)
   const discount = row.discount_name
     ? row.discount_code
       ? `${row.discount_name} (${row.discount_code})`
@@ -67,7 +69,10 @@ export function ReviewRecordModal({
               </Text>
               <ReviewStatusIndicator row={row} />
             </Box>
-            <RecordReason row={row} />
+            {paymentMethod ? (
+              <PaymentMethodNotice method={paymentMethod} />
+            ) : null}
+            <RecordReason row={row} hidden={paymentNoticeShown} />
             <BillingCountryField row={row} migrationId={migrationId} />
             <TaxAfterSwitchField row={row} migrationId={migrationId} />
           </Box>
@@ -124,10 +129,7 @@ export function ReviewRecordModal({
             ) : null}
             {discount ? <DetailCell label="Discount" value={discount} /> : null}
             {paymentMethod ? (
-              <DetailCell
-                label="Payment method"
-                value={<PaymentMethodLabel method={paymentMethod} />}
-              />
+              <DetailCell label="Payment method" value={paymentMethod.label} />
             ) : null}
             {facts.renewal ? (
               <DetailCell label="Renewal" value={facts.renewal} />

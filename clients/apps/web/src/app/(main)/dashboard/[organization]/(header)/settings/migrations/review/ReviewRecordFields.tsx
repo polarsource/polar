@@ -47,9 +47,15 @@ export function RecordCard({
   )
 }
 
-export function RecordReason({ row }: { row: ReviewRow }) {
+export function RecordReason({
+  row,
+  hidden = false,
+}: {
+  row: ReviewRow
+  hidden?: boolean
+}) {
   const { organization } = useContext(OrganizationContext)
-  if (!row.reason) return null
+  if (!row.reason || hidden) return null
 
   const links = reasonLinks(row, organization.slug)
   const attention = needsAttention(row)

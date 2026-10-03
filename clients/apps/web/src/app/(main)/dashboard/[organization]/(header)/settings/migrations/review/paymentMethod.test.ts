@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { BANK_DEBITS_STAY_BEHIND, rowPaymentMethod } from './paymentMethod'
+import {
+  BANK_DEBITS_STAY_BEHIND,
+  isPaymentMethodReason,
+  rowPaymentMethod,
+} from './paymentMethod'
 import type { ReviewRow } from './reviewRows'
 
 function row(overrides: Partial<ReviewRow>): ReviewRow {
@@ -53,5 +57,14 @@ describe('rowPaymentMethod', () => {
     expect(rowPaymentMethod(row({ status: 'skipped' }))).toBeNull()
     expect(rowPaymentMethod(row({ import_status: 'skipped' }))).toBeNull()
     expect(rowPaymentMethod(row({ entity: 'customers' }))).toBeNull()
+  })
+})
+
+describe('isPaymentMethodReason', () => {
+  it('recognises the pre-check payment notes only', () => {
+    expect(isPaymentMethodReason('payment_method_requires_reentry')).toBe(true)
+    expect(isPaymentMethodReason('payment_method_missing')).toBe(true)
+    expect(isPaymentMethodReason('customer_tax_exempt')).toBe(false)
+    expect(isPaymentMethodReason(null)).toBe(false)
   })
 })

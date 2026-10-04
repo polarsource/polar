@@ -84,7 +84,12 @@ class RepositoryProtocol[M](Protocol):
     async def get_all(self, statement: Select[tuple[M]]) -> Sequence[M]: ...
 
     async def paginate(
-        self, statement: Select[tuple[M]], *, limit: int, page: int
+        self,
+        statement: Select[tuple[M]],
+        *,
+        limit: int,
+        page: int,
+        count_statement: Select[Any] | None = None,
     ) -> tuple[list[M], int]: ...
 
     async def paginate_has_more(
@@ -150,12 +155,26 @@ class RepositoryBase[M: ModelIDProtocol[Any]]:
             await results.close()
 
     async def paginate(
-        self, statement: Select[tuple[M]], *, limit: int, page: int
+        self,
+        statement: Select[tuple[M]],
+        *,
+        limit: int,
+        page: int,
+        count_statement: Select[Any] | None = None,
     ) -> tuple[list[M], int]:
+        """
+        Paginate the statement and count its total number of rows.
+
+        Pass `count_statement` to count from a cheaper statement matching the
+        same rows, e.g. without the joins `statement` only needs for sorting.
+        """
         offset = (page - 1) * limit
 
-        count_statement = select(func.count()).select_from(count_subquery(statement))
-        count_result = await self.session.execute(count_statement)
+        if count_statement is None:
+            count_statement = statement
+        count_result = await self.session.execute(
+            select(func.count()).select_from(count_subquery(count_statement))
+        )
         count = count_result.scalar_one()
 
         paginated_statement = statement.limit(limit).offset(offset)

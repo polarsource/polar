@@ -9,7 +9,7 @@ from urllib.parse import urlencode
 
 import structlog
 from sqlalchemy import select
-from sqlalchemy.orm import contains_eager, joinedload, selectinload
+from sqlalchemy.orm import contains_eager, joinedload, raiseload, selectinload
 
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
@@ -590,12 +590,8 @@ class SubscriptionService:
         ),
     ) -> tuple[Sequence[Subscription], int]:
         repository = SubscriptionRepository.from_session(session)
-        statement = (
-            repository.get_readable_statement(auth_subject)
-            .where(Subscription.started_at.is_not(None))
-            .join(Subscription.product)
-            .join(Subscription.customer)
-            .join(Subscription.discount, isouter=True)
+        statement = repository.get_readable_statement(auth_subject).where(
+            Subscription.started_at.is_not(None)
         )
 
         if organization_id is not None:
@@ -610,7 +606,9 @@ class SubscriptionService:
             statement = statement.where(Subscription.customer_id.in_(customer_id))
 
         if external_customer_id is not None:
-            statement = statement.where(Customer.external_id.in_(external_customer_id))
+            statement = statement.join(Subscription.customer).where(
+                Customer.external_id.in_(external_customer_id)
+            )
 
         if discount_id is not None:
             statement = statement.where(Subscription.discount_id.in_(discount_id))
@@ -651,21 +649,33 @@ class SubscriptionService:
         if metadata is not None:
             statement = apply_metadata_clause(Subscription, statement, metadata)
 
+        count_statement = statement
+
+        statement = (
+            statement.join(Subscription.customer)
+            .join(Subscription.product)
+            .join(Subscription.discount, isouter=True)
+        )
         statement = repository.apply_sorting(statement, sorting)
 
         statement = statement.options(
-            contains_eager(Subscription.product).options(
+            selectinload(Subscription.product).options(
                 selectinload(Product.product_medias),
                 selectinload(Product.attached_custom_fields),
             ),
-            contains_eager(Subscription.discount),
+            selectinload(Subscription.discount).options(
+                raiseload(Discount.organization)
+            ),
             contains_eager(Subscription.customer),
             selectinload(Subscription.meters).joinedload(SubscriptionMeter.meter),
             joinedload(Subscription.pending_update),
         )
 
         return await repository.paginate(
-            statement, limit=pagination.limit, page=pagination.page
+            statement,
+            limit=pagination.limit,
+            page=pagination.page,
+            count_statement=count_statement,
         )
 
     async def get(

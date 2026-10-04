@@ -14,6 +14,7 @@ from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
 from polar.models import (
     Customer,
+    Discount,
     Organization,
     Product,
     Subscription,
@@ -305,6 +306,66 @@ class TestListSubscriptions:
         assert response.status_code == 200
         json = response.json()
         assert json["pagination"]["total_count"] == 1
+
+    @pytest.mark.auth
+    async def test_external_customer_id(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+        customer_external_id: Customer,
+    ) -> None:
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer_external_id
+        )
+
+        response = await client.get(
+            "/v1/subscriptions/",
+            params={
+                "external_customer_id": customer_external_id.external_id,
+                "sorting": "customer",
+            },
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        assert [item["id"] for item in json["items"]] == [str(subscription.id)]
+
+    @pytest.mark.parametrize("sorting", ["customer", "-product", "discount"])
+    @pytest.mark.auth
+    async def test_sorting_by_related_entity(
+        self,
+        sorting: str,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+        discount_percentage_50: Discount,
+    ) -> None:
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        discounted = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            discount=discount_percentage_50,
+        )
+
+        response = await client.get("/v1/subscriptions/", params={"sorting": sorting})
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 2
+        discounts = {item["id"]: item["discount"] for item in json["items"]}
+        assert discounts[str(discounted.id)]["id"] == str(discount_percentage_50.id)
 
 
 @pytest.mark.asyncio

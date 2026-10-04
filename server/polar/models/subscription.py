@@ -22,6 +22,7 @@ from sqlalchemy import (
     cast,
     event,
     select,
+    text,
     type_coerce,
 )
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
@@ -118,6 +119,12 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     __tablename__ = "subscriptions"
     __table_args__ = (
         Index("ix_subscriptions_customer_id_status", "customer_id", "status"),
+        Index(
+            "ix_subscriptions_organization_id_started_at",
+            "organization_id",
+            text("started_at DESC"),
+            postgresql_where="deleted_at IS NULL AND started_at IS NOT NULL",
+        ),
         Index(
             "ix_subscriptions_status_current_period_end",
             "status",

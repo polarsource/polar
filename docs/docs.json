@@ -100,10 +100,7 @@
                   "features/checkout/localization",
                   {
                     "group": "Embeds",
-                    "pages": [
-                      "features/checkout/embed",
-                      "features/checkout/embed-payment-method"
-                    ]
+                    "pages": ["features/checkout/embed", "features/checkout/embed-payment-method"]
                   }
                 ]
               },
@@ -266,8 +263,7 @@
               "merchant-of-record/fees",
               "merchant-of-record/supported-countries",
               "merchant-of-record/acceptable-use/introduction",
-              "merchant-of-record/account-reviews",
-              "migrate-away"
+              "merchant-of-record/account-reviews"
             ]
           }
         ]
@@ -286,10 +282,7 @@
             "groups": [
               {
                 "group": "General",
-                "pages": [
-                  "api-reference/2026-04/introduction",
-                  "api-reference/2026-04/versioning"
-                ]
+                "pages": ["api-reference/2026-04/introduction", "api-reference/2026-04/versioning"]
               },
               {
                 "group": "Core API",
@@ -376,10 +369,7 @@
                   },
                   {
                     "group": "Refunds",
-                    "pages": [
-                      "POST /v1/refunds/",
-                      "GET /v1/refunds/"
-                    ]
+                    "pages": ["POST /v1/refunds/", "GET /v1/refunds/"]
                   },
                   {
                     "group": "Products",
@@ -394,11 +384,7 @@
                   },
                   {
                     "group": "Events",
-                    "pages": [
-                      "POST /v1/events/ingest",
-                      "GET /v1/events/{id}",
-                      "GET /v1/events/"
-                    ]
+                    "pages": ["POST /v1/events/ingest", "GET /v1/events/{id}", "GET /v1/events/"]
                   },
                   {
                     "group": "Meters",
@@ -423,10 +409,7 @@
                   },
                   {
                     "group": "Customer Meters",
-                    "pages": [
-                      "GET /v1/customer-meters/{id}",
-                      "GET /v1/customer-meters/"
-                    ]
+                    "pages": ["GET /v1/customer-meters/{id}", "GET /v1/customer-meters/"]
                   },
                   {
                     "group": "License Keys",
@@ -479,10 +462,7 @@
                   },
                   {
                     "group": "Metrics",
-                    "pages": [
-                      "GET /v1/metrics/",
-                      "GET /v1/metrics/limits"
-                    ]
+                    "pages": ["GET /v1/metrics/", "GET /v1/metrics/limits"]
                   }
                 ]
               },
@@ -494,9 +474,7 @@
                   "GET /v1/customer-portal/organizations/{slug}",
                   {
                     "group": "Sessions",
-                    "pages": [
-                      "POST /v1/customer-sessions/"
-                    ]
+                    "pages": ["POST /v1/customer-sessions/"]
                   },
                   {
                     "group": "Subscriptions",
@@ -530,9 +508,7 @@
                   },
                   {
                     "group": "File Downloads",
-                    "pages": [
-                      "GET /v1/customer-portal/downloadables/"
-                    ]
+                    "pages": ["GET /v1/customer-portal/downloadables/"]
                   },
                   {
                     "group": "Seats",
@@ -611,10 +587,7 @@
                       },
                       {
                         "group": "Refunds",
-                        "pages": [
-                          "webhook refund.created",
-                          "webhook refund.updated"
-                        ]
+                        "pages": ["webhook refund.created", "webhook refund.updated"]
                       },
                       {
                         "group": "Benefit Grants",
@@ -632,17 +605,11 @@
                     "pages": [
                       {
                         "group": "Benefits",
-                        "pages": [
-                          "webhook benefit.created",
-                          "webhook benefit.updated"
-                        ]
+                        "pages": ["webhook benefit.created", "webhook benefit.updated"]
                       },
                       {
                         "group": "Products",
-                        "pages": [
-                          "webhook product.created",
-                          "webhook product.updated"
-                        ]
+                        "pages": ["webhook product.created", "webhook product.updated"]
                       },
                       {
                         "group": "Discounts",
@@ -698,10 +665,7 @@
             "groups": [
               {
                 "group": "General",
-                "pages": [
-                  "api-reference/2026-10/introduction",
-                  "api-reference/2026-10/versioning"
-                ]
+                "pages": ["api-reference/2026-10/introduction", "api-reference/2026-10/versioning"]
               },
               {
                 "group": "Core API",
@@ -788,10 +752,7 @@
                   },
                   {
                     "group": "Refunds",
-                    "pages": [
-                      "POST /v1/refunds/",
-                      "GET /v1/refunds/"
-                    ]
+                    "pages": ["POST /v1/refunds/", "GET /v1/refunds/"]
                   },
                   {
                     "group": "Products",
@@ -806,11 +767,7 @@
                   },
                   {
                     "group": "Events",
-                    "pages": [
-                      "POST /v1/events/ingest",
-                      "GET /v1/events/{id}",
-                      "GET /v1/events/"
-                    ]
+                    "pages": ["POST /v1/events/ingest", "GET /v1/events/{id}", "GET /v1/events/"]
                   },
                   {
                     "group": "Meters",
@@ -835,10 +792,7 @@
                   },
                   {
                     "group": "Customer Meters",
-                    "pages": [
-                      "GET /v1/customer-meters/{id}",
-                      "GET /v1/customer-meters/"
-                    ]
+                    "pages": ["GET /v1/customer-meters/{id}", "GET /v1/customer-meters/"]
                   },
                   {
                     "group": "License Keys",
@@ -891,10 +845,7 @@
                   },
                   {
                     "group": "Metrics",
-                    "pages": [
-                      "GET /v1/metrics/",
-                      "GET /v1/metrics/limits"
-                    ]
+                    "pages": ["GET /v1/metrics/", "GET /v1/metrics/limits"]
                   }
                 ]
               },
@@ -906,9 +857,7 @@
                   "GET /v1/customer-portal/organizations/{slug}",
                   {
                     "group": "Sessions",
-                    "pages": [
-                      "POST /v1/customer-sessions/"
-                    ]
+                    "pages": ["POST /v1/customer-sessions/"]
                   },
                   {
                     "group": "Subscriptions",
@@ -942,9 +891,7 @@
                   },
                   {
                     "group": "File Downloads",
-                    "pages": [
-                      "GET /v1/customer-portal/downloadables/"
-                    ]
+                    "pages": ["GET /v1/customer-portal/downloadables/"]
                   },
                   {
                     "group": "Seats",
@@ -1023,10 +970,7 @@
                       },
                       {
                         "group": "Refunds",
-                        "pages": [
-                          "webhook refund.created",
-                          "webhook refund.updated"
-                        ]
+                        "pages": ["webhook refund.created", "webhook refund.updated"]
                       },
                       {
                         "group": "Benefit Grants",
@@ -1044,17 +988,11 @@
                     "pages": [
                       {
                         "group": "Benefits",
-                        "pages": [
-                          "webhook benefit.created",
-                          "webhook benefit.updated"
-                        ]
+                        "pages": ["webhook benefit.created", "webhook benefit.updated"]
                       },
                       {
                         "group": "Products",
-                        "pages": [
-                          "webhook product.created",
-                          "webhook product.updated"
-                        ]
+                        "pages": ["webhook product.created", "webhook product.updated"]
                       },
                       {
                         "group": "Discounts",
@@ -1109,10 +1047,7 @@
             "groups": [
               {
                 "group": "General",
-                "pages": [
-                  "api-reference/2027-01/introduction",
-                  "api-reference/2027-01/versioning"
-                ]
+                "pages": ["api-reference/2027-01/introduction", "api-reference/2027-01/versioning"]
               },
               {
                 "group": "Core API",
@@ -1199,10 +1134,7 @@
                   },
                   {
                     "group": "Refunds",
-                    "pages": [
-                      "POST /v1/refunds/",
-                      "GET /v1/refunds/"
-                    ]
+                    "pages": ["POST /v1/refunds/", "GET /v1/refunds/"]
                   },
                   {
                     "group": "Products",
@@ -1217,11 +1149,7 @@
                   },
                   {
                     "group": "Events",
-                    "pages": [
-                      "POST /v1/events/ingest",
-                      "GET /v1/events/{id}",
-                      "GET /v1/events/"
-                    ]
+                    "pages": ["POST /v1/events/ingest", "GET /v1/events/{id}", "GET /v1/events/"]
                   },
                   {
                     "group": "Meters",
@@ -1246,10 +1174,7 @@
                   },
                   {
                     "group": "Customer Meters",
-                    "pages": [
-                      "GET /v1/customer-meters/{id}",
-                      "GET /v1/customer-meters/"
-                    ]
+                    "pages": ["GET /v1/customer-meters/{id}", "GET /v1/customer-meters/"]
                   },
                   {
                     "group": "License Keys",
@@ -1302,10 +1227,7 @@
                   },
                   {
                     "group": "Metrics",
-                    "pages": [
-                      "GET /v1/metrics/",
-                      "GET /v1/metrics/limits"
-                    ]
+                    "pages": ["GET /v1/metrics/", "GET /v1/metrics/limits"]
                   }
                 ]
               },
@@ -1317,9 +1239,7 @@
                   "GET /v1/customer-portal/organizations/{slug}",
                   {
                     "group": "Sessions",
-                    "pages": [
-                      "POST /v1/customer-sessions/"
-                    ]
+                    "pages": ["POST /v1/customer-sessions/"]
                   },
                   {
                     "group": "Subscriptions",
@@ -1353,9 +1273,7 @@
                   },
                   {
                     "group": "File Downloads",
-                    "pages": [
-                      "GET /v1/customer-portal/downloadables/"
-                    ]
+                    "pages": ["GET /v1/customer-portal/downloadables/"]
                   },
                   {
                     "group": "Seats",
@@ -1434,10 +1352,7 @@
                       },
                       {
                         "group": "Refunds",
-                        "pages": [
-                          "webhook refund.created",
-                          "webhook refund.updated"
-                        ]
+                        "pages": ["webhook refund.created", "webhook refund.updated"]
                       },
                       {
                         "group": "Benefit Grants",
@@ -1455,17 +1370,11 @@
                     "pages": [
                       {
                         "group": "Benefits",
-                        "pages": [
-                          "webhook benefit.created",
-                          "webhook benefit.updated"
-                        ]
+                        "pages": ["webhook benefit.created", "webhook benefit.updated"]
                       },
                       {
                         "group": "Products",
-                        "pages": [
-                          "webhook product.created",
-                          "webhook product.updated"
-                        ]
+                        "pages": ["webhook product.created", "webhook product.updated"]
                       },
                       {
                         "group": "Discounts",

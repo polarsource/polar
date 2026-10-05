@@ -538,6 +538,37 @@ class TestCreate:
 
 
 @pytest.mark.asyncio
+class TestCreateForOrganization:
+    @pytest.mark.parametrize("send_webhooks", [True, False])
+    async def test_member_created_webhook_follows_send_webhooks(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        send_webhooks: bool,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+        webhook_send_mock = mocker.patch("polar.member.service.webhook_service.send")
+
+        customer = await customer_service.create_for_organization(
+            session,
+            organization,
+            email="imported@example.com",
+            send_webhooks=send_webhooks,
+        )
+
+        assert customer.owner is not None
+        member_created_calls = [
+            call
+            for call in webhook_send_mock.call_args_list
+            if call.args[2] == WebhookEventType.member_created
+        ]
+        assert len(member_created_calls) == (1 if send_webhooks else 0)
+
+
+@pytest.mark.asyncio
 class TestUpdate:
     async def test_existing_external_id(
         self, session: AsyncSession, customer: Customer, customer_external_id: Customer

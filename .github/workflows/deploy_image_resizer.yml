@@ -32,12 +32,13 @@ jobs:
         working-directory: ./lambda/image-resizer
         run: |
           mkdir -p package
+          uv export --frozen --no-dev --no-emit-project --prune boto3 --prune taskipy -o requirements.txt
           uv pip install \
             --target package \
             --python-platform x86_64-manylinux2014 \
             --only-binary=:all: \
             --python-version 3.13 \
-            pillow
+            -r requirements.txt
           cp handler.py package/
           cd package
           zip -r ../package.zip .

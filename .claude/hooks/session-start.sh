@@ -13,6 +13,8 @@ ROOT="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}
 TMP="${TMPDIR:-/tmp}"
 LOG="$TMP/polar-session-start.log"
 CONTAINERD_PIDFILE=/run/docker/containerd/containerd.pid
+DOCKERD_PIDFILE=/var/run/docker.pid
+DOCKERD_LOG="$TMP/polar-dockerd.log"
 COMPOSE=(docker compose --project-directory "$ROOT/server")
 # uv needs ~/.local/bin first; /usr/local/bin is appended because its node symlink is
 # older than the one already on PATH and the workspace does not support it.
@@ -52,29 +54,35 @@ reap() {
   fi
 }
 
+PRIVILEGED=()
+
+# A resumed container keeps /run, and dockerd hangs trusting an orphaned pidfile.
+# Test the pid rather than the process name: an unrelated containerd also matches.
+clear_stale_docker_state() {
+  local pidfile
+  for pidfile in "$CONTAINERD_PIDFILE" "$DOCKERD_PIDFILE"; do
+    if [ -f "$pidfile" ] && ! kill -0 "$(cat "$pidfile" 2>/dev/null)" 2>/dev/null; then
+      "${PRIVILEGED[@]}" rm -f "$pidfile" /var/run/docker.sock
+    fi
+  done
+}
+
 # There is no systemd here, so `dev up`'s `systemctl start docker` cannot work.
 # Readiness is checked later, so a daemon slow to boot is not written off.
 launch_dockerd() {
   docker info >/dev/null 2>&1 && return 0
   command -v dockerd >/dev/null 2>&1 || return 1
 
-  local privileged=()
   if [ "$(id -u)" -ne 0 ]; then
     if ! sudo -n true >/dev/null 2>&1; then
       echo "dockerd requires root and passwordless sudo is unavailable"
       return 1
     fi
-    privileged=(sudo -n)
+    PRIVILEGED=(sudo -n)
   fi
 
-  # A resumed container keeps /run, and dockerd hangs trusting an orphaned pidfile.
-  # Test the pid rather than the process name: an unrelated containerd also matches.
-  if [ -f "$CONTAINERD_PIDFILE" ] &&
-    ! kill -0 "$(cat "$CONTAINERD_PIDFILE" 2>/dev/null)" 2>/dev/null; then
-    "${privileged[@]}" rm -f "$CONTAINERD_PIDFILE" /var/run/docker.sock
-  fi
-
-  setsid nohup "${privileged[@]}" dockerd >"$TMP/dockerd.log" 2>&1 &
+  clear_stale_docker_state
+  setsid nohup "${PRIVILEGED[@]}" dockerd >"$DOCKERD_LOG" 2>&1 &
 }
 
 wait_dockerd() {
@@ -82,6 +90,24 @@ wait_dockerd() {
     docker info >/dev/null 2>&1 && return 0
     sleep 1
   done
+  return 1
+}
+
+# A daemon that never came up is restarted once: a manual restart has recovered it in
+# seconds where the first boot hung past the timeout.
+ensure_dockerd() {
+  wait_dockerd && return 0
+
+  echo "dockerd not ready after 60s; restarting it once"
+  "${PRIVILEGED[@]}" pkill -x dockerd
+  sleep 2
+  clear_stale_docker_state
+  printf '\n--- restart ---\n' >>"$DOCKERD_LOG"
+  setsid nohup "${PRIVILEGED[@]}" dockerd >>"$DOCKERD_LOG" 2>&1 &
+  wait_dockerd && return 0
+
+  echo "dockerd still not ready; last lines of $DOCKERD_LOG:"
+  tail -n 20 "$DOCKERD_LOG"
   return 1
 }
 
@@ -129,7 +155,7 @@ fi
 [ -n "$PULL_PID" ] && reap "image pull" "$PULL_PID" "$PULL_LOG" optional
 
 PG_OK=0
-if [ "$DOCKER_LAUNCHED" -eq 1 ] && step "docker daemon ready" wait_dockerd; then
+if [ "$DOCKER_LAUNCHED" -eq 1 ] && step "docker daemon ready" ensure_dockerd; then
   # --wait uses the healthchecks docker-compose.yml declares. Services are named because
   # a bare `up -d` also pulls tinybird, whose tests skip themselves when it is absent.
   if step "infrastructure" "${COMPOSE[@]}" up -d --wait --wait-timeout 120 db redis minio; then
@@ -142,7 +168,7 @@ if [ "$DOCKER_LAUNCHED" -eq 1 ] && step "docker daemon ready" wait_dockerd; then
     "${COMPOSE[@]}" logs --tail 20 >> "$LOG" 2>&1
   fi
 else
-  NOTES+=("Docker daemon unavailable, so PostgreSQL and MinIO are not running. Skipped the template database and the pytest warm-up; backend tests will fail until the daemon is up. See $LOG.")
+  NOTES+=("Docker daemon unavailable, so PostgreSQL and MinIO are not running. Skipped the template database and the pytest warm-up; backend tests will fail until the daemon is up. See $LOG and $DOCKERD_LOG.")
 fi
 
 # Lets each xdist worker clone a migrated database instead of replaying the whole alembic

@@ -30,7 +30,7 @@ function money(amount: number, currency: Currency): Money {
     )
   }
   const { digits, point } = parseDecimal(amount)
-  if (digits.replace(/^0+|0+$/g, '').length > MAX_SIGNIFICANT_DIGITS) {
+  if (significantDigitCount(digits) > MAX_SIGNIFICANT_DIGITS) {
     throw new SchemaError(
       currency,
       `amount has more than ${MAX_SIGNIFICANT_DIGITS} significant digits, got ${amount}`,
@@ -54,6 +54,18 @@ function money(amount: number, currency: Currency): Money {
   return { amount: minor, currency }
 }
 
+function significantDigitCount(digits: string): number {
+  let first = -1
+  let last = -1
+  for (let i = 0; i < digits.length; i++) {
+    if (digits[i] !== '0') {
+      if (first === -1) first = i
+      last = i
+    }
+  }
+  return first === -1 ? 0 : last - first + 1
+}
+
 /** Reads the exact digits JavaScript prints for a number, without float math. */
 function parseDecimal(value: number): Decimal {
   const [mantissa = '', exponent = '0'] = String(value).split('e')
@@ -65,7 +77,25 @@ function formatDecimal({ digits, point }: Decimal): string {
   const padded =
     point < 1 ? '0'.repeat(1 - point) + digits : digits.padEnd(point, '0')
   const split = Math.max(point, 1)
-  const whole = padded.slice(0, split).replace(/^0+(?=\d)/, '')
-  const fraction = padded.slice(split).replace(/0+$/, '')
+  const whole = trimLeadingZeros(padded.slice(0, split))
+  const fraction = trimTrailingZeros(padded.slice(split))
   return fraction === '' ? whole : `${whole}.${fraction}`
+}
+
+function trimLeadingZeros(value: string): string {
+  let start = 0
+  for (let i = 0; i < value.length - 1; i++) {
+    if (value[i] !== '0') break
+    start = i + 1
+  }
+  return value.slice(start)
+}
+
+function trimTrailingZeros(value: string): string {
+  let end = value.length
+  for (let i = value.length - 1; i >= 0; i--) {
+    if (value[i] !== '0') break
+    end = i
+  }
+  return value.slice(0, end)
 }

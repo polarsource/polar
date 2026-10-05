@@ -581,8 +581,11 @@ class MeterService:
 
                 subscription = customer_price.subscription_product_price.subscription
                 if (
-                    subscription.trial_end is not None
-                    and event.ingested_at < subscription.trial_end
+                    subscription.trial_start is not None
+                    and subscription.trial_end is not None
+                    and subscription.trial_start
+                    <= event.timestamp
+                    < subscription.trial_end
                 ):
                     continue
 

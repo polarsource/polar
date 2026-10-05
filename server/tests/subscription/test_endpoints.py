@@ -349,7 +349,7 @@ class TestCreateSubscription:
         assert "user" in json
         assert "customer" in json
 
-    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.api_version(V2026_04, V2026_10, V2027_01)
     @pytest.mark.auth
     async def test_valid_with_currency(
         self,
@@ -379,35 +379,6 @@ class TestCreateSubscription:
         json = response.json()
         assert json["currency"] == "pln"
         assert [price["price_currency"] for price in json["prices"]] == ["pln"]
-
-    @pytest.mark.api_version(V2026_04, V2026_10)
-    @pytest.mark.auth
-    async def test_currency_ignored_before_2027_01(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-        customer: Customer,
-    ) -> None:
-        product = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(None, "usd"), (None, "pln")],
-        )
-
-        response = await client.post(
-            "/v1/subscriptions/",
-            json={
-                "product_id": str(product.id),
-                "customer_id": str(customer.id),
-                "currency": "pln",
-            },
-        )
-
-        assert response.status_code == 201
-        assert response.json()["currency"] == "usd"
 
     @pytest.mark.auth
     async def test_valid_with_external_customer_id(

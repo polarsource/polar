@@ -1,0 +1,114 @@
+{
+  "events": [
+    {
+      "name": "llm.completion"
+    },
+    {
+      "name": "search.query"
+    },
+    {
+      "name": "tool.call"
+    }
+  ],
+  "meters": [
+    {
+      "slug": "input_tokens",
+      "name": "Input tokens",
+      "filter": {
+        "conjunction": "and",
+        "clauses": [
+          {
+            "property": "name",
+            "operator": "eq",
+            "value": "llm.completion"
+          }
+        ]
+      },
+      "aggregation": {
+        "func": "sum",
+        "property": "input_tokens"
+      },
+      "unit": "token",
+      "unit_amount": "0.015",
+      "currency": "usd"
+    },
+    {
+      "slug": "premium_output_tokens",
+      "name": "Premium output tokens",
+      "filter": {
+        "conjunction": "and",
+        "clauses": [
+          {
+            "property": "name",
+            "operator": "eq",
+            "value": "llm.completion"
+          },
+          {
+            "conjunction": "or",
+            "clauses": [
+              {
+                "property": "model",
+                "operator": "eq",
+                "value": "claude-opus-5-5"
+              },
+              {
+                "property": "model",
+                "operator": "eq",
+                "value": "claude-fable-5-1"
+              }
+            ]
+          }
+        ]
+      },
+      "aggregation": {
+        "func": "sum",
+        "property": "output_tokens"
+      },
+      "unit": "token",
+      "unit_amount": "0.06",
+      "currency": "usd"
+    },
+    {
+      "slug": "search_requests",
+      "name": "Search requests",
+      "filter": {
+        "conjunction": "and",
+        "clauses": [
+          {
+            "property": "name",
+            "operator": "eq",
+            "value": "search.query"
+          }
+        ]
+      },
+      "aggregation": {
+        "func": "count"
+      },
+      "unit": "custom",
+      "custom_label": "request",
+      "custom_multiplier": 1000,
+      "unit_amount": "0.05",
+      "currency": "usd"
+    },
+    {
+      "slug": "tool_calls",
+      "name": "Tool calls",
+      "filter": {
+        "conjunction": "and",
+        "clauses": [
+          {
+            "property": "name",
+            "operator": "eq",
+            "value": "tool.call"
+          }
+        ]
+      },
+      "aggregation": {
+        "func": "count"
+      },
+      "unit": "scalar",
+      "unit_amount": "4",
+      "currency": "usd"
+    }
+  ]
+}

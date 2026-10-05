@@ -12,6 +12,8 @@ export type {
   PolarOptions,
   RequestOptions,
 } from '@polar-sh/sdk/2026-10'
+export { compile } from './schema/compile'
+export type { Ir, IrClause, IrEvent, IrFilter, IrMeter } from './schema/compile'
 export { defineConfig } from './schema/config'
 export type { Config, MeterKey } from './schema/config'
 export { SchemaError } from './schema/error'

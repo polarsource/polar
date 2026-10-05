@@ -66,11 +66,9 @@ export function reviewStatus(row: ReviewRow): ReviewStatus {
   if (stage === 'needs_info') {
     return { ...base, paymentMethod }
   }
-  if (paymentMethod.kind === 'no_card') {
+  // An unconfirmed bank debit asks the same of the merchant as a missing card.
+  if (paymentMethod.kind !== 'card') {
     return { label: 'Needs a card', color: 'yellow', paymentMethod }
-  }
-  if (paymentMethod.kind === 'bank_debit') {
-    return { label: 'Check bank debit', paymentMethod }
   }
   return {
     label: stage === 'ready' ? 'Prepared' : 'Ready',

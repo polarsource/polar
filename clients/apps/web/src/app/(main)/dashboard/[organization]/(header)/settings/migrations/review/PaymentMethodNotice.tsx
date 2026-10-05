@@ -8,7 +8,7 @@ export function PaymentMethodNotice({ method }: { method: RowPaymentMethod }) {
     // Alert grows to fill a column parent, so keep it in its own row.
     <Box>
       <Alert
-        variant={method.kind === 'no_card' ? 'warning' : 'info'}
+        variant="warning"
         title={method.note.title}
         description={method.note.body}
       />

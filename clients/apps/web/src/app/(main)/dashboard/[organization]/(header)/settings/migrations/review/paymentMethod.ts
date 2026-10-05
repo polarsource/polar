@@ -4,8 +4,8 @@ import { ReviewRow } from './reviewRows'
 type PaymentMethodType = NonNullable<ReviewRow['payment_method_type']>
 
 // Unconfirmed whether the copy from Stripe carries SEPA and ACH mandates over.
-// `false` keeps bank debits in their own state that claims neither; `true`
-// treats them like Link and the other methods that stay behind.
+// Either way the status reads "Needs a card"; `false` keeps the bank-debit note
+// neutral, `true` says it can't be copied, like Link.
 export const BANK_DEBITS_STAY_BEHIND = false
 
 const BANK_DEBITS = new Set<PaymentMethodType>([

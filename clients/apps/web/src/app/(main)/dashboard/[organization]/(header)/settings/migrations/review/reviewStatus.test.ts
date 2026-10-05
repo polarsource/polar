@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { BANK_DEBITS_STAY_BEHIND } from './paymentMethod'
 import { reviewStatus } from './reviewStatus'
 import type { ReviewRow } from './reviewRows'
 
@@ -172,14 +171,12 @@ describe('reviewStatus', () => {
       })
     })
 
-    it('labels a SEPA subscription by the bank-debit switch', () => {
+    it('shows "Needs a card" (yellow) for a bank debit too', () => {
       expect(
         reviewStatus(
           row({ status: 'importable', payment_method_type: 'sepa_debit' }),
         ),
-      ).toMatchObject({
-        label: BANK_DEBITS_STAY_BEHIND ? 'Needs a card' : 'Check bank debit',
-      })
+      ).toMatchObject({ label: 'Needs a card', color: 'yellow' })
     })
 
     it('drops the payment method for failed rows', () => {

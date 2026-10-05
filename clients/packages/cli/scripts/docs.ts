@@ -9,7 +9,7 @@ import {
 } from 'effect/unstable/cli'
 import { FetchHttpClient } from 'effect/unstable/http'
 import { ApiRuntime } from '@polar-sh/cli-commands'
-import { builtIns, polar } from '@/program'
+import { builtIns, program } from '@/program'
 import { Auth } from '@/services/auth'
 import { Deliveries } from '@/services/deliveries'
 import { Organizations } from '@/services/organizations'
@@ -32,6 +32,8 @@ const helpOnlyServices = Layer.mergeAll(
   ),
   FetchHttpClient.layer,
 )
+
+const polar = program({ preview: false })
 
 const docs = new URL('../../../../docs/', import.meta.url)
 const OVERVIEW = 'integrate/cli/reference.mdx'

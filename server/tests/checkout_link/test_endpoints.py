@@ -356,6 +356,42 @@ class TestRedirect:
         assert response.status_code == 307
         assert CHECKOUT_CLIENT_SECRET_PREFIX in response.headers["location"]
 
+    @pytest.mark.parametrize("product_id", ["", "   "])
+    async def test_empty_product_id(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        checkout_link: CheckoutLink,
+        product: Product,
+        product_id: str,
+    ) -> None:
+        response = await client.get(
+            f"/v1/checkout-links/{checkout_link.client_secret}/redirect",
+            params={"product_id": product_id},
+        )
+
+        assert response.status_code == 307
+        assert "product_id" not in response.headers["location"]
+
+        checkout_repository = CheckoutRepository.from_session(session)
+        checkouts = await checkout_repository.get_all(
+            checkout_repository.get_base_statement().order_by(
+                Checkout.created_at.desc()
+            )
+        )
+        assert checkouts[0].product_id == product.id
+
+    async def test_invalid_product_id(
+        self, client: AsyncClient, checkout_link: CheckoutLink
+    ) -> None:
+        response = await client.get(
+            f"/v1/checkout-links/{checkout_link.client_secret}/redirect",
+            params={"product_id": "not-a-uuid"},
+        )
+
+        assert response.status_code == 422
+        assert response.json()["detail"][0]["loc"] == ["query", "product_id"]
+
     async def test_wildcard_embed_origin(
         self, session: AsyncSession, client: AsyncClient, checkout_link: CheckoutLink
     ) -> None:

@@ -7,10 +7,11 @@ import { assessmentFacts } from './assessmentFacts'
 import {
   BillingCountryField,
   RecordCard,
-  RecordNotes,
+  RecordReason,
   TaxAfterSwitchField,
 } from './ReviewRecordFields'
-import { rowPaymentMethod } from './paymentMethod'
+import { isPaymentMethodReason, rowPaymentMethod } from './paymentMethod'
+import { PaymentMethodNotice } from './PaymentMethodNotice'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
 import { ReviewRow } from './reviewRows'
 import { reviewStatus } from './reviewStatus'
@@ -29,6 +30,11 @@ export function ReviewRecordModal({
   // Same gate as the chip: no renewal warning for a row that failed or has
   // already switched.
   const notice = reviewStatus(row).paymentMethod
+  // The notice owns payment guidance whenever the API sends the type; the
+  // pre-check's own note is only a fallback for an API that predates it.
+  const hidePaymentReason =
+    row.payment_method_type !== undefined &&
+    isPaymentMethodReason(row.reason_code)
   const discount = row.discount_name
     ? row.discount_code
       ? `${row.discount_name} (${row.discount_code})`
@@ -70,12 +76,13 @@ export function ReviewRecordModal({
               </Text>
               <ReviewStatusIndicator row={row} />
             </Box>
-            <RecordNotes row={row} paymentMethod={notice} />
+            {notice ? <PaymentMethodNotice method={notice} /> : null}
+            <RecordReason row={row} hidden={hidePaymentReason} />
             <BillingCountryField row={row} migrationId={migrationId} />
             <TaxAfterSwitchField row={row} migrationId={migrationId} />
           </Box>
         ) : (
-          <RecordNotes row={row} />
+          <RecordReason row={row} />
         )}
 
         {showCustomer ? (

@@ -2,7 +2,7 @@ import { BunRuntime, BunServices } from '@effect/platform-bun'
 import { Cause, Console, Effect, Layer, Runtime, Stdio } from 'effect'
 import { CliConfig, Command } from 'effect/unstable/cli'
 import { FetchHttpClient } from 'effect/unstable/http'
-import { builtIns, polar } from '@/program'
+import { builtIns, program } from '@/program'
 import { stdoutConsole } from '@/utils/console'
 import { describeError } from '@/utils/errors'
 import * as ApiRuntime from '@/commands/api-runtime'
@@ -20,6 +20,8 @@ import { availableUpdate, checkForUpdate } from '@/services/update-check'
 import * as Updater from '@/services/updater'
 import * as ui from '@/utils/ui'
 import { VERSION } from '@/version'
+
+const polar = program({ preview: process.env['POLAR_PREVIEW'] === '1' })
 
 const cli = Command.run(polar, {
   version: VERSION.replace(/^v/, ''),

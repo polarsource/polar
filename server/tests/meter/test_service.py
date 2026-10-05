@@ -198,6 +198,32 @@ class TestCreate:
                 aggregation=CountAggregation(),
             )
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_existing_external_id(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_meter(
+            save_fixture, organization=organization, external_id="ext_1337"
+        )
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await meter_service.create(
+                session,
+                MeterCreate(
+                    name="Meter",
+                    external_id="ext_1337",
+                    filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+                    aggregation=CountAggregation(),
+                ),
+                auth_subject,
+            )
+
+        assert e.value.errors()[0]["loc"] == ("body", "external_id")
+
 
 @pytest.mark.asyncio
 class TestUpdate:
@@ -340,6 +366,55 @@ class TestUpdate:
         )
 
         assert updated_meter.unit == unit
+
+    @pytest.mark.auth
+    async def test_existing_external_id(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        await create_meter(
+            save_fixture,
+            id=uuid.uuid4(),
+            organization=organization,
+            external_id="ext_1337",
+        )
+        meter = await create_meter(save_fixture, organization=organization)
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await meter_service.update(
+                session,
+                meter,
+                MeterUpdate(external_id="ext_1337"),  # pyright: ignore
+                auth_subject=auth_subject,
+            )
+
+        assert e.value.errors()[0]["loc"] == ("body", "external_id")
+
+    @pytest.mark.auth
+    async def test_same_external_id(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture, organization=organization, external_id="ext_1337"
+        )
+
+        updated_meter = await meter_service.update(
+            session,
+            meter,
+            MeterUpdate(name="Renamed", external_id="ext_1337"),  # pyright: ignore
+            auth_subject=auth_subject,
+        )
+
+        assert updated_meter.external_id == "ext_1337"
 
 
 @pytest.mark.asyncio

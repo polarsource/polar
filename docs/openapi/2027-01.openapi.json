@@ -23654,11 +23654,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.meters.create(\n    name='string',\n    filter={'conjunction': 'and',\n     'clauses': [{'property': 'string',\n                  'operator': 'eq',\n                  'value': 'string'}]},\n    aggregation={'func': 'count'},\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.meters.create(\n    external_id='ext_1337',\n    name='string',\n    filter={'conjunction': 'and',\n     'clauses': [{'property': 'string',\n                  'operator': 'eq',\n                  'value': 'string'}]},\n    aggregation={'func': 'count'},\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.meters.create(\n  {\n    \"name\": \"string\",\n    \"filter\": {\n      \"conjunction\": \"and\",\n      \"clauses\": [\n        {\n          \"property\": \"string\",\n          \"operator\": \"eq\",\n          \"value\": \"string\"\n        }\n      ]\n    },\n    \"aggregation\": {\n      \"func\": \"count\"\n    }\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.meters.create(\n  {\n    \"external_id\": \"ext_1337\",\n    \"name\": \"string\",\n    \"filter\": {\n      \"conjunction\": \"and\",\n      \"clauses\": [\n        {\n          \"property\": \"string\",\n          \"operator\": \"eq\",\n          \"value\": \"string\"\n        }\n      ]\n    },\n    \"aggregation\": {\n      \"func\": \"count\"\n    }\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -23865,11 +23865,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.meters.update(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.meters.update(\n    '00000000-0000-4000-8000-000000000000',\n    external_id='ext_1337',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.meters.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {},\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.meters.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"external_id\": \"ext_1337\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -61959,6 +61959,21 @@
       },
       "Meter": {
         "properties": {
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
           },
@@ -62081,6 +62096,7 @@
         },
         "type": "object",
         "required": [
+          "external_id",
           "metadata",
           "created_at",
           "modified_at",
@@ -62095,6 +62111,21 @@
       },
       "MeterCreate": {
         "properties": {
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -62610,6 +62641,21 @@
       },
       "MeterUpdate": {
         "properties": {
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -78347,7 +78393,10 @@
             "type": "boolean",
             "const": true,
             "title": "Resume",
-            "description": "Resume a paused subscription immediately, starting a new billing period and charging the customer."
+            "description": "Resume a paused subscription immediately, starting a new billing period and charging the customer.",
+            "x-polar-cli-confirm": {
+              "equals": true
+            }
           }
         },
         "additionalProperties": false,

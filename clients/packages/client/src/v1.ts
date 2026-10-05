@@ -25897,6 +25897,12 @@ export interface components {
     }
     /** Meter */
     Meter: {
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Created At
@@ -25957,6 +25963,12 @@ export interface components {
     }
     /** MeterCreate */
     MeterCreate: {
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id?: string | null
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -26215,6 +26227,12 @@ export interface components {
     MeterUnit: 'scalar' | 'token' | 'custom'
     /** MeterUpdate */
     MeterUpdate: {
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id?: string | null
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.

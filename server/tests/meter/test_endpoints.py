@@ -4,7 +4,10 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 
+from polar.meter.repository import MeterRepository
 from polar.models import Meter, Organization, UserOrganization
+from polar.postgres import AsyncSession
+from polar.version import V2026_04, V2026_10, V2027_01
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_meter
 
@@ -114,6 +117,55 @@ class TestCreateMeter:
         response = await client.post("/v1/meters/")
 
         assert response.status_code == 401
+
+    @pytest.mark.api_version(V2026_04, V2026_10)
+    @pytest.mark.auth
+    async def test_external_id_ignored_before_2027_01(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/meters/",
+            json={
+                "name": "Meter",
+                "organization_id": str(organization.id),
+                "external_id": "ext_1337",
+                "filter": {"conjunction": "and", "clauses": []},
+                "aggregation": {"func": "count"},
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        assert "external_id" not in json
+        meter = await MeterRepository.from_session(session).get_by_id(json["id"])
+        assert meter is not None
+        assert meter.external_id is None
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_external_id_2027_01(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/meters/",
+            json={
+                "name": "Meter",
+                "organization_id": str(organization.id),
+                "external_id": "ext_1337",
+                "filter": {"conjunction": "and", "clauses": []},
+                "aggregation": {"func": "count"},
+            },
+        )
+
+        assert response.status_code == 201
+        assert response.json()["external_id"] == "ext_1337"
 
 
 @pytest.mark.asyncio

@@ -153,6 +153,25 @@ class MeterService:
             organization.id,
             OrganizationPermission.products_manage,
         )
+
+        repository = MeterRepository.from_session(session)
+        if (
+            meter_create.external_id is not None
+            and await repository.get_by_external_id_and_organization(
+                meter_create.external_id, organization.id
+            )
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "external_id"),
+                        "msg": "A meter with this external ID already exists.",
+                        "input": meter_create.external_id,
+                    }
+                ]
+            )
+
         return await self.create_for_organization(session, organization, meter_create)
 
     async def create_for_organization(
@@ -215,6 +234,22 @@ class MeterService:
                             "input": getattr(meter_update, sensitive_field),
                         }
                     )
+
+        if (
+            meter_update.external_id is not None
+            and meter_update.external_id != meter.external_id
+            and await repository.get_by_external_id_and_organization(
+                meter_update.external_id, meter.organization_id
+            )
+        ):
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "external_id"),
+                    "msg": "A meter with this external ID already exists.",
+                    "input": meter_update.external_id,
+                }
+            )
 
         if errors:
             raise PolarRequestValidationError(errors)

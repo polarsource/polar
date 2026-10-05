@@ -67,6 +67,11 @@ clear_stale_docker_state() {
   done
 }
 
+start_dockerd() {
+  clear_stale_docker_state
+  setsid nohup "${PRIVILEGED[@]}" dockerd >>"$DOCKERD_LOG" 2>&1 &
+}
+
 # There is no systemd here, so `dev up`'s `systemctl start docker` cannot work.
 # Readiness is checked later, so a daemon slow to boot is not written off.
 launch_dockerd() {
@@ -81,8 +86,8 @@ launch_dockerd() {
     PRIVILEGED=(sudo -n)
   fi
 
-  clear_stale_docker_state
-  setsid nohup "${PRIVILEGED[@]}" dockerd >"$DOCKERD_LOG" 2>&1 &
+  : >"$DOCKERD_LOG"
+  start_dockerd
 }
 
 wait_dockerd() {
@@ -107,9 +112,8 @@ ensure_dockerd() {
     echo "restarting it once"
   fi
   sleep 2
-  clear_stale_docker_state
   printf '\n--- restart ---\n' >>"$DOCKERD_LOG"
-  setsid nohup "${PRIVILEGED[@]}" dockerd >>"$DOCKERD_LOG" 2>&1 &
+  start_dockerd
   wait_dockerd && return 0
 
   echo "dockerd still not ready; last lines of $DOCKERD_LOG:"
@@ -147,7 +151,10 @@ ensure_pnpm() {
   local version prefix current
   version=$(sed -n 's/.*"packageManager": *"pnpm@\([0-9.]*\).*/\1/p' \
     "$ROOT/clients/package.json")
-  [ -n "$version" ] || return 0
+  if [ -z "$version" ]; then
+    echo "no pnpm version in clients/package.json packageManager; using pnpm on PATH"
+    return 0
+  fi
   prefix="$HOME/.local/share/polar-pnpm/$version"
 
   current=$(readlink -f "$(command -v pnpm)" 2>/dev/null)
@@ -162,7 +169,6 @@ ensure_pnpm() {
   mkdir -p "$HOME/.local/bin"
   ln -sf "$prefix/bin/pnpm" "$HOME/.local/bin/pnpm"
   ln -sf "$prefix/bin/pnpx" "$HOME/.local/bin/pnpx"
-  hash -r
 }
 
 PNPM_LOG="$TMP/polar-pnpm-install.log"

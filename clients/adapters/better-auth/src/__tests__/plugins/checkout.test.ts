@@ -22,6 +22,7 @@ vi.mock('better-auth/api', () => ({
       super(data.message)
     }
   },
+  getIP: vi.fn(),
   getSessionFromCtx: vi.fn(),
   createAuthEndpoint: vi.fn((path, config, handler) => ({
     path,
@@ -30,8 +31,10 @@ vi.mock('better-auth/api', () => ({
   })),
 }))
 
-const { APIError, getSessionFromCtx, createAuthEndpoint } =
+const { APIError, getSessionFromCtx, createAuthEndpoint, getIP } =
   (await vi.importMock('better-auth/api')) as any
+const { getIP: actualGetIP } =
+  await vi.importActual<typeof import('better-auth/api')>('better-auth/api')
 
 describe('checkout plugin', () => {
   let mockClient: ReturnType<typeof createMockPolarClient>
@@ -688,6 +691,120 @@ describe('checkout plugin', () => {
           products: ['prod-123', 'prod-456'],
         }),
       )
+    })
+  })
+
+  describe('customer IP address', () => {
+    beforeEach(() => {
+      vi.mocked(getIP).mockImplementation(actualGetIP)
+    })
+
+    const createCheckout = async ({
+      headers = {},
+      options = {},
+      checkoutOptions = {},
+    }: {
+      headers?: Record<string, string>
+      options?: Record<string, unknown>
+      checkoutOptions?: Parameters<typeof checkout>[0]
+    } = {}) => {
+      vi.mocked(getSessionFromCtx).mockResolvedValue(null)
+      vi.mocked(mockClient.checkouts.create).mockResolvedValue(
+        createMockCheckout(),
+      )
+      const endpoints = checkout(checkoutOptions)(mockClient) as any
+      await endpoints.checkout.handler({
+        ...mockContext,
+        request: new Request('https://example.com/api/auth/checkout', {
+          headers,
+        }),
+        context: { options },
+        body: CheckoutParams.parse({ products: ['prod-123'] }),
+        json: vi.fn(),
+      })
+      return vi.mocked(mockClient.checkouts.create).mock.calls[0]?.[0]
+    }
+
+    it('forwards the IP address from x-forwarded-for', async () => {
+      const body = await createCheckout({
+        headers: { 'x-forwarded-for': '203.0.113.7' },
+      })
+
+      expect(body).toMatchObject({ customer_ip_address: '203.0.113.7' })
+    })
+
+    it('respects the configured Better Auth IP address options', async () => {
+      const body = await createCheckout({
+        headers: {
+          'x-forwarded-for': '198.51.100.1',
+          'cf-connecting-ip': '2001:db8::1',
+        },
+        options: {
+          advanced: {
+            ipAddress: {
+              ipAddressHeaders: ['cf-connecting-ip'],
+              ipv6Subnet: 128,
+            },
+          },
+        },
+      })
+
+      expect(body).toMatchObject({
+        customer_ip_address: '2001:0db8:0000:0000:0000:0000:0000:0001',
+      })
+    })
+
+    it('resolves the client IP behind trusted proxies', async () => {
+      const body = await createCheckout({
+        headers: { 'x-forwarded-for': '203.0.113.7, 10.0.0.1' },
+        options: {
+          advanced: { ipAddress: { trustedProxies: ['10.0.0.0/8'] } },
+        },
+      })
+
+      expect(body).toMatchObject({ customer_ip_address: '203.0.113.7' })
+    })
+
+    it('omits the IP address when Better Auth cannot resolve one', async () => {
+      vi.mocked(getIP).mockReturnValueOnce(null)
+
+      const body = await createCheckout()
+
+      expect(body.customer_ip_address).toBeUndefined()
+    })
+
+    it.each(['not-an-ip', '203.0.113.7, 10.0.0.1', '', null, undefined])(
+      'omits an invalid IP address %j from a custom resolver',
+      async (ipAddress) => {
+        const body = await createCheckout({
+          checkoutOptions: { customerIpAddress: () => ipAddress },
+        })
+
+        expect(body.customer_ip_address).toBeUndefined()
+      },
+    )
+
+    it('uses a custom resolver instead of Better Auth', async () => {
+      const resolver = vi.fn().mockResolvedValue('192.0.2.10')
+
+      const body = await createCheckout({
+        headers: { 'x-forwarded-for': '203.0.113.7' },
+        checkoutOptions: { customerIpAddress: resolver },
+      })
+
+      expect(resolver).toHaveBeenCalledWith(expect.any(Headers))
+      expect(getIP).not.toHaveBeenCalled()
+      expect(body).toMatchObject({ customer_ip_address: '192.0.2.10' })
+    })
+
+    it('does not forward the IP address when disabled', async () => {
+      const body = await createCheckout({
+        headers: { 'x-forwarded-for': '203.0.113.7' },
+        checkoutOptions: { customerIpAddress: false },
+      })
+
+      expect(getIP).not.toHaveBeenCalled()
+      expect(body.customer_ip_address).toBeUndefined()
     })
   })
 })

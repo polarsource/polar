@@ -6,6 +6,7 @@ import type { PolarCore } from '@polar-sh/sdk/2026-10'
 import {
   APIError,
   createAuthEndpoint,
+  getIP,
   getSessionFromCtx,
 } from 'better-auth/api'
 import * as z from 'zod/v4'
@@ -42,6 +43,31 @@ export interface CheckoutOptions {
    * Checkout theme
    */
   theme?: 'light' | 'dark'
+  /**
+   * Resolves the customer IP address sent to Polar, which uses it to pick the
+   * presentment currency. Defaults to the IP Better Auth resolves from the
+   * request using `advanced.ipAddress`. Pass `false` to not send it.
+   */
+  customerIpAddress?:
+    | false
+    | ((
+        headers: Headers,
+      ) => string | null | undefined | Promise<string | null | undefined>)
+}
+
+const IPAddress = z.union([z.ipv4(), z.ipv6()])
+
+const resolveCustomerIpAddress = async (
+  headers: Headers | undefined,
+  options: Parameters<typeof getIP>[1],
+  resolver: CheckoutOptions['customerIpAddress'],
+): Promise<string | undefined> => {
+  if (!headers || resolver === false) {
+    return undefined
+  }
+  const ipAddress = resolver ? await resolver(headers) : getIP(headers, options)
+  const result = IPAddress.safeParse(ipAddress)
+  return result.success ? result.data : undefined
 }
 
 export const CheckoutParams = z.object({
@@ -238,10 +264,17 @@ export const checkout =
           const returnUrl = ctx.body.return_url ?? checkoutOptions.returnUrl
 
           try {
+            const customerIpAddress = await resolveCustomerIpAddress(
+              ctx.request?.headers ?? ctx.headers,
+              ctx.context.options,
+              checkoutOptions.customerIpAddress,
+            )
+
             const checkout = await createCheckouts(polar)({
               external_customer_id:
                 principal?.externalCustomerId ?? session?.user.id,
               products: productIds,
+              customer_ip_address: customerIpAddress,
               success_url: successUrl
                 ? new URL(
                     successUrl,

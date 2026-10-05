@@ -1,12 +1,13 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Uuid
+from sqlalchemy import Boolean, ForeignKey, Index, Integer, String, Uuid, text
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.enums import PaymentProcessor
 from polar.kit.db.models import RecordModel
+from polar.kit.external_id import ExternalIDMixin
 from polar.kit.metadata import MetadataMixin
 from polar.kit.trial import TrialConfigurationMixin
 
@@ -18,8 +19,19 @@ if TYPE_CHECKING:
     from .organization import Organization
 
 
-class CheckoutLink(TrialConfigurationMixin, MetadataMixin, RecordModel):
+class CheckoutLink(
+    TrialConfigurationMixin, MetadataMixin, ExternalIDMixin, RecordModel
+):
     __tablename__ = "checkout_links"
+    __table_args__ = (
+        Index(
+            "ix_checkout_links_organization_id_external_id",
+            "organization_id",
+            "external_id",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
+    )
 
     payment_processor: Mapped[PaymentProcessor] = mapped_column(
         String, nullable=False, default=PaymentProcessor.stripe, index=True

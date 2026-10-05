@@ -2,11 +2,12 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, BigInteger, ForeignKey, String, Uuid
+from sqlalchemy import TIMESTAMP, BigInteger, ForeignKey, Index, String, Uuid, text
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models.base import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
+from polar.kit.external_id import ExternalIDMixin
 from polar.kit.metadata import MetadataMixin
 from polar.meter.aggregation import Aggregation, AggregationType
 from polar.meter.filter import Filter, FilterType
@@ -17,8 +18,17 @@ if TYPE_CHECKING:
     from .organization import Organization
 
 
-class Meter(RecordModel, MetadataMixin):
+class Meter(RecordModel, MetadataMixin, ExternalIDMixin):
     __tablename__ = "meters"
+    __table_args__ = (
+        Index(
+            "ix_meters_organization_id_external_id",
+            "organization_id",
+            "external_id",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
+    )
 
     name: Mapped[str] = mapped_column(String, nullable=False)
     unit: Mapped[MeterUnit] = mapped_column(

@@ -156,14 +156,14 @@ export default function CompanyPage() {
         <Grid
           templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }}
           columnGap="l"
-          rowGap="xl"
+          rowGap="l"
         >
           {investors.map((investor) => (
             <Box key={investor.name} flexDirection="column">
-              <Text variant="heading-xxs" as="span">
+              <Text variant="body" as="span">
                 {investor.name}
               </Text>
-              <Text variant="heading-xxs" as="span" color="muted">
+              <Text variant="body" as="span" color="muted">
                 {investor.company}
               </Text>
             </Box>

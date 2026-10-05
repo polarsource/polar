@@ -38,12 +38,14 @@ from polar.models import (
     Order,
     OrderItem,
     Organization,
+    Payment,
     Product,
     ProductPrice,
     Subscription,
     Transaction,
 )
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
+from polar.models.payment import PaymentStatus
 from polar.models.subscription import SubscriptionStatus
 
 from .sorting import OrderSortProperty
@@ -408,11 +410,21 @@ class OrderRepository(
         This is the original acquire_payment_lock logic.
 
         Returns:
-            True if lock was acquired, False if already locked
+            True if lock was acquired, False if already locked or a payment is pending
         """
         statement = (
             update(Order)
-            .where(Order.id == order_id, Order.payment_lock_acquired_at.is_(None))
+            .where(
+                Order.id == order_id,
+                Order.payment_lock_acquired_at.is_(None),
+                ~select(Payment.id)
+                .where(
+                    Payment.order_id == Order.id,
+                    Payment.status == PaymentStatus.pending,
+                    ~Payment.is_deleted,
+                )
+                .exists(),
+            )
             .values(payment_lock_acquired_at=utc_now())
         )
 

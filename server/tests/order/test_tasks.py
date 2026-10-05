@@ -521,6 +521,51 @@ class TestEnqueueStalePaymentLocks:
 
 @pytest.mark.asyncio
 class TestProcessStalePaymentLock:
+    @pytest.mark.parametrize(
+        "payment_status",
+        [PaymentStatus.pending, PaymentStatus.failed, PaymentStatus.succeeded],
+    )
+    async def test_preserves_lock_while_payment_is_pending(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        payment_status: PaymentStatus,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        acquired_at = utc_now() - timedelta(days=3)
+        next_attempt_at = utc_now() - timedelta(days=2)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=acquired_at,
+            next_payment_attempt_at=next_attempt_at,
+        )
+        await create_payment(
+            save_fixture,
+            organization,
+            order=order,
+            method="sepa_debit",
+            status=payment_status,
+        )
+        # A newer failed attempt must not hide an older pending debit.
+        await create_payment(
+            save_fixture, organization, order=order, status=PaymentStatus.failed
+        )
+
+        await process_stale_payment_lock(order.id)
+
+        repository = OrderRepository.from_session(session)
+        updated_order = await repository.get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.payment_lock_acquired_at == (
+            acquired_at if payment_status == PaymentStatus.pending else None
+        )
+        assert updated_order.next_payment_attempt_at == next_attempt_at
+
     async def test_releases_payment_lock(
         self,
         session: AsyncSession,

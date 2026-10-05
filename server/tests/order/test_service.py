@@ -5137,6 +5137,39 @@ class TestScheduleRetryForPastDueOrders:
 
 @pytest.mark.asyncio
 class TestTriggerPayment:
+    async def test_pending_payment_blocks_retry_without_lock(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        payment_method = await create_payment_method(
+            save_fixture, customer=customer, type="sepa_debit"
+        )
+        order = await create_order(
+            save_fixture, product=product, customer=customer, status=OrderStatus.pending
+        )
+        await create_payment(
+            save_fixture,
+            organization,
+            order=order,
+            method="sepa_debit",
+            status=PaymentStatus.pending,
+        )
+        await create_payment(
+            save_fixture, organization, order=order, status=PaymentStatus.failed
+        )
+
+        with pytest.raises(PaymentAlreadyInProgress):
+            await order_service.trigger_payment(session, order, payment_method)
+
+        stripe_service_mock.create_payment_intent.assert_not_called()
+        await session.refresh(order)
+        assert order.payment_lock_acquired_at is None
+
     """Test payment lock mechanism in trigger_payment service method."""
 
     async def test_skips_denied_organization(
@@ -5683,6 +5716,43 @@ class TestAcquirePaymentLock:
 
 @pytest.mark.asyncio
 class TestProcessRetryPayment:
+    async def test_pending_payment_blocks_manual_retry_without_lock(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=utc_now(),
+        )
+        await create_payment(
+            save_fixture,
+            organization,
+            order=order,
+            method="sepa_debit",
+            status=PaymentStatus.pending,
+        )
+
+        with pytest.raises(PaymentAlreadyInProgress):
+            await order_service.process_retry_payment(
+                session, order, "ctoken_test", PaymentProcessor.stripe
+            )
+
+        stripe_service_mock.create_payment_intent.assert_not_called()
+        await session.refresh(order)
+        assert order.payment_lock_acquired_at is None
+
     @pytest.mark.parametrize("method_type", ["card", "sepa_debit"])
     async def test_saved_payment_method_types(
         self,

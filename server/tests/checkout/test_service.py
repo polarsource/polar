@@ -6924,7 +6924,9 @@ class TestConfirm:
 
         assert checkout.status == CheckoutStatus.confirmed
         assert checkout.customer_name == "Provided Name"
-        stripe_service_mock.get_confirmation_token.assert_not_called()
+        stripe_service_mock.get_confirmation_token.assert_called_once_with(
+            "CONFIRMATION_TOKEN_ID"
+        )
 
     async def test_wallet_payment_succeeds_on_stripe_error(
         self,

@@ -140,7 +140,10 @@ if typing.TYPE_CHECKING:
         CustomerCreateParamsTaxIdDatum,
     )
     from stripe.params._customer_modify_params import CustomerModifyParams
-    from stripe.params._payment_intent_create_params import PaymentIntentCreateParams
+    from stripe.params._payment_intent_create_params import (
+        PaymentIntentCreateParams,
+        PaymentIntentCreateParamsPaymentMethodOptions,
+    )
     from stripe.params._setup_intent_create_params import SetupIntentCreateParams
 
 
@@ -1143,13 +1146,6 @@ class CheckoutService:
         if (
             checkout.payment_processor == PaymentProcessor.stripe
             and checkout_confirm.confirmation_token_id is not None
-            and (
-                checkout.customer_name is None
-                or (
-                    checkout.discount is not None
-                    and checkout.discount.max_redemptions_per_customer is not None
-                )
-            )
         ):
             try:
                 confirmation_token = await stripe_service.get_confirmation_token(
@@ -1302,10 +1298,23 @@ class CheckoutService:
                                     "off_session"
                                 )
 
+                            payment_method_options: PaymentIntentCreateParamsPaymentMethodOptions = {}
                             if three_d_secure:
-                                payment_intent_params["payment_method_options"] = {
-                                    "card": {"request_three_d_secure": "any"}
+                                payment_method_options["card"] = {
+                                    "request_three_d_secure": "any"
                                 }
+                            if (
+                                confirmation_token is not None
+                                and confirmation_token.payment_method_preview
+                                is not None
+                                and confirmation_token.payment_method_preview.type
+                                == "wechat_pay"
+                            ):
+                                payment_method_options["wechat_pay"] = {"client": "web"}
+                            if payment_method_options:
+                                payment_intent_params["payment_method_options"] = (
+                                    payment_method_options
+                                )
 
                             intent = await stripe_service.create_payment_intent(
                                 **payment_intent_params

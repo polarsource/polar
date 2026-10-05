@@ -6,4 +6,8 @@ export type {
   EntitlementHandler,
   EntitlementProperties,
 } from './entitlement/entitlement'
-export { getCustomerIpAddress } from './ipAddress/ipAddress'
+export {
+  getCustomerIpAddress,
+  resolveCustomerIpAddress,
+} from './ipAddress/ipAddress'
+export type { CustomerIpAddressOption } from './ipAddress/ipAddress'

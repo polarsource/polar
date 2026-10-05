@@ -695,34 +695,40 @@ describe('checkout plugin', () => {
   })
 
   it.each([
-    [{}, '203.0.113.7'],
+    [{}, {}, '203.0.113.7'],
     [
       { advanced: { ipAddress: { ipAddressHeaders: ['cf-connecting-ip'] } } },
+      {},
       '198.51.100.1',
     ],
-  ])('sends the IP Better Auth resolves with %j', async (options, expected) => {
-    vi.mocked(getIP).mockImplementation(actualGetIP)
-    vi.mocked(getSessionFromCtx).mockResolvedValue(null)
-    vi.mocked(mockClient.checkouts.create).mockResolvedValue(
-      createMockCheckout(),
-    )
-    const endpoints = checkout()(mockClient) as any
-    await endpoints.checkout.handler({
-      ...mockContext,
-      request: new Request('https://example.com/api/auth/checkout', {
-        headers: {
-          'x-forwarded-for': '203.0.113.7',
-          'cf-connecting-ip': '198.51.100.1',
-        },
-      }),
-      context: { options },
-      body: CheckoutParams.parse({ products: ['prod-123'] }),
-      json: vi.fn(),
-    })
+    [{}, { customerIpAddress: () => '192.0.2.10' }, '192.0.2.10'],
+    [{}, { customerIpAddress: false as const }, undefined],
+  ])(
+    'sends customer IP address for %j %j',
+    async (options, checkoutOptions, expected) => {
+      vi.mocked(getIP).mockImplementation(actualGetIP)
+      vi.mocked(getSessionFromCtx).mockResolvedValue(null)
+      vi.mocked(mockClient.checkouts.create).mockResolvedValue(
+        createMockCheckout(),
+      )
+      const endpoints = checkout(checkoutOptions)(mockClient) as any
+      await endpoints.checkout.handler({
+        ...mockContext,
+        request: new Request('https://example.com/api/auth/checkout', {
+          headers: {
+            'x-forwarded-for': '203.0.113.7',
+            'cf-connecting-ip': '198.51.100.1',
+          },
+        }),
+        context: { options },
+        body: CheckoutParams.parse({ products: ['prod-123'] }),
+        json: vi.fn(),
+      })
 
-    expect(
-      vi.mocked(mockClient.checkouts.create).mock.calls[0]?.[0]
-        .customer_ip_address,
-    ).toBe(expected)
-  })
+      expect(
+        vi.mocked(mockClient.checkouts.create).mock.calls[0]?.[0]
+          .customer_ip_address,
+      ).toBe(expected)
+    },
+  )
 })

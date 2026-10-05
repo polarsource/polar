@@ -10,6 +10,10 @@ import {
   getSessionFromCtx,
 } from 'better-auth/api'
 import * as z from 'zod/v4'
+import {
+  type CustomerIpAddressOption,
+  resolveCustomerIpAddress,
+} from '@polar-sh/adapter-utils'
 import { getBetterAuthCreatorRole } from '../organization/roles'
 import {
   getBetterAuthOrganizationOptions,
@@ -43,6 +47,11 @@ export interface CheckoutOptions {
    * Checkout theme
    */
   theme?: 'light' | 'dark'
+  /**
+   * Customer IP address sent to Polar to pick the presentment currency.
+   * Pass a function to resolve it yourself, or `false` to not send it.
+   */
+  customerIpAddress?: CustomerIpAddressOption<Headers>
 }
 
 export const CheckoutParams = z.object({
@@ -246,7 +255,11 @@ export const checkout =
                 principal?.externalCustomerId ?? session?.user.id,
               products: productIds,
               customer_ip_address: headers
-                ? (getIP(headers, ctx.context.options) ?? undefined)
+                ? await resolveCustomerIpAddress(
+                    headers,
+                    checkoutOptions.customerIpAddress,
+                    () => getIP(headers, ctx.context.options),
+                  )
                 : undefined,
               success_url: successUrl
                 ? new URL(

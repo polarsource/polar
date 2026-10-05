@@ -36,7 +36,7 @@ Pass query params to this route.
 
 ### Customer IP Address
 
-Unless `customer_ip_address` is passed, the customer's IP address is taken from the `x-forwarded-for`, `x-real-ip` or `cf-connecting-ip` header and sent to Polar to show local currency.
+Unless `customer_ip_address` is passed, the customer's IP address is taken from the `x-forwarded-for`, `x-real-ip` or `cf-connecting-ip` header and sent to Polar to show local currency. Set `customerIpAddress` to a function `(request) => ip` to resolve it yourself, or to `false` to not send it.
 
 ## Customer Portal
 

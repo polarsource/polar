@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getCustomerIpAddress } from './ipAddress'
+import { getCustomerIpAddress, resolveCustomerIpAddress } from './ipAddress'
 
 describe('getCustomerIpAddress', () => {
   it.each([
@@ -13,5 +13,18 @@ describe('getCustomerIpAddress', () => {
     [{}, undefined],
   ])('resolves %j to %s', (headers, expected) => {
     expect(getCustomerIpAddress(new Headers(headers))).toBe(expected)
+  })
+})
+
+describe('resolveCustomerIpAddress', () => {
+  it.each([
+    [undefined, '203.0.113.7'],
+    [async () => '192.0.2.10', '192.0.2.10'],
+    [() => null, undefined],
+    [false as const, undefined],
+  ])('resolves option %s to %s', async (option, expected) => {
+    expect(
+      await resolveCustomerIpAddress({}, option, () => '203.0.113.7'),
+    ).toBe(expected)
   })
 })

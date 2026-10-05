@@ -53,6 +53,16 @@ class StatusDescriptionListItem(description_list.DescriptionListItem[Order]):
         return None
 
 
+class DunningRetriesItem(description_list.DescriptionListItem[Order]):
+    def __init__(self, retries_remaining: int) -> None:
+        super().__init__("Automatic retries remaining")
+        self.retries_remaining = retries_remaining
+
+    def render(self, request: Request, item: Order) -> Generator[None] | None:
+        text(str(self.retries_remaining))
+        return None
+
+
 class InvoicePDFItem(description_list.DescriptionListItem[Order]):
     def __init__(self, url: str | None):
         super().__init__("Invoice PDF")
@@ -282,6 +292,9 @@ async def get(
     # Get all payments for this order
     payment_repository = PaymentRepository.from_session(session)
     payments = await payment_repository.get_all_by_order(order.id)
+    retries_remaining = await order_service.get_dunning_retries_remaining(
+        session, order
+    )
 
     with layout(
         request,
@@ -405,6 +418,26 @@ async def get(
                             ReceiptPDFItem(receipt_url),
                         ).render(request, order):
                             pass
+
+                if order.subscription is not None:
+                    with tag.div(classes="card card-border w-full shadow-sm"):
+                        with tag.div(classes="card-body"):
+                            with tag.h2(classes="card-title"):
+                                text("Dunning")
+                            with description_list.DescriptionList[Order](
+                                description_list.DescriptionListDateTimeItem(
+                                    "next_payment_attempt_at", "Next retry (UTC)"
+                                ),
+                                DunningRetriesItem(retries_remaining),
+                            ).render(request, order):
+                                pass
+                            with tag.p(classes="text-sm text-base-content/60"):
+                                text(
+                                    "Includes the next scheduled retry. "
+                                    "Manual retries do not count toward this limit."
+                                    if order.next_payment_attempt_at is not None
+                                    else "No automatic retry scheduled."
+                                )
 
                 # Customer Details
                 with tag.div(classes="card card-border w-full shadow-sm"):

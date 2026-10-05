@@ -138,6 +138,7 @@ def payments_datatable(
             "created_at", "Created", sorting=PaymentSortProperty.created_at
         ),
         PaymentStatusColumn("Status"),
+        datatable.DatatableAttrColumn("trigger", "Trigger"),
         datatable.DatatableAttrColumn("processor", "Processor"),
         PaymentProcessorIdColumn(),
         datatable.DatatableCurrencyColumn(

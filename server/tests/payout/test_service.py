@@ -1,8 +1,13 @@
+import contextlib
+import csv
 import datetime
+import io
 import uuid
+from collections.abc import AsyncIterator
 from datetime import timedelta
 from functools import partial
 from types import SimpleNamespace
+from typing import cast
 from unittest.mock import MagicMock
 
 import pytest
@@ -13,6 +18,7 @@ from polar.enums import PayoutAccountType
 from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address, CountryAlpha2
+from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.models import Account, Organization, Payout, Transaction, User
@@ -1118,6 +1124,115 @@ class TestTransferStripe:
 
         # Verify the payout's account_amount was adjusted for zero-decimal currencies
         assert result.account_amount == expected_amount
+
+
+async def _create_payout_with_transactions(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    user: User,
+    account_currency: str,
+) -> Payout:
+    account = await create_account(save_fixture, user)
+    payout_account = await create_payout_account(
+        save_fixture,
+        organization,
+        user,
+        type=PayoutAccountType.stripe,
+        currency=account_currency,
+    )
+    payout = await create_payout(
+        save_fixture,
+        account=account,
+        payout_account=payout_account,
+        account_currency=account_currency,
+    )
+    payout_transaction = await create_transaction(
+        save_fixture,
+        account=account,
+        type=TransactionType.payout,
+        amount=-payout.amount,
+        account_currency=account_currency,
+        payout=payout,
+    )
+    await create_transaction(
+        save_fixture,
+        account=account,
+        type=TransactionType.balance,
+        amount=payout.amount,
+        account_currency=account_currency,
+        payout_transaction=payout_transaction,
+    )
+    return payout
+
+
+async def _get_csv_rows(session: AsyncSession, payout: Payout) -> list[dict[str, str]]:
+    @contextlib.asynccontextmanager
+    async def sessionmaker() -> AsyncIterator[AsyncSession]:
+        yield session
+
+    content = "".join(
+        [
+            chunk
+            async for chunk in payout_service.get_csv(
+                session, cast(AsyncSessionMaker, sessionmaker), payout
+            )
+        ]
+    )
+    return list(csv.DictReader(io.StringIO(content)))
+
+
+@pytest.mark.asyncio
+class TestGetCSV:
+    @pytest.mark.parametrize(
+        ("account_currency", "stripe_amount", "expected_total"),
+        [
+            pytest.param("jpy", 1500, 1500.0, id="JPY"),
+            pytest.param("krw", 13500, 13500.0, id="KRW"),
+            pytest.param("eur", 925, 9.25, id="EUR"),
+        ],
+    )
+    async def test_account_payout_total_after_transfer(
+        self,
+        account_currency: str,
+        stripe_amount: int,
+        expected_total: float,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        stripe_service_mock.transfer.return_value = SimpleNamespace(
+            id="STRIPE_TRANSFER_ID", destination_payment="py_123"
+        )
+        stripe_service_mock.get_charge.return_value = SimpleNamespace(
+            balance_transaction=SimpleNamespace(amount=stripe_amount)
+        )
+        payout = await _create_payout_with_transactions(
+            save_fixture, organization, user, account_currency
+        )
+
+        payout = await payout_service.transfer_stripe(session, payout)
+        rows = await _get_csv_rows(session, payout)
+
+        assert len(rows) == 1
+        assert float(rows[0]["Account Payout Total"]) == expected_total
+
+    async def test_account_payout_total_before_transfer_zero_decimal(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        payout = await _create_payout_with_transactions(
+            save_fixture, organization, user, "jpy"
+        )
+
+        rows = await _get_csv_rows(session, payout)
+
+        assert len(rows) == 1
+        assert float(rows[0]["Account Payout Total"]) == payout.account_amount / 100
 
 
 @pytest.mark.asyncio

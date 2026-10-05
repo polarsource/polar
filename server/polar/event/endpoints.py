@@ -26,7 +26,12 @@ from polar.models import Event
 from polar.models.event import EventSource
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.routing import APIRouter
 
 from . import auth, sorting
@@ -136,7 +141,7 @@ async def list(
         description="Use cursor-based pagination (has_next_page) instead of offset pagination. Faster for large datasets.",
         include_in_schema=False,
     ),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[EventSchema] | ListResourceWithCursorPagination[EventSchema]:
     """List events."""
 
@@ -245,7 +250,7 @@ async def get_statistics_by_property(
         description="Metadata field paths to aggregate.",
     ),
     limit: int = Query(default=200, le=1000),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListPropertyGroupStats:
     """
     Get aggregate statistics grouped by distinct values of a metadata property.
@@ -297,7 +302,7 @@ async def get_statistics_by_customer(
         description="Metadata field paths to aggregate.",
     ),
     limit: int = Query(default=200, le=1000),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListCustomerStats:
     """
     Get aggregate statistics ranked by customer.
@@ -352,7 +357,7 @@ async def get_statistics_by_variance(
         description="Metadata field paths to aggregate.",
     ),
     limit: int = Query(default=100, le=1000),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListVarianceEvents:
     """
     Get root events whose aggregate value is at or above the p99 for their event name.
@@ -435,7 +440,7 @@ async def list_statistics_timeseries(
         default=["_cost.amount"],
         description="Metadata field paths to aggregate (e.g., '_cost.amount', 'duration_ns'). Use dot notation for nested fields.",
     ),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListStatisticsTimeseries:
     """
     Get aggregate statistics grouped by root event name over time.
@@ -524,7 +529,7 @@ async def list_names(
     auth_subject: auth.EventRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.EventNamesSorting,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
@@ -568,7 +573,7 @@ async def list_names(
 async def get(
     id: EventID,
     auth_subject: auth.EventRead,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
     aggregate_fields: Sequence[AggregateField] = Query(
         default=[],
         description="Metadata field paths to aggregate from descendants into ancestors (e.g., '_cost.amount', 'duration_ns'). Use dot notation for nested fields.",

@@ -98,8 +98,14 @@ wait_dockerd() {
 ensure_dockerd() {
   wait_dockerd && return 0
 
-  echo "dockerd not ready after 60s; restarting it once"
-  "${PRIVILEGED[@]}" pkill -x dockerd
+  if pgrep -x dockerd >/dev/null; then
+    echo "dockerd running but not answering after 60s; restarting it once"
+    "${PRIVILEGED[@]}" pkill -x dockerd
+  else
+    echo "dockerd exited before becoming ready; last lines of $DOCKERD_LOG:"
+    tail -n 20 "$DOCKERD_LOG"
+    echo "restarting it once"
+  fi
   sleep 2
   clear_stale_docker_state
   printf '\n--- restart ---\n' >>"$DOCKERD_LOG"
@@ -134,8 +140,33 @@ if [ "$DOCKER_LAUNCHED" -eq 1 ]; then
   PULL_PID=$!
 fi
 
+# pnpm 12 is a native binary that its postinstall swaps in for a shebang-less shim. The
+# image's older pnpm switches to the packageManager version without running that
+# postinstall, so on a turbo cache miss every task fails with "Exec format error".
+ensure_pnpm() {
+  local version prefix current
+  version=$(sed -n 's/.*"packageManager": *"pnpm@\([0-9.]*\).*/\1/p' \
+    "$ROOT/clients/package.json")
+  [ -n "$version" ] || return 0
+  prefix="$HOME/.local/share/polar-pnpm/$version"
+
+  current=$(readlink -f "$(command -v pnpm)" 2>/dev/null)
+  if [ -n "$current" ] && [ "$(head -c 4 "$current")" = $'\x7fELF' ] &&
+    [ "$("$current" --version 2>/dev/null)" = "$version" ]; then
+    return 0
+  fi
+
+  echo "installing native pnpm $version"
+  [ -x "$prefix/bin/pnpm" ] ||
+    npm install -g --prefix "$prefix" "pnpm@$version" || return 1
+  mkdir -p "$HOME/.local/bin"
+  ln -sf "$prefix/bin/pnpm" "$HOME/.local/bin/pnpm"
+  ln -sf "$prefix/bin/pnpx" "$HOME/.local/bin/pnpx"
+  hash -r
+}
+
 PNPM_LOG="$TMP/polar-pnpm-install.log"
-pnpm --dir "$ROOT/clients" install --frozen-lockfile >"$PNPM_LOG" 2>&1 &
+{ ensure_pnpm && pnpm --dir "$ROOT/clients" install --frozen-lockfile; } >"$PNPM_LOG" 2>&1 &
 PNPM_PID=$!
 
 # --dev carries pytest, mypy, ruff, fakeredis and xdist.

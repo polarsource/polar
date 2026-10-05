@@ -2,6 +2,7 @@ from collections.abc import AsyncGenerator, Sequence
 from datetime import datetime
 from enum import StrEnum
 from typing import Any, Literal, Protocol, Self, overload
+from uuid import UUID
 
 from sqlalchemy import Select, UnaryExpression, asc, desc, func, select
 from sqlalchemy.orm import Mapped, class_mapper
@@ -30,6 +31,11 @@ class ModelIDProtocol[ID_TYPE](Protocol):
 class ModelDeletedAtIDProtocol[ID_TYPE](Protocol):
     id: Mapped[ID_TYPE]
     deleted_at: Mapped[datetime | None]
+
+
+class ModelExternalIDProtocol(Protocol):
+    organization_id: Mapped[UUID]
+    external_id: Mapped[str | None]
 
 
 type Options = Sequence[ExecutableOption]
@@ -350,6 +356,19 @@ class RepositorySoftDeletionIDMixin[
 
 
 type SortingClause = ColumnExpressionArgument[Any] | UnaryExpression[Any]
+
+
+class RepositoryExternalIDMixin[MODEL_EXTERNAL_ID: ModelExternalIDProtocol]:
+    async def get_by_external_id_and_organization(
+        self: RepositoryProtocol[MODEL_EXTERNAL_ID],
+        external_id: str,
+        organization_id: UUID,
+    ) -> MODEL_EXTERNAL_ID | None:
+        statement = self.get_base_statement().where(
+            self.model.external_id == external_id,
+            self.model.organization_id == organization_id,
+        )
+        return await self.get_one_or_none(statement)
 
 
 class RepositorySortingMixin[M, PE: StrEnum]:

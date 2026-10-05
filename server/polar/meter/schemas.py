@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import UUID4, Field, model_validator
 
+from polar.kit.external_id import ExternalIDInputMixin, ExternalIDOutputMixin
 from polar.kit.metadata import (
     MetadataInputMixin,
     MetadataOutputMixin,
@@ -26,7 +27,7 @@ _aggregation_description = (
 )
 
 
-class MeterCreate(Schema, MetadataInputMixin):
+class MeterCreate(Schema, MetadataInputMixin, ExternalIDInputMixin):
     name: str = Field(..., description=NAME_DESCRIPTION, min_length=3)
     unit: MeterUnit = Field(
         default=MeterUnit.scalar,
@@ -71,7 +72,7 @@ class MeterCreate(Schema, MetadataInputMixin):
         return self
 
 
-class MeterUpdate(Schema, MetadataInputMixin):
+class MeterUpdate(Schema, MetadataInputMixin, ExternalIDInputMixin):
     name: str | None = Field(None, description=NAME_DESCRIPTION, min_length=3)
     unit: MeterUnit | None = Field(None, description="The unit of the meter.")
     custom_label: str | None = Field(
@@ -98,7 +99,7 @@ class MeterUpdate(Schema, MetadataInputMixin):
     )
 
 
-class Meter(IDSchema, TimestampedSchema, MetadataOutputMixin):
+class Meter(IDSchema, TimestampedSchema, MetadataOutputMixin, ExternalIDOutputMixin):
     name: str = Field(..., description=NAME_DESCRIPTION)
     unit: MeterUnit = Field(..., description="The unit of the meter.")
     custom_label: str | None = Field(

@@ -3127,6 +3127,38 @@ class OrderService:
             log.error("Could not save balance.credit_order event", error=str(e))
             raise
 
+    async def get_dunning_retries_remaining(
+        self, session: AsyncReadSession, order: Order
+    ) -> int:
+        """Return the automatic retry budget, including the scheduled attempt."""
+        subscription = order.subscription
+        if (
+            order.next_payment_attempt_at is None
+            or order.status != OrderStatus.pending
+            or subscription is None
+            or subscription.status == SubscriptionStatus.canceled
+        ):
+            return 0
+
+        payment_repository = PaymentRepository.from_session(session)
+        failed_attempts = await payment_repository.count_failed_payments_for_order(
+            order.id
+        )
+        if order.billing_reason != OrderBillingReasonInternal.subscription_meter_cycle:
+            # Use the stored schedule, not the clock: a due retry is still outstanding.
+            # This also accounts for retries without a payment method or Payment row.
+            failed_attempts = max(
+                failed_attempts,
+                self._scheduled_dunning_attempts(
+                    subscription, order.next_payment_attempt_at
+                )
+                - 1,
+            )
+
+        return max(
+            0, len(settings.DUNNING_RETRY_INTERVALS) + 1 - max(1, failed_attempts)
+        )
+
     async def handle_payment_failure(
         self, session: AsyncSession, order: Order, *, skip_dunning: bool = False
     ) -> Order:

@@ -43,31 +43,6 @@ export interface CheckoutOptions {
    * Checkout theme
    */
   theme?: 'light' | 'dark'
-  /**
-   * Resolves the customer IP address sent to Polar, which uses it to pick the
-   * presentment currency. Defaults to the IP Better Auth resolves from the
-   * request using `advanced.ipAddress`. Pass `false` to not send it.
-   */
-  customerIpAddress?:
-    | false
-    | ((
-        headers: Headers,
-      ) => string | null | undefined | Promise<string | null | undefined>)
-}
-
-const IPAddress = z.union([z.ipv4(), z.ipv6()])
-
-const resolveCustomerIpAddress = async (
-  headers: Headers | undefined,
-  options: Parameters<typeof getIP>[1],
-  resolver: CheckoutOptions['customerIpAddress'],
-): Promise<string | undefined> => {
-  if (!headers || resolver === false) {
-    return undefined
-  }
-  const ipAddress = resolver ? await resolver(headers) : getIP(headers, options)
-  const result = IPAddress.safeParse(ipAddress)
-  return result.success ? result.data : undefined
 }
 
 export const CheckoutParams = z.object({
@@ -263,18 +238,16 @@ export const checkout =
           const successUrl = ctx.body.success_url ?? checkoutOptions.successUrl
           const returnUrl = ctx.body.return_url ?? checkoutOptions.returnUrl
 
-          try {
-            const customerIpAddress = await resolveCustomerIpAddress(
-              ctx.request?.headers ?? ctx.headers,
-              ctx.context.options,
-              checkoutOptions.customerIpAddress,
-            )
+          const headers = ctx.request?.headers ?? ctx.headers
 
+          try {
             const checkout = await createCheckouts(polar)({
               external_customer_id:
                 principal?.externalCustomerId ?? session?.user.id,
               products: productIds,
-              customer_ip_address: customerIpAddress,
+              customer_ip_address: headers
+                ? (getIP(headers, ctx.context.options) ?? undefined)
+                : undefined,
               success_url: successUrl
                 ? new URL(
                     successUrl,

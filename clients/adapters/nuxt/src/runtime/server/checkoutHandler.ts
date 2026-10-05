@@ -3,10 +3,7 @@ import {
   createCheckouts,
 } from '@polar-sh/sdk/2026-10/services/checkouts'
 import { createPolarCore, type Environment } from '@polar-sh/sdk/2026-10'
-import {
-  type CustomerIpAddressResolver,
-  resolveCustomerIpAddress,
-} from '@polar-sh/adapter-utils'
+import { getCustomerIpAddress } from '@polar-sh/adapter-utils'
 import { createError, getValidatedQuery, sendRedirect } from 'h3'
 import type { H3Event } from 'h3'
 import { z } from 'zod'
@@ -18,13 +15,6 @@ export interface CheckoutConfig {
   includeCheckoutId?: boolean
   environment?: Environment
   theme?: 'light' | 'dark'
-  /**
-   * Resolves the customer IP address sent to Polar, which uses it to pick the
-   * presentment currency. Defaults to the first valid IP from the
-   * `x-forwarded-for`, `x-real-ip` and `cf-connecting-ip` headers, unless the
-   * `customer_ip_address` query parameter is set. Pass `false` to not send it.
-   */
-  customerIpAddress?: CustomerIpAddressResolver<H3Event> | false
 }
 
 const checkoutQuerySchema = z.object({
@@ -62,7 +52,6 @@ export const Checkout = ({
   environment,
   theme,
   includeCheckoutId = true,
-  customerIpAddress: customerIpAddressResolver,
 }: CheckoutConfig) => {
   const polar = createPolarCore({ accessToken, environment })
 
@@ -107,12 +96,7 @@ export const Checkout = ({
           : undefined,
         customer_tax_id: customerTaxId,
         customer_ip_address:
-          customerIpAddress ??
-          (await resolveCustomerIpAddress(
-            event,
-            event.headers,
-            customerIpAddressResolver,
-          )),
+          customerIpAddress ?? getCustomerIpAddress(event.headers),
         customer_metadata: customerMetadata
           ? JSON.parse(customerMetadata)
           : undefined,

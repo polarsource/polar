@@ -3,10 +3,7 @@ import {
   createCheckouts,
 } from '@polar-sh/sdk/2026-10/services/checkouts'
 import { createPolarCore, type Environment } from '@polar-sh/sdk/2026-10'
-import {
-  type CustomerIpAddressResolver,
-  resolveCustomerIpAddress,
-} from '@polar-sh/adapter-utils'
+import { getCustomerIpAddress } from '@polar-sh/adapter-utils'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
@@ -17,13 +14,6 @@ export interface CheckoutConfig {
   includeCheckoutId?: boolean
   environment?: Environment
   theme?: 'light' | 'dark'
-  /**
-   * Resolves the customer IP address sent to Polar, which uses it to pick the
-   * presentment currency. Defaults to the first valid IP from the
-   * `x-forwarded-for`, `x-real-ip` and `cf-connecting-ip` headers, unless the
-   * `customer_ip_address` query parameter is set. Pass `false` to not send it.
-   */
-  customerIpAddress?: CustomerIpAddressResolver<NextRequest> | false
 }
 
 export const Checkout = ({
@@ -33,7 +23,6 @@ export const Checkout = ({
   environment,
   theme,
   includeCheckoutId = true,
-  customerIpAddress,
 }: CheckoutConfig) => {
   const polar = createPolarCore({
     accessToken,
@@ -78,7 +67,7 @@ export const Checkout = ({
         customer_tax_id: url.searchParams.get('customer_tax_id') ?? undefined,
         customer_ip_address:
           url.searchParams.get('customer_ip_address') ??
-          (await resolveCustomerIpAddress(req, req.headers, customerIpAddress)),
+          getCustomerIpAddress(req.headers),
         customer_metadata: url.searchParams.has('customer_metadata')
           ? JSON.parse(url.searchParams.get('customer_metadata') ?? '{}')
           : undefined,

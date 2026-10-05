@@ -290,29 +290,21 @@ describe('Checkout', () => {
     })
   })
 
-  describe('customer IP address', () => {
-    const createCheckout = async (
-      query: string,
-      config: Partial<Parameters<typeof Checkout>[0]> = {},
-    ) => {
-      mockCheckoutCreate.mockResolvedValue({
-        url: 'https://polar.sh/checkout/123',
-        client_secret: 'checkout_secret',
-      })
-      const headers = { 'x-forwarded-for': '203.0.113.7, 10.0.0.1' }
-      const checkout = Checkout({ accessToken: 'test-token', ...config })
-      await checkout(
-        makeEvent(`/api/checkout?products=prod_123${query}`, headers),
-      )
-      return mockCheckoutCreate.mock.calls[0]![0].customer_ip_address
-    }
-
-    it.each([
-      ['', {}, '203.0.113.7'],
-      ['&customer_ip_address=198.51.100.1', {}, '198.51.100.1'],
-      ['', { customerIpAddress: false as const }, undefined],
-    ])('resolves %s %j to %s', async (query, config, expected) => {
-      expect(await createCheckout(query, config)).toBe(expected)
+  it.each([
+    ['', '203.0.113.7'],
+    ['&customer_ip_address=198.51.100.1', '198.51.100.1'],
+  ])('sends customer IP address for %j', async (query, expected) => {
+    mockCheckoutCreate.mockResolvedValue({
+      url: 'https://polar.sh/checkout/123',
+      client_secret: 'checkout_secret',
     })
+    const headers = { 'x-forwarded-for': '203.0.113.7' }
+    await Checkout({ accessToken: 'test-token' })(
+      makeEvent(`/api/checkout?products=prod_123${query}`, headers),
+    )
+
+    expect(mockCheckoutCreate.mock.calls[0]![0].customer_ip_address).toBe(
+      expected,
+    )
   })
 })

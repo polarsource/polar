@@ -31,8 +31,8 @@ export function ReviewRecordModal({
   // already switched.
   const notice = reviewStatus(row).paymentMethod
   // The notice owns payment guidance whenever the API sends the type, so the
-  // pre-check's renewal warning stays hidden even where the notice is (failed,
-  // switched or skipped rows). It's only a fallback for an API that predates it.
+  // pre-check's renewal warning stays hidden on rows with no notice too (failed,
+  // switched or skipped). It's only a fallback for an API that predates it.
   const hidePaymentReason =
     row.payment_method_type !== undefined &&
     isPaymentMethodReason(row.reason_code)

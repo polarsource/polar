@@ -124,8 +124,8 @@ export const Checkout = ({
       console.error('Failed to checkout:', error)
       throw createError({
         statusCode: 500,
-        statusMessage: (error as Error).message,
-        message: (error as Error).message ?? 'Internal server error',
+        statusMessage: 'Internal server error',
+        message: 'Internal server error',
       })
     }
   }

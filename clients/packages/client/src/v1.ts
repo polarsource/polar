@@ -1226,7 +1226,7 @@ export interface paths {
      * List Organization Orders
      * @description List Polar orders billed to this organization.
      *
-     *     **Scopes**: `organizations:read` `organizations:write`
+     *     **Scopes**: `payouts:read` `payouts:write` `transactions:read` `transactions:write`
      */
     get: operations['organizations:list_orders']
     put?: never

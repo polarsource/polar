@@ -1154,7 +1154,7 @@ async def claim_startup_program(
     tags=[APITag.private],
 )
 async def list_orders(
-    authz: AuthorizeOrgAccess,
+    authz: AuthorizeFinanceRead,
     pagination: PaginationParamsQuery,
 ) -> ListResource[OrganizationOrder]:
     """List Polar orders billed to this organization."""

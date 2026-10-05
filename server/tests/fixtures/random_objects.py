@@ -497,7 +497,7 @@ async def create_product(
             amount, currency = price
             if amount is None:
                 product_price = await create_product_price_free(
-                    save_fixture, product=product
+                    save_fixture, product=product, currency=currency
                 )
             else:
                 product_price = await create_product_price_fixed(

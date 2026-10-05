@@ -17,7 +17,7 @@ from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.customer.schemas.customer import CustomerBase
 from polar.discount.schemas import DiscountMinimal
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
-from polar.kit.currency import format_currency
+from polar.kit.currency import PresentmentCurrency, format_currency
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import (
     CUSTOMER_ID_EXAMPLE,
@@ -285,6 +285,14 @@ class SubscriptionCreateBase(MetadataInputMixin, Schema):
             "Must be a free product, otherwise the customer should go through a checkout flow."
         ),
         examples=[PRODUCT_ID_EXAMPLE],
+    )
+    currency: PresentmentCurrency | None = Field(
+        default=None,
+        description=(
+            "The currency of the subscription. "
+            "The product must have a free price in this currency. "
+            "If not set, the organization's default currency is used."
+        ),
     )
 
 

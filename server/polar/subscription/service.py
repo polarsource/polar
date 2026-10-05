@@ -732,16 +732,20 @@ class SubscriptionService:
                 }
             )
         else:
+            currency = (
+                subscription_create.currency
+                or product.organization.default_presentment_currency
+            )
             try:
                 default_price = PriceSet.from_product(
-                    product, product.organization.default_presentment_currency
+                    product, currency
                 ).get_default_price()
             except NoPricesForCurrencies:
                 errors.append(
                     {
                         "type": "value_error",
                         "loc": ("body", "product_id"),
-                        "msg": "Product has no price in the organization's default currency.",
+                        "msg": f"Product has no price in {currency.upper()}.",
                         "input": subscription_create.product_id,
                     }
                 )
@@ -805,7 +809,10 @@ class SubscriptionService:
         recurring_interval = product.recurring_interval
         recurring_interval_count = product.recurring_interval_count
 
-        currency = product.organization.default_presentment_currency
+        currency = (
+            subscription_create.currency
+            or product.organization.default_presentment_currency
+        )
         currency_prices = PriceSet.from_product(product, currency)
 
         # For seat-based products, determine initial seats from the price tiers

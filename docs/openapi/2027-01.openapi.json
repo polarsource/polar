@@ -76376,6 +76376,17 @@
               "d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23"
             ]
           },
+          "currency": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PresentmentCurrency"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The currency of the subscription. The product must have a free price in this currency. If not set, the organization's default currency is used."
+          },
           "customer_id": {
             "type": "string",
             "format": "uuid4",
@@ -76432,6 +76443,17 @@
             "examples": [
               "d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23"
             ]
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PresentmentCurrency"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The currency of the subscription. The product must have a free price in this currency. If not set, the organization's default currency is used."
           },
           "external_customer_id": {
             "type": "string",

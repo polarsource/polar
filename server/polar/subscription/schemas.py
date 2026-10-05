@@ -17,7 +17,7 @@ from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.customer.schemas.customer import CustomerBase
 from polar.discount.schemas import DiscountMinimal
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
-from polar.kit.currency import format_currency
+from polar.kit.currency import PresentmentCurrency, format_currency
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import (
     CUSTOMER_ID_EXAMPLE,
@@ -30,10 +30,12 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
+from polar.kit.versioning import Version
 from polar.meter.schemas import Meter
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.openapi import cli_confirm_equals
 from polar.product.schemas import Product, ProductPrice
+from polar.version import V2027_01
 
 SubscriptionID = Annotated[UUID4, Path(description="The subscription ID.")]
 
@@ -286,6 +288,17 @@ class SubscriptionCreateBase(MetadataInputMixin, Schema):
         ),
         examples=[PRODUCT_ID_EXAMPLE],
     )
+    currency: Annotated[
+        PresentmentCurrency | None,
+        Version(starting_from=V2027_01),
+        Field(
+            description=(
+                "The currency of the subscription. "
+                "The product must have a free price in this currency. "
+                "If not set, the organization's default currency is used."
+            ),
+        ),
+    ] = None
 
 
 class SubscriptionCreateCustomer(SubscriptionCreateBase):

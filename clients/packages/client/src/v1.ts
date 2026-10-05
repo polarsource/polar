@@ -35888,6 +35888,8 @@ export interface components {
        * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
        */
       product_id: string
+      /** @description The currency of the subscription. The product must have a free price in this currency. If not set, the organization's default currency is used. */
+      currency?: components['schemas']['PresentmentCurrency'] | null
       /**
        * Customer Id
        * Format: uuid4
@@ -35925,6 +35927,8 @@ export interface components {
        * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
        */
       product_id: string
+      /** @description The currency of the subscription. The product must have a free price in this currency. If not set, the organization's default currency is used. */
+      currency?: components['schemas']['PresentmentCurrency'] | null
       /**
        * External Customer Id
        * @description The ID of the customer in your system to create the subscription for. It must already exist in Polar.

@@ -373,10 +373,126 @@ class TestCreate:
         errors = exc_info.value.errors()
         assert len(errors) == 1
         assert errors[0]["loc"] == ("body", "product_id")
+        assert errors[0]["msg"] == "Product has no price in EUR."
+
+    @pytest.mark.auth
+    async def test_product_no_price_in_requested_currency(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product_recurring_free_price: Product,
+        customer: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product_recurring_free_price.id,
+            customer_id=customer.id,
+            currency=PresentmentCurrency.pln,
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.create(
+                session, subscription_create, auth_subject
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "product_id")
+        assert errors[0]["msg"] == "Product has no price in PLN."
+
+    @pytest.mark.auth
+    async def test_product_not_free_in_requested_currency(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        customer: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(None, "usd"), (4000, "pln")],
+        )
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product.id,
+            customer_id=customer.id,
+            currency=PresentmentCurrency.pln,
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.create(
+                session, subscription_create, auth_subject
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "product_id")
         assert (
             errors[0]["msg"]
-            == "Product has no price in the organization's default currency."
+            == "Product is not free. The customer should go through a checkout to create a paid subscription."
         )
+
+    @pytest.mark.auth
+    async def test_valid_with_currency(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        customer: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(None, "usd"), (None, "pln")],
+        )
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product.id,
+            customer_id=customer.id,
+            currency=PresentmentCurrency.pln,
+        )
+
+        subscription = await subscription_service.create(
+            session, subscription_create, auth_subject
+        )
+
+        assert subscription.currency == "pln"
+        assert len(subscription.prices) == 1
+        assert subscription.prices[0].price_currency == "pln"
+
+    @pytest.mark.auth
+    async def test_valid_without_currency_uses_default(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        customer: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(None, "usd"), (None, "pln")],
+        )
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product.id,
+            customer_id=customer.id,
+        )
+
+        subscription = await subscription_service.create(
+            session, subscription_create, auth_subject
+        )
+
+        assert subscription.currency == "usd"
+        assert len(subscription.prices) == 1
+        assert subscription.prices[0].price_currency == "usd"
 
     @pytest.mark.auth
     async def test_customer_does_not_exist_by_id(

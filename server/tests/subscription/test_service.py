@@ -1859,6 +1859,55 @@ class TestCycle:
         subject = enqueue_email_mock.call_args.kwargs["subject"]
         assert "ended" in subject.lower()
 
+    async def test_cancel_at_period_end_does_not_resend_canceled(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            cancel_at_period_end=True,
+        )
+        assert subscription.canceled_at is not None
+        subscription.scheduler_locked_at = utc_now()
+        await save_fixture(subscription)
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        assert updated_subscription.status == SubscriptionStatus.canceled
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated_subscription,
+        )
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_revoked,
+            organization,
+            updated_subscription,
+        )
+        assert_webhook_not_sent(
+            webhook_service_send_mock, WebhookEventType.subscription_canceled
+        )
+        assert await get_all_by_name(session, SystemEvent.subscription_canceled) == []
+        assert (
+            len(await get_all_by_name(session, SystemEvent.subscription_revoked)) == 1
+        )
+
     @freeze_time("2024-01-15 10:00:00")
     async def test_cancel_at_period_end_sets_ended_at_to_current_time(
         self,
@@ -3167,6 +3216,56 @@ class TestRevoke:
         subscription_hooks.canceled.assert_called_once()
         subscription_hooks.revoked.assert_called_once()
 
+    @pytest.mark.parametrize("cancel_at_period_end", [False, True])
+    async def test_sends_canceled_and_revoked(
+        self,
+        cancel_at_period_end: bool,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        if cancel_at_period_end:
+            subscription = await create_canceled_subscription(
+                save_fixture,
+                product=product,
+                customer=customer,
+                cancel_at_period_end=True,
+            )
+        else:
+            subscription = await create_active_subscription(
+                save_fixture, product=product, customer=customer
+            )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.revoke(
+                session, ctx, subscription
+            )
+
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_canceled,
+            organization,
+            updated_subscription,
+        )
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_revoked,
+            organization,
+            updated_subscription,
+        )
+        assert (
+            len(await get_all_by_name(session, SystemEvent.subscription_canceled)) == 1
+        )
+        assert (
+            len(await get_all_by_name(session, SystemEvent.subscription_revoked)) == 1
+        )
+
 
 @pytest.mark.asyncio
 class TestCancel:
@@ -3301,6 +3400,8 @@ class TestCancel:
         session: AsyncSession,
         save_fixture: SaveFixture,
         enqueue_job_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
+        organization: Organization,
         product: Product,
         customer: Customer,
     ) -> None:
@@ -3315,6 +3416,18 @@ class TestCancel:
 
         assert updated.status == SubscriptionStatus.active
         assert updated.cancel_at_period_end is True
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_canceled,
+            organization,
+            updated,
+        )
+        assert_webhook_not_sent(
+            webhook_service_send_mock, WebhookEventType.subscription_revoked
+        )
+        assert (
+            len(await get_all_by_name(session, SystemEvent.subscription_canceled)) == 1
+        )
         void_calls = [
             call_args
             for call_args in enqueue_job_mock.call_args_list

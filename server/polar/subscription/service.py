@@ -492,6 +492,7 @@ class SubscriptionUpdateContext:
         self._event_metadata: SubscriptionUpdatedMetadataFields = {}
         self._has_changes = True
         self._previous_product: Product | None = None
+        self._scheduled_completion = False
 
     async def __aenter__(self) -> Self:
         return self
@@ -544,10 +545,14 @@ class SubscriptionUpdateContext:
                 notify_customer=self._notify_customer,
                 customer_initiated=self._customer_initiated,
                 previous_product=self._previous_product,
+                scheduled_completion=self._scheduled_completion,
             )
 
     def mark_unchanged(self) -> None:
         self._has_changes = False
+
+    def mark_scheduled_completion(self) -> None:
+        self._scheduled_completion = True
 
     def set_previous_product(self, product: Product) -> None:
         self._previous_product = product
@@ -1229,6 +1234,7 @@ class SubscriptionService:
         if revoke:
             subscription.ended_at = utc_now()
             subscription.status = SubscriptionStatus.canceled
+            ctx.mark_scheduled_completion()
             await self.enqueue_benefits_grants(session, subscription)
         # Normal cycle
         else:
@@ -3563,6 +3569,7 @@ class SubscriptionService:
         notify_customer: bool = True,
         customer_initiated: bool = False,
         previous_product: Product | None = None,
+        scheduled_completion: bool = False,
     ) -> None:
         await self._on_subscription_updated(
             session, subscription, previous_product=previous_product
@@ -3624,7 +3631,10 @@ class SubscriptionService:
         if became_canceled and customer_initiated:
             await self._send_cancellation_notification(session, subscription)
 
-        if became_canceled or (became_revoked and previous_is_canceled):
+        # subscription.canceled was already sent when the cancellation was scheduled
+        if became_canceled or (
+            became_revoked and previous_is_canceled and not scheduled_completion
+        ):
             await self._on_subscription_canceled(
                 session,
                 subscription,

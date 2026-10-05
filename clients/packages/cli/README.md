@@ -184,14 +184,15 @@ release workflows read Bun `1.4.2` from `engines.bun` in the CLI's `package.json
 Manually run **Release CLI** with `publish` unchecked to build and upload a
 verification draft. Its `@polar-sh/cli-verify-...` tag is ignored by the updater.
 
-The workflow is idempotent: every job only produces what does not exist yet. To
-retry a failed stable release, rerun the original workflow run, or dispatch the
+Rerunning the workflow is safe: it finishes whatever is still missing. To retry
+a failed stable release, rerun the original workflow run, or dispatch the
 workflow on `main` with `publish` checked. If the GitHub release is already
 published, the test, build and release jobs are skipped and the `npm` job checks
 out the release's commit, repackages the release's own archives and publishes
-only the npm packages that are still missing. An existing draft can only be
-resumed from its original source commit. Published releases are never
-overwritten; corrections require a new changeset/version.
+only the npm packages that are still missing. An unfinished draft is rebuilt
+from its original source commit and its assets are replaced; it cannot be
+resumed from another commit. Published releases are never overwritten;
+corrections require a new changeset/version.
 
 ### One-time bridge release
 

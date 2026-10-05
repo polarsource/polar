@@ -4609,9 +4609,7 @@ async def delete_payout_account(
             account_type = payout_account.type
             stripe_id = payout_account.stripe_id
 
-            await payout_account_service.unlink_and_maybe_delete(
-                session, organization, allow_paid_out=True
-            )
+            await payout_account_service.unlink_and_maybe_delete(session, organization)
 
             timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
             delete_note = (

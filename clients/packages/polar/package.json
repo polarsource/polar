@@ -35,7 +35,7 @@
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.lint.json"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.lint.json && tsc -p examples"
   },
   "dependencies": {
     "@polar-sh/sdk": "1.0.1"

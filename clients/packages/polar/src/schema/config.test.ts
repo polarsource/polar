@@ -1,85 +1,68 @@
-import { describe, expect, it } from 'vitest'
-import { count, defineConfig, event, meter, sum, usd } from './config'
+import { describe, expect, expectTypeOf, it } from 'vitest'
+import { count, sum } from './usage'
+import { defineConfig } from './config'
+import type { MeterKey } from './config'
+import { SchemaError } from './error'
+import { event } from './event'
+import { meter } from './meter'
+import { usd } from './money'
 
-const completion = event<{ input_tokens: number }>('llm.completion')
+const llmCompletion = event<{ input_tokens: number }>('llm.completion')
 const toolCall = event('tool.call')
+const inputTokens = meter('input_tokens', {
+  name: 'Input tokens',
+  usage: sum(llmCompletion, 'input_tokens'),
+  price: usd(0.00015),
+})
+const toolCalls = meter('tool_calls', {
+  name: 'Tool calls',
+  usage: count(toolCall),
+  price: usd(0.04),
+})
+const schema = { llmCompletion, toolCall, inputTokens, toolCalls }
 
 describe('defineConfig', () => {
-  it('collects meter definitions', () => {
-    const inputTokens = meter('input_tokens', {
-      reducer: sum(completion, 'input_tokens'),
-      price: usd(0.00015),
-    })
-    const toolCalls = meter('tool_calls', {
-      reducer: count(toolCall),
-      price: usd(0.04),
+  it('keeps the schema and collects its meters', () => {
+    const config = defineConfig({ schema })
+
+    expect(config.schema).toBe(schema)
+    expect(config.meters).toEqual([inputTokens, toolCalls])
+  })
+
+  it('keeps each meter key as a literal type', () => {
+    const config = defineConfig({ schema })
+
+    expectTypeOf<MeterKey<typeof config>>().toEqualTypeOf<
+      'input_tokens' | 'tool_calls'
+    >()
+  })
+
+  it('collects a meter exported under two names once', () => {
+    const config = defineConfig({
+      schema: { inputTokens, tokens: inputTokens },
     })
 
-    const config = defineConfig({ schema: { inputTokens, toolCalls } })
-
-    expect(config).toEqual({
-      kind: 'config',
-      schema: { inputTokens, toolCalls },
-      meters: [
-        {
-          kind: 'meter',
-          key: 'input_tokens',
-          reducer: {
-            kind: 'reducer',
-            key: 'input_tokens',
-            filter: {
-              kind: 'filter',
-              event: { kind: 'event', name: 'llm.completion' },
-              where: {},
-            },
-            aggregation: { func: 'sum', property: 'input_tokens' },
-          },
-          price: { amount: 0.00015, currency: 'usd' },
-        },
-        {
-          kind: 'meter',
-          key: 'tool_calls',
-          reducer: {
-            kind: 'reducer',
-            key: 'tool_calls',
-            filter: {
-              kind: 'filter',
-              event: { kind: 'event', name: 'tool.call' },
-              where: {},
-            },
-            aggregation: { func: 'count' },
-          },
-          price: { amount: 0.04, currency: 'usd' },
-        },
-      ],
-    })
+    expect(config.meters).toEqual([inputTokens])
   })
 
   it('rejects the same meter key from two definitions', () => {
-    const first = meter('input_tokens', {
-      reducer: sum(completion, 'input_tokens'),
-      price: usd(1),
-    })
-    const second = meter('input_tokens', {
-      reducer: sum(completion, 'input_tokens'),
+    const again = meter('input_tokens', {
+      name: 'Input tokens again',
+      usage: sum(llmCompletion, 'input_tokens'),
       price: usd(2),
     })
 
-    expect(() => defineConfig({ schema: { first, second } })).toThrow(
-      'meter input_tokens is defined twice',
-    )
+    const define = () => defineConfig({ schema: { inputTokens, again } })
+
+    expect(define).toThrow(SchemaError)
+    expect(define).toThrow('meter: input_tokens is defined twice')
   })
 
-  it('rejects an empty event name, an empty meter key, and a negative price', () => {
-    expect(() => event('')).toThrow('event: empty name')
-    expect(() =>
-      meter('', {
-        reducer: count(toolCall),
-        price: usd(1),
-      }),
-    ).toThrow('meter: empty key')
-    expect(() => usd(-1)).toThrow(
-      'usd: amount must be a non-negative number, got -1',
-    )
+  it('rejects a value that is not a definition', () => {
+    // @ts-expect-error the schema holds only definitions
+    const define = () => defineConfig({ schema: { price: usd(1) } })
+
+    expect(define).toThrow(SchemaError)
+    expect(define).toThrow('schema: price is not a meter or an event')
   })
 })

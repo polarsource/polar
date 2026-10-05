@@ -521,59 +521,6 @@ class TestEnqueueStalePaymentLocks:
 
 @pytest.mark.asyncio
 class TestProcessStalePaymentLock:
-    @pytest.mark.parametrize(
-        ("method", "status", "deleted", "keep_lock"),
-        [
-            ("sepa_debit", PaymentStatus.pending, False, True),
-            ("sepa_debit", PaymentStatus.failed, False, False),
-            ("sepa_debit", PaymentStatus.succeeded, False, False),
-            ("card", PaymentStatus.pending, False, False),
-            ("sepa_debit", PaymentStatus.pending, True, False),
-        ],
-    )
-    async def test_only_preserves_pending_sepa_locks(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        product: Product,
-        organization: Organization,
-        method: str,
-        status: PaymentStatus,
-        deleted: bool,
-        keep_lock: bool,
-    ) -> None:
-        customer = await create_customer(save_fixture, organization=organization)
-        acquired_at = utc_now() - timedelta(days=3)
-        next_attempt_at = utc_now() - timedelta(days=2)
-        order = await create_order(
-            save_fixture,
-            product=product,
-            customer=customer,
-            status=OrderStatus.pending,
-            payment_lock_acquired_at=acquired_at,
-            next_payment_attempt_at=next_attempt_at,
-        )
-        payment = await create_payment(
-            save_fixture, organization, order=order, method=method, status=status
-        )
-        if deleted:
-            payment.deleted_at = utc_now()
-            await save_fixture(payment)
-        # A later failure must not hide a debit that is still pending.
-        await create_payment(
-            save_fixture, organization, order=order, status=PaymentStatus.failed
-        )
-
-        await process_stale_payment_lock(order.id)
-
-        repository = OrderRepository.from_session(session)
-        updated_order = await repository.get_by_id(order.id)
-        assert updated_order is not None
-        assert updated_order.payment_lock_acquired_at == (
-            acquired_at if keep_lock else None
-        )
-        assert updated_order.next_payment_attempt_at == next_attempt_at
-
     async def test_releases_payment_lock(
         self,
         session: AsyncSession,

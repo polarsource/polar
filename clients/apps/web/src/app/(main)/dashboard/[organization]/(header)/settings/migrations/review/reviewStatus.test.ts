@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { BANK_DEBITS_STAY_BEHIND } from './paymentMethod'
 import { reviewStatus } from './reviewStatus'
 import type { ReviewRow } from './reviewRows'
 
@@ -100,13 +101,13 @@ describe('reviewStatus', () => {
   })
 
   describe('moving subscriptions', () => {
-    it('shows "Moves with card" for a pending subscription with a card', () => {
+    it('shows "Ready" for a pending subscription with a card', () => {
       expect(
         reviewStatus(row({ status: 'importable', import_status: 'pending' })),
-      ).toMatchObject({ label: 'Moves with card' })
+      ).toMatchObject({ label: 'Ready' })
     })
 
-    it('shows "Ready with card" once dependencies are prepared', () => {
+    it('shows "Prepared" once dependencies are prepared', () => {
       expect(
         reviewStatus(
           row({
@@ -115,10 +116,10 @@ describe('reviewStatus', () => {
             dependencies_imported: true,
           }),
         ),
-      ).toMatchObject({ label: 'Ready with card' })
+      ).toMatchObject({ label: 'Prepared' })
     })
 
-    it('shows "Ready, no card" (yellow) for a prepared subscription without a card', () => {
+    it('shows "Needs a card" (yellow) for a prepared subscription without a card', () => {
       expect(
         reviewStatus(
           row({
@@ -128,10 +129,10 @@ describe('reviewStatus', () => {
             payment_method_type: 'link',
           }),
         ),
-      ).toMatchObject({ label: 'Ready, no card', color: 'yellow' })
+      ).toMatchObject({ label: 'Needs a card', color: 'yellow' })
     })
 
-    it('shows "Moves with card" for an info-level reason that does not need attention', () => {
+    it('shows "Ready" for an info-level reason that does not need attention', () => {
       expect(
         reviewStatus(
           row({
@@ -140,21 +141,21 @@ describe('reviewStatus', () => {
             reason_level: 'info',
           }),
         ),
-      ).toMatchObject({ label: 'Moves with card' })
+      ).toMatchObject({ label: 'Ready' })
     })
 
     it.each(['link', null] as const)(
-      'shows "Moves, no card" (yellow) for %s',
+      'shows "Needs a card" (yellow) for %s',
       (type) => {
         expect(
           reviewStatus(
             row({ status: 'importable', payment_method_type: type }),
           ),
-        ).toMatchObject({ label: 'Moves, no card', color: 'yellow' })
+        ).toMatchObject({ label: 'Needs a card', color: 'yellow' })
       },
     )
 
-    it('names the missing card on a row that needs info', () => {
+    it('keeps "Needs info" ahead of a missing card', () => {
       expect(
         reviewStatus(
           row({
@@ -164,7 +165,21 @@ describe('reviewStatus', () => {
             payment_method_type: 'link',
           }),
         ),
-      ).toMatchObject({ label: 'Needs info, no card', color: 'yellow' })
+      ).toMatchObject({
+        label: 'Needs info',
+        color: 'yellow',
+        paymentMethod: { kind: 'no_card' },
+      })
+    })
+
+    it('labels a SEPA subscription by the bank-debit switch', () => {
+      expect(
+        reviewStatus(
+          row({ status: 'importable', payment_method_type: 'sepa_debit' }),
+        ),
+      ).toMatchObject({
+        label: BANK_DEBITS_STAY_BEHIND ? 'Needs a card' : 'Check bank debit',
+      })
     })
 
     it('drops the payment method for failed rows', () => {

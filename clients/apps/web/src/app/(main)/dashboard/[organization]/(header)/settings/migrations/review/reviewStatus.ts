@@ -61,25 +61,19 @@ export function reviewStatus(row: ReviewRow): ReviewStatus {
   if (!paymentMethod) {
     return { ...base, paymentMethod }
   }
-  const noCard = paymentMethod.kind === 'no_card'
+  // The label is what the merchant should do next. A fix outranks a missing
+  // card, and the side panel still lists both.
   if (stage === 'needs_info') {
-    return {
-      label: noCard ? 'Needs info, no card' : base.label,
-      color: base.color,
-      paymentMethod,
-    }
+    return { ...base, paymentMethod }
   }
-  // A prepared subscription says so, so the merchant can still tell what an
-  // import would add.
-  const verb = stage === 'ready' ? 'Ready' : 'Moves'
-  if (noCard) {
-    return { label: `${verb}, no card`, color: 'yellow', paymentMethod }
+  if (paymentMethod.kind === 'no_card') {
+    return { label: 'Needs a card', color: 'yellow', paymentMethod }
+  }
+  if (paymentMethod.kind === 'bank_debit') {
+    return { label: 'Check bank debit', paymentMethod }
   }
   return {
-    label:
-      paymentMethod.kind === 'bank_debit'
-        ? `${verb}, bank debit`
-        : `${verb} with card`,
+    label: stage === 'ready' ? 'Prepared' : 'Ready',
     paymentMethod,
   }
 }

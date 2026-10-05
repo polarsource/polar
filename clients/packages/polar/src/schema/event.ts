@@ -92,12 +92,12 @@ function clauses(
   }
   if (typeof matcher !== 'object') return [eq(property, matcher)]
   if (isComparisons(matcher)) {
-    return matcher.map((comparison) => ({ property, ...comparison }))
+    return matcher.map((comparison) => ({ ...comparison, property }))
   }
   if ('kind' in matcher) {
     return [or(...matcher.values.map((value) => eq(property, value)))]
   }
-  return [{ property, ...matcher }]
+  return [{ ...matcher, property }]
 }
 
 const isComparisons = (

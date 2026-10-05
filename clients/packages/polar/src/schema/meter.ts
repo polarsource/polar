@@ -55,7 +55,7 @@ export function meter<const Key extends string>(
     customMultiplier,
   } = options
   if (key === '') throw new SchemaError('meter', 'key is empty')
-  if (name.length < 3) {
+  if (codePointLength(name) < 3) {
     throw new SchemaError('meter', 'name must be at least 3 characters')
   }
   if (unit !== 'scalar' && unit !== 'token' && unit !== 'custom') {
@@ -102,4 +102,8 @@ export function meter<const Key extends string>(
     )
   }
   return { ...defined, unit }
+}
+
+function codePointLength(value: string): number {
+  return Array.from(value).length
 }

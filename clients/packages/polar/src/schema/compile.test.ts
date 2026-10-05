@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { compile } from './compile'
 import { defineConfig } from './config'
 import { event, on, oneOf } from './event'
-import { eq, or } from './filter'
+import { and, eq, or } from './filter'
 import { meter } from './meter'
 import { usd } from './money'
 import { count, sum } from './usage'
@@ -56,12 +56,12 @@ describe('compile', () => {
                   {
                     property: 'model',
                     operator: 'eq',
-                    value: 'claude-opus-5-5',
+                    value: 'claude-fable-5-1',
                   },
                   {
                     property: 'model',
                     operator: 'eq',
-                    value: 'claude-fable-5-1',
+                    value: 'claude-opus-5-5',
                   },
                 ],
               },
@@ -134,6 +134,51 @@ describe('compile', () => {
 
     expect(events).toEqual([{ name: 'tool.call' }])
     expect(meters).toEqual([])
+  })
+
+  it('sorts filter clauses independent of insertion order', () => {
+    const scrambled = meter('mixed', {
+      name: 'Mixed filter',
+      usage: count(
+        or(
+          eq('name', 'b.event'),
+          and(eq('z', true), eq('a', 2), eq('a', '2')),
+          eq('name', 'a.event'),
+        ),
+      ),
+      price: usd(1),
+    })
+    const reversed = meter('mixed', {
+      name: 'Mixed filter',
+      usage: count(
+        or(
+          eq('name', 'a.event'),
+          and(eq('a', '2'), eq('a', 2), eq('z', true)),
+          eq('name', 'b.event'),
+        ),
+      ),
+      price: usd(1),
+    })
+
+    const forward = compile(defineConfig({ schema: { scrambled } }))
+    const backward = compile(defineConfig({ schema: { reversed } }))
+
+    expect(forward.meters[0]?.filter).toEqual({
+      conjunction: 'or',
+      clauses: [
+        { property: 'name', operator: 'eq', value: 'a.event' },
+        { property: 'name', operator: 'eq', value: 'b.event' },
+        {
+          conjunction: 'and',
+          clauses: [
+            { property: 'a', operator: 'eq', value: 2 },
+            { property: 'a', operator: 'eq', value: '2' },
+            { property: 'z', operator: 'eq', value: true },
+          ],
+        },
+      ],
+    })
+    expect(JSON.stringify(backward)).toBe(JSON.stringify(forward))
   })
 
   it('compiles the same schema in any order to the same JSON', () => {

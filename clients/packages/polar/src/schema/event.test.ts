@@ -69,6 +69,15 @@ describe('on', () => {
     )
   })
 
+  it('binds a comparison to its metadata key', () => {
+    expect(
+      on(event('tool.call'), { tool: eq('source', 'user') }).clauses,
+    ).toContainEqual(eq('tool', 'user'))
+    expect(
+      on(event('tool.call'), { tool: [eq('source', 'user')] }).clauses,
+    ).toContainEqual(eq('tool', 'user'))
+  })
+
   it('rejects matching an event field as metadata', () => {
     const define = () => on(event('tool.call'), { source: 'user' })
 

@@ -224,3 +224,14 @@ describe("organization", () => {
     expect(organizationHeader(client)).toBe("org_1");
   });
 });
+
+describe("parseResponse", () => {
+  test.each([
+    ["without Content-Type", {}],
+    ["with Content-Type", { "Content-Type": "application/json" }],
+  ])("returns undefined for a 202 with an empty body %s", async (_, headers) => {
+    const response = new Response(null, { status: 202, headers });
+
+    await expect(client.parseResponse(response, "json")).resolves.toBeUndefined();
+  });
+});

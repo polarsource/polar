@@ -29,7 +29,7 @@ class CheckoutLink(
             "organization_id",
             "external_id",
             unique=True,
-            postgresql_where=text("deleted_at IS NULL"),
+            postgresql_where=text("deleted_at IS NULL AND external_id IS NOT NULL"),
         ),
     )
 

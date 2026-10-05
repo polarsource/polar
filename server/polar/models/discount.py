@@ -15,6 +15,7 @@ from sqlalchemy import (
     String,
     Uuid,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import CITEXT, JSONB
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
@@ -161,7 +162,7 @@ class Discount(MetadataMixin, ExternalIDMixin, RecordModel):
             "organization_id",
             "external_id",
             unique=True,
-            postgresql_where="deleted_at IS NULL",
+            postgresql_where=text("deleted_at IS NULL AND external_id IS NOT NULL"),
         ),
     )
 

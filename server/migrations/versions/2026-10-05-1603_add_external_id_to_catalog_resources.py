@@ -63,7 +63,9 @@ def upgrade() -> None:
                 "benefits",
                 ["organization_id", "external_id"],
                 unique=True,
-                postgresql_where=sa.text("deleted_at IS NULL"),
+                postgresql_where=sa.text(
+                    "deleted_at IS NULL AND external_id IS NOT NULL"
+                ),
                 postgresql_concurrently=True,
             )
             op.drop_index(
@@ -77,7 +79,9 @@ def upgrade() -> None:
                 "checkout_links",
                 ["organization_id", "external_id"],
                 unique=True,
-                postgresql_where=sa.text("deleted_at IS NULL"),
+                postgresql_where=sa.text(
+                    "deleted_at IS NULL AND external_id IS NOT NULL"
+                ),
                 postgresql_concurrently=True,
             )
             op.drop_index(
@@ -91,7 +95,9 @@ def upgrade() -> None:
                 "discounts",
                 ["organization_id", "external_id"],
                 unique=True,
-                postgresql_where="deleted_at IS NULL",
+                postgresql_where=sa.text(
+                    "deleted_at IS NULL AND external_id IS NOT NULL"
+                ),
                 postgresql_concurrently=True,
             )
             op.drop_index(
@@ -105,7 +111,9 @@ def upgrade() -> None:
                 "meters",
                 ["organization_id", "external_id"],
                 unique=True,
-                postgresql_where=sa.text("deleted_at IS NULL"),
+                postgresql_where=sa.text(
+                    "deleted_at IS NULL AND external_id IS NOT NULL"
+                ),
                 postgresql_concurrently=True,
             )
             op.drop_index(
@@ -119,7 +127,9 @@ def upgrade() -> None:
                 "products",
                 ["organization_id", "external_id"],
                 unique=True,
-                postgresql_where=sa.text("deleted_at IS NULL"),
+                postgresql_where=sa.text(
+                    "deleted_at IS NULL AND external_id IS NOT NULL"
+                ),
                 postgresql_concurrently=True,
             )
         finally:

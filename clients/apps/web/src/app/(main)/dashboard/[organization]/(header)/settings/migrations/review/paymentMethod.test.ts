@@ -31,13 +31,13 @@ describe('rowPaymentMethod', () => {
   ] as const)('flags %s as moving without a card', (type, label) => {
     const method = rowPaymentMethod(row({ payment_method_type: type }))
     expect(method).toMatchObject({ label, kind: 'no_card' })
-    expect(method?.note?.body).toContain("can't be copied")
+    expect(method?.note).toContain("can't be copied")
   })
 
   it('flags a subscription with no payment method', () => {
     const method = rowPaymentMethod(row({ payment_method_type: null }))
     expect(method).toMatchObject({ label: 'No method', kind: 'no_card' })
-    expect(method?.note?.body).toContain('no saved payment method')
+    expect(method?.note).toContain('No saved payment method')
   })
 
   it.each(['sepa_debit', 'us_bank_account'] as const)(

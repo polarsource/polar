@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { Fragment, ReactNode, useContext } from 'react'
 import { ImportTaxPicker } from '../ImportTaxPicker'
 import { BillingAddressEditor } from './BillingAddressEditor'
+import { isPaymentMethodReason, RowPaymentMethod } from './paymentMethod'
 import { needsAttention, reasonLinks, ReviewRow } from './reviewRows'
 
 export function RecordCard({
@@ -47,35 +48,78 @@ export function RecordCard({
   )
 }
 
-export function RecordReason({
+interface RecordNote {
+  key: string
+  content: ReactNode
+}
+
+// Everything to know before the switch, in one callout: the pre-check's note
+// and what happens to the payment method. Two or more read as a list.
+export function RecordNotes({
   row,
-  hidden = false,
+  paymentMethod = null,
 }: {
   row: ReviewRow
-  hidden?: boolean
+  paymentMethod?: RowPaymentMethod | null
 }) {
   const { organization } = useContext(OrganizationContext)
-  if (!row.reason || hidden) return null
+  const paymentNote = paymentMethod?.note ?? null
+  // The payment note covers this whenever the API sends the type; the
+  // pre-check's own copy is only a fallback for an API that predates it.
+  const showReason =
+    Boolean(row.reason) &&
+    !(
+      row.payment_method_type !== undefined &&
+      isPaymentMethodReason(row.reason_code)
+    )
+  const attention = showReason && needsAttention(row)
+  const noCard = paymentMethod?.kind === 'no_card'
 
-  const links = reasonLinks(row, organization.slug)
-  const attention = needsAttention(row)
-
-  return (
-    // Alert grows to fill a column parent, so keep it in its own row.
-    <Box>
-      <Alert
-        variant={attention ? 'warning' : 'info'}
-        title={attention ? 'Needs your attention' : 'Good to know'}
-        description={
+  const reasonNote: RecordNote | null = showReason
+    ? {
+        key: 'reason',
+        content: (
           <>
             {row.reason}
-            {links.map((link) => (
+            {reasonLinks(row, organization.slug).map((link) => (
               <Fragment key={link.href}>
                 {' '}
                 <Link href={link.href}>{link.label}</Link>
               </Fragment>
             ))}
           </>
+        ),
+      }
+    : null
+  const payment: RecordNote | null = paymentNote
+    ? { key: 'payment', content: paymentNote }
+    : null
+  const notes = (
+    attention ? [reasonNote, payment] : [payment, reasonNote]
+  ).filter((note): note is RecordNote => note !== null)
+  if (notes.length === 0) return null
+
+  const warn = attention || noCard
+  return (
+    // Alert grows to fill a column parent, so keep it in its own row.
+    <Box>
+      <Alert
+        variant={warn ? 'warning' : 'info'}
+        title={warn ? 'Needs your attention' : 'Good to know'}
+        description={
+          notes.length === 1 ? (
+            notes[0].content
+          ) : (
+            // Spans, not a list element: the description renders inside a <p>.
+            <Box as="span" display="flex" flexDirection="column" rowGap="xs">
+              {notes.map((note) => (
+                <Box as="span" key={note.key} display="flex" columnGap="s">
+                  <span aria-hidden>•</span>
+                  <span>{note.content}</span>
+                </Box>
+              ))}
+            </Box>
+          )
         }
       />
     </Box>

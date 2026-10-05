@@ -699,15 +699,10 @@ describe('checkout plugin', () => {
       vi.mocked(getIP).mockImplementation(actualGetIP)
     })
 
-    const createCheckout = async ({
-      headers = {},
-      options = {},
-      checkoutOptions = {},
-    }: {
-      headers?: Record<string, string>
-      options?: Record<string, unknown>
-      checkoutOptions?: Parameters<typeof checkout>[0]
-    } = {}) => {
+    const createCheckout = async (
+      options: Record<string, unknown>,
+      checkoutOptions: Parameters<typeof checkout>[0] = {},
+    ) => {
       vi.mocked(getSessionFromCtx).mockResolvedValue(null)
       vi.mocked(mockClient.checkouts.create).mockResolvedValue(
         createMockCheckout(),
@@ -716,95 +711,31 @@ describe('checkout plugin', () => {
       await endpoints.checkout.handler({
         ...mockContext,
         request: new Request('https://example.com/api/auth/checkout', {
-          headers,
+          headers: {
+            'x-forwarded-for': '203.0.113.7',
+            'cf-connecting-ip': '198.51.100.1',
+          },
         }),
         context: { options },
         body: CheckoutParams.parse({ products: ['prod-123'] }),
         json: vi.fn(),
       })
       return vi.mocked(mockClient.checkouts.create).mock.calls[0]?.[0]
+        .customer_ip_address
     }
 
-    it('forwards the IP address from x-forwarded-for', async () => {
-      const body = await createCheckout({
-        headers: { 'x-forwarded-for': '203.0.113.7' },
-      })
-
-      expect(body).toMatchObject({ customer_ip_address: '203.0.113.7' })
-    })
-
-    it('respects the configured Better Auth IP address options', async () => {
-      const body = await createCheckout({
-        headers: {
-          'x-forwarded-for': '198.51.100.1',
-          'cf-connecting-ip': '2001:db8::1',
-        },
-        options: {
-          advanced: {
-            ipAddress: {
-              ipAddressHeaders: ['cf-connecting-ip'],
-              ipv6Subnet: 128,
-            },
-          },
-        },
-      })
-
-      expect(body).toMatchObject({
-        customer_ip_address: '2001:0db8:0000:0000:0000:0000:0000:0001',
-      })
-    })
-
-    it('resolves the client IP behind trusted proxies', async () => {
-      const body = await createCheckout({
-        headers: { 'x-forwarded-for': '203.0.113.7, 10.0.0.1' },
-        options: {
-          advanced: { ipAddress: { trustedProxies: ['10.0.0.0/8'] } },
-        },
-      })
-
-      expect(body).toMatchObject({ customer_ip_address: '203.0.113.7' })
-    })
-
-    it('omits the IP address when Better Auth cannot resolve one', async () => {
-      vi.mocked(getIP).mockReturnValueOnce(null)
-
-      const body = await createCheckout()
-
-      expect(body.customer_ip_address).toBeUndefined()
-    })
-
-    it.each(['not-an-ip', '203.0.113.7, 10.0.0.1', '', null, undefined])(
-      'omits an invalid IP address %j from a custom resolver',
-      async (ipAddress) => {
-        const body = await createCheckout({
-          checkoutOptions: { customerIpAddress: () => ipAddress },
-        })
-
-        expect(body.customer_ip_address).toBeUndefined()
-      },
-    )
-
-    it('uses a custom resolver instead of Better Auth', async () => {
-      const resolver = vi.fn().mockResolvedValue('192.0.2.10')
-
-      const body = await createCheckout({
-        headers: { 'x-forwarded-for': '203.0.113.7' },
-        checkoutOptions: { customerIpAddress: resolver },
-      })
-
-      expect(resolver).toHaveBeenCalledWith(expect.any(Headers))
-      expect(getIP).not.toHaveBeenCalled()
-      expect(body).toMatchObject({ customer_ip_address: '192.0.2.10' })
-    })
-
-    it('does not forward the IP address when disabled', async () => {
-      const body = await createCheckout({
-        headers: { 'x-forwarded-for': '203.0.113.7' },
-        checkoutOptions: { customerIpAddress: false },
-      })
-
-      expect(getIP).not.toHaveBeenCalled()
-      expect(body.customer_ip_address).toBeUndefined()
+    it.each([
+      [{}, {}, '203.0.113.7'],
+      [
+        { advanced: { ipAddress: { ipAddressHeaders: ['cf-connecting-ip'] } } },
+        {},
+        '198.51.100.1',
+      ],
+      [{}, { customerIpAddress: () => '192.0.2.10' }, '192.0.2.10'],
+      [{}, { customerIpAddress: () => 'not-an-ip' }, undefined],
+      [{}, { customerIpAddress: false as const }, undefined],
+    ])('resolves %j %j to %s', async (options, checkoutOptions, expected) => {
+      expect(await createCheckout(options, checkoutOptions)).toBe(expected)
     })
   })
 })

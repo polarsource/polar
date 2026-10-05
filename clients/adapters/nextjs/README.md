@@ -36,16 +36,7 @@ Pass query params to this route.
 
 ### Customer IP Address
 
-The checkout route sends the customer's IP address to Polar, which uses it to show prices in the customer's local currency. By default it uses the first valid IP from the `x-forwarded-for`, `x-real-ip` and `cf-connecting-ip` request headers, unless a `customer_ip_address` query param is passed. A missing or invalid IP is not sent. Make sure your host or proxy sets these headers, as clients can otherwise send their own.
-
-To resolve the IP yourself, pass a function to `customerIpAddress`, or set it to `false` to not send it:
-
-```typescript
-Checkout({
-  accessToken: process.env.POLAR_ACCESS_TOKEN,
-  customerIpAddress: (req) => req.headers.get('x-vercel-forwarded-for'),
-})
-```
+The customer's IP address is sent to Polar to show local currency, taken from `x-forwarded-for`, `x-real-ip` or `cf-connecting-ip` unless `customer_ip_address` is passed. Set `customerIpAddress` to a function `(request) => ip` to resolve it yourself, or to `false` to not send it.
 
 ## Customer Portal
 

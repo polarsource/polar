@@ -301,13 +301,7 @@ const auth = betterAuth({
 });
 ```
 
-The checkout endpoint sends the customer's IP address to Polar, which uses it to show prices in the customer's local currency. The IP is resolved with Better Auth's `getIP`, so it follows your `advanced.ipAddress` configuration. By default Better Auth reads a single-value `x-forwarded-for` header; behind other proxies, set `ipAddressHeaders` (for example `["cf-connecting-ip"]`) or `trustedProxies`. A missing or invalid IP is not sent. To resolve the IP yourself, pass a function to `customerIpAddress`, or set it to `false` to not send it:
-
-```typescript
-checkout({
-  customerIpAddress: (headers) => headers.get("x-vercel-forwarded-for"),
-})
-```
+The checkout endpoint sends the customer's IP address to Polar to show local currency, resolved with Better Auth's `getIP` (configure it with `advanced.ipAddress`). Set `customerIpAddress` to a function `(headers) => ip` to resolve it yourself, or to `false` to not send it.
 
 When checkouts are enabled, you're able to initialize Checkout Sessions using the checkout-method on the BetterAuth Client. This will redirect the user to the Product Checkout.
 

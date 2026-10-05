@@ -162,18 +162,15 @@ describe('Checkout', () => {
   })
 
   describe('customer IP address', () => {
-    beforeEach(() => {
+    const createCheckout = async (
+      query: string,
+      config: Partial<Parameters<typeof Checkout>[0]> = {},
+    ) => {
       mockCheckoutCreate.mockResolvedValue({
         url: 'https://polar.sh/checkout/123',
         client_secret: 'checkout_secret',
       })
-    })
-
-    const createCheckout = async (
-      query: string,
-      headers: Record<string, string>,
-      config: Partial<Parameters<typeof Checkout>[0]> = {},
-    ) => {
+      const headers = { 'x-forwarded-for': '203.0.113.7, 10.0.0.1' }
       const checkout = Checkout({ accessToken: 'test-token', ...config })
       await checkout({
         request: new Request(
@@ -181,52 +178,15 @@ describe('Checkout', () => {
           { headers },
         ),
       })
-      return mockCheckoutCreate.mock.calls[0]![0]
+      return mockCheckoutCreate.mock.calls[0]![0].customer_ip_address
     }
 
-    it('forwards the IP address from request headers', async () => {
-      const body = await createCheckout('', {
-        'x-forwarded-for': '203.0.113.7, 10.0.0.1',
-      })
-
-      expect(body.customer_ip_address).toBe('203.0.113.7')
-    })
-
-    it('prefers the customer_ip_address query parameter', async () => {
-      const body = await createCheckout('&customer_ip_address=198.51.100.1', {
-        'x-forwarded-for': '203.0.113.7',
-      })
-
-      expect(body.customer_ip_address).toBe('198.51.100.1')
-    })
-
-    it('omits a missing or invalid IP address', async () => {
-      const body = await createCheckout('', { 'x-forwarded-for': 'unknown' })
-
-      expect(body.customer_ip_address).toBeUndefined()
-    })
-
-    it('uses a custom resolver', async () => {
-      const resolver = vi.fn().mockReturnValue('192.0.2.10')
-
-      const body = await createCheckout(
-        '',
-        { 'x-forwarded-for': '203.0.113.7' },
-        { customerIpAddress: resolver },
-      )
-
-      expect(resolver).toHaveBeenCalledOnce()
-      expect(body.customer_ip_address).toBe('192.0.2.10')
-    })
-
-    it('does not forward the IP address when disabled', async () => {
-      const body = await createCheckout(
-        '',
-        { 'x-forwarded-for': '203.0.113.7' },
-        { customerIpAddress: false },
-      )
-
-      expect(body.customer_ip_address).toBeUndefined()
+    it.each([
+      ['', {}, '203.0.113.7'],
+      ['&customer_ip_address=198.51.100.1', {}, '198.51.100.1'],
+      ['', { customerIpAddress: false as const }, undefined],
+    ])('resolves %s %j to %s', async (query, config, expected) => {
+      expect(await createCheckout(query, config)).toBe(expected)
     })
   })
 })

@@ -10,6 +10,10 @@ History up to [1.0.0-alpha.22] is available in the existing GitHub releases.
 
 ## [Unreleased]
 
+### Fixed
+
+- Return `undefined` (`None` in Python) instead of throwing on empty-body success responses, such as the `202` returned by order receipt endpoints while the receipt is being generated.
+
 ## [1.0.2] - 2026-10-02
 
 ### Changed

@@ -527,7 +527,6 @@ class Settings(BaseSettings):
 
     ACCOUNT_PAYOUT_DELAY: timedelta = timedelta(seconds=1)
     ACCOUNT_DEFAULT_PAYOUT_INTERVAL: timedelta = timedelta(hours=24)
-    ACCOUNT_PAYOUT_MINIMUM_BALANCE: int = 1000
 
     _DEFAULT_ACCOUNT_PAYOUT_MINIMUM_BALANCE: int = 1000
     ACCOUNT_PAYOUT_MINIMUM_BALANCE_PER_PAYOUT_CURRENCY: dict[str, int] = {

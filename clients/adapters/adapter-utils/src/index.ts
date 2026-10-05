@@ -6,3 +6,9 @@ export type {
   EntitlementHandler,
   EntitlementProperties,
 } from './entitlement/entitlement'
+export {
+  getIpAddressFromHeaders,
+  isValidIpAddress,
+  resolveCustomerIpAddress,
+} from './ipAddress/ipAddress'
+export type { CustomerIpAddressResolver } from './ipAddress/ipAddress'

@@ -36,8 +36,8 @@ import { createEvent } from 'h3'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { Checkout } from '../src/runtime/server/checkoutHandler'
 
-function makeEvent(url: string) {
-  const req = { method: 'GET', url, headers: {} } as unknown as IncomingMessage
+function makeEvent(url: string, headers: Record<string, string> = {}) {
+  const req = { method: 'GET', url, headers } as unknown as IncomingMessage
   const res = {} as unknown as ServerResponse
   return createEvent(req, res)
 }
@@ -287,6 +287,72 @@ describe('Checkout', () => {
 
       expect(consoleSpy).toHaveBeenCalled()
       consoleSpy.mockRestore()
+    })
+  })
+
+  describe('customer IP address', () => {
+    beforeEach(() => {
+      mockCheckoutCreate.mockResolvedValue({
+        url: 'https://polar.sh/checkout/123',
+        client_secret: 'checkout_secret',
+      })
+    })
+
+    const createCheckout = async (
+      query: string,
+      headers: Record<string, string>,
+      config: Partial<Parameters<typeof Checkout>[0]> = {},
+    ) => {
+      const checkout = Checkout({ accessToken: 'test-token', ...config })
+      await checkout(
+        makeEvent(`/api/checkout?products=prod_123${query}`, headers),
+      )
+      return mockCheckoutCreate.mock.calls[0]![0]
+    }
+
+    it('forwards the IP address from request headers', async () => {
+      const body = await createCheckout('', {
+        'x-forwarded-for': '203.0.113.7, 10.0.0.1',
+      })
+
+      expect(body.customer_ip_address).toBe('203.0.113.7')
+    })
+
+    it('prefers the customer_ip_address query parameter', async () => {
+      const body = await createCheckout('&customer_ip_address=198.51.100.1', {
+        'x-forwarded-for': '203.0.113.7',
+      })
+
+      expect(body.customer_ip_address).toBe('198.51.100.1')
+    })
+
+    it('omits a missing or invalid IP address', async () => {
+      const body = await createCheckout('', { 'x-forwarded-for': 'unknown' })
+
+      expect(body.customer_ip_address).toBeUndefined()
+    })
+
+    it('uses a custom resolver', async () => {
+      const resolver = vi.fn().mockReturnValue('192.0.2.10')
+
+      const body = await createCheckout(
+        '',
+        { 'x-forwarded-for': '203.0.113.7' },
+        { customerIpAddress: resolver },
+      )
+
+      expect(resolver).toHaveBeenCalledOnce()
+      expect(body.customer_ip_address).toBe('192.0.2.10')
+    })
+
+    it('does not forward the IP address when disabled', async () => {
+      const body = await createCheckout(
+        '',
+        { 'x-forwarded-for': '203.0.113.7' },
+        { customerIpAddress: false },
+      )
+
+      expect(body.customer_ip_address).toBeUndefined()
     })
   })
 })

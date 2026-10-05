@@ -41,6 +41,19 @@ Pass query params to this route.
 - seats (optional) `?products=123&seats=5` - Number of seats for seat-based products
 - metadata (optional) `URL-Encoded JSON string`
 
+### Customer IP Address
+
+The checkout route sends the customer's IP address to Polar, which uses it to show prices in the customer's local currency. By default it uses the first valid IP from the `x-forwarded-for`, `x-real-ip` and `cf-connecting-ip` request headers, unless a `customer_ip_address` query param is passed. A missing or invalid IP is not sent. Make sure your host or proxy sets these headers, as clients can otherwise send their own.
+
+To resolve the IP yourself, pass a function to `customerIpAddress`, or set it to `false` to not send it:
+
+```typescript
+Checkout({
+  accessToken: process.env.POLAR_ACCESS_TOKEN,
+  customerIpAddress: (request) => request.headers.get('fly-client-ip'),
+})
+```
+
 ## Customer Portal
 
 Create a customer portal where your customer can view orders and subscriptions.

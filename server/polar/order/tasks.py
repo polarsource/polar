@@ -13,6 +13,7 @@ from polar.models import Order, Product
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.payment import PaymentTrigger
 from polar.observability.task_logging import LoggableField
+from polar.payment.repository import PaymentRepository
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
@@ -375,6 +376,13 @@ async def process_stale_payment_lock(
 
         if not order.is_payment_lock_stale:
             log.info("Order payment lock is not stale, skipping", order_id=order.id)
+            return
+
+        payment_repository = PaymentRepository.from_session(session)
+        if await payment_repository.has_pending_sepa_debit_for_order(order.id):
+            log.info(
+                "SEPA debit still pending, keeping payment lock", order_id=order.id
+            )
             return
 
         log.warning(

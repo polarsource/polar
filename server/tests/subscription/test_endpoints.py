@@ -27,7 +27,7 @@ from polar.order.service import PaymentFailed, PaymentFailedReason
 from polar.postgres import AsyncSession
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
-from polar.version import V2026_04, V2026_10, V2027_01
+from polar.version import V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -349,7 +349,7 @@ class TestCreateSubscription:
         assert "user" in json
         assert "customer" in json
 
-    @pytest.mark.api_version(V2026_04, V2026_10, V2027_01)
+    @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth
     async def test_valid_with_currency(
         self,

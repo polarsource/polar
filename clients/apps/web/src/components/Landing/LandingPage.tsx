@@ -8,6 +8,7 @@ import { Primitives } from './chapters/Primitives'
 import { StartupProgram } from './chapters/StartupProgram'
 import { UsageBilling } from './chapters/UsageBilling'
 import { ClosingCta } from './ClosingCta'
+import { CustomerStory } from './CustomerStory'
 import { Hero } from './Hero/Hero'
 import { Pricing } from './Pricing'
 import { Testimonials } from './Testimonials'
@@ -19,6 +20,7 @@ export default function Page() {
       <Primitives />
       <UsageBilling />
       <Platform />
+      <CustomerStory />
       <Meter />
       <MerchantOfRecord />
       <Margins />

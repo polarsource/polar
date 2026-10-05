@@ -213,7 +213,13 @@ for an agent — swallows a failed email-renderer build, the artifact that block
 
 It is idempotent, skips work already done, and reports failed steps in its output rather than
 aborting. It fires on session start and resume, not on every compaction. Read the script for
-what it does; its log is `polar-session-start.log` in `$TMPDIR` (`/tmp` unless overridden).
+what it does; its log is `polar-session-start.log` in `$TMPDIR` (`/tmp` unless overridden), and
+the Docker daemon's is `polar-dockerd.log` next to it.
+
+The image's pnpm switches to the `packageManager` version without running its postinstall,
+which leaves a shim turbo can't exec ("Exec format error" on a cache miss). The hook installs
+that version's native binary under `~/.local/share/polar-pnpm/` and links it into
+`~/.local/bin`, ahead of the image's pnpm on `PATH`.
 
 Deliberately excluded, none of it needed for tests or linters: `dev seed`, `dev start`/tmux,
 Stripe keys or CLI, GitHub App setup, the Tinybird CLI, `dev docker`, and the web build. Redis is

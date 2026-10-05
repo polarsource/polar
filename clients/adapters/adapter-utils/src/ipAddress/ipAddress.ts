@@ -1,12 +1,13 @@
+import * as z from 'zod'
+
 export type CustomerIpAddressResolver<TRequest> = (
   request: TRequest,
 ) => string | null | undefined | Promise<string | null | undefined>
 
-const IPV4_OCTET = '(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)'
-const IPV4 = new RegExp(`^${IPV4_OCTET}(\\.${IPV4_OCTET}){3}$`)
+const IpAddress = z.union([z.ipv4(), z.ipv6()])
 
 const isValidIpAddress = (value: string): boolean =>
-  IPV4.test(value) || (value.includes(':') && URL.canParse(`http://[${value}]`))
+  IpAddress.safeParse(value).success
 
 const getIpAddressFromHeaders = (headers: Headers): string | undefined =>
   [

@@ -2,16 +2,24 @@
   "$schema": "../../node_modules/oxlint/configuration_schema.json",
   "ignorePatterns": ["node_modules/**", "dist/**"],
   "extends": ["../oxlint-config/oxlint-base.json"],
-  "plugins": ["typescript", "import"],
+  "plugins": ["typescript", "import", "oxc"],
+  "jsPlugins": ["./lint/polar.ts"],
   "rules": {
     "import/no-cycle": "error",
+    "oxc/no-barrel-file": ["error", { "threshold": 0 }],
+    "polar-sdk/client-boundaries": "error",
+    "polar-sdk/internal-boundaries": "error",
+    "polar-sdk/no-internal-leak": "error",
+    "polar-sdk/no-terminal-output": "error",
+    "polar-sdk/schema-is-pure": "error",
+    "polar-sdk/test-colocation": "error",
     "no-restricted-imports": [
       "error",
       {
         "patterns": [
           {
             "group": ["@polar-sh/sdk", "@polar-sh/sdk/*"],
-            "message": "Import the generated SDK through src/polar.ts, the only module allowed to depend on @polar-sh/sdk. It pins the API version in one place."
+            "message": "Only src/index.ts may depend on @polar-sh/sdk. It pins the API version in one place."
           }
         ]
       }
@@ -19,7 +27,7 @@
   },
   "overrides": [
     {
-      "files": ["src/polar.ts"],
+      "files": ["src/index.ts"],
       "rules": {
         "no-restricted-imports": "off"
       }

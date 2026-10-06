@@ -26,7 +26,8 @@ if TYPE_CHECKING:
 
 POSTHOG_ID_TAG = "posthog_distinct_id"
 # Personal data, secrets, and merchant-supplied values on request bodies.
-# IP addresses and user agents are kept.
+# Keys are matched as they appear on the wire, so aliased fields are listed
+# under their alias. IP addresses and user agents are kept.
 _REQUEST_PII_KEYS = frozenset(
     {
         "access_token",
@@ -36,12 +37,14 @@ _REQUEST_PII_KEYS = frozenset(
         "billing_address",
         "billing_manager_email",
         "billing_name",
+        "cf-turnstile-response",
         "client_secret",
         "code",
         "customer_billing_address",
         "customer_billing_name",
         "customer_email",
         "customer_external_id",
+        "customer_metadata",
         "customer_name",
         "customer_tax_id",
         "date_of_birth",

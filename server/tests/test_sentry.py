@@ -93,8 +93,10 @@ class TestBeforeSend:
                     "access_token": "polar_at_xxx",
                     "api_key": "sk_test_xxx",
                     "client_secret": "polar_cs_xxx",
+                    "cf-turnstile-response": "cf_xxx",
                     "code": "123456",
                     "customer_external_id": "buyer@example.com",
+                    "customer_metadata": {"crm_contact": "buyer@example.com"},
                     "expo_push_token": "ExponentPushToken[xxx]",
                     "external_customer_id": "buyer@example.com",
                     "external_id": "buyer@example.com",
@@ -119,8 +121,10 @@ class TestBeforeSend:
         assert "access_token" not in data
         assert "api_key" not in data
         assert "client_secret" not in data
+        assert "cf-turnstile-response" not in data
         assert "code" not in data
         assert "customer_external_id" not in data
+        assert "customer_metadata" not in data
         assert "expo_push_token" not in data
         assert "external_customer_id" not in data
         assert "external_id" not in data

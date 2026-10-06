@@ -13,6 +13,8 @@ ROOT="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}
 TMP="${TMPDIR:-/tmp}"
 LOG="$TMP/polar-session-start.log"
 CONTAINERD_PIDFILE=/run/docker/containerd/containerd.pid
+DOCKERD_PIDFILE=/var/run/docker.pid
+DOCKERD_LOG="$TMP/polar-dockerd.log"
 COMPOSE=(docker compose --project-directory "$ROOT/server")
 # uv needs ~/.local/bin first; /usr/local/bin is appended because its node symlink is
 # older than the one already on PATH and the workspace does not support it.
@@ -52,29 +54,41 @@ reap() {
   fi
 }
 
+PRIVILEGED=()
+if [ "$(id -u)" -ne 0 ] && sudo -n true >/dev/null 2>&1; then
+  PRIVILEGED=(sudo -n)
+fi
+
+# A resumed container keeps /run, and dockerd hangs trusting an orphaned pidfile.
+# Test the pid rather than the process name: an unrelated containerd also matches.
+clear_stale_docker_state() {
+  local pidfile
+  for pidfile in "$CONTAINERD_PIDFILE" "$DOCKERD_PIDFILE"; do
+    if [ -f "$pidfile" ] &&
+      ! "${PRIVILEGED[@]}" kill -0 "$(cat "$pidfile" 2>/dev/null)" 2>/dev/null; then
+      "${PRIVILEGED[@]}" rm -f "$pidfile" /var/run/docker.sock
+    fi
+  done
+}
+
+start_dockerd() {
+  clear_stale_docker_state
+  setsid nohup "${PRIVILEGED[@]}" dockerd >>"$DOCKERD_LOG" 2>&1 &
+}
+
 # There is no systemd here, so `dev up`'s `systemctl start docker` cannot work.
 # Readiness is checked later, so a daemon slow to boot is not written off.
 launch_dockerd() {
   docker info >/dev/null 2>&1 && return 0
   command -v dockerd >/dev/null 2>&1 || return 1
 
-  local privileged=()
-  if [ "$(id -u)" -ne 0 ]; then
-    if ! sudo -n true >/dev/null 2>&1; then
-      echo "dockerd requires root and passwordless sudo is unavailable"
-      return 1
-    fi
-    privileged=(sudo -n)
+  if [ "$(id -u)" -ne 0 ] && [ ${#PRIVILEGED[@]} -eq 0 ]; then
+    echo "dockerd requires root and passwordless sudo is unavailable"
+    return 1
   fi
 
-  # A resumed container keeps /run, and dockerd hangs trusting an orphaned pidfile.
-  # Test the pid rather than the process name: an unrelated containerd also matches.
-  if [ -f "$CONTAINERD_PIDFILE" ] &&
-    ! kill -0 "$(cat "$CONTAINERD_PIDFILE" 2>/dev/null)" 2>/dev/null; then
-    "${privileged[@]}" rm -f "$CONTAINERD_PIDFILE" /var/run/docker.sock
-  fi
-
-  setsid nohup "${privileged[@]}" dockerd >"$TMP/dockerd.log" 2>&1 &
+  : >"$DOCKERD_LOG"
+  start_dockerd
 }
 
 wait_dockerd() {
@@ -82,6 +96,29 @@ wait_dockerd() {
     docker info >/dev/null 2>&1 && return 0
     sleep 1
   done
+  return 1
+}
+
+# A daemon that never came up is restarted once: a manual restart has recovered it in
+# seconds where the first boot hung past the timeout.
+ensure_dockerd() {
+  wait_dockerd && return 0
+
+  if pgrep -x dockerd >/dev/null; then
+    echo "dockerd running but not answering after 60s; restarting it once"
+    "${PRIVILEGED[@]}" pkill -x dockerd
+  else
+    echo "dockerd exited before becoming ready; last lines of $DOCKERD_LOG:"
+    tail -n 20 "$DOCKERD_LOG"
+    echo "restarting it once"
+  fi
+  sleep 2
+  printf '\n--- restart ---\n' >>"$DOCKERD_LOG"
+  start_dockerd
+  wait_dockerd && return 0
+
+  echo "dockerd still not ready; last lines of $DOCKERD_LOG:"
+  tail -n 20 "$DOCKERD_LOG"
   return 1
 }
 
@@ -108,8 +145,35 @@ if [ "$DOCKER_LAUNCHED" -eq 1 ]; then
   PULL_PID=$!
 fi
 
+# pnpm 12 is a native binary that its postinstall swaps in for a shebang-less shim. The
+# image's older pnpm switches to the packageManager version without running that
+# postinstall, so on a turbo cache miss every task fails with "Exec format error".
+ensure_pnpm() {
+  local version prefix current
+  version=$(sed -n 's/.*"packageManager": *"pnpm@\([0-9.]*\).*/\1/p' \
+    "$ROOT/clients/package.json")
+  if [ -z "$version" ]; then
+    echo "no pnpm version in clients/package.json packageManager; using pnpm on PATH"
+    return 0
+  fi
+  prefix="$HOME/.local/share/polar-pnpm/$version"
+
+  current=$(readlink -f "$(command -v pnpm)" 2>/dev/null)
+  if [ -n "$current" ] && [ "$(head -c 4 "$current")" = $'\x7fELF' ] &&
+    [ "$("$current" --version 2>/dev/null)" = "$version" ]; then
+    return 0
+  fi
+
+  echo "installing native pnpm $version"
+  [ -x "$prefix/bin/pnpm" ] ||
+    npm install -g --prefix "$prefix" "pnpm@$version" || return 1
+  mkdir -p "$HOME/.local/bin"
+  ln -sf "$prefix/bin/pnpm" "$HOME/.local/bin/pnpm"
+  ln -sf "$prefix/bin/pnpx" "$HOME/.local/bin/pnpx"
+}
+
 PNPM_LOG="$TMP/polar-pnpm-install.log"
-pnpm --dir "$ROOT/clients" install --frozen-lockfile >"$PNPM_LOG" 2>&1 &
+{ ensure_pnpm && pnpm --dir "$ROOT/clients" install --frozen-lockfile; } >"$PNPM_LOG" 2>&1 &
 PNPM_PID=$!
 
 # --dev carries pytest, mypy, ruff, fakeredis and xdist.
@@ -129,7 +193,7 @@ fi
 [ -n "$PULL_PID" ] && reap "image pull" "$PULL_PID" "$PULL_LOG" optional
 
 PG_OK=0
-if [ "$DOCKER_LAUNCHED" -eq 1 ] && step "docker daemon ready" wait_dockerd; then
+if [ "$DOCKER_LAUNCHED" -eq 1 ] && step "docker daemon ready" ensure_dockerd; then
   # --wait uses the healthchecks docker-compose.yml declares. Services are named because
   # a bare `up -d` also pulls tinybird, whose tests skip themselves when it is absent.
   if step "infrastructure" "${COMPOSE[@]}" up -d --wait --wait-timeout 120 db redis minio; then
@@ -142,7 +206,7 @@ if [ "$DOCKER_LAUNCHED" -eq 1 ] && step "docker daemon ready" wait_dockerd; then
     "${COMPOSE[@]}" logs --tail 20 >> "$LOG" 2>&1
   fi
 else
-  NOTES+=("Docker daemon unavailable, so PostgreSQL and MinIO are not running. Skipped the template database and the pytest warm-up; backend tests will fail until the daemon is up. See $LOG.")
+  NOTES+=("Docker daemon unavailable, so PostgreSQL and MinIO are not running. Skipped the template database and the pytest warm-up; backend tests will fail until the daemon is up. See $LOG and $DOCKERD_LOG.")
 fi
 
 # Lets each xdist worker clone a migrated database instead of replaying the whole alembic

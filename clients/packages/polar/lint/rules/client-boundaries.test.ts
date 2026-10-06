@@ -21,6 +21,11 @@ new RuleTester().run('client-boundaries', rule, {
       code: `import type { Billing } from '../schema/billing'`,
     },
     {
+      name: 'typing the Polar API',
+      filename: 'src/client/actor.ts',
+      code: `import type { Polar } from '../sdk'`,
+    },
+    {
       name: 'HTTP requests outside client',
       filename: 'src/internal/api/events.ts',
       code: `fetch('https://api.polar.sh/v1/events')`,
@@ -35,7 +40,7 @@ new RuleTester().run('client-boundaries', rule, {
     {
       name: 'importing the Polar API',
       filename: 'src/client/customer.ts',
-      code: `import { createPolar } from '../index'`,
+      code: `import { createPolar } from '../sdk'`,
       errors: [{ messageId: 'api' }],
     },
     {

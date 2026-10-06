@@ -1,10 +1,11 @@
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
+from pytest_mock import MockerFixture
 
 from polar.models import Organization, UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_event, create_meter
 
 METER = {
     "external_id": "sdk-tool-calls",
@@ -17,17 +18,6 @@ METER = {
     "unit": "custom",
     "custom_label": "call",
 }
-
-
-@pytest_asyncio.fixture
-async def config_as_code_enabled(
-    save_fixture: SaveFixture, organization: Organization
-) -> None:
-    organization.feature_settings = {
-        **organization.feature_settings,
-        "config_as_code_enabled": True,
-    }
-    await save_fixture(organization)
 
 
 @pytest.mark.asyncio
@@ -59,10 +49,13 @@ class TestApply:
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_valid(
         self,
+        mocker: MockerFixture,
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
+        mocker.patch("polar.meter.service.enqueue_job")
+
         response = await client.post(
             "/v1/config/apply",
             json={
@@ -78,7 +71,11 @@ class TestApply:
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_organization_token(self, client: AsyncClient) -> None:
+    async def test_organization_token(
+        self, mocker: MockerFixture, client: AsyncClient
+    ) -> None:
+        mocker.patch("polar.meter.service.enqueue_job")
+
         response = await client.post("/v1/config/apply", json={"meters": [METER]})
 
         assert response.status_code == 200
@@ -122,3 +119,38 @@ class TestApply:
         assert response.status_code == 422
         [error] = response.json()["detail"]
         assert error["loc"] == ["body", "meters"]
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_aggregating_meter_locked_fields(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        event = await create_event(save_fixture, organization=organization)
+        await create_meter(
+            save_fixture,
+            organization=organization,
+            external_id="sdk-tool-calls",
+            last_billed_event=event,
+        )
+
+        response = await client.post(
+            "/v1/config/apply",
+            json={"meters": [METER], "organization_id": str(organization.id)},
+        )
+
+        assert response.status_code == 409
+        json = response.json()
+        assert json["error"] == "ConfigMeterLocked"
+        assert json["detail"] == [
+            {
+                "loc": ["body", "meters", 0, "filter"],
+                "msg": (
+                    "This field can't be updated because the meter "
+                    "is already aggregating events."
+                ),
+            }
+        ]

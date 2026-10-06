@@ -17,7 +17,7 @@ async def polar_exception_handler(request: Request, exc: Exception) -> JSONRespo
     assert isinstance(exc, PolarError)
     return JSONResponse(
         status_code=exc.status_code,
-        content={"error": type(exc).__name__, "detail": exc.message},
+        content={"error": type(exc).__name__, "detail": jsonable_encoder(exc.detail)},
         headers=exc.headers,
     )
 

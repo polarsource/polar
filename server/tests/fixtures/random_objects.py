@@ -2293,6 +2293,7 @@ async def create_meter(
     aggregation: Aggregation = CountAggregation(),
     last_billed_event: Event | None = None,
     external_id: str | None = None,
+    user_metadata: dict[str, str | int | bool] | None = None,
 ) -> Meter:
     meter = Meter(
         id=id,
@@ -2302,6 +2303,7 @@ async def create_meter(
         aggregation=aggregation,
         last_billed_event=last_billed_event,
         external_id=external_id,
+        user_metadata=user_metadata or {},
     )
     await save_fixture(meter)
     return meter

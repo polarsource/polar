@@ -1,17 +1,33 @@
 # Outpost
 
-Logging is configured at application startup and writes to stderr at `INFO` level,
-with timestamps, levels, and logger names. Existing root logging handlers are
-preserved.
+## Development
 
-Use a module-level logger and lazy message formatting:
+Start Outpost and Redis:
 
-```python
-import logging
-
-logger = logging.getLogger(__name__)
-logger.info("Processed %s events", count)
+```sh
+just dev
 ```
 
-To choose another level, call `configure_logging("DEBUG")` from `outpost.logging`
-before application startup.
+## Benchmark
+
+Run the HTTP ingest benchmark:
+
+```sh
+uv run python benchmark.py
+uv run python benchmark.py --batch-size 1000 --concurrency 8 --requests 2000
+```
+
+Reports requests/s, events/s, and mean/p50/p95/p99 response time.
+
+### Results 1
+
+First implementation, with reduction made in Python in a single thread.
+
+```
+HTTP /ingest; count meter matching tool_call events
+10,000 requests × 10 events; concurrency=8; customers/batch=10; warmup=10 (excluded)
+2.403s; 4,162 requests/s; 41,623 events/s
+Stage (ms/request)           mean        p50        p95        p99
+ingest                      1.919      1.863      2.468      2.973
+Redis counts verified; benchmark keys removed.
+```

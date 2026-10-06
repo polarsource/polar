@@ -171,25 +171,20 @@ describe('reviewStatus', () => {
       })
     })
 
-    it('shows "Needs a card" (yellow) for an ACH debit too', () => {
-      expect(
-        reviewStatus(
-          row({ status: 'importable', payment_method_type: 'us_bank_account' }),
-        ),
-      ).toMatchObject({ label: 'Needs a card', color: 'yellow' })
-    })
-
-    it('treats a SEPA debit like Link', () => {
-      expect(
-        reviewStatus(
-          row({ status: 'importable', payment_method_type: 'sepa_debit' }),
-        ),
-      ).toMatchObject({
-        label: 'Needs a card',
-        color: 'yellow',
-        paymentMethod: { kind: 'no_card' },
-      })
-    })
+    it.each(['sepa_debit', 'us_bank_account'] as const)(
+      'treats a %s debit like Link',
+      (type) => {
+        expect(
+          reviewStatus(
+            row({ status: 'importable', payment_method_type: type }),
+          ),
+        ).toMatchObject({
+          label: 'Needs a card',
+          color: 'yellow',
+          paymentMethod: { kind: 'no_card' },
+        })
+      },
+    )
 
     it('drops the payment method for failed rows', () => {
       expect(

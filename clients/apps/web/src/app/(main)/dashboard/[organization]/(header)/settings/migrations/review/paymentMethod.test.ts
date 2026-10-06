@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  ACH_STAYS_BEHIND,
-  isPaymentMethodReason,
-  rowPaymentMethod,
-} from './paymentMethod'
+import { isPaymentMethodReason, rowPaymentMethod } from './paymentMethod'
 import type { ReviewRow } from './reviewRows'
 
 function row(overrides: Partial<ReviewRow>): ReviewRow {
@@ -27,6 +23,7 @@ describe('rowPaymentMethod', () => {
   it.each([
     ['link', 'Link'],
     ['sepa_debit', 'SEPA Debit'],
+    ['us_bank_account', 'ACH Debit'],
     ['bacs_debit', 'Bacs Debit'],
     ['other', 'Other method'],
   ] as const)('flags %s as moving without a card', (type, label) => {
@@ -39,12 +36,6 @@ describe('rowPaymentMethod', () => {
     const method = rowPaymentMethod(row({ payment_method_type: null }))
     expect(method).toMatchObject({ label: 'No method', kind: 'no_card' })
     expect(method?.note?.body).toContain('no saved payment method')
-  })
-
-  it('follows the ACH switch for us_bank_account', () => {
-    expect(
-      rowPaymentMethod(row({ payment_method_type: 'us_bank_account' }))?.kind,
-    ).toBe(ACH_STAYS_BEHIND ? 'no_card' : 'bank_debit')
   })
 
   it('says nothing when the API omits the field', () => {

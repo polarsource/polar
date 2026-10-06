@@ -1484,19 +1484,19 @@
     },
     {
       "source": "/api-reference/current",
-      "destination": "/api-reference/2026-04/introduction"
-    },
-    {
-      "source": "/api-reference/next",
       "destination": "/api-reference/2026-10/introduction"
     },
     {
+      "source": "/api-reference/next",
+      "destination": "/api-reference/2027-01/introduction"
+    },
+    {
       "source": "/api-reference/current/:path*",
-      "destination": "/api-reference/2026-04/:path*"
+      "destination": "/api-reference/2026-10/:path*"
     },
     {
       "source": "/api-reference/next/:path*",
-      "destination": "/api-reference/2026-10/:path*"
+      "destination": "/api-reference/2027-01/:path*"
     },
     {
       "source": "/api-reference/benefits/create",

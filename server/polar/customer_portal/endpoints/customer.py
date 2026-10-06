@@ -87,9 +87,7 @@ async def get_embed_policy(
 ) -> CustomerPortalEmbedPolicy:
     organization = get_customer(auth_subject).organization
     return CustomerPortalEmbedPolicy(
-        frame_ancestors=csp_frame_ancestors(organization.embed_hosts)
-        if organization.is_frame_ancestors_enforced
-        else ["*"],
+        frame_ancestors=csp_frame_ancestors(organization.embed_hosts),
         embed_origin=match_origin(embed_origin, organization.embed_hosts)
         if embed_origin is not None
         else None,

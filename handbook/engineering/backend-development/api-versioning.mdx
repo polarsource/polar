@@ -323,6 +323,24 @@ rules:
 After resolving those references, delete the identity constant. Any missed
 imports will fail immediately during type checking or test collection.
 
+### Updating the documentation
+
+The docs reference the lifecycle stages through stable aliases, so they must be
+updated as part of every rotation. In `docs/docs.json`:
+
+1. Update the version tags: the old Current version gets `"tag": "Deprecated"`,
+   the old Next version gets `"tag": "Current"` and `"default": true`, and the new
+   Next version gets `"tag": "Next"`. Remove the entry of the removed version.
+2. Repoint the `/api-reference/current` and `/api-reference/current/:path*`
+   redirects to the new Current version.
+3. Repoint the `/api-reference/next` and `/api-reference/next/:path*` redirects to
+   the new Next version.
+
+Link to API reference pages with `/api-reference/current/...` rather than a
+concrete version such as `/api-reference/2026-04/...`, so links keep working
+after a rotation. Only link to a concrete version when documenting that specific
+version.
+
 ## How it works under the hood
 
 The versioning middleware reads `Polar-Version`, defaults it to

@@ -12,19 +12,20 @@ export type MeterBalance = {
   isPristine: boolean
 }
 
+type MeterConfigs<Config extends RuntimeSDKConfig> = NonNullable<
+  Config['meters']
+>
+
 type Meters<Config extends RuntimeSDKConfig> = {
-  [Meter in Extract<
-    NonNullable<Config['meters']>[number],
-    { external_id: string }
-  > as Meter['external_id']]: Meter & { balance: () => Promise<MeterBalance> }
+  [ExternalId in keyof MeterConfigs<Config> &
+    string]: MeterConfigs<Config>[ExternalId] & {
+    balance: () => Promise<MeterBalance>
+  }
 }
 
 type Events<Config extends RuntimeSDKConfig> = {
   ingest: (
-    name: Extract<
-      NonNullable<Config['events']>[number],
-      { name: string }
-    >['name'],
+    name: keyof NonNullable<Config['events']> & string,
   ) => Promise<number>
 }
 
@@ -91,9 +92,9 @@ export const createActor = <Config extends RuntimeSDKConfig>(
   // Or do we `upsert` the actor if it needs to be persisted
   // Also, for events, we allow external_customer_id
   return (identifier) => {
-    const meters = config.meters?.reduce(
-      (acc, meter) => {
-        acc[meter.external_id] = {
+    const meters = Object.entries(config.meters ?? {}).reduce(
+      (acc, [externalId, meter]) => {
+        acc[externalId] = {
           ...meter,
           async balance() {
             // To investigate: a customer meter only gets created in 2 cases:
@@ -106,7 +107,7 @@ export const createActor = <Config extends RuntimeSDKConfig>(
               meter.id,
             )
 
-            const key = cacheKey(identifier, meter.external_id)
+            const key = cacheKey(identifier, externalId)
             const ingestedAt = latestIngestedAt.get(key)
 
             const updatedAt = customerMeter
@@ -147,9 +148,11 @@ export const createActor = <Config extends RuntimeSDKConfig>(
         )
 
         if (inserted > 0) {
-          for (const meter of config.meters ?? []) {
+          for (const [externalId, meter] of Object.entries(
+            config.meters ?? {},
+          )) {
             if (matchesFilter(meter.filter, { name })) {
-              const key = cacheKey(identifier, meter.external_id)
+              const key = cacheKey(identifier, externalId)
               const current = latestIngestedAt.get(key)
 
               if (current === undefined || timestamp > current) {
@@ -164,7 +167,7 @@ export const createActor = <Config extends RuntimeSDKConfig>(
     }
 
     return {
-      meters: (meters ?? {}) as Meters<Config>,
+      meters: meters as Meters<Config>,
       events,
     }
   }

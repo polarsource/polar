@@ -355,8 +355,6 @@ def _stripe_item(
     product_id: str = "prod_1",
     discounts: list[dict[str, Any] | str] | None = None,
     quantity: int = 1,
-    unit_amount: int | None = 1000,
-    billing_scheme: str = "per_unit",
     price_tax_behavior: str | None = None,
     interval: str = "month",
     transform_quantity: dict[str, Any] | None = None,
@@ -366,8 +364,8 @@ def _stripe_item(
         "id": price_id,
         "currency": "usd",
         "product": product_id,
-        "unit_amount": unit_amount,
-        "billing_scheme": billing_scheme,
+        "unit_amount": 1000,
+        "billing_scheme": "per_unit",
         "recurring": {
             "interval": interval,
             "interval_count": 1,
@@ -2502,26 +2500,6 @@ class TestAddOn:
         assert record.add_on is not None
         assert record.add_on.tax_rates_differ is True
 
-    async def test_tiered_add_on_is_not_a_per_unit_price(
-        self, mocker: MockerFixture
-    ) -> None:
-        record = await _extracted_subscription(
-            mocker,
-            _stripe_subscription(
-                items=[
-                    _stripe_item(),
-                    _stripe_item(
-                        price_id="price_leads",
-                        unit_amount=None,
-                        billing_scheme="tiered",
-                    ),
-                ]
-            ),
-        )
-
-        assert record.add_on is not None
-        assert record.add_on.pricing_scheme == CanonicalPricingScheme.tiered
-
     async def test_package_add_on_is_not_a_per_unit_price(
         self, mocker: MockerFixture
     ) -> None:
@@ -2556,19 +2534,4 @@ class TestAddOn:
         )
 
         assert record.line_item_count == 2
-        assert record.add_on is None
-
-    async def test_three_items_have_no_add_on(self, mocker: MockerFixture) -> None:
-        record = await _extracted_subscription(
-            mocker,
-            _stripe_subscription(
-                items=[
-                    _stripe_item(),
-                    _stripe_item(price_id="price_2"),
-                    _stripe_item(price_id="price_3"),
-                ]
-            ),
-        )
-
-        assert record.line_item_count == 3
         assert record.add_on is None

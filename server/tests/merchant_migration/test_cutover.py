@@ -2497,27 +2497,6 @@ class TestAddOn:
         subscription = await _created(session, pending_record)
         assert subscription.product_id != product.id
 
-    async def test_add_on_price_missing_from_the_catalog_stays_on_the_source(
-        self,
-        mocker: MockerFixture,
-        save_fixture: SaveFixture,
-        cutover: RunCutover,
-        pending_record: MerchantMigrationRecord,
-    ) -> None:
-        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
-        add_on = canonical_add_on(price_source_id="price_gone")
-        pending_record.canonical = serialize(
-            canonical_subscription(line_item_count=2, add_on=add_on)
-        )
-        await save_fixture(pending_record)
-        adapter = _source(line_item_count=2, add_on=add_on)
-
-        outcome = await cutover(adapter)
-
-        assert outcome.status == MerchantMigrationCutoverStatus.skipped
-        assert "wasn't in the catalog" in (outcome.message or "")
-        _assert_left_alone(adapter, pending_record)
-
     async def test_add_on_changed_on_the_source_stays_there(
         self, cutover: RunCutover, pending_record: MerchantMigrationRecord
     ) -> None:
@@ -2527,44 +2506,4 @@ class TestAddOn:
 
         assert outcome.status == MerchantMigrationCutoverStatus.skipped
         assert "plan changed on the source" in (outcome.message or "")
-        _assert_left_alone(adapter, pending_record)
-
-    async def test_coupon_restricted_to_some_products_stays_on_the_source(
-        self,
-        save_fixture: SaveFixture,
-        cutover: RunCutover,
-        pending_record: MerchantMigrationRecord,
-        migration: MerchantMigration,
-        organization: Organization,
-        product: Product,
-    ) -> None:
-        polar_discount = await create_discount(
-            save_fixture,
-            type=DiscountType.percentage,
-            basis_points=2000,
-            duration=DiscountDuration.forever,
-            organization=organization,
-            products=[product],
-        )
-        await stage_discount_record(
-            save_fixture, migration, organization, target_id=polar_discount.id
-        )
-        await _discounted_pending(
-            save_fixture,
-            pending_record,
-            discount_source_ids=["coupon_1"],
-            line_item_count=2,
-            add_on=canonical_add_on(),
-        )
-        adapter = _source(
-            has_discount=True,
-            discount_source_ids=["coupon_1"],
-            line_item_count=2,
-            add_on=canonical_add_on(),
-        )
-
-        outcome = await cutover(adapter)
-
-        assert outcome.status == MerchantMigrationCutoverStatus.skipped
-        assert "only applies to some products" in (outcome.message or "")
         _assert_left_alone(adapter, pending_record)

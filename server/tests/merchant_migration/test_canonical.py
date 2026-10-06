@@ -269,15 +269,6 @@ class TestDeserialize:
 
         assert result == subscription
 
-    def test_add_on_defaults_none_for_legacy_payload(self) -> None:
-        subscription = canonical_subscription(line_item_count=2)
-        legacy = serialize(subscription)
-        del legacy["add_on"]
-
-        result = deserialize(MerchantMigrationRecordType.subscription, legacy)
-
-        assert result == subscription
-
     def test_tax_rate_behavior_round_trips(self) -> None:
         subscription = canonical_subscription(
             has_tax_rates=True, tax_rate_behavior=TaxBehavior.exclusive

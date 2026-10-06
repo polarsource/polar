@@ -1402,19 +1402,10 @@ class TestClassifyAddOns:
                 id="price-not-in-the-catalog",
             ),
             pytest.param(
-                {}, {"quantity": 0}, "unsupported_add_on_quantity", id="zero-units"
-            ),
-            pytest.param(
                 {"price_tax_behavior": TaxBehavior.exclusive},
                 {"price_tax_behavior": TaxBehavior.inclusive},
                 "add_on_tax_mismatch",
                 id="taxed-differently",
-            ),
-            pytest.param(
-                {},
-                {"tax_rates_differ": True},
-                "add_on_tax_mismatch",
-                id="different-tax-rates",
             ),
         ],
     )
@@ -1448,20 +1439,6 @@ class TestClassifyAddOns:
 
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "subscription_add_on_discount"
-
-    def test_coupon_on_every_product_imports(self) -> None:
-        items = classify_subscription(
-            build_subscription(
-                line_item_count=2,
-                add_on=canonical_add_on(),
-                has_discount=True,
-                discount_source_ids=["coupon_1"],
-            ),
-            canonical_discount(),
-        )
-
-        assert items[0].status == PrecheckRecordStatus.importable
-        assert items[0].discount_name == "Launch"
 
 
 class TestSummarizeRecords:

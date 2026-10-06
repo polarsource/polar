@@ -311,7 +311,7 @@ class TestAssignSeat:
             },
         )
 
-        assert response.status_code == 404
+        assert response.status_code == 400
 
     async def test_assign_seat_subscription_unauthorized(
         self,
@@ -477,6 +477,7 @@ class TestClaimSeat:
             save_fixture,
             subscription=subscription_with_seats,
             customer=customer,
+            email="seat-holder@example.com",
         )
         await session.refresh(seat, ["subscription", "customer"])
         assert seat.subscription is not None
@@ -733,6 +734,7 @@ class TestOrderBasedSeats:
             save_fixture,
             order=order_with_seats,
             customer=customer,
+            email="seat-holder@example.com",
         )
         await session.refresh(seat, ["order", "customer"])
         assert seat.order is not None

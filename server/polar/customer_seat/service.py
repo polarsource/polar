@@ -7,15 +7,11 @@ from typing import Any
 
 import structlog
 from sqlalchemy import inspect as sa_inspect
-from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject
 from polar.authz.service import get_accessible_org_ids
 from polar.customer.repository import CustomerRepository
 from polar.customer_seat.sender import send_seat_invitation_email
-from polar.customer_session.service import (
-    customer_session as customer_session_service,
-)
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
 from polar.kit.db.postgres import AsyncSession
@@ -112,26 +108,16 @@ SeatContainer = Subscription | Order
 
 @dataclass
 class SeatAssignmentTarget:
-    """Resolved target for a seat assignment.
-
-    This dataclass unifies the result of resolving who a seat is being assigned to,
-    regardless of whether member_model_enabled is True or False.
-    """
+    """Resolved target for a seat assignment."""
 
     customer: Customer | None
-    """The customer to store on the seat.
-    - member_model_enabled=True: billing customer (purchaser)
-    - member_model_enabled=False: seat member's customer
-    """
+    """The billing customer (purchaser) to store on the seat."""
 
     member: Member | None
     """The member to store on the seat (if member was created)."""
 
     email: str | None
-    """The email to store on the seat.
-    - member_model_enabled=True: seat member's email
-    - member_model_enabled=False: None (email comes from customer)
-    """
+    """The seat member's email, to store on the seat."""
 
     seat_member_email: str | None
     """The email of the person getting the seat (for invitation emails).
@@ -292,35 +278,18 @@ class SeatService:
         organization_repository = OrganizationRepository.from_session(session)
         organization = await organization_repository.get_by_id(organization_id)
 
-        member_model_enabled = (
-            organization is not None and organization.is_member_model_enabled
+        target = await self._resolve_member_model_target(
+            session,
+            repository,
+            container,
+            billing_customer_id,
+            organization_id,
+            email,
+            customer_id,
+            external_customer_id,
+            external_member_id,
+            member_id,
         )
-
-        if member_model_enabled or external_member_id or member_id:
-            target = await self._resolve_member_model_target(
-                session,
-                repository,
-                container,
-                billing_customer_id,
-                organization_id,
-                email,
-                customer_id,
-                external_customer_id,
-                external_member_id,
-                member_id,
-            )
-        else:
-            target = await self._resolve_legacy_target(
-                session,
-                repository,
-                container,
-                organization,
-                organization_id,
-                billing_customer_id,
-                email,
-                customer_id,
-                external_customer_id,
-            )
 
         if immediate_claim:
             invitation_token = None
@@ -336,7 +305,7 @@ class SeatService:
             seat.status = SeatStatus.claimed if immediate_claim else SeatStatus.pending
             seat.invitation_token = invitation_token
             seat.invitation_token_expires_at = token_expires_at
-            seat.customer = target.customer
+            seat.customer_id = target.customer.id if target.customer else None
             seat.member = target.member
             seat.email = target.email
             seat.seat_metadata = metadata or {}
@@ -472,52 +441,25 @@ class SeatService:
         if not seat.customer_id:
             raise InvalidInvitationToken(invitation_token)
 
-        # Get customer for session creation
-        # Both paths use seat.customer_id, but it points to different customers:
-        # - member_model: billing customer (purchaser)
-        # - legacy: seat member's customer
-        member_model_enabled = organization.is_member_model_enabled
+        # seat.customer_id is the billing customer (purchaser).
+        customer_repository = CustomerRepository.from_session(session)
+        session_customer = await customer_repository.get_by_id(seat.customer_id)
+        if not session_customer:
+            raise InvalidInvitationToken(invitation_token)
 
-        if member_model_enabled:
-            # Load billing customer for session
-            customer_repository = CustomerRepository.from_session(session)
-            session_customer = await customer_repository.get_by_id(seat.customer_id)
-            if not session_customer:
+        if not seat.member_id:
+            # Pending seat being claimed: create a member under billing customer
+            if not seat.email:
                 raise InvalidInvitationToken(invitation_token)
-
-            if not seat.member_id:
-                # Pending seat being claimed: create a member under billing customer
-                if not seat.email:
-                    raise InvalidInvitationToken(invitation_token)
-                member = await member_service.get_or_create_by_email(
-                    session,
-                    customer_id=session_customer.id,
-                    organization_id=organization_id,
-                    email=seat.email,
-                )
-                seat.member_id = member.id
-        else:
-            # Use seat's customer relationship for legacy model
-            if not seat.customer:
-                raise InvalidInvitationToken(invitation_token)
-            session_customer = seat.customer
-
-            # Create member under billing customer if not already set
-            billing_cid = (
-                seat.subscription.customer_id
-                if seat.subscription_id and seat.subscription
-                else seat.order.customer_id
-                if seat.order_id and seat.order
-                else None
+            member = await member_service.get_or_create_by_email(
+                session,
+                customer_id=session_customer.id,
+                organization_id=organization_id,
+                email=seat.email,
             )
-            if billing_cid and not seat.member_id and session_customer.email:
-                member = await self._get_or_create_member_for_seat(
-                    session, billing_cid, organization_id, session_customer.email
-                )
-                seat.member_id = member.id
-                seat.email = session_customer.email
+            seat.member_id = member.id
 
-        # Claim the seat (unified)
+        # Claim the seat
         seat.status = SeatStatus.claimed
         seat.claimed_at = datetime.now(UTC)
         seat.invitation_token = None  # Single-use token
@@ -527,24 +469,18 @@ class SeatService:
         await self._publish_seat_claimed_event(seat, product_id)
         await self._enqueue_benefit_grant(seat, product_id)
 
-        if member_model_enabled and seat.member_id is not None:
-            member_repository = MemberRepository.from_session(session)
-            claim_member = await member_repository.get_by_id(seat.member_id)
-            if claim_member:
-                session_token, _ = await member_session_service.create_member_session(
-                    session, claim_member
-                )
-            else:
-                # The seat's member was deleted between assignment and claim.
-                # In member-model mode, `session_customer` is the billing
-                # (purchaser) customer, so issuing a customer session here
-                # would hand the seat-claimer purchaser-scope access. Reject
-                # the claim instead — the member must be re-created to claim.
-                raise InvalidInvitationToken(invitation_token)
-        else:
-            session_token, _ = await customer_session_service.create_customer_session(
-                session, session_customer
-            )
+        assert seat.member_id is not None
+        member_repository = MemberRepository.from_session(session)
+        claim_member = await member_repository.get_by_id(seat.member_id)
+        if claim_member is None:
+            # The seat's member was deleted between assignment and claim.
+            # `session_customer` is the billing (purchaser) customer, so issuing a
+            # customer session here would hand the seat-claimer purchaser-scope
+            # access. Reject the claim instead — the member must be re-created.
+            raise InvalidInvitationToken(invitation_token)
+        session_token, _ = await member_session_service.create_member_session(
+            session, claim_member
+        )
 
         log.info(
             "Seat claimed",
@@ -554,7 +490,6 @@ class SeatService:
             subscription_id=seat.subscription_id,
             order_id=seat.order_id,
             organization_id=organization_id,
-            member_model_enabled=member_model_enabled,
         )
 
         await self._send_seat_claimed_webhook(session, organization_id, seat)
@@ -578,9 +513,6 @@ class SeatService:
             organization = seat.order.organization
         else:
             raise ValueError("Seat must have either subscription or order")
-
-        # Check feature flag
-        member_model_enabled = organization.is_member_model_enabled
 
         # Capture customer_id and member_id before clearing to avoid race condition
         original_customer_id = seat.customer_id
@@ -621,7 +553,6 @@ class SeatService:
             seat_id=seat.id,
             subscription_id=seat.subscription_id,
             order_id=seat.order_id,
-            member_model_enabled=member_model_enabled,
         )
 
         await webhook_service.send(
@@ -764,58 +695,6 @@ class SeatService:
 
         return revoked_count
 
-    async def _find_or_create_customer(
-        self,
-        session: AsyncSession,
-        organization_id: uuid.UUID,
-        email: str | None,
-        external_customer_id: str | None,
-        customer_id: uuid.UUID | None,
-    ) -> Customer:
-        # Validate that exactly one identifier is provided
-        provided_identifiers = [email, external_customer_id, customer_id]
-        non_null_count = sum(
-            1 for identifier in provided_identifiers if identifier is not None
-        )
-
-        if non_null_count != 1:
-            raise InvalidSeatAssignmentRequest()
-
-        customer_repository = CustomerRepository.from_session(session)
-        customer = None
-
-        # Find customer based on provided identifier
-        if email:
-            customer = await customer_repository.get_by_email_and_organization(
-                email, organization_id
-            )
-        elif external_customer_id:
-            customer = await customer_repository.get_by_external_id_and_organization(
-                external_customer_id, organization_id
-            )
-        elif customer_id:
-            customer = await customer_repository.get_by_id_and_organization(
-                customer_id, organization_id
-            )
-
-        if not customer:
-            if not email:
-                raise CustomerNotFound(external_customer_id or str(customer_id))
-            customer = Customer(
-                organization_id=organization_id,
-                email=email,
-            )
-            try:
-                async with session.begin_nested():
-                    customer = await customer_repository.create(customer, flush=True)
-            except IntegrityError:
-                customer = await customer_repository.get_by_email_and_organization(
-                    email, organization_id
-                )
-                if customer is None:
-                    raise
-        return customer
-
     async def _get_or_create_member_for_seat(
         self,
         session: AsyncSession,
@@ -826,9 +705,8 @@ class SeatService:
         """
         Get or create a Member for a seat assignment under the billing customer.
 
-        This is used when member_model_enabled = True. Instead of creating a
-        separate Customer for each seat member, we create Members under the
-        billing customer (the purchaser).
+        Instead of creating a separate Customer for each seat member, we create
+        Members under the billing customer (the purchaser).
 
         Args:
             session: Database session
@@ -942,8 +820,7 @@ class SeatService:
             )
 
         raise InvalidSeatAssignmentRequest(
-            "At least one of email, external_member_id, or member_id must be "
-            "provided when member_model_enabled is true."
+            "At least one of email, external_member_id, or member_id must be provided."
         )
 
     async def _resolve_member_by_external_id(
@@ -991,53 +868,6 @@ class SeatService:
             raise MemberEmailMismatch(external_member_id, email)
 
         return member
-
-    async def _resolve_legacy_target(
-        self,
-        session: AsyncSession,
-        repository: CustomerSeatRepository,
-        container: SeatContainer,
-        organization: Organization | None,
-        organization_id: uuid.UUID,
-        billing_customer_id: uuid.UUID,
-        email: str | None,
-        customer_id: uuid.UUID | None,
-        external_customer_id: str | None,
-    ) -> SeatAssignmentTarget:
-        """Resolve seat assignment target when member_model_enabled=False.
-
-        In the legacy model:
-        - email, customer_id, or external_customer_id accepted (exactly one)
-        - A Customer is created/found for the seat member
-        - A Member is created under the billing customer
-        - seat.customer_id = seat member's customer
-        - seat.email = seat member's email
-        """
-        customer = await self._find_or_create_customer(
-            session, organization_id, email, external_customer_id, customer_id
-        )
-
-        # Check if seat already assigned to this customer
-        existing_seat = await repository.get_by_container_and_customer(
-            container, customer.id
-        )
-        if existing_seat and not existing_seat.is_revoked():
-            identifier = email or external_customer_id or str(customer_id)
-            raise SeatAlreadyAssigned(identifier)
-
-        # Create member under the billing customer (not the seat-holder customer)
-        member: Member | None = None
-        if customer.email is not None:
-            member = await self._get_or_create_member_for_seat(
-                session, billing_customer_id, organization_id, customer.email
-            )
-
-        return SeatAssignmentTarget(
-            customer=customer,
-            member=member,
-            email=customer.email,
-            seat_member_email=customer.email,
-        )
 
     async def update_product_benefits_grants(
         self, session: AsyncReadSession, product: Product

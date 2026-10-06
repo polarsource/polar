@@ -493,7 +493,7 @@ class TestPrecheckEngine:
                     source_id="sub_bank",
                     payment_method=CanonicalPaymentMethod(
                         source_id="pm_bank",
-                        type=CanonicalPaymentMethodType.sepa_debit,
+                        type=CanonicalPaymentMethodType.us_bank_account,
                     ),
                 ),
                 build_subscription(
@@ -983,7 +983,13 @@ class TestClassifyRecords:
             payment_method.type if payment_method is not None else None
         )
 
-    def test_payment_method_reentry_is_importable_with_info(self) -> None:
+    @pytest.mark.parametrize(
+        "payment_method_type",
+        [CanonicalPaymentMethodType.link, CanonicalPaymentMethodType.sepa_debit],
+    )
+    def test_payment_method_reentry_is_importable_with_info(
+        self, payment_method_type: CanonicalPaymentMethodType
+    ) -> None:
         records: list[CanonicalRecord] = [
             build_product(
                 product_source_id="prod_1", prices=[build_price(source_id="price_1")]
@@ -992,7 +998,7 @@ class TestClassifyRecords:
             build_subscription(
                 source_id="sub_1",
                 payment_method=CanonicalPaymentMethod(
-                    source_id="pm_1", type=CanonicalPaymentMethodType.link
+                    source_id="pm_1", type=payment_method_type
                 ),
             ),
         ]
@@ -1002,7 +1008,7 @@ class TestClassifyRecords:
         assert items[0].status == PrecheckRecordStatus.importable
         assert items[0].reason_code == "payment_method_requires_reentry"
         assert items[0].reason_level == PrecheckReasonLevel.info
-        assert items[0].payment_method_type == CanonicalPaymentMethodType.link
+        assert items[0].payment_method_type == payment_method_type
 
     def test_skipped_record_carries_its_level(self) -> None:
         records: list[CanonicalRecord] = [

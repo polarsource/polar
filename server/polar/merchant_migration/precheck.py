@@ -206,7 +206,7 @@ _PAYMENT_METHOD_MISSING_REASON = (
     "customer adds one first."
 )
 _PAYMENT_METHOD_NOT_CARD_REASON = (
-    "Bank debits are copied without a card check, so the first Polar renewal is "
+    "ACH debits are copied without a card check, so the first Polar renewal is "
     "their first real charge. If it fails, the subscription goes to dunning."
 )
 _SUBSCRIPTION_DISCOUNT_REASON = (

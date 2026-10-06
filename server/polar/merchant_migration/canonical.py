@@ -53,6 +53,7 @@ class CanonicalPaymentMethodType(StrEnum):
     def requires_reentry(self) -> bool:
         return self in {
             CanonicalPaymentMethodType.kr_card,
+            CanonicalPaymentMethodType.sepa_debit,
             CanonicalPaymentMethodType.bacs_debit,
             CanonicalPaymentMethodType.link,
             CanonicalPaymentMethodType.other,

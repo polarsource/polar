@@ -29,7 +29,10 @@ class Config(Schema):
         max_length=MAXIMUM_METERS,
         description=(
             "Meters to create or update, matched by `external_id`. "
-            "Existing meters that aren't listed are left untouched."
+            "Omitted fields are set to their default, except `metadata`, "
+            "which is left untouched when omitted. "
+            "Existing meters that aren't listed are left untouched, "
+            "and archived meters stay archived."
         ),
     )
     organization_id: OrganizationID | None = Field(
@@ -56,6 +59,13 @@ class Config(Schema):
                 f"Duplicate external_id values: {', '.join(sorted(duplicates))}."
             )
         return value
+
+
+class ConfigEntryError(Schema):
+    loc: list[str | int] = Field(
+        description="Location of the blocked value in the request body."
+    )
+    msg: str = Field(description="Why the value can't be applied.")
 
 
 class ConfigAction(StrEnum):

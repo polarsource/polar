@@ -301,6 +301,8 @@ const auth = betterAuth({
 });
 ```
 
+The checkout endpoint sends the customer's IP address, resolved with Better Auth's `getIP` (see `advanced.ipAddress`), to Polar to show local currency. Set `customerIpAddress` to a function `(headers) => ip` to resolve it yourself, or to `false` to not send it.
+
 When checkouts are enabled, you're able to initialize Checkout Sessions using the checkout-method on the BetterAuth Client. This will redirect the user to the Product Checkout.
 
 ```typescript

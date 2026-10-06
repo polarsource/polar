@@ -3,6 +3,11 @@ import {
   createCheckouts,
 } from '@polar-sh/sdk/2026-10/services/checkouts'
 import { createPolarCore, type Environment } from '@polar-sh/sdk/2026-10'
+import {
+  type CustomerIpAddressOption,
+  getCustomerIpAddress,
+  resolveCustomerIpAddress,
+} from '@polar-sh/adapter-utils'
 import { createError, getValidatedQuery, sendRedirect } from 'h3'
 import type { H3Event } from 'h3'
 import { z } from 'zod'
@@ -14,6 +19,11 @@ export interface CheckoutConfig {
   includeCheckoutId?: boolean
   environment?: Environment
   theme?: 'light' | 'dark'
+  /**
+   * Customer IP address sent to Polar to pick the presentment currency.
+   * Pass a function to resolve it yourself, or `false` to not send it.
+   */
+  customerIpAddress?: CustomerIpAddressOption<H3Event>
 }
 
 const checkoutQuerySchema = z.object({
@@ -51,6 +61,7 @@ export const Checkout = ({
   environment,
   theme,
   includeCheckoutId = true,
+  customerIpAddress: customerIpAddressOption,
 }: CheckoutConfig) => {
   const polar = createPolarCore({ accessToken, environment })
 
@@ -94,7 +105,11 @@ export const Checkout = ({
           ? JSON.parse(customerBillingAddress)
           : undefined,
         customer_tax_id: customerTaxId,
-        customer_ip_address: customerIpAddress,
+        customer_ip_address:
+          customerIpAddress ??
+          (await resolveCustomerIpAddress(event, customerIpAddressOption, () =>
+            getCustomerIpAddress(event.headers),
+          )),
         customer_metadata: customerMetadata
           ? JSON.parse(customerMetadata)
           : undefined,

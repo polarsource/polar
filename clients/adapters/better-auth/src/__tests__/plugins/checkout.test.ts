@@ -22,6 +22,7 @@ vi.mock('better-auth/api', () => ({
       super(data.message)
     }
   },
+  getIP: vi.fn(),
   getSessionFromCtx: vi.fn(),
   createAuthEndpoint: vi.fn((path, config, handler) => ({
     path,
@@ -30,8 +31,10 @@ vi.mock('better-auth/api', () => ({
   })),
 }))
 
-const { APIError, getSessionFromCtx, createAuthEndpoint } =
+const { APIError, getSessionFromCtx, createAuthEndpoint, getIP } =
   (await vi.importMock('better-auth/api')) as any
+const { getIP: actualGetIP } =
+  await vi.importActual<typeof import('better-auth/api')>('better-auth/api')
 
 describe('checkout plugin', () => {
   let mockClient: ReturnType<typeof createMockPolarClient>
@@ -690,4 +693,42 @@ describe('checkout plugin', () => {
       )
     })
   })
+
+  it.each([
+    [{}, {}, '203.0.113.7'],
+    [
+      { advanced: { ipAddress: { ipAddressHeaders: ['cf-connecting-ip'] } } },
+      {},
+      '198.51.100.1',
+    ],
+    [{}, { customerIpAddress: () => '192.0.2.10' }, '192.0.2.10'],
+    [{}, { customerIpAddress: false as const }, undefined],
+  ])(
+    'sends customer IP address for %j %j',
+    async (options, checkoutOptions, expected) => {
+      vi.mocked(getIP).mockImplementation(actualGetIP)
+      vi.mocked(getSessionFromCtx).mockResolvedValue(null)
+      vi.mocked(mockClient.checkouts.create).mockResolvedValue(
+        createMockCheckout(),
+      )
+      const endpoints = checkout(checkoutOptions)(mockClient) as any
+      await endpoints.checkout.handler({
+        ...mockContext,
+        request: new Request('https://example.com/api/auth/checkout', {
+          headers: {
+            'x-forwarded-for': '203.0.113.7',
+            'cf-connecting-ip': '198.51.100.1',
+          },
+        }),
+        context: { options },
+        body: CheckoutParams.parse({ products: ['prod-123'] }),
+        json: vi.fn(),
+      })
+
+      expect(
+        vi.mocked(mockClient.checkouts.create).mock.calls[0]?.[0]
+          .customer_ip_address,
+      ).toBe(expected)
+    },
+  )
 })

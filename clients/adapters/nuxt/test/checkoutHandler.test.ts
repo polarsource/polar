@@ -36,8 +36,8 @@ import { createEvent } from 'h3'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { Checkout } from '../src/runtime/server/checkoutHandler'
 
-function makeEvent(url: string) {
-  const req = { method: 'GET', url, headers: {} } as unknown as IncomingMessage
+function makeEvent(url: string, headers: Record<string, string> = {}) {
+  const req = { method: 'GET', url, headers } as unknown as IncomingMessage
   const res = {} as unknown as ServerResponse
   return createEvent(req, res)
 }
@@ -288,5 +288,25 @@ describe('Checkout', () => {
       expect(consoleSpy).toHaveBeenCalled()
       consoleSpy.mockRestore()
     })
+  })
+
+  it.each([
+    ['', {}, '203.0.113.7'],
+    ['&customer_ip_address=198.51.100.1', {}, '198.51.100.1'],
+    ['', { customerIpAddress: () => '192.0.2.10' }, '192.0.2.10'],
+    ['', { customerIpAddress: false as const }, undefined],
+  ])('sends customer IP address for %j %j', async (query, config, expected) => {
+    mockCheckoutCreate.mockResolvedValue({
+      url: 'https://polar.sh/checkout/123',
+      client_secret: 'checkout_secret',
+    })
+    const headers = { 'x-forwarded-for': '203.0.113.7' }
+    await Checkout({ accessToken: 'test-token', ...config })(
+      makeEvent(`/api/checkout?products=prod_123${query}`, headers),
+    )
+
+    expect(mockCheckoutCreate.mock.calls[0]![0].customer_ip_address).toBe(
+      expected,
+    )
   })
 })

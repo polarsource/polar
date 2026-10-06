@@ -76,6 +76,8 @@ async def validate(
     """
     Check a declarative config document against the organization without applying it.
 
-    Returns every issue `apply` would block on, plus warnings that don't block it.
+    A document that doesn't match the schema is rejected with a 422, like on apply.
+    Otherwise, returns every issue `apply` would block on, plus warnings that
+    don't block it.
     """
     return await declarative_config_service.validate(session, auth_subject, config)

@@ -6026,12 +6026,9 @@ export interface paths {
      * Apply Config
      * @description Apply a declarative config document to the organization.
      *
-     *     Each section requires its own scope, only when present:
-     *     `organization` requires `organizations:write`, `meters` requires `meters:write`.
-     *
      *     **Preview:** the config is validated, but changes aren't persisted yet.
      *
-     *     **Scopes**: `meters:write` `organizations:write`
+     *     **Scopes**: `meters:write`
      */
     post: operations['config:apply']
     delete?: never
@@ -15770,13 +15767,11 @@ export interface components {
        * @constant
        */
       version: 1
-      /** @description Organization settings to update. Each setting present replaces its current value; settings not present are left unchanged. */
-      organization?: components['schemas']['ConfigOrganization'] | null
       /**
        * Meters
        * @description Meters to create or update, matched by `external_id`. Existing meters that aren't listed are left untouched.
        */
-      meters?: components['schemas']['ConfigMeter'][] | null
+      meters: components['schemas']['ConfigMeter'][]
       /**
        * Organization Id
        * @description The ID of the organization to apply the config to. **Required unless you use an organization token.**
@@ -15794,9 +15789,9 @@ export interface components {
       section: components['schemas']['ConfigSection']
       /**
        * Key
-       * @description The resource's `external_id`, or `None` for singleton sections.
+       * @description The resource's `external_id`.
        */
-      key: string | null
+      key: string
       /** @description What applying the config did. */
       action: components['schemas']['ConfigAction']
     }
@@ -15877,40 +15872,11 @@ export interface components {
        */
       external_id: string
     }
-    /** ConfigOrganization */
-    ConfigOrganization: {
-      /** @description Default presentment currency for the organization */
-      default_presentment_currency?:
-        | components['schemas']['PresentmentCurrency']
-        | null
-      /** @description Default tax behavior applied on products. */
-      default_tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
-      subscription_settings?:
-        | components['schemas']['OrganizationSubscriptionSettings']
-        | null
-      customer_email_settings?:
-        | components['schemas']['OrganizationCustomerEmailSettings']
-        | null
-      customer_portal_settings?:
-        | components['schemas']['OrganizationCustomerPortalSettings']
-        | null
-    }
     /**
      * ConfigSection
      * @enum {string}
      */
-    ConfigSection: 'organization' | 'meters'
-    /** ConfigSectionScopeMissing */
-    ConfigSectionScopeMissing: {
-      /**
-       * Error
-       * @example ConfigSectionScopeMissing
-       * @constant
-       */
-      error: 'ConfigSectionScopeMissing'
-      /** Detail */
-      detail: string
-    }
+    ConfigSection: 'meters'
     /** CostMetadata */
     'CostMetadata-Input': {
       /**
@@ -61682,7 +61648,7 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
-      /** @description Not allowed to manage this organization, missing the scope for a submitted section, or config as code isn't enabled for it. */
+      /** @description Not allowed to manage this organization, or config as code isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown
@@ -61690,7 +61656,6 @@ export interface operations {
         content: {
           'application/json':
             | components['schemas']['NotPermitted']
-            | components['schemas']['ConfigSectionScopeMissing']
             | components['schemas']['ConfigAsCodeNotEnabled']
         }
       }
@@ -70341,7 +70306,7 @@ export const configActionValues: ReadonlyArray<
 > = ['created', 'updated', 'unchanged']
 export const configSectionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigSection']
-> = ['organization', 'meters']
+> = ['meters']
 export const countAggregationFuncValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CountAggregation']['func']
 > = ['count']

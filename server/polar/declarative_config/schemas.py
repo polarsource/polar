@@ -1,40 +1,15 @@
 from enum import StrEnum
-from typing import Literal, Self
+from typing import Literal
 
-from pydantic import ConfigDict, Field, field_validator, model_validator
+from pydantic import ConfigDict, Field, field_validator
 
-from polar.enums import TaxBehaviorOption
-from polar.kit.currency import PresentmentCurrency
 from polar.kit.schemas import Schema
 from polar.meter.schemas import MeterCreateBase
-from polar.models.organization import (
-    OrganizationCustomerEmailSettings,
-    OrganizationCustomerPortalSettings,
-    OrganizationSubscriptionSettings,
-)
-from polar.organization.schemas import (
-    DEFAULT_PRESENTMENT_CURRENCY_DESCRIPTION,
-    DEFAULT_TAX_BEHAVIOR_DESCRIPTION,
-    OrganizationID,
-)
+from polar.organization.schemas import OrganizationID
 
 MAXIMUM_METERS = 100
 
 ConfigVersion = Literal[1]
-
-
-class ConfigOrganization(Schema):
-    model_config = ConfigDict(extra="forbid")
-
-    default_presentment_currency: PresentmentCurrency | None = Field(
-        None, description=DEFAULT_PRESENTMENT_CURRENCY_DESCRIPTION
-    )
-    default_tax_behavior: TaxBehaviorOption | None = Field(
-        None, description=DEFAULT_TAX_BEHAVIOR_DESCRIPTION
-    )
-    subscription_settings: OrganizationSubscriptionSettings | None = None
-    customer_email_settings: OrganizationCustomerEmailSettings | None = None
-    customer_portal_settings: OrganizationCustomerPortalSettings | None = None
 
 
 class ConfigMeter(MeterCreateBase):
@@ -54,15 +29,7 @@ class Config(Schema):
     model_config = ConfigDict(extra="forbid")
 
     version: ConfigVersion = Field(description="Version of the config schema.")
-    organization: ConfigOrganization | None = Field(
-        default=None,
-        description=(
-            "Organization settings to update. Each setting present replaces "
-            "its current value; settings not present are left unchanged."
-        ),
-    )
-    meters: list[ConfigMeter] | None = Field(
-        default=None,
+    meters: list[ConfigMeter] = Field(
         max_length=MAXIMUM_METERS,
         description=(
             "Meters to create or update, matched by `external_id`. "
@@ -80,10 +47,8 @@ class Config(Schema):
     @field_validator("meters")
     @classmethod
     def validate_unique_external_ids(
-        cls, value: list[ConfigMeter] | None
-    ) -> list[ConfigMeter] | None:
-        if value is None:
-            return value
+        cls, value: list[ConfigMeter]
+    ) -> list[ConfigMeter]:
         seen: set[str] = set()
         duplicates: set[str] = set()
         for meter in value:
@@ -96,15 +61,8 @@ class Config(Schema):
             )
         return value
 
-    @model_validator(mode="after")
-    def validate_has_section(self) -> Self:
-        if self.organization is None and self.meters is None:
-            raise ValueError("The config must contain at least one section.")
-        return self
-
 
 class ConfigSection(StrEnum):
-    organization = "organization"
     meters = "meters"
 
 
@@ -116,9 +74,7 @@ class ConfigAction(StrEnum):
 
 class ConfigApplyResourceResult(Schema):
     section: ConfigSection = Field(description="Config section of the resource.")
-    key: str | None = Field(
-        description="The resource's `external_id`, or `None` for singleton sections."
-    )
+    key: str = Field(description="The resource's `external_id`.")
     action: ConfigAction = Field(description="What applying the config did.")
 
 

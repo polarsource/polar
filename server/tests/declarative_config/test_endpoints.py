@@ -2,7 +2,6 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 
-from polar.auth.scope import Scope
 from polar.models import Organization, UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -71,7 +70,6 @@ class TestApply:
             "/v1/config/apply",
             json={
                 "version": 1,
-                "organization": {"default_tax_behavior": "exclusive"},
                 "meters": [METER],
                 "organization_id": str(organization.id),
             },
@@ -81,7 +79,6 @@ class TestApply:
         assert response.json() == {
             "version": 1,
             "results": [
-                {"section": "organization", "key": None, "action": "updated"},
                 {"section": "meters", "key": "sdk-tool-calls", "action": "created"},
             ],
         }
@@ -94,65 +91,6 @@ class TestApply:
         )
 
         assert response.status_code == 200
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="organization", scopes={Scope.meters_write})
-    )
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_missing_section_scope(self, client: AsyncClient) -> None:
-        response = await client.post(
-            "/v1/config/apply",
-            json={"version": 1, "organization": {"default_tax_behavior": "exclusive"}},
-        )
-
-        assert response.status_code == 403
-        assert response.json()["error"] == "ConfigSectionScopeMissing"
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="organization", scopes={Scope.meters_write})
-    )
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_single_section_scope(self, client: AsyncClient) -> None:
-        response = await client.post(
-            "/v1/config/apply", json={"version": 1, "meters": [METER]}
-        )
-
-        assert response.status_code == 200
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_missing_section_permission(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization_second: UserOrganization,
-    ) -> None:
-        response = await client.post(
-            "/v1/config/apply",
-            json={
-                "version": 1,
-                "organization": {"default_tax_behavior": "exclusive"},
-                "organization_id": str(organization.id),
-            },
-        )
-
-        assert response.status_code == 403
-        assert response.json()["error"] == "NotPermitted"
-
-    @pytest.mark.auth
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_empty_config(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.post(
-            "/v1/config/apply",
-            json={"version": 1, "organization_id": str(organization.id)},
-        )
-
-        assert response.status_code == 422
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")

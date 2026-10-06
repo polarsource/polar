@@ -1,5 +1,18 @@
 # @polar-sh/hono
 
+## 2.1.0
+
+### Minor Changes
+
+- e381ab0: Send the customer IP address when creating a checkout so Polar can show the visitor's local currency. The IP is resolved with Better Auth's `getIP`, so it follows your `advanced.ipAddress` settings. Use the new `customerIpAddress` option to resolve it yourself, or set it to `false` to stop sending it.
+
+### Patch Changes
+
+- Updated dependencies [e381ab0]
+- Updated dependencies [c063d7a]
+  - @polar-sh/adapter-utils@1.1.0
+  - @polar-sh/checkout@0.4.3
+
 ## 2.0.1
 
 ### Patch Changes

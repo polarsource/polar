@@ -1,7 +1,7 @@
 from enum import StrEnum
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import ConfigDict, Field, field_validator
+from pydantic import ConfigDict, Field, field_validator, model_validator
 
 from polar.enums import TaxBehaviorOption
 from polar.kit.currency import PresentmentCurrency
@@ -95,6 +95,12 @@ class Config(Schema):
                 f"Duplicate external_id values: {', '.join(sorted(duplicates))}."
             )
         return value
+
+    @model_validator(mode="after")
+    def validate_has_section(self) -> Self:
+        if self.organization is None and self.meters is None:
+            raise ValueError("The config must contain at least one section.")
+        return self
 
 
 class ConfigSection(StrEnum):

@@ -61650,7 +61650,7 @@ export interface operations {
       }
     }
     responses: {
-      /** @description Config applied. */
+      /** @description Config validated. */
       200: {
         headers: {
           [name: string]: unknown

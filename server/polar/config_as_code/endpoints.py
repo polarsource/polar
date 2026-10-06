@@ -18,7 +18,7 @@ router = APIRouter(prefix="/config", tags=["config", APITag.private])
     response_model=ConfigApplyResult,
     summary="Apply Config",
     responses={
-        200: {"description": "Config applied."},
+        200: {"description": "Config validated."},
         403: {
             "description": (
                 "Not allowed to manage this organization, "

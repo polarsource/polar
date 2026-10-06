@@ -3,12 +3,14 @@ import type { ListenError } from '@/services/listen'
 import type { TriggerError } from '@/services/trigger'
 import type { UpdateError } from '@/services/update'
 import type { AuthError } from '@/schemas/Auth'
+import type { ConfigError } from '@/schemas/Config'
 import type { GitHubReleaseError } from '@/services/github-releases'
 import type { UpdaterError } from '@/services/updater'
 
 export type CommandError =
   | ApiCommandError
   | AuthError
+  | ConfigError
   | ListenError
   | TriggerError
   | UpdateError
@@ -43,6 +45,7 @@ const isCommandError = (error: unknown): error is CommandError =>
   [
     'ApiCommandError',
     'AuthError',
+    'ConfigError',
     'ListenError',
     'TriggerError',
     'UpdateError',
@@ -60,6 +63,10 @@ export const describeError = (error: unknown): ErrorDescription => {
   switch (error._tag) {
     case 'AuthError':
       return { title: error.message }
+    case 'ConfigError':
+      return error.hint
+        ? { title: error.message, hint: error.hint }
+        : { title: error.message }
     case 'ApiCommandError':
     case 'TriggerError':
       return error.hint

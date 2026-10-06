@@ -9,7 +9,7 @@ import {
   type Session,
 } from '@/schemas/Auth'
 import { Auth, type Credential } from '@/services/auth'
-import { CLIConfig } from '@/services/config'
+import { Settings } from '@/services/settings'
 import { Credentials } from '@/services/credentials'
 import { OAuth } from '@/services/oauth'
 import { Organizations } from '@/services/organizations'
@@ -198,7 +198,7 @@ interface ConfigState {
 
 export const fakeConfig = (activeOrganization?: OrganizationSelection) => {
   const state: ConfigState = { activeOrganization, writes: 0 }
-  const config = CLIConfig.of({
+  const config = Settings.of({
     getActiveOrganization: Effect.sync(() => state.activeOrganization),
     setActiveOrganization: (selection) =>
       Effect.sync(() => {

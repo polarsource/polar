@@ -4,7 +4,7 @@ import type { ActiveOrganization, PolarEnvironment } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
 import { Organizations, layer } from '@/services/organizations'
 import { Polar } from '@/services/polar'
-import { CLIConfig } from '@/services/config'
+import { Settings } from '@/services/settings'
 import {
   fakeAuth,
   fakeConfig,
@@ -66,7 +66,7 @@ const service = () =>
             Layer.mergeAll(
               Layer.succeed(Auth, auth.auth),
               Layer.succeed(Polar, polar.polar),
-              Layer.succeed(CLIConfig, config.config),
+              Layer.succeed(Settings, config.config),
             ),
           ),
         ),

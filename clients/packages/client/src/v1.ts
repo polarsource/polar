@@ -6039,6 +6039,29 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/config/validate': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Validate Config
+     * @description Validate a declarative config document against an organization without
+     *     applying it. Every problem is reported at once, with its path in the document.
+     *
+     *     **Scopes**: `meters:read` `meters:write`
+     */
+    post: operations['config:validate']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organization-access-tokens/': {
     parameters: {
       query?: never
@@ -15808,6 +15831,31 @@ export interface components {
        */
       msg: string
     }
+    /** ConfigIssue */
+    ConfigIssue: {
+      /**
+       * Severity
+       * @enum {string}
+       */
+      severity: 'error' | 'warning'
+      /**
+       * Code
+       * @description Machine-readable reason, e.g. `literal_error`.
+       */
+      code: string
+      /**
+       * Path
+       * @description Location of the issue in the config, as a JSON path.
+       */
+      path: (string | number)[]
+      /** Message */
+      message: string
+      /**
+       * Got
+       * @description The value found at the path, if any.
+       */
+      got: unknown | null
+    }
     /** ConfigMeter */
     ConfigMeter: {
       /**
@@ -15894,6 +15942,11 @@ export interface components {
       external_id: string
       /** @description What applying the config did. */
       action: components['schemas']['ConfigAction']
+    }
+    /** ConfigValidation */
+    ConfigValidation: {
+      /** Issues */
+      issues: components['schemas']['ConfigIssue'][]
     }
     /** CostMetadata */
     'CostMetadata-Input': {
@@ -61693,6 +61746,59 @@ export interface operations {
       }
     }
   }
+  'config:validate': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': unknown
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConfigValidation']
+        }
+      }
+      /** @description Not authenticated. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Unauthorized']
+        }
+      }
+      /** @description Not allowed to read this organization's meters, or config as code isn't enabled for it. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['NotPermitted']
+            | components['schemas']['ConfigAsCodeNotEnabled']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'organization_access_tokens:list': {
     parameters: {
       query?: {
@@ -70327,6 +70433,9 @@ export const confidenceLevelValues: ReadonlyArray<
 export const configActionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigAction']
 > = ['created', 'updated', 'unchanged']
+export const configIssueSeverityValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigIssue']['severity']
+> = ['error', 'warning']
 export const countAggregationFuncValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CountAggregation']['func']
 > = ['count']

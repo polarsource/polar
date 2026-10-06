@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
@@ -5,9 +7,13 @@ from pytest_mock import MockerFixture
 from polar.models import Organization, UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_event, create_meter
+from tests.fixtures.random_objects import (
+    create_event,
+    create_event_type,
+    create_meter,
+)
 
-METER = {
+METER: dict[str, Any] = {
     "external_id": "sdk-tool-calls",
     "name": "SDK - Tool Calls",
     "filter": {
@@ -154,3 +160,86 @@ class TestApply:
                 ),
             }
         ]
+
+
+@pytest.mark.asyncio
+class TestValidate:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post("/v1/config/validate", json={"meters": []})
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_flag_disabled(
+        self, client: AsyncClient, user_organization: UserOrganization
+    ) -> None:
+        response = await client.post(
+            "/v1/config/validate",
+            json={
+                "meters": [],
+                "organization_id": str(user_organization.organization_id),
+            },
+        )
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "ConfigAsCodeNotEnabled"
+
+    @pytest.mark.auth
+    async def test_invalid_organization_id(
+        self, client: AsyncClient, user_organization: UserOrganization
+    ) -> None:
+        response = await client.post(
+            "/v1/config/validate", json={"meters": [], "organization_id": "nope"}
+        )
+
+        assert response.status_code == 422
+        assert response.json()["detail"][0]["loc"] == ["body", "organization_id"]
+
+    @pytest.mark.auth
+    async def test_user(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        save_fixture: SaveFixture,
+        config_as_code_enabled: None,
+    ) -> None:
+        await create_event_type(
+            save_fixture, organization=organization, name="tool_call"
+        )
+
+        response = await client.post(
+            "/v1/config/validate",
+            json={"meters": [METER], "organization_id": str(organization.id)},
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"issues": []}
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_non_object_config(
+        self, client: AsyncClient, config_as_code_enabled: None
+    ) -> None:
+        response = await client.post("/v1/config/validate", json=[])
+
+        assert response.status_code == 200
+        assert [issue["code"] for issue in response.json()["issues"]] == ["dict_type"]
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_organization_token_reports_issues(
+        self, client: AsyncClient, config_as_code_enabled: None
+    ) -> None:
+        broken = {
+            **METER,
+            "filter": {**METER["filter"], "conjunction": "qwe"},
+        }
+
+        response = await client.post("/v1/config/validate", json={"meters": [broken]})
+
+        assert response.status_code == 200
+        issues = response.json()["issues"]
+        assert [issue["severity"] for issue in issues] == ["error", "warning"]
+        assert issues[0]["path"] == ["meters", 0, "filter", "conjunction"]
+        assert issues[0]["got"] == "qwe"
+        assert issues[1]["path"] == ["meters", 0, "filter", "clauses", 0, "value"]
+        assert issues[1]["message"] == 'No "tool_call" events have been received yet'

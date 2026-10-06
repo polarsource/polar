@@ -3,7 +3,7 @@ import { Effect, Redacted } from 'effect'
 import { AuthError } from '@/schemas/Auth'
 import { make } from '@/services/auth'
 import { Credentials } from '@/services/credentials'
-import { CLIConfig } from '@/services/config'
+import { Settings } from '@/services/settings'
 import { OAuth } from '@/services/oauth'
 import {
   fakeConfig,
@@ -27,7 +27,7 @@ const authEffect = () =>
   ).pipe(
     Effect.provideService(Credentials, credentials.credentials),
     Effect.provideService(OAuth, oauth.oauth),
-    Effect.provideService(CLIConfig, config.config),
+    Effect.provideService(Settings, config.config),
   )
 const activity = () =>
   credentials.state.reads +

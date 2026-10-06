@@ -14,7 +14,7 @@ const forbiddenImports = [
       [
         '@/services/api',
         '@/services/client',
-        '@/services/config',
+        '@/services/settings',
         '@/services/credentials',
         '@/services/oauth',
       ].includes(source),

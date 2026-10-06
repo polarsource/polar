@@ -7,7 +7,7 @@ import {
   type PolarEnvironment,
 } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
-import { CLIConfig } from '@/services/config'
+import { Settings } from '@/services/settings'
 import { Polar } from '@/services/polar'
 
 export class Organizations extends Context.Service<
@@ -28,7 +28,7 @@ export const layer = Layer.effect(
   Effect.gen(function* () {
     const polar = yield* Polar
     const auth = yield* Auth
-    const config = yield* CLIConfig
+    const config = yield* Settings
     const list = (environment: PolarEnvironment) =>
       Effect.gen(function* () {
         const organizations: ActiveOrganization[] = []

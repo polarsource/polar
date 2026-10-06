@@ -7,9 +7,10 @@ import { stdoutConsole } from '@/utils/console'
 import { describeError } from '@/utils/errors'
 import * as ApiRuntime from '@/commands/api-runtime'
 import * as Auth from '@/services/auth'
+import * as Config from '@/services/config'
 import * as Credentials from '@/services/credentials'
 import * as Deliveries from '@/services/deliveries'
-import * as Config from '@/services/config'
+import * as Settings from '@/services/settings'
 import * as Organizations from '@/services/organizations'
 import * as OAuth from '@/services/oauth'
 import * as Polar from '@/services/polar'
@@ -27,14 +28,19 @@ const cli = Command.run(polar, {
   version: VERSION.replace(/^v/, ''),
 })
 
-const configLayer = Config.layer.pipe(Layer.provide(BunServices.layer))
+const settingsLayer = Settings.layer.pipe(Layer.provide(BunServices.layer))
 const oauthLayer = OAuth.layer.pipe(Layer.provide(FetchHttpClient.layer))
 const authLayer = Auth.layer.pipe(
-  Layer.provide(Layer.mergeAll(Credentials.layer, oauthLayer, configLayer)),
+  Layer.provide(Layer.mergeAll(Credentials.layer, oauthLayer, settingsLayer)),
 )
 const polarLayer = Polar.layer.pipe(Layer.provide(authLayer))
+const configLayer = Config.layer.pipe(
+  Layer.provide(
+    Layer.mergeAll(BunServices.layer, authLayer, FetchHttpClient.layer),
+  ),
+)
 const organizationsLayer = Organizations.layer.pipe(
-  Layer.provide(Layer.mergeAll(authLayer, polarLayer, configLayer)),
+  Layer.provide(Layer.mergeAll(authLayer, polarLayer, settingsLayer)),
 )
 const triggerLayer = Trigger.layer.pipe(
   Layer.provide(Layer.mergeAll(authLayer, FetchHttpClient.layer)),
@@ -50,6 +56,7 @@ const services = Layer.mergeAll(
     Layer.provide(Layer.mergeAll(polarLayer, organizationsLayer)),
   ),
   authLayer,
+  configLayer,
   Deliveries.layer,
   polarLayer,
   organizationsLayer,

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import * as ApiRuntime from '@/commands/api-runtime'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
-import { CLIConfig } from '@/services/config'
+import { Settings } from '@/services/settings'
 import * as OrganizationsService from '@/services/organizations'
 import * as Polar from '@/services/polar'
 import { type RunCliOptions, runCli } from '@/utils/test-utils/cli'
@@ -493,7 +493,7 @@ describe('organization resolution', () => {
     const cli = runCli(root, args, { interactive })
     const dependencies = Layer.mergeAll(
       Layer.succeed(Auth, auth.auth),
-      Layer.succeed(CLIConfig, config.config),
+      Layer.succeed(Settings, config.config),
     )
     const polar = Polar.layer.pipe(Layer.provide(dependencies))
     const organizations = OrganizationsService.layer.pipe(

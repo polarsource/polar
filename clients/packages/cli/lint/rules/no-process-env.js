@@ -4,7 +4,7 @@ const allowed = [
   'cli.ts',
   'services/api.ts',
   'services/auth.ts',
-  'services/config.ts',
+  'services/settings.ts',
   'services/telemetry.ts',
 ]
 

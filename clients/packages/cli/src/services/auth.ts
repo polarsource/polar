@@ -7,7 +7,7 @@ import {
   type Session,
 } from '@/schemas/Auth'
 import { Credentials } from '@/services/credentials'
-import { CLIConfig } from '@/services/config'
+import { Settings } from '@/services/settings'
 import { type AnnounceAuthorization, OAuth } from '@/services/oauth'
 
 export interface Credential {
@@ -49,7 +49,7 @@ export const make = (
 ) =>
   Effect.gen(function* () {
     const store = yield* Credentials
-    const config = yield* CLIConfig
+    const config = yield* Settings
     const oauth = yield* OAuth
     const locks = {
       sandbox: yield* Semaphore.make(1),

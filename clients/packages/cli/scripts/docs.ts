@@ -11,6 +11,7 @@ import { FetchHttpClient } from 'effect/unstable/http'
 import { ApiRuntime } from '@polar-sh/cli-commands'
 import { builtIns, program } from '@/program'
 import { Auth } from '@/services/auth'
+import { Config } from '@/services/config'
 import { Deliveries } from '@/services/deliveries'
 import { Organizations } from '@/services/organizations'
 import { Trigger } from '@/services/trigger'
@@ -22,6 +23,7 @@ const unused = () => Effect.die('help never runs command handlers')
 
 const helpOnlyServices = Layer.mergeAll(
   Layer.succeed(Auth, fakeAuth().auth),
+  Layer.succeed(Config, Config.of({ load: unused, validate: unused })),
   Layer.succeed(Organizations, fakeOrganizations().organizations),
   Layer.succeed(Trigger, Trigger.of({ listEvents: unused, send: unused })),
   Layer.succeed(ApiRuntime, ApiRuntime.of({ execute: unused })),

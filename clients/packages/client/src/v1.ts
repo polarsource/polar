@@ -5691,8 +5691,8 @@ export interface paths {
      * Create Customer Session
      * @description Create a customer session.
      *
-     *     For organizations with `member_model_enabled`, this will automatically
-     *     create a member session for the owner member of the customer.
+     *     This creates a member session: for the member given by `member_id` or
+     *     `external_member_id`, or for the owner member of the customer otherwise.
      *
      *     **Scopes**: `customer_sessions:write`
      */
@@ -19142,12 +19142,6 @@ export interface components {
      */
     CustomerOrganizationFeatureSettings: {
       /**
-       * Member Model Enabled
-       * @description Whether the member model is enabled for this organization.
-       * @default false
-       */
-      member_model_enabled: boolean
-      /**
        * Checkout Localization Enabled
        * @description Whether localization is enabled for this organization.
        * @default false
@@ -19591,7 +19585,7 @@ export interface components {
       status: components['schemas']['SeatStatus']
       /**
        * Customer Id
-       * @description The customer ID. When member_model_enabled is true, this is the billing customer (purchaser). When false, this is the seat member customer.
+       * @description The ID of the billing customer (purchaser).
        */
       customer_id: string | null
       /**
@@ -19603,7 +19597,7 @@ export interface components {
       member: components['schemas']['Member'] | null
       /**
        * Email
-       * @description Email of the seat member (set when member_model_enabled is true)
+       * @description Email of the seat member
        */
       email: string | null
       /**
@@ -19829,7 +19823,7 @@ export interface components {
     CustomerSessionCustomerExternalIDCreate: {
       /**
        * Member Id
-       * @description ID of the member to create a session for. When not provided and the organization has `member_model_enabled`, the owner member of the customer will be used for individual customers.
+       * @description ID of the member to create a session for. When not provided, the owner member of the customer is used.
        */
       member_id?: string | null
       /**
@@ -19856,7 +19850,7 @@ export interface components {
     CustomerSessionCustomerIDCreate: {
       /**
        * Member Id
-       * @description ID of the member to create a session for. When not provided and the organization has `member_model_enabled`, the owner member of the customer will be used for individual customers.
+       * @description ID of the member to create a session for. When not provided, the owner member of the customer is used.
        */
       member_id?: string | null
       /**
@@ -29861,12 +29855,6 @@ export interface components {
        */
       wallets_enabled: boolean
       /**
-       * Member Model Enabled
-       * @description If this organization has the Member model enabled
-       * @default false
-       */
-      member_model_enabled: boolean
-      /**
        * Checkout Localization Enabled
        * @description If this organization has checkout localization enabled
        * @default false
@@ -29952,12 +29940,6 @@ export interface components {
      *     provided and keep their current value.
      */
     OrganizationFeatureSettingsUpdate: {
-      /**
-       * Member Model Enabled
-       * @description If this organization has the Member model enabled
-       * @default false
-       */
-      member_model_enabled: boolean
       /**
        * Checkout Localization Enabled
        * @description If this organization has checkout localization enabled

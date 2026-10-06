@@ -95,12 +95,17 @@ class TestBeforeSend:
                     "client_secret": "polar_cs_xxx",
                     "code": "123456",
                     "customer_external_id": "buyer@example.com",
+                    "expo_push_token": "ExponentPushToken[xxx]",
                     "external_customer_id": "buyer@example.com",
                     "external_id": "buyer@example.com",
+                    "invitation_token": "polar_it_xxx",
                     "metadata": {"crm_contact": "buyer@example.com"},
                     "refresh_token": "polar_rt_xxx",
                     "secret": "whsec_xxx",
+                    "session_token": "polar_st_xxx",
+                    "signing_secret": "slack_signing_xxx",
                     "token": "polar_oat_xxx",
+                    "turnstile_token": "cf_xxx",
                     "product_id": "prod_123",
                     "grant_type": "authorization_code",
                 }
@@ -116,12 +121,17 @@ class TestBeforeSend:
         assert "client_secret" not in data
         assert "code" not in data
         assert "customer_external_id" not in data
+        assert "expo_push_token" not in data
         assert "external_customer_id" not in data
         assert "external_id" not in data
+        assert "invitation_token" not in data
         assert "metadata" not in data
         assert "refresh_token" not in data
         assert "secret" not in data
+        assert "session_token" not in data
+        assert "signing_secret" not in data
         assert "token" not in data
+        assert "turnstile_token" not in data
         assert data["product_id"] == "prod_123"
         assert data["grant_type"] == "authorization_code"
 

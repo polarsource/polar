@@ -16,7 +16,6 @@ const PAYMENT_METHOD_COPY = {
 const PAYMENT_REASON_CODES = new Set([
   'payment_method_missing',
   'payment_method_requires_reentry',
-  'payment_method_not_card',
 ])
 
 export function isPaymentMethodReason(code: string | null): boolean {

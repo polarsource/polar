@@ -950,31 +950,21 @@ class TestClassifyRecords:
         assert items[0].reason_code == "subscription_trialing"
         assert items[0].reason_level == PrecheckReasonLevel.info
 
-    @pytest.mark.parametrize(
-        ("payment_method", "reason_code"),
-        [
-            (None, "payment_method_missing"),
-        ],
-    )
-    def test_payment_method_the_switch_cant_check_is_importable_with_info(
-        self, payment_method: CanonicalPaymentMethod | None, reason_code: str
-    ) -> None:
+    def test_missing_payment_method_is_importable_with_info(self) -> None:
         records: list[CanonicalRecord] = [
             build_product(
                 product_source_id="prod_1", prices=[build_price(source_id="price_1")]
             ),
             build_customer(source_id="cus_1", email="a@example.com"),
-            build_subscription(source_id="sub_1", payment_method=payment_method),
+            build_subscription(source_id="sub_1", payment_method=None),
         ]
 
         items = classify_records(records, PrecheckEntity.subscriptions, "usd")
 
         assert items[0].status == PrecheckRecordStatus.importable
-        assert items[0].reason_code == reason_code
+        assert items[0].reason_code == "payment_method_missing"
         assert items[0].reason_level == PrecheckReasonLevel.info
-        assert items[0].payment_method_type == (
-            payment_method.type if payment_method is not None else None
-        )
+        assert items[0].payment_method_type is None
 
     @pytest.mark.parametrize(
         "payment_method_type",

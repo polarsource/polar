@@ -109,13 +109,9 @@ _NO_PAYMENT_METHOD = (
     "they have a default one by the next renewal, it fails and goes to dunning."
 )
 _NOT_COPYABLE = (
-    "It renewed with a payment method that can't be copied to Polar. Its next "
+    "It renews with a payment method that can't be copied to Polar. Its next "
     "renewal fails and goes to dunning unless the customer re-enters their "
     "billing details first."
-)
-_NOT_A_CARD = (
-    "It renews with a payment method that isn't a card, which Polar can't "
-    "check ahead of the first charge. If that renewal fails, it goes to dunning."
 )
 _NOT_PAUSED = "It isn't paused in Polar any more, so it was left alone."
 _CARD_EXPIRED = (
@@ -840,13 +836,16 @@ class SubscriptionCutover:
                     PaymentProcessor.stripe,
                     staged.payment_method.source_id,
                 )
-                if payment_method is not None:
+                if payment_method is not None and payment_method.type == CARD_TYPE:
                     return payment_method
-            if customer.default_payment_method_id is not None:
-                return await repository.get_by_id_and_customer(
-                    customer.default_payment_method_id, customer.id
-                )
-            return None
+            if customer.default_payment_method_id is None:
+                return None
+            default = await repository.get_by_id_and_customer(
+                customer.default_payment_method_id, customer.id
+            )
+            if default is None or default.type != CARD_TYPE:
+                return None
+            return default
         return await link_payment_method(
             self.session, customer, source_method=source.payment_method
         )
@@ -868,8 +867,6 @@ class SubscriptionCutover:
             ):
                 return _NOT_COPYABLE
             return _NO_PAYMENT_METHOD
-        if payment_method.type != CARD_TYPE:
-            return _NOT_A_CARD
         expires_at = payment_method.expires_at
         if expires_at is None or expires_at > utc_now():
             return None

@@ -1,15 +1,17 @@
 import { Data, Schema } from 'effect'
+import { ValidationIssue } from '@/schemas/Validation'
 
 export const IssueSeverity = Schema.Literals(['error', 'warning'])
 
-const Loc = Schema.Array(Schema.Union([Schema.String, Schema.Number]))
+export const RequestValidationIssue = Schema.Struct({
+  ...ValidationIssue.fields,
+  type: Schema.String,
+  input: Schema.optional(Schema.Unknown),
+})
 
 export const ServerIssue = Schema.Struct({
+  ...RequestValidationIssue.fields,
   severity: IssueSeverity,
-  type: Schema.String,
-  loc: Loc,
-  msg: Schema.String,
-  input: Schema.optional(Schema.Unknown),
 })
 
 export const ApiError = Schema.Struct({ error: Schema.String })
@@ -19,14 +21,7 @@ export const ConfigValidation = Schema.Struct({
 })
 
 export const RequestValidationError = Schema.Struct({
-  detail: Schema.Array(
-    Schema.Struct({
-      type: Schema.String,
-      loc: Loc,
-      msg: Schema.String,
-      input: Schema.optional(Schema.Unknown),
-    }),
-  ),
+  detail: Schema.Array(RequestValidationIssue),
 })
 
 export interface SourceLocation {

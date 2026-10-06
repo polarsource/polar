@@ -18,6 +18,7 @@ import {
   type LoadedConfig,
   type SourceLocation,
 } from '@/schemas/Config'
+import { bodyPath } from '@/schemas/Validation'
 import { apiUrl, describeApiFailure, withOrganization } from '@/services/api'
 import { type ApiClient, authenticatedClient } from '@/services/client'
 
@@ -85,7 +86,7 @@ const toConfigIssue = (
   config: LoadedConfig,
   issue: ServerIssue,
 ): ConfigIssue => {
-  const path = issue.loc[0] === 'body' ? issue.loc.slice(1) : issue.loc
+  const path = bodyPath(issue.loc)
   return {
     severity: issue.severity,
     code: issue.type,

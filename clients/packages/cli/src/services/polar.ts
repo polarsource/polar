@@ -11,6 +11,7 @@ import {
   orgCommand,
   type PolarEnvironment,
 } from '@/schemas/Auth'
+import { bodyPath, ValidationIssue } from '@/schemas/Validation'
 import { apiOrigin } from '@/services/api'
 import { Auth } from '@/services/auth'
 
@@ -36,11 +37,6 @@ const isOrganizationNotAccessible = (body: unknown) =>
     )(body),
   )
 
-const ValidationIssue = Schema.Struct({
-  loc: Schema.Array(Schema.Union([Schema.String, Schema.Number])),
-  msg: Schema.String,
-})
-
 const ErrorDetail = Schema.Struct({
   detail: Schema.Union([Schema.String, Schema.Array(ValidationIssue)]),
 })
@@ -49,7 +45,7 @@ const describeIssues = (issues: ReadonlyArray<typeof ValidationIssue.Type>) =>
   [
     'The request is invalid:',
     ...issues.map(({ loc, msg }) => {
-      const field = (loc[0] === 'body' ? loc.slice(1) : loc).join('.')
+      const field = bodyPath(loc).join('.')
       return field ? `${field}: ${msg}` : msg
     }),
   ].join('\n    ')

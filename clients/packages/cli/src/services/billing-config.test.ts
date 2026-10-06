@@ -11,6 +11,7 @@ import { fakeHttp } from '@/utils/test-utils/http'
 import { fakeAuth } from '@/utils/test-utils/services'
 
 const applyUrl = 'https://sandbox-api.polar.sh/v1/config/apply'
+const planUrl = 'https://sandbox-api.polar.sh/v1/config/plan'
 
 const acme: ActiveOrganization = {
   id: 'org-1',
@@ -50,6 +51,17 @@ const apply = (file: string) =>
       Effect.flatMap((billing) =>
         Effect.flatMap(billing.load(file), (config) =>
           billing.apply(config, acme),
+        ),
+      ),
+    ),
+  )
+
+const planFor = (file: string) =>
+  Effect.runPromise(
+    service().pipe(
+      Effect.flatMap((billing) =>
+        Effect.flatMap(billing.load(file), (config) =>
+          billing.plan(config, acme),
         ),
       ),
     ),
@@ -382,5 +394,93 @@ describe('apply', () => {
     const error = await failure(apply(await write(source)))
 
     expect(error._tag).toBe('BillingConfigError')
+  })
+})
+
+describe('plan', () => {
+  test('returns the planned changes and the issues mapped onto the file', async () => {
+    api.routes[`POST ${planUrl}`] = Response.json({
+      changes: [{ external_id: 'tool-calls', action: 'created' }],
+      issues: [
+        {
+          severity: 'warning',
+          type: 'unknown_event',
+          loc: ['body', 'meters', 0, 'filter', 'clauses', 0, 'value'],
+          msg: 'No events with this name have been received yet.',
+          input: 'tool_call',
+        },
+      ],
+    })
+
+    const result = await planFor(await write(source))
+
+    expect(result.entries).toEqual([
+      { section: 'meters', id: 'tool-calls', action: 'created' },
+    ])
+    expect(result.issues).toEqual([
+      {
+        severity: 'warning',
+        code: 'unknown_event',
+        path: 'meters.0.filter.clauses.0.value',
+        message: 'No events with this name have been received yet.',
+        got: '"tool_call"',
+        location: { line: 5, column: 52, length: 2 },
+      },
+    ])
+  })
+
+  test('turns 422 structural errors into issues with no changes', async () => {
+    api.routes[`POST ${planUrl}`] = Response.json(
+      {
+        error: 'RequestValidationError',
+        detail: [
+          {
+            type: 'missing',
+            loc: ['body', 'meters', 0, 'name'],
+            msg: 'Field required',
+          },
+        ],
+      },
+      { status: 422 },
+    )
+
+    const result = await planFor(await write(source))
+
+    expect(result.entries).toEqual([])
+    expect(result.issues.map((issue) => [issue.severity, issue.code])).toEqual([
+      ['error', 'missing'],
+    ])
+  })
+
+  test('explains when config is not enabled', async () => {
+    api.routes[`POST ${planUrl}`] = Response.json(
+      { error: 'ConfigAsCodeNotEnabled', detail: 'nope' },
+      { status: 403 },
+    )
+
+    const error = await failure(planFor(await write(source)))
+
+    expect(error.message).toBe('Config is not enabled for Acme')
+  })
+
+  test('explains a missing route instead of blaming the organization', async () => {
+    api.routes[`POST ${planUrl}`] = new Response('Not Found', { status: 404 })
+
+    const error = await failure(planFor(await write(source)))
+
+    expect(error.message).toBe(
+      'Config commands are not available in sandbox yet',
+    )
+  })
+
+  test('asks for the read scope on other 403s', async () => {
+    api.routes[`POST ${planUrl}`] = Response.json(
+      { error: 'NotPermitted', detail: 'Not permitted' },
+      { status: 403 },
+    )
+
+    const error = await failure(planFor(await write(source)))
+
+    expect(error.hint).toContain('meters:read')
   })
 })

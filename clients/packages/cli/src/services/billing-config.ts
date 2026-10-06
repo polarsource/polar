@@ -13,6 +13,10 @@ import {
   type AppliedEntry,
   type ApplyResult,
   ApplyResponse,
+  EntryResult,
+  type PlanResult,
+  PlanResponse,
+  ServerError,
   BillingConfigError,
   type ConfigIssue,
   type LoadedConfig,
@@ -26,6 +30,10 @@ export class BillingConfig extends Context.Service<
   BillingConfig,
   {
     load: (file?: string) => Effect.Effect<LoadedConfig, BillingConfigError>
+    plan: (
+      config: LoadedConfig,
+      organization: ActiveOrganization,
+    ) => Effect.Effect<PlanResult, AuthError | BillingConfigError>
     apply: (
       config: LoadedConfig,
       organization: ActiveOrganization,
@@ -201,60 +209,56 @@ export const make = Effect.gen(function* () {
       })
     })
 
-  const rejection = (
-    config: LoadedConfig,
-    response: HttpClientResponse.HttpClientResponse,
-  ) =>
-    Effect.map(
-      HttpClientResponse.schemaBodyJson(ValidationErrors)(response),
-      ({ detail }): ApplyResult => ({
-        status: 'rejected',
-        issues: detail.map((error) =>
-          issue(config, error.severity ?? 'error', {
-            code: error.type,
-            path: error.loc[0] === 'body' ? error.loc.slice(1) : error.loc,
-            message: error.msg,
-            got: error.input,
-          }),
-        ),
+  const issues = (config: LoadedConfig, detail: (typeof ServerError.Type)[]) =>
+    detail.map((error) =>
+      issue(config, error.severity ?? 'error', {
+        code: error.type,
+        path: error.loc[0] === 'body' ? error.loc.slice(1) : error.loc,
+        message: error.msg,
+        got: error.input,
       }),
     )
 
-  const apply = (config: LoadedConfig, organization: ActiveOrganization) =>
+  const entries = (
+    section: string,
+    results: ReadonlyArray<typeof EntryResult.Type>,
+  ) =>
+    results.map(
+      (entry): AppliedEntry => ({
+        section,
+        id: entry.external_id ?? section,
+        action: entry.action,
+      }),
+    )
+
+  const post = (
+    path: string,
+    config: LoadedConfig,
+    organization: ActiveOrganization,
+  ) =>
     Effect.gen(function* () {
-      const { environment } = organization
       const request = yield* HttpClientRequest.post(
-        yield* apiUrl(environment, '/config/apply'),
+        yield* apiUrl(organization.environment, path),
       ).pipe(
         withOrganization(organization.id),
         HttpClientRequest.bodyJson(config.input),
       )
-      const response = yield* clients[environment].execute(request)
-      if (response.status === 200) {
-        const sections =
-          yield* HttpClientResponse.schemaBodyJson(ApplyResponse)(response)
-        return {
-          status: 'applied',
-          entries: Object.entries(sections).flatMap(([section, result]) =>
-            (Array.isArray(result) ? result : [result]).map(
-              (entry): AppliedEntry => ({
-                section,
-                id: entry.external_id ?? section,
-                action: entry.action,
-              }),
-            ),
-          ),
-        } satisfies ApplyResult
-      }
-      if (response.status === 422) {
-        return yield* rejection(config, response)
-      }
-      const { error } = yield* HttpClientResponse.schemaBodyJson(ApiError)(
-        response,
-      ).pipe(Effect.orElseSucceed(() => ({ error: undefined })))
-      if (response.status === 409 && error === 'ConfigInvalid') {
-        return yield* rejection(config, response)
-      }
+      return yield* clients[organization.environment].execute(request)
+    })
+
+  const errorName = (response: HttpClientResponse.HttpClientResponse) =>
+    HttpClientResponse.schemaBodyJson(ApiError)(response).pipe(
+      Effect.map(({ error }) => error),
+      Effect.orElseSucceed(() => undefined),
+    )
+
+  const unexpected = (
+    response: HttpClientResponse.HttpClientResponse,
+    organization: ActiveOrganization,
+    scope: string,
+  ) =>
+    Effect.gen(function* () {
+      const error = yield* errorName(response)
       if (response.status === 409) {
         return yield* new BillingConfigError({
           message: 'Another request changed this config at the same time',
@@ -270,10 +274,38 @@ export const make = Effect.gen(function* () {
       if (response.status === 403) {
         return yield* new BillingConfigError({
           message: `You do not have access to ${organization.name}`,
-          hint: 'The token needs the meters:write scope.',
+          hint: `The token needs the ${scope} scope.`,
         })
       }
-      return yield* apiFailure(response.status, environment)
+      if (response.status === 404) {
+        return yield* new BillingConfigError({
+          message: `Config commands are not available in ${organization.environment} yet`,
+          hint: 'The API is still rolling out. Try again later.',
+        })
+      }
+      return yield* apiFailure(response.status, organization.environment)
+    })
+
+  const plan = (config: LoadedConfig, organization: ActiveOrganization) =>
+    Effect.gen(function* () {
+      const response = yield* post('/config/plan', config, organization)
+      if (response.status === 200) {
+        const body =
+          yield* HttpClientResponse.schemaBodyJson(PlanResponse)(response)
+        return {
+          entries: entries('meters', body.changes),
+          issues: issues(config, [...body.issues]),
+        } satisfies PlanResult
+      }
+      if (response.status === 422) {
+        const { detail } =
+          yield* HttpClientResponse.schemaBodyJson(ValidationErrors)(response)
+        return {
+          entries: [],
+          issues: issues(config, [...detail]),
+        } satisfies PlanResult
+      }
+      return yield* unexpected(response, organization, 'meters:read')
     }).pipe(
       Effect.scoped,
       Effect.catchTags({
@@ -291,7 +323,50 @@ export const make = Effect.gen(function* () {
       }),
     )
 
-  return BillingConfig.of({ load, apply })
+  const apply = (config: LoadedConfig, organization: ActiveOrganization) =>
+    Effect.gen(function* () {
+      const response = yield* post('/config/apply', config, organization)
+      if (response.status === 200) {
+        const sections =
+          yield* HttpClientResponse.schemaBodyJson(ApplyResponse)(response)
+        return {
+          status: 'applied',
+          entries: Object.entries(sections).flatMap(([section, result]) =>
+            entries(section, Array.isArray(result) ? result : [result]),
+          ),
+        } satisfies ApplyResult
+      }
+      const invalid =
+        response.status === 422 ||
+        (response.status === 409 &&
+          (yield* errorName(response)) === 'ConfigInvalid')
+      if (invalid) {
+        const { detail } =
+          yield* HttpClientResponse.schemaBodyJson(ValidationErrors)(response)
+        return {
+          status: 'rejected',
+          issues: issues(config, [...detail]),
+        } satisfies ApplyResult
+      }
+      return yield* unexpected(response, organization, 'meters:write')
+    }).pipe(
+      Effect.scoped,
+      Effect.catchTags({
+        HttpClientError: (error) =>
+          new BillingConfigError({
+            message: 'Could not reach the Polar API',
+            hint: error.message,
+          }),
+        HttpBodyError: () =>
+          new BillingConfigError({ message: 'Could not encode the config' }),
+        SchemaError: () =>
+          new BillingConfigError({
+            message: 'Unexpected response from the API',
+          }),
+      }),
+    )
+
+  return BillingConfig.of({ load, plan, apply })
 })
 
 export const layer = Layer.effect(BillingConfig, make)

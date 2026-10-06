@@ -57,4 +57,5 @@ export const brandSections: BrandSectionMeta[] = [
   { id: 'illustration', index: '04', label: 'Illustration' },
   { id: 'voice', index: '05', label: 'Voice' },
   { id: 'marketing', index: '06', label: 'Marketing' },
+  { id: 'posters', index: '07', label: 'Posters' },
 ]

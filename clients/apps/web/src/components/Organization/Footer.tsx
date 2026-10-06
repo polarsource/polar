@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { PropsWithChildren } from 'react'
 import { PolarLogotype } from '../Layout/Public/PolarLogotype'
 import { CookiePreferencesButton } from '../Privacy/CookiePreferencesButton'
-import LogoReveal from '../Brand/logos/LogoReveal'
 
 const Footer = () => {
   return (
@@ -32,9 +31,9 @@ const Footer = () => {
           alignItems="start"
           rowGap="3xl"
         >
-          <LogoReveal
+          <PolarLogotype
             className="ml-2 md:ml-0"
-            variant="logotype"
+            logoVariant="logotype"
             size={120}
           />
           <Box flexDirection="column" rowGap="xl">

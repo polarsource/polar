@@ -14,17 +14,25 @@ const expensiveToolCall = async () => {
 
   const balance = await customer.meters.tool_call.balance()
 
-  console.log('Checking balance before tool call:', balance)
-
-  if (balance > 0) {
+  if (balance.isPristine && balance.balance > 0) {
     console.log('That is plenty, doing the thing')
     // doTheThing();
     await customer.events.ingest('tool_call')
 
-    // A problem is that this is now stale and we have no way of knowing
+    // // customer.meters.tool_call.isStale() // returns true
+    // // customer.meters.tool_call.on('reconciled', () => isStale() // returns false)
+
+    // // A problem is that this is now stale and we have no way of knowing
+    // await balance.refresh()
+
     const newBalance = await customer.meters.tool_call.balance()
 
-    console.log('Checking balance after tool call:', newBalance)
+    console.log(
+      'Checking balance after tool call:',
+      newBalance,
+      'is pristine:',
+      newBalance.isPristine,
+    )
   } else {
     console.log('Not enough balance, cannot do the thing')
   }

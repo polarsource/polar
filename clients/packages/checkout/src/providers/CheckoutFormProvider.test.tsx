@@ -731,7 +731,10 @@ describe('CheckoutFormProvider', () => {
     const makeStripe = (handleNextAction: ReturnType<typeof vi.fn>): Stripe =>
       ({
         createConfirmationToken: vi.fn(async () => ({
-          confirmationToken: { id: 'ctoken_1' },
+          confirmationToken: {
+            id: 'ctoken_1',
+            payment_method_preview: { type: 'card' },
+          },
         })),
         handleNextAction,
       }) as unknown as Stripe

@@ -38,7 +38,8 @@
     "access": "public"
   },
   "dependencies": {
-    "@polar-sh/sdk": "1.0.2"
+    "@polar-sh/sdk": "1.0.2",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@polar-sh/typescript-config": "workspace:*",

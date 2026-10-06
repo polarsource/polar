@@ -132,7 +132,7 @@ Every order carries:
 Polar generates a PDF invoice for every paid order. You can:
 
 - **Download it** from the order detail page in the dashboard.
-- **Trigger generation** programmatically via [Generate Order Invoice](/api-reference/orders/generate-order-invoice), then fetch the URL with [Get Order Invoice](/api-reference/orders/get-order-invoice).
+- **Trigger generation** programmatically via [Generate Order Invoice](/api-reference/current/orders/generate-order-invoice), then fetch the URL with [Get Order Invoice](/api-reference/current/orders/get-order-invoice).
 
 Customers can download and edit their own invoices — adding a company name, VAT number, or billing address — from the [Customer Portal](/features/customer-portal/introduction), without pulling you into a support thread.
 
@@ -153,13 +153,13 @@ Each receipt includes:
 - Any **refunds** issued against the order, with dates and amounts.
 - The same line items, taxes, totals, and linked invoice number as the order's invoice.
 
-You can **download receipts** from the order detail page in the dashboard, and customers download receipts from the [Customer Portal](/features/customer-portal/introduction) — a **Download Receipt** button appears on each paid order. Programmatically, use [Get Order Receipt](/api-reference/orders/get-order-receipt) for the merchant API or its [customer-portal counterpart](/api-reference/customer_portal/get-order-receipt).
+You can **download receipts** from the order detail page in the dashboard, and customers download receipts from the [Customer Portal](/features/customer-portal/introduction) — a **Download Receipt** button appears on each paid order. Programmatically, use [Get Order Receipt](/api-reference/current/orders/get-order-receipt) for the merchant API or its [customer-portal counterpart](/api-reference/current/customer_portal/get-order-receipt).
 
 The first request for a given order may return `202 Accepted` while the PDF renders. Retry shortly after for a presigned download URL. The Customer Portal handles this for you.
 
 ## Refunds
 
-Orders can be refunded in full or in part from the dashboard, or programmatically via the [Refunds API](/api-reference/refunds/create-refund). Refunds are a separate resource linked to the order — see [Refunds](/features/refunds) for the rules around what's refundable and how it interacts with payouts.
+Orders can be refunded in full or in part from the dashboard, or programmatically via the [Refunds API](/api-reference/current/refunds/create-refund). Refunds are a separate resource linked to the order — see [Refunds](/features/refunds) for the rules around what's refundable and how it interacts with payouts.
 
 ## Webhooks
 
@@ -179,7 +179,7 @@ If you're integrating orders into your own system, Polar emits an event on every
   <Card title="Refunds" icon="arrow-rotate-left" href="/features/refunds">
     How to refund an order, fully or partially.
   </Card>
-  <Card title="Orders API" icon="code" href="/api-reference/orders/list-orders">
+  <Card title="Orders API" icon="code" href="/api-reference/current/orders/list-orders">
     List and fetch orders, update billing details, and generate invoices.
   </Card>
   <Card title="Customer Portal" icon="user" href="/features/customer-portal/introduction">

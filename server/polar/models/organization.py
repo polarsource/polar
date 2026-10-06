@@ -747,8 +747,8 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return self.feature_settings.get("merchant_migration_enabled", False)
 
     @property
-    def is_frame_ancestors_enforced(self) -> bool:
-        return self.feature_settings.get("frame_ancestors_enforced", False)
+    def is_config_as_code_enabled(self) -> bool:
+        return self.feature_settings.get("config_as_code_enabled", False)
 
     sso_enforced: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 

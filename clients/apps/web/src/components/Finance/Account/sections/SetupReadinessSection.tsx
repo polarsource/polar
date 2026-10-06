@@ -33,7 +33,7 @@ type Status = schemas['OrganizationReviewCheckStatus']
 
 const DOCS = {
   checkoutLink: 'https://polar.sh/docs/features/checkout/links',
-  api: 'https://polar.sh/docs/api-reference/introduction',
+  api: 'https://polar.sh/docs/api-reference/current/introduction',
 }
 
 const API_ONLY_BENEFIT_TYPES: ReadonlySet<schemas['BenefitType']> = new Set([

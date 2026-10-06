@@ -301,6 +301,8 @@ const auth = betterAuth({
 });
 ```
 
+The checkout endpoint sends the customer's IP address, resolved with Better Auth's `getIP` (see `advanced.ipAddress`), to Polar to show local currency. Set `customerIpAddress` to a function `(headers) => ip` to resolve it yourself, or to `false` to not send it.
+
 When checkouts are enabled, you're able to initialize Checkout Sessions using the checkout-method on the BetterAuth Client. This will redirect the user to the Product Checkout.
 
 ```typescript
@@ -486,7 +488,7 @@ Thus, with that single object, you have all the required information to check if
 
 The portal plugin adds 3 convenient methods for listing benefits, orders & subscriptions relevant to the authenticated user/customer.
 
-[All of these methods use the Polar CustomerPortal APIs](https://docs.polar.sh/api-reference/customer-portal)
+These methods use the Polar Customer Portal API: [benefit grants](https://polar.sh/docs/api-reference/current/customer_portal/list-benefit-grants), [orders](https://polar.sh/docs/api-reference/current/customer_portal/list-orders) and [subscriptions](https://polar.sh/docs/api-reference/current/customer_portal/list-subscriptions).
 
 #### Benefits
 

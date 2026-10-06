@@ -353,6 +353,9 @@ importers:
       '@polar-sh/sdk':
         specifier: 1.0.2
         version: 1.0.2
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
     devDependencies:
       '@polar-sh/typescript-config':
         specifier: workspace:*

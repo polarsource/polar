@@ -8,7 +8,7 @@ import {
 } from '../paths.ts'
 import type { Rule } from '../types.ts'
 
-const API_MODULES = ['index', 'index.ts']
+const API_MODULES = ['sdk', 'sdk.ts']
 
 export default {
   meta: {
@@ -36,6 +36,8 @@ export default {
         source === undefined ? undefined : resolveImport(file, source)
       if (target === undefined) return
       if (API_MODULES.includes(target)) {
+        // Types don't call the API, so client/ may still type the SDK it's given
+        if ('importKind' in node && node.importKind === 'type') return
         context.report({ node, messageId: 'api' })
       } else if (areaOf(target) === 'adapters') {
         context.report({ node, messageId: 'adapter' })

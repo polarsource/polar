@@ -19,7 +19,7 @@
         "patterns": [
           {
             "group": ["@polar-sh/sdk", "@polar-sh/sdk/*"],
-            "message": "Only src/index.ts may depend on @polar-sh/sdk. It pins the API version in one place."
+            "message": "Only src/sdk.ts may depend on @polar-sh/sdk. It pins the API version in one place."
           }
         ]
       }
@@ -27,7 +27,7 @@
   },
   "overrides": [
     {
-      "files": ["src/index.ts"],
+      "files": ["src/sdk.ts"],
       "rules": {
         "no-restricted-imports": "off"
       }

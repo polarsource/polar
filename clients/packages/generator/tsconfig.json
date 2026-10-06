@@ -1,0 +1,9 @@
+{
+  "extends": "@polar-sh/typescript-config/bundled.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

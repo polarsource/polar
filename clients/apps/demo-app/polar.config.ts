@@ -1,6 +1,6 @@
 // import { defineConfig } from '@polar-sh/polar'
 
-import { MeterSDKConfig } from '@polar-sh/polar'
+import { RuntimeSDKConfig } from '@polar-sh/polar'
 
 export default {
   events: [
@@ -41,4 +41,4 @@ export default {
     //   custom_multiplier: null,
     // },
   ],
-} as const satisfies MeterSDKConfig
+} as const satisfies RuntimeSDKConfig

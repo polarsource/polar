@@ -20,7 +20,7 @@ import {
   type PolarOptions,
 } from '@polar-sh/sdk/2027-01'
 
-export type MeterSDKConfig = {
+export type RuntimeSDKConfig = {
   events?: readonly {
     name: string
   }[]
@@ -44,21 +44,21 @@ export type MeterSDKConfig = {
   }[]
 }
 
-type MeterSDKMeterConfig = NonNullable<MeterSDKConfig['meters']>[number]
+type RuntimeSDKMeterConfig = NonNullable<RuntimeSDKConfig['meters']>[number]
 
 export type MeterBalance = {
   balance: number
   isPristine: boolean
 }
 
-type MeterSDKMeters<Config extends MeterSDKConfig> = {
+type RuntimeSDKMeters<Config extends RuntimeSDKConfig> = {
   [Meter in Extract<
     NonNullable<Config['meters']>[number],
     { external_id: string }
   > as Meter['external_id']]: Meter & { balance: () => Promise<MeterBalance> }
 }
 
-type MeterSDKEvents<Config extends MeterSDKConfig> = {
+type RuntimeSDKEvents<Config extends RuntimeSDKConfig> = {
   ingest: (
     name: Extract<
       NonNullable<Config['events']>[number],
@@ -79,7 +79,7 @@ type ActorIdentifier = ActorCustomerIdentifier & ActorMemberIdentifier
 
 // Vibe-coded alert
 const matchesFilter = (
-  filter: MeterSDKMeterConfig['filter'],
+  filter: RuntimeSDKMeterConfig['filter'],
   event: Record<string, unknown>,
 ): boolean =>
   filter.clauses.every((group) =>
@@ -89,19 +89,19 @@ const matchesFilter = (
     ),
   )
 
-type MeterSDKActor<Config extends MeterSDKConfig> = (
+type RuntimeSDKActor<Config extends RuntimeSDKConfig> = (
   identifier: ActorIdentifier,
 ) => {
-  meters: MeterSDKMeters<Config>
-  events: MeterSDKEvents<Config>
+  meters: RuntimeSDKMeters<Config>
+  events: RuntimeSDKEvents<Config>
 }
 
-export function MeterSDK<const Config extends MeterSDKConfig>(
+export function RuntimeSDK<const Config extends RuntimeSDKConfig>(
   config: Config,
   sdkOptions: PolarOptions,
 ): {
   sdk: Polar
-  actor: MeterSDKActor<Config>
+  actor: RuntimeSDKActor<Config>
 } {
   const sdk = createPolar(sdkOptions)
 
@@ -161,11 +161,11 @@ export function MeterSDK<const Config extends MeterSDKConfig>(
       },
       {} as Record<
         string,
-        MeterSDKMeterConfig & { balance: () => Promise<MeterBalance> }
+        RuntimeSDKMeterConfig & { balance: () => Promise<MeterBalance> }
       >,
     )
 
-    const events: MeterSDKEvents<Config> = {
+    const events: RuntimeSDKEvents<Config> = {
       async ingest(name) {
         const timestamp = new Date()
 
@@ -197,7 +197,7 @@ export function MeterSDK<const Config extends MeterSDKConfig>(
     }
 
     return {
-      meters: (meters ?? {}) as MeterSDKMeters<Config>,
+      meters: (meters ?? {}) as RuntimeSDKMeters<Config>,
       events,
     }
   }

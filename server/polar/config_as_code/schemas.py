@@ -57,7 +57,8 @@ class Config(Schema):
     organization: ConfigOrganization | None = Field(
         default=None,
         description=(
-            "Organization settings to update. Only the settings present are changed."
+            "Organization settings to update. Each setting present replaces "
+            "its current value; settings not present are left unchanged."
         ),
     )
     meters: list[ConfigMeter] | None = Field(
@@ -110,7 +111,7 @@ class ConfigAction(StrEnum):
 class ConfigApplyResourceResult(Schema):
     section: ConfigSection = Field(description="Config section of the resource.")
     key: str | None = Field(
-        description="The resource's `external_id`, or `null` for singleton sections."
+        description="The resource's `external_id`, or `None` for singleton sections."
     )
     action: ConfigAction = Field(description="What applying the config did.")
 

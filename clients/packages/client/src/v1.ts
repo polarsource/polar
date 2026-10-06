@@ -15767,7 +15767,7 @@ export interface components {
        * @constant
        */
       version: 1
-      /** @description Organization settings to update. Only the settings present are changed. */
+      /** @description Organization settings to update. Each setting present replaces its current value; settings not present are left unchanged. */
       organization?: components['schemas']['ConfigOrganization'] | null
       /**
        * Meters
@@ -15791,7 +15791,7 @@ export interface components {
       section: components['schemas']['ConfigSection']
       /**
        * Key
-       * @description The resource's `external_id`, or `null` for singleton sections.
+       * @description The resource's `external_id`, or `None` for singleton sections.
        */
       key: string | null
       /** @description What applying the config did. */

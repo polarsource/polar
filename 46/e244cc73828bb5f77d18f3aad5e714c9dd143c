@@ -1,0 +1,19 @@
+server/polar/metrics/service.py
+  s_3994309354b59a::t_bef19aa35c1753 315,318-321
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "46e244cc73828bb5f77d18f3aad5e714c9dd143c",
+  "prompts": {},
+  "sessions": {
+    "s_3994309354b59a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "db4e6884-e94a-4022-8218-3a720538e6ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

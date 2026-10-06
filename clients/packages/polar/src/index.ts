@@ -29,13 +29,25 @@ export function RuntimeSDK<const Config extends RuntimeSDKConfig>(
   return { sdk, actor: createActor(config, sdk) }
 }
 
-export { MeterAggregation, MeterConfig, MeterFilter } from './schema/meter'
+export {
+  eq,
+  ne,
+  gt,
+  gte,
+  lt,
+  lte,
+  like,
+  notLike,
+  fold,
+  MeterAggregation,
+  MeterConfig,
+  MeterFilter,
+} from './schema/meter'
+export type { MeterDefinition } from './schema/meter'
+export { defineConfig, validateConfig } from './schema/config'
+export type { Config } from './schema/config'
+export { generateConfig } from './generate'
 export { PolarConfig }
-
-export const validateConfig = Schema.decodeUnknownEffect(PolarConfig, {
-  errors: 'all',
-  onExcessProperty: 'error',
-})
 
 export const parseConfig = Schema.decodeUnknownEffect(
   Schema.fromJsonString(PolarConfig),

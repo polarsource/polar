@@ -1,0 +1,10 @@
+{
+  "name": "demo-app",
+  "private": true,
+  "dependencies": {
+    "@polar-sh/polar": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:"
+  }
+}

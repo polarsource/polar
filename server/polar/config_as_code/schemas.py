@@ -12,7 +12,11 @@ from polar.models.organization import (
     OrganizationCustomerPortalSettings,
     OrganizationSubscriptionSettings,
 )
-from polar.organization.schemas import OrganizationID
+from polar.organization.schemas import (
+    DEFAULT_PRESENTMENT_CURRENCY_DESCRIPTION,
+    DEFAULT_TAX_BEHAVIOR_DESCRIPTION,
+    OrganizationID,
+)
 
 MAXIMUM_METERS = 100
 
@@ -22,8 +26,12 @@ ConfigVersion = Literal[1]
 class ConfigOrganization(Schema):
     model_config = ConfigDict(extra="forbid")
 
-    default_presentment_currency: PresentmentCurrency | None = None
-    default_tax_behavior: TaxBehaviorOption | None = None
+    default_presentment_currency: PresentmentCurrency | None = Field(
+        None, description=DEFAULT_PRESENTMENT_CURRENCY_DESCRIPTION
+    )
+    default_tax_behavior: TaxBehaviorOption | None = Field(
+        None, description=DEFAULT_TAX_BEHAVIOR_DESCRIPTION
+    )
     subscription_settings: OrganizationSubscriptionSettings | None = None
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
     customer_portal_settings: OrganizationCustomerPortalSettings | None = None

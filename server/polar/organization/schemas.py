@@ -170,6 +170,12 @@ def _coerce_overview_metrics(value: Any) -> Any:
 OverviewMetrics = Annotated[list[str] | None, BeforeValidator(_coerce_overview_metrics)]
 
 
+DEFAULT_PRESENTMENT_CURRENCY_DESCRIPTION = (
+    "Default presentment currency for the organization"
+)
+DEFAULT_TAX_BEHAVIOR_DESCRIPTION = "Default tax behavior applied on products."
+
+
 class OrganizationFeatureSettings(Schema):
     issue_funding_enabled: bool = Field(
         False, description="If this organization has issue funding enabled"
@@ -709,10 +715,10 @@ class OrganizationUpdate(Schema):
     dispute_settings: OrganizationDisputeSettingsUpdate | None = None
     embed_hosts: EmbedHostsInput | None = None
     default_presentment_currency: PresentmentCurrency | None = Field(
-        None, description="Default presentment currency for the organization"
+        None, description=DEFAULT_PRESENTMENT_CURRENCY_DESCRIPTION
     )
     default_tax_behavior: TaxBehaviorOption | None = Field(
-        None, description="Default tax behavior applied on products."
+        None, description=DEFAULT_TAX_BEHAVIOR_DESCRIPTION
     )
     sso_enforced: bool | None = Field(
         None,

@@ -6026,6 +6026,8 @@ export interface paths {
      * Apply Config
      * @description Apply a declarative config document to the organization.
      *
+     *     **Preview:** the config is validated, but changes aren't persisted yet.
+     *
      *     **Scopes**: `meters:write` `organizations:write`
      */
     post: operations['config:apply']
@@ -15874,9 +15876,11 @@ export interface components {
     }
     /** ConfigOrganization */
     ConfigOrganization: {
+      /** @description Default presentment currency for the organization */
       default_presentment_currency?:
         | components['schemas']['PresentmentCurrency']
         | null
+      /** @description Default tax behavior applied on products. */
       default_tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
       subscription_settings?:
         | components['schemas']['OrganizationSubscriptionSettings']

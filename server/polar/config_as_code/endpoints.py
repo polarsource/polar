@@ -33,5 +33,9 @@ async def apply(
     auth_subject: ConfigWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> ConfigApplyResult:
-    """Apply a declarative config document to the organization."""
+    """
+    Apply a declarative config document to the organization.
+
+    **Preview:** the config is validated, but changes aren't persisted yet.
+    """
     return await config_as_code_service.apply(session, auth_subject, config)

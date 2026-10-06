@@ -1,8 +1,10 @@
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
+from polar.auth.scope import Scope
 from polar.authz.service import assert_organization_permission
 from polar.exceptions import PolarError
 from polar.models import Organization, User
+from polar.oauth2.exceptions import InsufficientScopeError
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
 
@@ -28,12 +30,22 @@ class ConfigAsCodeService:
         config: Config,
     ) -> ConfigApplyResult:
         organization = await get_payload_organization(session, auth_subject, config)
-        await assert_organization_permission(
-            session,
-            auth_subject,
-            organization.id,
-            OrganizationPermission.organization_manage,
-        )
+        if config.organization is not None:
+            await self._authorize_section(
+                session,
+                auth_subject,
+                organization,
+                Scope.organizations_write,
+                OrganizationPermission.organization_manage,
+            )
+        if config.meters is not None:
+            await self._authorize_section(
+                session,
+                auth_subject,
+                organization,
+                Scope.meters_write,
+                OrganizationPermission.products_manage,
+            )
         if not organization.is_config_as_code_enabled:
             raise ConfigAsCodeNotEnabled()
 
@@ -55,6 +67,20 @@ class ConfigAsCodeService:
                 )
             )
         return ConfigApplyResult(version=config.version, results=results)
+
+    async def _authorize_section(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        scope: Scope,
+        permission: OrganizationPermission,
+    ) -> None:
+        if scope not in auth_subject.scopes:
+            raise InsufficientScopeError({scope})
+        await assert_organization_permission(
+            session, auth_subject, organization.id, permission
+        )
 
 
 config_as_code = ConfigAsCodeService()

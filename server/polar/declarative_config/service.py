@@ -132,9 +132,10 @@ class DeclarativeConfigService:
         for meter_config, meter, update_dict in changes:
             if meter is None:
                 try:
-                    await meter_service.create_for_organization(
-                        session, organization, meter_config
-                    )
+                    async with session.begin_nested():
+                        await meter_service.create_for_organization(
+                            session, organization, meter_config
+                        )
                 except IntegrityError as e:
                     database_error = getattr(e.orig, "__cause__", None)
                     constraint_name = getattr(database_error, "constraint_name", None)

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { VoidConfiguration } from '../api'
-import type { Configuration } from '../Stage/diff'
+import { emptyConfiguration, type Configuration } from '../Stage/diff'
+import { useStage } from '../Stage/queries'
 import {
   configurationFromLevers,
   DEFAULT_ASSUMPTIONS,
@@ -68,3 +69,26 @@ export const useStageLevers = (
 }
 
 export type StageLevers = ReturnType<typeof useStageLevers>
+
+export const useStagePreview = (organizationId: string) => {
+  const { stage, applied, configuration } = useStage(organizationId)
+  const comparable = applied ? !!configuration.data : true
+  const preview = useMemo(
+    () =>
+      stage.data && comparable
+        ? {
+            revision: stage.data.revision,
+            baseLevers: leversFromConfiguration(
+              asVoid(configuration.data ?? emptyConfiguration),
+              DEFAULT_ASSUMPTIONS,
+            ),
+            levers: leversFromConfiguration(
+              asVoid(stage.data.configuration),
+              DEFAULT_ASSUMPTIONS,
+            ),
+          }
+        : null,
+    [stage.data, comparable, configuration.data],
+  )
+  return preview
+}

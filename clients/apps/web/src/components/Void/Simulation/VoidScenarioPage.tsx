@@ -136,8 +136,7 @@ export const VoidScenarioPage = () => {
               <DropdownMenuItem
                 onClick={async () => {
                   const copy = await duplicate(scenario.id)
-                  if (copy)
-                    router.push(`${base}/definition/simulate/${copy.id}`)
+                  if (copy) router.push(`${base}/simulate/${copy.id}`)
                 }}
               >
                 Duplicate
@@ -145,7 +144,7 @@ export const VoidScenarioPage = () => {
               <DropdownMenuItem
                 onClick={() => {
                   remove(scenario.id)
-                  router.push(`${base}/definition/simulate`)
+                  router.push(`${base}/simulate`)
                 }}
               >
                 Delete

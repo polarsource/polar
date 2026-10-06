@@ -95,7 +95,7 @@ const ScenarioCard = ({ card, href }: { card: Card; href: string }) => {
 export const VoidSimulationList = () => {
   const router = useRouter()
   const { organization } = useContext(OrganizationContext)
-  const base = `/void/dashboard/${organization.slug}/definition/simulate`
+  const base = `/void/dashboard/${organization.slug}/simulate`
   const { scenarios, create } = useScenarios()
   const cards = useMemo(() => scenarios.map(toCard), [scenarios])
   const { isShown, show, hide } = useModal()

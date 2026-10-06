@@ -43,7 +43,7 @@ export const SimulationBlockViewFixture = ({
       applyChanges(levers, block.changes)
     })
     router.push(
-      `/void/dashboard/${organization.slug}/definition/simulate/${scenario.id}`,
+      `/void/dashboard/${organization.slug}/simulate/${scenario.id}`,
     )
   }
 

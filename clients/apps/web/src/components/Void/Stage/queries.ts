@@ -20,7 +20,7 @@ export const stageKey = (organizationId: string) => [
 ]
 
 export const stageReviewHref = (organizationSlug: string) =>
-  `/void/dashboard/${organizationSlug}/definition/simulate/stage`
+  `/void/dashboard/${organizationSlug}/simulate/stage`
 
 export const useSaveStage = (organizationId: string) => {
   const queryClient = useQueryClient()

@@ -66,12 +66,14 @@ const voidRoutesList = (org?: schemas['Organization']): Route[] => {
           link: `${base}/definition/signals`,
           icon: <SensorsOutlined fontSize="inherit" />,
         },
-        {
-          title: 'Simulate',
-          link: `${base}/definition/simulate`,
-          icon: <AltRouteOutlined fontSize="inherit" />,
-        },
       ],
+    },
+    {
+      id: 'void-simulate',
+      title: 'Simulate',
+      icon: <AltRouteOutlined fontSize="inherit" />,
+      link: `${base}/simulate`,
+      if: true,
     },
     {
       id: 'void-identities',

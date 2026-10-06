@@ -120,7 +120,7 @@ it('stages successive product and meter edits while preserving the remaining con
   expect(await screen.findByRole('status')).toHaveTextContent('Saved to stage')
   expect(screen.getByRole('link', { name: /Review staged/ })).toHaveAttribute(
     'href',
-    '/void/dashboard/org/definition/simulate/stage',
+    '/void/dashboard/org/simulate/stage',
   )
   fireEvent.click(screen.getByRole('button', { name: 'Edit meter' }))
   fireEvent.change(await screen.findByLabelText('Unit price'), {

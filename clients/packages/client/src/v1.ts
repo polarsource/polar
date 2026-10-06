@@ -6026,7 +6026,9 @@ export interface paths {
      * Apply Config
      * @description Apply a declarative config document to the organization.
      *
-     *     **Preview:** the config is validated, but changes aren't persisted yet.
+     *     Meters are matched by `external_id`: missing ones are created, changed ones
+     *     are updated, and meters not listed are left untouched. Everything is applied
+     *     in one transaction.
      *
      *     **Scopes**: `meters:write`
      */
@@ -15793,6 +15795,19 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** ConfigEntryError */
+    ConfigEntryError: {
+      /**
+       * Loc
+       * @description Location of the blocked value in the request body.
+       */
+      loc: (string | number)[]
+      /**
+       * Msg
+       * @description Why the value can't be applied.
+       */
+      msg: string
+    }
     /** ConfigMeter */
     ConfigMeter: {
       /**
@@ -15847,6 +15862,28 @@ export interface components {
        * @description Your identifier for the meter. Used to match the config entry with an existing meter.
        */
       external_id: string
+    }
+    /** ConfigMeterConflict */
+    ConfigMeterConflict: {
+      /**
+       * Error
+       * @example ConfigMeterConflict
+       * @constant
+       */
+      error: 'ConfigMeterConflict'
+      /** Detail */
+      detail: string
+    }
+    /** ConfigMeterLocked */
+    ConfigMeterLocked: {
+      /**
+       * Error
+       * @example ConfigMeterLocked
+       * @constant
+       */
+      error: 'ConfigMeterLocked'
+      /** Detail */
+      detail: components['schemas']['ConfigEntryError'][]
     }
     /** ConfigMeterResult */
     ConfigMeterResult: {
@@ -61611,7 +61648,7 @@ export interface operations {
       }
     }
     responses: {
-      /** @description Config validated. */
+      /** @description Config applied. */
       200: {
         headers: {
           [name: string]: unknown
@@ -61638,6 +61675,17 @@ export interface operations {
           'application/json':
             | components['schemas']['NotPermitted']
             | components['schemas']['ConfigAsCodeNotEnabled']
+        }
+      }
+      /** @description A meter is already aggregating events and its filter or aggregation would change, or another request created the same meter concurrently. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['ConfigMeterLocked']
+            | components['schemas']['ConfigMeterConflict']
         }
       }
       /** @description Validation Error */

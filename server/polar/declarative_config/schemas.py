@@ -58,6 +58,13 @@ class Config(Schema):
         return value
 
 
+class ConfigEntryError(Schema):
+    loc: list[str | int] = Field(
+        description="Location of the blocked value in the request body."
+    )
+    msg: str = Field(description="Why the value can't be applied.")
+
+
 class ConfigAction(StrEnum):
     created = "created"
     updated = "updated"

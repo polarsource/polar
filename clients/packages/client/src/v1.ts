@@ -6050,8 +6050,9 @@ export interface paths {
     put?: never
     /**
      * Validate Config
-     * @description Validate a declarative config document against an organization without
-     *     applying it. Every problem is reported at once, with its path in the document.
+     * @description Check a declarative config document against the organization without applying it.
+     *
+     *     Returns every issue `apply` would block on, plus warnings that don't block it.
      *
      *     **Scopes**: `meters:read` `meters:write`
      */
@@ -15818,44 +15819,36 @@ export interface components {
       /** Detail */
       detail: string
     }
-    /** ConfigEntryError */
-    ConfigEntryError: {
+    /** ConfigIssue */
+    ConfigIssue: {
+      /** @description `error` blocks applying the config, `warning` doesn't. */
+      severity: components['schemas']['ConfigIssueSeverity']
+      /**
+       * Type
+       * @description Machine-readable reason, e.g. `meter_locked`.
+       */
+      type: string
       /**
        * Loc
-       * @description Location of the blocked value in the request body.
+       * @description Location of the issue in the request body.
        */
       loc: (string | number)[]
       /**
        * Msg
-       * @description Why the value can't be applied.
+       * @description Human-readable description of the issue.
        */
       msg: string
+      /**
+       * Input
+       * @description The value at `loc`, if relevant.
+       */
+      input?: unknown | null
     }
-    /** ConfigIssue */
-    ConfigIssue: {
-      /**
-       * Severity
-       * @enum {string}
-       */
-      severity: 'error' | 'warning'
-      /**
-       * Code
-       * @description Machine-readable reason, e.g. `literal_error`.
-       */
-      code: string
-      /**
-       * Path
-       * @description Location of the issue in the config, as a JSON path.
-       */
-      path: (string | number)[]
-      /** Message */
-      message: string
-      /**
-       * Got
-       * @description The value found at the path, if any.
-       */
-      got: unknown | null
-    }
+    /**
+     * ConfigIssueSeverity
+     * @enum {string}
+     */
+    ConfigIssueSeverity: 'error' | 'warning'
     /** ConfigMeter */
     ConfigMeter: {
       /**
@@ -15931,7 +15924,7 @@ export interface components {
        */
       error: 'ConfigMeterLocked'
       /** Detail */
-      detail: components['schemas']['ConfigEntryError'][]
+      detail: components['schemas']['ConfigIssue'][]
     }
     /** ConfigMeterResult */
     ConfigMeterResult: {
@@ -61755,11 +61748,11 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': unknown
+        'application/json': components['schemas']['Config']
       }
     }
     responses: {
-      /** @description Successful Response */
+      /** @description Config checked. Issues are listed in the response. */
       200: {
         headers: {
           [name: string]: unknown
@@ -61777,7 +61770,7 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
-      /** @description Not allowed to read this organization's meters, or config as code isn't enabled for it. */
+      /** @description Not allowed to read this organization's products, or config as code isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown
@@ -70434,7 +70427,7 @@ export const configActionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigAction']
 > = ['created', 'updated', 'unchanged']
 export const configIssueSeverityValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ConfigIssue']['severity']
+  FlattenedDeepRequired<components>['schemas']['ConfigIssueSeverity']
 > = ['error', 'warning']
 export const countAggregationFuncValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CountAggregation']['func']

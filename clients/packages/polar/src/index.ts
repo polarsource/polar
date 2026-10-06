@@ -77,6 +77,29 @@ type ActorMemberIdentifier =
 
 type ActorIdentifier = ActorCustomerIdentifier & ActorMemberIdentifier
 
+type CustomerIdentifier =
+  | { customer_id: string }
+  | { external_customer_id: string }
+type MemberIdentifier = CustomerIdentifier &
+  ({ member_id: string } | { external_member_id: string } | {})
+
+const toCustomerIdentifier = (
+  identifier: ActorIdentifier,
+): CustomerIdentifier =>
+  identifier.customerId !== undefined
+    ? { customer_id: identifier.customerId }
+    : { external_customer_id: identifier.externalCustomerId }
+
+const toMemberIdentifier = (identifier: ActorIdentifier): MemberIdentifier => ({
+  // Always require a customer identifier on a member too
+  ...toCustomerIdentifier(identifier),
+  ...(identifier.memberId !== undefined
+    ? { member_id: identifier.memberId }
+    : identifier.externalMemberId !== undefined
+      ? { external_member_id: identifier.externalMemberId }
+      : {}),
+})
+
 // Vibe-coded alert
 const matchesFilter = (
   filter: RuntimeSDKMeterConfig['filter'],
@@ -124,9 +147,7 @@ export function RuntimeSDK<const Config extends RuntimeSDKConfig>(
           ...meter,
           async balance() {
             const response = await sdk.customerMeters.list({
-              ...(identifier.customerId !== undefined
-                ? { customer_id: identifier.customerId }
-                : { external_customer_id: identifier.externalCustomerId }),
+              ...toCustomerIdentifier(identifier),
               meter_id: meter.id,
             })
 
@@ -172,9 +193,7 @@ export function RuntimeSDK<const Config extends RuntimeSDKConfig>(
         const { inserted } = await sdk.events.ingest({
           events: [
             {
-              ...(identifier.customerId !== undefined
-                ? { customer_id: identifier.customerId }
-                : { external_customer_id: identifier.externalCustomerId }),
+              ...toMemberIdentifier(identifier),
               name,
               timestamp: timestamp.toISOString(),
             },

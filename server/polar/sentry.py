@@ -25,17 +25,36 @@ if TYPE_CHECKING:
     from sentry_sdk._types import Event, Hint
 
 POSTHOG_ID_TAG = "posthog_distinct_id"
-_FILTERED = "[Filtered]"
+# Personal data fields on request bodies. IP addresses and user agents are kept.
 _REQUEST_PII_KEYS = frozenset(
     {
+        "account_email",
+        "account_username",
+        "billing_address",
+        "billing_manager_email",
+        "billing_name",
+        "customer_billing_address",
+        "customer_billing_name",
         "customer_email",
         "customer_name",
-        "customer_billing_name",
-        "customer_billing_address",
         "customer_tax_id",
-        "billing_name",
-        "billing_address",
+        "date_of_birth",
+        "email",
+        "first_name",
+        "from_email_addr",
+        "full_name",
+        "invited_email",
+        "inviter_email",
+        "last_name",
+        "name",
+        "new_email",
+        "owner_email",
+        "reply_to_email_addr",
+        "reply_to_name",
         "tax_id",
+        "to_email_addr",
+        "verified_first_name",
+        "verified_last_name",
     }
 )
 
@@ -57,11 +76,13 @@ class DramatiqIntegration(_DramatiqIntegration):
 
 def _scrub_request_pii(value: object) -> None:
     if isinstance(value, dict):
-        for key, item in cast(dict[object, object], value).items():
-            if isinstance(key, str) and key in _REQUEST_PII_KEYS:
-                value[key] = _FILTERED
-            else:
-                _scrub_request_pii(item)
+        mapping = cast(dict[object, object], value)
+        for key in [
+            key for key in mapping if isinstance(key, str) and key in _REQUEST_PII_KEYS
+        ]:
+            mapping.pop(key, None)
+        for item in mapping.values():
+            _scrub_request_pii(item)
     elif isinstance(value, list):
         for item in cast(list[object], value):
             _scrub_request_pii(item)

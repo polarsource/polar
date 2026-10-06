@@ -6,7 +6,7 @@ import { BunServices } from '@effect/platform-bun'
 import { Effect, Layer } from 'effect'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
-import { locate, make } from '@/services/config'
+import { displayPath, locate, make } from '@/services/config'
 import { fakeHttp } from '@/utils/test-utils/http'
 import { fakeAuth } from '@/utils/test-utils/services'
 
@@ -211,6 +211,22 @@ describe('locate', () => {
   })
 })
 
+describe('displayPath', () => {
+  test('drops union tags that are not keys in the file', () => {
+    expect(
+      displayPath(source, ['meters', 0, 'filter', 'and', 'conjunction']),
+    ).toEqual(['meters', 0, 'filter', 'conjunction'])
+  })
+
+  test('keeps a missing last key', () => {
+    expect(displayPath(source, ['meters', 0, 'count', 'name'])).toEqual([
+      'meters',
+      0,
+      'name',
+    ])
+  })
+})
+
 describe('validate', () => {
   test('posts the config for the organization and maps the issues onto the file', async () => {
     api.routes[`POST ${validateUrl}`] = Response.json({
@@ -265,7 +281,7 @@ describe('validate', () => {
         detail: [
           {
             type: 'literal_error',
-            loc: ['body', 'meters', 0, 'filter', 'conjunction'],
+            loc: ['body', 'meters', 0, 'filter', 'and', 'conjunction'],
             msg: "Input should be 'and' or 'or'",
             input: 'qwe',
           },

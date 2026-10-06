@@ -80,6 +80,22 @@ export const locate = (
   }
 }
 
+export const displayPath = (source: string, path: Path): Path => {
+  let node = parseTree(source)
+  if (!node) return path
+  const kept: Array<string | number> = []
+  for (const [index, segment] of path.entries()) {
+    const child = findNodeAtLocation(node, [segment])
+    if (child) {
+      node = child
+      kept.push(segment)
+    } else if (index === path.length - 1) {
+      kept.push(segment)
+    }
+  }
+  return kept
+}
+
 type ServerIssue = typeof ServerIssueSchema.Type
 
 const toConfigIssue = (
@@ -90,7 +106,7 @@ const toConfigIssue = (
   return {
     severity: issue.severity,
     code: issue.type,
-    path: path.join('.'),
+    path: displayPath(config.source, path).join('.'),
     message: issue.msg,
     got: issue.input === undefined ? undefined : JSON.stringify(issue.input),
     location: locate(config.source, path),

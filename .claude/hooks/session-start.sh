@@ -55,13 +55,17 @@ reap() {
 }
 
 PRIVILEGED=()
+if [ "$(id -u)" -ne 0 ] && sudo -n true >/dev/null 2>&1; then
+  PRIVILEGED=(sudo -n)
+fi
 
 # A resumed container keeps /run, and dockerd hangs trusting an orphaned pidfile.
 # Test the pid rather than the process name: an unrelated containerd also matches.
 clear_stale_docker_state() {
   local pidfile
   for pidfile in "$CONTAINERD_PIDFILE" "$DOCKERD_PIDFILE"; do
-    if [ -f "$pidfile" ] && ! kill -0 "$(cat "$pidfile" 2>/dev/null)" 2>/dev/null; then
+    if [ -f "$pidfile" ] &&
+      ! "${PRIVILEGED[@]}" kill -0 "$(cat "$pidfile" 2>/dev/null)" 2>/dev/null; then
       "${PRIVILEGED[@]}" rm -f "$pidfile" /var/run/docker.sock
     fi
   done
@@ -78,12 +82,9 @@ launch_dockerd() {
   docker info >/dev/null 2>&1 && return 0
   command -v dockerd >/dev/null 2>&1 || return 1
 
-  if [ "$(id -u)" -ne 0 ]; then
-    if ! sudo -n true >/dev/null 2>&1; then
-      echo "dockerd requires root and passwordless sudo is unavailable"
-      return 1
-    fi
-    PRIVILEGED=(sudo -n)
+  if [ "$(id -u)" -ne 0 ] && [ ${#PRIVILEGED[@]} -eq 0 ]; then
+    echo "dockerd requires root and passwordless sudo is unavailable"
+    return 1
   fi
 
   : >"$DOCKERD_LOG"

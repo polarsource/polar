@@ -2756,6 +2756,11 @@ export interface components {
        */
       previous_billing_provider: string | null
       order: components['schemas']['OrderEmail']
+      /**
+       * Regular Amount
+       * @default null
+       */
+      regular_amount: number | null
     }
     /** SubscriptionCycledAfterTrialEmail */
     SubscriptionCycledAfterTrialEmail: {
@@ -2971,6 +2976,7 @@ export interface components {
         | null
       /** Customer Cancellation Comment */
       customer_cancellation_comment: string | null
+      tax_behavior: components['schemas']['TaxBehavior'] | null
     }
     /** SubscriptionFinalInvoiceEmail */
     SubscriptionFinalInvoiceEmail: {
@@ -3256,6 +3262,11 @@ export interface components {
       /** Url */
       url: string
     }
+    /**
+     * TaxBehavior
+     * @enum {string}
+     */
+    TaxBehavior: 'inclusive' | 'exclusive'
     /**
      * TaxBehaviorOption
      * @enum {string}

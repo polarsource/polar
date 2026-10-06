@@ -81,7 +81,7 @@ from polar.models import (
     User,
     WalletTransaction,
 )
-from polar.models.discount import DiscountType
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.payment import PaymentTrigger
 from polar.models.product import ProductBillingType
@@ -2673,6 +2673,15 @@ class OrderService:
             }
             if subscription is not None and template_name != "order_confirmation":
                 props["previous_billing_provider"] = previous_billing_provider
+            if (
+                subscription is not None
+                and template_name == "subscription_confirmation"
+                and subscription.discount is not None
+                and subscription.discount.duration != DiscountDuration.forever
+            ):
+                props["regular_amount"] = sum(
+                    spp.amount for spp in subscription.subscription_product_prices
+                )
             email = EmailAdapter.validate_python(
                 {
                     "template": template_name,

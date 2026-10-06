@@ -12,6 +12,7 @@ from pydantic import (
 )
 
 from polar.benefit.schemas import Benefit
+from polar.enums import TaxBehavior
 from polar.kit.currency import format_currency
 from polar.kit.visibility import Visibility
 from polar.notifications.notification import (
@@ -76,7 +77,8 @@ class EmailTemplate(StrEnum):
     polar_self_startup_program_welcome = "polar_self_startup_program_welcome"
 
 
-class SubscriptionEmail(SubscriptionBase): ...
+class SubscriptionEmail(SubscriptionBase):
+    tax_behavior: TaxBehavior | None
 
 
 def _filter_email_benefit_list(benefits: list[Benefit]) -> list[Benefit]:
@@ -305,6 +307,7 @@ class SubscriptionCancellationEmail(BaseModel):
 
 class SubscriptionConfirmationProps(SubscriptionPropsBase):
     order: OrderEmail
+    regular_amount: int | None = None
 
 
 class SubscriptionConfirmationEmail(BaseModel):

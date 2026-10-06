@@ -35,7 +35,10 @@ interface OrderSummaryProps {
   order: schemas['OrderEmail']
 }
 
-function formatCurrency(amount: number, currency: string = 'USD'): string {
+export function formatCurrency(
+  amount: number,
+  currency: string = 'USD',
+): string {
   const decimalFactor = getCurrencyDecimalFactor(currency)
   return new Intl.NumberFormat('en-US', {
     style: 'currency',

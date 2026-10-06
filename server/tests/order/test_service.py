@@ -16,7 +16,11 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject
 from polar.checkout.eventstream import CheckoutEvent
 from polar.config import settings
-from polar.email.schemas import OrderConfirmationEmail, SubscriptionCycledEmail
+from polar.email.schemas import (
+    OrderConfirmationEmail,
+    SubscriptionConfirmationEmail,
+    SubscriptionCycledEmail,
+)
 from polar.enums import (
     InvoiceNumbering,
     PaymentMode,
@@ -3208,6 +3212,81 @@ class TestSendConfirmationEmail:
         email = enqueue_email_mock.call_args[0][0]
         assert isinstance(email, SubscriptionCycledEmail)
         assert email.props.previous_billing_provider == "Stripe"
+
+    async def test_subscription_create_with_temporary_discount(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        discount_fixed_once: Discount,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            discount=discount_fixed_once,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_create,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, SubscriptionConfirmationEmail)
+        assert email.props.regular_amount == sum(
+            spp.amount for spp in subscription.subscription_product_prices
+        )
+        assert email.props.regular_amount != subscription.amount
+
+    async def test_subscription_create_with_forever_discount(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer, discount=discount
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_create,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, SubscriptionConfirmationEmail)
+        assert email.props.regular_amount is None
 
 
 @pytest.mark.asyncio

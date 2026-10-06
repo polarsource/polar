@@ -153,11 +153,14 @@ class TestApply:
         assert json["error"] == "ConfigMeterLocked"
         assert json["detail"] == [
             {
+                "severity": "error",
+                "type": "meter_locked",
                 "loc": ["body", "meters", 0, "filter"],
                 "msg": (
                     "This field can't be updated because the meter "
                     "is already aggregating events."
                 ),
+                "input": None,
             }
         ]
 
@@ -217,29 +220,49 @@ class TestValidate:
         assert response.json() == {"issues": []}
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_non_object_config(
+    async def test_invalid_config(
         self, client: AsyncClient, config_as_code_enabled: None
     ) -> None:
-        response = await client.post("/v1/config/validate", json=[])
-
-        assert response.status_code == 200
-        assert [issue["code"] for issue in response.json()["issues"]] == ["dict_type"]
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_organization_token_reports_issues(
-        self, client: AsyncClient, config_as_code_enabled: None
-    ) -> None:
-        broken = {
-            **METER,
-            "filter": {**METER["filter"], "conjunction": "qwe"},
-        }
+        broken = {**METER, "filter": {**METER["filter"], "conjunction": "qwe"}}
 
         response = await client.post("/v1/config/validate", json={"meters": [broken]})
 
+        assert response.status_code == 422
+        [error] = response.json()["detail"]
+        assert error["loc"] == ["body", "meters", 0, "filter", "conjunction"]
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_reports_locked_meter_and_unknown_event(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        config_as_code_enabled: None,
+    ) -> None:
+        event = await create_event(save_fixture, organization=organization)
+        await create_meter(
+            save_fixture,
+            organization=organization,
+            external_id="sdk-tool-calls",
+            last_billed_event=event,
+        )
+
+        response = await client.post("/v1/config/validate", json={"meters": [METER]})
+
         assert response.status_code == 200
         issues = response.json()["issues"]
-        assert [issue["severity"] for issue in issues] == ["error", "warning"]
-        assert issues[0]["path"] == ["meters", 0, "filter", "conjunction"]
-        assert issues[0]["got"] == "qwe"
-        assert issues[1]["path"] == ["meters", 0, "filter", "clauses", 0, "value"]
-        assert issues[1]["message"] == 'No "tool_call" events have been received yet'
+        assert [(issue["severity"], issue["type"]) for issue in issues] == [
+            ("error", "meter_locked"),
+            ("warning", "unknown_event"),
+        ]
+        assert issues[0]["loc"] == ["body", "meters", 0, "filter"]
+        assert issues[1]["loc"] == [
+            "body",
+            "meters",
+            0,
+            "filter",
+            "clauses",
+            0,
+            "value",
+        ]
+        assert issues[1]["input"] == "tool_call"

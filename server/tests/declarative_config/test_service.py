@@ -284,3 +284,53 @@ class TestApply:
                 auth_subject,
                 Config.model_validate({"meters": [TOOL_CALLS_METER]}),
             )
+
+
+@pytest.mark.asyncio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+class TestValidate:
+    async def test_not_enabled(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        with pytest.raises(ConfigAsCodeNotEnabled):
+            await declarative_config_service.validate(
+                session, auth_subject, Config.model_validate({"meters": []})
+            )
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_reports_locked_meter_without_applying(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        event = await create_event(save_fixture, organization=organization)
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            external_id="my-meter",
+            last_billed_event=event,
+        )
+
+        result = await declarative_config_service.validate(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "meters": [
+                        {
+                            **FIXTURE_METER,
+                            "name": "Renamed",
+                            "aggregation": {"func": "sum", "property": "tokens"},
+                        }
+                    ]
+                }
+            ),
+        )
+
+        assert [(issue.type, issue.loc) for issue in result.issues] == [
+            ("meter_locked", ["body", "meters", 0, "aggregation"]),
+            ("unknown_event", ["body", "meters", 0, "filter", "clauses", 0, "value"]),
+        ]
+        assert meter.name == "My Meter"

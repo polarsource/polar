@@ -1,170 +1,104 @@
-from collections.abc import Awaitable, Callable
-from dataclasses import dataclass, field
+from collections.abc import Awaitable, Callable, Sequence
+from dataclasses import dataclass
 from typing import Any
 
-from pydantic import BaseModel, ValidationError
-from pydantic_core import ErrorDetails
-
 from polar.event_type.repository import EventTypeRepository
-from polar.exceptions import PolarRequestValidationError
-from polar.models import Organization
+from polar.meter.filter import Filter, FilterClause, FilterOperator
+from polar.meter.repository import MeterRepository
+from polar.meter.schemas import MeterCreateBase
+from polar.meter.service import METER_LOCKED_FIELD_MESSAGE, METER_LOCKED_FIELDS
+from polar.models import Meter, Organization
 from polar.postgres import AsyncSession
 
-from .schemas import (
-    MAXIMUM_METERS,
-    ConfigIssue,
-    ConfigMeter,
-    duplicate_external_ids,
+from .schemas import Config, ConfigIssue, ConfigIssueSeverity, ConfigMeter
+
+Loc = list[str | int]
+
+_METER_FIELDS = tuple(
+    field for field in MeterCreateBase.model_fields if field != "metadata"
 )
-
-Path = list[str | int]
-
-SECTIONS: dict[str, type[BaseModel]] = {"meters": ConfigMeter}
 
 
 @dataclass
-class ValidatedConfig:
-    raw: dict[str, Any]
-    sections: dict[str, list[BaseModel]]
-    issues: list[ConfigIssue] = field(default_factory=list)
+class MeterChange:
+    index: int
+    config: ConfigMeter
+    meter: Meter | None
+    update_dict: dict[str, Any]
 
-    @property
-    def meters(self) -> list[ConfigMeter]:
-        return [m for m in self.sections["meters"] if isinstance(m, ConfigMeter)]
+
+@dataclass
+class ConfigCheck:
+    meter_changes: list[MeterChange]
+    issues: list[ConfigIssue]
 
     @property
     def errors(self) -> list[ConfigIssue]:
-        return [issue for issue in self.issues if issue.severity == "error"]
-
-    @property
-    def is_valid(self) -> bool:
-        return not self.errors
-
-    def raise_for_errors(self) -> None:
-        if self.is_valid:
-            return
-        raise PolarRequestValidationError(
-            [
-                {
-                    "loc": ("body", *issue.path),
-                    "msg": issue.message,
-                    "type": issue.code,
-                    "input": issue.got,
-                }
-                for issue in self.errors
-            ]
-        )
+        return [
+            issue
+            for issue in self.issues
+            if issue.severity == ConfigIssueSeverity.error
+        ]
 
 
 @dataclass
 class RuleContext:
     session: AsyncSession
     organization: Organization
-    config: ValidatedConfig
+    config: Config
+    meter_changes: list[MeterChange]
 
 
 Rule = Callable[[RuleContext], Awaitable[list[ConfigIssue]]]
 
 
-def _error(code: str, path: Path, message: str, got: Any = None) -> ConfigIssue:
-    return ConfigIssue(severity="error", code=code, path=path, message=message, got=got)
+def _meter_loc(index: int, *path: str | int) -> Loc:
+    return ["body", "meters", index, *path]
 
 
-def _issue_from_error(error: ErrorDetails, prefix: Path) -> ConfigIssue:
-    return _error(
-        error["type"],
-        [*prefix, *error["loc"]],
-        error["msg"],
-        error.get("input") if error["loc"] else None,
+async def locked_meter_fields(context: RuleContext) -> list[ConfigIssue]:
+    return [
+        ConfigIssue(
+            severity=ConfigIssueSeverity.error,
+            type="meter_locked",
+            loc=_meter_loc(change.index, field),
+            msg=METER_LOCKED_FIELD_MESSAGE,
+        )
+        for change in context.meter_changes
+        if change.meter is not None and change.meter.last_billed_event_id is not None
+        for field in METER_LOCKED_FIELDS
+        if field in change.update_dict
+    ]
+
+
+def _event_name_references(filter: Filter, loc: Loc) -> list[tuple[str, Loc]]:
+    references: list[tuple[str, Loc]] = []
+    for index, clause in enumerate(filter.clauses):
+        clause_loc = [*loc, "clauses", index]
+        if isinstance(clause, Filter):
+            references.extend(_event_name_references(clause, clause_loc))
+        elif _is_event_name_clause(clause):
+            assert isinstance(clause.value, str)
+            references.append((clause.value, [*clause_loc, "value"]))
+    return references
+
+
+def _is_event_name_clause(clause: FilterClause) -> bool:
+    return (
+        clause.property == "name"
+        and clause.operator == FilterOperator.eq
+        and isinstance(clause.value, str)
     )
 
 
-def _parse_section(
-    name: str, model: type[BaseModel], raw: Any
-) -> tuple[list[BaseModel], list[ConfigIssue]]:
-    if not isinstance(raw, list):
-        return [], [_error("list_type", [name], "Input should be a list", raw)]
-    if len(raw) > MAXIMUM_METERS:
-        return [], [
-            _error(
-                "too_long",
-                [name],
-                f"A config can have at most {MAXIMUM_METERS} {name}",
-                len(raw),
-            )
-        ]
-    items: list[BaseModel] = []
-    issues: list[ConfigIssue] = []
-    for index, item in enumerate(raw):
-        try:
-            items.append(model.model_validate(item))
-        except ValidationError as e:
-            issues.extend(
-                _issue_from_error(error, [name, index]) for error in e.errors()
-            )
-    return items, issues
-
-
-def _parse(config: Any) -> ValidatedConfig:
-    if not isinstance(config, dict):
-        return ValidatedConfig(
-            raw={},
-            sections={name: [] for name in SECTIONS},
-            issues=[_error("dict_type", [], "Config should be an object", config)],
-        )
-    validated = ValidatedConfig(raw=config, sections={})
-    for key in config:
-        if key not in SECTIONS:
-            validated.issues.append(
-                _error("unknown_section", [key], f'Unknown section "{key}"')
-            )
-    for name, model in SECTIONS.items():
-        if name not in config:
-            validated.sections[name] = []
-            continue
-        items, issues = _parse_section(name, model, config[name])
-        validated.sections[name] = items
-        validated.issues.extend(issues)
-    return validated
-
-
-async def unique_external_ids(context: RuleContext) -> list[ConfigIssue]:
-    return [
-        _error(
-            "duplicate_external_id",
-            [name, duplicate.position, "external_id"],
-            f'"{duplicate.external_id}" is already used by {name}.{duplicate.first_index}',
-            duplicate.external_id,
-        )
-        for name, items in context.config.sections.items()
-        for duplicate in duplicate_external_ids(items)
-    ]
-
-
-def _event_references(value: Any, path: Path) -> list[tuple[str, Path]]:
-    if isinstance(value, list):
-        return [
-            reference
-            for index, item in enumerate(value)
-            for reference in _event_references(item, [*path, index])
-        ]
-    if not isinstance(value, dict):
-        return []
-    if (
-        value.get("property") == "name"
-        and value.get("operator") == "eq"
-        and isinstance(value.get("value"), str)
-    ):
-        return [(value["value"], [*path, "value"])]
-    return [
-        reference
-        for key, child in value.items()
-        for reference in _event_references(child, [*path, key])
-    ]
-
-
 async def unknown_events(context: RuleContext) -> list[ConfigIssue]:
-    references = _event_references(context.config.raw, [])
+    references = [
+        reference
+        for index, meter in enumerate(context.config.meters)
+        for reference in _event_name_references(
+            meter.filter, _meter_loc(index, "filter")
+        )
+    ]
     if not references:
         return []
     repository = EventTypeRepository.from_session(context.session)
@@ -173,25 +107,70 @@ async def unknown_events(context: RuleContext) -> list[ConfigIssue]:
     )
     return [
         ConfigIssue(
-            severity="warning",
-            code="unknown_event",
-            path=path,
-            message=f'No "{name}" events have been received yet',
-            got=name,
+            severity=ConfigIssueSeverity.warning,
+            type="unknown_event",
+            loc=loc,
+            msg=f'No "{name}" events have been received yet',
+            input=name,
         )
-        for name, path in references
+        for name, loc in references
         if (context.organization.id, name) not in known
     ]
 
 
-RULES: list[Rule] = [unique_external_ids, unknown_events]
+RULES: list[Rule] = [locked_meter_fields, unknown_events]
 
 
-async def validate(
-    session: AsyncSession, organization: Organization, config: Any
-) -> ValidatedConfig:
-    validated = _parse(config)
-    context = RuleContext(session, organization, validated)
-    for rule in RULES:
-        validated.issues.extend(await rule(context))
-    return validated
+def _get_meter_update_dict(meter: Meter, meter_config: ConfigMeter) -> dict[str, Any]:
+    update_dict: dict[str, Any] = {}
+    for field in _METER_FIELDS:
+        value = getattr(meter_config, field)
+        if getattr(meter, field) != value:
+            update_dict[field] = value
+    if (
+        "metadata" in meter_config.model_fields_set
+        and meter.user_metadata != meter_config.metadata
+    ):
+        update_dict["user_metadata"] = meter_config.metadata
+    return update_dict
+
+
+async def diff_meters(
+    session: AsyncSession,
+    organization: Organization,
+    meter_configs: Sequence[ConfigMeter],
+    *,
+    for_update: bool,
+) -> list[MeterChange]:
+    repository = MeterRepository.from_session(session)
+    existing_meters = {
+        meter.external_id: meter
+        for meter in await repository.get_all_by_external_ids(
+            organization.id,
+            [config.external_id for config in meter_configs],
+            for_update=for_update,
+        )
+    }
+    changes: list[MeterChange] = []
+    for index, meter_config in enumerate(meter_configs):
+        meter = existing_meters.get(meter_config.external_id)
+        update_dict = (
+            {} if meter is None else _get_meter_update_dict(meter, meter_config)
+        )
+        changes.append(MeterChange(index, meter_config, meter, update_dict))
+    return changes
+
+
+async def check(
+    session: AsyncSession,
+    organization: Organization,
+    config: Config,
+    *,
+    for_update: bool,
+) -> ConfigCheck:
+    meter_changes = await diff_meters(
+        session, organization, config.meters, for_update=for_update
+    )
+    context = RuleContext(session, organization, config, meter_changes)
+    issues = [issue for rule in RULES for issue in await rule(context)]
+    return ConfigCheck(meter_changes, issues)

@@ -3,171 +3,148 @@ from typing import Any
 import pytest
 
 from polar.declarative_config import validation
-from polar.exceptions import PolarRequestValidationError
+from polar.declarative_config.schemas import Config, ConfigIssueSeverity
 from polar.models import Organization
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_event_type
+from tests.fixtures.random_objects import (
+    METER_TEST_EVENT,
+    create_event,
+    create_event_type,
+    create_meter,
+)
 
-TOOL_CALLS: dict[str, Any] = {
-    "external_id": "tool-calls",
-    "name": "SDK - Tool Calls",
+METER: dict[str, Any] = {
+    "external_id": "my-meter",
+    "name": "My Meter",
     "filter": {
         "conjunction": "and",
-        "clauses": [{"property": "name", "operator": "eq", "value": "tool_call"}],
+        "clauses": [{"property": "name", "operator": "eq", "value": METER_TEST_EVENT}],
     },
     "aggregation": {"func": "count"},
-    "unit": "custom",
-    "custom_label": "call",
 }
 
 
+def _config(*meters: dict[str, Any]) -> Config:
+    return Config.model_validate({"meters": list(meters)})
+
+
 @pytest.mark.asyncio
-class TestValidate:
-    async def test_valid(
+class TestCheck:
+    async def test_new_meter(
         self,
-        session: AsyncSession,
         save_fixture: SaveFixture,
+        session: AsyncSession,
         organization: Organization,
     ) -> None:
         await create_event_type(
-            save_fixture, organization=organization, name="tool_call"
+            save_fixture, organization=organization, name=METER_TEST_EVENT
         )
 
-        validated = await validation.validate(
-            session, organization, {"meters": [TOOL_CALLS]}
+        result = await validation.check(
+            session, organization, _config(METER), for_update=False
         )
 
-        assert validated.is_valid
-        assert validated.issues == []
-        assert [meter.external_id for meter in validated.meters] == ["tool-calls"]
-        validated.raise_for_errors()
+        assert result.issues == []
+        [change] = result.meter_changes
+        assert change.meter is None
+        assert change.update_dict == {}
 
-    async def test_not_an_object(
-        self, session: AsyncSession, organization: Organization
+    async def test_existing_meter_diff(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
     ) -> None:
-        validated = await validation.validate(session, organization, [])
-
-        assert [(issue.code, issue.path) for issue in validated.issues] == [
-            ("dict_type", [])
-        ]
-
-    async def test_section_must_be_a_list(
-        self, session: AsyncSession, organization: Organization
-    ) -> None:
-        validated = await validation.validate(session, organization, {"meters": "nope"})
-
-        assert [(issue.code, issue.path) for issue in validated.issues] == [
-            ("list_type", ["meters"])
-        ]
-
-    async def test_null_section(
-        self, session: AsyncSession, organization: Organization
-    ) -> None:
-        validated = await validation.validate(session, organization, {"meters": None})
-
-        assert [(issue.code, issue.path) for issue in validated.issues] == [
-            ("list_type", ["meters"])
-        ]
-
-    async def test_too_many_meters(
-        self, session: AsyncSession, organization: Organization
-    ) -> None:
-        validated = await validation.validate(
-            session, organization, {"meters": [TOOL_CALLS] * 101}
+        meter = await create_meter(
+            save_fixture, organization=organization, external_id="my-meter"
         )
 
-        assert [(issue.code, issue.path, issue.got) for issue in validated.errors] == [
-            ("too_long", ["meters"], 101)
-        ]
-
-    async def test_unknown_section(
-        self, session: AsyncSession, organization: Organization
-    ) -> None:
-        validated = await validation.validate(
-            session, organization, {"meter": [TOOL_CALLS]}
+        result = await validation.check(
+            session,
+            organization,
+            _config({**METER, "name": "Renamed"}),
+            for_update=False,
         )
 
-        assert [(issue.code, issue.path) for issue in validated.errors] == [
-            ("unknown_section", ["meter"])
-        ]
+        [change] = result.meter_changes
+        assert change.meter == meter
+        assert change.update_dict == {"name": "Renamed"}
 
-    async def test_reports_every_problem_of_a_meter(
-        self, session: AsyncSession, organization: Organization
+    async def test_locked_fields(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
     ) -> None:
-        broken = {
-            **TOOL_CALLS,
-            "external_id": "",
-            "name": "x",
-            "aggregation": {"func": "sum"},
-        }
-
-        validated = await validation.validate(
-            session, organization, {"meters": [broken]}
+        event = await create_event(save_fixture, organization=organization)
+        await create_meter(
+            save_fixture,
+            organization=organization,
+            external_id="my-meter",
+            last_billed_event=event,
+        )
+        await create_event_type(
+            save_fixture, organization=organization, name=METER_TEST_EVENT
         )
 
-        assert [issue.path for issue in validated.errors] == [
-            ["meters", 0, "name"],
-            ["meters", 0, "aggregation", "sum", "property"],
-            ["meters", 0, "external_id"],
-        ]
-        assert validated.errors[0].got == "x"
-        assert validated.meters == []
-
-    async def test_raise_for_errors(
-        self, session: AsyncSession, organization: Organization
-    ) -> None:
-        validated = await validation.validate(
-            session, organization, {"meters": [{**TOOL_CALLS, "unit": "bogus"}]}
+        result = await validation.check(
+            session,
+            organization,
+            _config({**METER, "aggregation": {"func": "sum", "property": "tokens"}}),
+            for_update=False,
         )
 
-        with pytest.raises(PolarRequestValidationError) as excinfo:
-            validated.raise_for_errors()
-        assert excinfo.value.errors()[0]["loc"] == ("body", "meters", 0, "unit")
+        [error] = result.errors
+        assert error.type == "meter_locked"
+        assert error.loc == ["body", "meters", 0, "aggregation"]
 
-    async def test_warnings_do_not_block(
-        self, session: AsyncSession, organization: Organization
+    async def test_locked_meter_allows_other_fields(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
     ) -> None:
-        validated = await validation.validate(
-            session, organization, {"meters": [TOOL_CALLS]}
+        event = await create_event(save_fixture, organization=organization)
+        await create_meter(
+            save_fixture,
+            organization=organization,
+            external_id="my-meter",
+            last_billed_event=event,
         )
 
-        assert [issue.severity for issue in validated.issues] == ["warning"]
-        assert validated.is_valid
-        validated.raise_for_errors()
-
-    async def test_duplicate_external_id(
-        self, session: AsyncSession, organization: Organization
-    ) -> None:
-        validated = await validation.validate(
-            session, organization, {"meters": [TOOL_CALLS, TOOL_CALLS]}
+        result = await validation.check(
+            session,
+            organization,
+            _config({**METER, "name": "Renamed"}),
+            for_update=False,
         )
 
-        assert [issue.code for issue in validated.errors] == ["duplicate_external_id"]
-        assert validated.errors[0].path == ["meters", 1, "external_id"]
+        assert result.errors == []
 
-    async def test_unknown_event_is_a_warning_even_on_a_broken_meter(
+    async def test_unknown_event_is_a_warning(
         self, session: AsyncSession, organization: Organization
     ) -> None:
-        validated = await validation.validate(
-            session, organization, {"meters": [{**TOOL_CALLS, "unit": "bogus"}]}
+        result = await validation.check(
+            session, organization, _config(METER), for_update=False
         )
 
-        warnings = [i for i in validated.issues if i.severity == "warning"]
-        assert [issue.code for issue in warnings] == ["unknown_event"]
-        assert warnings[0].path == ["meters", 0, "filter", "clauses", 0, "value"]
-        assert warnings[0].got == "tool_call"
-        assert not validated.is_valid
+        [warning] = result.issues
+        assert warning.severity == ConfigIssueSeverity.warning
+        assert warning.type == "unknown_event"
+        assert warning.loc == ["body", "meters", 0, "filter", "clauses", 0, "value"]
+        assert warning.input == METER_TEST_EVENT
+        assert result.errors == []
 
-    async def test_nested_filters(
+    async def test_unknown_event_in_nested_filter(
         self, session: AsyncSession, organization: Organization
     ) -> None:
         nested = {
-            **TOOL_CALLS,
+            **METER,
             "filter": {
                 "conjunction": "or",
                 "clauses": [
-                    TOOL_CALLS["filter"],
+                    METER["filter"],
                     {
                         "conjunction": "and",
                         "clauses": [
@@ -178,8 +155,19 @@ class TestValidate:
             },
         }
 
-        validated = await validation.validate(
-            session, organization, {"meters": [nested]}
+        result = await validation.check(
+            session, organization, _config(nested), for_update=False
         )
 
-        assert [issue.got for issue in validated.issues] == ["tool_call", "embed"]
+        assert [issue.input for issue in result.issues] == [METER_TEST_EVENT, "embed"]
+        assert result.issues[1].loc == [
+            "body",
+            "meters",
+            0,
+            "filter",
+            "clauses",
+            1,
+            "clauses",
+            0,
+            "value",
+        ]

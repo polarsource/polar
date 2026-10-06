@@ -21,17 +21,17 @@ import {
 } from '@polar-sh/sdk/2026-10'
 
 export type MeterSDKConfig = {
-  events?: {
+  events?: readonly {
     name: string
   }[]
-  meters?: {
+  meters?: readonly {
     id: string
     external_id: string
     filter: {
       conjunction: 'and'
-      clauses: {
+      clauses: readonly {
         conjunction: 'or'
-        clauses: {
+        clauses: readonly {
           property: string
           operator: 'eq'
           value: string | number | boolean
@@ -44,19 +44,21 @@ export type MeterSDKConfig = {
   }[]
 }
 
-type MeterSDKMeters = Record<
-  string,
-  { balance: () => Promise<number> } & NonNullable<
-    MeterSDKConfig['meters']
-  >[number]
->
+type MeterSDKMeters<Config extends MeterSDKConfig> = {
+  [Meter in Extract<
+    NonNullable<Config['meters']>[number],
+    { external_id: string }
+  > as Meter['external_id']]: Meter & { balance: () => Promise<number> }
+}
 
-type MeterSDKEvents = Record<
-  string,
-  {
-    ingest: () => Promise<number>
-  }
->
+type MeterSDKEvents<Config extends MeterSDKConfig> = {
+  ingest: (
+    name: Extract<
+      NonNullable<Config['events']>[number],
+      { name: string }
+    >['name'],
+  ) => Promise<number>
+}
 
 type ActorCustomerIdentifier =
   | { externalCustomerId: string; customerId?: never }
@@ -68,66 +70,72 @@ type ActorMemberIdentifier =
 
 type ActorIdentifier = ActorCustomerIdentifier & ActorMemberIdentifier
 
-type MeterSDKActor = (identifier: ActorIdentifier) => {
-  meters: MeterSDKMeters
-  events: MeterSDKEvents
+type MeterSDKActor<Config extends MeterSDKConfig> = (
+  identifier: ActorIdentifier,
+) => {
+  meters: MeterSDKMeters<Config>
+  events: MeterSDKEvents<Config>
 }
 
-export function MeterSDK(
-  config: MeterSDKConfig,
+export function MeterSDK<const Config extends MeterSDKConfig>(
+  config: Config,
   sdkOptions: PolarOptions,
 ): {
   sdk: Polar
-  actor: MeterSDKActor
+  actor: MeterSDKActor<Config>
 } {
   const sdk = createPolar(sdkOptions)
 
   // Should we validate if an actor exists before we allow this?
-  // Or do we `upsert` the actor
+  // Or do we `upsert` the actor if it needs to be persisted
   // Also, for events, we allow external_customer_id
   const actor = (identifier: ActorIdentifier) => {
-    const meters = config.meters?.reduce((acc, meter) => {
-      acc[meter.external_id] = {
-        ...meter,
-        async balance() {
-          const response = await sdk.customerMeters.list({
-            ...(identifier.customerId !== undefined
-              ? { customer_id: identifier.customerId }
-              : { external_customer_id: identifier.externalCustomerId }),
-            meter_id: meter.id,
-          })
+    const meters = config.meters?.reduce(
+      (acc, meter) => {
+        acc[meter.external_id] = {
+          ...meter,
+          async balance() {
+            const response = await sdk.customerMeters.list({
+              ...(identifier.customerId !== undefined
+                ? { customer_id: identifier.customerId }
+                : { external_customer_id: identifier.externalCustomerId }),
+              meter_id: meter.id,
+            })
 
-          return response.items[0]?.balance ?? 0
-        },
-      }
+            return response.items[0]?.balance ?? 0
+          },
+        }
 
-      return acc
-    }, {} as MeterSDKMeters)
+        return acc
+      },
+      {} as Record<
+        string,
+        NonNullable<MeterSDKConfig['meters']>[number] & {
+          balance: () => Promise<number>
+        }
+      >,
+    )
 
-    const events = config.events?.reduce((acc, event) => {
-      acc[event.name] = {
-        async ingest() {
-          const { inserted } = await sdk.events.ingest({
-            events: [
-              {
-                ...(identifier.customerId !== undefined
-                  ? { customer_id: identifier.customerId }
-                  : { external_customer_id: identifier.externalCustomerId }),
-                name: event.name,
-              },
-            ],
-          })
+    const events: MeterSDKEvents<Config> = {
+      async ingest(name) {
+        const { inserted } = await sdk.events.ingest({
+          events: [
+            {
+              ...(identifier.customerId !== undefined
+                ? { customer_id: identifier.customerId }
+                : { external_customer_id: identifier.externalCustomerId }),
+              name,
+            },
+          ],
+        })
 
-          return inserted
-        },
-      }
-
-      return acc
-    }, {} as MeterSDKEvents)
+        return inserted
+      },
+    }
 
     return {
-      meters: meters ?? {},
-      events: events ?? {},
+      meters: (meters ?? {}) as MeterSDKMeters<Config>,
+      events,
     }
   }
 

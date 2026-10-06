@@ -18,8 +18,9 @@ const expensiveToolCall = async () => {
   if (balance > -100) {
     console.log('That is plenty, doing the thing')
     // doTheThing();
-    await customer.events.tool_call.ingest()
+    await customer.events.ingest('tool_call')
 
+    // A problem is that this is now stale and we have no way of knowing
     const newBalance = await customer.meters.tool_call.balance()
 
     console.log('Checking balance after tool call:', newBalance)

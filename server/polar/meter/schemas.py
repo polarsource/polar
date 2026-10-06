@@ -75,7 +75,7 @@ class MeterCreate(MeterCreateBase, ExternalIDInputMixin):
     )
 
 
-class MeterUpdate(Schema, MetadataInputMixin, ExternalIDInputMixin):
+class MeterUpdateBase(Schema, MetadataInputMixin):
     name: str | None = Field(None, description=NAME_DESCRIPTION, min_length=3)
     unit: MeterUnit | None = Field(None, description="The unit of the meter.")
     custom_label: str | None = Field(
@@ -100,6 +100,10 @@ class MeterUpdate(Schema, MetadataInputMixin, ExternalIDInputMixin):
             "Archived meters are no longer used for billing."
         ),
     )
+
+
+class MeterUpdate(MeterUpdateBase, ExternalIDInputMixin):
+    pass
 
 
 class Meter(IDSchema, TimestampedSchema, MetadataOutputMixin, ExternalIDOutputMixin):

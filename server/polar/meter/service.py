@@ -53,6 +53,7 @@ from polar.postgres import AsyncReadSession, AsyncSession
 from polar.subscription.repository import SubscriptionProductPriceRepository
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
+from . import legacy_schemas
 from .repository import MeterRepository
 from .schemas import (
     MeterCreate,
@@ -141,7 +142,7 @@ class MeterService:
     async def create(
         self,
         session: AsyncSession,
-        meter_create: MeterCreate,
+        meter_create: MeterCreate | legacy_schemas.MeterCreate,
         auth_subject: AuthSubject[User | Organization],
     ) -> Meter:
         organization = await get_payload_organization(
@@ -156,7 +157,8 @@ class MeterService:
 
         repository = MeterRepository.from_session(session)
         if (
-            meter_create.external_id is not None
+            isinstance(meter_create, MeterCreate)
+            and meter_create.external_id is not None
             and await repository.get_by_external_id_and_organization(
                 meter_create.external_id, organization.id
             )
@@ -214,7 +216,7 @@ class MeterService:
         self,
         session: AsyncSession,
         meter: Meter,
-        meter_update: MeterUpdate,
+        meter_update: MeterUpdate | legacy_schemas.MeterUpdate,
         auth_subject: AuthSubject[User | Organization],
     ) -> Meter:
         await assert_resource_permission(
@@ -236,7 +238,8 @@ class MeterService:
                     )
 
         if (
-            meter_update.external_id is not None
+            isinstance(meter_update, MeterUpdate)
+            and meter_update.external_id is not None
             and meter_update.external_id != meter.external_id
             and await repository.get_by_external_id_and_organization(
                 meter_update.external_id, meter.organization_id

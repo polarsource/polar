@@ -27,7 +27,6 @@ _example = "ext_1337"
 class ExternalIDInputMixin(BaseModel):
     external_id: Annotated[
         EmptyStrToNone,
-        Version(starting_from=V2027_01),
         Field(description=_description, examples=[_example]),
     ] = None
 

@@ -122,11 +122,16 @@ class TestCreateMeter:
     @pytest.mark.auth
     async def test_external_id_ignored_before_2027_01(
         self,
+        save_fixture: SaveFixture,
         session: AsyncSession,
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
+        await create_meter(
+            save_fixture, organization=organization, external_id="ext_1337"
+        )
+
         response = await client.post(
             "/v1/meters/",
             json={
@@ -174,6 +179,51 @@ class TestUpdateMeter:
         response = await client.patch(f"/v1/meters/{uuid.uuid4()}")
 
         assert response.status_code == 401
+
+    @pytest.mark.api_version(V2026_04, V2026_10)
+    @pytest.mark.auth
+    async def test_external_id_ignored_before_2027_01(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_meter(
+            save_fixture, organization=organization, external_id="ext_1337"
+        )
+        meter = await create_meter(
+            save_fixture, id=uuid.uuid4(), organization=organization
+        )
+
+        response = await client.patch(
+            f"/v1/meters/{meter.id}", json={"external_id": "ext_1337"}
+        )
+
+        assert response.status_code == 200
+        assert "external_id" not in response.json()
+        updated_meter = await MeterRepository.from_session(session).get_by_id(meter.id)
+        assert updated_meter is not None
+        assert updated_meter.external_id is None
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_external_id_2027_01(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+
+        response = await client.patch(
+            f"/v1/meters/{meter.id}", json={"external_id": "ext_1337"}
+        )
+
+        assert response.status_code == 200
+        assert response.json()["external_id"] == "ext_1337"
 
     @pytest.mark.auth
     async def test_user_cannot_update_other_organization_meter(

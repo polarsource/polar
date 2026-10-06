@@ -10,6 +10,7 @@ from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.time_queries import MIN_DATETIME, TimeInterval, is_under_limits
+from polar.kit.versioning import version
 from polar.meter.aggregation import AggregationFunction
 from polar.models import Meter
 from polar.openapi import APITag, cli_preview
@@ -21,8 +22,9 @@ from polar.postgres import (
     get_db_session,
 )
 from polar.routing import APIRouter
+from polar.version import V2027_01
 
-from . import auth, sorting
+from . import auth, legacy_schemas, sorting
 from .schemas import Meter as MeterSchema
 from .schemas import MeterCreate, MeterID, MeterQuantities, MeterUpdate
 from .service import meter as meter_service
@@ -179,6 +181,24 @@ async def quantities(
     responses={201: {"description": "Meter created."}},
 )
 async def create(
+    meter_create: legacy_schemas.MeterCreate,
+    auth_subject: auth.MeterWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Meter:
+    """Create a meter."""
+    return await meter_service.create(session, meter_create, auth_subject)
+
+
+@router.post(
+    "/",
+    name="create",
+    response_model=MeterSchema,
+    status_code=201,
+    summary="Create Meter",
+    responses={201: {"description": "Meter created."}},
+)
+@version(starting_from=V2027_01)
+async def create_v2027_01(
     meter_create: MeterCreate,
     auth_subject: auth.MeterWrite,
     session: AsyncSession = Depends(get_db_session),
@@ -197,6 +217,32 @@ async def create(
     },
 )
 async def update(
+    id: MeterID,
+    meter_update: legacy_schemas.MeterUpdate,
+    auth_subject: auth.MeterWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Meter:
+    """Update a meter."""
+    meter = await meter_service.get(session, auth_subject, id)
+
+    if meter is None:
+        raise ResourceNotFound()
+
+    return await meter_service.update(session, meter, meter_update, auth_subject)
+
+
+@router.patch(
+    "/{id}",
+    name="update",
+    response_model=MeterSchema,
+    summary="Update Meter",
+    responses={
+        200: {"description": "Meter updated."},
+        404: MeterNotFound,
+    },
+)
+@version(starting_from=V2027_01)
+async def update_v2027_01(
     id: MeterID,
     meter_update: MeterUpdate,
     auth_subject: auth.MeterWrite,

@@ -32378,6 +32378,17 @@ export interface components {
        * @description Number of units to apply to the subscription. If `null`, the number of units won't be changed.
        */
       units: number | null
+      /**
+       * Discount Id
+       * @description ID of the new discount to apply to the subscription. If `null`, the subscription keeps its current discount.
+       */
+      discount_id?: string | null
+      /**
+       * Discount Unset
+       * @description Whether the subscription's current discount will be removed.
+       * @default false
+       */
+      discount_unset: boolean
     }
     /** PersonalAccessToken */
     PersonalAccessToken: {

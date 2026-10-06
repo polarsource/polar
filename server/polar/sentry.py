@@ -53,6 +53,8 @@ def before_send(event: Event, hint: Hint) -> Event | None:
             request["url"] = url_without_request_values(url)
         request.pop("query_string", None)
         request.pop("fragment", None)
+        # Bodies are customer payloads (ADR-0013), including checkout confirmation.
+        request.pop("data", None)
     return event
 
 

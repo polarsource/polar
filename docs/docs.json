@@ -1499,14 +1499,6 @@
       "destination": "/api-reference/2027-01/:path*"
     },
     {
-      "source": "/api-reference/deprecated",
-      "destination": "/api-reference/2026-04/introduction"
-    },
-    {
-      "source": "/api-reference/deprecated/:path*",
-      "destination": "/api-reference/2026-04/:path*"
-    },
-    {
       "source": "/api-reference/benefits/create",
       "destination": "/api-reference/current/benefits/create-benefit"
     },

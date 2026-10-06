@@ -486,7 +486,7 @@ Thus, with that single object, you have all the required information to check if
 
 The portal plugin adds 3 convenient methods for listing benefits, orders & subscriptions relevant to the authenticated user/customer.
 
-[All of these methods use the Polar CustomerPortal APIs](https://docs.polar.sh/api-reference/customer-portal)
+These methods use the Polar Customer Portal API: [benefit grants](https://polar.sh/docs/api-reference/current/customer_portal/list-benefit-grants), [orders](https://polar.sh/docs/api-reference/current/customer_portal/list-orders) and [subscriptions](https://polar.sh/docs/api-reference/current/customer_portal/list-subscriptions).
 
 #### Benefits
 

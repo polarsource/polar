@@ -1,17 +1,10 @@
 import { getPaymentMethodTypeLabel } from '@/components/PaymentMethodDisplay'
 import { ReviewRow } from './reviewRows'
 
-type PaymentMethodType = NonNullable<ReviewRow['payment_method_type']>
-
-// Unconfirmed whether the copy from Stripe carries SEPA and ACH mandates over.
-// Either way the status reads "Needs a card"; `false` keeps the bank-debit note
-// neutral, `true` says it can't be copied, like Link.
-export const BANK_DEBITS_STAY_BEHIND = false
-
-const BANK_DEBITS = new Set<PaymentMethodType>([
-  'sepa_debit',
-  'us_bank_account',
-])
+// Unconfirmed whether the copy from Stripe carries ACH mandates over. Either
+// way the status reads "Needs a card"; `false` keeps the ACH note neutral,
+// `true` says it can't be copied, like Link and SEPA.
+export const ACH_STAYS_BEHIND = false
 
 const NO_CARD_CONSEQUENCE =
   'The subscription still moves, but its first renewal on Polar fails and goes to dunning until the customer adds a card. Ask them to add one before it renews.'
@@ -67,7 +60,7 @@ export function rowPaymentMethod(row: ReviewRow): RowPaymentMethod | null {
   if (type === 'card') {
     return { label: getPaymentMethodTypeLabel(type), kind: 'card', note: null }
   }
-  if (type && BANK_DEBITS.has(type) && !BANK_DEBITS_STAY_BEHIND) {
+  if (type === 'us_bank_account' && !ACH_STAYS_BEHIND) {
     return {
       label: getPaymentMethodTypeLabel(type),
       kind: 'bank_debit',

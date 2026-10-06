@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  BANK_DEBITS_STAY_BEHIND,
+  ACH_STAYS_BEHIND,
   isPaymentMethodReason,
   rowPaymentMethod,
 } from './paymentMethod'
@@ -26,6 +26,7 @@ describe('rowPaymentMethod', () => {
 
   it.each([
     ['link', 'Link'],
+    ['sepa_debit', 'SEPA Debit'],
     ['bacs_debit', 'Bacs Debit'],
     ['other', 'Other method'],
   ] as const)('flags %s as moving without a card', (type, label) => {
@@ -40,14 +41,11 @@ describe('rowPaymentMethod', () => {
     expect(method?.note?.body).toContain('no saved payment method')
   })
 
-  it.each(['sepa_debit', 'us_bank_account'] as const)(
-    'follows the bank-debit switch for %s',
-    (type) => {
-      expect(rowPaymentMethod(row({ payment_method_type: type }))?.kind).toBe(
-        BANK_DEBITS_STAY_BEHIND ? 'no_card' : 'bank_debit',
-      )
-    },
-  )
+  it('follows the ACH switch for us_bank_account', () => {
+    expect(
+      rowPaymentMethod(row({ payment_method_type: 'us_bank_account' }))?.kind,
+    ).toBe(ACH_STAYS_BEHIND ? 'no_card' : 'bank_debit')
+  })
 
   it('says nothing when the API omits the field', () => {
     expect(rowPaymentMethod(row({ payment_method_type: undefined }))).toBeNull()

@@ -1,8 +1,17 @@
+import { loadEnvFile } from 'node:process'
 import { MeterSDK } from '@polar-sh/polar'
 import config from './polar.config'
 
+loadEnvFile(new URL('./.env.local', import.meta.url))
+
+const accessToken = process.env.POLAR_ACCESS_TOKEN
+
+if (!accessToken) {
+  throw new Error('POLAR_ACCESS_TOKEN is required in .env.local')
+}
+
 const polar = MeterSDK(config, {
-  accessToken: 'polar_oat_f2oL0wrw8aJ0QXGq2DuzNi2GUX9BKX1ACPpcq433SAB',
+  accessToken,
   environment: 'sandbox',
 })
 

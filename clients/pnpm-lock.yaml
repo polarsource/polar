@@ -734,6 +734,10 @@ importers:
       '@polar-sh/polar':
         specifier: workspace:*
         version: link:../../packages/polar
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.6
 
   apps/orbit:
     dependencies:

@@ -53,6 +53,9 @@ def before_send(event: Event, hint: Hint) -> Event | None:
             request["url"] = url_without_request_values(url)
         request.pop("query_string", None)
         request.pop("fragment", None)
+        # Bodies include customer email, name, and address (ADR-0013).
+        # User agent and IP stay on the request for fraud checks.
+        request.pop("data", None)
     return event
 
 
@@ -66,6 +69,8 @@ def configure_sentry(*, aws_lambda: bool = False) -> None:
         environment=settings.ENV,
         # Stack frame locals here carry customer, order and payment objects.
         include_local_variables=False,
+        # Checkout confirmation and other client payloads carry customer email.
+        max_request_body_size="never",
         default_integrations=False,
         auto_enabling_integrations=False,
         before_send=before_send,

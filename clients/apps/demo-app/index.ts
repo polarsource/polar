@@ -6,16 +6,17 @@ const polar = MeterSDK(config, {
   environment: 'sandbox',
 })
 
-const DEMO_ID_PIETER = '0c65fa03-9f98-4e5c-8ec0-253608c091ce' // External customer ID for Pieter
+const DEMO_ID = '0c65fa03-9f98-4e5c-8ec0-253608c091ce' // External customer ID for Pieter
+// const DEMO_ID = '861f6728-4c01-4c6f-8ea1-e8011bb14c78' // External customer ID for Villiam
 
 const expensiveToolCall = async () => {
-  const customer = polar.actor({ externalCustomerId: DEMO_ID_PIETER })
+  const customer = polar.actor({ externalCustomerId: DEMO_ID })
 
   const balance = await customer.meters.tool_call.balance()
 
   console.log('Checking balance before tool call:', balance)
 
-  if (balance > -100) {
+  if (balance > 0) {
     console.log('That is plenty, doing the thing')
     // doTheThing();
     await customer.events.ingest('tool_call')

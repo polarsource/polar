@@ -6013,6 +6013,32 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/config/apply': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Apply Config
+     * @description Apply a declarative config document to the organization.
+     *
+     *     Meters are matched by `external_id`: missing ones are created, changed ones
+     *     are updated, and meters not listed are left untouched. Everything is applied
+     *     in one transaction.
+     *
+     *     **Scopes**: `meters:write`
+     */
+    post: operations['config:apply']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organization-access-tokens/': {
     parameters: {
       query?: never
@@ -15735,6 +15761,140 @@ export interface components {
      * @enum {string}
      */
     ConfidenceLevel: 'low' | 'medium' | 'high'
+    /** Config */
+    Config: {
+      /**
+       * Meters
+       * @description Meters to create or update, matched by `external_id`. Omitted fields are set to their default, except `metadata`, which is left untouched when omitted. Existing meters that aren't listed are left untouched, and archived meters stay archived.
+       */
+      meters: components['schemas']['ConfigMeter'][]
+      /**
+       * Organization Id
+       * @description The ID of the organization to apply the config to. **Required unless you use an organization token.**
+       */
+      organization_id?: string | null
+    }
+    /**
+     * ConfigAction
+     * @enum {string}
+     */
+    ConfigAction: 'created' | 'updated' | 'unchanged'
+    /** ConfigApplyResult */
+    ConfigApplyResult: {
+      /** Meters */
+      meters: components['schemas']['ConfigMeterResult'][]
+    }
+    /** ConfigAsCodeNotEnabled */
+    ConfigAsCodeNotEnabled: {
+      /**
+       * Error
+       * @example ConfigAsCodeNotEnabled
+       * @constant
+       */
+      error: 'ConfigAsCodeNotEnabled'
+      /** Detail */
+      detail: string
+    }
+    /** ConfigEntryError */
+    ConfigEntryError: {
+      /**
+       * Loc
+       * @description Location of the blocked value in the request body.
+       */
+      loc: (string | number)[]
+      /**
+       * Msg
+       * @description Why the value can't be applied.
+       */
+      msg: string
+    }
+    /** ConfigMeter */
+    ConfigMeter: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Name
+       * @description The name of the meter. Will be shown on customer's invoices and usage.
+       */
+      name: string
+      /**
+       * @description The unit of the meter.
+       * @default scalar
+       */
+      unit: components['schemas']['MeterUnit']
+      /**
+       * Custom Label
+       * @description The label for the custom unit, e.g. 'request'. Required when unit is 'custom'.
+       */
+      custom_label?: string | null
+      /**
+       * Custom Multiplier
+       * @description The multiplier to convert from the base unit to display scale, e.g. 1000 to display per 1000 units. Defaults to 1 when not provided.
+       */
+      custom_multiplier?: number | null
+      /** @description The filter to apply on events that'll be used to calculate the meter. */
+      filter: components['schemas']['Filter']
+      /**
+       * Aggregation
+       * @description The aggregation to apply on the filtered events to calculate the meter.
+       */
+      aggregation:
+        | components['schemas']['CountAggregation']
+        | components['schemas']['PropertyAggregation']
+        | components['schemas']['UniqueAggregation']
+      /**
+       * External Id
+       * @description Your identifier for the meter. Used to match the config entry with an existing meter.
+       */
+      external_id: string
+    }
+    /** ConfigMeterConflict */
+    ConfigMeterConflict: {
+      /**
+       * Error
+       * @example ConfigMeterConflict
+       * @constant
+       */
+      error: 'ConfigMeterConflict'
+      /** Detail */
+      detail: string
+    }
+    /** ConfigMeterLocked */
+    ConfigMeterLocked: {
+      /**
+       * Error
+       * @example ConfigMeterLocked
+       * @constant
+       */
+      error: 'ConfigMeterLocked'
+      /** Detail */
+      detail: components['schemas']['ConfigEntryError'][]
+    }
+    /** ConfigMeterResult */
+    ConfigMeterResult: {
+      /**
+       * External Id
+       * @description The meter's `external_id`.
+       */
+      external_id: string
+      /** @description What applying the config did. */
+      action: components['schemas']['ConfigAction']
+    }
     /** CostMetadata */
     'CostMetadata-Input': {
       /**
@@ -29498,6 +29658,12 @@ export interface components {
        * @default false
        */
       merchant_migration_enabled: boolean
+      /**
+       * Config As Code Enabled
+       * @description If this organization can manage its configuration from a declarative config document.
+       * @default false
+       */
+      config_as_code_enabled: boolean
     }
     /**
      * OrganizationFeatureSettingsUpdate
@@ -61463,6 +61629,70 @@ export interface operations {
       }
     }
   }
+  'config:apply': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['Config']
+      }
+    }
+    responses: {
+      /** @description Config applied. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConfigApplyResult']
+        }
+      }
+      /** @description Not authenticated. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Unauthorized']
+        }
+      }
+      /** @description Not allowed to manage this organization, or config as code isn't enabled for it. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['NotPermitted']
+            | components['schemas']['ConfigAsCodeNotEnabled']
+        }
+      }
+      /** @description A meter is already aggregating events and its filter or aggregation would change, or another request created the same meter concurrently. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['ConfigMeterLocked']
+            | components['schemas']['ConfigMeterConflict']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'organization_access_tokens:list': {
     parameters: {
       query?: {
@@ -70094,6 +70324,9 @@ export const columnFormatValues: ReadonlyArray<
 export const confidenceLevelValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfidenceLevel']
 > = ['low', 'medium', 'high']
+export const configActionValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigAction']
+> = ['created', 'updated', 'unchanged']
 export const countAggregationFuncValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CountAggregation']['func']
 > = ['count']

@@ -2290,6 +2290,12 @@ export interface components {
        * @default false
        */
       merchant_migration_enabled: boolean
+      /**
+       * Config As Code Enabled
+       * @description If this organization can manage its configuration from a declarative config document.
+       * @default false
+       */
+      config_as_code_enabled: boolean
     }
     /** OrganizationInviteEmail */
     OrganizationInviteEmail: {

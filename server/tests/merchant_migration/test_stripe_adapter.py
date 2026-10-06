@@ -359,13 +359,14 @@ def _stripe_item(
     interval: str = "month",
     transform_quantity: dict[str, Any] | None = None,
     tax_rates: list[dict[str, Any]] | None = None,
+    billing_scheme: str = "per_unit",
 ) -> dict[str, Any]:
     price: dict[str, Any] = {
         "id": price_id,
         "currency": "usd",
         "product": product_id,
-        "unit_amount": 1000,
-        "billing_scheme": "per_unit",
+        "unit_amount": 1000 if billing_scheme == "per_unit" else None,
+        "billing_scheme": billing_scheme,
         "recurring": {
             "interval": interval,
             "interval_count": 1,
@@ -2500,25 +2501,37 @@ class TestAddOn:
         assert record.add_on is not None
         assert record.add_on.tax_rates_differ is True
 
-    async def test_package_add_on_is_not_a_per_unit_price(
-        self, mocker: MockerFixture
+    @pytest.mark.parametrize(
+        ("price_fields", "scheme"),
+        [
+            pytest.param(
+                {"transform_quantity": {"divide_by": 10, "round": "up"}},
+                CanonicalPricingScheme.package,
+                id="package",
+            ),
+            pytest.param(
+                {"billing_scheme": "tiered"}, CanonicalPricingScheme.tiered, id="tiered"
+            ),
+        ],
+    )
+    async def test_add_on_not_priced_per_unit_keeps_its_scheme(
+        self,
+        mocker: MockerFixture,
+        price_fields: dict[str, Any],
+        scheme: CanonicalPricingScheme,
     ) -> None:
         record = await _extracted_subscription(
             mocker,
             _stripe_subscription(
                 items=[
                     _stripe_item(),
-                    _stripe_item(
-                        price_id="price_pack",
-                        quantity=25,
-                        transform_quantity={"divide_by": 10, "round": "up"},
-                    ),
+                    _stripe_item(price_id="price_extra", quantity=25, **price_fields),
                 ]
             ),
         )
 
         assert record.add_on is not None
-        assert record.add_on.pricing_scheme == CanonicalPricingScheme.package
+        assert record.add_on.pricing_scheme == scheme
 
     async def test_items_on_different_intervals_have_no_add_on(
         self, mocker: MockerFixture

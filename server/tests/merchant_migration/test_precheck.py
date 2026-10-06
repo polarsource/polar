@@ -1377,14 +1377,21 @@ def classify_subscription(
 
 
 class TestClassifyAddOns:
-    def test_plan_with_add_on_imports(self) -> None:
+    def test_plan_with_add_on_and_unrestricted_coupon_imports(self) -> None:
         items = classify_subscription(
-            build_subscription(line_item_count=2, add_on=canonical_add_on())
+            build_subscription(
+                line_item_count=2,
+                add_on=canonical_add_on(),
+                has_discount=True,
+                discount_source_ids=["coupon_1"],
+            ),
+            canonical_discount(),
         )
 
         assert items[0].status == PrecheckRecordStatus.importable
         assert items[0].reason_code == "subscription_add_on"
         assert items[0].reason_level == PrecheckReasonLevel.info
+        assert items[0].discount_name == "Launch"
 
     @pytest.mark.parametrize(
         ("subscription_fields", "add_on_fields", "code"),
@@ -1406,6 +1413,12 @@ class TestClassifyAddOns:
                 {"price_tax_behavior": TaxBehavior.inclusive},
                 "add_on_tax_mismatch",
                 id="taxed-differently",
+            ),
+            pytest.param(
+                {}, {"tax_rates_differ": True}, "add_on_tax_mismatch", id="tax-rates"
+            ),
+            pytest.param(
+                {}, {"quantity": 0}, "unsupported_add_on_quantity", id="zero-units"
             ),
         ],
     )

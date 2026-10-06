@@ -2,6 +2,7 @@ import pytest
 
 from polar.merchant_migration.importer import (
     ADD_ON_PRODUCT_METADATA_KEY,
+    add_on_product_name,
     find_or_create_add_on_product,
 )
 from polar.models import Benefit, Product, ProductPriceFixed
@@ -11,6 +12,19 @@ from tests.fixtures.random_objects import (
     create_product_price_fixed,
     set_product_benefits,
 )
+
+
+@pytest.mark.parametrize(
+    ("add_on_name", "expected"),
+    [
+        ("+ 1 Project", "Essentials + 1 Project"),
+        ("Project slot", "Essentials + Project slot"),
+        (None, "Essentials + Add-on"),
+        ("x" * 80, f"Essentials + {'x' * 51}"),
+    ],
+)
+def test_add_on_product_name(add_on_name: str | None, expected: str) -> None:
+    assert add_on_product_name("Essentials", add_on_name) == expected
 
 
 @pytest.mark.asyncio

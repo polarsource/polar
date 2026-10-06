@@ -108,6 +108,11 @@ _NO_PAYMENT_METHOD = (
     "No copied payment method has landed on Polar for this customer. Unless "
     "they have a default one by the next renewal, it fails and goes to dunning."
 )
+_NOT_COPYABLE = (
+    "It renewed with a payment method that can't be copied to Polar. Its next "
+    "renewal fails and goes to dunning unless the customer re-enters their "
+    "billing details first."
+)
 _NOT_A_CARD = (
     "It renews with a payment method that isn't a card, which Polar can't "
     "check ahead of the first charge. If that renewal fails, it goes to dunning."
@@ -483,7 +488,7 @@ class SubscriptionCutover:
             subscription_id=subscription.id,
             source_id=record.source_id,
         )
-        return _moved(self._card_note(payment_method))
+        return _moved(self._card_note(payment_method, source))
 
     async def _stop_source(
         self, record: MerchantMigrationRecord, *, cancel_at_period_end: bool
@@ -846,7 +851,9 @@ class SubscriptionCutover:
             self.session, customer, source_method=source.payment_method
         )
 
-    def _card_note(self, payment_method: PaymentMethod | None) -> str | None:
+    def _card_note(
+        self, payment_method: PaymentMethod | None, source: CanonicalSubscription
+    ) -> str | None:
         """What the merchant should chase, not a reason to hold the switch back.
 
         A card only proves itself on a real charge, and a first renewal that
@@ -855,6 +862,11 @@ class SubscriptionCutover:
         the answer travels with a subscription that moved.
         """
         if payment_method is None:
+            if (
+                source.payment_method is not None
+                and source.payment_method.type.requires_reentry
+            ):
+                return _NOT_COPYABLE
             return _NO_PAYMENT_METHOD
         if payment_method.type != CARD_TYPE:
             return _NOT_A_CARD

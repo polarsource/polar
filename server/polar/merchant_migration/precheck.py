@@ -205,10 +205,6 @@ _PAYMENT_METHOD_MISSING_REASON = (
     "to Polar, but its next renewal fails and goes to dunning unless the "
     "customer adds one first."
 )
-_PAYMENT_METHOD_NOT_CARD_REASON = (
-    "ACH debits are copied without a card check, so the first Polar renewal is "
-    "their first real charge. If it fails, the subscription goes to dunning."
-)
 _SUBSCRIPTION_DISCOUNT_REASON = (
     "This subscription's coupon isn't one Polar can import, so it stays on the "
     "source rather than renewing at full price."
@@ -933,8 +929,6 @@ def payment_method_reason(
         return Reason("payment_method_missing", _PAYMENT_METHOD_MISSING_REASON)
     if payment_method.type.requires_reentry:
         return Reason("payment_method_requires_reentry", _PAYMENT_REENTRY_REASON)
-    if payment_method.type != CanonicalPaymentMethodType.card:
-        return Reason("payment_method_not_card", _PAYMENT_METHOD_NOT_CARD_REASON)
     return None
 
 

@@ -142,11 +142,14 @@ async def link_payment_method(
         # No such customer on our account: the copy hasn't reached them.
         return None
 
+    # Only cards: like Link, a copied bank debit isn't charged on Polar, and
+    # the customer enters their billing details again.
     payment_methods = [
         await payment_method_service.upsert_from_stripe(
             session, customer, stripe_payment_method, flush=True
         )
         for stripe_payment_method in stripe_payment_methods
+        if stripe_payment_method.type == CARD_TYPE
     ]
     if not payment_methods:
         return None
@@ -165,12 +168,16 @@ async def link_mapped_payment_method(
     customer: Customer,
     mapping: PaymentMethodMapping,
 ) -> PaymentMethod | None:
+    """The mapped copy, or None when it isn't a card and so isn't used."""
     try:
         stripe_payment_method = await stripe_service.get_payment_method(
             mapping.destination_payment_method_id
         )
-    except stripe_lib.InvalidRequestError:
-        return None
+    except stripe_lib.InvalidRequestError as e:
+        raise PaymentMethodMappingCSVError(
+            f"Copied payment method {mapping.destination_payment_method_id} "
+            "does not exist on Polar's Stripe account."
+        ) from e
     stripe_customer = stripe_payment_method.customer
     if (
         stripe_customer is None
@@ -180,6 +187,8 @@ async def link_mapped_payment_method(
             f"Copied payment method {mapping.destination_payment_method_id} does not "
             "belong to the customer in Stripe's mapping."
         )
+    if stripe_payment_method.type != CARD_TYPE:
+        return None
     return await payment_method_service.upsert_from_stripe(
         session, customer, stripe_payment_method, flush=True
     )
@@ -190,7 +199,7 @@ def _preferred(
     customer: Customer,
     source_method: CanonicalPaymentMethod | None,
 ) -> PaymentMethod:
-    """Prefer the source method's copy, else the customer's default, else the first stored method."""
+    """Prefer the source method's copy, else the customer's default, else the first card."""
     if source_method is not None:
         copies = [
             payment_method
@@ -203,9 +212,6 @@ def _preferred(
             return copies[0]
     for payment_method in payment_methods:
         if payment_method.id == customer.default_payment_method_id:
-            return payment_method
-    for payment_method in payment_methods:
-        if payment_method.type == CARD_TYPE:
             return payment_method
     return payment_methods[0]
 

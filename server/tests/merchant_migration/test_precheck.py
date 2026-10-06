@@ -513,7 +513,6 @@ class TestPrecheckEngine:
         assert "subscription_trialing" in warnings
         assert "payment_method_requires_reentry" in warnings
         assert "payment_method_missing" in warnings
-        assert "payment_method_not_card" in warnings
         assert report.can_start is True
 
     async def test_schedule_that_cancels_warns_once(self) -> None:
@@ -955,12 +954,6 @@ class TestClassifyRecords:
         ("payment_method", "reason_code"),
         [
             (None, "payment_method_missing"),
-            (
-                CanonicalPaymentMethod(
-                    source_id="pm_1", type=CanonicalPaymentMethodType.us_bank_account
-                ),
-                "payment_method_not_card",
-            ),
         ],
     )
     def test_payment_method_the_switch_cant_check_is_importable_with_info(
@@ -985,7 +978,11 @@ class TestClassifyRecords:
 
     @pytest.mark.parametrize(
         "payment_method_type",
-        [CanonicalPaymentMethodType.link, CanonicalPaymentMethodType.sepa_debit],
+        [
+            CanonicalPaymentMethodType.link,
+            CanonicalPaymentMethodType.sepa_debit,
+            CanonicalPaymentMethodType.us_bank_account,
+        ],
     )
     def test_payment_method_reentry_is_importable_with_info(
         self, payment_method_type: CanonicalPaymentMethodType

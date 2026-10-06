@@ -14,25 +14,35 @@ const expensiveToolCall = async () => {
 
   const balance = await customer.meters.tool_call.balance()
 
-  if (balance.isPristine && balance.balance > 0) {
-    console.log('That is plenty, doing the thing')
-    // doTheThing();
+  console.log('Current balance before tool call:', balance)
+
+  if (!balance.isPristine) {
+    throw new Error(
+      'Balance is not pristine, meaning the last event ingested has not yet been reflected in the balance. Please wait a few seconds and try again.',
+    )
+  }
+
+  if (balance.balance > 0) {
+    console.log('Balance is sufficient, doing the tool call')
+
     await customer.events.ingest('tool_call')
 
-    // // customer.meters.tool_call.isStale() // returns true
-    // // customer.meters.tool_call.on('reconciled', () => isStale() // returns false)
+    const start = new Date()
+    let newBalance = await customer.meters.tool_call.balance()
 
-    // // A problem is that this is now stale and we have no way of knowing
-    // await balance.refresh()
+    while (!newBalance.isPristine) {
+      console.log('New balance is not pristine yet, polling again in 1s')
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      newBalance = await customer.meters.tool_call.balance()
 
-    const newBalance = await customer.meters.tool_call.balance()
+      if (new Date().getTime() - start.getTime() > 60000) {
+        throw new Error(
+          'Balance is not pristine after 1 minute, something is wrong',
+        )
+      }
+    }
 
-    console.log(
-      'Checking balance after tool call:',
-      newBalance,
-      'is pristine:',
-      newBalance.isPristine,
-    )
+    console.log('New balance after tool call:', newBalance)
   } else {
     console.log('Not enough balance, cannot do the thing')
   }

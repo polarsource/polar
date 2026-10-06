@@ -203,10 +203,12 @@ export function RuntimeSDK<const Config extends RuntimeSDKConfig>(
         if (inserted > 0) {
           for (const meter of config.meters ?? []) {
             if (matchesFilter(meter.filter, { name })) {
-              latestIngestedAt.set(
-                cacheKey(identifier, meter.external_id),
-                timestamp,
-              )
+              const key = cacheKey(identifier, meter.external_id)
+              const current = latestIngestedAt.get(key)
+
+              if (current === undefined || timestamp > current) {
+                latestIngestedAt.set(key, timestamp)
+              }
             }
           }
         }

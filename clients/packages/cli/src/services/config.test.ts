@@ -217,16 +217,17 @@ describe('validate', () => {
       issues: [
         {
           severity: 'error',
-          code: 'literal_error',
-          path: ['meters', 0, 'filter', 'conjunction'],
-          message: "Input should be 'and' or 'or'",
-          got: 'qwe',
+          type: 'meter_locked',
+          loc: ['body', 'meters', 0, 'filter'],
+          msg: "This field can't be updated because the meter is already aggregating events.",
+          input: null,
         },
         {
-          severity: 'error',
-          code: 'missing',
-          path: ['meters', 0, 'name'],
-          message: 'Field required',
+          severity: 'warning',
+          type: 'unknown_event',
+          loc: ['body', 'meters', 0, 'name'],
+          msg: 'No "tool_call" events have been received yet',
+          input: 'tool_call',
         },
       ],
     })
@@ -239,19 +240,50 @@ describe('validate', () => {
     expect(issues).toEqual([
       {
         severity: 'error',
+        code: 'meter_locked',
+        path: 'meters.0.filter',
+        message:
+          "This field can't be updated because the meter is already aggregating events.",
+        got: 'null',
+        location: { line: 5, column: 17, length: 39 },
+      },
+      {
+        severity: 'warning',
+        code: 'unknown_event',
+        path: 'meters.0.name',
+        message: 'No "tool_call" events have been received yet',
+        got: '"tool_call"',
+        location: { line: 3, column: 5, length: 1 },
+      },
+    ])
+  })
+
+  test('maps request validation errors onto the file', async () => {
+    api.routes[`POST ${validateUrl}`] = Response.json(
+      {
+        error: 'RequestValidationError',
+        detail: [
+          {
+            type: 'literal_error',
+            loc: ['body', 'meters', 0, 'filter', 'conjunction'],
+            msg: "Input should be 'and' or 'or'",
+            input: 'qwe',
+          },
+        ],
+      },
+      { status: 422 },
+    )
+
+    const issues = await validate(await write(source))
+
+    expect(issues).toEqual([
+      {
+        severity: 'error',
         code: 'literal_error',
         path: 'meters.0.filter.conjunction',
         message: "Input should be 'and' or 'or'",
         got: '"qwe"',
         location: { line: 5, column: 34, length: 5 },
-      },
-      {
-        severity: 'error',
-        code: 'missing',
-        path: 'meters.0.name',
-        message: 'Field required',
-        got: undefined,
-        location: { line: 3, column: 5, length: 1 },
       },
     ])
   })

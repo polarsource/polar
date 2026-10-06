@@ -12,6 +12,8 @@ import {
   ApiError,
   ConfigError,
   ConfigValidation,
+  RequestValidationError,
+  ServerIssue as ServerIssueSchema,
   type ConfigIssue,
   type LoadedConfig,
   type SourceLocation,
@@ -74,6 +76,23 @@ export const locate = (
   return {
     ...positionOf(source, node.offset),
     length: Math.min(node.length, restOfLine),
+  }
+}
+
+type ServerIssue = typeof ServerIssueSchema.Type
+
+const toConfigIssue = (
+  config: LoadedConfig,
+  issue: ServerIssue,
+): ConfigIssue => {
+  const path = issue.loc[0] === 'body' ? issue.loc.slice(1) : issue.loc
+  return {
+    severity: issue.severity,
+    code: issue.type,
+    path: path.join('.'),
+    message: issue.msg,
+    got: issue.input === undefined ? undefined : JSON.stringify(issue.input),
+    location: locate(config.source, path),
   }
 }
 
@@ -192,21 +211,20 @@ export const make = Effect.gen(function* () {
           hint: 'The token needs the meters:read or meters:write scope.',
         })
       }
+      if (response.status === 422) {
+        const { detail } = yield* HttpClientResponse.schemaBodyJson(
+          RequestValidationError,
+        )(response)
+        return detail.map((error) =>
+          toConfigIssue(config, { ...error, severity: 'error' }),
+        )
+      }
       if (response.status !== 200) {
         return yield* apiFailure(response.status, environment)
       }
       const { issues } =
         yield* HttpClientResponse.schemaBodyJson(ConfigValidation)(response)
-      return issues.map(
-        (issue): ConfigIssue => ({
-          severity: issue.severity,
-          code: issue.code,
-          path: issue.path.join('.'),
-          message: issue.message,
-          got: issue.got === undefined ? undefined : JSON.stringify(issue.got),
-          location: locate(config.source, issue.path),
-        }),
-      )
+      return issues.map((issue) => toConfigIssue(config, issue))
     }).pipe(
       Effect.scoped,
       Effect.catchTags({

@@ -30,6 +30,7 @@ class Config(Schema):
 
     version: ConfigVersion = Field(description="Version of the config schema.")
     meters: list[ConfigMeter] = Field(
+        min_length=1,
         max_length=MAXIMUM_METERS,
         description=(
             "Meters to create or update, matched by `external_id`. "

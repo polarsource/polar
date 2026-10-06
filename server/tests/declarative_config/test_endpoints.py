@@ -94,6 +94,27 @@ class TestApply:
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_empty_meters(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/config/apply",
+            json={
+                "version": 1,
+                "meters": [],
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 422
+        [error] = response.json()["detail"]
+        assert error["loc"] == ["body", "meters"]
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_unknown_key(
         self,
         client: AsyncClient,

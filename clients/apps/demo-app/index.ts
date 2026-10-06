@@ -1,5 +1,5 @@
 import { MeterSDK } from '@polar-sh/polar'
-import config from './config'
+import config from './polar.config'
 
 const polar = MeterSDK(config, {
   accessToken: 'polar_oat_f2oL0wrw8aJ0QXGq2DuzNi2GUX9BKX1ACPpcq433SAB',

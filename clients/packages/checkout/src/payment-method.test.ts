@@ -5,7 +5,7 @@ const ALLOWED_ORIGIN = 'http://127.0.0.1:3000'
 const CUSTOMER_SESSION_TOKEN = 'polar_cst_test_token'
 
 beforeAll(() => {
-  // @ts-expect-error - Global defined at build time by tsup
+  // @ts-expect-error - Global defined at build time by tsdown
   globalThis.__POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__ = ALLOWED_ORIGIN
 })
 

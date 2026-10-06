@@ -5,7 +5,7 @@ const ALLOWED_ORIGIN = 'http://127.0.0.1:3000'
 
 beforeAll(() => {
   // Define the build-time global that embed.ts expects
-  // @ts-expect-error - Global defined at build time by tsup
+  // @ts-expect-error - Global defined at build time by tsdown
   globalThis.__POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__ = ALLOWED_ORIGIN
 })
 

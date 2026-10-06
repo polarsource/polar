@@ -103,7 +103,7 @@ services:
       - default
       - polar-shared
     # `start_period` is long because a cold first boot binds uvicorn only after
-    # a serial chain: uv sync, the email-template build (pnpm install + tsup +
+    # a serial chain: uv sync, the email-template build (pnpm install + tsdown +
     # pkg), DB/bucket bootstrap, migrations, and full seed load — routinely
     # several minutes. Checks that fail during it don't count against `retries`,
     # so `dev docker up --wait` won't give up before /healthz answers. Plain

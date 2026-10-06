@@ -167,7 +167,7 @@ interface EmbedPaymentMethodCreateInlineOptions {
 
 const resolveEmbedBaseURL = (): string => {
   const origins = // oxlint-disable-next-line typescript/ban-ts-comment
-    // @ts-ignore - Defined at build time by tsup
+    // @ts-ignore - Defined at build time by tsdown
     (__POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__ as string).split(',')
 
   if (
@@ -181,7 +181,7 @@ const resolveEmbedBaseURL = (): string => {
 
 const buildIframeAllow = (): string => {
   // oxlint-disable-next-line typescript/ban-ts-comment
-  // @ts-ignore - Defined at build time by tsup
+  // @ts-ignore - Defined at build time by tsdown
   const origins = (__POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__ as string)
     .split(',')
     .join(' ')
@@ -577,7 +577,7 @@ class EmbedPaymentMethod {
   private handleWindowMessage({ data, origin }: MessageEvent): void {
     if (
       // oxlint-disable-next-line typescript/ban-ts-comment
-      // @ts-ignore - Defined at build time by tsup
+      // @ts-ignore - Defined at build time by tsdown
       !__POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__
         .split(',')
         .includes(origin)

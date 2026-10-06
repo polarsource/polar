@@ -30,14 +30,14 @@ const isPolarMessage = (
 
 const resolveEmbedBaseURL = (): string => {
   // oxlint-disable-next-line typescript/ban-ts-comment
-  // @ts-ignore - Defined at build time by tsup
+  // @ts-ignore - Defined at build time by tsdown
   const origins = __POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__ as string
   return origins.split(',')[0]
 }
 
 const isAllowedOrigin = (origin: string): boolean => {
   // oxlint-disable-next-line typescript/ban-ts-comment
-  // @ts-ignore - Defined at build time by tsup
+  // @ts-ignore - Defined at build time by tsdown
   return (__POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__ as string)
     .split(',')
     .includes(origin)
@@ -45,7 +45,7 @@ const isAllowedOrigin = (origin: string): boolean => {
 
 const buildIframeAllow = (): string => {
   // oxlint-disable-next-line typescript/ban-ts-comment
-  // @ts-ignore - Defined at build time by tsup
+  // @ts-ignore - Defined at build time by tsdown
   const origins = (__POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__ as string)
     .split(',')
     .join(' ')

@@ -24,7 +24,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "build": "tsup ./src/index.ts --format esm,cjs --dts --clean --sourcemap",
+    "build": "tsdown",
     "dev": "tsc --watch",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
@@ -45,7 +45,7 @@
     "@polar-sh/typescript-config": "workspace:*",
     "@typescript/native": "catalog:",
     "next": "^16.3.6",
-    "tsup": "catalog:",
+    "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

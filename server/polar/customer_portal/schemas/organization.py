@@ -1,14 +1,16 @@
-from typing import Self
+from typing import Annotated, Self
 
 from pydantic import Field, model_validator
 
 from polar.file.schemas import ProductMediaFileRead
 from polar.kit.schemas import Schema
+from polar.kit.versioning import Version
 from polar.models.organization import OrganizationCustomerPortalSettings
 from polar.organization.schemas import (
     OrganizationPublicBase,
 )
 from polar.product.schemas import BenefitPublicList, ProductBase, ProductPrice
+from polar.version import V2026_10
 
 
 class CustomerProduct(ProductBase):
@@ -26,10 +28,14 @@ class CustomerProduct(ProductBase):
 class CustomerOrganizationFeatureSettings(Schema):
     """Feature flags exposed to the customer portal."""
 
-    member_model_enabled: bool = Field(
-        default=False,
-        description="Whether the member model is enabled for this organization.",
-    )
+    member_model_enabled: Annotated[
+        bool,
+        Version(up_to=V2026_10),
+        Field(
+            description="Every organization uses the member model.",
+            deprecated=True,
+        ),
+    ] = True
     checkout_localization_enabled: bool = Field(
         default=False,
         description="Whether localization is enabled for this organization.",

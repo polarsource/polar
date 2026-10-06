@@ -41,8 +41,8 @@ async def create(
     """
     Create a customer session.
 
-    For organizations with `member_model_enabled`, this will automatically
-    create a member session for the owner member of the customer.
+    This creates a member session: for the member given by `member_id` or
+    `external_member_id`, or for the owner member of the customer otherwise.
     """
     return await customer_session_service.create(
         session, auth_subject, customer_session_create

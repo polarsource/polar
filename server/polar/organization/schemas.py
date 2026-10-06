@@ -47,7 +47,7 @@ from polar.models.user_organization import (
     OrganizationRole,
 )
 from polar.organization.embed_hosts import InvalidEmbedHost, validate_host_pattern
-from polar.version import V2027_01
+from polar.version import V2026_10, V2027_01
 
 OrganizationID = Annotated[
     UUID4,
@@ -177,9 +177,14 @@ class OrganizationFeatureSettings(Schema):
     wallets_enabled: bool = Field(
         False, description="If this organization has Wallets enabled"
     )
-    member_model_enabled: bool = Field(
-        False, description="If this organization has the Member model enabled"
-    )
+    member_model_enabled: Annotated[
+        bool,
+        Version(up_to=V2026_10),
+        Field(
+            description="Every organization uses the Member model.",
+            deprecated=True,
+        ),
+    ] = True
     checkout_localization_enabled: bool = Field(
         False,
         description="If this organization has checkout localization enabled",
@@ -261,9 +266,14 @@ class OrganizationFeatureSettingsUpdate(Schema):
     provided and keep their current value.
     """
 
-    member_model_enabled: bool = Field(
-        False, description="If this organization has the Member model enabled"
-    )
+    member_model_enabled: Annotated[
+        bool,
+        Version(up_to=V2026_10),
+        Field(
+            description="Every organization uses the Member model. Ignored.",
+            deprecated=True,
+        ),
+    ] = True
     checkout_localization_enabled: bool = Field(
         False,
         description="If this organization has checkout localization enabled",

@@ -14,8 +14,7 @@ class CustomerSessionCreateBase(Schema):
         Field(
             description=(
                 "ID of the member to create a session for. "
-                "When not provided and the organization has `member_model_enabled`, "
-                "the owner member of the customer will be used for individual customers."
+                "When not provided, the owner member of the customer is used."
             ),
         ),
     ] = None

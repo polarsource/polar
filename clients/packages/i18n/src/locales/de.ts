@@ -255,8 +255,8 @@ export default {
     },
     cta: {
       startTrial: 'Testphase starten',
-      subscribeNow: 'Jetzt kostenpflichtig abonnieren',
-      payNow: 'Jetzt bezahlen',
+      subscribeNow: 'Zahlungspflichtig abonnieren',
+      payNow: 'Zahlungspflichtig bestellen',
       getFree: 'Kostenlos erhalten',
       paymentsUnavailable: 'Zahlungen sind derzeit nicht verfügbar',
     },

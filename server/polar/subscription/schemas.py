@@ -238,16 +238,15 @@ class PendingSubscriptionUpdate(IDSchema, TimestampedSchema):
             description=(
                 "ID of the new discount to apply to the subscription. "
                 "If `null`, the discount won't be changed, "
-                "unless `discount_removed` is `true`."
+                "unless `discount_unset` is `true`."
             )
         ),
     ] = None
-    discount_removed: Annotated[
+    discount_unset: Annotated[
         bool,
         Version(starting_from=V2027_01),
         Field(
-            validation_alias=AliasChoices("discount_removed", "discount_unset"),
-            description="Whether the subscription's current discount will be removed.",
+            description="Whether the subscription's current discount will be removed."
         ),
     ] = False
 

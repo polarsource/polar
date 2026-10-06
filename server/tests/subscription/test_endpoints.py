@@ -717,7 +717,7 @@ class TestSubscriptionProductUpdate:
         assert response.status_code == 200
         pending_update = response.json()["pending_update"]
         assert pending_update["discount_id"] == str(discount_percentage_50.id)
-        assert pending_update["discount_removed"] is False
+        assert pending_update["discount_unset"] is False
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth
@@ -750,7 +750,7 @@ class TestSubscriptionProductUpdate:
         assert response.status_code == 200
         pending_update = response.json()["pending_update"]
         assert pending_update["discount_id"] is None
-        assert pending_update["discount_removed"] is True
+        assert pending_update["discount_unset"] is True
 
 
 @pytest.mark.asyncio

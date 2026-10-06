@@ -71736,11 +71736,11 @@
               }
             ],
             "title": "Discount Id",
-            "description": "ID of the new discount to apply to the subscription. If `null`, the discount won't be changed, unless `discount_removed` is `true`."
+            "description": "ID of the new discount to apply to the subscription. If `null`, the discount won't be changed, unless `discount_unset` is `true`."
           },
-          "discount_removed": {
+          "discount_unset": {
             "type": "boolean",
-            "title": "Discount Removed",
+            "title": "Discount Unset",
             "description": "Whether the subscription's current discount will be removed.",
             "default": false
           }

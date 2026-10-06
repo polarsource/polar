@@ -19,7 +19,7 @@ const DAYS = [
 ]
 const PEAK = Math.max(...DAYS)
 const STEP = (POSTER_WIDTH - PAD * 2) / DAYS.length
-const BAR = STEP * 0.35
+const BAR = STEP * 0.2
 
 /** A month of usage, every day of it already invoiced. */
 export const GrowthPoster = () => (

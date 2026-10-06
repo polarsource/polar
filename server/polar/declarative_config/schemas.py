@@ -1,5 +1,4 @@
 from enum import StrEnum
-from typing import Literal
 
 from pydantic import ConfigDict, Field, field_validator
 
@@ -8,8 +7,6 @@ from polar.meter.schemas import MeterCreateBase
 from polar.organization.schemas import OrganizationID
 
 MAXIMUM_METERS = 100
-
-ConfigVersion = Literal[1]
 
 
 class ConfigMeter(MeterCreateBase):
@@ -28,7 +25,6 @@ class ConfigMeter(MeterCreateBase):
 class Config(Schema):
     model_config = ConfigDict(extra="forbid")
 
-    version: ConfigVersion = Field(description="Version of the config schema.")
     meters: list[ConfigMeter] = Field(
         max_length=MAXIMUM_METERS,
         description=(
@@ -62,22 +58,16 @@ class Config(Schema):
         return value
 
 
-class ConfigSection(StrEnum):
-    meters = "meters"
-
-
 class ConfigAction(StrEnum):
     created = "created"
     updated = "updated"
     unchanged = "unchanged"
 
 
-class ConfigApplyResourceResult(Schema):
-    section: ConfigSection = Field(description="Config section of the resource.")
-    key: str = Field(description="The resource's `external_id`.")
+class ConfigMeterResult(Schema):
+    external_id: str = Field(description="The meter's `external_id`.")
     action: ConfigAction = Field(description="What applying the config did.")
 
 
 class ConfigApplyResult(Schema):
-    version: ConfigVersion = Field(description="Version of the applied config schema.")
-    results: list[ConfigApplyResourceResult]
+    meters: list[ConfigMeterResult]

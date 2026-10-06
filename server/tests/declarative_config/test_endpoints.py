@@ -33,9 +33,7 @@ async def config_as_code_enabled(
 @pytest.mark.asyncio
 class TestApply:
     async def test_anonymous(self, client: AsyncClient) -> None:
-        response = await client.post(
-            "/v1/config/apply", json={"version": 1, "meters": [METER]}
-        )
+        response = await client.post("/v1/config/apply", json={"meters": [METER]})
 
         assert response.status_code == 401
 
@@ -49,7 +47,6 @@ class TestApply:
         response = await client.post(
             "/v1/config/apply",
             json={
-                "version": 1,
                 "meters": [METER],
                 "organization_id": str(organization.id),
             },
@@ -69,7 +66,6 @@ class TestApply:
         response = await client.post(
             "/v1/config/apply",
             json={
-                "version": 1,
                 "meters": [METER],
                 "organization_id": str(organization.id),
             },
@@ -77,18 +73,13 @@ class TestApply:
 
         assert response.status_code == 200
         assert response.json() == {
-            "version": 1,
-            "results": [
-                {"section": "meters", "key": "sdk-tool-calls", "action": "created"},
-            ],
+            "meters": [{"external_id": "sdk-tool-calls", "action": "created"}],
         }
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_organization_token(self, client: AsyncClient) -> None:
-        response = await client.post(
-            "/v1/config/apply", json={"version": 1, "meters": [METER]}
-        )
+        response = await client.post("/v1/config/apply", json={"meters": [METER]})
 
         assert response.status_code == 200
 
@@ -103,7 +94,6 @@ class TestApply:
         response = await client.post(
             "/v1/config/apply",
             json={
-                "version": 1,
                 "meters": [{**METER, "agregation": {"func": "count"}}],
                 "organization_id": str(organization.id),
             },
@@ -124,7 +114,6 @@ class TestApply:
         response = await client.post(
             "/v1/config/apply",
             json={
-                "version": 1,
                 "meters": [METER, {**METER, "name": "Duplicate"}],
                 "organization_id": str(organization.id),
             },
@@ -133,24 +122,3 @@ class TestApply:
         assert response.status_code == 422
         [error] = response.json()["detail"]
         assert error["loc"] == ["body", "meters"]
-
-    @pytest.mark.auth
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_unsupported_version(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.post(
-            "/v1/config/apply",
-            json={
-                "version": 2,
-                "meters": [METER],
-                "organization_id": str(organization.id),
-            },
-        )
-
-        assert response.status_code == 422
-        [error] = response.json()["detail"]
-        assert error["loc"] == ["body", "version"]

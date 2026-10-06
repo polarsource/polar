@@ -15762,12 +15762,6 @@ export interface components {
     /** Config */
     Config: {
       /**
-       * Version
-       * @description Version of the config schema.
-       * @constant
-       */
-      version: 1
-      /**
        * Meters
        * @description Meters to create or update, matched by `external_id`. Existing meters that aren't listed are left untouched.
        */
@@ -15783,28 +15777,10 @@ export interface components {
      * @enum {string}
      */
     ConfigAction: 'created' | 'updated' | 'unchanged'
-    /** ConfigApplyResourceResult */
-    ConfigApplyResourceResult: {
-      /** @description Config section of the resource. */
-      section: components['schemas']['ConfigSection']
-      /**
-       * Key
-       * @description The resource's `external_id`.
-       */
-      key: string
-      /** @description What applying the config did. */
-      action: components['schemas']['ConfigAction']
-    }
     /** ConfigApplyResult */
     ConfigApplyResult: {
-      /**
-       * Version
-       * @description Version of the applied config schema.
-       * @constant
-       */
-      version: 1
-      /** Results */
-      results: components['schemas']['ConfigApplyResourceResult'][]
+      /** Meters */
+      meters: components['schemas']['ConfigMeterResult'][]
     }
     /** ConfigAsCodeNotEnabled */
     ConfigAsCodeNotEnabled: {
@@ -15872,11 +15848,16 @@ export interface components {
        */
       external_id: string
     }
-    /**
-     * ConfigSection
-     * @enum {string}
-     */
-    ConfigSection: 'meters'
+    /** ConfigMeterResult */
+    ConfigMeterResult: {
+      /**
+       * External Id
+       * @description The meter's `external_id`.
+       */
+      external_id: string
+      /** @description What applying the config did. */
+      action: components['schemas']['ConfigAction']
+    }
     /** CostMetadata */
     'CostMetadata-Input': {
       /**
@@ -70304,9 +70285,6 @@ export const confidenceLevelValues: ReadonlyArray<
 export const configActionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigAction']
 > = ['created', 'updated', 'unchanged']
-export const configSectionValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ConfigSection']
-> = ['meters']
 export const countAggregationFuncValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CountAggregation']['func']
 > = ['count']

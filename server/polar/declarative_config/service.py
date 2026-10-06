@@ -6,13 +6,7 @@ from polar.models import Organization, User
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
 
-from .schemas import (
-    Config,
-    ConfigAction,
-    ConfigApplyResourceResult,
-    ConfigApplyResult,
-    ConfigSection,
-)
+from .schemas import Config, ConfigAction, ConfigApplyResult, ConfigMeterResult
 
 
 class ConfigAsCodeNotEnabled(PolarError):
@@ -38,15 +32,12 @@ class DeclarativeConfigService:
             raise ConfigAsCodeNotEnabled()
 
         return ConfigApplyResult(
-            version=config.version,
-            results=[
-                ConfigApplyResourceResult(
-                    section=ConfigSection.meters,
-                    key=meter.external_id,
-                    action=ConfigAction.created,
+            meters=[
+                ConfigMeterResult(
+                    external_id=meter.external_id, action=ConfigAction.created
                 )
                 for meter in config.meters
-            ],
+            ]
         )
 
 

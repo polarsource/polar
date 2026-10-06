@@ -1748,6 +1748,8 @@ class MerchantMigrationService:
         updated = await MerchantMigrationRecordRepository.from_session(
             session
         ).set_subscription_tax_behavior(migration.id, update.tax_behavior)
+        if updated:
+            await self._reclassify_records(session, migration)
         return MerchantMigrationTaxBehaviorUpdateResult(updated=updated)
 
     async def update_record(

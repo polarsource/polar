@@ -25,34 +25,46 @@ if TYPE_CHECKING:
     from sentry_sdk._types import Event, Hint
 
 POSTHOG_ID_TAG = "posthog_distinct_id"
-# Personal data fields on request bodies. IP addresses and user agents are kept.
+# Personal data, secrets, and merchant-supplied values on request bodies.
+# IP addresses and user agents are kept.
 _REQUEST_PII_KEYS = frozenset(
     {
+        "access_token",
         "account_email",
         "account_username",
+        "api_key",
         "billing_address",
         "billing_manager_email",
         "billing_name",
+        "client_secret",
+        "code",
         "customer_billing_address",
         "customer_billing_name",
         "customer_email",
+        "customer_external_id",
         "customer_name",
         "customer_tax_id",
         "date_of_birth",
         "email",
+        "external_customer_id",
+        "external_id",
         "first_name",
         "from_email_addr",
         "full_name",
         "invited_email",
         "inviter_email",
         "last_name",
+        "metadata",
         "name",
         "new_email",
         "owner_email",
+        "refresh_token",
         "reply_to_email_addr",
         "reply_to_name",
+        "secret",
         "tax_id",
         "to_email_addr",
+        "token",
         "verified_first_name",
         "verified_last_name",
     }

@@ -36,5 +36,6 @@ class MeterRepository(RepositoryBase[Meter], RepositoryIDMixin[Meter, UUID]):
                 Meter.deleted_at.is_(None),
             )
             .options(undefer(Meter.external_id))
+            .with_for_update()
         )
         return await self.get_all(statement)

@@ -12,7 +12,6 @@ from polar.declarative_config.service import (
 from polar.declarative_config.service import (
     declarative_config as declarative_config_service,
 )
-from polar.kit.utils import utc_now
 from polar.meter.repository import MeterRepository
 from polar.meter.unit import MeterUnit
 from polar.models import Organization
@@ -162,9 +161,7 @@ class TestApply:
         auth_subject: AuthSubject[Organization],
         organization: Organization,
     ) -> None:
-        event = await create_event(
-            save_fixture, organization=organization, ingested_at=utc_now()
-        )
+        event = await create_event(save_fixture, organization=organization)
         await create_meter(
             save_fixture,
             organization=organization,
@@ -199,9 +196,7 @@ class TestApply:
         auth_subject: AuthSubject[Organization],
         organization: Organization,
     ) -> None:
-        event = await create_event(
-            save_fixture, organization=organization, ingested_at=utc_now()
-        )
+        event = await create_event(save_fixture, organization=organization)
         meter = await create_meter(
             save_fixture,
             organization=organization,

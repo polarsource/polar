@@ -9,6 +9,10 @@ from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission
 from polar.exceptions import PolarError
 from polar.meter.repository import MeterRepository
+from polar.meter.service import (
+    METER_LOCKED_FIELD_MESSAGE,
+    METER_LOCKED_FIELDS,
+)
 from polar.meter.service import meter as meter_service
 from polar.models import Meter, Organization, User
 from polar.organization.resolver import get_payload_organization
@@ -24,7 +28,6 @@ from .schemas import (
 )
 
 _METER_SCALAR_FIELDS = ("name", "unit", "custom_label", "custom_multiplier")
-_METER_LOCKED_FIELDS = ("filter", "aggregation")
 
 
 class ConfigAsCodeNotEnabled(PolarError):
@@ -109,12 +112,9 @@ class DeclarativeConfigService:
                 errors.extend(
                     ConfigEntryError(
                         loc=["body", "meters", index, field],
-                        msg=(
-                            "This field can't be updated because the meter "
-                            "is already aggregating events."
-                        ),
+                        msg=METER_LOCKED_FIELD_MESSAGE,
                     )
-                    for field in _METER_LOCKED_FIELDS
+                    for field in METER_LOCKED_FIELDS
                     if field in update_dict
                 )
             changes.append((meter_config, meter, update_dict))
@@ -146,7 +146,7 @@ class DeclarativeConfigService:
         self, meter: Meter, meter_config: ConfigMeter
     ) -> dict[str, Any]:
         update_dict: dict[str, Any] = {}
-        for field in (*_METER_SCALAR_FIELDS, *_METER_LOCKED_FIELDS):
+        for field in (*_METER_SCALAR_FIELDS, *METER_LOCKED_FIELDS):
             value = getattr(meter_config, field)
             if getattr(meter, field) != value:
                 update_dict[field] = value

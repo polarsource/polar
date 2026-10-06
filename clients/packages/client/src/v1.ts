@@ -15765,7 +15765,7 @@ export interface components {
     Config: {
       /**
        * Meters
-       * @description Meters to create or update, matched by `external_id`. Existing meters that aren't listed are left untouched.
+       * @description Meters to create or update, matched by `external_id`. Omitted fields are set to their default, except `metadata`, which is left untouched when omitted. Existing meters that aren't listed are left untouched, and archived meters stay archived.
        */
       meters: components['schemas']['ConfigMeter'][]
       /**

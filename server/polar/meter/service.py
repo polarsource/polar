@@ -66,6 +66,11 @@ from .sorting import MeterSortProperty
 # Maximum number of events processed by one billing task invocation.
 _BILLING_ENTRY_BATCH_SIZE = 500
 
+METER_LOCKED_FIELDS = ("filter", "aggregation")
+METER_LOCKED_FIELD_MESSAGE = (
+    "This field can't be updated because the meter is already aggregating events."
+)
+
 
 class MeterService:
     async def list(
@@ -160,8 +165,7 @@ class MeterService:
         meter = await repository.create(
             Meter(
                 **meter_create.model_dump(
-                    by_alias=True,
-                    exclude={"filter", "aggregation", "organization_id"},
+                    by_alias=True, exclude={"filter", "aggregation"}
                 ),
                 filter=meter_create.filter,
                 aggregation=meter_create.aggregation,
@@ -201,17 +205,13 @@ class MeterService:
 
         errors: list[ValidationError] = []
         if meter.last_billed_event is not None:
-            sensitive_fields = {"filter", "aggregation"}
-            for sensitive_field in sensitive_fields:
+            for sensitive_field in METER_LOCKED_FIELDS:
                 if sensitive_field in meter_update.model_fields_set:
                     errors.append(
                         {
                             "type": "forbidden",
                             "loc": ("body", sensitive_field),
-                            "msg": (
-                                "This field can't be updated because the meter "
-                                "is already aggregating events."
-                            ),
+                            "msg": METER_LOCKED_FIELD_MESSAGE,
                             "input": getattr(meter_update, sensitive_field),
                         }
                     )

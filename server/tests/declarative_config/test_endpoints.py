@@ -2,7 +2,6 @@ import pytest
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
-from polar.kit.utils import utc_now
 from polar.models import Organization, UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -130,9 +129,7 @@ class TestApply:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        event = await create_event(
-            save_fixture, organization=organization, ingested_at=utc_now()
-        )
+        event = await create_event(save_fixture, organization=organization)
         await create_meter(
             save_fixture,
             organization=organization,

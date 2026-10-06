@@ -38,13 +38,13 @@ export function SubscriptionTermsNotice({
     subscription.recurring_interval,
     subscription.recurring_interval_count,
   )
-  const formattedAmount =
-    subscription.tax_behavior === 'inclusive'
-      ? formatCurrency(amount, currency)
-      : `${formatCurrency(amount, currency)} (plus applicable taxes)`
+  const formatAmount = (value: number): string =>
+    subscription.tax_behavior === 'exclusive'
+      ? `${formatCurrency(value, currency)} (plus applicable taxes)`
+      : formatCurrency(value, currency)
   const price = regularAmount
-    ? `${formattedAmount} while your discount applies and ${formatCurrency(regularAmount, currency)} after it ends,`
-    : formattedAmount
+    ? `${formatAmount(amount)} while your discount applies and ${formatAmount(regularAmount)} after it ends,`
+    : formatAmount(amount)
   const portalLink = (
     <Link href={portalUrl} className="text-gray-500 underline">
       Customer Portal

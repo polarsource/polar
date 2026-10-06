@@ -941,7 +941,7 @@ export type PaymentTrigger =
   | "retry_payment_method_update"
   | "retry_admin";
 /**
- * Permission
+ * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
  */
 export type Permission = "pull" | "triage" | "push" | "maintain" | "admin";
 /**
@@ -1966,6 +1966,36 @@ export type WebhookEventType =
  * WebhookFormat
  */
 export type WebhookFormat = "raw" | "discord" | "slack";
+
+/**
+ * ActorCustomerSegment
+ */
+export interface ActorCustomerSegment {
+  /**
+   * external_customer_id
+   */
+  external_customer_id: string;
+}
+
+/**
+ * ActorEntitySegment
+ */
+export interface ActorEntitySegment {
+  /**
+   * external_entity_id
+   */
+  external_entity_id: string;
+}
+
+/**
+ * ActorMemberSegment
+ */
+export interface ActorMemberSegment {
+  /**
+   * external_member_id
+   */
+  external_member_id: string;
+}
 
 /**
  * Address
@@ -14121,7 +14151,18 @@ export interface EventMetadataInput {
    * _llm
    */
   _llm?: LLMMetadata;
-  [key: string]: string | number | boolean | CostMetadataInput | LLMMetadata | undefined;
+  /**
+   * The actors from the customer down to the one that produced the event. Starts with the customer, may contain one member at position 1 or 2, and any number of entities.
+   */
+  _actors?: (ActorCustomerSegment | ActorMemberSegment | ActorEntitySegment)[];
+  [key: string]:
+    | string
+    | number
+    | boolean
+    | CostMetadataInput
+    | LLMMetadata
+    | (ActorCustomerSegment | ActorMemberSegment | ActorEntitySegment)[]
+    | undefined;
 }
 
 /**
@@ -14136,7 +14177,18 @@ export interface EventMetadataOutput {
    * _llm
    */
   _llm?: LLMMetadata;
-  [key: string]: string | number | boolean | CostMetadataOutput | LLMMetadata | undefined;
+  /**
+   * _actors
+   */
+  _actors?: (ActorCustomerSegment | ActorMemberSegment | ActorEntitySegment)[];
+  [key: string]:
+    | string
+    | number
+    | boolean
+    | CostMetadataOutput
+    | LLMMetadata
+    | (ActorCustomerSegment | ActorMemberSegment | ActorEntitySegment)[]
+    | undefined;
 }
 
 /**
@@ -19070,9 +19122,9 @@ export interface OrganizationFeatureSettings {
    */
   merchant_migration_enabled?: boolean;
   /**
-   * If this organization's checkout tells the browser to refuse framing from any host outside its embed hosts.
+   * If this organization can manage its configuration from a declarative config document.
    */
-  frame_ancestors_enforced?: boolean;
+  config_as_code_enabled?: boolean;
 }
 
 /**
@@ -21914,6 +21966,10 @@ You can store up to **50 key-value pairs**.
    */
   product_id: string;
   /**
+   * The currency of the subscription. The product must have a free price in this currency. If not set, the organization's default currency is used.
+   */
+  currency?: PresentmentCurrency | null;
+  /**
    * The ID of the customer to create the subscription for.
    */
   customer_id: string;
@@ -21941,6 +21997,10 @@ You can store up to **50 key-value pairs**.
    * The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow.
    */
   product_id: string;
+  /**
+   * The currency of the subscription. The product must have a free price in this currency. If not set, the organization's default currency is used.
+   */
+  currency?: PresentmentCurrency | null;
   /**
    * The ID of the customer in your system to create the subscription for. It must already exist in Polar.
    */

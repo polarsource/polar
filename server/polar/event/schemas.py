@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Annotated, Literal, NotRequired
+from typing import Annotated, Literal, NotRequired, Self
 
 from fastapi import Path
 from pydantic import (
@@ -8,8 +8,12 @@ from pydantic import (
     AfterValidator,
     AliasChoices,
     AwareDatetime,
+    ConfigDict,
     Discriminator,
     Field,
+    StringConstraints,
+    model_validator,
+    with_config,
 )
 from pydantic.type_adapter import TypeAdapter
 from typing_extensions import TypedDict
@@ -129,6 +133,40 @@ class LLMMetadata(TypedDict):
     ]
 
 
+_ActorExternalID = Annotated[str, StringConstraints(min_length=1, max_length=500)]
+
+
+@with_config(ConfigDict(extra="forbid"))
+class ActorCustomerSegment(TypedDict):
+    external_customer_id: _ActorExternalID
+
+
+@with_config(ConfigDict(extra="forbid"))
+class ActorMemberSegment(TypedDict):
+    external_member_id: _ActorExternalID
+
+
+@with_config(ConfigDict(extra="forbid"))
+class ActorEntitySegment(TypedDict):
+    external_entity_id: _ActorExternalID
+
+
+ActorSegment = ActorCustomerSegment | ActorMemberSegment | ActorEntitySegment
+
+ActorPathMetadata = Annotated[
+    list[ActorSegment],
+    Field(
+        min_length=1,
+        max_length=16,
+        description=(
+            "The actors from the customer down to the one that produced the event. "
+            "Starts with the customer, may contain one member at position 1 or 2, "
+            "and any number of entities."
+        ),
+    ),
+]
+
+
 class EventMetadataInput(  # type: ignore[call-arg]
     TypedDict,
     total=False,
@@ -136,6 +174,7 @@ class EventMetadataInput(  # type: ignore[call-arg]
 ):
     _cost: CostMetadata
     _llm: LLMMetadata
+    _actors: ActorPathMetadata
 
 
 def metadata_default_factory() -> EventMetadataInput:
@@ -198,6 +237,14 @@ class EventCreateCustomer(EventCreateBase):
         ),
     )
 
+    @model_validator(mode="after")
+    def reject_actor_path(self) -> Self:
+        if "_actors" in self.metadata:
+            raise ValueError(
+                "`_actors` requires `external_customer_id` instead of `customer_id`."
+            )
+        return self
+
 
 class EventCreateExternalCustomer(EventCreateBase):
     external_customer_id: str = Field(
@@ -210,6 +257,41 @@ class EventCreateExternalCustomer(EventCreateBase):
             "who performed the action. Used for member-level attribution in B2B."
         ),
     )
+
+    @model_validator(mode="after")
+    def validate_actor_path(self) -> Self:
+        actors = self.metadata.get("_actors")
+        if actors is None:
+            return self
+
+        customer_indexes = [
+            i for i, segment in enumerate(actors) if "external_customer_id" in segment
+        ]
+        if customer_indexes != [0] or actors[0] != {
+            "external_customer_id": self.external_customer_id
+        }:
+            raise ValueError(
+                "`_actors` must start with the customer matching "
+                "`external_customer_id`, and contain no other customer."
+            )
+
+        member_indexes = [
+            i for i, segment in enumerate(actors) if "external_member_id" in segment
+        ]
+        if self.external_member_id is None:
+            if member_indexes:
+                raise ValueError(
+                    "`_actors` contains a member without `external_member_id`."
+                )
+        elif member_indexes not in ([1], [2]) or actors[member_indexes[0]] != {
+            "external_member_id": self.external_member_id
+        }:
+            raise ValueError(
+                "`_actors` must contain one member, at position 1 or 2, "
+                "matching `external_member_id`."
+            )
+
+        return self
 
 
 EventCreate = EventCreateCustomer | EventCreateExternalCustomer
@@ -712,6 +794,7 @@ class EventMetadataOutput(  # type: ignore[call-arg]
 ):
     _cost: CostMetadata
     _llm: LLMMetadata
+    _actors: list[ActorSegment]
 
 
 class UserEvent(BaseEvent):

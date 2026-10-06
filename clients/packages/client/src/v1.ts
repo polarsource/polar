@@ -7573,6 +7573,21 @@ export interface components {
        */
       billing_notes?: string | null
     }
+    /** ActorCustomerSegment */
+    ActorCustomerSegment: {
+      /** External Customer Id */
+      external_customer_id: string
+    }
+    /** ActorEntitySegment */
+    ActorEntitySegment: {
+      /** External Entity Id */
+      external_entity_id: string
+    }
+    /** ActorMemberSegment */
+    ActorMemberSegment: {
+      /** External Member Id */
+      external_member_id: string
+    }
     /**
      * AddCurrencyAction
      * @description A nudge to offer prices in an additional presentment currency.
@@ -22728,6 +22743,15 @@ export interface components {
     EventMetadataInput: {
       _cost?: components['schemas']['CostMetadata-Input']
       _llm?: components['schemas']['LLMMetadata']
+      /**
+       * Actors
+       * @description The actors from the customer down to the one that produced the event. Starts with the customer, may contain one member at position 1 or 2, and any number of entities.
+       */
+      _actors?: (
+        | components['schemas']['ActorCustomerSegment']
+        | components['schemas']['ActorMemberSegment']
+        | components['schemas']['ActorEntitySegment']
+      )[]
     } & {
       [key: string]: string | number | boolean
     }
@@ -22735,6 +22759,12 @@ export interface components {
     EventMetadataOutput: {
       _cost?: components['schemas']['CostMetadata-Output']
       _llm?: components['schemas']['LLMMetadata']
+      /** Actors */
+      _actors?: (
+        | components['schemas']['ActorCustomerSegment']
+        | components['schemas']['ActorMemberSegment']
+        | components['schemas']['ActorEntitySegment']
+      )[]
     } & {
       [key: string]: string | number | boolean
     }

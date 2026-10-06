@@ -1428,8 +1428,8 @@ importers:
   packages/polar:
     dependencies:
       '@polar-sh/sdk':
-        specifier: 1.0.1
-        version: 1.0.1
+        specifier: link:../../../sdk/typescript
+        version: link:../../../sdk/typescript
     devDependencies:
       '@polar-sh/typescript-config':
         specifier: workspace:*
@@ -4710,10 +4710,6 @@ packages:
 
   '@polar-sh/sdk@0.46.7':
     resolution: {integrity: sha512-g8/goRQFfnik9Ood2Ej5AsbEXv2rohzhVlmW7wjkCuwdc8i59FWhdBjolX2tUwcXXjugziXrhCZJLivY3W6ytQ==}
-
-  '@polar-sh/sdk@1.0.1':
-    resolution: {integrity: sha512-//SIpog6sairTzqC04mIsdp8fqeHfpCd3iweLUOyCm7c4IHlRoaUEWFMGRTDPUjvyu4KBYODaI7aODr9acLQhA==}
-    engines: {node: '>=22'}
 
   '@polar-sh/sdk@1.0.2':
     resolution: {integrity: sha512-c3jdqYloVfcejKsAqYfYcW4bG7KkXj5bXkgdsdx4GHlJPzHFV5tysfeZGf9V7dJReLBirAluchsuHWiAIBco8w==}
@@ -18354,8 +18350,6 @@ snapshots:
     dependencies:
       standardwebhooks: 1.1.1
       zod: 4.6.5
-
-  '@polar-sh/sdk@1.0.1': {}
 
   '@polar-sh/sdk@1.0.2': {}
 

@@ -1,6 +1,6 @@
 // import { defineConfig } from '@polar-sh/polar'
 
-import { RuntimeSDKConfig } from '@polar-sh/polar'
+import type { RuntimeSDKConfig } from '@polar-sh/polar'
 
 export default {
   events: {
@@ -9,7 +9,7 @@ export default {
   meters: {
     tool_call: {
       // Fix next - stop requiring `ID` in the `config.ts`
-      id: '478a02b7-0738-4798-811f-4ffe2f7d8396',
+      id: '30b9b3e4-74fe-424d-a1d4-f5645e51f258',
       filter: {
         conjunction: 'and',
         clauses: [

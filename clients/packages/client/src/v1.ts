@@ -6013,6 +6013,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/config/apply': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Apply Config
+     * @description Apply a declarative config document to the organization.
+     *
+     *     **Scopes**: `meters:write` `organizations:write`
+     */
+    post: operations['config:apply']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organization-access-tokens/': {
     parameters: {
       query?: never
@@ -15735,6 +15757,142 @@ export interface components {
      * @enum {string}
      */
     ConfidenceLevel: 'low' | 'medium' | 'high'
+    /** Config */
+    Config: {
+      /**
+       * Version
+       * @description Version of the config schema.
+       * @constant
+       */
+      version: 1
+      /** @description Organization settings to update. Only the settings present are changed. */
+      organization?: components['schemas']['ConfigOrganization'] | null
+      /**
+       * Meters
+       * @description Meters to create or update, matched by `external_id`. Existing meters that aren't listed are left untouched.
+       */
+      meters?: components['schemas']['ConfigMeter'][] | null
+      /**
+       * Organization Id
+       * @description The ID of the organization to apply the config to. **Required unless you use an organization token.**
+       */
+      organization_id?: string | null
+    }
+    /**
+     * ConfigAction
+     * @enum {string}
+     */
+    ConfigAction: 'created' | 'updated' | 'unchanged'
+    /** ConfigApplyResourceResult */
+    ConfigApplyResourceResult: {
+      /** @description Config section of the resource. */
+      section: components['schemas']['ConfigSection']
+      /**
+       * Key
+       * @description The resource's `external_id`, or `null` for singleton sections.
+       */
+      key: string | null
+      /** @description What applying the config did. */
+      action: components['schemas']['ConfigAction']
+    }
+    /** ConfigApplyResult */
+    ConfigApplyResult: {
+      /**
+       * Version
+       * @description Version of the applied config schema.
+       * @constant
+       */
+      version: 1
+      /** Results */
+      results: components['schemas']['ConfigApplyResourceResult'][]
+    }
+    /** ConfigAsCodeNotEnabled */
+    ConfigAsCodeNotEnabled: {
+      /**
+       * Error
+       * @example ConfigAsCodeNotEnabled
+       * @constant
+       */
+      error: 'ConfigAsCodeNotEnabled'
+      /** Detail */
+      detail: string
+    }
+    /** ConfigMeter */
+    ConfigMeter: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Name
+       * @description The name of the meter. Will be shown on customer's invoices and usage.
+       */
+      name: string
+      /**
+       * @description The unit of the meter.
+       * @default scalar
+       */
+      unit: components['schemas']['MeterUnit']
+      /**
+       * Custom Label
+       * @description The label for the custom unit, e.g. 'request'. Required when unit is 'custom'.
+       */
+      custom_label?: string | null
+      /**
+       * Custom Multiplier
+       * @description The multiplier to convert from the base unit to display scale, e.g. 1000 to display per 1000 units. Defaults to 1 when not provided.
+       */
+      custom_multiplier?: number | null
+      /** @description The filter to apply on events that'll be used to calculate the meter. */
+      filter: components['schemas']['Filter']
+      /**
+       * Aggregation
+       * @description The aggregation to apply on the filtered events to calculate the meter.
+       */
+      aggregation:
+        | components['schemas']['CountAggregation']
+        | components['schemas']['PropertyAggregation']
+        | components['schemas']['UniqueAggregation']
+      /**
+       * External Id
+       * @description Your identifier for the meter. Used to match the config entry with an existing meter.
+       */
+      external_id: string
+    }
+    /** ConfigOrganization */
+    ConfigOrganization: {
+      default_presentment_currency?:
+        | components['schemas']['PresentmentCurrency']
+        | null
+      default_tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
+      subscription_settings?:
+        | components['schemas']['OrganizationSubscriptionSettings']
+        | null
+      customer_email_settings?:
+        | components['schemas']['OrganizationCustomerEmailSettings']
+        | null
+      customer_portal_settings?:
+        | components['schemas']['OrganizationCustomerPortalSettings']
+        | null
+    }
+    /**
+     * ConfigSection
+     * @enum {string}
+     */
+    ConfigSection: 'organization' | 'meters'
     /** CostMetadata */
     'CostMetadata-Input': {
       /**
@@ -29504,6 +29662,12 @@ export interface components {
        * @default false
        */
       frame_ancestors_enforced: boolean
+      /**
+       * Config As Code Enabled
+       * @description If this organization can manage its configuration from a declarative config document.
+       * @default false
+       */
+      config_as_code_enabled: boolean
     }
     /**
      * OrganizationFeatureSettingsUpdate
@@ -61469,6 +61633,50 @@ export interface operations {
       }
     }
   }
+  'config:apply': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['Config']
+      }
+    }
+    responses: {
+      /** @description Config applied. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConfigApplyResult']
+        }
+      }
+      /** @description Not allowed to manage this organization, or config as code isn't enabled for it. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['NotPermitted']
+            | components['schemas']['ConfigAsCodeNotEnabled']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'organization_access_tokens:list': {
     parameters: {
       query?: {
@@ -70100,6 +70308,12 @@ export const columnFormatValues: ReadonlyArray<
 export const confidenceLevelValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfidenceLevel']
 > = ['low', 'medium', 'high']
+export const configActionValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigAction']
+> = ['created', 'updated', 'unchanged']
+export const configSectionValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigSection']
+> = ['organization', 'meters']
 export const countAggregationFuncValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CountAggregation']['func']
 > = ['count']

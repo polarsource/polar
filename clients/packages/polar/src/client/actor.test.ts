@@ -1,5 +1,5 @@
 import { describe, expect, expectTypeOf, it, vi } from 'vitest'
-import type { RuntimeSDKConfig } from '../schema/config'
+import type { RuntimeSDKConfig } from '../schema/runtime'
 import type { Polar } from '../sdk'
 import { createActor } from './actor'
 

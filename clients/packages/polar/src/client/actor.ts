@@ -5,7 +5,7 @@ import type {
   CustomerIdentifier,
   MemberIdentifier,
 } from '../internal/api/utils'
-import type { MeterConfig, RuntimeSDKConfig } from '../schema/config'
+import type { MeterConfig, RuntimeSDKConfig } from '../schema/runtime'
 import type { models, Polar } from '../sdk'
 
 export type MeterBalance = {

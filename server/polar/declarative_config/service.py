@@ -9,6 +9,7 @@ from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission
 from polar.exceptions import PolarError
 from polar.meter.repository import MeterRepository
+from polar.meter.schemas import MeterCreateBase
 from polar.meter.service import (
     METER_LOCKED_FIELD_MESSAGE,
     METER_LOCKED_FIELDS,
@@ -27,7 +28,10 @@ from .schemas import (
     ConfigMeterResult,
 )
 
-_METER_SCALAR_FIELDS = ("name", "unit", "custom_label", "custom_multiplier")
+_METER_FIELDS = tuple(
+    field for field in MeterCreateBase.model_fields if field != "metadata"
+)
+_METER_EXTERNAL_ID_INDEX = "ix_meters_organization_id_external_id"
 
 
 class ConfigAsCodeNotEnabled(PolarError):
@@ -95,7 +99,9 @@ class DeclarativeConfigService:
         existing_meters = {
             meter.external_id: meter
             for meter in await repository.get_all_by_external_ids(
-                organization.id, [config.external_id for config in meter_configs]
+                organization.id,
+                [config.external_id for config in meter_configs],
+                for_update=True,
             )
         }
 
@@ -130,6 +136,10 @@ class DeclarativeConfigService:
                         session, organization, meter_config
                     )
                 except IntegrityError as e:
+                    database_error = getattr(e.orig, "__cause__", None)
+                    constraint_name = getattr(database_error, "constraint_name", None)
+                    if constraint_name != _METER_EXTERNAL_ID_INDEX:
+                        raise
                     raise ConfigMeterConflict() from e
                 action = ConfigAction.created
             elif update_dict:
@@ -146,7 +156,7 @@ class DeclarativeConfigService:
         self, meter: Meter, meter_config: ConfigMeter
     ) -> dict[str, Any]:
         update_dict: dict[str, Any] = {}
-        for field in (*_METER_SCALAR_FIELDS, *METER_LOCKED_FIELDS):
+        for field in _METER_FIELDS:
             value = getattr(meter_config, field)
             if getattr(meter, field) != value:
                 update_dict[field] = value

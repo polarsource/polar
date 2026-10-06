@@ -1,6 +1,5 @@
 import pytest
 from pytest_mock import MockerFixture
-from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject
 from polar.declarative_config.schemas import Config, ConfigAction
@@ -236,16 +235,48 @@ class TestApply:
         assert meter.user_metadata == {"team": "sdk"}
 
     @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_metadata_update(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            external_id="my-meter",
+            user_metadata={"team": "sdk"},
+        )
+
+        result = await declarative_config_service.apply(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {"meters": [{**FIXTURE_METER, "metadata": {"team": "billing"}}]}
+            ),
+        )
+
+        assert result.meters[0].action == ConfigAction.updated
+        assert meter.user_metadata == {"team": "billing"}
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_concurrent_create(
         self,
         mocker: MockerFixture,
+        save_fixture: SaveFixture,
         session: AsyncSession,
         auth_subject: AuthSubject[Organization],
+        organization: Organization,
     ) -> None:
-        mocker.patch(
-            "polar.declarative_config.service.meter_service.create_for_organization",
-            side_effect=IntegrityError("INSERT", {}, Exception()),
+        await create_meter(
+            save_fixture, organization=organization, external_id="sdk-tool-calls"
         )
+        mocker.patch(
+            "polar.declarative_config.service.MeterRepository.get_all_by_external_ids",
+            return_value=[],
+        )
+        mocker.patch("polar.meter.service.enqueue_job")
 
         with pytest.raises(ConfigMeterConflict):
             await declarative_config_service.apply(

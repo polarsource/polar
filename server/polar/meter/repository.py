@@ -26,7 +26,11 @@ class MeterRepository(RepositoryBase[Meter], RepositoryIDMixin[Meter, UUID]):
         return await self.get_one_or_none(statement)
 
     async def get_all_by_external_ids(
-        self, organization_id: UUID, external_ids: Sequence[str]
+        self,
+        organization_id: UUID,
+        external_ids: Sequence[str],
+        *,
+        for_update: bool = False,
     ) -> Sequence[Meter]:
         statement = (
             self.get_base_statement()
@@ -36,6 +40,7 @@ class MeterRepository(RepositoryBase[Meter], RepositoryIDMixin[Meter, UUID]):
                 Meter.deleted_at.is_(None),
             )
             .options(undefer(Meter.external_id))
-            .with_for_update()
         )
+        if for_update:
+            statement = statement.with_for_update()
         return await self.get_all(statement)

@@ -237,9 +237,7 @@ class PendingSubscriptionUpdate(IDSchema, TimestampedSchema):
         Field(
             description=(
                 "ID of the new discount to apply to the subscription. "
-                "If `null`, the subscription keeps its current discount, "
-                "as given by the subscription's `discount_id`, "
-                "unless `discount_unset` is `true`."
+                "If `null`, the subscription keeps its current discount."
             )
         ),
     ] = None
@@ -247,10 +245,7 @@ class PendingSubscriptionUpdate(IDSchema, TimestampedSchema):
         bool,
         Version(starting_from=V2027_01),
         Field(
-            description=(
-                "Whether the subscription's current discount will be removed. "
-                "If `true`, the subscription will have no discount after the update."
-            )
+            description="Whether the subscription's current discount will be removed."
         ),
     ] = False
 

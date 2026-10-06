@@ -309,7 +309,17 @@ class MetricsService:
             tb_needed=tb_slugs,
         )
 
-        pg_periods, tb_periods = await asyncio.gather(pg_coro, tb_coro)
+        # The Postgres queries run on the request session. Raising as soon as
+        # Tinybird fails would roll that session back mid-query and leave its
+        # connection unusable, so both finish before either error propagates.
+        pg_result, tb_result = await asyncio.gather(
+            pg_coro, tb_coro, return_exceptions=True
+        )
+        if isinstance(pg_result, BaseException):
+            raise pg_result
+        if isinstance(tb_result, BaseException):
+            raise tb_result
+        pg_periods, tb_periods = pg_result, tb_result
 
         periods: list[MetricsPeriod] = []
         all_timestamps = sorted(set(pg_periods.keys()) | set(tb_periods.keys()))

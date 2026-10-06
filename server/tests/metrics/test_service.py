@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
@@ -9,6 +10,8 @@ import pytest
 import pytest_asyncio
 from alembic_utils.pg_trigger import PGTrigger
 from alembic_utils.replaceable_entity import registry as entities_registry
+from pytest_mock import MockerFixture
+from sqlalchemy import text
 from sqlalchemy.schema import CreateSequence
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
@@ -16,7 +19,7 @@ from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.config import settings
 from polar.enums import SubscriptionRecurringInterval
-from polar.integrations.tinybird.client import TinybirdClient
+from polar.integrations.tinybird.client import TinybirdClient, TinybirdOperationalError
 from polar.integrations.tinybird.service import DATASOURCE_EVENTS, _event_to_tinybird
 from polar.kit.db.postgres import create_async_engine, create_async_sessionmaker
 from polar.kit.time_queries import TimeInterval
@@ -42,6 +45,7 @@ from polar.models.order import OrderStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture, get_database_url, save_fixture_factory
 from tests.fixtures.random_objects import (
     create_account,
@@ -5636,3 +5640,45 @@ class TestCheckoutMetrics:
         # Only the checkout opened within range should be counted
         total_checkouts = sum(p.checkouts or 0 for p in metrics.periods)
         assert total_checkouts == 1
+
+
+@pytest.mark.asyncio
+class TestGetMetricsTinybirdFailure:
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_postgres_finishes_before_the_error_propagates(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        get_metrics_from_pg = metrics_service._get_metrics_from_pg
+        postgres_finished = False
+
+        async def slow_postgres(*args: Any, **kwargs: Any) -> Any:
+            nonlocal postgres_finished
+            await asyncio.sleep(0.05)
+            result = await get_metrics_from_pg(*args, **kwargs)
+            postgres_finished = True
+            return result
+
+        mocker.patch.object(
+            metrics_service, "_get_metrics_from_pg", side_effect=slow_postgres
+        )
+        mocker.patch.object(
+            metrics_service,
+            "_get_metrics_from_tinybird",
+            side_effect=TinybirdOperationalError("502 Bad Gateway"),
+        )
+
+        with pytest.raises(TinybirdOperationalError):
+            await metrics_service.get_metrics(
+                session,
+                auth_subject,
+                start_date=date(2026, 1, 1),
+                end_date=date(2026, 1, 31),
+                timezone=ZoneInfo("UTC"),
+                interval=TimeInterval.day,
+            )
+
+        assert postgres_finished
+        assert (await session.execute(text("SELECT 1"))).scalar_one() == 1

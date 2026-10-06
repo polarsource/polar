@@ -76,9 +76,7 @@ class ConfigIssue(Schema):
         description="Location of the issue in the request body."
     )
     msg: str = Field(description="Human-readable description of the issue.")
-    input: Any | None = Field(
-        default=None, description="The value at `loc`, if relevant."
-    )
+    input: Any | None = Field(description="The value at `loc`, if relevant.")
 
 
 class ConfigValidation(Schema):

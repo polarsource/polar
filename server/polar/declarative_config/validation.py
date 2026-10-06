@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from polar.event_type.repository import EventTypeRepository
-from polar.meter.filter import Filter, FilterClause, FilterOperator
+from polar.meter.filter import Filter, FilterOperator
 from polar.meter.repository import MeterRepository
 from polar.meter.schemas import MeterCreateBase
 from polar.meter.service import METER_LOCKED_FIELD_MESSAGE, METER_LOCKED_FIELDS
@@ -63,6 +63,7 @@ async def locked_meter_fields(context: RuleContext) -> list[ConfigIssue]:
             type="meter_locked",
             loc=_meter_loc(change.index, field),
             msg=METER_LOCKED_FIELD_MESSAGE,
+            input=None,
         )
         for change in context.meter_changes
         if change.meter is not None and change.meter.last_billed_event_id is not None
@@ -77,18 +78,13 @@ def _event_name_references(filter: Filter, loc: Loc) -> list[tuple[str, Loc]]:
         clause_loc = [*loc, "clauses", index]
         if isinstance(clause, Filter):
             references.extend(_event_name_references(clause, clause_loc))
-        elif _is_event_name_clause(clause):
-            assert isinstance(clause.value, str)
+        elif (
+            clause.property == "name"
+            and clause.operator == FilterOperator.eq
+            and isinstance(clause.value, str)
+        ):
             references.append((clause.value, [*clause_loc, "value"]))
     return references
-
-
-def _is_event_name_clause(clause: FilterClause) -> bool:
-    return (
-        clause.property == "name"
-        and clause.operator == FilterOperator.eq
-        and isinstance(clause.value, str)
-    )
 
 
 async def unknown_events(context: RuleContext) -> list[ConfigIssue]:

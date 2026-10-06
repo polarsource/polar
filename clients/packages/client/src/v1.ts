@@ -15844,7 +15844,7 @@ export interface components {
        * Input
        * @description The value at `loc`, if relevant.
        */
-      input?: unknown | null
+      input: unknown | null
     }
     /**
      * ConfigIssueSeverity

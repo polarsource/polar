@@ -25,10 +25,6 @@ METER: dict[str, Any] = {
 }
 
 
-def _config(*meters: dict[str, Any]) -> Config:
-    return Config.model_validate({"meters": list(meters)})
-
-
 @pytest.mark.asyncio
 class TestCheck:
     async def test_new_meter(
@@ -42,7 +38,10 @@ class TestCheck:
         )
 
         result = await validation.check(
-            session, organization, _config(METER), for_update=False
+            session,
+            organization,
+            Config.model_validate({"meters": [METER]}),
+            for_update=False,
         )
 
         assert result.issues == []
@@ -63,7 +62,7 @@ class TestCheck:
         result = await validation.check(
             session,
             organization,
-            _config({**METER, "name": "Renamed"}),
+            Config.model_validate({"meters": [{**METER, "name": "Renamed"}]}),
             for_update=False,
         )
 
@@ -91,7 +90,13 @@ class TestCheck:
         result = await validation.check(
             session,
             organization,
-            _config({**METER, "aggregation": {"func": "sum", "property": "tokens"}}),
+            Config.model_validate(
+                {
+                    "meters": [
+                        {**METER, "aggregation": {"func": "sum", "property": "tokens"}}
+                    ]
+                }
+            ),
             for_update=False,
         )
 
@@ -116,7 +121,7 @@ class TestCheck:
         result = await validation.check(
             session,
             organization,
-            _config({**METER, "name": "Renamed"}),
+            Config.model_validate({"meters": [{**METER, "name": "Renamed"}]}),
             for_update=False,
         )
 
@@ -126,7 +131,10 @@ class TestCheck:
         self, session: AsyncSession, organization: Organization
     ) -> None:
         result = await validation.check(
-            session, organization, _config(METER), for_update=False
+            session,
+            organization,
+            Config.model_validate({"meters": [METER]}),
+            for_update=False,
         )
 
         [warning] = result.issues
@@ -156,7 +164,10 @@ class TestCheck:
         }
 
         result = await validation.check(
-            session, organization, _config(nested), for_update=False
+            session,
+            organization,
+            Config.model_validate({"meters": [nested]}),
+            for_update=False,
         )
 
         assert [issue.input for issue in result.issues] == [METER_TEST_EVENT, "embed"]

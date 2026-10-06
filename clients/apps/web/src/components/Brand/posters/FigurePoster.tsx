@@ -1,6 +1,11 @@
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { PosterFrame, PosterMono, PosterRule } from './PosterFrame'
+import {
+  PosterFrame,
+  PosterHeader,
+  PosterMono,
+  PosterRule,
+} from './PosterFrame'
 
 const Meta = ({ left, right }: { left: string; right: string }) => (
   <Box justifyContent="between" alignItems="baseline" columnGap="l">
@@ -11,7 +16,7 @@ const Meta = ({ left, right }: { left: string; right: string }) => (
 
 /** A figure from a spec sheet: numbered, ruled, and captioned in mono. */
 export const FigurePoster = () => (
-  <PosterFrame surface="snow">
+  <PosterFrame surface="snow" signed>
     <Box
       position="absolute"
       inset="none"
@@ -21,7 +26,7 @@ export const FigurePoster = () => (
       rowGap="xl"
     >
       <Box flexDirection="column" rowGap="m">
-        <Meta left="FIG. 04" right="USAGE BILLING" />
+        <PosterHeader>USAGE BILLING</PosterHeader>
         <PosterRule />
       </Box>
       <Box flexDirection="column">
@@ -48,7 +53,7 @@ export const FigurePoster = () => (
       </Box>
       <Box flexDirection="column" rowGap="m">
         <PosterRule />
-        <Meta left="POLAR" right="polar.sh" />
+        <Meta left="FIG. 04" right="polar.sh" />
       </Box>
     </Box>
   </PosterFrame>

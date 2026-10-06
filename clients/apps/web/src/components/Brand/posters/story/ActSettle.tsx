@@ -3,6 +3,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import {
   PosterBody,
   PosterFrame,
+  PosterHeader,
   PosterHeadline,
   PosterMono,
   PosterRule,
@@ -20,10 +21,7 @@ export const PayoutPoster = () => (
   <PosterFrame surface="night" signed>
     <PosterBody>
       <Box flexDirection="column" rowGap="l">
-        <Box justifyContent="between">
-          <PosterMono>PAYOUT 0193</PosterMono>
-          <PosterMono dim>USD</PosterMono>
-        </Box>
+        <PosterHeader>PAYOUT 0193</PosterHeader>
         <Text variant="heading-m" as="p" color="inherit" tabularNums>
           2,418.20
         </Text>
@@ -36,7 +34,7 @@ export const PayoutPoster = () => (
           ))}
         </Box>
       </Box>
-      <PosterHeadline primary="Paid out" secondary="down to the last fee" />
+      <PosterHeadline primary="Paid out," secondary="every fee shown" />
     </PosterBody>
   </PosterFrame>
 )
@@ -65,9 +63,8 @@ export const SettlementPoster = () => (
   <PosterFrame surface="snow" signed>
     <PosterBody>
       <Box flexDirection="column">
-        <Box justifyContent="between" paddingBottom="s">
-          <PosterMono>SETTLEMENT</PosterMono>
-          <PosterMono dim>ORDER 0042</PosterMono>
+        <Box paddingBottom="s">
+          <PosterHeader>ORDER 0042</PosterHeader>
         </Box>
         {SETTLEMENT.map(({ label, amount, endpoint }) => (
           <Box key={label} flexDirection="column" rowGap="s" paddingTop="s">
@@ -90,10 +87,7 @@ export const SettlementPoster = () => (
           </Box>
         ))}
       </Box>
-      <PosterHeadline
-        primary="The customer pays Polar"
-        secondary="and Polar pays you"
-      />
+      <PosterHeadline primary="They pay Polar," secondary="Polar pays you" />
     </PosterBody>
   </PosterFrame>
 )
@@ -103,10 +97,7 @@ export const BalancePoster = () => (
   <PosterFrame surface="ether" signed>
     <PosterBody>
       <Box flexDirection="column" rowGap="l">
-        <Box justifyContent="between">
-          <PosterMono>YOUR BOOKS</PosterMono>
-          <PosterMono dim>OCTOBER</PosterMono>
-        </Box>
+        <PosterHeader>YOUR BOOKS, OCTOBER</PosterHeader>
         <Box flexDirection="column">
           <Text variant="heading-m" as="p" color="inherit" tabularNums>
             <Box as="span" opacity={0.5}>
@@ -124,8 +115,8 @@ export const BalancePoster = () => (
         </Box>
       </Box>
       <PosterHeadline
-        primary="Thousands of transactions"
-        secondary="one invoice to book"
+        primary="Thousands of sales,"
+        secondary="one line to book"
       />
     </PosterBody>
   </PosterFrame>

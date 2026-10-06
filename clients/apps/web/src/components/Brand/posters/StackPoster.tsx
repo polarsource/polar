@@ -1,6 +1,6 @@
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { PosterFrame, PosterMono } from './PosterFrame'
+import { PosterFrame, PosterHeader, PosterMono } from './PosterFrame'
 
 const STEPS = [
   { word: 'Meter', opacity: 1 },
@@ -12,7 +12,7 @@ const STEPS = [
 const RULERS = ['$8.5760', '$1.0720', '$0.1340', '$0.0168', '$0.0021']
 
 export const StackPoster = () => (
-  <PosterFrame surface="night">
+  <PosterFrame surface="night" signed>
     <Box
       position="absolute"
       inset="none"
@@ -21,19 +21,22 @@ export const StackPoster = () => (
       padding={{ base: 'xl', md: '2xl' }}
     >
       <Box flexDirection="column">
-        {STEPS.map(({ word, opacity }) => (
-          <Text
-            key={word}
-            variant="heading-m"
-            as="p"
-            color="inherit"
-            leading="tight"
-          >
-            <Box as="span" opacity={opacity}>
-              {word}
-            </Box>
-          </Text>
-        ))}
+        <PosterHeader />
+        <Box flexDirection="column" paddingTop="2xl">
+          {STEPS.map(({ word, opacity }) => (
+            <Text
+              key={word}
+              variant="heading-m"
+              as="p"
+              color="inherit"
+              leading="tight"
+            >
+              <Box as="span" opacity={opacity}>
+                {word}
+              </Box>
+            </Text>
+          ))}
+        </Box>
       </Box>
       <Box flexDirection="column" rowGap="l">
         {RULERS.map((amount, index) => (

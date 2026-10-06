@@ -3,6 +3,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import {
   PosterBody,
   PosterFrame,
+  PosterHeader,
   PosterHeadline,
   PosterMono,
   PosterRule,
@@ -20,10 +21,7 @@ export const InvoicePoster = () => (
   <PosterFrame surface="snow" signed>
     <PosterBody>
       <Box flexDirection="column" rowGap="l">
-        <Box justifyContent="between">
-          <PosterMono>INVOICE 0042</PosterMono>
-          <PosterMono dim>LUMEN AI</PosterMono>
-        </Box>
+        <PosterHeader>INVOICE 0042</PosterHeader>
         <PosterRule />
         <Box flexDirection="column" rowGap="s">
           {LINES.map(([label, amount]) => (
@@ -59,7 +57,8 @@ const RATES: [string, string][] = [
 export const TaxPoster = () => (
   <PosterFrame surface="night" signed>
     <PosterBody>
-      <Box flexDirection="column">
+      <Box flexDirection="column" rowGap="s">
+        <PosterHeader>VAT BY REGION</PosterHeader>
         {RATES.map(([region, rate], index) => (
           <Box
             key={region}
@@ -93,9 +92,8 @@ export const SellerPoster = () => (
   <PosterFrame surface="ether" signed>
     <PosterBody>
       <Box flexDirection="column">
-        <Box justifyContent="between" paddingVertical="s">
-          <PosterMono dim>MERCHANT OF RECORD</PosterMono>
-          <PosterMono dim>HANDLED BY</PosterMono>
+        <Box paddingBottom="s">
+          <PosterHeader>HANDLED BY</PosterHeader>
         </Box>
         {RESPONSIBILITIES.map(([item, owner]) => (
           <Box key={item} flexDirection="column" rowGap="s" paddingTop="s">
@@ -110,8 +108,8 @@ export const SellerPoster = () => (
         ))}
       </Box>
       <PosterHeadline
-        primary="Polar is the merchant of record"
-        secondary="and the liability comes with it"
+        primary="Merchant of record"
+        secondary="liability included"
       />
     </PosterBody>
   </PosterFrame>

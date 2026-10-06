@@ -2,13 +2,16 @@ import type { ComponentType } from 'react'
 import { BenefitsPoster } from './BenefitsPoster'
 import { AgentsPoster, DerivedPoster, LatencyPoster } from './EthosPoster'
 import { FigurePoster } from './FigurePoster'
-import { GridPoster } from './GridPoster'
+import {
+  ConvergencePoster,
+  ResolvedPoster,
+  ScatterPoster,
+} from './GeometryPosters'
 import { LabelsPoster } from './LabelsPoster'
 import { LedgerPoster } from './LedgerPoster'
 import { OrbitPoster } from './OrbitPoster'
 import { StackPoster } from './StackPoster'
-import { StatementPoster } from './StatementPoster'
-import { SurfacesPoster } from './SurfacesPoster'
+import { StatePoster } from './StatePoster'
 import { ArithmeticPoster } from './ArithmeticPoster'
 import { EventPoster, MeterPoster, StreamPoster } from './story/ActSignal'
 import { CreditsPoster, MarginPoster, RatePoster } from './story/ActPrice'
@@ -23,7 +26,6 @@ import {
   ClosingPoster,
   InsightPoster,
 } from './story/ActUnderstand'
-import { TracePoster } from './TracePoster'
 import { UnitsPoster } from './UnitsPoster'
 import { WavePoster } from './WavePoster'
 import { WebhooksPoster } from './WebhooksPoster'
@@ -44,23 +46,23 @@ export interface Board {
 export const SYSTEM_BOARDS: Board[] = [
   {
     sheets: [
-      { caption: 'Grid, usage billing', Poster: GridPoster },
-      { caption: 'Route, platform', Poster: TracePoster },
-      { caption: 'Statement, platform', Poster: StatementPoster },
+      { caption: 'Scatter, events', Poster: ScatterPoster },
+      { caption: 'Convergence, meter', Poster: ConvergencePoster },
+      { caption: 'Resolved, invoice', Poster: ResolvedPoster },
     ],
   },
   {
     sheets: [
       { caption: 'Figure, usage billing', Poster: FigurePoster },
       { caption: 'Stack, lifecycle', Poster: StackPoster },
-      { caption: 'Orbit, brand', Poster: OrbitPoster },
+      { caption: 'Radial, brand', Poster: OrbitPoster },
     ],
   },
   {
     sheets: [
       { caption: 'Ledger, events', Poster: LedgerPoster },
       { caption: 'Units, pricing', Poster: UnitsPoster },
-      { caption: 'Labels, platform', Poster: LabelsPoster },
+      { caption: 'Stack, the whole stack', Poster: LabelsPoster },
     ],
   },
   {
@@ -72,9 +74,9 @@ export const SYSTEM_BOARDS: Board[] = [
   },
   {
     sheets: [
-      { caption: 'Benefits, entitlements', Poster: BenefitsPoster },
+      { caption: 'Entitlements, automated', Poster: BenefitsPoster },
       { caption: 'Webhooks, events out', Poster: WebhooksPoster },
-      { caption: 'Surfaces, four ways in', Poster: SurfacesPoster },
+      { caption: 'State, one call', Poster: StatePoster },
     ],
   },
   {

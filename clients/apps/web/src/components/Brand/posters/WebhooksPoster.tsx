@@ -2,6 +2,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import {
   PosterBody,
   PosterFrame,
+  PosterHeader,
   PosterHeadline,
   PosterMono,
 } from './PosterFrame'
@@ -22,10 +23,7 @@ export const WebhooksPoster = () => (
   <PosterFrame surface="snow" signed>
     <PosterBody>
       <Box flexDirection="column" rowGap="l">
-        <Box justifyContent="between">
-          <PosterMono>WEBHOOKS</PosterMono>
-          <PosterMono dim>POST /webhooks</PosterMono>
-        </Box>
+        <PosterHeader>POST /webhooks</PosterHeader>
         <Box flexDirection="column" rowGap="s">
           {EVENTS.map(([time, event], i) => (
             <Box key={i} columnGap="l">

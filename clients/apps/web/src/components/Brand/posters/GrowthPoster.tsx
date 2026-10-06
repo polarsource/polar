@@ -5,6 +5,7 @@ import {
   PosterBody,
   PosterCanvas,
   PosterFrame,
+  PosterHeader,
   PosterHeadline,
   PosterMono,
 } from './PosterFrame'
@@ -52,10 +53,7 @@ export const GrowthPoster = () => (
       <PosterMono dim>DAY 31</PosterMono>
     </Box>
     <PosterBody>
-      <Box justifyContent="between">
-        <PosterMono>USAGE</PosterMono>
-        <PosterMono dim>TOKENS / DAY</PosterMono>
-      </Box>
+      <PosterHeader>TOKENS / DAY</PosterHeader>
       <PosterHeadline primary="Every bar" secondary="already invoiced" />
     </PosterBody>
   </PosterFrame>

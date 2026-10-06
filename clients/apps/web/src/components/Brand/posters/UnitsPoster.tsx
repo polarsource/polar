@@ -3,6 +3,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import {
   PosterBody,
   PosterFrame,
+  PosterHeader,
   PosterHeadline,
   PosterMono,
 } from './PosterFrame'
@@ -19,10 +20,11 @@ const UNITS: [string, string][] = [
 export const UnitsPoster = () => (
   <PosterFrame surface="snow" signed>
     <PosterBody>
+      <PosterHeader>RATES</PosterHeader>
       <Box flexDirection="column" rowGap="s">
         {UNITS.map(([unit, rate]) => (
           <Box key={unit} justifyContent="between" alignItems="baseline">
-            <Text variant="heading-xs" as="span" color="inherit">
+            <Text variant="heading-xxs" as="span" color="inherit">
               {unit}
             </Text>
             <PosterMono dim>{rate}</PosterMono>

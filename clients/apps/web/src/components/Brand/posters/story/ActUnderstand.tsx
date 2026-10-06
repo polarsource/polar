@@ -2,10 +2,13 @@ import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
   PosterBody,
+  PosterCanvas,
   PosterFrame,
+  PosterHeader,
   PosterHeadline,
   PosterMono,
   PosterRule,
+  ETHER,
 } from '../PosterFrame'
 
 const CUSTOMERS: [string, string][] = [
@@ -19,9 +22,8 @@ export const InsightPoster = () => (
   <PosterFrame surface="night" signed>
     <PosterBody>
       <Box flexDirection="column">
-        <Box justifyContent="between" paddingVertical="s">
-          <PosterMono dim>CUSTOMER</PosterMono>
-          <PosterMono dim>MARGIN</PosterMono>
+        <Box paddingBottom="s">
+          <PosterHeader>MARGIN BY CUSTOMER</PosterHeader>
         </Box>
         {CUSTOMERS.map(([name, margin]) => (
           <Box key={name} flexDirection="column" rowGap="s" paddingTop="s">
@@ -34,8 +36,8 @@ export const InsightPoster = () => (
         ))}
       </Box>
       <PosterHeadline
-        primary="Your best customer is losing you money"
-        secondary="Polar shows you which one"
+        primary="Your best customer"
+        secondary="loses you money"
       />
     </PosterBody>
   </PosterFrame>
@@ -46,6 +48,7 @@ export const AgentPoster = () => (
   <PosterFrame surface="snow" signed>
     <PosterBody>
       <Box flexDirection="column" rowGap="xl">
+        <PosterHeader />
         <Box flexDirection="column" rowGap="xs">
           <PosterMono dim>YOU</PosterMono>
           <Text
@@ -67,10 +70,10 @@ export const AgentPoster = () => (
             wrap="pretty"
             leading="tight"
           >
-            <Box as="span" opacity={0.5}>
-              Three customers crossed zero: Atlas, Northwind and Lumen. Want me
-              to send each of them a checkout link?
-            </Box>
+            <span style={{ color: ETHER }}>
+              Three customers crossed zero: Atlas, Northwind and Lumen. Shall I
+              grant each of them 1,000 credits?
+            </span>
           </Text>
         </Box>
       </Box>
@@ -82,15 +85,29 @@ export const AgentPoster = () => (
   </PosterFrame>
 )
 
-/** 30. Back where the landing page ends. */
+const RING = { x: 200, y: 222, r: 108 }
+const SWEEP = (320 * Math.PI) / 180
+const END = {
+  x: RING.x + RING.r * Math.cos(-Math.PI / 2 + SWEEP),
+  y: RING.y + RING.r * Math.sin(-Math.PI / 2 + SWEEP),
+}
+
+/** 30. Back where the landing page ends: the loop, almost closed. */
 export const ClosingPoster = () => (
   <PosterFrame surface="ether" signed>
+    <PosterCanvas>
+      <circle cx={RING.x} cy={RING.y} r={RING.r} opacity={0.3} />
+      <path
+        d={`M ${RING.x} ${RING.y - RING.r} A ${RING.r} ${RING.r} 0 1 1 ${END.x} ${END.y}`}
+        strokeWidth={2}
+      />
+      <circle cx={END.x} cy={END.y} r={7} fill="currentColor" stroke="none" />
+    </PosterCanvas>
     <PosterBody>
-      <PosterMono dim>FIN.</PosterMono>
+      <PosterHeader />
       <PosterHeadline
         primary="From usage to revenue"
-        secondary="Integrate in an afternoon"
-        size="heading-xs"
+        secondary="in an afternoon"
       />
     </PosterBody>
   </PosterFrame>

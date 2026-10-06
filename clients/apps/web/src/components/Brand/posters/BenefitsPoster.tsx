@@ -1,44 +1,56 @@
-import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
   PosterBody,
   PosterFrame,
+  PosterHeader,
   PosterHeadline,
   PosterMono,
   PosterRule,
 } from './PosterFrame'
 
-const BENEFITS: [string, string][] = [
-  ['License keys', 'license_keys'],
-  ['File downloads', 'downloadables'],
-  ['GitHub access', 'github_repository'],
-  ['Discord roles', 'discord'],
-  ['Meter credits', 'meter_credit'],
-  ['Anything else', 'custom'],
+const TRANSITIONS: { event: string; access: string; on: boolean }[] = [
+  { event: 'subscription.active', access: 'GRANTED', on: true },
+  { event: 'subscription.past_due', access: 'KEPT', on: true },
+  { event: 'subscription.canceled', access: 'REVOKED', on: false },
+  { event: 'subscription.active', access: 'GRANTED', on: true },
 ]
 
-/** What a paid order grants, with the type behind each one. */
+const Marker = ({ on }: { on: boolean }) => (
+  <svg width={10} height={10} viewBox="0 0 10 10" aria-hidden>
+    <circle
+      cx={5}
+      cy={5}
+      r={4}
+      fill={on ? 'currentColor' : 'none'}
+      stroke="currentColor"
+    />
+  </svg>
+)
+
+/** Access tracks the subscription, event by event, with nobody in the loop. */
 export const BenefitsPoster = () => (
   <PosterFrame surface="night" signed>
     <PosterBody>
       <Box flexDirection="column">
-        <Box justifyContent="between" paddingBottom="s">
-          <PosterMono>BENEFITS</PosterMono>
-          <PosterMono dim>GRANTED ON PAYMENT</PosterMono>
-        </Box>
-        {BENEFITS.map(([name, type]) => (
-          <Box key={type} flexDirection="column" rowGap="s" paddingTop="s">
+        <PosterHeader>ENTITLEMENTS</PosterHeader>
+        {TRANSITIONS.map(({ event, access, on }, i) => (
+          <Box key={i} flexDirection="column" rowGap="s" paddingTop="s">
             <PosterRule />
-            <Box justifyContent="between" alignItems="baseline" columnGap="l">
-              <Text variant="heading-xxs" as="span" color="inherit">
-                {name}
-              </Text>
-              <PosterMono dim>{type}</PosterMono>
+            <Box alignItems="center" columnGap="m">
+              <Marker on={on} />
+              <Box flex={1} justifyContent="between" columnGap="l">
+                <PosterMono>{event}</PosterMono>
+                {on ? (
+                  <PosterMono>{access}</PosterMono>
+                ) : (
+                  <PosterMono dim>{access}</PosterMono>
+                )}
+              </Box>
             </Box>
           </Box>
         ))}
       </Box>
-      <PosterHeadline primary="Paid," secondary="and the access follows" />
+      <PosterHeadline primary="Access follows" secondary="the subscription" />
     </PosterBody>
   </PosterFrame>
 )

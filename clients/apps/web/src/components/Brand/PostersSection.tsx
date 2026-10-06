@@ -76,52 +76,29 @@ const PosterBoard = ({ board, offset }: { board: Board; offset: number }) => (
   </Box>
 )
 
-const BoardStack = ({
-  title,
-  lead,
-  boards,
-  offset,
-}: {
-  title: string
-  lead: string
-  boards: Board[]
-  offset: number
-}) => (
-  <Box flexDirection="column" rowGap="xl">
-    <Grid
-      templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
-      gap={{ base: 's', lg: 'l' }}
-    >
-      <Text variant="title" as="h3">
-        {title}
-      </Text>
-      <Text variant="heading-xxs" as="p" color="muted" wrap="pretty">
-        {lead}
-      </Text>
-    </Grid>
-    <Box flexDirection="column" rowGap="l">
-      {boards.map((board, index) => (
-        <PosterBoard
-          key={index}
-          board={board}
-          offset={offset + index * SHEETS_PER_BOARD}
-        />
-      ))}
-    </Box>
+const Boards = ({ boards, offset }: { boards: Board[]; offset: number }) => (
+  <Box flexDirection="column" rowGap="l">
+    {boards.map((board, index) => (
+      <PosterBoard
+        key={index}
+        board={board}
+        offset={offset + index * SHEETS_PER_BOARD}
+      />
+    ))}
   </Box>
 )
 
 export function PostersSection() {
   return (
-    <Chapter
-      id={brandSections[6].id}
-      index={brandSections[6].index}
-      name={brandSections[6].label}
-      title="One idea per sheet"
-      subtitle="Thirty-three posters from the same parts as the product"
-      description="Print and social sheets that reuse the grid, the type and the illustrations. The grid is the ornament, and the headline does the work."
-    >
-      <Box flexDirection="column" rowGap={{ base: '3xl', md: '5xl' }}>
+    <>
+      <Chapter
+        id={brandSections[6].id}
+        index={brandSections[6].index}
+        name={brandSections[6].label}
+        title="One idea per sheet"
+        subtitle="Thirty-three posters from the same parts as the product"
+        description="Print and social sheets that reuse the grid, the type and the illustrations. The grid is the ornament, and the headline does the work."
+      >
         <Box as="ol" flexDirection="column">
           {PRINCIPLES.map((principle, index) => (
             <Box
@@ -149,19 +126,24 @@ export function PostersSection() {
             </Box>
           ))}
         </Box>
-        <BoardStack
-          title="The system"
-          lead="Eighteen sheets that each take one part of Polar and let it fill the page."
-          boards={SYSTEM_BOARDS}
-          offset={0}
-        />
-        <BoardStack
-          title="The story"
-          lead="Fifteen sheets in five acts that follow one event from the wire to the payout, and what you learn at the end."
+      </Chapter>
+      <Chapter
+        name="The system"
+        title="One part of Polar per sheet"
+        subtitle="Eighteen sheets, six boards"
+      >
+        <Boards boards={SYSTEM_BOARDS} offset={0} />
+      </Chapter>
+      <Chapter
+        name="The story"
+        title="One event, from the wire to the payout"
+        subtitle="Fifteen sheets in five acts"
+      >
+        <Boards
           boards={STORY_BOARDS}
           offset={SYSTEM_BOARDS.length * SHEETS_PER_BOARD}
         />
-      </Box>
-    </Chapter>
+      </Chapter>
+    </>
   )
 }

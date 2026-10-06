@@ -2,7 +2,7 @@ import { Text } from '@polar-sh/orbit'
 import { StaticImage } from '@/components/Image/StaticImage'
 import { Box } from '@polar-sh/orbit/Box'
 import type { CSSProperties, PropsWithChildren } from 'react'
-import LogoIcon from '../logos/LogoIcon'
+import LogoType from '../logos/LogoType'
 
 export type PosterSurface = 'night' | 'snow' | 'ether'
 
@@ -12,11 +12,14 @@ interface Surface {
   dim: string
 }
 
+/** The accent, for the rare word that should carry it on a Night or Snow sheet. */
+export const ETHER = '#3619CC'
+
 const SURFACES: Record<PosterSurface, Surface> = {
   night: { background: '#090909', ink: '#d8d8d8', dim: 'rgb(60, 60, 60)' },
   snow: { background: '#d8d8d8', ink: '#090909', dim: 'rgb(170, 170, 170)' },
   ether: {
-    background: '#3619CC',
+    background: ETHER,
     ink: '#d8d8d8',
     dim: 'rgba(216, 216, 216, 0.3)',
   },
@@ -30,22 +33,23 @@ export const POSTER_HEIGHT = 500
  * surface and ink regardless of the page theme; children inherit the ink
  * through `currentColor`, and the landing graphics pick it up through the
  * `--color-graphic-*` variables they read from their canvas. A signed sheet
- * carries the mark in its lower-right corner; a sheet with a backdrop sits
+ * carries the wordmark in its upper-left corner, so a signed sheet's first
+ * row keeps its left side clear (see `PosterHeader`); a sheet with a backdrop sits
  * inset on a photo so the photo shows only around its edges.
  */
 const PosterMark = () => (
   <Box
     position="absolute"
-    right={{ base: 'xl', md: '2xl' }}
-    bottom={{ base: 'xl', md: '2xl' }}
-    paddingBottom="xs"
+    left={{ base: 'xl', md: '2xl' }}
+    top={{ base: 'xl', md: '2xl' }}
   >
-    <LogoIcon size={24} />
+    <LogoType height={17} />
   </Box>
 )
 
 interface PosterFrameProps {
   surface: PosterSurface
+  /** Sign the sheet with the wordmark in the upper-left corner. */
   signed?: boolean
   /** A photo behind the sheet, showing only as a thin border around it. */
   backdrop?: string
@@ -151,13 +155,13 @@ export const PosterMono = ({
 export const PosterHeadline = ({
   primary,
   secondary,
-  size = 'heading-xxs',
+  size = 'heading-s',
 }: {
   primary: string
   secondary?: string
   size?: 'heading-xxs' | 'heading-xs' | 'heading-s'
 }) => (
-  <Box flexDirection="column" paddingRight="3xl">
+  <Box flexDirection="column">
     <Text variant={size} as="p" color="inherit" wrap="balance" leading="tight">
       {primary}
     </Text>
@@ -189,4 +193,20 @@ export const PosterRule = () => (
       opacity={0.4}
     />
   </svg>
+)
+
+/**
+ * The first row of a signed sheet: the wordmark owns the left, so this only
+ * places a mono label on the right, at the wordmark's height.
+ */
+export const PosterHeader = ({ children }: PropsWithChildren) => (
+  <Box
+    width="100%"
+    justifyContent="end"
+    alignItems="center"
+    minHeight={17}
+    paddingBottom="xl"
+  >
+    {children ? <PosterMono dim>{children}</PosterMono> : null}
+  </Box>
 )

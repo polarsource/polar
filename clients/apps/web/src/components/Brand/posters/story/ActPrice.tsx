@@ -4,6 +4,7 @@ import {
   PosterBody,
   PosterCanvas,
   PosterFrame,
+  PosterHeader,
   PosterHeadline,
   PosterMono,
 } from '../PosterFrame'
@@ -12,10 +13,7 @@ import {
 export const RatePoster = () => (
   <PosterFrame surface="snow" signed>
     <PosterBody>
-      <Box justifyContent="between">
-        <PosterMono>RATE</PosterMono>
-        <PosterMono dim>PER TOKEN</PosterMono>
-      </Box>
+      <PosterHeader>RATE PER TOKEN</PosterHeader>
       <Text variant="heading-m" as="p" color="inherit" tabularNums>
         $0.000002
       </Text>
@@ -31,10 +29,7 @@ const CREDITS_USED = 11
 export const CreditsPoster = () => (
   <PosterFrame surface="ether" signed>
     <PosterBody>
-      <Box justifyContent="between">
-        <PosterMono>CREDITS</PosterMono>
-        <PosterMono dim>7,250 / 10,000</PosterMono>
-      </Box>
+      <PosterHeader>CREDITS 7,250 / 10,000</PosterHeader>
       <Grid templateColumns="repeat(8, 1fr)" gap="s">
         {Array.from({ length: CREDIT_CELLS }, (_, i) => (
           <div
@@ -104,10 +99,7 @@ export const MarginPoster = () => (
       <PosterMono>MARGIN 37%</PosterMono>
     </Box>
     <PosterBody justifyContent="end">
-      <PosterHeadline
-        primary="Know what each one"
-        secondary="costs you to serve"
-      />
+      <PosterHeadline primary="The cost to serve," secondary="per customer" />
     </PosterBody>
   </PosterFrame>
 )

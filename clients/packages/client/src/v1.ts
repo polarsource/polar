@@ -20351,6 +20351,15 @@ export interface components {
       /** Customer Cancellation Comment */
       customer_cancellation_comment: string | null
       product: components['schemas']['CustomerSubscriptionProduct']
+      /** Discount */
+      discount:
+        | (
+            | components['schemas']['CheckoutDiscountFixedOnceForeverDuration']
+            | components['schemas']['CheckoutDiscountFixedRepeatDuration']
+            | components['schemas']['CheckoutDiscountPercentageOnceForeverDuration']
+            | components['schemas']['CheckoutDiscountPercentageRepeatDuration']
+          )
+        | null
       /**
        * Prices
        * @description List of enabled prices for the subscription.

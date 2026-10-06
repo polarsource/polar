@@ -11,6 +11,7 @@ from pydantic import (
 )
 from pydantic.json_schema import SkipJsonSchema
 
+from polar.checkout.schemas import CheckoutDiscount
 from polar.kit.schemas import (
     IDSchema,
     Int32,
@@ -62,6 +63,7 @@ class CustomerSubscription(SubscriptionBase):
         deprecated="Use `customer_id`.",
     )
     product: CustomerSubscriptionProduct
+    discount: CheckoutDiscount | None
 
     price: SkipJsonSchema[ProductPrice] = Field(
         deprecated="Use `prices` instead.",

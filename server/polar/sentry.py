@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import sentry_sdk
 from dramatiq import get_broker
@@ -25,6 +25,19 @@ if TYPE_CHECKING:
     from sentry_sdk._types import Event, Hint
 
 POSTHOG_ID_TAG = "posthog_distinct_id"
+_FILTERED = "[Filtered]"
+_REQUEST_PII_KEYS = frozenset(
+    {
+        "customer_email",
+        "customer_name",
+        "customer_billing_name",
+        "customer_billing_address",
+        "customer_tax_id",
+        "billing_name",
+        "billing_address",
+        "tax_id",
+    }
+)
 
 
 class DramatiqIntegration(_DramatiqIntegration):
@@ -42,6 +55,18 @@ class DramatiqIntegration(_DramatiqIntegration):
         broker.add_middleware(SentryMiddleware(), before=first_middleware)
 
 
+def _scrub_request_pii(value: object) -> None:
+    if isinstance(value, dict):
+        for key, item in cast(dict[object, object], value).items():
+            if isinstance(key, str) and key in _REQUEST_PII_KEYS:
+                value[key] = _FILTERED
+            else:
+                _scrub_request_pii(item)
+    elif isinstance(value, list):
+        for item in cast(list[object], value):
+            _scrub_request_pii(item)
+
+
 def before_send(event: Event, hint: Hint) -> Event | None:
     tags = event.get("tags", {})
     if tags and tags.get("is_operational_error") == "true":
@@ -53,8 +78,7 @@ def before_send(event: Event, hint: Hint) -> Event | None:
             request["url"] = url_without_request_values(url)
         request.pop("query_string", None)
         request.pop("fragment", None)
-        # Bodies are customer payloads (ADR-0013), including checkout confirmation.
-        request.pop("data", None)
+        _scrub_request_pii(request.get("data"))
     return event
 
 

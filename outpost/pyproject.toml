@@ -6,7 +6,12 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "anyio",
+    "httpx2>=2.13.1",
+    "pydantic>=2.13.5",
+    "pydantic-settings>=2.15.0",
+    "redis>=8.1.0",
     "starlette>=1.7.0",
+    "uvicorn[standard]>=0.54.0",
 ]
 
 [dependency-groups]
@@ -14,6 +19,7 @@ dev = [
     "ruff",
     "ty",
     "pytest",
+    "fakeredis[lua]>=2.38.0",
 ]
 
 [tool.ruff]

@@ -53,6 +53,9 @@ def before_send(event: Event, hint: Hint) -> Event | None:
             request["url"] = url_without_request_values(url)
         request.pop("query_string", None)
         request.pop("fragment", None)
+        data = request.get("data")
+        if isinstance(data, dict):
+            data.pop("customer_billing_address", None)
     return event
 
 

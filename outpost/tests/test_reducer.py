@@ -155,6 +155,6 @@ def test_matches(
         "operator": operator,
         "value": expected,
     }
-    assert matches({"value": actual}, clause) is result
-    assert matches({}, {"conjunction": "and", "clauses": []}) is True
-    assert matches({}, {"conjunction": "or", "clauses": []}) is False
+    assert matches({"value": actual}.get, clause) is result
+    assert matches({}.get, {"conjunction": "and", "clauses": []}) is True
+    assert matches({}.get, {"conjunction": "or", "clauses": []}) is False

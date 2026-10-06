@@ -50,10 +50,10 @@ def is_filter(clause: Filter | FilterClause) -> typing.TypeIs[Filter]:
 
 
 def matches(
-    properties: collections.abc.Mapping[str, object], clause: Filter | FilterClause
+    get_property: collections.abc.Callable[[str], object], clause: Filter | FilterClause
 ) -> bool:
     if is_filter(clause):
-        results = (matches(properties, child) for child in clause["clauses"])
+        results = (matches(get_property, child) for child in clause["clauses"])
         match clause["conjunction"]:
             case "and":
                 return all(results)
@@ -62,7 +62,7 @@ def matches(
             case _:
                 raise ValueError()
 
-    actual = properties.get(clause["property"])
+    actual = get_property(clause["property"])
     expected = clause["value"]
     if actual is None:
         return False
@@ -86,16 +86,15 @@ def reduce(
 ) -> Updates:
     updates: Updates = {}
     for event in events:
-        properties = {**event.metadata, **event.model_dump(mode="json")}
         for meter in meters:
-            if not matches(properties, meter["filter"]):
+            if not matches(event.get_property, meter["filter"]):
                 continue
             aggregation = meter["aggregation"]
             func = aggregation["func"]
             if func == "count":
                 value: int | float = 1
             else:
-                raw_value = properties.get(
+                raw_value = event.get_property(
                     typing.cast(PropertyAggregation, aggregation)["property"]
                 )
                 if type(raw_value) not in (int, float):
@@ -110,15 +109,13 @@ def reduce(
 
             update_key = (event.external_customer_id, meter["id"], func)
             previous = updates.get(update_key)
-            if func in ("count", "sum"):
-                value = (previous or 0) + value
-            elif func == "min":
-                value = min(previous, value) if previous is not None else value
-            elif func == "max":
-                value = max(previous, value) if previous is not None else value
-            else:
-                message = "Invalid aggregation function"
-                raise ValueError(message)
+            match func:
+                case "count" | "sum":
+                    value = (previous or 0) + value
+                case "min":
+                    value = min(previous, value) if previous is not None else value
+                case "max":
+                    value = max(previous, value) if previous is not None else value
             updates[update_key] = value
 
     for (_, _, func), value in updates.items():

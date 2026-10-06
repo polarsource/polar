@@ -7,45 +7,51 @@ from redis.commands.core import AsyncScript
 
 from outpost.reducer import Updates
 
-MIN_MAX_SCRIPT = """
-local value = tonumber(ARGV[2])
-assert(value and value == value and math.abs(value) ~= math.huge, 'Invalid value')
-assert(ARGV[3] == 'min' or ARGV[3] == 'max', 'Invalid aggregation function')
-local stored = redis.call('HGET', KEYS[1], ARGV[1])
-local previous = stored and assert(tonumber(stored), 'Invalid stored value')
-if previous then
-    assert(previous == previous and math.abs(previous) ~= math.huge,
-        'Invalid stored value')
-end
-if not previous or (ARGV[3] == 'min' and value < previous)
-    or (ARGV[3] == 'max' and value > previous) then
-    return redis.call('HSET', KEYS[1], ARGV[1], ARGV[2])
+WRITE_UPDATES_SCRIPT = """
+for i, key in ipairs(KEYS) do
+    local offset = (i - 1) * 3
+    local field, func, raw_value = ARGV[offset + 1], ARGV[offset + 2], ARGV[offset + 3]
+    if func == 'count' or func == 'sum' then
+        redis.call('HINCRBY', key, field, raw_value)
+    else
+        local value = tonumber(raw_value)
+        assert(value and value == value and math.abs(value) ~= math.huge, 'Invalid value')
+        assert(func == 'min' or func == 'max', 'Invalid aggregation function')
+        local stored = redis.call('HGET', key, field)
+        local previous = stored and assert(tonumber(stored), 'Invalid stored value')
+        if previous then
+            assert(previous == previous and math.abs(previous) ~= math.huge,
+                'Invalid stored value')
+        end
+        if not previous or (func == 'min' and value < previous)
+            or (func == 'max' and value > previous) then
+            redis.call('HSET', key, field, raw_value)
+        end
+    end
 end
 return 0
 """
 
 
 class Redis(RedisClient):
-    min_max_script: AsyncScript
+    write_updates_script: AsyncScript
 
 
 @contextlib.asynccontextmanager
 async def create_redis(url: str) -> collections.abc.AsyncGenerator[Redis]:
     redis = typing.cast(Redis, Redis.from_url(url))
     async with redis:
-        redis.min_max_script = redis.register_script(MIN_MAX_SCRIPT)
-        await redis.script_load(MIN_MAX_SCRIPT)
+        redis.write_updates_script = redis.register_script(WRITE_UPDATES_SCRIPT)
+        await redis.script_load(WRITE_UPDATES_SCRIPT)
         yield redis
 
 
 async def write_updates(redis: Redis, updates: Updates) -> None:
-    async with redis.pipeline(transaction=False) as pipeline:
-        for (customer_id, meter_id, func), value in updates.items():
-            key = f"outpost:meters:{customer_id}"
-            if func in ("count", "sum"):
-                pipeline.hincrby(key, meter_id, typing.cast(int, value))
-            else:
-                await redis.min_max_script(
-                    keys=[key], args=[meter_id, value, func], client=pipeline
-                )
-        await pipeline.execute()
+    if not updates:
+        return
+    keys: list[str] = []
+    args: list[str | int | float] = []
+    for (customer_id, meter_id, func), value in updates.items():
+        keys.append(f"outpost:meters:{customer_id}")
+        args.extend((meter_id, func, value))
+    await redis.write_updates_script(keys=keys, args=args)

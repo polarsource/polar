@@ -2,7 +2,11 @@ import argparse
 import asyncio
 import json
 import math
+import multiprocessing
+import multiprocessing.synchronize
+import os
 import statistics
+from concurrent.futures import ProcessPoolExecutor
 from time import perf_counter
 from uuid import uuid4
 
@@ -10,6 +14,22 @@ import httpx2
 
 from outpost.env import get_environment
 from outpost.redis import create_redis
+
+start_barrier: multiprocessing.synchronize.Barrier | None = None
+
+
+def initialize_worker(barrier: multiprocessing.synchronize.Barrier) -> None:
+    global start_barrier
+    start_barrier = barrier
+
+
+def run_benchmark(args: argparse.Namespace) -> tuple[list[float], float, float]:
+    try:
+        return asyncio.run(benchmark(args))
+    except BaseException:
+        if start_barrier is not None:
+            start_barrier.abort()
+        raise
 
 
 def positive_int(value: str) -> int:
@@ -20,7 +40,7 @@ def positive_int(value: str) -> int:
     return number
 
 
-async def benchmark(args: argparse.Namespace) -> None:
+async def benchmark(args: argparse.Namespace) -> tuple[list[float], float, float]:
     prefix = f"benchmark-{uuid4()}"
     customers = [f"{prefix}-{i}" for i in range(min(args.customers, args.batch_size))]
     body = json.dumps(
@@ -71,11 +91,13 @@ async def benchmark(args: argparse.Namespace) -> None:
         try:
             for _ in range(args.warmup):
                 await ingest(record=False)
+            if start_barrier is not None:
+                await asyncio.to_thread(start_barrier.wait)
             start = perf_counter()
             async with asyncio.TaskGroup() as group:
                 for _ in range(args.concurrency):
                     group.create_task(worker())
-            elapsed = perf_counter() - start
+            end = perf_counter()
 
             batch_counts = [0] * len(customers)
             for i in range(args.batch_size):
@@ -94,10 +116,23 @@ async def benchmark(args: argparse.Namespace) -> None:
                 *(f"outpost:meters:{customer}" for customer in customers)
             )
 
+    return samples, start, end
+
+
+def report(
+    args: argparse.Namespace,
+    results: list[tuple[list[float], float, float]],
+) -> None:
+    samples = [sample for durations, _, _ in results for sample in durations]
+    if len(samples) != args.requests:
+        message = f"Expected {args.requests} requests, got {len(samples)}"
+        raise RuntimeError(message)
+    elapsed = max(end for _, _, end in results) - min(start for _, start, _ in results)
     print("HTTP /ingest; count meter matching tool_call events")
     print(
         f"{args.requests:,} requests × {args.batch_size:,} events; "
-        f"concurrency={args.concurrency}; customers/batch={len(customers)}; "
+        f"concurrency={args.concurrency}; processes={len(results)}; "
+        f"customers/batch={min(args.customers, args.batch_size)}; "
         f"warmup={args.warmup} (excluded)"
     )
     print(
@@ -121,13 +156,42 @@ def main() -> None:
     parser.add_argument("--requests", type=positive_int, default=1000)
     parser.add_argument("--batch-size", type=positive_int, default=100)
     parser.add_argument("--concurrency", type=positive_int, default=1)
+    parser.add_argument(
+        "--processes",
+        type=positive_int,
+        default=min(4, os.process_cpu_count() or 1),
+        help="Maximum client processes (default: up to 4 available CPUs)",
+    )
     parser.add_argument("--customers", type=positive_int, default=100)
     parser.add_argument("--warmup", type=positive_int, default=10)
     parser.add_argument("--redis-url", default=str(get_environment().redis_dsn))
     parser.add_argument(
         "--url", default="http://127.0.0.1:9000", help="Running Outpost base URL"
     )
-    asyncio.run(benchmark(parser.parse_args()))
+    args = parser.parse_args()
+    processes = min(args.processes, args.concurrency, args.requests)
+    if processes == 1:
+        report(args, [run_benchmark(args)])
+        return
+
+    context = multiprocessing.get_context("spawn")
+    barrier = context.Barrier(processes, timeout=30)
+    with ProcessPoolExecutor(
+        max_workers=processes,
+        mp_context=context,
+        initializer=initialize_worker,
+        initargs=(barrier,),
+    ) as executor:
+        futures = []
+        for index in range(processes):
+            worker_args = argparse.Namespace(**vars(args))
+            for field in ("requests", "concurrency", "warmup"):
+                total = getattr(args, field)
+                share, remainder = divmod(total, processes)
+                setattr(worker_args, field, share + (index < remainder))
+            futures.append(executor.submit(run_benchmark, worker_args))
+        results = [future.result() for future in futures]
+    report(args, results)
 
 
 if __name__ == "__main__":

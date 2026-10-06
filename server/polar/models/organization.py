@@ -747,6 +747,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return self.feature_settings.get("merchant_migration_enabled", False)
 
     @property
+    def is_billing_config_enabled(self) -> bool:
+        return self.feature_settings.get("billing_config_enabled", False)
+
+    @property
     def is_frame_ancestors_enforced(self) -> bool:
         return self.feature_settings.get("frame_ancestors_enforced", False)
 

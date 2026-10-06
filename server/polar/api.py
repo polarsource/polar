@@ -7,6 +7,7 @@ from polar.benefit.grant.endpoints import router as benefit_grants_router
 from polar.benefit.strategies.slack_shared_channel.endpoints import (
     router as slack_shared_channel_benefit_router,
 )
+from polar.billing_config.endpoints import router as billing_config_router
 from polar.checkout.endpoints import router as checkout_router
 from polar.checkout_link.endpoints import router as checkout_link_router
 from polar.cli.endpoints import router as cli_router
@@ -166,6 +167,8 @@ router.include_router(event_router)
 router.include_router(event_type_router)
 # /meters
 router.include_router(meter_router)
+# /billing-config
+router.include_router(billing_config_router)
 # /organization-access-tokens
 router.include_router(organization_access_token_router)
 # /customer-meters

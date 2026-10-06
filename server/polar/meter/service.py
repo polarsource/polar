@@ -54,7 +54,13 @@ from polar.subscription.repository import SubscriptionProductPriceRepository
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
 from .repository import MeterRepository
-from .schemas import MeterCreate, MeterQuantities, MeterQuantity, MeterUpdate
+from .schemas import (
+    MeterCreate,
+    MeterCreateBase,
+    MeterQuantities,
+    MeterQuantity,
+    MeterUpdate,
+)
 from .sorting import MeterSortProperty
 
 # Maximum number of events processed by one billing task invocation.
@@ -133,7 +139,6 @@ class MeterService:
         meter_create: MeterCreate,
         auth_subject: AuthSubject[User | Organization],
     ) -> Meter:
-        repository = MeterRepository.from_session(session)
         organization = await get_payload_organization(
             session, auth_subject, meter_create
         )
@@ -143,11 +148,20 @@ class MeterService:
             organization.id,
             OrganizationPermission.products_manage,
         )
+        return await self.create_for_organization(session, organization, meter_create)
 
+    async def create_for_organization(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        meter_create: MeterCreateBase,
+    ) -> Meter:
+        repository = MeterRepository.from_session(session)
         meter = await repository.create(
             Meter(
                 **meter_create.model_dump(
-                    by_alias=True, exclude={"filter", "aggregation"}
+                    by_alias=True,
+                    exclude={"filter", "aggregation", "organization_id"},
                 ),
                 filter=meter_create.filter,
                 aggregation=meter_create.aggregation,

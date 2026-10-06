@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import Select
@@ -22,3 +23,13 @@ class MeterRepository(RepositoryBase[Meter], RepositoryIDMixin[Meter, UUID]):
     ) -> Meter | None:
         statement = self.get_statement_by_org_ids(org_ids).where(Meter.id == id)
         return await self.get_one_or_none(statement)
+
+    async def get_all_by_external_ids(
+        self, organization_id: UUID, external_ids: Sequence[str]
+    ) -> Sequence[Meter]:
+        statement = self.get_base_statement().where(
+            Meter.organization_id == organization_id,
+            Meter.external_id.in_(external_ids),
+            Meter.deleted_at.is_(None),
+        )
+        return await self.get_all(statement)

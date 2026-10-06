@@ -13,10 +13,18 @@ const expensiveToolCall = async () => {
 
   const balance = await customer.meters.tool_call.balance()
 
-  console.log(balance)
+  console.log('Checking balance before tool call:', balance)
 
-  if (balance > 0) {
+  if (balance > -100) {
+    console.log('That is plenty, doing the thing')
     // doTheThing();
+    await customer.events.tool_call.ingest()
+
+    const newBalance = await customer.meters.tool_call.balance()
+
+    console.log('Checking balance after tool call:', newBalance)
+  } else {
+    console.log('Not enough balance, cannot do the thing')
   }
 }
 

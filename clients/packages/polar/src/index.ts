@@ -1,15 +1,10 @@
-import {
-  createPolar,
-  type Polar,
-  type PolarOptions,
-} from '@polar-sh/sdk/2026-10'
-
 export {
   createPolar,
   createPolarCore,
   errors,
   webhooks,
 } from '@polar-sh/sdk/2027-01'
+
 export type {
   Environment,
   models,
@@ -19,10 +14,33 @@ export type {
   RequestOptions,
 } from '@polar-sh/sdk/2027-01'
 
+import {
+  createPolar,
+  type Polar,
+  type PolarOptions,
+} from '@polar-sh/sdk/2026-10'
+
 export type MeterSDKConfig = {
+  events?: {
+    name: string
+  }[]
   meters?: {
     id: string
     external_id: string
+    filter: {
+      conjunction: 'and'
+      clauses: {
+        conjunction: 'or'
+        clauses: {
+          property: string
+          operator: 'eq'
+          value: string | number | boolean
+        }[]
+      }[]
+    }
+    aggregation: {
+      func: 'count'
+    }
   }[]
 }
 
@@ -33,17 +51,26 @@ type MeterSDKMeters = Record<
   >[number]
 >
 
+type MeterSDKEvents = Record<
+  string,
+  {
+    ingest: () => Promise<number>
+  }
+>
+
 type ActorCustomerIdentifier =
   | { externalCustomerId: string; customerId?: never }
   | { customerId: string; externalCustomerId?: never }
 type ActorMemberIdentifier =
-  | { externalMemberId?: string; memberId?: never }
-  | { memberId?: string; externalMemberId?: never }
+  | { externalMemberId: string; memberId?: never }
+  | { memberId: string; externalMemberId?: never }
+  | { memberId?: never; externalMemberId?: never }
 
 type ActorIdentifier = ActorCustomerIdentifier & ActorMemberIdentifier
 
 type MeterSDKActor = (identifier: ActorIdentifier) => {
   meters: MeterSDKMeters
+  events: MeterSDKEvents
 }
 
 export function MeterSDK(
@@ -64,11 +91,9 @@ export function MeterSDK(
         ...meter,
         async balance() {
           const response = await sdk.customerMeters.list({
-            ...(identifier.customerId
+            ...(identifier.customerId !== undefined
               ? { customer_id: identifier.customerId }
-              : identifier.externalCustomerId
-                ? { external_customer_id: identifier.externalCustomerId }
-                : {}),
+              : { external_customer_id: identifier.externalCustomerId }),
             meter_id: meter.id,
           })
 
@@ -79,8 +104,30 @@ export function MeterSDK(
       return acc
     }, {} as MeterSDKMeters)
 
+    const events = config.events?.reduce((acc, event) => {
+      acc[event.name] = {
+        async ingest() {
+          const { inserted } = await sdk.events.ingest({
+            events: [
+              {
+                ...(identifier.customerId !== undefined
+                  ? { customer_id: identifier.customerId }
+                  : { external_customer_id: identifier.externalCustomerId }),
+                name: event.name,
+              },
+            ],
+          })
+
+          return inserted
+        },
+      }
+
+      return acc
+    }, {} as MeterSDKEvents)
+
     return {
       meters: meters ?? {},
+      events: events ?? {},
     }
   }
 

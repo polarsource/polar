@@ -242,13 +242,6 @@ class OrganizationFeatureSettings(Schema):
             "provider (e.g. Stripe) to Polar."
         ),
     )
-    frame_ancestors_enforced: bool = Field(
-        False,
-        description=(
-            "If this organization's checkout tells the browser to refuse framing "
-            "from any host outside its embed hosts."
-        ),
-    )
     config_as_code_enabled: Annotated[
         bool,
         Version(starting_from=NEXT_API_VERSION),

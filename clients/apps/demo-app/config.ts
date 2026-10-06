@@ -10,6 +10,7 @@ export default {
   ],
   meters: [
     {
+      // Fix next - stop requiring `ID` in the `config.ts`
       id: '478a02b7-0738-4798-811f-4ffe2f7d8396',
       external_id: 'tool_call',
       filter: {

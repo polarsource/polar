@@ -8,7 +8,7 @@ from polar.routing import APIRouter
 from .auth import ConfigWrite
 from .schemas import Config, ConfigApplyResult
 from .service import ConfigAsCodeNotEnabled, ConfigSectionScopeMissing
-from .service import config_as_code as config_as_code_service
+from .service import declarative_config as declarative_config_service
 
 router = APIRouter(prefix="/config", tags=["config", APITag.private])
 
@@ -45,4 +45,4 @@ async def apply(
 
     **Preview:** the config is validated, but changes aren't persisted yet.
     """
-    return await config_as_code_service.apply(session, auth_subject, config)
+    return await declarative_config_service.apply(session, auth_subject, config)

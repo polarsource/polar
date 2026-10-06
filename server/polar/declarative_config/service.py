@@ -28,7 +28,7 @@ class ConfigSectionScopeMissing(PolarError):
         )
 
 
-class ConfigAsCodeService:
+class DeclarativeConfigService:
     async def apply(
         self,
         session: AsyncSession,
@@ -89,4 +89,4 @@ class ConfigAsCodeService:
         )
 
 
-config_as_code = ConfigAsCodeService()
+declarative_config = DeclarativeConfigService()

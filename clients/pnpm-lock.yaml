@@ -729,6 +729,12 @@ importers:
         specifier: 'catalog:'
         version: '@typescript/typescript6@6.0.2'
 
+  apps/demo-app:
+    dependencies:
+      '@polar-sh/polar':
+        specifier: workspace:*
+        version: link:../../packages/polar
+
   apps/orbit:
     dependencies:
       '@polar-sh/orbit':

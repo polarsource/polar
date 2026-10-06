@@ -8,7 +8,7 @@ import {
   AccordionTrigger,
 } from '@polar-sh/ui/components/atoms/Accordion'
 import { Box } from '@polar-sh/orbit/Box'
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import { DEFAULT_ASSUMPTIONS } from './baseline'
 import { useScenarios } from './store'
 import { Scenario, ScenarioLevers as Levers } from './types'
@@ -35,6 +35,7 @@ const LeverField = ({
   step = 1,
   scale = 1,
 }: LeverFieldProps) => {
+  const [text, setText] = useState<string | null>(null)
   const changed = value !== baseline
   return (
     <Box flexDirection="column" rowGap="s">
@@ -57,12 +58,18 @@ const LeverField = ({
         type="number"
         step={step}
         min={0}
-        value={value / scale}
+        value={text ?? value / scale}
         preSlot={prefix ? <span>{prefix}</span> : undefined}
         postSlot={suffix ? <span>{suffix}</span> : undefined}
+        onFocus={(event) => {
+          setText(String(value / scale))
+          event.target.select()
+        }}
+        onBlur={() => setText(null)}
         onChange={(event) => {
+          setText(event.target.value)
           const parsed = Number.parseFloat(event.target.value)
-          onChange(Number.isNaN(parsed) ? 0 : parsed * scale)
+          if (!Number.isNaN(parsed)) onChange(parsed * scale)
         }}
       />
     </Box>
@@ -102,10 +109,26 @@ const Group = ({
 
 export const ScenarioLevers = ({ scenario }: { scenario: Scenario }) => {
   const { updateLevers } = useScenarios()
-  const { levers, baseLevers } = scenario
-  const edit = (mutate: (levers: Levers) => void) =>
-    updateLevers(scenario.id, mutate)
+  return (
+    <LeversPanel
+      levers={scenario.levers}
+      baseLevers={scenario.baseLevers}
+      onEdit={(mutate) => updateLevers(scenario.id, mutate)}
+    />
+  )
+}
 
+export const LeversPanel = ({
+  levers,
+  baseLevers,
+  onEdit: edit,
+  actions,
+}: {
+  levers: Levers
+  baseLevers: Levers
+  onEdit: (mutate: (levers: Levers) => void) => void
+  actions?: ReactNode
+}) => {
   return (
     <Box flexDirection="column" rowGap="l" padding="xl">
       <Box flexDirection="column" rowGap="xs">
@@ -113,6 +136,7 @@ export const ScenarioLevers = ({ scenario }: { scenario: Scenario }) => {
           Simulation Levers
         </Text>
       </Box>
+      {actions}
       <Accordion
         type="multiple"
         className="flex flex-col"

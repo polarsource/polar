@@ -1,5 +1,6 @@
 import ImpersonationBanner from '@/components/Impersonation/ImpersonationBanner'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
+import { VoidStageBanner } from '@/components/Void/Stage/VoidStageBanner'
 import { AccountSetupProvider } from '@/providers/accountSetup'
 import { OrganizationContextProvider } from '@/providers/maintainerOrganization'
 import { getServerSideAPI } from '@/utils/client/serverside'
@@ -64,7 +65,9 @@ export default async function Layout(props: {
       <AccountSetupProvider>
         <ImpersonationBanner />
         <SidebarProvider open>
-          <DashboardLayout>{children}</DashboardLayout>
+          <DashboardLayout>
+            <VoidStageBanner>{children}</VoidStageBanner>
+          </DashboardLayout>
         </SidebarProvider>
       </AccountSetupProvider>
     </OrganizationContextProvider>

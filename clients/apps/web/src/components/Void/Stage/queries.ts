@@ -19,6 +19,9 @@ export const stageKey = (organizationId: string) => [
   organizationId,
 ]
 
+export const stageReviewHref = (organizationSlug: string) =>
+  `/void/dashboard/${organizationSlug}/definition/simulate/stage`
+
 export const useSaveStage = (organizationId: string) => {
   const queryClient = useQueryClient()
   return useMutation({
@@ -37,9 +40,8 @@ export const useSaveStage = (organizationId: string) => {
   })
 }
 
-export const useStage = (organizationId: string) => {
-  const queryClient = useQueryClient()
-  const stage = useQuery({
+export const useStageQuery = (organizationId: string) =>
+  useQuery({
     queryKey: stageKey(organizationId),
     queryFn: async () => {
       try {
@@ -52,6 +54,10 @@ export const useStage = (organizationId: string) => {
     },
     retry: false,
   })
+
+export const useStage = (organizationId: string) => {
+  const queryClient = useQueryClient()
+  const stage = useStageQuery(organizationId)
   const deploys = useVoidDeploys(organizationId)
   const applied = activeDeploy(deploys.data ?? [])
   const configuration = useQuery({

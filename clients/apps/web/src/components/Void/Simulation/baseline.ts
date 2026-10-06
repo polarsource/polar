@@ -129,9 +129,9 @@ export const configurationFromLevers = (
         ...product,
         price: changes.price ?? product.price,
         meters: product.meters.map((entry) => {
-          const { slug, ...terms } = termsOf(entry)
+          const { slug } = termsOf(entry)
           const next = changes.meters?.[slug]
-          return next ? { slug, ...next } : { slug, ...terms }
+          return next ? { slug, ...next } : entry
         }),
       }
     }),

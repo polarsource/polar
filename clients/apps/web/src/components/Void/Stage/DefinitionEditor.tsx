@@ -10,7 +10,7 @@ import { VoidRequestError } from '../api'
 import { useVoidDataSource } from '../dataSource'
 import { DefinitionFields, type EditableKind } from './DefinitionFields'
 import type { Configuration, Definition } from './diff'
-import { useSaveStage, useStage } from './queries'
+import { stageReviewHref, useSaveStage, useStage } from './queries'
 
 export const DefinitionEditor = ({
   kind,
@@ -25,7 +25,7 @@ export const DefinitionEditor = ({
     <Editor
       key={`${organization.id}-${kind}-${slug}`}
       organizationId={organization.id}
-      stageHref={`/void/dashboard/${organization.slug}/definition/stage`}
+      stageHref={stageReviewHref(organization.slug)}
       kind={kind}
       slug={slug}
     />

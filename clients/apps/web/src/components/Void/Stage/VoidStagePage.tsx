@@ -14,16 +14,32 @@ import {
   versionLabels,
   VoidRequestError,
 } from '../api'
+import { StageSimulation } from '../Simulation/StageSimulation'
+import { useStageLevers } from '../Simulation/stageLevers'
 import { configurationDiff, emptyConfiguration } from './diff'
 import { useStage } from './queries'
 import { StageChanges } from './StageChanges'
+import { StageJson } from './StageJson'
+import { StageLeversPanel } from './StageLeversPanel'
 
 export const VoidStagePage = () => {
   const { organization } = useContext(OrganizationContext)
-  return <StagePage key={organization.id} organizationId={organization.id} />
+  return (
+    <StagePage
+      key={organization.id}
+      organizationId={organization.id}
+      organizationSlug={organization.slug}
+    />
+  )
 }
 
-const StagePage = ({ organizationId }: { organizationId: string }) => {
+const StagePage = ({
+  organizationId,
+  organizationSlug,
+}: {
+  organizationId: string
+  organizationSlug: string
+}) => {
   const { stage, deploys, applied, configuration, deploy, refresh } =
     useStage(organizationId)
   const changes = useMemo(
@@ -44,6 +60,11 @@ const StagePage = ({ organizationId }: { organizationId: string }) => {
   const deployed = deploy.data
   const conflict =
     deploy.error instanceof VoidRequestError && deploy.error.status === 409
+  const stageLevers = useStageLevers(
+    configuration.data ?? emptyConfiguration,
+    stage.data?.configuration,
+  )
+  const reviewable = !loading && !error && !!stage.data && !unavailable
   const refreshPage = async () => {
     deploy.reset()
     await refresh()
@@ -52,7 +73,19 @@ const StagePage = ({ organizationId }: { organizationId: string }) => {
 
   return (
     <DashboardBody
-      title="Stage"
+      title="Review staged changes"
+      contextView={
+        reviewable && stage.data ? (
+          <StageLeversPanel
+            organizationId={organizationId}
+            stage={stage.data}
+            stageLevers={stageLevers}
+          />
+        ) : undefined
+      }
+      contextViewPlacement="left"
+      contextViewTitle="Levers"
+      contextViewClassName="md:max-w-[320px] xl:max-w-[360px]"
       header={
         <Box columnGap="s">
           <Button
@@ -83,6 +116,7 @@ const StagePage = ({ organizationId }: { organizationId: string }) => {
                 !!error ||
                 unavailable ||
                 !stage.data ||
+                stageLevers.dirty ||
                 deploy.isPending
               }
             >
@@ -94,8 +128,8 @@ const StagePage = ({ organizationId }: { organizationId: string }) => {
     >
       <Box flexDirection="column" rowGap="2xl">
         <Text color="muted">
-          Review staged changes against the active configuration, then deploy as
-          a draft or make them active immediately.
+          Review staged changes against the active configuration and simulate
+          their impact, then deploy as a draft or make them active immediately.
         </Text>
         {deployed ? (
           <Box role="status">
@@ -195,41 +229,18 @@ const StagePage = ({ organizationId }: { organizationId: string }) => {
               Successful deployments clear the stage. Removed definitions remain
               available to existing subscriptions.
             </Text>
+            <StageJson stage={stage.data} />
+            {stageLevers.levers ? (
+              <StageSimulation
+                organizationId={organizationId}
+                organizationSlug={organizationSlug}
+                levers={stageLevers.levers}
+                baseLevers={stageLevers.baseLevers}
+                dirty={stageLevers.dirty}
+              />
+            ) : null}
           </>
         )}
-        {stage.data && !stage.error ? (
-          <Box
-            as="section"
-            aria-label="Staged billing JSON"
-            flexDirection="column"
-            rowGap="m"
-            minWidth={0}
-          >
-            <Text as="h2" variant="heading-xs">
-              Staged billing JSON
-            </Text>
-            <Text color="muted" variant="caption">
-              Complete staged configuration · Revision {stage.data.revision} ·
-              Not active yet
-            </Text>
-            <Box
-              padding="l"
-              borderWidth={1}
-              borderStyle="solid"
-              borderColor="border-primary"
-              borderRadius="m"
-              backgroundColor="background-card"
-              overflow="auto"
-              maxHeight={480}
-            >
-              <pre>
-                <Text as="code" variant="caption" monospace>
-                  {JSON.stringify(stage.data.configuration, null, 2)}
-                </Text>
-              </pre>
-            </Box>
-          </Box>
-        ) : null}
       </Box>
     </DashboardBody>
   )

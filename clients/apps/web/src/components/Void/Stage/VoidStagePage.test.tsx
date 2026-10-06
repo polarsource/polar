@@ -10,17 +10,21 @@ import { VoidStagePage } from './VoidStagePage'
 vi.mock('@/components/Layout/DashboardLayout', () => ({
   DashboardBody: ({
     header,
+    contextView,
     children,
   }: {
     header: ReactNode
+    contextView?: ReactNode
     children: ReactNode
   }) => (
     <>
       {header}
+      {contextView}
       {children}
     </>
   ),
 }))
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }))
 vi.mock('@/providers/maintainerOrganization', async () => {
   const { createContext } = await import('react')
   return { OrganizationContext: createContext({ organization: { id: 'org' } }) }
@@ -61,6 +65,9 @@ beforeEach(() => {
     http.get('*/v1/void/deploys/active/configuration', () =>
       HttpResponse.json(applied),
     ),
+    http.get('*/v1/void/customers', () => HttpResponse.json([])),
+    http.get('*/v1/void/subscriptions', () => HttpResponse.json([])),
+    http.get('*/v1/void/reducers', () => HttpResponse.json([])),
   )
 })
 
@@ -224,4 +231,84 @@ it('compares the first deployment against an empty configuration', async () => {
   expect(await screen.findByText('First deployment')).toBeInTheDocument()
   expect(screen.getByText('1 added')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Deploy as draft' })).toBeEnabled()
+})
+
+it('folds the staged JSON by default and simulates the stage', async () => {
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <VoidStagePage />
+    </QueryClientProvider>,
+  )
+  await screen.findByText('Priority support')
+  expect(screen.queryByText(/"Priority support"/)).not.toBeInTheDocument()
+  const toggle = screen.getByRole('button', { name: /Staged JSON/ })
+  expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  fireEvent.click(toggle)
+  expect(screen.getByText(/"Priority support"/)).toBeInTheDocument()
+  fireEvent.click(toggle)
+  expect(screen.queryByText(/"Priority support"/)).not.toBeInTheDocument()
+  expect(
+    await screen.findByRole('heading', { name: 'Projection' }),
+  ).toBeInTheDocument()
+})
+
+it('saves lever edits to the stage and blocks deploying unsaved edits', async () => {
+  const pro = {
+    slug: 'pro',
+    name: 'Pro',
+    description: null,
+    price: { type: 'recurring', amount: '20', interval: 'month' },
+    meters: [],
+    entitlements: [],
+  }
+  const configuration = { ...staged, products: [pro] }
+  const saves: unknown[] = []
+  server.use(
+    http.get('*/v1/void/stage', () =>
+      HttpResponse.json({ revision: 3, configuration }),
+    ),
+    http.put('*/v1/void/stage', async ({ request }) => {
+      const body = (await request.json()) as {
+        configuration: typeof configuration
+      }
+      saves.push(body)
+      return HttpResponse.json({
+        revision: 4,
+        configuration: body.configuration,
+      })
+    }),
+  )
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <VoidStagePage />
+    </QueryClientProvider>,
+  )
+  const price = await screen.findByDisplayValue('20')
+  fireEvent.focus(price)
+  fireEvent.change(price, { target: { value: '' } })
+  expect(price).toHaveValue(null)
+  fireEvent.change(price, { target: { value: '25' } })
+  fireEvent.blur(price)
+  expect(
+    screen.getByRole('button', { name: 'Deploy and activate' }),
+  ).toBeDisabled()
+  fireEvent.click(screen.getByRole('button', { name: 'Save to stage' }))
+  await waitFor(() =>
+    expect(
+      screen.queryByRole('button', { name: 'Save to stage' }),
+    ).not.toBeInTheDocument(),
+  )
+  expect(saves).toEqual([
+    {
+      expected_revision: 3,
+      configuration: {
+        ...configuration,
+        products: [{ ...pro, price: { ...pro.price, amount: '25' } }],
+      },
+    },
+  ])
+  expect(screen.getByDisplayValue('25')).toBeInTheDocument()
+  expect(
+    screen.getByRole('button', { name: 'Deploy and activate' }),
+  ).toBeEnabled()
 })

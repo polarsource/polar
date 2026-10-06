@@ -11,7 +11,7 @@ import { Scenario } from './types'
 
 export const useSimulationCustomers = (
   organizationId: string,
-  scenarios: Scenario[],
+  scenarios: Pick<Scenario, 'levers' | 'baseLevers'>[],
 ) => {
   const slugs = [
     ...new Set(

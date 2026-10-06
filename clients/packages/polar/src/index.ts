@@ -18,7 +18,7 @@ import {
   createPolar,
   type Polar,
   type PolarOptions,
-} from '@polar-sh/sdk/2026-10'
+} from '@polar-sh/sdk/2027-01'
 
 export type MeterSDKConfig = {
   events?: readonly {

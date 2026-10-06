@@ -6026,6 +6026,9 @@ export interface paths {
      * Apply Config
      * @description Apply a declarative config document to the organization.
      *
+     *     Each section requires its own scope, only when present:
+     *     `organization` requires `organizations:write`, `meters` requires `meters:write`.
+     *
      *     **Preview:** the config is validated, but changes aren't persisted yet.
      *
      *     **Scopes**: `meters:write` `organizations:write`
@@ -15897,6 +15900,17 @@ export interface components {
      * @enum {string}
      */
     ConfigSection: 'organization' | 'meters'
+    /** ConfigSectionScopeMissing */
+    ConfigSectionScopeMissing: {
+      /**
+       * Error
+       * @example ConfigSectionScopeMissing
+       * @constant
+       */
+      error: 'ConfigSectionScopeMissing'
+      /** Detail */
+      detail: string
+    }
     /** CostMetadata */
     'CostMetadata-Input': {
       /**
@@ -61659,7 +61673,16 @@ export interface operations {
           'application/json': components['schemas']['ConfigApplyResult']
         }
       }
-      /** @description Not allowed to manage this organization, or config as code isn't enabled for it. */
+      /** @description Not authenticated. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Unauthorized']
+        }
+      }
+      /** @description Not allowed to manage this organization, missing the scope for a submitted section, or config as code isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown
@@ -61667,6 +61690,7 @@ export interface operations {
         content: {
           'application/json':
             | components['schemas']['NotPermitted']
+            | components['schemas']['ConfigSectionScopeMissing']
             | components['schemas']['ConfigAsCodeNotEnabled']
         }
       }

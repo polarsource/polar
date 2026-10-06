@@ -106,6 +106,7 @@ class TestApply:
         )
 
         assert response.status_code == 403
+        assert response.json()["error"] == "ConfigSectionScopeMissing"
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.meters_write})

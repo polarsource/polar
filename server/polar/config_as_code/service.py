@@ -4,7 +4,6 @@ from polar.auth.scope import Scope
 from polar.authz.service import assert_organization_permission
 from polar.exceptions import PolarError
 from polar.models import Organization, User
-from polar.oauth2.exceptions import InsufficientScopeError
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
 
@@ -20,6 +19,13 @@ from .schemas import (
 class ConfigAsCodeNotEnabled(PolarError):
     def __init__(self) -> None:
         super().__init__("Config as code is not enabled for this organization.", 403)
+
+
+class ConfigSectionScopeMissing(PolarError):
+    def __init__(self, scope: Scope) -> None:
+        super().__init__(
+            f"The `{scope}` scope is required to apply this config section.", 403
+        )
 
 
 class ConfigAsCodeService:
@@ -77,7 +83,7 @@ class ConfigAsCodeService:
         permission: OrganizationPermission,
     ) -> None:
         if scope not in auth_subject.scopes:
-            raise InsufficientScopeError({scope})
+            raise ConfigSectionScopeMissing(scope)
         await assert_organization_permission(
             session, auth_subject, organization.id, permission
         )

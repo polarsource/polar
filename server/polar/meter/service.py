@@ -54,11 +54,22 @@ from polar.subscription.repository import SubscriptionProductPriceRepository
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
 from .repository import MeterRepository
-from .schemas import MeterCreate, MeterQuantities, MeterQuantity, MeterUpdate
+from .schemas import (
+    MeterCreate,
+    MeterCreateBase,
+    MeterQuantities,
+    MeterQuantity,
+    MeterUpdate,
+)
 from .sorting import MeterSortProperty
 
 # Maximum number of events processed by one billing task invocation.
 _BILLING_ENTRY_BATCH_SIZE = 500
+
+METER_LOCKED_FIELDS = ("filter", "aggregation")
+METER_LOCKED_FIELD_MESSAGE = (
+    "This field can't be updated because the meter is already aggregating events."
+)
 
 
 class MeterService:
@@ -133,7 +144,6 @@ class MeterService:
         meter_create: MeterCreate,
         auth_subject: AuthSubject[User | Organization],
     ) -> Meter:
-        repository = MeterRepository.from_session(session)
         organization = await get_payload_organization(
             session, auth_subject, meter_create
         )
@@ -143,7 +153,15 @@ class MeterService:
             organization.id,
             OrganizationPermission.products_manage,
         )
+        return await self.create_for_organization(session, organization, meter_create)
 
+    async def create_for_organization(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        meter_create: MeterCreateBase,
+    ) -> Meter:
+        repository = MeterRepository.from_session(session)
         meter = await repository.create(
             Meter(
                 **meter_create.model_dump(
@@ -187,17 +205,13 @@ class MeterService:
 
         errors: list[ValidationError] = []
         if meter.last_billed_event is not None:
-            sensitive_fields = {"filter", "aggregation"}
-            for sensitive_field in sensitive_fields:
+            for sensitive_field in METER_LOCKED_FIELDS:
                 if sensitive_field in meter_update.model_fields_set:
                     errors.append(
                         {
                             "type": "forbidden",
                             "loc": ("body", sensitive_field),
-                            "msg": (
-                                "This field can't be updated because the meter "
-                                "is already aggregating events."
-                            ),
+                            "msg": METER_LOCKED_FIELD_MESSAGE,
                             "input": getattr(meter_update, sensitive_field),
                         }
                     )

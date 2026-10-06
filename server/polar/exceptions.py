@@ -34,6 +34,10 @@ class PolarError(Exception):
         self.status_code = status_code
         self.headers = headers
 
+    @property
+    def detail(self) -> Any:
+        return self.message
+
     @classmethod
     def schema(cls) -> type[BaseModel]:
         if cls._schema is not None:

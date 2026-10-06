@@ -12,9 +12,6 @@ from uuid import uuid4
 
 import httpx2
 
-from outpost.env import get_environment
-from outpost.redis import create_redis
-
 start_barrier: multiprocessing.synchronize.Barrier | None = None
 
 
@@ -58,16 +55,13 @@ async def benchmark(args: argparse.Namespace) -> tuple[list[float], float, float
     ).encode()
     samples: list[float] = []
 
-    async with (
-        create_redis(args.redis_url) as redis,
-        httpx2.AsyncClient(
-            timeout=30,
-            limits=httpx2.Limits(
-                max_connections=args.concurrency,
-                max_keepalive_connections=args.concurrency,
-            ),
-        ) as client,
-    ):
+    async with httpx2.AsyncClient(
+        timeout=30,
+        limits=httpx2.Limits(
+            max_connections=args.concurrency,
+            max_keepalive_connections=args.concurrency,
+        ),
+    ) as client:
 
         async def ingest(record: bool) -> None:
             start = perf_counter()
@@ -88,33 +82,15 @@ async def benchmark(args: argparse.Namespace) -> tuple[list[float], float, float
             for _ in requests:
                 await ingest(record=True)
 
-        try:
-            for _ in range(args.warmup):
-                await ingest(record=False)
-            if start_barrier is not None:
-                await asyncio.to_thread(start_barrier.wait)
-            start = perf_counter()
-            async with asyncio.TaskGroup() as group:
-                for _ in range(args.concurrency):
-                    group.create_task(worker())
-            end = perf_counter()
-
-            batch_counts = [0] * len(customers)
-            for i in range(args.batch_size):
-                batch_counts[i % len(customers)] += 1
-            for customer, count in zip(customers, batch_counts, strict=True):
-                stored = await redis.hget(f"outpost:meters:{customer}", "METER_1")
-                expected = count * (args.requests + args.warmup)
-                if stored is None or int(stored) != expected:
-                    message = (
-                        f"Redis count mismatch: expected {expected}, got {stored!r}. "
-                        "--redis-url must match the server's Redis."
-                    )
-                    raise RuntimeError(message)
-        finally:
-            await redis.delete(
-                *(f"outpost:meters:{customer}" for customer in customers)
-            )
+        for _ in range(args.warmup):
+            await ingest(record=False)
+        if start_barrier is not None:
+            await asyncio.to_thread(start_barrier.wait)
+        start = perf_counter()
+        async with asyncio.TaskGroup() as group:
+            for _ in range(args.concurrency):
+                group.create_task(worker())
+        end = perf_counter()
 
     return samples, start, end
 
@@ -148,7 +124,6 @@ def report(
         f"{'ingest':<22} {statistics.mean(ordered):10.3f} "
         + " ".join(f"{value:10.3f}" for value in percentiles)
     )
-    print("Redis counts verified; benchmark keys removed.")
 
 
 def main() -> None:
@@ -164,7 +139,6 @@ def main() -> None:
     )
     parser.add_argument("--customers", type=positive_int, default=100)
     parser.add_argument("--warmup", type=positive_int, default=10)
-    parser.add_argument("--redis-url", default=str(get_environment().redis_dsn))
     parser.add_argument(
         "--url", default="http://127.0.0.1:9000", help="Running Outpost base URL"
     )

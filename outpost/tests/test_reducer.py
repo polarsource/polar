@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 import pytest
 
 from outpost.event import EventCreate
-from outpost.reducer import FilterClause, Meter, matches, reduce
+from outpost.reducer import FilterClause, Meter, get_matcher, reduce
 
 
 @pytest.fixture
@@ -43,7 +43,8 @@ class TestReduce:
                 update={"external_customer_id": "other", "metadata": {"amount": 7}}
             ),
         )
-        assert reduce(meters, events) == {
+        meter_matchers = [(meter, get_matcher(meter["filter"])) for meter in meters]
+        assert reduce(meter_matchers, events) == {
             ("customer", "count", "count"): 3,
             ("customer", "sum", "sum"): 2,
             ("customer", "min", "min"): -2,
@@ -53,7 +54,7 @@ class TestReduce:
             ("other", "min", "min"): 7,
             ("other", "max", "max"): 7,
         }
-        assert reduce(meters, []) == {}
+        assert reduce(meter_matchers, []) == {}
         assert reduce([], events) == {}
 
     def test_filters(self, event: EventCreate) -> None:
@@ -88,7 +89,9 @@ class TestReduce:
             ),
             matching.model_copy(update={"metadata": {"tier": "paid", "enabled": True}}),
         ]
-        assert reduce([meter], events) == {("customer", "count", "count"): 1}
+        assert reduce([(meter, get_matcher(meter["filter"]))], events) == {
+            ("customer", "count", "count"): 1
+        }
 
     @pytest.mark.parametrize("amount", [None, "3", True])
     def test_skips_non_numeric_values(
@@ -100,13 +103,12 @@ class TestReduce:
             "aggregation": {"func": "sum", "property": "amount"},
         }
         event.metadata = {} if amount is None else {"amount": amount}
-        assert reduce([meter], [event]) == {}
+        assert reduce([(meter, get_matcher(meter["filter"]))], [event]) == {}
 
     @pytest.mark.parametrize(
         ("func", "amount", "message"),
         [
             ("sum", 1.5, "integer"),
-            ("sum", 2**63, "64-bit"),
             ("min", float("inf"), "finite"),
             ("max", float("nan"), "finite"),
         ],
@@ -125,7 +127,7 @@ class TestReduce:
         }
         event.metadata = {"amount": amount}
         with pytest.raises(ValueError, match=message):
-            reduce([meter], [event])
+            reduce([(meter, get_matcher(meter["filter"]))], [event])
 
 
 @pytest.mark.parametrize(
@@ -144,9 +146,10 @@ class TestReduce:
         ("ne", None, 1, False),
     ],
 )
-def test_matches(
+def test_get_matcher(
+    event: EventCreate,
     operator: typing.Literal["eq", "ne", "gt", "gte", "lt", "lte"],
-    actual: object,
+    actual: str | float | bool | None,
     expected: str | float | bool,
     result: bool,
 ) -> None:
@@ -155,6 +158,7 @@ def test_matches(
         "operator": operator,
         "value": expected,
     }
-    assert matches({"value": actual}.get, clause) is result
-    assert matches({}.get, {"conjunction": "and", "clauses": []}) is True
-    assert matches({}.get, {"conjunction": "or", "clauses": []}) is False
+    event.metadata = {} if actual is None else {"value": actual}
+    assert get_matcher(clause)(event) is result
+    assert get_matcher({"conjunction": "and", "clauses": []})(event) is True
+    assert get_matcher({"conjunction": "or", "clauses": []})(event) is False

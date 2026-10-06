@@ -10,17 +10,36 @@ from starlette.routing import Route
 
 from outpost.env import Environment, get_environment
 from outpost.event import EventsIngest
-from outpost.redis import Redis, create_redis, write_updates
-from outpost.reducer import reduce
+from outpost.reducer import Meter, get_matcher, reduce
+from outpost.storage import Storage, create_storage
 
 
 class LifespanState(typing.TypedDict):
     env: Environment
-    redis: Redis
+    storage: Storage
 
 
 def get_state(request: Request) -> LifespanState:
     return request.state  # type: ignore
+
+
+METERS: list[Meter] = [
+    {
+        "id": "METER_1",
+        "filter": {
+            "conjunction": "and",
+            "clauses": [
+                {
+                    "property": "name",
+                    "operator": "eq",
+                    "value": "tool_call",
+                },
+            ],
+        },
+        "aggregation": {"func": "count"},
+    }
+]
+METER_MATCHERS = [(meter, get_matcher(meter["filter"])) for meter in METERS]
 
 
 async def ingest(request: Request) -> Response:
@@ -29,29 +48,8 @@ async def ingest(request: Request) -> Response:
     except ValidationError:
         return Response(status_code=422)
 
-    redis = get_state(request)["redis"]
-    await write_updates(
-        redis,
-        reduce(
-            [
-                {
-                    "id": "METER_1",
-                    "filter": {
-                        "conjunction": "and",
-                        "clauses": [
-                            {
-                                "property": "name",
-                                "operator": "eq",
-                                "value": "tool_call",
-                            },
-                        ],
-                    },
-                    "aggregation": {"func": "count"},
-                }
-            ],
-            payload.events,
-        ),
-    )
+    storage = get_state(request)["storage"]
+    await storage.write_updates(reduce(METER_MATCHERS, payload.events))
 
     return Response(status_code=202)
 
@@ -59,10 +57,10 @@ async def ingest(request: Request) -> Response:
 @contextlib.asynccontextmanager
 async def lifespan(_: Starlette) -> collections.abc.AsyncGenerator[LifespanState]:
     env = get_environment()
-    async with create_redis(str(env.redis_dsn)) as redis:
+    async with create_storage(env) as storage:
         yield {
             "env": env,
-            "redis": redis,
+            "storage": storage,
         }
 
 

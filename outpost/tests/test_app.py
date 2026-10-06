@@ -19,7 +19,7 @@ class TestIngest:
                 "events": [
                     {
                         "timestamp": "2026-01-01T00:00:00Z",
-                        "name": "test_event",
+                        "name": "tool_call",
                         "external_customer_id": "customer_123",
                         "metadata": {"key": "value"},
                     }

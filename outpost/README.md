@@ -2,15 +2,28 @@
 
 ## Development
 
-Start Outpost and Redis:
+Start Outpost with in-memory storage (default, one worker):
 
 ```sh
 just dev
 ```
 
+Memory storage is process-local and lost on restart. The runner rejects multiple workers in memory mode. Use the runner rather than invoking Uvicorn directly.
+
+For Redis storage, set both environment variables:
+
+```sh
+docker compose up -d
+POLAR_OUTPOST_STORAGE=redis POLAR_OUTPOST_REDIS_DSN=redis://localhost:6379/0 \
+  uv run python -m outpost --workers 4
+```
+
+The runner also accepts `--host`, `--port` (default: 9000), and `--reload`.
+Redis connections are initialized and closed during the application lifespan.
+
 ## Benchmark
 
-Run the HTTP ingest benchmark:
+Run the HTTP ingest benchmark against a running Outpost server:
 
 ```sh
 uv run python benchmark.py
@@ -21,6 +34,4 @@ uv run python benchmark.py --batch-size 10 --concurrency 32 --requests 20000 --p
 Reports requests/s, events/s, and mean/p50/p95/p99 response time.
 
 Uses up to four client processes by default, capped by concurrency and request count.
-Requests, concurrency, and warmup are totals split across processes. Each process
-warms up before a synchronized start; timings exclude startup, warmup, and Redis
-verification. Use `--processes 1` to compare against a single client process.
+Requests, concurrency, and warmup are totals split across processes. Each process warms up before a synchronized start; timings exclude startup and warmup. Use `--processes 1` to compare against a single client process.

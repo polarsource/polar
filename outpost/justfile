@@ -17,11 +17,9 @@ test:
     uv run pytest
 
 dev:
-    docker compose up -d
-    uv run uvicorn outpost:app --reload --port 9000
+    uv run python -m outpost --reload
 
 default_workers := '1'
 
 up workers=default_workers:
-    docker compose up -d
-    uv run uvicorn outpost:app --port 9000 --workers {{workers}}
+    uv run python -m outpost --workers {{workers}}

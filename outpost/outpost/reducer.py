@@ -45,49 +45,59 @@ FILTER_OPERATORS = {
 }
 
 
-def is_filter(clause: Filter | FilterClause) -> typing.TypeIs[Filter]:
-    return "clauses" in clause
+def is_filter_clause(clause: Filter | FilterClause) -> typing.TypeIs[FilterClause]:
+    return "property" in clause
 
 
-def matches(
-    get_property: collections.abc.Callable[[str], object], clause: Filter | FilterClause
-) -> bool:
-    if is_filter(clause):
-        results = (matches(get_property, child) for child in clause["clauses"])
-        match clause["conjunction"]:
-            case "and":
-                return all(results)
-            case "or":
-                return any(results)
-            case _:
-                raise ValueError()
+type EventMatcher = collections.abc.Callable[[EventCreate], bool]
 
-    actual = get_property(clause["property"])
-    expected = clause["value"]
-    if actual is None:
-        return False
-    same_type = type(actual) is type(expected) or (
-        type(actual) in (int, float) and type(expected) in (int, float)
-    )
-    if not same_type:
-        return clause["operator"] == "ne"
-    actual = typing.cast(str | int | float | bool, actual)
-    if clause["operator"] not in ("eq", "ne") and type(actual) not in (int, float, str):
-        return False
-    return FILTER_OPERATORS[clause["operator"]](actual, expected)
+
+def get_matcher(clause: Filter | FilterClause) -> EventMatcher:
+    if is_filter_clause(clause):
+        expected = clause["value"]
+        expected_type = type(expected)
+        operator_name = clause["operator"]
+        filter_operator = FILTER_OPERATORS[operator_name]
+        property = clause["property"]
+
+        def matcher(event: EventCreate) -> bool:
+            actual = event.get_property(property)
+            if actual is None:
+                return False
+            same_type = type(actual) is expected_type or (
+                type(actual) in (int, float) and expected_type in (int, float)
+            )
+            if not same_type:
+                return filter_operator is operator.ne
+            if filter_operator not in (operator.eq, operator.ne) and type(
+                actual
+            ) not in (int, float, str):
+                return False
+            return filter_operator(actual, expected)
+
+        return matcher
+
+    conjunction_operator = all if clause["conjunction"] == "and" else any
+
+    def matcher(event: EventCreate) -> bool:
+        return conjunction_operator(
+            get_matcher(child)(event) for child in clause["clauses"]
+        )
+
+    return matcher
 
 
 type Updates = dict[tuple[str, str, str], int | float]
 
 
 def reduce(
-    meters: collections.abc.Sequence[Meter],
+    meters: collections.abc.Sequence[tuple[Meter, EventMatcher]],
     events: collections.abc.Sequence[EventCreate],
 ) -> Updates:
     updates: Updates = {}
     for event in events:
-        for meter in meters:
-            if not matches(event.get_property, meter["filter"]):
+        for meter, matcher in meters:
+            if not matcher(event):
                 continue
             aggregation = meter["aggregation"]
             func = aggregation["func"]
@@ -118,8 +128,4 @@ def reduce(
                     value = max(previous, value) if previous is not None else value
             updates[update_key] = value
 
-    for (_, _, func), value in updates.items():
-        if func in ("count", "sum") and not -(2**63) <= value < 2**63:
-            message = "Increment exceeds the signed 64-bit integer range"
-            raise ValueError(message)
     return updates

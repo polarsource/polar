@@ -2,9 +2,9 @@ import collections.abc
 import contextlib
 import typing
 
-from redis.asyncio import Redis as RedisClient
-from redis.commands.core import AsyncScript
+from redis.asyncio import Redis
 
+from outpost.env import Environment
 from outpost.reducer import Updates
 
 WRITE_UPDATES_SCRIPT = """
@@ -33,25 +33,27 @@ return 0
 """
 
 
-class Redis(RedisClient):
-    write_updates_script: AsyncScript
+class RedisStorage:
+    def __init__(self, redis: Redis) -> None:
+        self.redis = redis
+        self.write_updates_script = redis.register_script(WRITE_UPDATES_SCRIPT)
 
+    @classmethod
+    @contextlib.asynccontextmanager
+    async def create(
+        cls, env: Environment
+    ) -> collections.abc.AsyncIterator[typing.Self]:
+        async with Redis.from_url(str(env.redis_dsn)) as redis:
+            storage = cls(redis)
+            await redis.script_load(WRITE_UPDATES_SCRIPT)
+            yield storage
 
-@contextlib.asynccontextmanager
-async def create_redis(url: str) -> collections.abc.AsyncGenerator[Redis]:
-    redis = typing.cast(Redis, Redis.from_url(url))
-    async with redis:
-        redis.write_updates_script = redis.register_script(WRITE_UPDATES_SCRIPT)
-        await redis.script_load(WRITE_UPDATES_SCRIPT)
-        yield redis
-
-
-async def write_updates(redis: Redis, updates: Updates) -> None:
-    if not updates:
-        return
-    keys: list[str] = []
-    args: list[str | int | float] = []
-    for (customer_id, meter_id, func), value in updates.items():
-        keys.append(f"outpost:meters:{customer_id}")
-        args.extend((meter_id, func, value))
-    await redis.write_updates_script(keys=keys, args=args)
+    async def write_updates(self, updates: Updates) -> None:
+        if not updates:
+            return
+        keys: list[str] = []
+        args: list[str | int | float] = []
+        for (customer_id, meter_id, func), value in updates.items():
+            keys.append(f"outpost:meters:{customer_id}")
+            args.extend((meter_id, func, value))
+        await self.write_updates_script(keys=keys, args=args)

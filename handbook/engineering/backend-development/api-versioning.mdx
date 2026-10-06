@@ -305,6 +305,24 @@ During a rotation, update the lifecycle aliases and `VERSIONS`, then regenerate
 every supported OpenAPI schema and SDK and run the schema-lock tests. Version
 markers do not move merely because a version changes lifecycle stage.
 
+Also delete an unversioned fallback once every supported version matches its
+version-specific override. Since the fallback has no boundary marker of its own,
+look for these route pairs when removing the last version before an override's
+`starting_from` boundary.
+
+When removing the oldest supported version, find every reference to its identity
+constant. Since no remaining version can be older than it, cleanup follows three
+rules:
+
+| How the removed version is used | Cleanup |
+| --- | --- |
+| As `up_to` | Delete the endpoint implementation or field; its last supported version is gone |
+| As the only `starting_from` bound | Remove the field marker; for an endpoint, remove the decorator and rename the function to its route `name` |
+| As `starting_from` with a later `up_to` | Remove `starting_from` but keep the `up_to` bound |
+
+After resolving those references, delete the identity constant. Any missed
+imports will fail immediately during type checking or test collection.
+
 ### Updating the documentation
 
 The docs reference the lifecycle stages through stable aliases, so they must be
@@ -324,24 +342,6 @@ Link to API reference pages with `/api-reference/current/...` rather than a
 concrete version such as `/api-reference/2026-04/...`, so links keep working
 after a rotation. Only link to a concrete version when documenting that specific
 version.
-
-Also delete an unversioned fallback once every supported version matches its
-version-specific override. Since the fallback has no boundary marker of its own,
-look for these route pairs when removing the last version before an override's
-`starting_from` boundary.
-
-When removing the oldest supported version, find every reference to its identity
-constant. Since no remaining version can be older than it, cleanup follows three
-rules:
-
-| How the removed version is used | Cleanup |
-| --- | --- |
-| As `up_to` | Delete the endpoint implementation or field; its last supported version is gone |
-| As the only `starting_from` bound | Remove the field marker; for an endpoint, remove the decorator and rename the function to its route `name` |
-| As `starting_from` with a later `up_to` | Remove `starting_from` but keep the `up_to` bound |
-
-After resolving those references, delete the identity constant. Any missed
-imports will fail immediately during type checking or test collection.
 
 ## How it works under the hood
 

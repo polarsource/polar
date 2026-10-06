@@ -305,6 +305,26 @@ During a rotation, update the lifecycle aliases and `VERSIONS`, then regenerate
 every supported OpenAPI schema and SDK and run the schema-lock tests. Version
 markers do not move merely because a version changes lifecycle stage.
 
+### Updating the documentation
+
+The docs reference the lifecycle stages through stable aliases, so they must be
+updated as part of every rotation. In `docs/docs.json`:
+
+1. Update the version tags: the old Current version gets `"tag": "Deprecated"`,
+   the old Next version gets `"tag": "Current"` and `"default": true`, and the new
+   Next version gets `"tag": "Next"`. Remove the entry of the removed version.
+2. Repoint the `/api-reference/current` and `/api-reference/current/:path*`
+   redirects to the new Current version.
+3. Repoint the `/api-reference/next` and `/api-reference/next/:path*` redirects to
+   the new Next version.
+4. Repoint the `/api-reference/deprecated` and `/api-reference/deprecated/:path*`
+   redirects to the new Deprecated version.
+
+Link to API reference pages with `/api-reference/current/...` rather than a
+concrete version such as `/api-reference/2026-04/...`, so links keep working
+after a rotation. Only link to a concrete version when documenting that specific
+version.
+
 Also delete an unversioned fallback once every supported version matches its
 version-specific override. Since the fallback has no boundary marker of its own,
 look for these route pairs when removing the last version before an override's

@@ -68,6 +68,10 @@ Pass query params to this route.
 - seats (optional) `?products=123&seats=5` - Number of seats for seat-based products
 - metadata (optional) `URL-Encoded JSON string`
 
+### Customer IP Address
+
+Unless `customer_ip_address` is passed, the customer's IP address is taken from the `x-forwarded-for`, `x-real-ip` or `cf-connecting-ip` header and sent to Polar to show local currency. Set `customerIpAddress` to a function `(request) => ip` to resolve it yourself, or to `false` to not send it.
+
 ## Customer Portal
 
 Create a customer portal where your customer can view orders and subscriptions.

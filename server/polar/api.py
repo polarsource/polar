@@ -17,6 +17,7 @@ from polar.customer_meter.endpoints import router as customer_meter_router
 from polar.customer_portal.endpoints import router as customer_portal_router
 from polar.customer_seat.endpoints import router as customer_seat_router
 from polar.customer_session.endpoints import router as customer_session_router
+from polar.declarative_config.endpoints import router as declarative_config_router
 from polar.discount.endpoints import router as discount_router
 from polar.dispute.endpoints import router as dispute_router
 from polar.email_update.endpoints import router as email_update_router
@@ -166,6 +167,8 @@ router.include_router(event_router)
 router.include_router(event_type_router)
 # /meters
 router.include_router(meter_router)
+# /config
+router.include_router(declarative_config_router)
 # /organization-access-tokens
 router.include_router(organization_access_token_router)
 # /customer-meters

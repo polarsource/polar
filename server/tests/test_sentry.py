@@ -94,3 +94,12 @@ class TestBeforeSend:
         }
 
         assert before_send(cast(Any, event), {}) is None
+
+    def test_leaves_non_mapping_request_data(self) -> None:
+        event = {"request": {"data": "raw-body"}}
+
+        result = before_send(cast(Any, event), {})
+
+        assert result is not None
+        request = cast(dict[str, Any], result["request"])
+        assert request["data"] == "raw-body"

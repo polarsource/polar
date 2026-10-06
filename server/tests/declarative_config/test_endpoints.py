@@ -1,0 +1,124 @@
+import pytest
+import pytest_asyncio
+from httpx import AsyncClient
+
+from polar.models import Organization, UserOrganization
+from tests.fixtures.auth import AuthSubjectFixture
+from tests.fixtures.database import SaveFixture
+
+METER = {
+    "external_id": "sdk-tool-calls",
+    "name": "SDK - Tool Calls",
+    "filter": {
+        "conjunction": "and",
+        "clauses": [{"property": "name", "operator": "eq", "value": "tool_call"}],
+    },
+    "aggregation": {"func": "count"},
+    "unit": "custom",
+    "custom_label": "call",
+}
+
+
+@pytest_asyncio.fixture
+async def config_as_code_enabled(
+    save_fixture: SaveFixture, organization: Organization
+) -> None:
+    organization.feature_settings = {
+        **organization.feature_settings,
+        "config_as_code_enabled": True,
+    }
+    await save_fixture(organization)
+
+
+@pytest.mark.asyncio
+class TestApply:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post("/v1/config/apply", json={"meters": [METER]})
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_not_enabled(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/config/apply",
+            json={
+                "meters": [METER],
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "ConfigAsCodeNotEnabled"
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/config/apply",
+            json={
+                "meters": [METER],
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "meters": [{"external_id": "sdk-tool-calls", "action": "created"}],
+        }
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_organization_token(self, client: AsyncClient) -> None:
+        response = await client.post("/v1/config/apply", json={"meters": [METER]})
+
+        assert response.status_code == 200
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_unknown_key(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/config/apply",
+            json={
+                "meters": [{**METER, "agregation": {"func": "count"}}],
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 422
+        [error] = response.json()["detail"]
+        assert error["loc"] == ["body", "meters", 0, "agregation"]
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_duplicate_external_ids(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/config/apply",
+            json={
+                "meters": [METER, {**METER, "name": "Duplicate"}],
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 422
+        [error] = response.json()["detail"]
+        assert error["loc"] == ["body", "meters"]

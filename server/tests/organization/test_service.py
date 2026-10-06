@@ -203,7 +203,6 @@ class TestCreate:
         assert organization.slug == slug
         assert organization.feature_settings == {
             "member_model_enabled": True,
-            "frame_ancestors_enforced": True,
         }
 
         user_organization = await user_organization_service.get_by_user_and_org(
@@ -271,7 +270,6 @@ class TestCreate:
         assert organization.feature_settings == {
             "checkout_localization_enabled": True,
             "member_model_enabled": True,
-            "frame_ancestors_enforced": True,
         }
 
     @pytest.mark.auth

@@ -6,8 +6,9 @@ const NO_CARD_CONSEQUENCE =
 
 const PAYMENT_METHOD_COPY = {
   noCardTitle: 'Moves without a payment method',
+  notCopiedTitle: "Payment method can't be copied",
   notCopied: (label: string) =>
-    `${label} can't be copied to Polar. ${NO_CARD_CONSEQUENCE}`,
+    `${label} can't be copied to Polar. The subscription still moves, and renews with another card copied for this customer if there is one. Otherwise its first renewal on Polar fails and goes to dunning until the customer adds a card.`,
   none: `This customer has no saved payment method on Stripe. ${NO_CARD_CONSEQUENCE}`,
 }
 
@@ -60,11 +61,14 @@ export function rowPaymentMethod(row: ReviewRow): RowPaymentMethod | null {
   return {
     label,
     kind: 'no_card',
-    note: {
-      title: PAYMENT_METHOD_COPY.noCardTitle,
-      body: type
-        ? PAYMENT_METHOD_COPY.notCopied(label)
-        : PAYMENT_METHOD_COPY.none,
-    },
+    note: type
+      ? {
+          title: PAYMENT_METHOD_COPY.notCopiedTitle,
+          body: PAYMENT_METHOD_COPY.notCopied(label),
+        }
+      : {
+          title: PAYMENT_METHOD_COPY.noCardTitle,
+          body: PAYMENT_METHOD_COPY.none,
+        },
   }
 }

@@ -30,6 +30,7 @@ describe('rowPaymentMethod', () => {
     const method = rowPaymentMethod(row({ payment_method_type: type }))
     expect(method).toMatchObject({ label, kind: 'no_card' })
     expect(method?.note?.body).toContain("can't be copied")
+    expect(method?.note?.body).toContain('another card copied')
   })
 
   it('flags a subscription with no payment method', () => {

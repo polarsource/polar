@@ -25,6 +25,11 @@ if TYPE_CHECKING:
     from sentry_sdk._types import Event, Hint
 
 POSTHOG_ID_TAG = "posthog_distinct_id"
+_FILTERED = "[Filtered]"
+# Street, city, and postal code identify a person. Country and state stay:
+# checkout failures are often tax-country mismatches, and those fields are not
+# a street address.
+_BILLING_ADDRESS_PII_FIELDS = ("line1", "line2", "city", "postal_code")
 
 
 class DramatiqIntegration(_DramatiqIntegration):
@@ -42,6 +47,18 @@ class DramatiqIntegration(_DramatiqIntegration):
         broker.add_middleware(SentryMiddleware(), before=first_middleware)
 
 
+def _redact_customer_billing_address(data: object) -> None:
+    if not isinstance(data, dict):
+        return
+    address = data.get("customer_billing_address")
+    if not isinstance(address, dict):
+        return
+    for field in _BILLING_ADDRESS_PII_FIELDS:
+        value = address.get(field)
+        if isinstance(value, str) and value:
+            address[field] = _FILTERED
+
+
 def before_send(event: Event, hint: Hint) -> Event | None:
     tags = event.get("tags", {})
     if tags and tags.get("is_operational_error") == "true":
@@ -53,6 +70,7 @@ def before_send(event: Event, hint: Hint) -> Event | None:
             request["url"] = url_without_request_values(url)
         request.pop("query_string", None)
         request.pop("fragment", None)
+        _redact_customer_billing_address(request.get("data"))
     return event
 
 

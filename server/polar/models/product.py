@@ -22,6 +22,7 @@ from sqlalchemy import (
     or_,
     select,
     table,
+    text,
 )
 from sqlalchemy.dialects.postgresql import CITEXT, TSVECTOR
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
@@ -38,6 +39,7 @@ from sqlalchemy.orm.attributes import set_committed_value
 from polar.enums import MeterInterval, SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
+from polar.kit.external_id import ExternalIDMixin
 from polar.kit.metadata import MetadataMixin
 from polar.kit.schemas import SetSchemaReference
 from polar.kit.trial import TrialConfigurationMixin
@@ -86,13 +88,26 @@ _discounts = table(
 )
 
 
-class Product(VisibilityMixin, TrialConfigurationMixin, MetadataMixin, RecordModel):
+class Product(
+    VisibilityMixin,
+    TrialConfigurationMixin,
+    MetadataMixin,
+    ExternalIDMixin,
+    RecordModel,
+):
     __tablename__ = "products"
     __table_args__ = (
         Index(
             "ix_products_search_vector",
             "search_vector",
             postgresql_using="gin",
+        ),
+        Index(
+            "ix_products_organization_id_external_id",
+            "organization_id",
+            "external_id",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL AND external_id IS NOT NULL"),
         ),
     )
 

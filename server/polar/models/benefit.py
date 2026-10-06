@@ -5,13 +5,14 @@ from uuid import UUID
 from alembic_utils.pg_function import PGFunction
 from alembic_utils.pg_trigger import PGTrigger
 from alembic_utils.replaceable_entity import register_entities
-from sqlalchemy import Boolean, ForeignKey, Index, Text, Uuid
+from sqlalchemy import Boolean, ForeignKey, Index, Text, Uuid, text
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.exceptions import PolarError
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
+from polar.kit.external_id import ExternalIDMixin
 from polar.kit.metadata import MetadataMixin
 from polar.kit.schemas import SetSchemaReference
 from polar.kit.visibility import Visibility, VisibilityMixin
@@ -97,13 +98,20 @@ VISIBILITY_CONFIGURABLE_BENEFIT_TYPES: frozenset[BenefitType] = frozenset(
 )
 
 
-class Benefit(VisibilityMixin, MetadataMixin, RecordModel):
+class Benefit(VisibilityMixin, MetadataMixin, ExternalIDMixin, RecordModel):
     __tablename__ = "benefits"
     __table_args__ = (
         Index(
             "ix_benefits_search_vector",
             "search_vector",
             postgresql_using="gin",
+        ),
+        Index(
+            "ix_benefits_organization_id_external_id",
+            "organization_id",
+            "external_id",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL AND external_id IS NOT NULL"),
         ),
     )
 

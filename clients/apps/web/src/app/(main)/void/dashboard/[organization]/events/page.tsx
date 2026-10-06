@@ -4,5 +4,5 @@ export default async function Page(props: {
   params: Promise<{ organization: string }>
 }) {
   const { organization } = await props.params
-  redirect(`/void/dashboard/${organization}/definition/products`)
+  redirect(`/void/dashboard/${organization}/events/stream`)
 }

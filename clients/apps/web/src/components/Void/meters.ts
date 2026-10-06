@@ -76,10 +76,10 @@ export const startOfUtcDay = (date: Date) =>
   )
 
 export const meterHref = (base: string, id: string) =>
-  `${base}/definition/meters/${encodeURIComponent(id)}`
+  `${base}/billing/meters/${encodeURIComponent(id)}`
 
 export const reducerHref = (base: string, id: string) =>
-  `${base}/definition/reducers/${encodeURIComponent(id)}`
+  `${base}/events/reducers/${encodeURIComponent(id)}`
 
 export const billedCents = (
   units: number,

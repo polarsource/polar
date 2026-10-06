@@ -35,35 +35,26 @@ const voidRoutesList = (org?: schemas['Organization']): Route[] => {
       if: !!org?.feature_settings?.compass_enabled,
     },
     {
-      id: 'void-definition',
-      title: 'Definition',
-      icon: <HiveOutlined fontSize="inherit" />,
-      link: `${base}/definition`,
+      id: 'void-events',
+      title: 'Events',
+      icon: <BoltOutlined fontSize="inherit" />,
+      link: `${base}/events/stream`,
+      checkIsActive: (path) => path.startsWith(`${base}/events`),
       if: true,
       subs: [
         {
-          title: 'Products',
-          link: `${base}/definition/products`,
-          icon: <HiveOutlined fontSize="inherit" />,
-        },
-        {
-          title: 'Events',
-          link: `${base}/definition/events`,
+          title: 'Stream',
+          link: `${base}/events/stream`,
           icon: <BoltOutlined fontSize="inherit" />,
         },
         {
           title: 'Reducers',
-          link: `${base}/definition/reducers`,
+          link: `${base}/events/reducers`,
           icon: <FunctionsOutlined fontSize="inherit" />,
         },
         {
-          title: 'Meters',
-          link: `${base}/definition/meters`,
-          icon: <DonutLargeOutlined fontSize="inherit" />,
-        },
-        {
           title: 'Signals',
-          link: `${base}/definition/signals`,
+          link: `${base}/events/signals`,
           icon: <SensorsOutlined fontSize="inherit" />,
         },
       ],
@@ -83,12 +74,30 @@ const voidRoutesList = (org?: schemas['Organization']): Route[] => {
       if: true,
     },
     {
+      id: 'void-metrics',
+      title: 'Metrics',
+      icon: <SignalCellularAltOutlined fontSize="inherit" />,
+      link: `${base}/metrics`,
+      if: true,
+    },
+    {
       id: 'void-billing',
       title: 'Billing',
       icon: <ShoppingBagOutlined fontSize="inherit" />,
-      link: `${base}/billing`,
+      link: `${base}/billing/products`,
+      checkIsActive: (path) => path.startsWith(`${base}/billing`),
       if: true,
       subs: [
+        {
+          title: 'Products',
+          link: `${base}/billing/products`,
+          icon: <HiveOutlined fontSize="inherit" />,
+        },
+        {
+          title: 'Meters',
+          link: `${base}/billing/meters`,
+          icon: <DonutLargeOutlined fontSize="inherit" />,
+        },
         {
           title: 'Subscriptions',
           link: `${base}/billing/subscriptions`,
@@ -100,13 +109,6 @@ const voidRoutesList = (org?: schemas['Organization']): Route[] => {
           icon: <ShoppingBagOutlined fontSize="inherit" />,
         },
       ],
-    },
-    {
-      id: 'void-metrics',
-      title: 'Metrics',
-      icon: <SignalCellularAltOutlined fontSize="inherit" />,
-      link: `${base}/metrics`,
-      if: true,
     },
   ]
 }

@@ -21,7 +21,7 @@ import { withKeptParams } from './searchParams'
 export const VoidReducerListSidebar = () => {
   const { organization } = useContext(OrganizationContext)
   const base = `/void/dashboard/${organization.slug}`
-  const listBase = `${base}/definition/reducers`
+  const listBase = `${base}/events/reducers`
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const withQuerystring = withKeptParams(searchParams, ['query'])

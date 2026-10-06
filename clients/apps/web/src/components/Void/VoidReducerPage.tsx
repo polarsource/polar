@@ -141,7 +141,7 @@ export function VoidReducerPage({
         <ReducerMeters
           used={used}
           onOpen={(meterId) =>
-            router.push(`${base}/definition/meters/${meterId}`)
+            router.push(`${base}/billing/meters/${meterId}`)
           }
         />
         <Text variant="caption" color="muted" monospace>

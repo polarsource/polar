@@ -107,7 +107,7 @@ export const VoidIdentityUsage = ({
               {count(remaining)} remaining
             </Text>
           </Box>
-          <Link href={`${base}/definition/events`}>
+          <Link href={`${base}/events/stream`}>
             <Box alignItems="center" columnGap="xs">
               <ChevronRight size={12} />
               <Text variant="caption">View history</Text>

@@ -49,7 +49,7 @@ export const VoidProductListSidebar = () => {
   const source = useVoidDataSource()
   const live = source === 'live'
   const base = `/void/dashboard/${organization.slug}`
-  const listBase = `${base}/definition/products`
+  const listBase = `${base}/billing/products`
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const withQuerystring = withKeptParams(searchParams, ['query', 'filter', 'sorting'])

@@ -123,7 +123,7 @@ export const VoidToplists = ({
           {meters.map((meter) => (
             <ToplistItem
               key={meter.id}
-              href={`${base}/definition/meters/${meter.id}`}
+              href={`${base}/billing/meters/${meter.id}`}
             >
               <ToplistText
                 primary={meter.name}

@@ -37,7 +37,7 @@ export const VoidWidgets = ({
         <WidgetContainer
           title="Definition"
           action={
-            <Link href={`${base}/definition/products`}>
+            <Link href={`${base}/billing/products`}>
               <span className="dark:text-polar-500 text-gray-500">
                 View definition
               </span>
@@ -99,7 +99,7 @@ export const VoidWidgets = ({
               </Box>
             ))}
             <Box paddingTop="m">
-              <Link href={`${base}/definition/events`}>
+              <Link href={`${base}/events/stream`}>
                 <Text color="muted" variant="caption">
                   View all events
                 </Text>

@@ -37,7 +37,7 @@ const matches = (signal: VoidConfigSignal, filter: Filter) =>
 export const VoidSignalListSidebar = () => {
   const { organization } = useContext(OrganizationContext)
   const base = `/void/dashboard/${organization.slug}`
-  const listBase = `${base}/definition/signals`
+  const listBase = `${base}/events/signals`
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const withQuerystring = withKeptParams(searchParams, ['query', 'filter'])

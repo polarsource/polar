@@ -35,7 +35,7 @@ export interface VoidProduct {
 }
 
 export const productHref = (base: string, id: string) =>
-  `${base}/definition/products/${id}`
+  `${base}/billing/products/${id}`
 
 export const priceCents = (amount: string) => Math.round(Number(amount) * 100)
 

@@ -116,7 +116,7 @@ export function usedByMetersLabel(count: number): string {
 }
 
 export function reducerHref(base: string, id: string): string {
-  return `${base}/definition/reducers/${id}`
+  return `${base}/events/reducers/${id}`
 }
 
 export function dayLabel(timestamp: string): string {

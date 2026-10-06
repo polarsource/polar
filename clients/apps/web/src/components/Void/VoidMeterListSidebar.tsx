@@ -16,7 +16,7 @@ import { withKeptParams } from './searchParams'
 export const VoidMeterListSidebar = () => {
   const { organization } = useContext(OrganizationContext)
   const base = `/void/dashboard/${organization.slug}`
-  const listBase = `${base}/definition/meters`
+  const listBase = `${base}/billing/meters`
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const withQuerystring = withKeptParams(searchParams, ['query'])

@@ -138,7 +138,7 @@ export const VoidScenarioPage = () => {
           columnGap="xl"
         >
           <Text color="muted" variant="body">
-            <Link href={`${base}/definition/products`}>
+            <Link href={`${base}/billing/products`}>
               {scenario.basedOn.definition} · {scenario.basedOn.version}
             </Link>
             {' · '}

@@ -125,7 +125,7 @@ export const VoidEventsPage = () => {
 
   return (
     <DashboardBody
-      title="Events"
+      title="Stream"
       header={
         <Text color="muted" variant="heading-xs">
           {totalCount.toLocaleString('en-US')}{' '}

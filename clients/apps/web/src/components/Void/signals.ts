@@ -35,7 +35,7 @@ export const describeHysteresis = (signal: VoidConfigSignal): string =>
     : `Rising ${signalEnters(signal)} enters. Only falling ${signalExits(signal)} exits. In between, the previous status holds, so one borderline answer does not flap the signal.`
 
 export const signalHref = (base: string, slug: string) =>
-  `${base}/definition/signals/${encodeURIComponent(slug)}`
+  `${base}/events/signals/${encodeURIComponent(slug)}`
 
 export const FIXTURE_SIGNALS: VoidConfigSignal[] = [
   {

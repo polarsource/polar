@@ -71724,6 +71724,25 @@
             ],
             "title": "Units",
             "description": "Number of units to apply to the subscription. If `null`, the number of units won't be changed."
+          },
+          "discount_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discount Id",
+            "description": "ID of the new discount to apply to the subscription. If `null`, the discount won't be changed, unless `discount_removed` is `true`."
+          },
+          "discount_removed": {
+            "type": "boolean",
+            "title": "Discount Removed",
+            "description": "Whether the subscription's current discount will be removed.",
+            "default": false
           }
         },
         "type": "object",

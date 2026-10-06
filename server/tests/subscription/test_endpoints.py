@@ -14,6 +14,7 @@ from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
 from polar.models import (
     Customer,
+    Discount,
     Organization,
     Product,
     Subscription,
@@ -687,6 +688,69 @@ class TestSubscriptionProductUpdate:
         assert error["detail"][0]["loc"] == ["body", "product_id"]
         assert "above the maximum of 10 seats" in error["detail"][0]["msg"]
         assert error["detail"][0]["input"] == str(new_seat_product.id)
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_next_period_with_discount(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        customer: Customer,
+        product: Product,
+        product_second: Product,
+        discount_percentage_50: Discount,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={
+                "product_id": str(product_second.id),
+                "proration_behavior": SubscriptionProrationBehavior.next_period.value,
+                "discount_id": str(discount_percentage_50.id),
+            },
+        )
+
+        assert response.status_code == 200
+        pending_update = response.json()["pending_update"]
+        assert pending_update["discount_id"] == str(discount_percentage_50.id)
+        assert pending_update["discount_removed"] is False
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_next_period_removing_discount(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        customer: Customer,
+        product: Product,
+        product_second: Product,
+        discount_percentage_50: Discount,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            discount=discount_percentage_50,
+        )
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={
+                "product_id": str(product_second.id),
+                "proration_behavior": SubscriptionProrationBehavior.next_period.value,
+                "discount_id": None,
+            },
+        )
+
+        assert response.status_code == 200
+        pending_update = response.json()["pending_update"]
+        assert pending_update["discount_id"] is None
+        assert pending_update["discount_removed"] is True
 
 
 @pytest.mark.asyncio

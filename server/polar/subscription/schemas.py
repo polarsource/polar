@@ -231,6 +231,25 @@ class PendingSubscriptionUpdate(IDSchema, TimestampedSchema):
     units: int | None = Field(
         description="Number of units to apply to the subscription. If `null`, the number of units won't be changed."
     )
+    discount_id: Annotated[
+        UUID4 | None,
+        Version(starting_from=V2027_01),
+        Field(
+            description=(
+                "ID of the new discount to apply to the subscription. "
+                "If `null`, the discount won't be changed, "
+                "unless `discount_removed` is `true`."
+            )
+        ),
+    ] = None
+    discount_removed: Annotated[
+        bool,
+        Version(starting_from=V2027_01),
+        Field(
+            validation_alias=AliasChoices("discount_removed", "discount_unset"),
+            description="Whether the subscription's current discount will be removed.",
+        ),
+    ] = False
 
 
 class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, SubscriptionBase):

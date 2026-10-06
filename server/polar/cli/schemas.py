@@ -60,8 +60,17 @@ class SearchResult(Schema):
     probability: float
 
 
+class SearchUsage(Schema):
+    input_tokens: int
+    output_tokens: int
+    cost_usd: float | None = Field(
+        description="What the gateway billed for this call, when it reports it."
+    )
+
+
 class SearchResponse(Schema):
     query: str
     model: str
     confidence: float
+    usage: SearchUsage
     results: list[SearchResult]

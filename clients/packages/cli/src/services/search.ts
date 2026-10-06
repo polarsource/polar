@@ -19,10 +19,18 @@ const SearchResultSchema = Schema.Struct({
 })
 export type SearchResult = typeof SearchResultSchema.Type
 
+const SearchUsageSchema = Schema.Struct({
+  input_tokens: Schema.Number,
+  output_tokens: Schema.Number,
+  cost_usd: Schema.NullOr(Schema.Number),
+})
+export type SearchUsage = typeof SearchUsageSchema.Type
+
 const SearchResponseSchema = Schema.Struct({
   query: Schema.String,
   model: Schema.String,
   confidence: Schema.Number,
+  usage: SearchUsageSchema,
   results: Schema.Array(SearchResultSchema),
 })
 export type SearchResponse = typeof SearchResponseSchema.Type

@@ -6,6 +6,7 @@ import {
   Search,
   type SearchResponse,
   type SearchResult,
+  type SearchUsage,
 } from '@/services/search'
 import { printJson } from '@/utils/json'
 import * as ui from '@/utils/ui'
@@ -27,6 +28,17 @@ const percent = (probability: number) =>
     .toString()
     .padStart(3)}%`
 
+const formatCost = (costUsd: number) =>
+  costUsd < 0.000001 ? '<$0.000001' : `$${costUsd.toFixed(6)}`
+
+export const formatUsage = ({ input_tokens, cost_usd }: SearchUsage) =>
+  [
+    cost_usd === null ? undefined : `cost ${formatCost(cost_usd)}`,
+    `${input_tokens} input tokens`,
+  ]
+    .filter((part) => part !== undefined)
+    .join(' · ')
+
 const formatResult = ({
   method,
   path,
@@ -44,7 +56,9 @@ export const formatResults = (response: SearchResponse) => {
     return [
       ui.blank,
       ui.warning(`No API operation matches "${response.query}"`),
-      ui.step('Try rephrasing, or browse https://polar.sh/docs/api-reference'),
+      ui.step(
+        `Try rephrasing, or browse https://polar.sh/docs/api-reference (${formatUsage(response.usage)})`,
+      ),
       ui.blank,
     ].join('\n')
   }
@@ -55,7 +69,7 @@ export const formatResults = (response: SearchResponse) => {
       ui.blank,
     ]),
     ui.step(
-      `Experimental: ranked by ${response.model}. Run a command with ${ui.command('--help')} to see its flags`,
+      `Experimental: ranked by ${response.model} (${formatUsage(response.usage)}). Run a command with ${ui.command('--help')} to see its flags`,
     ),
     ui.blank,
   ].join('\n')

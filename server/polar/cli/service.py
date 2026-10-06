@@ -4,8 +4,8 @@ from collections.abc import Sequence
 from typing import Any
 from uuid import UUID
 
-from pydantic import ValidationError
-from typesafe_sdk import AsyncTypeSafeClient, Choice, TypeSafeError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from typesafe_sdk import AsyncTypeSafeClient, Choice, SystemOneResponse, TypeSafeError
 
 from polar.config import settings
 from polar.exceptions import PolarError, PolarRequestValidationError
@@ -22,6 +22,7 @@ from .listener import has_active_listener
 from .schemas import (
     SearchResponse,
     SearchResult,
+    SearchUsage,
     TriggerEvent,
     TriggerRequest,
     TriggerResponse,
@@ -55,6 +56,27 @@ SEARCH_INSTRUCTIONS = (
 SEARCH_TIMEOUT_SECONDS = 10.0
 
 
+class GatewayCost(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    cost: str | None = None
+
+
+class ProviderMetadata(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    gateway: GatewayCost | None = None
+
+
+class GatewaySystemOneResponse(SystemOneResponse):
+    provider_metadata: ProviderMetadata | None = Field(default=None)
+
+    @property
+    def cost_usd(self) -> float | None:
+        gateway = self.provider_metadata.gateway if self.provider_metadata else None
+        return float(gateway.cost) if gateway and gateway.cost is not None else None
+
+
 async def search_routes(
     catalog: Sequence[CatalogEntry], query: str, limit: int
 ) -> SearchResponse:
@@ -81,6 +103,7 @@ async def search_routes(
                     )
                 },
                 model=settings.TYPESAFE_MODEL,
+                response_model=GatewaySystemOneResponse,
             )
     except TypeSafeError as e:
         raise SearchUnavailable(str(e)) from e
@@ -117,6 +140,11 @@ async def search_routes(
         query=query,
         model=response.model,
         confidence=answer.confidence,
+        usage=SearchUsage(
+            input_tokens=response.usage.input_tokens or 0,
+            output_tokens=response.usage.output_tokens or 0,
+            cost_usd=response.cost_usd,
+        ),
         results=results,
     )
 

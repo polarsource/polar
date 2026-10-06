@@ -32,6 +32,8 @@ class BillingConfig(Schema):
         max_length=MAXIMUM_METERS,
         description=(
             "Meters to create or update, matched by `external_id`. "
+            "Omitted fields are set to their default, except `metadata`, "
+            "which is left untouched when omitted. "
             "Existing meters that aren't listed are left untouched."
         ),
     )

@@ -1,6 +1,8 @@
 from collections.abc import Sequence
 from typing import Any
 
+from sqlalchemy.exc import IntegrityError
+
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission
@@ -27,6 +29,13 @@ _METER_LOCKED_FIELDS = ("filter", "aggregation")
 class BillingConfigNotEnabled(PolarError):
     def __init__(self) -> None:
         super().__init__("Billing config is not enabled for this organization.", 403)
+
+
+class BillingConfigConflict(PolarError):
+    def __init__(self) -> None:
+        super().__init__(
+            "A meter in this config was created by a concurrent request. Retry.", 409
+        )
 
 
 class BillingConfigService:
@@ -94,9 +103,12 @@ class BillingConfigService:
         results: list[MeterConfigResult] = []
         for meter_config, meter, update_dict in changes:
             if meter is None:
-                meter = await meter_service.create_for_organization(
-                    session, organization, meter_config
-                )
+                try:
+                    meter = await meter_service.create_for_organization(
+                        session, organization, meter_config
+                    )
+                except IntegrityError as e:
+                    raise BillingConfigConflict() from e
                 action = BillingConfigAction.created
             elif update_dict:
                 meter = await repository.update(meter, update_dict=update_dict)

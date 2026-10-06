@@ -1,11 +1,13 @@
-import uuid
-
 import pytest
 from pytest_mock import MockerFixture
+from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject
 from polar.billing_config.schemas import BillingConfig, BillingConfigAction
-from polar.billing_config.service import BillingConfigNotEnabled
+from polar.billing_config.service import (
+    BillingConfigConflict,
+    BillingConfigNotEnabled,
+)
 from polar.billing_config.service import billing_config as billing_config_service
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.utils import utc_now
@@ -89,6 +91,27 @@ class TestApply:
         )
 
     @pytest.mark.usefixtures("billing_config_enabled")
+    async def test_concurrent_create(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        mocker.patch(
+            "polar.billing_config.service.meter_service.create_for_organization",
+            side_effect=IntegrityError("INSERT", {}, Exception()),
+        )
+
+        with pytest.raises(BillingConfigConflict):
+            await billing_config_service.apply(
+                session,
+                auth_subject,
+                BillingConfig.model_validate(
+                    {"version": 1, "meters": [TOOL_CALLS_METER]}
+                ),
+            )
+
+    @pytest.mark.usefixtures("billing_config_enabled")
     async def test_unchanged(
         self,
         mocker: MockerFixture,
@@ -150,7 +173,6 @@ class TestApply:
     ) -> None:
         other_meter = await create_meter(
             save_fixture,
-            id=uuid.uuid4(),
             organization=organization_second,
             external_id="sdk-tool-calls",
         )
@@ -243,10 +265,11 @@ class TestApply:
         organization: Organization,
     ) -> None:
         meter = await create_meter(
-            save_fixture, organization=organization, external_id="my-meter"
+            save_fixture,
+            organization=organization,
+            external_id="my-meter",
+            user_metadata={"team": "sdk"},
         )
-        meter.user_metadata = {"team": "sdk"}
-        await save_fixture(meter)
 
         result = await billing_config_service.apply(
             session,

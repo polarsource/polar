@@ -1,8 +1,8 @@
 """add merchant_migration_records.classification
 
 Revision ID: 3f6b9c2d8e41
-Revises: 9d4a1e77c580
-Create Date: 2026-09-29 08:00:00.000000
+Revises: 200d10ea2bdd
+Create Date: 2026-10-06 15:45:00.000000
 
 """
 
@@ -14,7 +14,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "3f6b9c2d8e41"
-down_revision = "9d4a1e77c580"
+down_revision = "200d10ea2bdd"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

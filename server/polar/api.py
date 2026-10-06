@@ -11,6 +11,7 @@ from polar.checkout.endpoints import router as checkout_router
 from polar.checkout_link.endpoints import router as checkout_link_router
 from polar.cli.endpoints import router as cli_router
 from polar.compass.endpoints import router as compass_router
+from polar.config_as_code.endpoints import router as config_as_code_router
 from polar.custom_field.endpoints import router as custom_field_router
 from polar.customer.endpoints import router as customer_router
 from polar.customer_meter.endpoints import router as customer_meter_router
@@ -166,6 +167,8 @@ router.include_router(event_router)
 router.include_router(event_type_router)
 # /meters
 router.include_router(meter_router)
+# /config
+router.include_router(config_as_code_router)
 # /organization-access-tokens
 router.include_router(organization_access_token_router)
 # /customer-meters

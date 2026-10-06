@@ -31,6 +31,7 @@ from polar.kit.schemas import (
     SlugValidator,
     TimestampedSchema,
 )
+from polar.kit.versioning import Version
 from polar.models.organization import (
     OrganizationCustomerEmailSettings,
     OrganizationCustomerPortalSettings,
@@ -46,6 +47,7 @@ from polar.models.user_organization import (
     OrganizationRole,
 )
 from polar.organization.embed_hosts import InvalidEmbedHost, validate_host_pattern
+from polar.version import NEXT_API_VERSION
 
 OrganizationID = Annotated[
     UUID4,
@@ -247,6 +249,16 @@ class OrganizationFeatureSettings(Schema):
             "from any host outside its embed hosts."
         ),
     )
+    config_as_code_enabled: Annotated[
+        bool,
+        Version(starting_from=NEXT_API_VERSION),
+        Field(
+            description=(
+                "If this organization can manage its configuration from a "
+                "declarative config document."
+            ),
+        ),
+    ] = False
 
 
 class OrganizationFeatureSettingsUpdate(Schema):

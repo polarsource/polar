@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Self
 
 from fastapi import Path
 from pydantic import UUID4, Field, model_validator
@@ -26,7 +26,7 @@ _aggregation_description = (
 )
 
 
-class MeterCreate(Schema, MetadataInputMixin):
+class MeterCreateBase(Schema, MetadataInputMixin):
     name: str = Field(..., description=NAME_DESCRIPTION, min_length=3)
     unit: MeterUnit = Field(
         default=MeterUnit.scalar,
@@ -50,16 +50,9 @@ class MeterCreate(Schema, MetadataInputMixin):
     )
     filter: Filter = Field(..., description=_filter_description)
     aggregation: Aggregation = Field(..., description=_aggregation_description)
-    organization_id: OrganizationID | None = Field(
-        default=None,
-        description=(
-            "The ID of the organization owning the meter. "
-            "**Required unless you use an organization token.**"
-        ),
-    )
 
     @model_validator(mode="after")
-    def validate_custom_unit_fields(self) -> "MeterCreate":
+    def validate_custom_unit_fields(self) -> Self:
         if self.unit == MeterUnit.custom:
             if self.custom_label is None:
                 raise ValueError("custom_label is required when unit is 'custom'.")
@@ -69,6 +62,16 @@ class MeterCreate(Schema, MetadataInputMixin):
                     "custom_label and custom_multiplier are only allowed when unit is 'custom'."
                 )
         return self
+
+
+class MeterCreate(MeterCreateBase):
+    organization_id: OrganizationID | None = Field(
+        default=None,
+        description=(
+            "The ID of the organization owning the meter. "
+            "**Required unless you use an organization token.**"
+        ),
+    )
 
 
 class MeterUpdate(Schema, MetadataInputMixin):

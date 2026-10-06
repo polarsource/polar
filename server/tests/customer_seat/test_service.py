@@ -2121,16 +2121,24 @@ class TestBenefitGranting:
             )
 
     @pytest.mark.asyncio
-    async def test_revoke_pending_seat_does_not_enqueue_revocation(
+    async def test_revoke_pending_seat_enqueues_member_scoped_revocation(
         self, session: AsyncSession, customer_seat_pending: CustomerSeat
     ) -> None:
-        """Test that revoking a pending seat (no customer) doesn't enqueue revocation."""
-        assert customer_seat_pending.customer_id is None
+        """A pending seat carries the billing customer and the invited member, so
+        revoking it revokes that member's benefits rather than the buyer's."""
+        billing_customer_id = customer_seat_pending.customer_id
+        member_id = customer_seat_pending.member_id
+        assert billing_customer_id is not None
+        assert member_id is not None
 
         with patch("polar.customer_seat.service.enqueue_job") as mock_enqueue_job:
             await seat_service.revoke_seat(session, customer_seat_pending)
 
-            mock_enqueue_job.assert_not_called()
+            mock_enqueue_job.assert_called_once()
+            kwargs = mock_enqueue_job.call_args.kwargs
+            assert kwargs["task"] == "revoke"
+            assert kwargs["customer_id"] == billing_customer_id
+            assert kwargs["member_id"] == member_id
 
     @pytest.mark.asyncio
     async def test_claim_seat_publishes_event(

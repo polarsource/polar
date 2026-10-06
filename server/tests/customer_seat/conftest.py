@@ -15,6 +15,7 @@ from polar.models.subscription import SubscriptionStatus
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_customer_seat,
+    create_member,
     create_order_with_seats,
     create_product,
     create_subscription_with_seats,
@@ -48,10 +49,22 @@ async def subscription_with_seats(
 async def customer_seat_pending(
     save_fixture: SaveFixture,
     subscription_with_seats: Subscription,
+    customer: Customer,
     session: AsyncSession,
 ) -> CustomerSeat:
+    # A pending seat points at the billing customer and carries the invited member.
+    member = await create_member(
+        save_fixture,
+        customer=customer,
+        organization=subscription_with_seats.product.organization,
+        email="seat-holder@example.com",
+    )
     seat = await create_customer_seat(
-        save_fixture, subscription=subscription_with_seats
+        save_fixture,
+        subscription=subscription_with_seats,
+        customer=customer,
+        member=member,
+        email="seat-holder@example.com",
     )
     await session.refresh(seat, ["subscription"])
     assert seat.subscription is not None
@@ -72,6 +85,7 @@ async def customer_seat_claimed(
         save_fixture,
         subscription=subscription_with_seats,
         customer=customer,
+        email=customer.email,
         status=SeatStatus.claimed,
         claimed_at=utc_now(),
     )

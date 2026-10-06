@@ -11,12 +11,14 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
+from polar.kit.versioning import version
 from polar.models import LicenseKey, LicenseKeyActivation
 from polar.models.license_key import LicenseKeyStatus
 from polar.openapi import APITag, cli_confirm, cli_preview
 from polar.organization.schemas import OrganizationID
 from polar.postgres import get_db_read_session, get_db_session
 from polar.routing import APIRouter
+from polar.version import V2027_01
 
 from . import auth
 from .repository import LicenseKeyRepository
@@ -30,6 +32,7 @@ from .schemas import (
     LicenseKeyRead,
     LicenseKeyUpdate,
     LicenseKeyValidate,
+    LicenseKeyWithActivationConditions,
     LicenseKeyWithActivations,
     NotFoundResponse,
     RotatedLicenseKey,
@@ -109,6 +112,34 @@ async def list(
     },
 )
 async def get(
+    auth_subject: auth.LicenseKeysRead,
+    id: UUID4,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> LicenseKey:
+    """Get a license key."""
+    lk = await license_key_service.get(session, auth_subject, id)
+    if not lk:
+        raise ResourceNotFound()
+
+    return lk
+
+
+@router.get(
+    "/{id}",
+    name="get",
+    summary="Get License Key",
+    openapi_extra=cli_preview(
+        ("id", "ID"), ("status", "Status"), ("customer_id", "Customer ID")
+    ),
+    response_model=LicenseKeyWithActivationConditions,
+    tags=[APITag.mcp, APITag.cli],
+    responses={
+        401: UnauthorizedResponse,
+        404: NotFoundResponse,
+    },
+)
+@version(starting_from=V2027_01)
+async def get_v2027_01(
     auth_subject: auth.LicenseKeysRead,
     id: UUID4,
     session: AsyncReadSession = Depends(get_db_read_session),

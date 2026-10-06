@@ -979,6 +979,9 @@ class TestClassifyRecords:
         assert items[0].status == PrecheckRecordStatus.importable
         assert items[0].reason_code == reason_code
         assert items[0].reason_level == PrecheckReasonLevel.info
+        assert items[0].payment_method_type == (
+            payment_method.type if payment_method is not None else None
+        )
 
     def test_payment_method_reentry_is_importable_with_info(self) -> None:
         records: list[CanonicalRecord] = [
@@ -999,6 +1002,7 @@ class TestClassifyRecords:
         assert items[0].status == PrecheckRecordStatus.importable
         assert items[0].reason_code == "payment_method_requires_reentry"
         assert items[0].reason_level == PrecheckReasonLevel.info
+        assert items[0].payment_method_type == CanonicalPaymentMethodType.link
 
     def test_skipped_record_carries_its_level(self) -> None:
         records: list[CanonicalRecord] = [

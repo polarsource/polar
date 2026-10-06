@@ -49,6 +49,9 @@ const PAYMENT_METHOD_TYPE_LABELS: Record<string, string> = {
   naver_pay: 'Naver Pay',
   samsung_pay: 'Samsung Pay',
   payco: 'PAYCO',
+  sepa_debit: 'SEPA Debit',
+  us_bank_account: 'ACH Debit',
+  bacs_debit: 'Bacs Debit',
 }
 
 const capitalize = (value: string): string =>

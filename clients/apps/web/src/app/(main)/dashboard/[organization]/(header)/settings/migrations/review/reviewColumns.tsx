@@ -55,8 +55,8 @@ export function buildReviewColumns({
     },
     {
       id: 'status',
-      size: 160,
-      header: 'Import',
+      size: 200,
+      header: 'Status',
       cell: ({ row }) => <ReviewStatusIndicator row={row.original} />,
     },
     {

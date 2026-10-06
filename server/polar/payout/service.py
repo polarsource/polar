@@ -1001,11 +1001,14 @@ class PayoutService:
         )
         assert payout_transaction is not None
 
-        account_currency_factor = (
-            get_currency_decimal_factor(payout.account_currency)
-            if payout_transaction.transfer_id is not None
-            else 100
-        )
+        account_currency = ""
+        account_payout_total: float | str = ""
+        if payout_transaction.transfer_id is not None:
+            account_currency = payout.account_currency
+            account_payout_total = abs(
+                payout.account_amount
+                / get_currency_decimal_factor(payout.account_currency)
+            )
 
         transaction_repository = TransactionRepository.from_session(session)
         statement = transaction_repository.get_paid_transactions_statement(
@@ -1065,8 +1068,8 @@ class PayoutService:
                         transaction.currency,
                         transaction.amount / 100,
                         abs(payout.amount / 100),
-                        payout.account_currency,
-                        abs(payout.account_amount / account_currency_factor),
+                        account_currency,
+                        account_payout_total,
                     )
                 )
 

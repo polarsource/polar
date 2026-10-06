@@ -1218,7 +1218,7 @@ class TestGetCSV:
         assert len(rows) == 1
         assert float(rows[0]["Account Payout Total"]) == expected_total
 
-    async def test_account_payout_total_before_transfer_zero_decimal(
+    async def test_account_columns_empty_before_transfer(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -1232,7 +1232,8 @@ class TestGetCSV:
         rows = await _get_csv_rows(session, payout)
 
         assert len(rows) == 1
-        assert float(rows[0]["Account Payout Total"]) == payout.account_amount / 100
+        assert rows[0]["Account Currency"] == ""
+        assert rows[0]["Account Payout Total"] == ""
 
 
 @pytest.mark.asyncio

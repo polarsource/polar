@@ -2296,6 +2296,12 @@ export interface components {
        * @default false
        */
       frame_ancestors_enforced: boolean
+      /**
+       * Billing Config Enabled
+       * @description If this organization can manage its meters from a declarative billing config.
+       * @default false
+       */
+      billing_config_enabled: boolean
     }
     /** OrganizationInviteEmail */
     OrganizationInviteEmail: {

@@ -6013,6 +6013,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/billing-config/apply': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Apply Billing Config
+     * @description Create or update the meters declared in a billing config.
+     *
+     *     **Scopes**: `meters:write`
+     */
+    post: operations['billing-config:apply']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organization-access-tokens/': {
     parameters: {
       query?: never
@@ -12783,6 +12805,63 @@ export interface components {
      * @enum {string}
      */
     BillingAddressFieldMode: 'required' | 'optional' | 'disabled'
+    /** BillingConfig */
+    BillingConfig: {
+      /**
+       * Version
+       * @description Version of the billing config schema.
+       * @constant
+       */
+      version: 1
+      /**
+       * Meters
+       * @description Meters to create or update, matched by `external_id`. Omitted fields are set to their default, except `metadata`, which is left untouched when omitted. Existing meters that aren't listed are left untouched.
+       */
+      meters?: components['schemas']['MeterConfig'][]
+      /**
+       * Organization Id
+       * @description The ID of the organization to apply the config to. **Required unless you use an organization token.**
+       */
+      organization_id?: string | null
+    }
+    /**
+     * BillingConfigAction
+     * @enum {string}
+     */
+    BillingConfigAction: 'created' | 'updated' | 'unchanged'
+    /** BillingConfigApplyResult */
+    BillingConfigApplyResult: {
+      /**
+       * Version
+       * @description Version of the billing config schema that was applied.
+       * @constant
+       */
+      version: 1
+      /** Meters */
+      meters: components['schemas']['MeterConfigResult'][]
+    }
+    /** BillingConfigConflict */
+    BillingConfigConflict: {
+      /**
+       * Error
+       * @example BillingConfigConflict
+       * @constant
+       */
+      error: 'BillingConfigConflict'
+      /** Detail */
+      detail: string
+    }
+    /** BillingConfigNotEnabled */
+    BillingConfigNotEnabled: {
+      /**
+       * Error
+       * @example BillingConfigNotEnabled
+       * @constant
+       */
+      error: 'BillingConfigNotEnabled'
+      /** Detail */
+      detail: string
+    }
     /**
      * BlockingOrganization
      * @description Organization that is blocking user deletion.
@@ -25779,6 +25858,72 @@ export interface components {
        */
       archived_at?: string | null
     }
+    /** MeterConfig */
+    MeterConfig: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Name
+       * @description The name of the meter. Will be shown on customer's invoices and usage.
+       */
+      name: string
+      /**
+       * @description The unit of the meter.
+       * @default scalar
+       */
+      unit: components['schemas']['MeterUnit']
+      /**
+       * Custom Label
+       * @description The label for the custom unit, e.g. 'request'. Required when unit is 'custom'.
+       */
+      custom_label?: string | null
+      /**
+       * Custom Multiplier
+       * @description The multiplier to convert from the base unit to display scale, e.g. 1000 to display per 1000 units. Defaults to 1 when not provided.
+       */
+      custom_multiplier?: number | null
+      /** @description The filter to apply on events that'll be used to calculate the meter. */
+      filter: components['schemas']['Filter']
+      /**
+       * Aggregation
+       * @description The aggregation to apply on the filtered events to calculate the meter.
+       */
+      aggregation:
+        | components['schemas']['CountAggregation']
+        | components['schemas']['PropertyAggregation']
+        | components['schemas']['UniqueAggregation']
+      /**
+       * External Id
+       * @description Your identifier for the meter. Used to match the config entry with an existing meter.
+       */
+      external_id: string
+    }
+    /** MeterConfigResult */
+    MeterConfigResult: {
+      /**
+       * External Id
+       * @description The external ID from the config entry.
+       */
+      external_id: string
+      /** @description What applying the config did to the meter. */
+      action: components['schemas']['BillingConfigAction']
+      meter: components['schemas']['Meter']
+    }
     /** MeterCreate */
     MeterCreate: {
       /**
@@ -29488,6 +29633,12 @@ export interface components {
        * @default false
        */
       frame_ancestors_enforced: boolean
+      /**
+       * Billing Config Enabled
+       * @description If this organization can manage its meters from a declarative billing config.
+       * @default false
+       */
+      billing_config_enabled: boolean
     }
     /**
      * OrganizationFeatureSettingsUpdate
@@ -61449,6 +61600,59 @@ export interface operations {
       }
     }
   }
+  'billing-config:apply': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BillingConfig']
+      }
+    }
+    responses: {
+      /** @description Billing config applied. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BillingConfigApplyResult']
+        }
+      }
+      /** @description Not allowed to manage this organization, or billing config isn't enabled for it. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['NotPermitted']
+            | components['schemas']['BillingConfigNotEnabled']
+        }
+      }
+      /** @description Another config apply created the same meter concurrently. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BillingConfigConflict']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'organization_access_tokens:list': {
     parameters: {
       query?: {
@@ -70032,6 +70236,9 @@ export const benefitVisibilityValues: ReadonlyArray<
 export const billingAddressFieldModeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BillingAddressFieldMode']
 > = ['required', 'optional', 'disabled']
+export const billingConfigActionValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BillingConfigAction']
+> = ['created', 'updated', 'unchanged']
 export const body_oauth2_consentActionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Body_oauth2_consent']['action']
 > = ['allow', 'deny']

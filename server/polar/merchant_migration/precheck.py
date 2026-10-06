@@ -196,8 +196,9 @@ _TAX_BEHAVIOR_UNSPECIFIED_REASON = (
 )
 _TRIALING_REASON = "On trial. Billing resumes on Polar when the trial ends."
 _PAYMENT_REENTRY_REASON = (
-    "The payment method can't be copied. It still moves to Polar, but its next "
-    "renewal fails and goes to dunning unless the customer re-enters their "
+    "The payment method can't be copied. It still moves to Polar, and renews "
+    "with another card copied for this customer if there is one. Otherwise its "
+    "next renewal fails and goes to dunning unless the customer re-enters their "
     "billing details first."
 )
 _PAYMENT_METHOD_MISSING_REASON = (

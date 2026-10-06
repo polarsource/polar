@@ -994,6 +994,8 @@ class TestClassifyRecords:
 
         assert items[0].status == PrecheckRecordStatus.importable
         assert items[0].reason_code == "payment_method_requires_reentry"
+        assert items[0].reason is not None
+        assert "another card copied" in items[0].reason
         assert items[0].reason_level == PrecheckReasonLevel.info
         assert items[0].payment_method_type == payment_method_type
 

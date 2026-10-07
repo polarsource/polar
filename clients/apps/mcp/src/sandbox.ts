@@ -1,7 +1,6 @@
 import { env } from 'cloudflare:workers'
 
 const SANDBOX_COMPATIBILITY_DATE = '2026-10-01'
-const MAX_RESULT_CHARS = 24_000
 
 interface SandboxEntrypoint {
   evaluate(): Promise<{ result?: string; error?: string }>
@@ -52,24 +51,5 @@ export default class Sandbox extends WorkerEntrypoint {
   if (error !== undefined) {
     throw new Error(error)
   }
-  return truncate(result ?? '')
+  return result ?? ''
 }
-
-const truncate = (text: string) =>
-  text.length <= MAX_RESULT_CHARS
-    ? text
-    : `${text.slice(0, MAX_RESULT_CHARS)}\n\n--- TRUNCATED ---\nThe result was ${text.length} characters (limit ${MAX_RESULT_CHARS}). Return fewer fields or items.`
-
-export const toolResult = (text: string) => ({
-  content: [{ type: 'text' as const, text }],
-})
-
-export const toolError = (error: unknown) => ({
-  content: [
-    {
-      type: 'text' as const,
-      text: `Error: ${error instanceof Error ? error.message : String(error)}`,
-    },
-  ],
-  isError: true,
-})

@@ -4,6 +4,7 @@ import {
 } from '@modelcontextprotocol/server'
 import { env } from 'cloudflare:workers'
 import { getBearerToken, isTokenValid, unauthorized } from './auth'
+import { detectClient, toolModeFor } from './clients'
 import { createServer } from './server'
 
 export { PolarApiOutbound } from './outbound'
@@ -33,6 +34,17 @@ const withCors = (response: Response) => {
     statusText: response.statusText,
     headers,
   })
+}
+
+const readJsonBody = async (request: Request) => {
+  if (request.method !== 'POST') {
+    return undefined
+  }
+  try {
+    return await request.clone().json()
+  } catch {
+    return undefined
+  }
 }
 
 const handle = async (request: Request): Promise<Response> => {
@@ -70,9 +82,11 @@ const handle = async (request: Request): Promise<Response> => {
   }
 
   const readOnly = url.searchParams.get('readonly') === 'true'
+  const body = await readJsonBody(request)
+  const toolMode = toolModeFor(url, detectClient(request, body))
   return createMcpHandler(() =>
-    createServer({ apiUrl, token, readOnly }),
-  ).fetch(request)
+    createServer({ apiUrl, token, readOnly }, toolMode),
+  ).fetch(request, { parsedBody: body })
 }
 
 export default {

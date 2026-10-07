@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/server'
 import { z } from 'zod'
-import { runInSandbox, toolError, toolResult } from '../sandbox'
+import { toolError, toolResult } from '../results'
+import { runInSandbox } from '../sandbox'
 import { spec } from '../spec'
 
 const SEARCH_LIMITS = { cpuMs: 5_000, subRequests: 0 }

@@ -2,7 +2,8 @@ import type { McpServer } from '@modelcontextprotocol/server'
 import { exports } from 'cloudflare:workers'
 import { z } from 'zod'
 import type { PolarApiOutboundProps } from '../outbound'
-import { runInSandbox, toolError, toolResult } from '../sandbox'
+import { toolError, toolResult } from '../results'
+import { runInSandbox } from '../sandbox'
 
 const EXECUTE_LIMITS = { cpuMs: 10_000, subRequests: 50 }
 

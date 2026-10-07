@@ -23,7 +23,11 @@ router = APIRouter(
 )
 
 
-@router.get("/", summary="List Refunds", response_model=ListResource[RefundSchema])
+@router.get(
+    "/",
+    summary="List Refunds",
+    response_model=ListResource[RefundSchema],
+)
 async def list(
     pagination: PaginationParamsQuery,
     sorting: RefundListSorting,

@@ -107,6 +107,7 @@ dev = [
   # "litellm==1.82.3",
   "pytest-split>=0.11.0",
   "openapi-kit>=0.3.1",
+  "httpx-ws>=0.9.0",
 ]
 
 [tool.taskipy.tasks]

@@ -1,4 +1,4 @@
-from collections.abc import Awaitable, Callable, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -42,18 +42,11 @@ class MeterChange:
         return ConfigAction.unchanged
 
 
-Rule = Callable[
-    [AsyncSession, Organization, list[MeterChange]], Awaitable[list[ConfigIssue]]
-]
-
-
 def _meter_loc(index: int, *path: str | int) -> Loc:
     return ["body", "meters", index, *path]
 
 
-async def unique_external_ids(
-    session: AsyncSession, organization: Organization, changes: list[MeterChange]
-) -> list[ConfigIssue]:
+def unique_external_ids(changes: list[MeterChange]) -> list[ConfigIssue]:
     seen: set[str] = set()
     issues: list[ConfigIssue] = []
     for change in changes:
@@ -72,9 +65,7 @@ async def unique_external_ids(
     return issues
 
 
-async def locked_meter_fields(
-    session: AsyncSession, organization: Organization, changes: list[MeterChange]
-) -> list[ConfigIssue]:
+def locked_meter_fields(changes: list[MeterChange]) -> list[ConfigIssue]:
     return [
         ConfigIssue(
             severity=ConfigIssueSeverity.error,
@@ -132,9 +123,6 @@ async def unknown_events(
     ]
 
 
-RULES: list[Rule] = [unique_external_ids, locked_meter_fields, unknown_events]
-
-
 def _get_meter_update_dict(meter: Meter, meter_config: ConfigMeter) -> dict[str, Any]:
     update_dict: dict[str, Any] = {}
     for field in _METER_FIELDS:
@@ -186,6 +174,8 @@ async def check(
         session, organization, config.meters, for_update=for_update
     )
     issues = [
-        issue for rule in RULES for issue in await rule(session, organization, changes)
+        *unique_external_ids(changes),
+        *locked_meter_fields(changes),
+        *await unknown_events(session, organization, changes),
     ]
     return changes, issues

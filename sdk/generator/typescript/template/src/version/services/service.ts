@@ -29,7 +29,7 @@ export const {{ method.name | exported_operation_name(service.name) }} = (
 {% endif %}
 * @param requestOptions - Request options
 {% if method.response_type == 'json' %}
-* @returns {{'{'}}{{ method.response | ts_type }}{{'}'}}
+* @returns {{'{'}}{{ method.response | ts_type }}{% if method.pending_response %} | undefined{% endif %}{{'}'}}{% if method.pending_response %} undefined means the receipt is still being generated.{% endif %}
 {% elif method.response_type == 'text' %}
 * @returns {string}
 {% else %}
@@ -56,7 +56,7 @@ export const {{ method.name | exported_operation_name(service.name) }} = (
     body: {{ method.body | ts_type }},
     {% endif %}
     requestOptions?: RequestOptions,
-  ): Promise<{{ method.response | ts_type if method.response_type == 'json' else 'string' if method.response_type == 'text' else 'void' }}> => {
+  ): Promise<{{ method.response | ts_type if method.response_type == 'json' else 'string' if method.response_type == 'text' else 'void' }}{% if method.pending_response %} | undefined{% endif %}> => {
     const pathParams = {
       {% for param in method.path_params %}"{{ param.name }}": {{ param.parameter_name }},{% endfor %}
     };
@@ -71,7 +71,7 @@ export const {{ method.name | exported_operation_name(service.name) }} = (
       {% if method.body %}body{% else %}undefined{% endif %}
     );
     const response = await client.sendRequest(request, requestOptions);
-    return client.parseResponse<{{ method.response | ts_type if method.response_type == 'json' else 'string' if method.response_type == 'text' else 'void' }}>(
+    return client.parseResponse<{{ method.response | ts_type if method.response_type == 'json' else 'string' if method.response_type == 'text' else 'void' }}{% if method.pending_response %} | undefined{% endif %}>(
       response,
       "{{ method.response_type }}",
       {

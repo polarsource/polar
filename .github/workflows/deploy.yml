@@ -319,7 +319,7 @@ jobs:
 
   deploy-lambda-test:
     name: "Deploy Lambda Worker to Test 🧰"
-    needs: [changes, build-lambda-worker]
+    needs: [changes, build-lambda-worker, deploy-test]
     if: always() && !failure() && !cancelled() && needs.build-lambda-worker.result == 'success' && needs.changes.outputs.test-enabled == 'true' && (needs.changes.outputs.backend-sandbox == 'true' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     permissions:
@@ -345,7 +345,7 @@ jobs:
 
   deploy-lambda-sandbox:
     name: "Deploy Lambda Worker to Sandbox 🧪"
-    needs: [changes, build-lambda-worker]
+    needs: [changes, build-lambda-worker, deploy-sandbox]
     if: always() && !failure() && !cancelled() && needs.build-lambda-worker.result == 'success' && (needs.changes.outputs.backend-sandbox == 'true' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     permissions:
@@ -371,7 +371,7 @@ jobs:
 
   deploy-lambda-production:
     name: "Deploy Lambda Worker to Production 🚀"
-    needs: [changes, build-lambda-worker, deploy-lambda-sandbox]
+    needs: [changes, build-lambda-worker, deploy-lambda-sandbox, deploy-production]
     if: always() && !failure() && !cancelled() && needs.build-lambda-worker.result == 'success' && (needs.changes.outputs.backend-production == 'true' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     permissions:

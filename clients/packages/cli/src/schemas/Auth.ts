@@ -24,7 +24,7 @@ export const Session = Schema.Struct({
   refreshToken: Schema.optional(
     Schema.RedactedFromValue(Schema.NonEmptyString),
   ),
-  expiresAt: Schema.Number,
+  expiresAt: Schema.Finite,
   scopes: Schema.Array(Schema.String),
 })
 export type Session = typeof Session.Type

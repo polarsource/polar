@@ -1,6 +1,6 @@
 node_modules
 dist
-bin 
+bin
 
 .env*
 
@@ -10,3 +10,5 @@ bin
 polar
 *.bun-build
 coverage
+
+polar.config.ts

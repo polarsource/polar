@@ -34,9 +34,9 @@ export const layer = Layer.sync(Credentials, () => {
           catch: () => unavailable(),
         })
         if (value == null) return undefined
-        return yield* Schema.decodeUnknownEffect(
-          Schema.fromJsonString(Session),
-        )(value).pipe(
+        return yield* Schema.decodeEffect(Schema.fromJsonString(Session))(
+          value,
+        ).pipe(
           Effect.mapError(
             () =>
               new AuthError({

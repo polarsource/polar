@@ -3,9 +3,9 @@ import { Schema, Struct } from 'effect'
 export const CreateProductPriceCustom = Schema.Struct({
   amountType: Schema.Literal('custom'),
   priceCurrency: Schema.Literal('USD').transform('usd'),
-  minimumAmount: Schema.optional(Schema.Number),
-  maximumAmount: Schema.optional(Schema.Number),
-  presetAmount: Schema.optional(Schema.Number),
+  minimumAmount: Schema.optional(Schema.Finite),
+  maximumAmount: Schema.optional(Schema.Finite),
+  presetAmount: Schema.optional(Schema.Finite),
 }).mapFields(Struct.map(Schema.mutableKey))
 
 export const CreateProductPriceFree = Schema.Struct({
@@ -15,7 +15,7 @@ export const CreateProductPriceFree = Schema.Struct({
 export const CreateProductPriceFixed = Schema.Struct({
   amountType: Schema.Literal('fixed'),
   priceCurrency: Schema.Literal('usd'),
-  priceAmount: Schema.Number,
+  priceAmount: Schema.Finite,
 }).mapFields(Struct.map(Schema.mutableKey))
 
 export const ProductCreate = Schema.Struct({

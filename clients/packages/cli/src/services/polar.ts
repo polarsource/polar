@@ -37,7 +37,7 @@ const isOrganizationNotAccessible = (body: unknown) =>
   )
 
 const ValidationIssue = Schema.Struct({
-  loc: Schema.Array(Schema.Union([Schema.String, Schema.Number])),
+  loc: Schema.Array(Schema.Union([Schema.String, Schema.Finite])),
   msg: Schema.String,
 })
 

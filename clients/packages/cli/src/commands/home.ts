@@ -78,12 +78,10 @@ const signedIn = Effect.gen(function* () {
   lines.push(ui.blank, `  ${ui.bold('Try next')}`, commandList(suggestions))
   return lines
 }).pipe(
-  Effect.catch(() =>
-    Effect.succeed([
-      ui.warning('Could not read your saved session'),
-      ui.step(`Run ${ui.command('polar auth whoami')} for details`),
-    ]),
-  ),
+  Effect.orElseSucceed(() => [
+    ui.warning('Could not read your saved session'),
+    ui.step(`Run ${ui.command('polar auth whoami')} for details`),
+  ]),
 )
 
 export const home = Effect.gen(function* () {

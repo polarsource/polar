@@ -13,8 +13,8 @@ import {
 
 export const Delivery = Schema.Struct({
   forwardUrl: Schema.String,
-  durationMs: Schema.Number,
-  status: Schema.optional(Schema.Number),
+  durationMs: Schema.Finite,
+  status: Schema.optional(Schema.Finite),
   statusText: Schema.optional(Schema.String),
   failure: Schema.optional(Schema.String),
   body: Schema.optional(Schema.String),

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { Console, Effect, Option, Stdio } from 'effect'
+import { Console, Effect, Stdio } from 'effect'
 import { FetchHttpClient } from 'effect/http'
 import {
   forwardTarget,
@@ -202,7 +202,7 @@ describe('listen command', () => {
   } as const
   const deliveries = Deliveries.of({
     record: () => Effect.void,
-    await: () => Effect.succeed(Option.none()),
+    await: () => Effect.succeedNone,
   })
   const run = (args: string[]) => {
     const cli = runCli(listen, args)

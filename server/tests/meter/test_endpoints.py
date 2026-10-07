@@ -5,7 +5,7 @@ import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.meter.repository import MeterRepository
-from polar.models import Meter, Organization, UserOrganization
+from polar.models import Meter, Organization, User, UserOrganization
 from polar.postgres import AsyncSession
 from polar.version import V2026_04, V2026_10, V2027_01
 from tests.fixtures.database import SaveFixture
@@ -106,6 +106,32 @@ class TestGetExternalMeter:
         response = await client.get("/v1/meters/external/tool_call")
 
         assert response.status_code == 404
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_ambiguous_across_organizations(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        user_organization: UserOrganization,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(user=user, organization=organization_second)
+        )
+        for org in (organization, organization_second):
+            await create_meter(
+                save_fixture,
+                id=uuid.uuid4(),
+                organization=org,
+                external_id="tool_call",
+            )
+
+        response = await client.get("/v1/meters/external/tool_call")
+
+        assert response.status_code == 409
 
     @pytest.mark.api_version(V2026_04, V2026_10)
     @pytest.mark.auth

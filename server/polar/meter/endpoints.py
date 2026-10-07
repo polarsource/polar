@@ -27,6 +27,7 @@ from polar.version import V2027_01
 from . import auth, sorting
 from .schemas import Meter as MeterSchema
 from .schemas import MeterCreate, MeterID, MeterQuantities, MeterUpdate
+from .service import AmbiguousExternalMeterID
 from .service import meter as meter_service
 
 router = APIRouter(
@@ -37,6 +38,12 @@ router = APIRouter(
 MeterNotFound = {
     "description": "Meter not found.",
     "model": ResourceNotFound.schema(),
+}
+
+AmbiguousExternalMeter = {
+    "description": "The external ID matches meters in several "
+    "accessible organizations.",
+    "model": AmbiguousExternalMeterID.schema(),
 }
 
 
@@ -82,7 +89,7 @@ async def list(
     summary="Get Meter by External ID",
     openapi_extra=cli_preview(("id", "ID"), ("name", "Name"), ("unit", "Unit")),
     response_model=MeterSchema,
-    responses={404: MeterNotFound},
+    responses={404: MeterNotFound, 409: AmbiguousExternalMeter},
 )
 @version(starting_from=V2027_01)
 async def get_external(

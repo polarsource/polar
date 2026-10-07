@@ -2100,6 +2100,20 @@ export interface AmbiguousExternalCustomerID {
 }
 
 /**
+ * AmbiguousExternalMeterID
+ */
+export interface AmbiguousExternalMeterID {
+  /**
+   * error
+   */
+  error: "AmbiguousExternalMeterID";
+  /**
+   * detail
+   */
+  detail: string;
+}
+
+/**
  * Schema of a custom field attached to a resource.
  */
 export interface AttachedCustomField {

@@ -12,7 +12,7 @@ import type {
   Timezone,
 } from "../models";
 
-import { HTTPValidationError, ResourceNotFound } from "../errors";
+import { AmbiguousExternalMeterID, HTTPValidationError, ResourceNotFound } from "../errors";
 
 export const listMeters = (client: ClientBase) => {
   /**
@@ -137,6 +137,7 @@ export const getExternalMeters = (client: ClientBase) => {
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Meter not found.
+   * @throws {AmbiguousExternalMeterID} The external ID matches meters in several accessible organizations.
    * @throws {HTTPValidationError} Validation Error
    */
   return async (external_id: string, requestOptions?: RequestOptions): Promise<Meter> => {
@@ -154,6 +155,7 @@ export const getExternalMeters = (client: ClientBase) => {
     const response = await client.sendRequest(request, requestOptions);
     return client.parseResponse<Meter>(response, "json", {
       404: ResourceNotFound,
+      409: AmbiguousExternalMeterID,
       422: HTTPValidationError,
     });
   };

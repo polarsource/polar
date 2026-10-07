@@ -394,6 +394,10 @@ def test_generator_registers_unicode_fallback_fonts(invoice: Invoice) -> None:
     assert generator.get_fallback_font("م", style="B") == (
         f"{generator.arabic_font_name}B"
     )
+    assert generator.get_fallback_font("ก") == generator.thai_font_name
+    assert generator.get_fallback_font("ก", style="B") == (
+        f"{generator.thai_font_name}B"
+    )
     if InvoiceGenerator.has_cjk_fallback_fonts():
         # Default invoice has a US customer, so the SC family is preferred
         # first; characters shared across scripts (Han) resolve to it. KR is

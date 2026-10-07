@@ -184,7 +184,7 @@ class TestDelete:
         assert response.status_code in (200, 303)
         stripe_mock.delete_account.assert_awaited_once_with(payout_account.stripe_id)
 
-    async def test_post_deletes_a_paid_out_payout_account(
+    async def test_post_refuses_a_paid_out_payout_account(
         self,
         backoffice_client: httpx.AsyncClient,
         mocker: MockerFixture,
@@ -203,8 +203,6 @@ class TestDelete:
         )
 
         stripe_mock = mocker.patch("polar.payout_account.service.stripe")
-        stripe_mock.account_exists = mocker.AsyncMock(return_value=True)
-        stripe_mock.retrieve_balance = mocker.AsyncMock(return_value=(0, 0))
         stripe_mock.delete_account = mocker.AsyncMock(return_value=None)
 
         response = await backoffice_client.post(
@@ -212,8 +210,8 @@ class TestDelete:
             data={"reason": "Merchant closed account"},
         )
 
-        assert response.status_code in (200, 303)
-        stripe_mock.delete_account.assert_awaited_once_with(payout_account.stripe_id)
+        assert response.status_code == 409
+        stripe_mock.delete_account.assert_not_awaited()
 
     async def test_post_refuses_when_still_linked_to_organization(
         self,

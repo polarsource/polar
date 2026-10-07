@@ -1907,8 +1907,8 @@ class TestCancelHeldPayout:
 
 
 @pytest.mark.asyncio
-class TestCountPendingByPayoutAccount:
-    async def test_includes_held(
+class TestCountByPayoutAccount:
+    async def test_excludes_canceled(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -1936,7 +1936,6 @@ class TestCountPendingByPayoutAccount:
             )
 
         repository = PayoutRepository.from_session(session)
-        count = await repository.count_pending_by_payout_account(payout_account.id)
+        count = await repository.count_by_payout_account(payout_account.id)
 
-        # held + pending + in_transit reserve funds; succeeded/canceled do not.
-        assert count == 3
+        assert count == 4

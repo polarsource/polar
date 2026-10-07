@@ -14,7 +14,6 @@ from polar.payout_account.schemas import (
 )
 from polar.payout_account.service import (
     PayoutAccountHasPayouts,
-    PayoutAccountHasPendingPayouts,
     PayoutAccountLinkedToOrganization,
     PayoutAccountNonZeroBalance,
     PayoutAccountStripeAccountDoesNotExist,
@@ -456,7 +455,7 @@ class TestUnlinkAndMaybeDelete:
             attempts=[PayoutAttemptStatus.pending],
         )
 
-        with pytest.raises(PayoutAccountHasPendingPayouts):
+        with pytest.raises(PayoutAccountHasPayouts):
             await payout_account_service.unlink_and_maybe_delete(session, organization)
 
         await session.refresh(organization)

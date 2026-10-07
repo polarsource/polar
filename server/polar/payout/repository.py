@@ -88,24 +88,10 @@ class PayoutRepository(
         )
         return await self.get_one_or_none(statement)
 
-    async def count_pending_by_payout_account(self, payout_account_id: UUID) -> int:
-        statement = self.get_base_statement().where(
-            Payout.payout_account_id == payout_account_id,
-            Payout.status.in_(
-                {
-                    # held reserves funds like pending, so it must count here
-                    # too (otherwise the payout account could be deleted).
-                    PayoutStatus.held,
-                    PayoutStatus.pending,
-                    PayoutStatus.in_transit,
-                }
-            ),
-        )
-        return await self.count(statement)
-
     async def count_by_payout_account(self, payout_account_id: UUID) -> int:
         statement = self.get_base_statement().where(
-            Payout.payout_account_id == payout_account_id
+            Payout.payout_account_id == payout_account_id,
+            Payout.status != PayoutStatus.canceled,
         )
         return await self.count(statement)
 

@@ -10,6 +10,7 @@ export const ServerError = Schema.Struct({
   loc: ServerPath,
   msg: Schema.String,
   input: Schema.optional(Schema.Unknown),
+  ctx: Schema.optionalKey(Schema.Record(Schema.String, Schema.Unknown)),
 })
 
 export const ApiError = Schema.Struct({ error: Schema.String })

@@ -8,7 +8,7 @@ import type {
   LoadedConfig,
 } from '@/schemas/BillingConfig'
 import { Auth } from '@/services/auth'
-import { BillingConfig } from '@/services/billing-config'
+import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
 import { runCli, stripAnsi } from '@/utils/test-utils/cli'
 import { fakeAuth, fakeOrganizations } from '@/utils/test-utils/services'
@@ -168,9 +168,7 @@ describe('polar config apply', () => {
     expect(output).toContain(
       'polar.json applied: 2 entries (1 created, 0 updated, 1 unchanged)',
     )
-    expect(output).toMatch(
-      /Finished in \d+ms on polar.json\. Applied to Acme \(sandbox\)\./,
-    )
+    expect(output).toMatch(/Applying config \d+ms/)
   })
 
   test('fails and shows the problems when the config is rejected', async () => {
@@ -189,7 +187,6 @@ describe('polar config apply', () => {
     expect(failed).toBe(true)
     expect(output).toContain('Error: Cannot change "filter" of meters.0')
     expect(output).toContain('Found 1 error.')
-    expect(output).toContain('Nothing applied to Acme (sandbox).')
     expect(output).not.toContain('applied:')
   })
 })

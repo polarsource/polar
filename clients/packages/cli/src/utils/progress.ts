@@ -44,7 +44,7 @@ const make = (interactive: boolean) => {
       if (!interactive) return
       const startedAt = Date.now()
       const elapsed = () =>
-        `${text}… ${ui.dim(formatDuration(Duration.millis(Date.now() - startedAt)))}`
+        `${text} ${ui.dim(formatDuration(Duration.millis(Date.now() - startedAt)))}`
       spinner.start(elapsed())
       timer = setInterval(() => {
         spinner.text = elapsed()

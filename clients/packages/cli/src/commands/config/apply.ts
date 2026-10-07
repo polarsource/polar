@@ -2,15 +2,14 @@ import { Console, Duration, Effect, Option } from 'effect'
 import { Argument, Command } from 'effect/cli'
 import { formatProblems, plural } from '@/commands/config/problems'
 import { org } from '@/commands/flags'
-import type { ActiveOrganization } from '@/schemas/Auth'
 import {
   type AppliedEntry,
   BillingConfigError,
   type LoadedConfig,
 } from '@/schemas/BillingConfig'
-import { BillingConfig } from '@/services/billing-config'
+import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
-import { formatDuration, withProgress } from '@/utils/progress'
+import { withProgress } from '@/utils/progress'
 import * as ui from '@/utils/ui'
 
 const file = Argument.String('file').pipe(
@@ -32,7 +31,24 @@ const bySection = (entries: ReadonlyArray<AppliedEntry>) =>
     entries: entries.filter((entry) => entry.section === section),
   }))
 
-export const formatEntries = (entries: ReadonlyArray<AppliedEntry>) => {
+type Labels = Record<AppliedEntry['action'], string>
+
+export const DONE: Labels = {
+  created: 'created',
+  updated: 'updated',
+  unchanged: 'unchanged',
+}
+
+export const PLANNED: Labels = {
+  created: 'will be created',
+  updated: 'will be updated',
+  unchanged: 'unchanged',
+}
+
+export const formatEntries = (
+  entries: ReadonlyArray<AppliedEntry>,
+  labels: Labels = DONE,
+) => {
   const width = Math.max(...entries.map((entry) => entry.id.length))
   return bySection(entries)
     .map(({ section, entries }) =>
@@ -40,7 +56,7 @@ export const formatEntries = (entries: ReadonlyArray<AppliedEntry>) => {
         `${ui.INDENT}${ui.bold(section)}`,
         ...entries.map(
           (entry) =>
-            `${ui.INDENT}${ui.INDENT}${MARKS[entry.action]} ${entry.id.padEnd(width)}  ${ui.dim(entry.action)}`,
+            `${ui.INDENT}${ui.INDENT}${MARKS[entry.action]} ${entry.id.padEnd(width)}  ${ui.dim(labels[entry.action])}`,
         ),
       ].join('\n'),
     )
@@ -63,40 +79,28 @@ export const applied = (
     `${config.file} applied: ${plural(entries.length, 'entry', 'entries')} (${tally(entries)})`,
   )
 
-export const finished = (
-  duration: Duration.Duration,
-  config: LoadedConfig,
-  organization: ActiveOrganization,
-  outcome: 'applied' | 'rejected',
-) =>
-  ui.dim(
-    `${ui.INDENT}Finished in ${Math.round(Duration.toMillis(duration))}ms on ${config.file}. ${outcome === 'applied' ? 'Applied to' : 'Nothing applied to'} ${ui.bold(organization.name)} ${ui.dim(`(${organization.environment})`)}.`,
-  )
-
 export const apply = Command.make('apply', { file, org }, ({ file, org }) =>
   Effect.gen(function* () {
     const billing = yield* BillingConfig
-    const [duration, { config, organization, result }] = yield* Effect.timed(
-      withProgress((progress) =>
-        Effect.gen(function* () {
-          yield* progress.start('Reading config')
-          const config = yield* billing.load(Option.getOrUndefined(file))
-          yield* progress.finish(config.file)
-          yield* progress.start('Resolving organization')
-          const organization = yield* (yield* Organizations).resolve(
-            Option.getOrUndefined(org),
-          )
-          yield* progress.finish(
-            `${organization.name} (${organization.environment})`,
-          )
-          yield* progress.start('Applying config')
-          const [elapsed, result] = yield* Effect.timed(
-            billing.apply(config, organization),
-          )
-          yield* progress.finish(formatDuration(elapsed))
-          return { config, organization, result }
-        }),
-      ),
+    const { config, result } = yield* withProgress((progress) =>
+      Effect.gen(function* () {
+        yield* progress.start('Reading config')
+        const config = yield* billing.load(Option.getOrUndefined(file))
+        yield* progress.finish(config.file)
+        yield* progress.start('Resolving organization')
+        const organization = yield* (yield* Organizations).resolve(
+          Option.getOrUndefined(org),
+        )
+        yield* progress.finish(
+          `${organization.name} (${organization.environment})`,
+        )
+        yield* progress.start('Applying config')
+        const [elapsed, result] = yield* Effect.timed(
+          billing.apply(config, organization),
+        )
+        yield* progress.finish(`${Math.round(Duration.toMillis(elapsed))}ms`)
+        return { config, organization, result }
+      }),
     )
     yield* Console.log(ui.blank)
     if (result.status === 'rejected') {
@@ -105,7 +109,6 @@ export const apply = Command.make('apply', { file, org }, ({ file, org }) =>
       yield* Console.log(
         `${ui.INDENT}Found ${plural(result.issues.length, 'error')}.`,
       )
-      yield* Console.log(finished(duration, config, organization, 'rejected'))
       return yield* new BillingConfigError({
         message: `${config.file} was not applied`,
       })
@@ -115,7 +118,6 @@ export const apply = Command.make('apply', { file, org }, ({ file, org }) =>
       yield* Console.log(ui.blank)
     }
     yield* Console.log(applied(config, result.entries))
-    yield* Console.log(finished(duration, config, organization, 'applied'))
   }),
 ).pipe(
   Command.withDescription(

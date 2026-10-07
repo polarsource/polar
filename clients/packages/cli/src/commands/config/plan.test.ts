@@ -3,7 +3,7 @@ import { Effect } from 'effect'
 import { plan } from '@/commands/config/plan'
 import type { LoadedConfig, PlanResult } from '@/schemas/BillingConfig'
 import { Auth } from '@/services/auth'
-import { BillingConfig } from '@/services/billing-config'
+import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
 import { runCli, stripAnsi } from '@/utils/test-utils/cli'
 import { fakeAuth, fakeOrganizations } from '@/utils/test-utils/services'
@@ -80,14 +80,12 @@ describe('polar config plan', () => {
   test('shows the changes and succeeds with warnings', async () => {
     const { output, failed } = await run({ entries, issues: [warning] })
     expect(failed).toBe(false)
-    expect(output).toContain('+ tool-calls  created')
+    expect(output).toContain('+ tool-calls  will be created')
     expect(output).toContain(
       'Warning: No events with this name have been received yet.',
     )
     expect(output).toContain('Found 0 errors and 1 warning.')
-    expect(output).toMatch(
-      /Finished in \d+ms on polar.json\. Planned against Acme \(sandbox\)\./,
-    )
+    expect(output).toMatch(/Checking config \d+ms/)
   })
 
   test('reports a config that can be applied as is', async () => {
@@ -102,7 +100,7 @@ describe('polar config plan', () => {
       issues: [locked, warning],
     })
     expect(failed).toBe(true)
-    expect(output).toContain('+ tool-calls  created')
+    expect(output).toContain('+ tool-calls  will be created')
     expect(output).toContain('Error: Cannot change "filter" of meters.0')
     expect(output).toContain('Warning:')
     expect(output).toContain('Found 1 error and 1 warning.')

@@ -32,6 +32,7 @@ from polar.models import (
     BillingEntry,
     Customer,
     Event,
+    EventSequence,
     Meter,
     MeterEvent,
 )
@@ -584,3 +585,21 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         cte = get_timestamp_series_cte(start_timestamp, end_timestamp, interval)
         result = await self.session.execute(select(cte.c.timestamp))
         return [row[0] for row in result.all()]
+
+    async def next_ingest_sequence(self, organization_id: UUID) -> int:
+        """
+        Atomically hand out the organization's next sequence number. The row stays
+        locked until the transaction commits, so an organization's ingestions take
+        their numbers and commit in the same order.
+        """
+        statement = (
+            insert(EventSequence)
+            .values(organization_id=organization_id, last_sequence=1)
+            .on_conflict_do_update(
+                index_elements=[EventSequence.organization_id],
+                set_={"last_sequence": EventSequence.last_sequence + 1},
+            )
+            .returning(EventSequence.last_sequence)
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one()

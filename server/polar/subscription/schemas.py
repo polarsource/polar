@@ -219,6 +219,8 @@ class SubscriptionMeter(SubscriptionMeterBase):
 class PendingSubscriptionUpdate(IDSchema, TimestampedSchema):
     """Pending update to be applied to a subscription at the beginning of the next period."""
 
+    model_config = ConfigDict(json_schema_serialization_defaults_required=True)
+
     applies_at: datetime = Field(
         description="The date and time when the subscription update will be applied."
     )

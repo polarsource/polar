@@ -32382,7 +32382,7 @@ export interface components {
        * Discount Id
        * @description ID of the new discount to apply to the subscription. If `null`, the subscription keeps its current discount.
        */
-      discount_id?: string | null
+      discount_id: string | null
       /**
        * Discount Unset
        * @description Whether the subscription's current discount will be removed.

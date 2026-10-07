@@ -700,6 +700,8 @@ class TestSlackSubscriptionPayload:
                     product_id=new_product_id,
                     seats=None,
                     units=None,
+                    discount_id=None,
+                    discount_unset=False,
                 ),
             ),
         )
@@ -732,6 +734,8 @@ class TestSlackSubscriptionPayload:
                     product_id=uuid4(),
                     seats=None,
                     units=None,
+                    discount_id=None,
+                    discount_unset=False,
                 ),
             ),
         )
@@ -805,6 +809,8 @@ class TestDiscordSubscriptionPayload:
                     product_id=new_product_id,
                     seats=None,
                     units=None,
+                    discount_id=None,
+                    discount_unset=False,
                 ),
             ),
         )
@@ -837,6 +843,8 @@ class TestDiscordSubscriptionPayload:
                     product_id=uuid4(),
                     seats=None,
                     units=None,
+                    discount_id=None,
+                    discount_unset=False,
                 ),
             ),
         )

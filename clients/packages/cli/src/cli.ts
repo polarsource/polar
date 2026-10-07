@@ -4,7 +4,7 @@ import { CliConfig, Command } from 'effect/cli'
 import { FetchHttpClient } from 'effect/http'
 import { builtIns, program } from '@/program'
 import { stdoutConsole } from '@/utils/console'
-import { describeError } from '@/utils/errors'
+import { describeError, errorJson } from '@/utils/errors'
 import * as ApiRuntime from '@/api-runtime'
 import * as Auth from '@/services/auth'
 import * as BillingConfig from '@/services/billing-config/service'
@@ -73,10 +73,15 @@ const reportError = (cause: Cause.Cause<unknown>) => {
   if (Cause.hasInterruptsOnly(cause)) return Effect.void
   const error = Cause.squash(cause)
   if (!Runtime.getErrorReported(error)) return Effect.void
-  const { title, hint } = describeError(error)
   return Effect.gen(function* () {
+    const args = yield* (yield* Stdio.Stdio).args
+    const { title, hint } = describeError(error)
     yield* Effect.sync(() => {
-      process.stderr.write(`\n${ui.failure(title, hint)}\n\n`)
+      process.stderr.write(
+        args.includes('--json')
+          ? `${errorJson(error)}\n`
+          : `\n${ui.failure(title, hint)}\n\n`,
+      )
     })
     yield* Effect.logDebug(cause)
   })
@@ -107,7 +112,7 @@ if (process.argv[2] === Telemetry.SENDER_COMMAND) {
 } else {
   removeRetiredBinary()
   const latestVersion = availableUpdate()
-  if (latestVersion) {
+  if (latestVersion && !process.argv.includes('--json')) {
     process.stderr.write(ui.updateNotice(VERSION, latestVersion))
   }
   Effect.runFork(checkForUpdate().pipe(Effect.provide(FetchHttpClient.layer)))

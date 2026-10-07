@@ -174,8 +174,8 @@ describe('trigger', () => {
     })
   })
 
-  test('prints the payload instead of delivering with --json', async () => {
-    const { promise, output } = run(['order.created', '--json'])
+  test('prints the payload instead of delivering with --dry-run', async () => {
+    const { promise, output } = run(['order.created', '--dry-run'])
     await promise
 
     expect(trigger.state.sent[0]?.request.deliver).toBe(false)
@@ -183,6 +183,17 @@ describe('trigger', () => {
       type: 'order.created',
       data: { id: 'ord-1' },
     })
+  })
+
+  test('delivers and reports the result as JSON with --json', async () => {
+    const { promise, output } = run(['order.created', '--json'])
+    await promise
+
+    expect(trigger.state.sent[0]?.request.deliver).toBe(true)
+    const result = JSON.parse(output())
+    expect(result.kind).toBe('sent')
+    expect(result.event).toBe('order.created')
+    expect(result.webhookEventId).toBeTypeOf('string')
   })
 
   test('lets you pick an event interactively', async () => {

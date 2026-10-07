@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'vitest'
-import { Console, Effect } from 'effect'
-import { home } from '@/commands/home'
+import { Effect } from 'effect'
+import { polar } from '@/commands/home'
 import { AuthError, type ActiveOrganization } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
 import { Organizations } from '@/services/organizations'
-import { captureConsole } from '@/utils/test-utils/cli'
+import { runCli, stripAnsi } from '@/utils/test-utils/cli'
 import {
   fakeAuth,
   fakeOrganizations,
@@ -23,14 +23,13 @@ const render = (
   auth: ReturnType<typeof fakeAuth>,
   organizations: ReturnType<typeof fakeOrganizations>,
 ) => {
-  const { lines, console } = captureConsole()
+  const cli = runCli(polar, [])
   return Effect.runPromise(
-    home.pipe(
+    cli.effect.pipe(
       Effect.provideService(Auth, auth.auth),
       Effect.provideService(Organizations, organizations.organizations),
-      Effect.provideService(Console.Console, console),
     ),
-  ).then(() => lines.join('\n'))
+  ).then(() => stripAnsi(cli.output()))
 }
 
 describe('home', () => {

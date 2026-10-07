@@ -56,6 +56,18 @@ const unionTag = (error: typeof ServerError.Type) => {
   }
 }
 
+const valueAt = (input: unknown, path: Path): unknown =>
+  path.reduce<unknown>(
+    (current, segment) =>
+      typeof current === 'object' && current !== null
+        ? (current as Record<string | number, unknown>)[segment]
+        : undefined,
+    input,
+  )
+
+const supplied = (config: LoadedConfig, path: Path, input: unknown) =>
+  input === null ? valueAt(config.input, path) === null : input !== undefined
+
 const issue = (
   config: LoadedConfig,
   error: typeof ServerError.Type,
@@ -63,7 +75,8 @@ const issue = (
   const loc = error.loc[0] === 'body' ? error.loc.slice(1) : error.loc
   const tag = unionTag(error)
   const path = tag ? [...loc, tag.key] : loc
-  const got = tag ? tag.value : error.input
+  const raw = tag ? tag.value : error.input
+  const got = supplied(config, path, raw) ? raw : undefined
   return {
     severity: error.severity ?? 'error',
     code: error.type,

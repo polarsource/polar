@@ -10,6 +10,7 @@
     "polar-cli/command-boundaries": "error",
     "polar-cli/command-descriptions": "error",
     "polar-cli/commands-only": "error",
+    "polar-cli/commands-output-json": "error",
     "polar-cli/no-ansi-escapes": "error",
     "polar-cli/no-effect-run-outside-entrypoint": "error",
     "polar-cli/no-hardcoded-hosts": "error",

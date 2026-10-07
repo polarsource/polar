@@ -11,6 +11,7 @@ import {
 } from 'effect'
 import { Command } from 'effect/cli'
 import { Environment as ApiEnvironment } from '@/services/api'
+import { Output } from '@/utils/output'
 
 export const stripAnsi = (text: string) => Bun.stripANSI(text)
 
@@ -98,10 +99,10 @@ export const runCli = <Name extends string, Input, E, R, ContextInput>(
   const { lines, console } = captureConsole()
   const frames: string[] = []
   const interactive = options.interactive ?? false
-  const effect = Command.runWith(command, {
-    version: '0.0.0',
-    renderErrors: false,
-  })(args).pipe(
+  const effect = Command.runWith(
+    command.pipe(Command.withGlobalFlags([Output])),
+    { version: '0.0.0', renderErrors: false },
+  )(args).pipe(
     Effect.provideService(
       Terminal.Terminal,
       scriptedTerminal(options.input ?? [], frames),

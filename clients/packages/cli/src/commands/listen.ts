@@ -1,7 +1,9 @@
 import { connect } from 'node:net'
-import { Console, Effect, Option, Stdio } from 'effect'
+import { Effect, Option } from 'effect'
 import { Argument, Command, Flag } from 'effect/cli'
+import { type Emit, streaming } from '@/utils/command'
 import { org } from '@/utils/flags'
+import { withTerminalTitle } from '@/utils/terminal-title'
 import {
   type ListenEvent,
   ListenError,
@@ -12,11 +14,6 @@ import * as ui from '@/utils/ui'
 import { redactUrl } from '@/utils/url'
 
 const EVENT_TYPE_WIDTH = 28
-
-const printError = (line: string) =>
-  Effect.sync(() => {
-    process.stderr.write(`${line}\n`)
-  })
 
 const eventLine = (eventType: string, outcome: string, durationMs: number) =>
   `  ${ui.timestamp()}  ${ui.cyan(eventType.padEnd(EVENT_TYPE_WIDTH))}  ${outcome}  ${ui.duration(durationMs)}`
@@ -43,29 +40,39 @@ const banner = (organizationName: string, secret: string, forwardUrl: string) =>
     ui.blank,
   ].join('\n')
 
-export const renderEvent = (organizationName: string, forwardUrl: string) => {
+export const renderEvent = (
+  emit: Emit,
+  organizationName: string,
+  forwardUrl: string,
+) => {
   const shownUrl = redactUrl(forwardUrl)
   return (event: ListenEvent) => {
     switch (event._tag) {
       case 'Connected':
-        return Console.log(banner(organizationName, event.secret, shownUrl))
+        return emit.out(banner(organizationName, event.secret, shownUrl), {
+          ...event,
+          organization: organizationName,
+          forwardUrl: shownUrl,
+        })
       case 'Undecodable':
-        return printError(decodeFailure(event.key))
+        return emit.err(decodeFailure(event.key), event)
       case 'Forwarded':
-        return Console.log(
+        return emit.out(
           eventLine(
             event.eventType,
             ui.statusCode(event.status, event.statusText),
             event.durationMs,
           ),
+          event,
         )
       case 'ForwardFailed':
-        return printError(
+        return emit.err(
           eventLine(
             event.eventType,
             ui.red(`failed  ${event.reason}`),
             event.durationMs,
           ),
+          event,
         )
     }
   }
@@ -121,20 +128,6 @@ export const probeTarget = (url: URL) =>
     return Effect.sync(() => socket.destroy())
   })
 
-export const withTerminalTitle = <A, E, R>(
-  title: string,
-  effect: Effect.Effect<A, E, R>,
-) =>
-  Effect.gen(function* () {
-    const stdio = yield* Stdio.Stdio
-    if (!(yield* stdio.stdoutIsTerminal)) return yield* effect
-    return yield* Effect.acquireUseRelease(
-      Effect.sync(() => process.stdout.write(ui.pushTitle(title))),
-      () => effect,
-      () => Effect.sync(() => process.stdout.write(ui.popTitle)),
-    )
-  })
-
 const url = Argument.String('url').pipe(
   Argument.withDescription(
     'Where to forward webhook events: a port like 3000, or a URL like http://localhost:3000/api/webhooks',
@@ -149,13 +142,14 @@ const printSecret = Flag.Boolean('print-secret').pipe(
   ),
 )
 
-const printOrganizationSecret = (id: string | undefined) =>
+const printOrganizationSecret = (emit: Emit, id: string | undefined) =>
   Effect.gen(function* () {
     const organization = yield* (yield* Organizations).resolve(id)
-    yield* Console.log(organization.id.replaceAll('-', ''))
+    const secret = organization.id.replaceAll('-', '')
+    yield* emit.out(secret, { secret })
   })
 
-const listenCommand = (url: string, org: string | undefined) =>
+const listenCommand = (emit: Emit, url: string, org: string | undefined) =>
   Effect.gen(function* () {
     const target = forwardTarget(url)
     if (!target) {
@@ -173,10 +167,15 @@ const listenCommand = (url: string, org: string | undefined) =>
     }
     const organization = yield* (yield* Organizations).resolve(org)
     if (status === 'refused') {
-      yield* Console.log(ui.blank)
-      yield* Console.log(ui.warning(`Nothing is running on ${target.host} yet`))
-      yield* Console.log(
-        ui.step('Start your server, events that arrive before then will fail'),
+      yield* emit.err(
+        [
+          ui.blank,
+          ui.warning(`Nothing is running on ${target.host} yet`),
+          ui.step(
+            'Start your server, events that arrive before then will fail',
+          ),
+        ].join('\n'),
+        { _tag: 'TargetDown', host: target.host },
       )
     }
     return yield* withTerminalTitle(
@@ -184,28 +183,12 @@ const listenCommand = (url: string, org: string | undefined) =>
       startListening({
         organization,
         forwardUrl: target.href,
-        onEvent: renderEvent(organization.name, target.href),
+        onEvent: renderEvent(emit, organization.name, target.href),
       }),
     )
   })
 
-export const listen = Command.make(
-  'listen',
-  { url, org, printSecret },
-  ({ url, org, printSecret }) =>
-    Effect.gen(function* () {
-      const organizationId = Option.getOrUndefined(org)
-      if (printSecret) return yield* printOrganizationSecret(organizationId)
-      if (Option.isNone(url)) {
-        return yield* new ListenError({
-          code: 0,
-          message:
-            'Pass a port or URL to forward events to, e.g. polar listen 3000.',
-        })
-      }
-      return yield* listenCommand(url.value, organizationId)
-    }),
-).pipe(
+export const listen = Command.make('listen', { url, org, printSecret }).pipe(
   Command.withDescription(
     'Forward webhook events for an organization to a local URL',
   ),
@@ -228,4 +211,19 @@ export const listen = Command.make(
         'Print the signing secret, e.g. for POLAR_WEBHOOK_SECRET in .env',
     },
   ]),
+  streaming(({ url, org, printSecret }, emit) =>
+    Effect.gen(function* () {
+      const organizationId = Option.getOrUndefined(org)
+      if (printSecret)
+        return yield* printOrganizationSecret(emit, organizationId)
+      if (Option.isNone(url)) {
+        return yield* new ListenError({
+          code: 0,
+          message:
+            'Pass a port or URL to forward events to, e.g. polar listen 3000.',
+        })
+      }
+      return yield* listenCommand(emit, url.value, organizationId)
+    }),
+  ),
 )

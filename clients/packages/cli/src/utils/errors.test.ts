@@ -1,7 +1,7 @@
 import { ApiCommandError } from '@polar-sh/cli-commands'
 import { describe, expect, test } from 'vitest'
 import { ListenError } from '@/services/listen'
-import { TriggerError } from '@/services/trigger'
+import { TriggerError } from '@/schemas/Trigger'
 import { UpdateError } from '@/services/update'
 import { describeError } from '@/utils/errors'
 import { AuthError } from '@/schemas/Auth'

@@ -1,5 +1,5 @@
 import { Effect } from 'effect'
-import { TriggerError } from '@/services/trigger'
+import { TriggerError } from '@/schemas/Trigger'
 
 type Override = readonly [path: string, value: unknown]
 

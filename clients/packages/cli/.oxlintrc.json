@@ -14,14 +14,19 @@
     "polar-cli/no-effect-run-outside-entrypoint": "error",
     "polar-cli/no-hardcoded-hosts": "error",
     "polar-cli/no-process-env": "error",
+    "polar-cli/schemas-are-pure": "error",
+    "polar-cli/service-facade": "error",
     "polar-cli/service-boundaries": "error",
-    "polar-cli/test-colocation": "error"
+    "polar-cli/test-colocation": "error",
+    "polar-cli/utils-boundaries": "error",
+    "no-console": "error"
   },
   "overrides": [
     {
       "files": ["scripts/**"],
       "rules": {
-        "polar-cli/no-effect-run-outside-entrypoint": "off"
+        "polar-cli/no-effect-run-outside-entrypoint": "off",
+        "no-console": "off"
       }
     }
   ]

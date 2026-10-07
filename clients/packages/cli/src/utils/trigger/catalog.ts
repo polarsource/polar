@@ -1,4 +1,4 @@
-import type { TriggerEvent } from '@/services/trigger'
+import type { TriggerEvent } from '@/schemas/Trigger'
 import * as ui from '@/utils/ui'
 
 export const formatCatalog = (events: ReadonlyArray<TriggerEvent>) => {

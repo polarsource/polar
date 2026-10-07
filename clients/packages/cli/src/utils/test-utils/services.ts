@@ -17,11 +17,10 @@ import { Polar } from '@/services/polar'
 import {
   type SendError,
   Trigger,
-  type TriggerError,
-  type TriggerEvent,
   type TriggerRequest,
   type TriggerResult,
 } from '@/services/trigger'
+import type { TriggerError, TriggerEvent } from '@/schemas/Trigger'
 
 export const session = (
   accessToken = 'access',

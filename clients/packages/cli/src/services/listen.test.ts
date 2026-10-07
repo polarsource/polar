@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, vi, test } from 'vitest'
-import { Effect, Fiber, Option } from 'effect'
+import { Effect, Fiber } from 'effect'
 import { FetchHttpClient } from 'effect/http'
 import { AuthError } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
@@ -16,7 +16,7 @@ const fakeDeliveries = () => {
       Effect.sync(() => {
         state.recorded.push({ eventId, delivery })
       }),
-    await: () => Effect.succeed(Option.none()),
+    await: () => Effect.succeedNone,
   })
   return { deliveries, state }
 }

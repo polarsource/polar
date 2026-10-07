@@ -149,7 +149,7 @@ export const startListening = ({
             Effect.gen(function* () {
               if (event.id !== undefined) lastEventId = event.id
               if (event.event !== 'message') return
-              const decoded = Schema.decodeUnknownExit(
+              const decoded = Schema.decodeExit(
                 Schema.fromJsonString(Schema.Unknown),
               )(event.data)
               if (Exit.isFailure(decoded)) {
@@ -180,7 +180,7 @@ export const startListening = ({
                 return
               }
               const rawPayload = webhook.value.payload.payload
-              const payload = Schema.decodeUnknownExit(
+              const payload = Schema.decodeExit(
                 Schema.fromJsonString(
                   Schema.Struct({ type: Schema.optional(Schema.String) }),
                 ),
@@ -259,44 +259,45 @@ export const startListening = ({
       }),
     )
     return yield* connection.pipe(
-      Effect.catchTag('Retry', (retry) => {
-        retryDelay = retry.duration
-        if (retry.lastEventId !== undefined) lastEventId = retry.lastEventId
-        return Effect.succeed(false)
+      Effect.catchTags({
+        Retry: (retry) => {
+          retryDelay = retry.duration
+          if (retry.lastEventId !== undefined) lastEventId = retry.lastEventId
+          return Effect.succeed(false)
+        },
+        HttpClientError: (error) =>
+          error.reason._tag === 'TransportError' ||
+          error.reason._tag === 'DecodeError'
+            ? Effect.succeed(false)
+            : Effect.fail(
+                new ListenError({
+                  code: 0,
+                  message: error.message,
+                  cause: error,
+                }),
+              ),
       }),
-      Effect.catchTag('HttpClientError', (error) =>
-        error.reason._tag === 'TransportError' ||
-        error.reason._tag === 'DecodeError'
-          ? Effect.succeed(false)
-          : Effect.fail(
-              new ListenError({
-                code: 0,
-                message: error.message,
-                cause: error,
-              }),
-            ),
-      ),
       Effect.flatMap((reconnect) =>
         reconnect ? Effect.void : Effect.sleep(retryDelay),
       ),
       Effect.forever,
     )
   }).pipe(
-    Effect.catchTag('AuthError', (error) =>
-      Effect.fail(
-        new ListenError({
-          code: 0,
-          message:
-            'Unable to authenticate the stream. Check your connection, keyring, and token; try polar auth whoami for details.',
-          cause: error,
-        }),
-      ),
-    ),
-    Effect.catchTag('SseError', (error) =>
-      Effect.fail(
-        new ListenError({ code: 0, message: error.message, cause: error }),
-      ),
-    ),
+    Effect.catchTags({
+      AuthError: (error) =>
+        Effect.fail(
+          new ListenError({
+            code: 0,
+            message:
+              'Unable to authenticate the stream. Check your connection, keyring, and token; try polar auth whoami for details.',
+            cause: error,
+          }),
+        ),
+      SseError: (error) =>
+        Effect.fail(
+          new ListenError({ code: 0, message: error.message, cause: error }),
+        ),
+    }),
     Effect.mapError((error) =>
       error.code === 401
         ? new ListenError({

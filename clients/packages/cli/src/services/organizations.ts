@@ -81,7 +81,7 @@ export const layer = Layer.effect(
         if (available.length === 1) return yield* get(id, available[0]!)
         for (const environment of available) {
           const found = yield* get(id, environment).pipe(
-            Effect.catch(() => Effect.succeed(undefined)),
+            Effect.orElseSucceed(() => undefined),
           )
           if (found) return found
         }

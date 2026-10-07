@@ -2,7 +2,7 @@ import { Data, Schema } from 'effect'
 
 export const IssueSeverity = Schema.Literals(['error', 'warning'])
 
-const ServerPath = Schema.Array(Schema.Union([Schema.String, Schema.Number]))
+const ServerPath = Schema.Array(Schema.Union([Schema.String, Schema.Finite]))
 
 export const ServerError = Schema.Struct({
   severity: Schema.optionalKey(IssueSeverity),

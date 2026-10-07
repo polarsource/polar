@@ -49,9 +49,9 @@ export const layer = Layer.effect(
         ),
       )
       if (content === undefined) return undefined
-      return yield* Schema.decodeUnknownEffect(
-        Schema.fromJsonString(ConfigFile),
-      )(content).pipe(
+      return yield* Schema.decodeEffect(Schema.fromJsonString(ConfigFile))(
+        content,
+      ).pipe(
         Effect.mapError(
           () =>
             new AuthError({

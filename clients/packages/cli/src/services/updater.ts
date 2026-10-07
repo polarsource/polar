@@ -199,6 +199,7 @@ const retainRunningImage = (
         yield* fs
           .link(executable, path.join(directory, path.basename(executable)))
           .pipe(Effect.tapError(() => remove))
+        // @effect-diagnostics-next-line returnEffectInGen:off
         return remove
       }).pipe(Effect.orElseSucceed((): Effect.Effect<void> => Effect.void))
 

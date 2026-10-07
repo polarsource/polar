@@ -5,7 +5,7 @@ from typing import Annotated
 from zoneinfo import ZoneInfo
 
 from annotated_types import Len, Predicate
-from fastapi import Depends, Query
+from fastapi import Depends, Query, Response
 from fastapi.exceptions import RequestValidationError
 from pydantic import UUID4, AwareDatetime, ValidationError
 from pydantic_extra_types.timezone_name import TimeZoneName
@@ -48,6 +48,8 @@ from .schemas import (
     ListVarianceEvents,
 )
 from .service import event as event_service
+
+INGEST_SEQUENCE_HEADER = "Polar-Ingest-Sequence"
 
 router = APIRouter(prefix="/events", tags=["events", APITag.public])
 
@@ -591,12 +593,31 @@ async def get(
     return event
 
 
-@router.post("/ingest", summary="Ingest Events")
+@router.post(
+    "/ingest",
+    summary="Ingest Events",
+    responses={
+        200: {
+            "headers": {
+                INGEST_SEQUENCE_HEADER: {
+                    "description": (
+                        "Sequence number covering every event of the request, "
+                        "including duplicates stored by an earlier request."
+                    ),
+                    "schema": {"type": "integer"},
+                }
+            }
+        }
+    },
+)
 async def ingest(
     ingest: EventsIngest,
     auth_subject: auth.EventWrite,
+    response: Response,
     session: AsyncSession = Depends(get_db_session),
 ) -> EventsIngestResponse:
     """Ingest batch of events."""
-    response, _ = await event_service.ingest(session, auth_subject, ingest)
-    return response
+    ingested, sequence = await event_service.ingest(session, auth_subject, ingest)
+    if sequence is not None:
+        response.headers[INGEST_SEQUENCE_HEADER] = str(sequence)
+    return ingested

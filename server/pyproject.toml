@@ -62,11 +62,11 @@ dependencies = [
   "clickhouse-connect[async]>=1.4.1",
   "trafilatura>=2.1.0",
   "firecrawl-py>=4.31.0",
-  "polar-sdk==1.0.0a22",
+  "polar-sdk==1.0.0",
   "anyio==4.15.1", # Potential culprit for Sep 23-24 memory leak
   "markdown-it-py>=4.2.0",
   "tzdata>=2026.2",
-  "reauth==0.4.1",
+  "reauth==0.4.2",
   "langcodes>=3.5.1",
   "pypdf>=6.14.2",
   "google-auth[requests]>=2.38.0",

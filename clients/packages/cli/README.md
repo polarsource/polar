@@ -154,6 +154,13 @@ the standalone binary and updated from GitHub Releases as before. `--method`
 overrides detection. On Windows a second hard link to the running executable is
 kept alive during the upgrade so the package manager can replace it.
 
+The "Update available" notice uses the same source without asking the package
+managers: if the `package.json` check finds the npm package it reads the npm
+registry, otherwise GitHub Releases. `src/services/update-check.ts` checks in
+the background at most once a day and caches the result with its source in
+`~/.polar/update-check.json`, ignoring entries from the other source, so the
+notice never offers a version `polar update` would not install.
+
 The job authenticates with npm trusted publishing (`id-token: write`), like the
 other packages. npm only lets you configure a trusted publisher on an existing
 package, so `@polar-sh/cli` and each platform package were bootstrapped with an

@@ -971,11 +971,16 @@ class EventService:
         if sequence is not None and duplicates_count:
             # A duplicate keeps the number of the request that first stored it.
             external_ids = [
-                event["external_id"] for event in events if event.get("external_id")
+                event["external_id"]
+                for event in events
+                if event.get("external_id") is not None
             ]
             if len(external_ids) == len(events):
-                sequence = await repository.get_max_ingest_sequence(
-                    organization_id, external_ids
+                sequence = (
+                    await repository.get_max_ingest_sequence(
+                        organization_id, external_ids
+                    )
+                    or sequence
                 )
 
         # Temporarily: fetch inserted events and create meter_events

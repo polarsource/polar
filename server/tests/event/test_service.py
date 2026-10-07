@@ -1300,6 +1300,42 @@ class TestIngest:
         assert response.duplicates == 1
         assert sequence == 2
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_sequence_of_a_resent_unnumbered_request_is_new(
+        self,
+        enqueue_events_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        await create_event(
+            save_fixture, organization=auth_subject.subject, external_id="a"
+        )
+
+        response, sequence = await event_service.ingest(
+            session, auth_subject, _ingest_request("a")
+        )
+
+        assert response.duplicates == 1
+        assert sequence == 1
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_sequence_of_a_resent_empty_external_id_is_the_original(
+        self,
+        enqueue_events_mock: AsyncMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        await event_service.ingest(session, auth_subject, _ingest_request(""))
+        await event_service.ingest(session, auth_subject, _ingest_request("b"))
+
+        response, sequence = await event_service.ingest(
+            session, auth_subject, _ingest_request("")
+        )
+
+        assert response.duplicates == 1
+        assert sequence == 1
+
     @pytest.mark.auth
     async def test_no_sequence_across_organizations(
         self,

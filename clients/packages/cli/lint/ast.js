@@ -70,3 +70,29 @@ export const onModuleReference = (visit) => {
     TSImportType: handle,
   }
 }
+
+export const BUILDERS_MODULE = '@/utils/command'
+const CLI_MODULE = 'effect/cli'
+
+export const commandBindings = (node) =>
+  node.source.value === CLI_MODULE
+    ? node.specifiers
+        .filter(
+          (specifier) =>
+            (specifier.type === 'ImportSpecifier' &&
+              specifier.imported.name === 'Command') ||
+            specifier.type === 'ImportNamespaceSpecifier',
+        )
+        .map((specifier) => specifier.local.name)
+    : []
+
+export const isCommandMake = (node, bindings) =>
+  node.type === 'CallExpression' &&
+  [...bindings].some(
+    (name) =>
+      isMember(node.callee, name, 'make') ||
+      (node.callee.type === 'MemberExpression' &&
+        isMember(node.callee.object, name, 'Command') &&
+        node.callee.property.type === 'Identifier' &&
+        node.callee.property.name === 'make'),
+  )

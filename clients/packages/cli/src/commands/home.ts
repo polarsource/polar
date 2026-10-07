@@ -1,30 +1,37 @@
-import { Console, Effect, Option } from 'effect'
+import { Effect, Option, Schema } from 'effect'
 import { Command } from 'effect/cli'
 import {
+  ActiveOrganization,
   loginCommand,
   orgCommand,
-  type ActiveOrganization,
+  PolarEnvironment,
 } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
 import { Organizations } from '@/services/organizations'
+import { output } from '@/utils/command'
 import * as ui from '@/utils/ui'
 import { VERSION } from '@/version'
 
+const Session = Schema.Union([
+  Schema.Struct({ status: Schema.Literal('unreadable') }),
+  Schema.Struct({ status: Schema.Literal('logged-out') }),
+  Schema.Struct({
+    status: Schema.Literal('active'),
+    override: Schema.Boolean,
+    environments: Schema.Array(PolarEnvironment),
+    organization: Schema.Union([
+      ActiveOrganization,
+      Schema.Literals(['none', 'unavailable']),
+    ]),
+  }),
+])
+type Session = typeof Session.Type
+
+const Home = Schema.Struct({ version: Schema.String, session: Session })
+type Home = typeof Home.Type
+
 const lookup = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
   effect.pipe(Effect.timeout('3 seconds'), Effect.option)
-
-const commandList = (rows: ReadonlyArray<readonly [string, string]>) => {
-  const width = Math.max(...rows.map(([command]) => command.length))
-  return rows
-    .map(
-      ([command, description]) =>
-        `  ${ui.command(command.padEnd(width))}  ${ui.dim(description)}`,
-    )
-    .join('\n')
-}
-
-const describe = (organization: ActiveOrganization) =>
-  `${ui.bold(organization.name)} ${ui.dim(organization.environment)}`
 
 const activeOrganization = (override: boolean) =>
   Effect.gen(function* () {
@@ -39,30 +46,66 @@ const activeOrganization = (override: boolean) =>
     return yield* lookup(organizations.resolve())
   })
 
-const signedIn = Effect.gen(function* () {
-  const auth = yield* Auth
-  const override = yield* auth.override
-  const environments = yield* auth.environments
-  if (!override && environments.length === 0) {
+const session: Effect.Effect<Session, never, Auth | Organizations> = Effect.gen(
+  function* () {
+    const auth = yield* Auth
+    const override = yield* auth.override
+    const environments = yield* auth.environments
+    if (!override && environments.length === 0) {
+      return { status: 'logged-out' } satisfies Session
+    }
+    const organization = yield* activeOrganization(override)
+    return {
+      status: 'active',
+      override,
+      environments,
+      organization: Option.isNone(organization)
+        ? 'unavailable'
+        : (organization.value ?? 'none'),
+    } satisfies Session
+  },
+).pipe(Effect.orElseSucceed((): Session => ({ status: 'unreadable' })))
+
+const commandList = (rows: ReadonlyArray<readonly [string, string]>) => {
+  const width = Math.max(...rows.map(([command]) => command.length))
+  return rows
+    .map(
+      ([command, description]) =>
+        `  ${ui.command(command.padEnd(width))}  ${ui.dim(description)}`,
+    )
+    .join('\n')
+}
+
+const describe = (organization: ActiveOrganization) =>
+  `${ui.bold(organization.name)} ${ui.dim(organization.environment)}`
+
+const sessionLines = (session: Session) => {
+  if (session.status === 'unreadable') {
+    return [
+      ui.warning('Could not read your saved session'),
+      ui.step(`Run ${ui.command('polar auth whoami')} for details`),
+    ]
+  }
+  if (session.status === 'logged-out') {
     return [
       ui.warning('Not logged in'),
       ui.step(`Run ${ui.command(loginCommand('sandbox'))} to get started`),
     ]
   }
-  const organization = yield* activeOrganization(override)
+  const { override, environments, organization } = session
   const rows: Array<readonly [string, string]> = override
     ? [
         ['Token', 'POLAR_ACCESS_TOKEN'],
         ['Environment', environments[0]!],
       ]
     : [['Logged in', environments.join(', ')]]
-  if (Option.isNone(organization)) {
+  if (organization === 'unavailable') {
     rows.push(['Organization', ui.dim('could not be loaded')])
-  } else if (organization.value) {
-    rows.push(['Organization', describe(organization.value)])
+  } else if (organization !== 'none') {
+    rows.push(['Organization', describe(organization)])
   }
   const lines = [ui.keyValue(rows)]
-  if (Option.isSome(organization) && !organization.value) {
+  if (organization === 'none') {
     lines.push(
       ui.blank,
       ui.warning('No active organization'),
@@ -78,28 +121,22 @@ const signedIn = Effect.gen(function* () {
   if (!override) suggestions.push([orgCommand, 'Switch organization'])
   lines.push(ui.blank, `  ${ui.bold('Try next')}`, commandList(suggestions))
   return lines
-}).pipe(
-  Effect.orElseSucceed(() => [
-    ui.warning('Could not read your saved session'),
-    ui.step(`Run ${ui.command('polar auth whoami')} for details`),
-  ]),
-)
+}
 
-export const home = Effect.gen(function* () {
-  const lines = yield* signedIn
-  yield* Console.log(
-    [
+export const polar = Command.make('polar', {}).pipe(
+  Command.withDescription('Polar from your terminal'),
+  output({
+    result: Home,
+    run: () =>
+      Effect.map(session, (session): Home => ({ version: VERSION, session })),
+    render: ({ version, session }) => [
       ui.blank,
-      `  ${ui.bold('Polar CLI')} ${ui.dim(VERSION)}`,
+      `  ${ui.bold('Polar CLI')} ${ui.dim(version)}`,
       ui.blank,
-      ...lines,
+      ...sessionLines(session),
       ui.blank,
       ui.step(`Run ${ui.command('polar --help')} to see every command`),
       ui.blank,
-    ].join('\n'),
-  )
-})
-
-export const polar = Command.make('polar', {}, () => home).pipe(
-  Command.withDescription('Polar from your terminal'),
+    ],
+  }),
 )

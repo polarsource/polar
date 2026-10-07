@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { Context, Data, Effect, FileSystem, Layer, Schema } from 'effect'
 import { HttpClient, HttpClientResponse } from 'effect/http'
+import { isJson } from '@/utils/output'
 
 export const PACKAGE_NAME = '@polar-sh/cli'
 export const REGISTRY_URL = `https://registry.npmjs.org/${PACKAGE_NAME.replaceAll('/', '%2F')}/latest`
@@ -212,15 +213,19 @@ export const upgradeWithPackageManager = (
 ): Effect.Effect<void, UpdaterError, FileSystem.FileSystem> =>
   Effect.gen(function* () {
     const command = upgradeCommand(method, version)
+    const inherit = !(yield* isJson)
     const release = yield* retainRunningImage(executable, platform)
     const result = yield* Effect.ensuring(
-      run(command, { inherit: true, timeoutMs: 5 * 60_000 }),
+      run(command, { inherit, timeoutMs: 5 * 60_000 }),
       release,
     )
     if (result.code !== 0) {
       return yield* new UpdaterError({
         message: `${command.join(' ')} exited with code ${result.code}`,
-        hint: 'Fix the issue above, then run polar update again.',
+        hint: inherit
+          ? 'Fix the issue above, then run polar update again.'
+          : result.stderr.trim() ||
+            'Run polar update again without --json to see the output.',
       })
     }
   })

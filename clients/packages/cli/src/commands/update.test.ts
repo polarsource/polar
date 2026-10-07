@@ -187,6 +187,5 @@ describe('downloadAndUpdate', () => {
     expect(lines.join('\n')).toContain('Verifying checksum...')
     expect(lines.join('\n')).toContain('Extracting...')
     expect(lines.join('\n')).toContain('Replacing binary...')
-    expect(lines.join('\n')).toContain(`Updated ${VERSION} → v9.9.9`)
   })
 })

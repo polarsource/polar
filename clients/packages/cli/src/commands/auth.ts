@@ -1,19 +1,20 @@
-import { Console, Effect, Stdio } from 'effect'
+import { Effect, Schema, Stdio } from 'effect'
 import { Command, Flag, Prompt } from 'effect/cli'
 import {
+  ActiveOrganization,
   AuthError,
   environments,
   loginCommand,
   orgCommand,
-  type ActiveOrganization,
   type OrganizationSelection,
-  type PolarEnvironment,
+  PolarEnvironment,
 } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
 import { Organizations } from '@/services/organizations'
-import { printJson } from '@/utils/json'
+import { output } from '@/utils/command'
+import { production, sandbox } from '@/utils/flags'
+import { note } from '@/utils/progress'
 import * as ui from '@/utils/ui'
-import { json, production, sandbox } from '@/utils/flags'
 
 const isSelected = (
   organization: ActiveOrganization,
@@ -34,21 +35,19 @@ const organizationRows = (
   ['ID', ui.dim(organization.id)],
 ]
 
-const notLoggedIn = Effect.gen(function* () {
-  yield* Console.log(ui.warning('Not logged in'))
-  yield* Console.log(
-    ui.step(
-      `Run ${ui.command(loginCommand('sandbox'))} or ${ui.command(loginCommand('production'))}`,
-    ),
-  )
-  yield* Console.log(ui.blank)
-})
+const notLoggedIn = [
+  ui.warning('Not logged in'),
+  ui.step(
+    `Run ${ui.command(loginCommand('sandbox'))} or ${ui.command(loginCommand('production'))}`,
+  ),
+  ui.blank,
+]
 
 const environmentFlags = { sandbox, production }
 
 const announceAuthorization =
   (environment: PolarEnvironment) => (authorization: URL) =>
-    Console.log(
+    note(
       [
         ui.blank,
         ui.step(`Opening your browser to sign in to Polar ${environment}...`),
@@ -91,6 +90,47 @@ const chooseEnvironment = (
     })
   })
 
+const Selection = Schema.Union([
+  Schema.Struct({
+    status: Schema.Literal('activated'),
+    organization: ActiveOrganization,
+  }),
+  Schema.Struct({ status: Schema.Literal('none') }),
+  Schema.Struct({ status: Schema.Literal('needs-terminal') }),
+])
+type Selection = typeof Selection.Type
+
+const Login = Schema.Struct({
+  environment: PolarEnvironment,
+  replaced: Schema.Boolean,
+  selection: Schema.optional(Selection),
+})
+
+const Identity = Schema.Struct({
+  source: Schema.Literals(['POLAR_ACCESS_TOKEN', 'session']),
+  environments: Schema.Array(PolarEnvironment),
+  organization: Schema.NullOr(ActiveOrganization),
+})
+type Identity = typeof Identity.Type
+
+const Listed = Schema.Struct({
+  ...ActiveOrganization.fields,
+  active: Schema.Boolean,
+})
+
+const Listing = Schema.Struct({
+  override: Schema.Boolean,
+  environments: Schema.Array(PolarEnvironment),
+  items: Schema.Array(Listed),
+})
+type Listing = typeof Listing.Type
+
+const Logout = Schema.Struct({
+  overrideActive: Schema.Boolean,
+  targets: Schema.Array(PolarEnvironment),
+  deleted: Schema.Array(PolarEnvironment),
+})
+
 const activate = (organization: ActiveOrganization) =>
   Effect.gen(function* () {
     const organizations = yield* Organizations
@@ -98,38 +138,16 @@ const activate = (organization: ActiveOrganization) =>
       id: organization.id,
       environment: organization.environment,
     })
-    yield* Console.log(ui.blank)
-    yield* Console.log(
-      ui.success(`Active organization ${describe(organization)}`),
-    )
-    yield* Console.log(ui.blank)
+    return { status: 'activated', organization } satisfies Selection
   })
 
 const selectOrganization = Effect.gen(function* () {
   const organizations = yield* Organizations
   const items = yield* organizations.listAll
-  if (items.length === 0) {
-    yield* Console.log(ui.warning('No organizations yet'))
-    yield* Console.log(
-      ui.step(
-        `Create one at ${ui.cyan('https://polar.sh')} or ${ui.cyan('https://sandbox.polar.sh')}, then run ${ui.command(orgCommand)}`,
-      ),
-    )
-    yield* Console.log(ui.blank)
-    return
-  }
+  if (items.length === 0) return { status: 'none' } satisfies Selection
   if (items.length === 1) return yield* activate(items[0]!)
   if (!(yield* interactive)) {
-    yield* Console.log(
-      ui.warning('Organization selection requires an interactive terminal'),
-    )
-    yield* Console.log(
-      ui.step(
-        `Run ${ui.command(orgCommand)} interactively, or use POLAR_ACCESS_TOKEN with ${ui.command('--org <id>')} in CI`,
-      ),
-    )
-    yield* Console.log(ui.blank)
-    return
+    return { status: 'needs-terminal' } satisfies Selection
   }
   const selection = yield* organizations.selected
   const organization = yield* Prompt.Select({
@@ -140,54 +158,43 @@ const selectOrganization = Effect.gen(function* () {
       description: organization.slug,
     })),
   })
-  yield* activate(organization)
+  return yield* activate(organization)
 })
 
-const login = Command.make(
-  'login',
-  {
-    ...environmentFlags,
-    newSession: Flag.Boolean('new-session').pipe(
-      Flag.withDefault(false),
-      Flag.withDescription('Sign in again even if a session is already saved'),
-    ),
-  },
-  ({ newSession, ...flags }) =>
-    Effect.gen(function* () {
-      const environment = yield* chooseEnvironment(flags, 'log in to')
-      const auth = yield* Auth
-      const replaced = yield* auth.login(
-        environment,
-        newSession,
-        announceAuthorization(environment),
-      )
-      if (!replaced) {
-        const other: PolarEnvironment =
-          environment === 'production' ? 'sandbox' : 'production'
-        yield* Console.log(ui.blank)
-        yield* Console.log(
-          ui.warning(`Already logged in to ${ui.bold(environment)}`),
-        )
-        yield* Console.log(
-          ui.step(
-            `Run ${ui.command(`${loginCommand(environment)} --new-session`)} to sign in again`,
-          ),
-        )
-        yield* Console.log(
-          ui.step(
-            `Run ${ui.command(loginCommand(other))} to sign in to ${other}`,
-          ),
-        )
-        yield* Console.log(ui.blank)
-        return
-      }
-      yield* Console.log(
-        ui.success(`Logged in to Polar ${ui.bold(environment)}`),
-      )
-      yield* Console.log(ui.blank)
-      yield* selectOrganization
-    }),
-).pipe(
+const selectionLines = (selection: Selection) => {
+  switch (selection.status) {
+    case 'activated':
+      return [
+        ui.blank,
+        ui.success(`Active organization ${describe(selection.organization)}`),
+        ui.blank,
+      ]
+    case 'none':
+      return [
+        ui.warning('No organizations yet'),
+        ui.step(
+          `Create one at ${ui.cyan('https://polar.sh')} or ${ui.cyan('https://sandbox.polar.sh')}, then run ${ui.command(orgCommand)}`,
+        ),
+        ui.blank,
+      ]
+    case 'needs-terminal':
+      return [
+        ui.warning('Organization selection requires an interactive terminal'),
+        ui.step(
+          `Run ${ui.command(orgCommand)} interactively, or use POLAR_ACCESS_TOKEN with ${ui.command('--org <id>')} in CI`,
+        ),
+        ui.blank,
+      ]
+  }
+}
+
+const login = Command.make('login', {
+  ...environmentFlags,
+  newSession: Flag.Boolean('new-session').pipe(
+    Flag.withDefault(false),
+    Flag.withDescription('Sign in again even if a session is already saved'),
+  ),
+}).pipe(
   Command.withDescription('Sign in to Polar through your browser'),
   Command.withExamples([
     {
@@ -203,135 +210,178 @@ const login = Command.make(
       description: 'Sign in to production again, replacing the saved session',
     },
   ]),
+  output({
+    result: Login,
+    run: ({ newSession, ...flags }) =>
+      Effect.gen(function* () {
+        const environment = yield* chooseEnvironment(flags, 'log in to')
+        const auth = yield* Auth
+        const replaced = yield* auth.login(
+          environment,
+          newSession,
+          announceAuthorization(environment),
+        )
+        const selection = replaced ? yield* selectOrganization : undefined
+        return { environment, replaced, selection }
+      }),
+    render: ({ environment, replaced, selection }: typeof Login.Type) => {
+      if (!replaced) {
+        const other: PolarEnvironment =
+          environment === 'production' ? 'sandbox' : 'production'
+        return [
+          ui.blank,
+          ui.warning(`Already logged in to ${ui.bold(environment)}`),
+          ui.step(
+            `Run ${ui.command(`${loginCommand(environment)} --new-session`)} to sign in again`,
+          ),
+          ui.step(
+            `Run ${ui.command(loginCommand(other))} to sign in to ${other}`,
+          ),
+          ui.blank,
+        ]
+      }
+      return [
+        ui.success(`Logged in to Polar ${ui.bold(environment)}`),
+        ui.blank,
+        ...(selection ? selectionLines(selection) : []),
+      ]
+    },
+  }),
 )
 
-const whoamiJson = Effect.gen(function* () {
-  const auth = yield* Auth
-  const organizations = yield* Organizations
-  const environments = yield* auth.environments
-  if (yield* auth.override) {
-    const items = yield* organizations.listAll
-    return yield* printJson({
-      source: 'POLAR_ACCESS_TOKEN',
-      environments,
-      organization: items.length === 1 ? items[0] : null,
-    })
-  }
-  const selection =
-    environments.length > 0 ? yield* organizations.selected : undefined
-  return yield* printJson({
-    source: 'session',
-    environments,
-    organization: selection ? yield* organizations.resolve() : null,
-  })
-})
-
-const whoami = Command.make('whoami', { json }, ({ json }) =>
-  Effect.gen(function* () {
-    if (json) return yield* whoamiJson
-    const auth = yield* Auth
-    const organizations = yield* Organizations
-    const environments = yield* auth.environments
-    yield* Console.log(ui.blank)
-    if (yield* auth.override) {
-      const items = yield* organizations.listAll
-      const organization = items.length === 1 ? items[0] : undefined
-      yield* Console.log(
-        ui.keyValue([
+const whoami = Command.make('whoami', {}).pipe(
+  Command.withDescription('Show the active organization'),
+  output({
+    result: Identity,
+    run: () =>
+      Effect.gen(function* () {
+        const auth = yield* Auth
+        const organizations = yield* Organizations
+        const environments = yield* auth.environments
+        if (yield* auth.override) {
+          const items = yield* organizations.listAll
+          return {
+            source: 'POLAR_ACCESS_TOKEN',
+            environments,
+            organization: items.length === 1 ? items[0]! : null,
+          } satisfies Identity
+        }
+        const selection =
+          environments.length > 0 ? yield* organizations.selected : undefined
+        return {
+          source: 'session',
+          environments,
+          organization: selection ? yield* organizations.resolve() : null,
+        } satisfies Identity
+      }),
+    render: ({ source, environments, organization }) => {
+      if (source === 'POLAR_ACCESS_TOKEN') {
+        return [
+          ui.blank,
+          ui.keyValue([
+            ...(organization
+              ? organizationRows(organization)
+              : [['Environment', environments[0]!] as const]),
+            ['Token', 'POLAR_ACCESS_TOKEN'],
+          ]),
           ...(organization
-            ? organizationRows(organization)
-            : [['Environment', environments[0]!] as const]),
-          ['Token', 'POLAR_ACCESS_TOKEN'],
-        ]),
-      )
-      if (!organization) {
-        yield* Console.log(ui.blank)
-        yield* Console.log(ui.warning('No active organization'))
-        yield* Console.log(
-          ui.step(
-            `Use ${ui.command('--org <id>')} on organization-dependent commands`,
-          ),
-        )
+            ? []
+            : [
+                ui.blank,
+                ui.warning('No active organization'),
+                ui.step(
+                  `Use ${ui.command('--org <id>')} on organization-dependent commands`,
+                ),
+              ]),
+          ui.blank,
+        ]
       }
-      yield* Console.log(ui.blank)
-      return
-    }
-    if (environments.length === 0) return yield* notLoggedIn
-    const selection = yield* organizations.selected
-    if (selection) {
-      const organization = yield* organizations.resolve()
-      yield* Console.log(ui.keyValue(organizationRows(organization)))
-    } else {
-      yield* Console.log(ui.warning('No active organization'))
-      yield* Console.log(ui.step(`Run ${ui.command(orgCommand)} to choose one`))
-    }
-    yield* Console.log(ui.blank)
+      if (environments.length === 0) return [ui.blank, ...notLoggedIn]
+      return [
+        ui.blank,
+        ...(organization
+          ? [ui.keyValue(organizationRows(organization))]
+          : [
+              ui.warning('No active organization'),
+              ui.step(`Run ${ui.command(orgCommand)} to choose one`),
+            ]),
+        ui.blank,
+      ]
+    },
   }),
-).pipe(Command.withDescription('Show the active organization'))
+)
 
-const listJson = Effect.gen(function* () {
-  const auth = yield* Auth
-  const organizations = yield* Organizations
-  const selection = yield* organizations.selected
-  const items: Array<ActiveOrganization & { active: boolean }> = []
-  for (const environment of yield* auth.environments) {
-    for (const organization of yield* organizations.list(environment)) {
-      items.push({
-        ...organization,
-        active: isSelected(organization, selection),
-      })
-    }
-  }
-  return yield* printJson(items)
-})
-
-const list = Command.make('list', { json }, ({ json }) =>
-  Effect.gen(function* () {
-    if (json) return yield* listJson
-    const auth = yield* Auth
-    const organizations = yield* Organizations
-    const environments = yield* auth.environments
-    const override = yield* auth.override
-    yield* Console.log(ui.blank)
-    if (environments.length === 0) return yield* notLoggedIn
-    const selection = yield* organizations.selected
-    for (const environment of environments) {
-      const items = yield* organizations.list(environment)
-      yield* Console.log(
-        `  ${ui.bold(`Organizations in ${environment}`)}${override ? ui.dim('  via POLAR_ACCESS_TOKEN') : ''}`,
-      )
-      yield* Console.log(ui.blank)
-      if (items.length === 0) {
-        yield* Console.log(ui.step('No accessible organizations'))
-      }
+const list = Command.make('list', {}).pipe(
+  Command.withDescription('List the organizations you have access to'),
+  output({
+    result: Schema.Array(Listed),
+    run: () =>
+      Effect.gen(function* () {
+        const auth = yield* Auth
+        const organizations = yield* Organizations
+        const environments = yield* auth.environments
+        const override = yield* auth.override
+        const selection =
+          environments.length > 0 ? yield* organizations.selected : undefined
+        const items: Array<typeof Listed.Type> = []
+        for (const environment of environments) {
+          for (const organization of yield* organizations.list(environment)) {
+            items.push({
+              ...organization,
+              active: isSelected(organization, selection),
+            })
+          }
+        }
+        return { override, environments, items } satisfies Listing
+      }),
+    render: ({ override, environments, items }) => {
+      if (environments.length === 0) return [ui.blank, ...notLoggedIn]
       const width = Math.max(0, ...items.map((org) => org.name.length))
-      for (const org of items) {
-        const marker = isSelected(org, selection) ? ui.green('●') : ui.dim('○')
-        yield* Console.log(
-          `  ${marker} ${org.name.padEnd(width)}  ${ui.dim(org.slug)}  ${ui.dim(org.id)}`,
-        )
-      }
-      yield* Console.log(ui.blank)
-    }
+      return [
+        ui.blank,
+        ...environments.flatMap((environment) => {
+          const rows = items.filter((item) => item.environment === environment)
+          return [
+            `  ${ui.bold(`Organizations in ${environment}`)}${override ? ui.dim('  via POLAR_ACCESS_TOKEN') : ''}`,
+            ui.blank,
+            ...(rows.length === 0
+              ? [ui.step('No accessible organizations')]
+              : []),
+            ...rows.map(
+              (org) =>
+                `  ${org.active ? ui.green('●') : ui.dim('○')} ${org.name.padEnd(width)}  ${ui.dim(org.slug)}  ${ui.dim(org.id)}`,
+            ),
+            ui.blank,
+          ]
+        }),
+      ]
+    },
+    json: ({ items }) => items,
   }),
-).pipe(Command.withDescription('List the organizations you have access to'))
+)
 
-const org = Command.make('org', {}, () =>
-  Effect.gen(function* () {
-    const auth = yield* Auth
-    if (yield* auth.override) {
-      return yield* new AuthError({
-        message: 'Unset POLAR_ACCESS_TOKEN to manage saved sessions.',
-      })
-    }
-    if ((yield* auth.environments).length === 0) {
-      return yield* new AuthError({
-        message: `Not logged in. Run ${loginCommand('sandbox')} or ${loginCommand('production')}.`,
-      })
-    }
-    yield* selectOrganization
+const org = Command.make('org', {}).pipe(
+  Command.withDescription('Choose the active organization'),
+  output({
+    result: Selection,
+    run: () =>
+      Effect.gen(function* () {
+        const auth = yield* Auth
+        if (yield* auth.override) {
+          return yield* new AuthError({
+            message: 'Unset POLAR_ACCESS_TOKEN to manage saved sessions.',
+          })
+        }
+        if ((yield* auth.environments).length === 0) {
+          return yield* new AuthError({
+            message: `Not logged in. Run ${loginCommand('sandbox')} or ${loginCommand('production')}.`,
+          })
+        }
+        return yield* selectOrganization
+      }),
+    render: selectionLines,
   }),
-).pipe(Command.withDescription('Choose the active organization'))
+)
 
 const logoutTargets = (flags: {
   sandbox: boolean
@@ -365,42 +415,13 @@ const logoutTargets = (flags: {
     })
   })
 
-const logout = Command.make(
-  'logout',
-  {
-    ...environmentFlags,
-    all: Flag.Boolean('all').pipe(
-      Flag.withDefault(false),
-      Flag.withDescription('Remove every saved session'),
-    ),
-  },
-  (flags) =>
-    Effect.gen(function* () {
-      const auth = yield* Auth
-      yield* Console.log(ui.blank)
-      if (yield* auth.override) {
-        yield* Console.log(ui.warning('POLAR_ACCESS_TOKEN remains active'))
-        yield* Console.log(
-          ui.step(
-            'Unset it to stop using the override, only saved sessions are removed',
-          ),
-        )
-      }
-      const targets = yield* logoutTargets(flags)
-      const deleted = yield* auth.logout(targets)
-      for (const environment of targets) {
-        yield* Console.log(
-          deleted.includes(environment)
-            ? ui.success(`Logged out of Polar ${ui.bold(environment)}`)
-            : ui.step(`Already logged out of ${environment}`),
-        )
-      }
-      if (targets.length === 0) {
-        yield* Console.log(ui.step('Already logged out'))
-      }
-      yield* Console.log(ui.blank)
-    }),
-).pipe(
+const logout = Command.make('logout', {
+  ...environmentFlags,
+  all: Flag.Boolean('all').pipe(
+    Flag.withDefault(false),
+    Flag.withDescription('Remove every saved session'),
+  ),
+}).pipe(
   Command.withDescription('Sign out and remove saved sessions'),
   Command.withExamples([
     {
@@ -412,6 +433,35 @@ const logout = Command.make(
       description: 'Remove every saved session',
     },
   ]),
+  output({
+    result: Logout,
+    run: (flags) =>
+      Effect.gen(function* () {
+        const auth = yield* Auth
+        const overrideActive = yield* auth.override
+        const targets = yield* logoutTargets(flags)
+        const deleted = yield* auth.logout(targets)
+        return { overrideActive, targets, deleted }
+      }),
+    render: ({ overrideActive, targets, deleted }: typeof Logout.Type) => [
+      ui.blank,
+      ...(overrideActive
+        ? [
+            ui.warning('POLAR_ACCESS_TOKEN remains active'),
+            ui.step(
+              'Unset it to stop using the override, only saved sessions are removed',
+            ),
+          ]
+        : []),
+      ...targets.map((environment) =>
+        deleted.includes(environment)
+          ? ui.success(`Logged out of Polar ${ui.bold(environment)}`)
+          : ui.step(`Already logged out of ${environment}`),
+      ),
+      ...(targets.length === 0 ? [ui.step('Already logged out')] : []),
+      ui.blank,
+    ],
+  }),
 )
 
 export const auth = Command.make('auth').pipe(

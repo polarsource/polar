@@ -1,7 +1,4 @@
-import { inDirectory, isMember } from '../ast.js'
-
-const isCommandMake = (node) =>
-  node.type === 'CallExpression' && isMember(node.callee, 'Command', 'make')
+import { commandBindings, inDirectory, isCommandMake } from '../ast.js'
 
 export default {
   meta: {
@@ -17,10 +14,14 @@ export default {
   },
   create(context) {
     if (!inDirectory(context, 'commands')) return {}
+    const bindings = new Set()
     let defined = false
     return {
+      ImportDeclaration(node) {
+        for (const name of commandBindings(node)) bindings.add(name)
+      },
       CallExpression(node) {
-        if (isCommandMake(node)) defined = true
+        if (isCommandMake(node, bindings)) defined = true
       },
       'Program:exit'(node) {
         if (!defined) context.report({ node, messageId: 'notACommand' })

@@ -23,7 +23,7 @@ polar trigger [flags] [<event>]
 | `--org` | `string` | Organization ID for this invocation only |
 | `--override` | `string` | Override a payload field, as path=value. Values are sent as text; use null, a JSON object, array or quoted string for other types. Repeatable. |
 | `--seed` | `integer` | Seed for generated IDs, for a reproducible payload |
-| `--json` | `boolean` | Print the payload as JSON instead of sending it, or the event list with --list |
+| `--dry-run` | `boolean` | Print the payload that would be sent, without sending it |
 | `--list` | `boolean` | List every event you can trigger, with descriptions |
 
 **Examples**
@@ -50,5 +50,5 @@ polar trigger order.paid --seed 7
 
 Print the payload instead of sending it
 ```bash
-polar trigger order.paid --json
+polar trigger order.paid --dry-run
 ```

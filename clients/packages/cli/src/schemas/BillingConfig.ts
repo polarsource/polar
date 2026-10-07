@@ -38,44 +38,64 @@ export const ApplyResponse = Schema.Record(
   Schema.Union([EntryResult, Schema.Array(EntryResult)]),
 )
 
-export interface AppliedEntry {
-  readonly section: string
-  readonly id: string
-  readonly action: typeof EntryAction.Type
-  readonly diff: ReadonlyArray<typeof FieldChange.Type>
-}
+export const AppliedEntry = Schema.Struct({
+  section: Schema.String,
+  id: Schema.String,
+  action: EntryAction,
+  diff: Schema.Array(FieldChange),
+})
+export type AppliedEntry = typeof AppliedEntry.Type
 
 export const PlanResponse = Schema.Struct({
   changes: Schema.Array(EntryResult),
   issues: Schema.Array(ServerError),
 })
 
-export interface PlanResult {
-  readonly entries: ReadonlyArray<AppliedEntry>
-  readonly issues: ReadonlyArray<ConfigIssue>
-}
+export const SourceLocation = Schema.Struct({
+  line: Schema.Finite,
+  column: Schema.Finite,
+  length: Schema.Finite,
+})
+export type SourceLocation = typeof SourceLocation.Type
 
-export type ApplyResult =
-  | {
-      readonly status: 'applied'
-      readonly entries: ReadonlyArray<AppliedEntry>
-    }
-  | { readonly status: 'rejected'; readonly issues: ReadonlyArray<ConfigIssue> }
+export const ConfigIssue = Schema.Struct({
+  severity: IssueSeverity,
+  code: Schema.String,
+  path: Schema.String,
+  message: Schema.String,
+  got: Schema.optional(Schema.String),
+  location: Schema.optional(SourceLocation),
+})
+export type ConfigIssue = typeof ConfigIssue.Type
 
-export interface SourceLocation {
-  readonly line: number
-  readonly column: number
-  readonly length: number
-}
+export const PlanResult = Schema.Struct({
+  entries: Schema.Array(AppliedEntry),
+  issues: Schema.Array(ConfigIssue),
+})
+export type PlanResult = typeof PlanResult.Type
 
-export interface ConfigIssue {
-  readonly severity: typeof IssueSeverity.Type
-  readonly code: string
-  readonly path: string
-  readonly message: string
-  readonly got?: string | undefined
-  readonly location?: SourceLocation | undefined
-}
+export const ApplyResult = Schema.Union([
+  Schema.Struct({
+    status: Schema.Literal('applied'),
+    entries: Schema.Array(AppliedEntry),
+  }),
+  Schema.Struct({
+    status: Schema.Literal('rejected'),
+    issues: Schema.Array(ConfigIssue),
+  }),
+])
+export type ApplyResult = typeof ApplyResult.Type
+
+export const PlanOutput = Schema.Struct({
+  file: Schema.String,
+  ...PlanResult.fields,
+})
+
+export const ApplyOutput = Schema.Union(
+  ApplyResult.members.map((member) =>
+    Schema.Struct({ file: Schema.String, ...member.fields }),
+  ),
+)
 
 export interface LoadedConfig {
   readonly file: string

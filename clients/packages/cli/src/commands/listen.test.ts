@@ -1,38 +1,37 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { Console, Effect, Stdio } from 'effect'
+import { afterEach, describe, expect, test, vi } from 'vitest'
+import { Effect } from 'effect'
 import { FetchHttpClient } from 'effect/http'
 import {
   forwardTarget,
   listen,
   probeTarget,
   renderEvent,
-  withTerminalTitle,
 } from '@/commands/listen'
 import { Auth } from '@/services/auth'
 import { Deliveries } from '@/services/deliveries'
 import type { ListenEvent } from '@/services/listen'
 import { Organizations } from '@/services/organizations'
-import { captureConsole, runCli, stripAnsi } from '@/utils/test-utils/cli'
+import { runCli, stripAnsi } from '@/utils/test-utils/cli'
 import { fakeAuth, fakeOrganizations } from '@/utils/test-utils/services'
-import * as ui from '@/utils/ui'
 
 describe('renderEvent', () => {
   const render = (
     event: ListenEvent,
     forwardUrl = 'http://localhost:3000/webhook',
   ) => {
-    const { lines, console } = captureConsole()
+    const lines: string[] = []
     const errors: string[] = []
-    vi.spyOn(process.stderr, 'write').mockImplementation((chunk) => {
-      errors.push(stripAnsi(String(chunk)))
-      return true
-    })
-    Effect.runSync(
-      renderEvent(
-        'Acme',
-        forwardUrl,
-      )(event).pipe(Effect.provideService(Console.Console, console)),
-    )
+    const emit = {
+      out: (human: string) =>
+        Effect.sync(() => {
+          lines.push(stripAnsi(human))
+        }),
+      err: (human: string) =>
+        Effect.sync(() => {
+          errors.push(stripAnsi(human))
+        }),
+    }
+    Effect.runSync(renderEvent(emit, 'Acme', forwardUrl)(event))
     return { output: lines.join('\n'), errors: errors.join('') }
   }
 
@@ -149,47 +148,6 @@ describe('probeTarget', () => {
         probeTarget(new URL('http://polar-cli-test.invalid/')),
       ),
     ).toBe('unknownHost')
-  })
-})
-
-describe('withTerminalTitle', () => {
-  let writes: string[]
-
-  beforeEach(() => {
-    writes = []
-    vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
-      writes.push(String(chunk))
-      return true
-    })
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
-  const run = <A, E>(effect: Effect.Effect<A, E>, terminal: boolean) =>
-    Effect.runPromise(
-      withTerminalTitle('polar listen · Acme', effect).pipe(
-        Effect.provide(
-          Stdio.layerTest({ stdoutIsTerminal: Effect.succeed(terminal) }),
-        ),
-        Effect.result,
-      ),
-    )
-
-  test('sets the title while running and restores it afterwards', async () => {
-    await run(Effect.void, true)
-    expect(writes).toEqual([ui.pushTitle('polar listen · Acme'), ui.popTitle])
-  })
-
-  test('restores the title when listening fails', async () => {
-    await run(Effect.fail('stream closed'), true)
-    expect(writes.at(-1)).toBe(ui.popTitle)
-  })
-
-  test('leaves the title alone outside a terminal', async () => {
-    await run(Effect.void, false)
-    expect(writes).toEqual([])
   })
 })
 

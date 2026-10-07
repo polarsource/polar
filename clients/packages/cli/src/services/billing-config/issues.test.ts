@@ -88,6 +88,31 @@ describe('issues', () => {
     ])
   })
 
+  test('keeps a null the file actually contains, drops a null meaning no value', () => {
+    const nulls = {
+      file: 'polar.json',
+      source: '{\n  "meters": [\n    { "name": null }\n  ]\n}',
+      input: { meters: [{ name: null }] },
+      generated: false,
+    }
+    const [literal, irrelevant] = issues(nulls, [
+      {
+        type: 'string_type',
+        loc: ['body', 'meters', 0, 'name'],
+        msg: 'Input should be a valid string',
+        input: null,
+      },
+      {
+        type: 'meter_locked',
+        loc: ['body', 'meters', 0, 'filter'],
+        msg: 'Locked',
+        input: null,
+      },
+    ])
+    expect(literal?.got).toBe('null')
+    expect(irrelevant?.got).toBeUndefined()
+  })
+
   test('points a bad discriminator at the tag key with the allowed values', () => {
     expect(
       issues(config, [

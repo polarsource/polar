@@ -53,6 +53,15 @@ const isCommandError = (error: unknown): error is CommandError =>
     'GitHubReleaseError',
   ].includes(String(error._tag))
 
+export const errorJson = (error: unknown) => {
+  const { title, hint } = describeError(error)
+  return JSON.stringify({
+    error: isCommandError(error) ? error._tag : 'UnexpectedError',
+    message: title,
+    ...(hint ? { hint } : {}),
+  })
+}
+
 export const describeError = (error: unknown): ErrorDescription => {
   if (!isCommandError(error)) {
     return {

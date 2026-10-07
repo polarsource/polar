@@ -3368,6 +3368,82 @@
             "description": "Filter by customer external ID."
           },
           {
+            "name": "benefit_external_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "BenefitExternalID Filter",
+              "description": "Filter by benefit external ID."
+            },
+            "description": "Filter by benefit external ID."
+          },
+          {
+            "name": "member_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid4"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid4"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "MemberID Filter",
+              "description": "Filter by member ID."
+            },
+            "description": "Filter by member ID."
+          },
+          {
+            "name": "external_member_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "The member external ID."
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "The member external ID."
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ExternalMemberID Filter",
+              "description": "Filter by member external ID."
+            },
+            "description": "Filter by member external ID."
+          },
+          {
             "name": "is_granted",
             "in": "query",
             "required": false,

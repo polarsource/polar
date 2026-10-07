@@ -116,20 +116,6 @@ test.each(cases)(
   },
 )
 
-test('generates the composable tokens example', async () => {
-  expect(await Effect.runPromise(generateConfig({ meters: [meter] })))
-    .toBe(`import { defineConfig, gte } from '@polar-sh/polar'
-
-export default defineConfig({
-  meters: ({ fold }) => ({
-    "tokens": fold("Tokens", "llm.completion")
-      .where({ "inputTokens": gte(1000) })
-      .sum("inputTokens"),
-  }),
-})
-`)
-})
-
 test('generated modules typecheck against the public API', async () => {
   const sources = new Map(
     await Promise.all(

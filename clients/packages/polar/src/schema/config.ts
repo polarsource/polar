@@ -1,4 +1,6 @@
 import { Schema } from 'effect'
+import { RuntimeSDK, type RuntimeConnection } from '../runtime'
+import type { PolarOptions } from '../sdk'
 import { fold, MeterConfig } from './meter'
 import type { MeterDefinition } from './meter'
 
@@ -17,13 +19,25 @@ type MeterEntries =
   | Readonly<Record<string, MeterDefinition>>
   | ReadonlyArray<readonly [externalId: string, meter: MeterDefinition]>
 
-export interface Config {
-  readonly toJSON: () => PolarConfig
+type MeterKey<Meters extends MeterEntries> =
+  Meters extends ReadonlyArray<readonly [infer Key, MeterDefinition]>
+    ? Key & string
+    : keyof Meters & string
+
+type ConnectedConfig<Meters extends MeterEntries> = {
+  readonly meters: Readonly<Record<MeterKey<Meters>, MeterConfig>>
 }
 
-export const defineConfig = (input: {
-  readonly meters: (helpers: { readonly fold: typeof fold }) => MeterEntries
-}): Config => {
+export interface Config<Meters extends MeterEntries = MeterEntries> {
+  readonly toJSON: () => PolarConfig
+  readonly connect: (
+    options: PolarOptions,
+  ) => RuntimeConnection<ConnectedConfig<Meters>>
+}
+
+export const defineConfig = <const Meters extends MeterEntries>(input: {
+  readonly meters: (helpers: { readonly fold: typeof fold }) => Meters
+}): Config<Meters> => {
   const definitions = input.meters({ fold })
   const entries = Array.isArray(definitions)
     ? definitions
@@ -35,5 +49,24 @@ export const defineConfig = (input: {
     meters: entries.map(([external_id, meter]) => ({ ...meter, external_id })),
   })
 
-  return { toJSON: () => structuredClone(config) }
+  return {
+    toJSON: () => structuredClone(config),
+    connect: (options) => {
+      const meters = Object.fromEntries(
+        structuredClone(config.meters).map((meter) => [
+          meter.external_id,
+          meter,
+        ]),
+      )
+      if (Object.keys(meters).length !== config.meters.length) {
+        throw new Error(
+          'Cannot connect a config with duplicate meter external IDs.',
+        )
+      }
+      return RuntimeSDK(
+        { meters: meters as ConnectedConfig<Meters>['meters'] },
+        options,
+      )
+    },
+  }
 }

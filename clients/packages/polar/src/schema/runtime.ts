@@ -1,29 +1,24 @@
+import type { MeterAggregation, MeterFilter } from './meter'
+
 export type EventConfig = Record<string, never>
 
 export type BenefitConfig = {
   id: string
 }
 
-export type MeterConfig = {
-  id: string
-  filter: {
-    conjunction: 'and'
-    clauses: readonly {
-      conjunction: 'or'
-      clauses: readonly {
-        property: string
-        operator: 'eq'
-        value: string | number | boolean
-      }[]
-    }[]
-  }
-  aggregation: {
-    func: 'count'
-  }
+export type RuntimeFilter = {
+  readonly conjunction: 'and' | 'or'
+  readonly clauses: readonly (MeterFilter['clauses'][number] | RuntimeFilter)[]
+}
+
+export type RuntimeMeterConfig = {
+  readonly id?: string
+  readonly filter: RuntimeFilter
+  readonly aggregation: MeterAggregation
 }
 
 export type RuntimeSDKConfig = {
-  events?: Readonly<Record<string, EventConfig>>
-  benefits?: Readonly<Record<string, BenefitConfig>>
-  meters?: Readonly<Record<string, MeterConfig>>
+  readonly events?: Readonly<Record<string, EventConfig>>
+  readonly benefits?: Readonly<Record<string, BenefitConfig>>
+  readonly meters?: Readonly<Record<string, RuntimeMeterConfig>>
 }

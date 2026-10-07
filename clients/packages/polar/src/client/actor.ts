@@ -1,11 +1,13 @@
 import { getCustomerMeter } from '../internal/api/customer-meters'
 import { ingestEvent } from '../internal/api/events'
 import { findBenefitGrant } from '../internal/api/benefits'
+import { getMeterId } from '../internal/api/meters'
+import { matchesMeter } from '../internal/meter'
 import type {
   CustomerIdentifier,
   MemberIdentifier,
 } from '../internal/api/utils'
-import type { MeterConfig, RuntimeSDKConfig } from '../schema/runtime'
+import type { RuntimeSDKConfig } from '../schema/runtime'
 import type { models, Polar } from '../sdk'
 
 export type MeterBalance = {
@@ -27,10 +29,11 @@ type MeterName<Config extends RuntimeSDKConfig> = keyof NonNullable<
   Config['meters']
 > &
   string
-type EventName<Config extends RuntimeSDKConfig> = keyof NonNullable<
-  Config['events']
-> &
-  string
+type EventName<Config extends RuntimeSDKConfig> = Config extends {
+  readonly events: infer Events
+}
+  ? keyof Events & string
+  : string
 
 type ActorCustomerIdentifier =
   | { externalCustomerId: string; customerId?: never }
@@ -67,18 +70,6 @@ const toMemberIdentifier = (identifier: ActorIdentifier): MemberIdentifier => ({
       : {}),
 })
 
-// Vibe-coded alert
-const matchesFilter = (
-  filter: MeterConfig['filter'],
-  event: Record<string, unknown>,
-): boolean =>
-  filter.clauses.every((group) =>
-    group.clauses.some(
-      (clause) =>
-        clause.operator === 'eq' && event[clause.property] === clause.value,
-    ),
-  )
-
 export const createActor = <Config extends RuntimeSDKConfig>(
   config: Config,
   sdk: Polar,
@@ -87,6 +78,7 @@ export const createActor = <Config extends RuntimeSDKConfig>(
   // and meter. The server processes events asynchronously, so a customer meter
   // last modified before this timestamp doesn't reflect that event yet.
   const latestIngestedAt = new Map<string, Date>()
+  const meterIds = new Map<string, string>()
   const cacheKey = (identifier: ActorIdentifier, meterId: string) =>
     identifier.customerId !== undefined
       ? `customer:${identifier.customerId}:${meterId}`
@@ -122,10 +114,13 @@ export const createActor = <Config extends RuntimeSDKConfig>(
       //
       // #1 - a benefit has granted meter credits for that meter -> customer meter gets created upon benefit grant
       // #2 - an event has been ingested that matches the meter's filter definition -> customer meter gets created
+      const meterId =
+        meter.id ?? meterIds.get(name) ?? (await getMeterId(sdk, name))
+      meterIds.set(name, meterId)
       const customerMeter = await getCustomerMeter(
         sdk,
         toCustomerIdentifier(identifier),
-        meter.id,
+        meterId,
       )
 
       const key = cacheKey(identifier, name)
@@ -161,7 +156,9 @@ export const createActor = <Config extends RuntimeSDKConfig>(
 
       if (inserted > 0) {
         for (const [externalId, meter] of Object.entries(config.meters ?? {})) {
-          if (matchesFilter(meter.filter, { ...metadata, name })) {
+          if (
+            matchesMeter(meter, { name, timestamp, metadata: metadata ?? {} })
+          ) {
             const key = cacheKey(identifier, externalId)
             const current = latestIngestedAt.get(key)
 

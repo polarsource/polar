@@ -14,6 +14,19 @@ test('config serializes to JSON without exposing mutable internal data', () => {
   expect(config.toJSON().meters).toHaveLength(1)
 })
 
+test('connect rejects duplicate IDs without changing JSON serialization', () => {
+  const config = defineConfig({
+    meters: ({ fold }) => [
+      ['calls', fold('First').count()],
+      ['calls', fold('Second').count()],
+    ],
+  })
+  expect(config.toJSON().meters).toHaveLength(2)
+  expect(() => config.connect({ accessToken: 'test' })).toThrow(
+    'duplicate meter external IDs',
+  )
+})
+
 test('defineConfig rejects invalid builder values', () => {
   expect(() =>
     defineConfig({

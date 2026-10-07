@@ -25,7 +25,7 @@ type BenefitName<Config extends RuntimeSDKConfig> = keyof NonNullable<
   Config['benefits']
 > &
   string
-type MeterName<Config extends RuntimeSDKConfig> = keyof NonNullable<
+type MeterExternalId<Config extends RuntimeSDKConfig> = keyof NonNullable<
   Config['meters']
 > &
   string
@@ -49,7 +49,7 @@ export type Actor<Config extends RuntimeSDKConfig> = (
   identifier: ActorIdentifier,
 ) => {
   access: (name: BenefitName<Config>) => Promise<BenefitAccess>
-  balance: (name: MeterName<Config>) => Promise<MeterBalance>
+  balance: (externalId: MeterExternalId<Config>) => Promise<MeterBalance>
   track: (name: EventName<Config>, metadata?: EventMetadata) => Promise<void>
 }
 
@@ -79,10 +79,10 @@ export const createActor = <Config extends RuntimeSDKConfig>(
   // last modified before this timestamp doesn't reflect that event yet.
   const latestIngestedAt = new Map<string, Date>()
   const deployedMeters = new Set<string>()
-  const cacheKey = (identifier: ActorIdentifier, meterName: string) =>
+  const cacheKey = (identifier: ActorIdentifier, externalMeterId: string) =>
     identifier.customerId !== undefined
-      ? `customer:${identifier.customerId}:${meterName}`
-      : `external_customer:${identifier.externalCustomerId}:${meterName}`
+      ? `customer:${identifier.customerId}:${externalMeterId}`
+      : `external_customer:${identifier.externalCustomerId}:${externalMeterId}`
 
   // Should we validate if an actor exists before we allow this?
   // Or do we `upsert` the actor if it needs to be persisted
@@ -104,9 +104,9 @@ export const createActor = <Config extends RuntimeSDKConfig>(
         : { granted: true, metadata: grant.benefit.metadata }
     },
 
-    async balance(name) {
-      if (config.meters?.[name] === undefined) {
-        throw new Error(`Unknown meter: ${name}`)
+    async balance(externalId) {
+      if (config.meters?.[externalId] === undefined) {
+        throw new Error(`Unknown meter: ${externalId}`)
       }
 
       // A customer meter only gets created in 2 cases:
@@ -119,14 +119,14 @@ export const createActor = <Config extends RuntimeSDKConfig>(
       const customerMeter = await getCustomerMeter(
         sdk,
         toCustomerIdentifier(identifier),
-        name,
+        externalId,
       )
-      if (customerMeter === undefined && !deployedMeters.has(name)) {
-        await assertMeterDeployed(sdk, name)
+      if (customerMeter === undefined && !deployedMeters.has(externalId)) {
+        await assertMeterDeployed(sdk, externalId)
       }
-      deployedMeters.add(name)
+      deployedMeters.add(externalId)
 
-      const key = cacheKey(identifier, name)
+      const key = cacheKey(identifier, externalId)
       const ingestedAt = latestIngestedAt.get(key)
 
       const updatedAt = customerMeter

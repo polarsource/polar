@@ -61,6 +61,31 @@ describe('ui', () => {
     expect(stripAnsi(ui.statusCode(500, ''))).toBe('500')
   })
 
+  test('code frames expand tabs and keep the marker under the value', () => {
+    const source = '{\n\t"name": "x"\n}'
+    const frame = stripAnsi(
+      ui.codeFrame(source, {
+        file: 'polar.json',
+        location: { line: 2, column: 10, length: 3 },
+        label: 'here',
+      }),
+    )
+    const [, , row = '', marker = ''] = frame.split('\n')
+    expect(row).toContain('  "name": "x"')
+    expect(marker.indexOf('┬')).toBe(row.indexOf('"x"') + 1)
+  })
+
+  test('code frames strip control characters from the source', () => {
+    const frame = stripAnsi(
+      ui.codeFrame(`{ "name": "${ESC}[31mx" }`, {
+        file: 'polar.json',
+        location: { line: 1, column: 1, length: 1 },
+        label: 'here',
+      }),
+    )
+    expect(frame).toContain('"name": "[31mx"')
+  })
+
   test('formats timestamps and durations', () => {
     const date = new Date(2026, 0, 1, 13, 5, 9)
     expect(stripAnsi(ui.timestamp(date))).toBe('13:05:09')

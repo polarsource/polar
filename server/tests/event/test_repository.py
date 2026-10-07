@@ -386,3 +386,26 @@ class TestGetRecentBalanceOrderExchangeRate:
         )
 
         assert result is None
+
+
+@pytest.mark.asyncio
+class TestNextIngestSequence:
+    async def test_starts_at_one_and_increments(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        repository = EventRepository.from_session(session)
+
+        assert await repository.next_ingest_sequence(organization.id) == 1
+        assert await repository.next_ingest_sequence(organization.id) == 2
+
+    async def test_counts_each_organization_separately(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        repository = EventRepository.from_session(session)
+        await repository.next_ingest_sequence(organization.id)
+        await repository.next_ingest_sequence(organization.id)
+
+        assert await repository.next_ingest_sequence(organization_second.id) == 1

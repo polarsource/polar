@@ -7,21 +7,20 @@ const config = {
   benefits: { custom_meters: { id: 'benefit-id' } },
 } as const satisfies RuntimeSDKConfig
 
-describe('actor.can', () => {
+describe('actor benefits', () => {
   it('accepts only configured benefit names', () => {
     const actor = createActor(
       config,
       {} as Polar,
     )({ customerId: 'customer-id' })
-    expectTypeOf(actor.can).parameter(0).toEqualTypeOf<'custom_meters'>()
-    expectTypeOf(actor.can).returns.toEqualTypeOf<
-      Promise<{ allowed: boolean }>
-    >()
+    expectTypeOf(actor.has).parameter(0).toEqualTypeOf<'custom_meters'>()
+    expectTypeOf(actor.has).returns.toEqualTypeOf<Promise<boolean>>()
+    expectTypeOf(actor.benefit).parameter(0).toEqualTypeOf<'custom_meters'>()
     const unconfigured = createActor(
       {},
       {} as Polar,
     )({ customerId: 'customer-id' })
-    expectTypeOf(unconfigured.can).parameter(0).toEqualTypeOf<never>()
+    expectTypeOf(unconfigured.has).parameter(0).toEqualTypeOf<never>()
   })
 
   it.each([
@@ -29,7 +28,7 @@ describe('actor.can', () => {
     { externalCustomerId: 'external-customer-id' },
   ])('checks granted benefits for %j across all pages', async (identifier) => {
     const iterGrants = vi.fn(async function* () {
-      yield { benefit_id: 'benefit-id' }
+      yield { benefit_id: 'benefit-id', benefit: { metadata: { seats: 5 } } }
     })
     const getExternal = vi.fn().mockResolvedValue({ id: 'customer-id' })
     const sdk = {
@@ -38,8 +37,10 @@ describe('actor.can', () => {
     } as unknown as Polar
     const actor = createActor(config, sdk)(identifier)
 
-    await expect(actor.can('custom_meters')).resolves.toEqual({
-      allowed: true,
+    await expect(actor.has('custom_meters')).resolves.toBe(true)
+    await expect(actor.benefit('custom_meters')).resolves.toEqual({
+      granted: true,
+      metadata: { seats: 5 },
     })
     expect(iterGrants).toHaveBeenCalledWith('benefit-id', {
       customer_id: 'customer-id',
@@ -70,9 +71,7 @@ describe('actor.can', () => {
       sdk,
     )({ customerId: 'customer-id', ...identifier })
 
-    await expect(actor.can('custom_meters')).resolves.toEqual({
-      allowed: true,
-    })
+    await expect(actor.has('custom_meters')).resolves.toBe(true)
   })
 
   it('returns false when no matching grant exists', async () => {
@@ -80,8 +79,9 @@ describe('actor.can', () => {
     const sdk = { benefits: { iterGrants } } as unknown as Polar
     const actor = createActor(config, sdk)({ customerId: 'customer-id' })
 
-    await expect(actor.can('custom_meters')).resolves.toEqual({
-      allowed: false,
+    await expect(actor.has('custom_meters')).resolves.toBe(false)
+    await expect(actor.benefit('custom_meters')).resolves.toEqual({
+      granted: false,
     })
   })
 })

@@ -1,11 +1,11 @@
-import type { Polar } from '../../sdk'
+import type { models, Polar } from '../../sdk'
 import type { MemberIdentifier } from './utils'
 
-export const hasBenefit = async (
+export const findBenefitGrant = async (
   sdk: Polar,
   identifier: MemberIdentifier,
   benefitId: string,
-): Promise<boolean> => {
+): Promise<models.BenefitGrant | undefined> => {
   const customerId =
     'customer_id' in identifier
       ? identifier.customer_id
@@ -22,8 +22,8 @@ export const hasBenefit = async (
           ? grant.member?.external_id === identifier.external_member_id
           : true
     ) {
-      return true
+      return grant
     }
   }
-  return false
+  return undefined
 }

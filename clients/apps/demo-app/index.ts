@@ -24,7 +24,7 @@ const expensiveToolCall = async () => {
 
   const benefitsSpan = log.start('Checking benefits')
 
-  if ((await customer.can('custom_servers')).allowed) {
+  if (await customer.has('custom_servers')) {
     log('Customer has custom servers benefit, embedding custom servers')
   }
 

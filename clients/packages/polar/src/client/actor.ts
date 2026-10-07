@@ -1,6 +1,6 @@
 import { getCustomerMeter } from '../internal/api/customer-meters'
 import { ingestEvent } from '../internal/api/events'
-import { hasBenefit } from '../internal/api/benefits'
+import { findBenefitGrant } from '../internal/api/benefits'
 import type {
   CustomerIdentifier,
   MemberIdentifier,
@@ -13,9 +13,9 @@ export type MeterBalance = {
   pristine: boolean
 }
 
-export type BenefitCheck = {
-  allowed: boolean
-}
+export type BenefitDetails =
+  | { granted: true; metadata: models.MetadataOutputType }
+  | { granted: false }
 
 export type EventMetadata = models.EventMetadataInput
 
@@ -45,7 +45,8 @@ type ActorIdentifier = ActorCustomerIdentifier & ActorMemberIdentifier
 export type Actor<Config extends RuntimeSDKConfig> = (
   identifier: ActorIdentifier,
 ) => {
-  can: (name: BenefitName<Config>) => Promise<BenefitCheck>
+  has: (name: BenefitName<Config>) => Promise<boolean>
+  benefit: (name: BenefitName<Config>) => Promise<BenefitDetails>
   balance: (name: MeterName<Config>) => Promise<MeterBalance>
   track: (name: EventName<Config>, metadata?: EventMetadata) => Promise<void>
 }
@@ -92,23 +93,29 @@ export const createActor = <Config extends RuntimeSDKConfig>(
       ? `customer:${identifier.customerId}:${meterId}`
       : `external_customer:${identifier.externalCustomerId}:${meterId}`
 
+  const findGrant = (identifier: ActorIdentifier, name: string) => {
+    const benefit = config.benefits?.[name]
+    if (benefit === undefined) {
+      throw new Error(`Unknown benefit: ${name}`)
+    }
+
+    return findBenefitGrant(sdk, toMemberIdentifier(identifier), benefit.id)
+  }
+
   // Should we validate if an actor exists before we allow this?
   // Or do we `upsert` the actor if it needs to be persisted
   // Also, for events, we allow external_customer_id
   return (identifier) => ({
-    async can(name) {
-      const benefit = config.benefits?.[name]
-      if (benefit === undefined) {
-        throw new Error(`Unknown benefit: ${name}`)
-      }
+    async has(name) {
+      const grant = await findGrant(identifier, name)
+      return grant !== undefined
+    },
 
-      return {
-        allowed: await hasBenefit(
-          sdk,
-          toMemberIdentifier(identifier),
-          benefit.id,
-        ),
-      }
+    async benefit(name) {
+      const grant = await findGrant(identifier, name)
+      return grant === undefined
+        ? { granted: false }
+        : { granted: true, metadata: grant.benefit.metadata }
     },
 
     async balance(name) {

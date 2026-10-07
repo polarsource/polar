@@ -47,7 +47,6 @@ from polar.models.product_price import (
 )
 from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.product.schemas import (
-    PRODUCT_NAME_MAX_LENGTH,
     ProductCreateRecurring,
     ProductPriceCreate,
     ProductPriceFixedCreate,
@@ -214,12 +213,6 @@ def find_imported_price(
     )
 
 
-def add_on_product_name(plan_name: str, add_on_name: str | None) -> str:
-    """Names "Essentials + 1 Project" after a "+ 1 Project" add-on."""
-    add_on = (add_on_name or "").lstrip("+ ").strip() or "Add-on"
-    return f"{plan_name} + {add_on}"[:PRODUCT_NAME_MAX_LENGTH]
-
-
 async def find_or_create_add_on_product(
     session: AsyncSession,
     plan: Product,
@@ -227,7 +220,6 @@ async def find_or_create_add_on_product(
     *,
     add_on_price_source_id: str,
     unit_amount: int,
-    name: str,
 ) -> tuple[Product, ProductPriceFixed, ProductPriceUnit]:
     """The product a plan-plus-add-on subscription moves onto: the plan's price
     with the add-on as a unit price. One per plan and add-on price, shared by
@@ -235,7 +227,8 @@ async def find_or_create_add_on_product(
 
     Archived and kept apart from the plan, because a unit price is the
     product's own quantity: on the plan itself, every new buyer and every
-    subscriber without the add-on would have to take at least one unit.
+    subscriber without the add-on would have to take at least one unit. It
+    keeps the plan's name, which customers see on their invoices.
     """
     repository = ProductRepository.from_session(session)
     reference = f"{plan.id}:{add_on_price_source_id}"
@@ -252,7 +245,7 @@ async def find_or_create_add_on_product(
     if product is None:
         product = await repository.create(
             Product(
-                name=name,
+                name=plan.name,
                 organization=plan.organization,
                 recurring_interval=plan.recurring_interval,
                 recurring_interval_count=plan.recurring_interval_count,

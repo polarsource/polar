@@ -2441,7 +2441,7 @@ class TestAddOn:
             subscription.product_id
         )
         assert combined is not None
-        assert combined.name == "Product + 1 Project"
+        assert combined.name == product.name
         assert combined.is_archived is True
 
     async def test_a_later_subscriber_joins_the_existing_combined_product(
@@ -2460,7 +2460,6 @@ class TestAddOn:
             plan_price,
             add_on_price_source_id="price_slot",
             unit_amount=250,
-            name="Product + Slot",
         )
         existing_id = existing.id
         # What the next subscriber's run sees: a row with nothing loaded yet.

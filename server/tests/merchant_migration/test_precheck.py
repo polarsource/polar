@@ -1394,6 +1394,7 @@ class TestClassifyAddOns:
         assert items[0].status == PrecheckRecordStatus.importable
         assert items[0].reason_code == "subscription_add_on"
         assert items[0].reason_level == PrecheckReasonLevel.info
+        assert "2 × '+ 1 Project'" in (items[0].reason or "")
         assert items[0].discount_name == "Launch"
 
     @pytest.mark.parametrize(

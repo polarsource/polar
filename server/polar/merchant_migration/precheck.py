@@ -249,17 +249,14 @@ _SUBSCRIPTION_DISCOUNT_CURRENCY_REASON = (
     "price."
 )
 _SUBSCRIPTION_ADD_ON_DISCOUNT_REASON = (
-    "This subscription's coupon only applies to some of its items on the "
-    "source, and Polar discounts the plan and its add-on together. It stays on "
-    "the source rather than renewing at a different price."
+    "This subscription's coupon only discounts some of its items in Stripe, "
+    "while Polar would discount the plan and its add-on together. It stays on "
+    "Stripe rather than renewing at a different price."
 )
 _SUBSCRIPTION_ADD_ON_PRICE_MISSING_REASON = (
-    "The add-on's price in this subscription's currency wasn't in the catalog "
-    "Polar read from the source, so it stays there."
-)
-_SUBSCRIPTION_ADD_ON_REASON = (
-    "Its add-on moves as units billed on top of the plan, on a separate "
-    "archived product, so the customer keeps paying the same."
+    "Polar can't bill this subscription's add-on: we couldn't read its price "
+    "in the subscription's currency (the product may have been deleted in "
+    "Stripe), or the amount is one Polar doesn't support. It stays on Stripe."
 )
 _SUBSCRIPTION_DISCOUNT_START_REASON = (
     "The source doesn't say when this coupon was applied, so Polar can't "
@@ -1348,7 +1345,7 @@ def _subscription_items(
             Reason("subscription_multiple_discounts", _MULTIPLE_DISCOUNTS_REASON)
             if len(subscription.discount_source_ids) > 1
             else None,
-            Reason("subscription_add_on", _SUBSCRIPTION_ADD_ON_REASON)
+            _add_on_note(subscription.add_on, product_by_price_id)
             if subscription.add_on is not None
             else None,
         )
@@ -1397,6 +1394,23 @@ def _subscription_items(
             )
         )
     return items
+
+
+def _add_on_note(
+    add_on: CanonicalSubscriptionAddOn,
+    product_by_price_id: dict[str, CanonicalProduct],
+) -> Reason:
+    product = product_by_price_id.get(add_on.price_source_id)
+    add_on_name = f"'{product.name}'" if product is not None else "its add-on"
+    return Reason(
+        "subscription_add_on",
+        (
+            f"Moves together with its add-on: {add_on.quantity} × {add_on_name} "
+            "keep billing on top of the plan, so the customer pays the same. "
+            "Polar puts it on an archived copy of the plan, so your catalog "
+            "doesn't change."
+        ),
+    )
 
 
 def _product_by_price_key(

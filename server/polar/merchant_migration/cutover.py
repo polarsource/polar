@@ -57,7 +57,6 @@ from .canonical import (
 from .cards import CARD_TYPE, AmbiguousCopiedCard, link_payment_method
 from .importer import (
     _CUSTOMER_ALREADY_SUBSCRIBED,
-    add_on_product_name,
     create_imported_subscription,
     find_imported_price,
     find_or_create_add_on_product,
@@ -636,7 +635,6 @@ class SubscriptionCutover:
                 price,
                 add_on_price_source_id=staged.add_on.price_source_id,
                 unit_amount=unit_amount,
-                name=add_on_product_name(product.name, add_on_product.name),
             )
 
         customer = await self.customer_repository.get_by_id(

@@ -1,7 +1,11 @@
 import { extname, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { Effect, type FileSystem } from 'effect'
-import { BillingConfigError, type LoadedConfig } from '@/schemas/BillingConfig'
+import {
+  BillingConfigError,
+  DEFAULT_CONFIG_FILES,
+  type LoadedConfig,
+} from '@/schemas/BillingConfig'
 
 const SCRIPT_EXTENSIONS = new Set([
   '.ts',
@@ -12,16 +16,45 @@ const SCRIPT_EXTENSIONS = new Set([
   '.cjs',
 ])
 
-const DEFAULT_FILES = [
-  'polar.config.ts',
-  'polar.config.mts',
-  'polar.config.cts',
-  'polar.config.js',
-  'polar.config.mjs',
-  'polar.config.cjs',
-  'polar.config.json',
-  'polar.json',
-]
+interface Position {
+  readonly line: number
+  readonly column: number
+}
+
+const MISSING_PACKAGE = /Cannot find package '([^']+)'/
+
+const positionOf = (error: unknown): Position | undefined => {
+  const position =
+    typeof error === 'object' && error !== null && 'position' in error
+      ? (error.position as Partial<Position> | null)
+      : undefined
+  return typeof position?.line === 'number' &&
+    typeof position.column === 'number'
+    ? { line: position.line, column: position.column }
+    : undefined
+}
+
+export const loadFailure = (file: string, error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error)
+  const missing = MISSING_PACKAGE.exec(message)?.[1]
+  if (missing !== undefined) {
+    return new BillingConfigError({
+      message: `Could not load ${file}`,
+      hint: `It imports ${missing}, which is not installed. Run npm install ${missing}.`,
+    })
+  }
+  const position = positionOf(error)
+  if (position !== undefined) {
+    return new BillingConfigError({
+      message: `Could not parse ${file}:${position.line}:${position.column}`,
+      hint: message,
+    })
+  }
+  return new BillingConfigError({
+    message: `Could not load ${file}`,
+    hint: message,
+  })
+}
 
 const loadScript = (file: string) =>
   Effect.gen(function* () {
@@ -34,11 +67,7 @@ const loadScript = (file: string) =>
           ? ((await module.default()) as unknown)
           : module.default
       },
-      catch: (error) =>
-        new BillingConfigError({
-          message: `Could not load ${file}`,
-          hint: error instanceof Error ? error.message : String(error),
-        }),
+      catch: (error) => loadFailure(file, error),
     })
     const source = JSON.stringify(exported, null, 2) as string | undefined
     if (source === undefined || !source.startsWith('{')) {
@@ -76,21 +105,27 @@ export const loader = (fs: FileSystem.FileSystem) => {
       return { file, source, input, generated: false }
     })
 
+  const exists = (file: string) =>
+    fs.exists(file).pipe(Effect.orElseSucceed(() => false))
+
   const findDefault = Effect.gen(function* () {
-    for (const name of DEFAULT_FILES) {
-      if (yield* fs.exists(name).pipe(Effect.orElseSucceed(() => false))) {
-        return name
-      }
+    for (const name of DEFAULT_CONFIG_FILES) {
+      if (yield* exists(name)) return name
     }
     return yield* new BillingConfigError({
       message: 'No billing config file found in the current directory',
-      hint: `Looked for ${DEFAULT_FILES.join(', ')}. Pass a path to use another file.`,
+      hint: `Looked for ${DEFAULT_CONFIG_FILES.join(', ')}. Pass a path to use another file.`,
     })
   })
 
   return (file?: string): Effect.Effect<LoadedConfig, BillingConfigError> =>
     Effect.gen(function* () {
       const resolved = file ?? (yield* findDefault)
+      if (!(yield* exists(resolved))) {
+        return yield* new BillingConfigError({
+          message: `${resolved} does not exist`,
+        })
+      }
       const extension = extname(resolved)
       if (SCRIPT_EXTENSIONS.has(extension)) return yield* loadScript(resolved)
       if (extension === '.json' || extension === '') {

@@ -82,7 +82,7 @@ describe('polar config plan', () => {
     expect(failed).toBe(false)
     expect(output).toContain('+ tool-calls  will be created')
     expect(output).toContain(
-      'Warning: No events with this name have been received yet.',
+      'Warning: No events named "tool_call" have been received yet',
     )
     expect(output).toContain('Found 0 errors and 1 warning.')
     expect(output).toMatch(/Checking config \d+ms/)

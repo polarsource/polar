@@ -12,14 +12,18 @@ import {
   overrideCredential,
 } from '@/utils/test-utils/services'
 
+const ORG_1 = '00000000-0000-4000-8000-000000000001'
+const ORG_2 = '00000000-0000-4000-8000-000000000002'
+const ORG_3 = '00000000-0000-4000-8000-000000000003'
+
 const first = {
-  id: 'org-1',
+  id: ORG_1,
   name: 'First',
   slug: 'first',
   environment: 'sandbox' as const,
 }
 const second = {
-  id: 'org-2',
+  id: ORG_2,
   name: 'Second',
   slug: 'second',
   environment: 'production' as const,
@@ -30,6 +34,7 @@ let pages: Partial<Record<PolarEnvironment, ActiveOrganization[][]>>
 let requests: Array<{
   page?: number
   id?: string
+  slug?: string
   environment: PolarEnvironment
 }>
 let denied: boolean
@@ -37,11 +42,17 @@ let denied: boolean
 const environmentOf = () => polar.state.requests.at(-1)!.environment
 const polar = fakePolar({
   organizations: {
-    list: ({ page }: { page: number }) => {
+    list: ({ page = 1, slug }: { page?: number; slug?: string }) => {
       const environment = environmentOf()
-      requests.push({ page, environment })
+      requests.push({ page, environment, ...(slug ? { slug } : {}) })
       if (denied) throw new Error('forbidden')
       const items = pages[environment] ?? [[]]
+      if (slug !== undefined) {
+        return Promise.resolve({
+          items: items.flat().filter((org) => org.slug === slug),
+          pagination: { max_page: 1 },
+        })
+      }
       return Promise.resolve({
         items: items[page - 1] ?? [],
         pagination: { max_page: items.length },
@@ -124,13 +135,13 @@ test('token overrides ignore saved selection and cannot change it', async () => 
 
 test('lists every page of every logged-in environment', async () => {
   pages = {
-    sandbox: [[first], [{ ...first, id: 'org-3' }]],
+    sandbox: [[first], [{ ...first, id: ORG_3 }]],
     production: [[second]],
   }
   const organizations = await service()
   expect(await Effect.runPromise(organizations.listAll)).toEqual([
     first,
-    { ...first, id: 'org-3' },
+    { ...first, id: ORG_3 },
     second,
   ])
   expect(requests).toEqual([
@@ -159,18 +170,46 @@ test('an explicit id is looked up across logged-in environments without persisti
   ])
 })
 
+test('an explicit slug is looked up by listing instead of fetching by id', async () => {
+  const organizations = await service()
+  expect(await Effect.runPromise(organizations.resolve('second'))).toEqual(
+    second,
+  )
+  expect(requests).toEqual([
+    { page: 1, slug: 'second', environment: 'sandbox' },
+    { page: 1, slug: 'second', environment: 'production' },
+  ])
+  expect(
+    polar.state.requests.every(
+      (request) => request.organizationId === undefined,
+    ),
+  ).toBe(true)
+})
+
+test('an unknown slug in a single environment says so', async () => {
+  auth.state.sessions = ['sandbox']
+  const organizations = await service()
+  await expect(
+    Effect.runPromise(organizations.resolve('nope')),
+  ).rejects.toThrow('No organization with the slug nope in sandbox')
+})
+
 test('an explicit id in a single environment surfaces the real error', async () => {
   auth.state.sessions = ['sandbox']
   const organizations = await service()
   await expect(
-    Effect.runPromise(organizations.resolve('missing')),
+    Effect.runPromise(
+      organizations.resolve('00000000-0000-4000-8000-00000000dead'),
+    ),
   ).rejects.toThrow('missing')
 })
 
 test('an unknown explicit id names the environments that were searched', async () => {
   const organizations = await service()
   await expect(
-    Effect.runPromise(organizations.resolve('missing')),
+    Effect.runPromise(
+      organizations.resolve('00000000-0000-4000-8000-00000000dead'),
+    ),
   ).rejects.toThrow('inaccessible in sandbox and production')
 })
 
@@ -218,7 +257,7 @@ test('a stale selection fails rather than choosing another organization', async 
 test('override uses its own environment and only selects a sole accessible organization', async () => {
   auth.state.credential = overrideCredential()
   auth.state.environment = 'sandbox'
-  pages = { sandbox: [[first, { ...first, id: 'org-3' }]] }
+  pages = { sandbox: [[first, { ...first, id: ORG_3 }]] }
   const organizations = await service()
   await expect(Effect.runPromise(organizations.resolve())).rejects.toThrow(
     '--org <id>',

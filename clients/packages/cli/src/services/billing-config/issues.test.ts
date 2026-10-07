@@ -72,7 +72,7 @@ describe('issues', () => {
       {
         severity: 'error',
         code: 'missing',
-        path: 'meters.0.name',
+        path: 'meters.tool-calls.name',
         message: 'Field required',
         got: undefined,
         location: { line: 3, column: 5, length: 1 },
@@ -80,7 +80,7 @@ describe('issues', () => {
       {
         severity: 'warning',
         code: 'unknown_event',
-        path: 'meters.0.filter.conjunction',
+        path: 'meters.tool-calls.filter.conjunction',
         message: 'No events with this name have been received yet.',
         got: '"qwe"',
         location: { line: 5, column: 34, length: 5 },
@@ -132,7 +132,7 @@ describe('issues', () => {
       {
         severity: 'error',
         code: 'union_tag_invalid',
-        path: 'meters.0.filter.conjunction',
+        path: 'meters.tool-calls.filter.conjunction',
         message: "Input should be 'and' or 'or'",
         got: '"qwe"',
         location: { line: 5, column: 34, length: 5 },

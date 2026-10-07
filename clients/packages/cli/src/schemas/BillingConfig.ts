@@ -1,5 +1,16 @@
 import { Data, Schema } from 'effect'
 
+export const DEFAULT_CONFIG_FILES = [
+  'polar.config.ts',
+  'polar.config.mts',
+  'polar.config.cts',
+  'polar.config.js',
+  'polar.config.mjs',
+  'polar.config.cjs',
+  'polar.config.json',
+  'polar.json',
+] as const
+
 export const IssueSeverity = Schema.Literals(['error', 'warning'])
 
 const ServerPath = Schema.Array(Schema.Union([Schema.String, Schema.Finite]))

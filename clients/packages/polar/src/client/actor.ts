@@ -25,7 +25,7 @@ type BenefitName<Config extends RuntimeSDKConfig> = keyof NonNullable<
   Config['benefits']
 > &
   string
-type MeterExternalId<Config extends RuntimeSDKConfig> = keyof NonNullable<
+type MeterName<Config extends RuntimeSDKConfig> = keyof NonNullable<
   Config['meters']
 > &
   string
@@ -49,7 +49,7 @@ export type Actor<Config extends RuntimeSDKConfig> = (
   identifier: ActorIdentifier,
 ) => {
   access: (name: BenefitName<Config>) => Promise<BenefitAccess>
-  balance: (externalId: MeterExternalId<Config>) => Promise<MeterBalance>
+  balance: (name: MeterName<Config>) => Promise<MeterBalance>
   track: (name: EventName<Config>, metadata?: EventMetadata) => Promise<void>
 }
 
@@ -104,9 +104,9 @@ export const createActor = <Config extends RuntimeSDKConfig>(
         : { granted: true, metadata: grant.benefit.metadata }
     },
 
-    async balance(externalId) {
-      if (config.meters?.[externalId] === undefined) {
-        throw new Error(`Unknown meter: ${externalId}`)
+    async balance(name) {
+      if (config.meters?.[name] === undefined) {
+        throw new Error(`Unknown meter: ${name}`)
       }
 
       // A customer meter only gets created in 2 cases:
@@ -119,14 +119,14 @@ export const createActor = <Config extends RuntimeSDKConfig>(
       const customerMeter = await getCustomerMeter(
         sdk,
         toCustomerIdentifier(identifier),
-        externalId,
+        name,
       )
-      if (customerMeter === undefined && !deployedMeters.has(externalId)) {
-        await assertMeterDeployed(sdk, externalId)
+      if (customerMeter === undefined && !deployedMeters.has(name)) {
+        await assertMeterDeployed(sdk, name)
       }
-      deployedMeters.add(externalId)
+      deployedMeters.add(name)
 
-      const key = cacheKey(identifier, externalId)
+      const key = cacheKey(identifier, name)
       const ingestedAt = latestIngestedAt.get(key)
 
       const updatedAt = customerMeter

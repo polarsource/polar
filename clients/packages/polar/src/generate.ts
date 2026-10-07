@@ -23,7 +23,7 @@ const renderCondition = (
 }
 
 const renderMeter = (meter: MeterConfig, imports: Set<string>): string => {
-  const lines = [`meter().displayName(${literal(meter.name)})`]
+  const lines = [`meter({ displayName: ${literal(meter.name)} })`]
   const filter = meter.filter
   if (filter.conjunction === 'or' || filter.clauses.length > 0) {
     const [only] = filter.clauses

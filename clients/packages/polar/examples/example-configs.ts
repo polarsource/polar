@@ -8,8 +8,7 @@ export const requestCountConfig = defineConfig({
 
 export const completionTokensConfig = defineConfig({
   meters: ({ meter }) => ({
-    completionTokens: meter()
-      .displayName('Completion Tokens')
+    completionTokens: meter({ displayName: 'Completion Tokens' })
       .where(
         and(
           eq('name', 'llm.completions'),
@@ -27,25 +26,27 @@ export const completionTokensConfig = defineConfig({
 
 export const apiMetricsConfig = defineConfig({
   meters: ({ meter }) => {
-    const successfulRequests = meter()
-      .where(eq('name', 'api.request'))
-      .where(and(gte('statusCode', 200), lt('statusCode', 300)))
+    const successfulRequests = and(
+      eq('name', 'api.request'),
+      gte('statusCode', 200),
+      lt('statusCode', 300),
+    )
 
     return {
-      requests: successfulRequests
-        .displayName('Successful Requests')
+      requests: meter({ displayName: 'Successful Requests' })
+        .where(successfulRequests)
         .unit('custom', 'request')
         .count(),
-      averageLatency: successfulRequests
-        .displayName('Average Latency')
+      averageLatency: meter({ displayName: 'Average Latency' })
+        .where(successfulRequests)
         .unit('custom', 'ms')
         .avg('durationMs'),
-      peakLatency: successfulRequests
-        .displayName('Peak Latency')
+      peakLatency: meter({ displayName: 'Peak Latency' })
+        .where(successfulRequests)
         .unit('custom', 'ms')
         .max('durationMs'),
-      activeAccounts: successfulRequests
-        .displayName('Active Accounts')
+      activeAccounts: meter({ displayName: 'Active Accounts' })
+        .where(successfulRequests)
         .unique('accountId'),
     }
   },

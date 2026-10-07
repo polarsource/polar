@@ -51,8 +51,7 @@ test('defined configs connect lazily, resolve deployed IDs, and track metadata e
     })
   const config = defineConfig({
     meters: ({ meter }) => ({
-      tokens: meter()
-        .displayName('Tokens')
+      tokens: meter({ displayName: 'Tokens' })
         .where(and(eq('name', 'llm.completion'), gte('inputTokens', 1000)))
         .sum('inputTokens'),
     }),

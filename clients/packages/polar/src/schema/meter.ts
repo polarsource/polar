@@ -107,10 +107,6 @@ class MeterBuilder {
     private readonly meterUnit: Unit = { unit: 'scalar' },
   ) {}
 
-  displayName(name: string): MeterBuilder {
-    return new MeterBuilder(name, this.meterFilter, this.meterUnit)
-  }
-
   where(condition: Condition): MeterBuilder {
     const filter = 'conjunction' in condition ? condition : and(condition)
     const combined: MeterFilter =
@@ -178,4 +174,6 @@ class MeterBuilder {
 
 export type MeterDefinition = ReturnType<MeterBuilder['count']>
 
-export const meter = (): MeterBuilder => new MeterBuilder()
+export const meter = (
+  config: { readonly displayName?: string } = {},
+): MeterBuilder => new MeterBuilder(config.displayName)

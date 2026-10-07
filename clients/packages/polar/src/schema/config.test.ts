@@ -18,8 +18,8 @@ test('config serializes to JSON without exposing mutable internal data', () => {
 test('connect rejects duplicate IDs without changing JSON serialization', () => {
   const config = defineConfig({
     meters: ({ meter }) => [
-      ['calls', meter().displayName('First').count()],
-      ['calls', meter().displayName('Second').count()],
+      ['calls', meter({ displayName: 'First' }).count()],
+      ['calls', meter({ displayName: 'Second' }).count()],
     ],
   })
   expect(config.toJSON().meters).toHaveLength(2)

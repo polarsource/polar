@@ -1,4 +1,4 @@
-import { Flag } from 'effect/unstable/cli'
+import { Flag } from 'effect/cli'
 
 export const sandbox = Flag.Boolean('sandbox').pipe(
   Flag.withDefault(false),

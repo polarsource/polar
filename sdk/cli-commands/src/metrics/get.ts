@@ -1,7 +1,7 @@
 // Generated from metrics:get (2026-10). Do not edit.
 import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
-import { Command, Flag } from 'effect/unstable/cli'
+import { Command, Flag } from 'effect/cli'
 import { ApiRuntime, ApiCommandError } from '../runtime'
 import { data, mergeInput, missingFlags } from '../inputs'
 

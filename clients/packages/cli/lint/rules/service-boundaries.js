@@ -10,7 +10,7 @@ const forbiddenImports = [
     messageId: 'print',
   },
   {
-    matches: (source) => source === 'effect/unstable/cli',
+    matches: (source) => source === 'effect/cli',
     messageId: 'prompt',
   },
 ]

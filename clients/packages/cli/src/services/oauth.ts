@@ -1,11 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { createServer } from 'node:http'
 import { Context, DateTime, Effect, Layer, Redacted, Schema } from 'effect'
-import {
-  HttpClient,
-  HttpClientRequest,
-  HttpClientResponse,
-} from 'effect/unstable/http'
+import { HttpClient, HttpClientRequest, HttpClientResponse } from 'effect/http'
 import open from 'open'
 import { apiUrl } from '@/services/api'
 import {

@@ -1,5 +1,5 @@
 // Generated CLI resource command. Do not edit.
-import { Command } from 'effect/unstable/cli'
+import { Command } from 'effect/cli'
 import { command as generateInvoiceOrders } from './generate_invoice'
 import { command as getOrders } from './get'
 import { command as invoiceOrders } from './invoice'

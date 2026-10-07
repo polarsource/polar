@@ -1,5 +1,5 @@
 import { Layer } from 'effect'
-import { FetchHttpClient } from 'effect/unstable/http'
+import { FetchHttpClient } from 'effect/http'
 
 type Handler = (request: Request) => Response | Promise<Response>
 

@@ -1,5 +1,5 @@
 // Generated CLI resource command. Do not edit.
-import { Command } from 'effect/unstable/cli'
+import { Command } from 'effect/cli'
 import { command as listEventTypes } from './list'
 import { command as updateEventTypes } from './update'
 

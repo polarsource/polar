@@ -1,5 +1,5 @@
 import { Option, Schema } from 'effect'
-import { Flag } from 'effect/unstable/cli'
+import { Flag } from 'effect/cli'
 
 export const nullableStringFlag = (name: string) =>
   Flag.String(name).pipe(Flag.map((value) => value === 'null' ? null : value))

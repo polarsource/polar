@@ -2,7 +2,7 @@ import { inDirectory, isMember } from '../ast.js'
 
 const forbiddenImports = [
   {
-    matches: (source) => source.startsWith('effect/unstable/http'),
+    matches: (source) => source.startsWith('effect/http'),
     messageId: 'http',
   },
   {

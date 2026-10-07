@@ -67,6 +67,7 @@ catalog:
   'ai': '^7.0.0'
   'class-variance-authority': '^0.7.1'
   'date-fns': '^4.4.0'
+  'effect': '4.0.1'
   'event-source-plus': '^0.1.15'
   'eventemitter3': '^5.0.4'
   'jsdom': '^27.4.0'

@@ -1,5 +1,5 @@
 import { Data, Effect, Schema } from 'effect'
-import { HttpClient, HttpClientResponse } from 'effect/unstable/http'
+import { HttpClient, HttpClientResponse } from 'effect/http'
 
 const REPOSITORY = 'polarsource/polar'
 const TAG_PREFIX = '@polar-sh/cli@'

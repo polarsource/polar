@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import { Cause, Effect, Exit, FileSystem, Layer, PlatformError } from 'effect'
-import { CliError, Command } from 'effect/unstable/cli'
+import { CliError, Command } from 'effect/cli'
 import { AuthError, type PolarEnvironment } from '@/schemas/Auth'
 import { UsedEnvironments } from '@/services/api'
 import {

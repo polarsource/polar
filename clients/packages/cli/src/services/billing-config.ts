@@ -1,7 +1,7 @@
 import { extname, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { Context, Effect, FileSystem, Layer } from 'effect'
-import { HttpClientRequest, HttpClientResponse } from 'effect/unstable/http'
+import { HttpClientRequest, HttpClientResponse } from 'effect/http'
 import { findNodeAtLocation, parseTree } from 'jsonc-parser'
 import type {
   ActiveOrganization,

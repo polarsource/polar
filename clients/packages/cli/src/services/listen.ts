@@ -1,6 +1,6 @@
 import { Cause, Data, Duration, Effect, Exit, Schema, Stream } from 'effect'
-import { Sse } from 'effect/unstable/encoding'
-import { HttpClientRequest, HttpClientResponse } from 'effect/unstable/http'
+import { Sse } from 'effect/encoding'
+import { HttpClientRequest, HttpClientResponse } from 'effect/http'
 import { type ActiveOrganization, loginCommand } from '@/schemas/Auth'
 import {
   ListenAck,

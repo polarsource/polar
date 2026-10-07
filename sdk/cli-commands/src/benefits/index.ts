@@ -1,5 +1,5 @@
 // Generated CLI resource command. Do not edit.
-import { Command } from 'effect/unstable/cli'
+import { Command } from 'effect/cli'
 import { command as createBenefits } from './create'
 import { command as deleteBenefits } from './delete'
 import { command as filesBenefits } from './files'

@@ -1,5 +1,5 @@
 import { Context, Data, Effect, Layer, Schema } from 'effect'
-import { HttpClientRequest, HttpClientResponse } from 'effect/unstable/http'
+import { HttpClientRequest, HttpClientResponse } from 'effect/http'
 import type {
   ActiveOrganization,
   AuthError,

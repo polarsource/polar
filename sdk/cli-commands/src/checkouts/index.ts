@@ -1,5 +1,5 @@
 // Generated CLI resource command. Do not edit.
-import { Command } from 'effect/unstable/cli'
+import { Command } from 'effect/cli'
 import { command as getCheckouts } from './get'
 import { command as listCheckouts } from './list'
 

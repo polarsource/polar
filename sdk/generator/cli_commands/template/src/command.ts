@@ -3,7 +3,7 @@
 import type { Polar } from '@polar-sh/sdk/{{ api.version }}'
 {% endif %}
 import { Effect{% if confirmation_fields %}, Schema{% endif %} } from 'effect'
-import { {% if method.path_params %}Argument, {% endif %}Command{% if fields or not method.requires_authentication %}, Flag{% endif %} } from 'effect/unstable/cli'
+import { {% if method.path_params %}Argument, {% endif %}Command{% if fields or not method.requires_authentication %}, Flag{% endif %} } from 'effect/cli'
 import { ApiRuntime{% if confirmation_fields or required %}, ApiCommandError{% endif %}{% if not method.requires_authentication or method.pending_response %}, executeRequest{% endif %} } from '{{ runtime_path }}runtime'
 {% if helpers %}
 import { {{ helpers | join(', ') }} } from '{{ runtime_path }}inputs'

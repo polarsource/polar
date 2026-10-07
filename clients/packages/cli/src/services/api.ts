@@ -1,5 +1,5 @@
 import { Context, Effect } from 'effect'
-import { HttpClientRequest } from 'effect/unstable/http'
+import { HttpClientRequest } from 'effect/http'
 import { loginCommand, orgCommand, type PolarEnvironment } from '@/schemas/Auth'
 
 type Env = Record<string, string | undefined>

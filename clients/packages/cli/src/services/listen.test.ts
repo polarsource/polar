@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, vi, test } from 'vitest'
 import { Effect, Fiber, Option } from 'effect'
-import { FetchHttpClient } from 'effect/unstable/http'
+import { FetchHttpClient } from 'effect/http'
 import { AuthError } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
 import { Deliveries, type Delivery } from '@/services/deliveries'

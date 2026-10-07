@@ -9,7 +9,7 @@ import {
   Stdio,
   Terminal,
 } from 'effect'
-import { Command } from 'effect/unstable/cli'
+import { Command } from 'effect/cli'
 import { Environment as ApiEnvironment } from '@/services/api'
 
 export const stripAnsi = (text: string) => Bun.stripANSI(text)

@@ -3,7 +3,7 @@ import { isTestFile, locate, sourceOf } from '../paths.ts'
 import type { Node, Rule } from '../types.ts'
 
 const promptModules = new Set([
-  'effect/unstable/cli',
+  'effect/cli',
   'node:readline',
   'node:readline/promises',
 ])

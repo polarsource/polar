@@ -1,5 +1,5 @@
 // Generated CLI resource command. Do not edit.
-import { Command } from 'effect/unstable/cli'
+import { Command } from 'effect/cli'
 import { command as createWebhookEndpointWebhooks } from './create_webhook_endpoint'
 import { command as deleteWebhookEndpointWebhooks } from './delete_webhook_endpoint'
 import { command as getWebhookEndpointWebhooks } from './get_webhook_endpoint'

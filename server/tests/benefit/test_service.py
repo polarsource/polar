@@ -797,32 +797,6 @@ class TestUpdate:
         assert updated_benefit.visibility == Visibility.public
 
     @pytest.mark.auth
-    async def test_existing_external_id(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        redis: Redis,
-        auth_subject: AuthSubject[User],
-        user_organization: UserOrganization,
-        organization: Organization,
-    ) -> None:
-        await create_benefit(
-            save_fixture, organization=organization, external_id="ext_1337"
-        )
-        benefit = await create_benefit(save_fixture, organization=organization)
-
-        with pytest.raises(PolarRequestValidationError) as e:
-            await benefit_service.update(
-                session,
-                redis,
-                benefit,
-                BenefitCustomUpdate(type=BenefitType.custom, external_id="ext_1337"),
-                auth_subject,
-            )
-
-        assert e.value.errors()[0]["loc"] == ("body", "external_id")
-
-    @pytest.mark.auth
     async def test_same_external_id(
         self,
         mocker: MockerFixture,

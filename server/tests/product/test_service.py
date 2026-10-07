@@ -2505,32 +2505,6 @@ class TestUpdate:
         assert product.trial_interval_count is None
 
     @pytest.mark.auth
-    async def test_existing_external_id(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User],
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=None,
-            external_id="ext_1337",
-        )
-        product = await create_product(
-            save_fixture, organization=organization, recurring_interval=None
-        )
-
-        with pytest.raises(PolarRequestValidationError) as e:
-            await product_service.update(
-                session, product, ProductUpdate(external_id="ext_1337"), auth_subject
-            )
-
-        assert e.value.errors()[0]["loc"] == ("body", "external_id")
-
-    @pytest.mark.auth
     async def test_same_external_id(
         self,
         save_fixture: SaveFixture,

@@ -207,6 +207,7 @@ class Event(Model, MetadataMixin):
     ingested_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, default=utc_now, index=True
     )
+    ingest_sequence: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     timestamp: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, default=utc_now, index=True
     )

@@ -32,6 +32,7 @@ from .email_log import EmailLog
 from .email_otp import EmailOTP
 from .email_verification import EmailVerification
 from .event import Event
+from .event_sequence import EventSequence
 from .event_type import EventType
 from .external_event import ExternalEvent
 from .feedback import Feedback, FeedbackStatus, FeedbackType
@@ -168,6 +169,7 @@ __all__ = [
     "EmailOTP",
     "EmailVerification",
     "Event",
+    "EventSequence",
     "EventType",
     "ExternalEvent",
     "Feedback",

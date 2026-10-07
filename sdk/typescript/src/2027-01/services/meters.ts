@@ -124,6 +124,40 @@ export const createMeters = (client: ClientBase) => {
     });
   };
 };
+export const getExternalMeters = (client: ClientBase) => {
+  /**
+   * Get a meter by external ID.
+   *
+   * **Scopes**: `meters:read` `meters:write`
+   *
+   * @param external_id
+   * @param requestOptions - Request options
+   * @returns {Meter}
+   * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
+   * @throws {PolarServerError} When the server returns a 5xx error
+   * @throws {ResourceNotFound} Meter not found.
+   * @throws {HTTPValidationError} Validation Error
+   */
+  return async (external_id: string, requestOptions?: RequestOptions): Promise<Meter> => {
+    const pathParams = {
+      external_id: external_id,
+    };
+    const queryParams = {};
+    const request = client.buildRequest(
+      "GET",
+      "/v1/meters/external/{external_id}",
+      pathParams,
+      queryParams,
+      undefined,
+    );
+    const response = await client.sendRequest(request, requestOptions);
+    return client.parseResponse<Meter>(response, "json", {
+      404: ResourceNotFound,
+      422: HTTPValidationError,
+    });
+  };
+};
 export const getMeters = (client: ClientBase) => {
   /**
    * Get a meter by ID.
@@ -249,6 +283,7 @@ export function createMetersService(client: ClientBase) {
   return {
     list: listMeters(client),
     create: createMeters(client),
+    getExternal: getExternalMeters(client),
     get: getMeters(client),
     update: updateMeters(client),
     quantities: quantitiesMeters(client),

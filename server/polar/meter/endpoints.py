@@ -10,6 +10,7 @@ from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.time_queries import MIN_DATETIME, TimeInterval, is_under_limits
+from polar.kit.versioning import version
 from polar.meter.aggregation import AggregationFunction
 from polar.models import Meter
 from polar.openapi import APITag, cli_preview
@@ -21,6 +22,7 @@ from polar.postgres import (
     get_db_session,
 )
 from polar.routing import APIRouter
+from polar.version import V2027_01
 
 from . import auth, sorting
 from .schemas import Meter as MeterSchema
@@ -73,6 +75,28 @@ async def list(
         count,
         pagination,
     )
+
+
+@router.get(
+    "/external/{external_id}",
+    summary="Get Meter by External ID",
+    openapi_extra=cli_preview(("id", "ID"), ("name", "Name"), ("unit", "Unit")),
+    response_model=MeterSchema,
+    responses={404: MeterNotFound},
+)
+@version(starting_from=V2027_01)
+async def get_external(
+    external_id: str,
+    auth_subject: auth.MeterRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> Meter:
+    """Get a meter by external ID."""
+    meter = await meter_service.get_external(session, auth_subject, external_id)
+
+    if meter is None:
+        raise ResourceNotFound()
+
+    return meter
 
 
 @router.get(

@@ -139,6 +139,23 @@ class MeterService:
         )
         return await repository.get_one_or_none(statement)
 
+    async def get_external(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        external_id: str,
+    ) -> Meter | None:
+        repository = MeterRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.products_read
+        )
+        statement = (
+            repository.get_statement_by_org_ids(org_ids)
+            .where(Meter.external_id == external_id)
+            .options(joinedload(Meter.last_billed_event))
+        )
+        return await repository.get_one_or_none(statement)
+
     async def create(
         self,
         session: AsyncSession,

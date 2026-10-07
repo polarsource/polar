@@ -65,6 +65,67 @@ class TestGetMeter:
 
 
 @pytest.mark.asyncio
+class TestGetExternalMeter:
+    @pytest.mark.api_version(V2027_01)
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/meters/external/tool_call")
+
+        assert response.status_code == 401
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture, organization=organization, external_id="tool_call"
+        )
+
+        response = await client.get("/v1/meters/external/tool_call")
+
+        assert response.status_code == 200
+        assert response.json()["id"] == str(meter.id)
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_meter(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization_second: Organization,
+    ) -> None:
+        await create_meter(
+            save_fixture, organization=organization_second, external_id="tool_call"
+        )
+
+        response = await client.get("/v1/meters/external/tool_call")
+
+        assert response.status_code == 404
+
+    @pytest.mark.api_version(V2026_04, V2026_10)
+    @pytest.mark.auth
+    async def test_not_available_before_2027_01(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        await create_meter(
+            save_fixture, organization=organization, external_id="tool_call"
+        )
+
+        response = await client.get("/v1/meters/external/tool_call")
+
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
 class TestGetMeterQuantities:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/meters/{uuid.uuid4()}/quantities")

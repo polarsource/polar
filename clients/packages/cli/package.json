@@ -37,11 +37,11 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "@effect/platform-bun": "4.0.0-rc.117",
+    "@effect/platform-bun": "4.0.1",
     "@napi-rs/keyring": "2.1.0",
     "@polar-sh/cli-commands": "file:../../../sdk/cli-commands",
     "@polar-sh/sdk": "1.0.2",
-    "effect": "4.0.0-rc.117",
+    "effect": "catalog:",
     "jsonc-parser": "^3.3.1",
     "open": "^10.2.0",
     "picocolors": "^1.1.1",

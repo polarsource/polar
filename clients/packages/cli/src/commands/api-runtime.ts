@@ -1,6 +1,6 @@
 import { ApiCommandError, ApiRuntime } from '@polar-sh/cli-commands'
 import { Console, Effect, Layer, Result, Stdio, Terminal } from 'effect'
-import { Prompt } from 'effect/unstable/cli'
+import { Prompt } from 'effect/cli'
 import { Organizations } from '@/services/organizations'
 import { Polar } from '@/services/polar'
 import { formatRecordPreview } from '@/utils/api-preview'

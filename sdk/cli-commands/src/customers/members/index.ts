@@ -1,5 +1,5 @@
 // Generated CLI resource command. Do not edit.
-import { Command } from 'effect/unstable/cli'
+import { Command } from 'effect/cli'
 import { command as createMembers } from './create'
 import { command as createExternalMembers } from './create_external'
 import { command as deleteMembers } from './delete'

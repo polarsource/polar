@@ -1,5 +1,5 @@
 // Generated CLI resource command. Do not edit.
-import { Command } from 'effect/unstable/cli'
+import { Command } from 'effect/cli'
 import { command as createMeters } from './create'
 import { command as getMeters } from './get'
 import { command as listMeters } from './list'

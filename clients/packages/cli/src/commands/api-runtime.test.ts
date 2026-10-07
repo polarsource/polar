@@ -1,6 +1,6 @@
 import { commands, products } from '@polar-sh/cli-commands'
 import { Effect, Layer } from 'effect'
-import { Command, Prompt } from 'effect/unstable/cli'
+import { Command, Prompt } from 'effect/cli'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import * as ApiRuntime from '@/commands/api-runtime'
 import type { ActiveOrganization } from '@/schemas/Auth'
@@ -16,8 +16,8 @@ import {
   overrideCredential,
 } from '@/utils/test-utils/services'
 
-vi.mock('effect/unstable/cli', async (importOriginal) => {
-  const cli = await importOriginal<typeof import('effect/unstable/cli')>()
+vi.mock('effect/cli', async (importOriginal) => {
+  const cli = await importOriginal<typeof import('effect/cli')>()
   return { ...cli, Prompt: { ...cli.Prompt, run: vi.fn() } }
 })
 

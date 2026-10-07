@@ -1,6 +1,6 @@
 // Generated from orders:receipt (2026-10). Do not edit.
 import { Effect } from 'effect'
-import { Argument, Command } from 'effect/unstable/cli'
+import { Argument, Command } from 'effect/cli'
 import { ApiRuntime, executeRequest } from '../runtime'
 
 export const command = Command.make(

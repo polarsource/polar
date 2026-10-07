@@ -1,5 +1,5 @@
 import { Effect, Exit, Scope } from 'effect'
-import { HttpClient, HttpClientRequest } from 'effect/unstable/http'
+import { HttpClient, HttpClientRequest } from 'effect/http'
 import type { PolarEnvironment } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
 

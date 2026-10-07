@@ -1,5 +1,5 @@
 import { commands } from '@polar-sh/cli-commands'
-import { Command, GlobalFlag } from 'effect/unstable/cli'
+import { Command, GlobalFlag } from 'effect/cli'
 import { auth } from '@/commands/auth'
 import { config } from '@/commands/config'
 import { home } from '@/commands/home'

@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { rmSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { Data, Effect, FileSystem } from 'effect'
-import { HttpClient } from 'effect/unstable/http'
+import { HttpClient } from 'effect/http'
 import type { CLIRelease } from '@/services/github-releases'
 
 export class UpdateError extends Data.TaggedError('UpdateError')<{

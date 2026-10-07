@@ -1,5 +1,5 @@
 // Generated CLI resource command. Do not edit.
-import { Command } from 'effect/unstable/cli'
+import { Command } from 'effect/cli'
 import { command as getLicenseKeys } from './get'
 import { command as getActivationLicenseKeys } from './get_activation'
 import { command as listLicenseKeys } from './list'

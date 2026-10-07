@@ -1,5 +1,5 @@
 // Generated CLI resource command. Do not edit.
-import { Command } from 'effect/unstable/cli'
+import { Command } from 'effect/cli'
 import { command as assignSeatCustomerSeats } from './assign_seat'
 import { command as claimSeatCustomerSeats } from './claim_seat'
 import { command as getClaimInfoCustomerSeats } from './get_claim_info'

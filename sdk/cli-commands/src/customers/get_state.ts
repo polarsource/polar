@@ -1,6 +1,6 @@
 // Generated from customers:get_state (2026-10). Do not edit.
 import { Effect } from 'effect'
-import { Argument, Command } from 'effect/unstable/cli'
+import { Argument, Command } from 'effect/cli'
 import { ApiRuntime } from '../runtime'
 
 export const command = Command.make(

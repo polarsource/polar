@@ -1,6 +1,6 @@
 // Generated from customer-seats:get_claim_info (2026-10). Do not edit.
 import { Effect } from 'effect'
-import { Argument, Command, Flag } from 'effect/unstable/cli'
+import { Argument, Command, Flag } from 'effect/cli'
 import { ApiRuntime, executeRequest } from '../runtime'
 
 export const command = Command.make(

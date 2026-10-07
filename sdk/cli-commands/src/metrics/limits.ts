@@ -1,6 +1,6 @@
 // Generated from metrics:limits (2026-10). Do not edit.
 import { Effect } from 'effect'
-import { Command } from 'effect/unstable/cli'
+import { Command } from 'effect/cli'
 import { ApiRuntime } from '../runtime'
 
 export const command = Command.make('limits', {}, () =>

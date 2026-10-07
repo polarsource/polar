@@ -1,5 +1,5 @@
 import { Console, Effect, Option, Stdio } from 'effect'
-import { Argument, Command, Flag, Prompt } from 'effect/unstable/cli'
+import { Argument, Command, Flag, Prompt } from 'effect/cli'
 import { org } from '@/commands/flags'
 import { formatCatalog } from '@/commands/trigger/catalog'
 import { describeRejection, parseOverrides } from '@/commands/trigger/overrides'

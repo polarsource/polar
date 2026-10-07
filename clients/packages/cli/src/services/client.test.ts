@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import { Effect, Redacted } from 'effect'
-import { FetchHttpClient } from 'effect/unstable/http'
+import { FetchHttpClient } from 'effect/http'
 import { AuthError, type PolarEnvironment } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
 import { authenticatedClient } from '@/services/client'

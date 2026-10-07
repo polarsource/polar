@@ -1,5 +1,5 @@
 // Generated CLI resource command. Do not edit.
-import { Command } from 'effect/unstable/cli'
+import { Command } from 'effect/cli'
 {% for method in methods %}
 import { command as {{ method.name | sdk_name(service.name) }} } from './{{ method.name }}'
 {% endfor %}

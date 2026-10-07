@@ -1,5 +1,5 @@
 import { Console, Duration, Effect, Option } from 'effect'
-import { Argument, Command } from 'effect/unstable/cli'
+import { Argument, Command } from 'effect/cli'
 import { formatProblems, plural } from '@/commands/config/problems'
 import { org } from '@/commands/flags'
 import type { ActiveOrganization } from '@/schemas/Auth'

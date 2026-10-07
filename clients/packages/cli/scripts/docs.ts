@@ -1,13 +1,8 @@
 import { readdir, rm } from 'node:fs/promises'
 import { BunServices } from '@effect/platform-bun'
 import { Console, Effect, Layer, Option } from 'effect'
-import {
-  CliConfig,
-  CliOutput,
-  Command,
-  type HelpDoc,
-} from 'effect/unstable/cli'
-import { FetchHttpClient } from 'effect/unstable/http'
+import { CliConfig, CliOutput, Command, type HelpDoc } from 'effect/cli'
+import { FetchHttpClient } from 'effect/http'
 import { ApiRuntime } from '@polar-sh/cli-commands'
 import { builtIns, program } from '@/program'
 import { Auth } from '@/services/auth'

@@ -1,6 +1,6 @@
 import type { Environment, Polar, PolarCore } from '@polar-sh/sdk/2026-10'
 import { Context, Data, type Effect, type Stdio } from 'effect'
-import type { Prompt } from 'effect/unstable/cli'
+import type { Prompt } from 'effect/cli'
 
 export type { Environment } from '@polar-sh/sdk/2026-10'
 

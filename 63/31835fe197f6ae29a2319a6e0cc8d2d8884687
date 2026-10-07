@@ -1,0 +1,27 @@
+clients/packages/polar/src/generate.test.ts
+  s_26e9f7497a6831::t_efbd0c8fd788ea 108,112
+clients/packages/polar/src/schema/config.test.ts
+  s_26e9f7497a6831::t_9ed899dc22cfef 31-40
+clients/packages/polar/src/schema/meter.ts
+  s_26e9f7497a6831::t_efb1e7ddda44ed 53
+clients/packages/polar/src/internal/meter.test.ts
+  s_26e9f7497a6831::t_dbbad3e659c152 107-108
+clients/packages/polar/src/internal/meter.ts
+  s_26e9f7497a6831::t_af34a6d94b89c8 98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "6331835fe197f6ae29a2319a6e0cc8d2d8884687",
+  "prompts": {},
+  "sessions": {
+    "s_26e9f7497a6831": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a110e6-f34c-748a-a1f4-2cc823c609bc",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

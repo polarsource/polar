@@ -1,0 +1,54 @@
+clients/packages/polar/src/internal/meter.ts
+  s_26e9f7497a6831::t_169c9b489fa435 3,33
+clients/packages/polar/src/generate.ts
+  s_26e9f7497a6831::t_9db043b41e98f6 3
+  s_26e9f7497a6831::t_c44ae00ca4921d 11-18,21,23,28-29,37
+  s_26e9f7497a6831::t_03992fbf8cfb76 19-20,30-36
+  s_26e9f7497a6831::t_df83838b9b4c77 22,26-27,76
+clients/packages/polar/src/schema/meter.ts
+  s_26e9f7497a6831::t_03992fbf8cfb76 116-132
+  s_26e9f7497a6831::t_657f3c5663280a 3-31,35-38
+  s_26e9f7497a6831::t_f2cb4ded596781 88-90,92-95,114
+  s_26e9f7497a6831::t_0dfca342cdf8d8 103-106
+  s_26e9f7497a6831::t_3c216cef2df701 71-76,87,91,102,110-111,115,181
+clients/packages/polar/src/index.test.ts
+  s_26e9f7497a6831::t_a33e81c124e0c5 53-55,62-63
+  s_26e9f7497a6831::t_d7a34de0605793 56-61
+clients/packages/polar/src/schema/runtime.ts
+  s_26e9f7497a6831::t_d7f4de5ca9165a 5
+clients/packages/polar/src/index.ts
+  s_26e9f7497a6831::t_a2c352ed19964f 21-22
+  s_26e9f7497a6831::t_254524174c4161 31
+clients/packages/polar/src/schema/meter.test.ts
+  s_26e9f7497a6831::t_5169c7ca4ba718 2,5,12-13,23-25,27-30,61,63
+  s_26e9f7497a6831::t_0dfca342cdf8d8 6-8,62
+  s_26e9f7497a6831::t_917189ce556b04 22,31-60,64-66
+clients/packages/polar/src/runtime.test.ts
+  s_26e9f7497a6831::t_790bf70d058492 4,53-56
+clients/packages/polar/examples/example-configs.ts
+  s_26e9f7497a6831::t_c6cc1c4d30b8c0 1-52
+clients/packages/polar/src/generate.test.ts
+  s_26e9f7497a6831::t_a9d9bea2edd201 58-59,76,78-79
+  s_26e9f7497a6831::t_d7a34de0605793 60-75,77
+clients/packages/polar/src/schema/config.test.ts
+  s_26e9f7497a6831::t_b5b4394ca44a09 7-8,12,20-22,34
+  s_26e9f7497a6831::t_0dfca342cdf8d8 35
+clients/packages/polar/src/schema/config.ts
+  s_26e9f7497a6831::t_a1886949cf9ade 4,39,41,49-53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "1802580bfd2ed12ffa22f4787706aa6a3a303958",
+  "prompts": {},
+  "sessions": {
+    "s_26e9f7497a6831": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a110e6-f34c-748a-a1f4-2cc823c609bc",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

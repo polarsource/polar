@@ -13,14 +13,12 @@ describe('actor benefits', () => {
       config,
       {} as Polar,
     )({ customerId: 'customer-id' })
-    expectTypeOf(actor.has).parameter(0).toEqualTypeOf<'custom_meters'>()
-    expectTypeOf(actor.has).returns.toEqualTypeOf<Promise<boolean>>()
-    expectTypeOf(actor.benefit).parameter(0).toEqualTypeOf<'custom_meters'>()
+    expectTypeOf(actor.access).parameter(0).toEqualTypeOf<'custom_meters'>()
     const unconfigured = createActor(
       {},
       {} as Polar,
     )({ customerId: 'customer-id' })
-    expectTypeOf(unconfigured.has).parameter(0).toEqualTypeOf<never>()
+    expectTypeOf(unconfigured.access).parameter(0).toEqualTypeOf<never>()
   })
 
   it.each([
@@ -37,8 +35,7 @@ describe('actor benefits', () => {
     } as unknown as Polar
     const actor = createActor(config, sdk)(identifier)
 
-    await expect(actor.has('custom_meters')).resolves.toBe(true)
-    await expect(actor.benefit('custom_meters')).resolves.toEqual({
+    await expect(actor.access('custom_meters')).resolves.toEqual({
       granted: true,
       metadata: { seats: 5 },
     })
@@ -63,6 +60,7 @@ describe('actor benefits', () => {
         benefit_id: 'benefit-id',
         member_id: 'member-id',
         member: { external_id: 'external-member-id' },
+        benefit: { metadata: {} },
       }
     })
     const sdk = { benefits: { iterGrants } } as unknown as Polar
@@ -71,16 +69,18 @@ describe('actor benefits', () => {
       sdk,
     )({ customerId: 'customer-id', ...identifier })
 
-    await expect(actor.has('custom_meters')).resolves.toBe(true)
+    await expect(actor.access('custom_meters')).resolves.toEqual({
+      granted: true,
+      metadata: {},
+    })
   })
 
-  it('returns false when no matching grant exists', async () => {
+  it('returns not granted when no matching grant exists', async () => {
     const iterGrants = vi.fn(async function* () {})
     const sdk = { benefits: { iterGrants } } as unknown as Polar
     const actor = createActor(config, sdk)({ customerId: 'customer-id' })
 
-    await expect(actor.has('custom_meters')).resolves.toBe(false)
-    await expect(actor.benefit('custom_meters')).resolves.toEqual({
+    await expect(actor.access('custom_meters')).resolves.toEqual({
       granted: false,
     })
   })

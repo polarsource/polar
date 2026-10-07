@@ -1,9 +1,4 @@
-import { createActor, type Actor } from './client/actor'
-import type { RuntimeSDKConfig } from './schema/config'
-import { createPolar, type Polar, type PolarOptions } from './sdk'
-
 export { createPolar, createPolarCore, errors, webhooks } from './sdk'
-
 export type {
   Environment,
   models,
@@ -14,16 +9,30 @@ export type {
 } from './sdk'
 
 export type { BenefitAccess, EventMetadata, MeterBalance } from './client/actor'
-export type { RuntimeSDKConfig } from './schema/config'
+export type { RuntimeSDKConfig } from './schema/runtime'
 
-export function RuntimeSDK<const Config extends RuntimeSDKConfig>(
-  config: Config,
-  sdkOptions: PolarOptions,
-): {
-  sdk: Polar
-  actor: Actor<Config>
-} {
-  const sdk = createPolar(sdkOptions)
+export { RuntimeSDK } from './runtime'
+export type { RuntimeConnection } from './runtime'
 
-  return { sdk, actor: createActor(config, sdk) }
-}
+export {
+  and,
+  or,
+  eq,
+  ne,
+  gt,
+  gte,
+  lt,
+  lte,
+  like,
+  notLike,
+  meter,
+} from './schema/meter'
+export type {
+  MeterAggregation,
+  MeterConfig,
+  MeterDefinition,
+  MeterFilter,
+} from './schema/meter'
+export { defineConfig } from './schema/config'
+export type { Config, PolarConfig } from './schema/config'
+export { generateConfig } from './generate'

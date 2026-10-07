@@ -1,8 +1,11 @@
+from contextlib import AsyncExitStack
 from uuid import UUID
 
+import dramatiq
 import logfire
 import structlog
-from fastapi import Request
+from fastapi import Response, WebSocket
+from fastapi.requests import HTTPConnection
 from fastapi.security.utils import get_authorization_scheme_param
 from starlette.types import ASGIApp, Receive, Send
 from starlette.types import Scope as ASGIScope
@@ -50,7 +53,7 @@ from polar.postgres import AsyncSession
 from polar.rate_limit import clear_cached_identity, write_cached_identity
 from polar.redis import Redis
 from polar.sentry import set_sentry_user
-from polar.worker import enqueue_job
+from polar.worker import JobQueueManager, enqueue_job
 
 from .exceptions import (
     InvalidRequestedOrganization,
@@ -70,13 +73,13 @@ log: Logger = structlog.get_logger(__name__)
 
 
 async def get_user_session(
-    request: Request, session: AsyncSession
+    connection: HTTPConnection, session: AsyncSession
 ) -> UserSession | None:
-    return await auth_service.authenticate(session, request)
+    return await auth_service.authenticate(session, connection)
 
 
-def get_bearer_token(request: Request) -> str | None:
-    authorization = request.headers.get("Authorization")
+def get_bearer_token(connection: HTTPConnection) -> str | None:
+    authorization = connection.headers.get("Authorization")
     scheme, value = get_authorization_scheme_param(authorization)
     if not scheme or not value or scheme.lower() != "bearer":
         return None
@@ -130,14 +133,14 @@ async def get_member_session(session: AsyncSession, value: str) -> MemberSession
 
 
 async def get_auth_subject(
-    request: Request, session: AsyncSession
+    connection: HTTPConnection, session: AsyncSession
 ) -> AuthSubject[Subject]:
     subject: User | Organization
     credential: (
         UserSession | OAuth2Token | PersonalAccessToken | OrganizationAccessToken
     )
     organization_ids: frozenset[UUID] | None = None
-    token = get_bearer_token(request)
+    token = get_bearer_token(connection)
     if token is not None and is_registration_token_prefix(token):
         return AuthSubject(Anonymous(), set(), None)
 
@@ -188,7 +191,7 @@ async def get_auth_subject(
     elif token is not None:
         raise InvalidTokenError()
     else:
-        user_session = await get_user_session(request, session)
+        user_session = await get_user_session(connection, session)
         if user_session is None:
             return AuthSubject(Anonymous(), set(), None)
         subject = user_session.user
@@ -201,7 +204,7 @@ async def get_auth_subject(
             or None
         )
 
-    organization_id = get_requested_organization_id(request)
+    organization_id = get_requested_organization_id(connection)
     if (
         organization_id is not None
         and isinstance(subject, Organization)
@@ -225,8 +228,8 @@ async def get_auth_subject(
     return AuthSubject(subject, scopes, credential, organization_ids)
 
 
-def get_requested_organization_id(request: Request) -> UUID | None:
-    value = request.headers.get(ORGANIZATION_HEADER)
+def get_requested_organization_id(connection: HTTPConnection) -> UUID | None:
+    value = connection.headers.get(ORGANIZATION_HEADER)
     if value is None:
         return None
     try:
@@ -243,32 +246,52 @@ class AuthSubjectMiddleware:
         self.redis = redis
 
     async def __call__(self, scope: ASGIScope, receive: Receive, send: Send) -> None:
-        if scope["type"] != "http":
+        if scope["type"] not in ("http", "websocket"):
             await self.app(scope, receive, send)
             return
 
-        session: AsyncSession = scope["state"]["async_session"]
-        request = Request(scope)
+        connection = HTTPConnection(scope)
+        session: AsyncSession
+        response: Response | None
+        auth_subject: AuthSubject[Subject]
 
         try:
-            auth_subject = await get_auth_subject(request, session)
+            async with AsyncExitStack() as stack:
+                if scope["type"] == "websocket":
+                    session = await stack.enter_async_context(
+                        connection.state.async_sessionmaker()
+                    )
+                    await stack.enter_async_context(
+                        JobQueueManager.open(
+                            dramatiq.get_broker(), connection.state.redis
+                        )
+                    )
+                else:
+                    session = connection.state.async_session
+                auth_subject = await get_auth_subject(connection, session)
         except OAuth2Error as e:
-            token = get_bearer_token(request)
+            token = get_bearer_token(connection)
             if token is not None:
                 await clear_cached_identity(self.redis, token)
-            response = await oauth2_error_exception_handler(request, e)
-            request.state.transaction_failed = True
-            return await response(scope, receive, send)
+            response = await oauth2_error_exception_handler(connection, e)
         except PolarAuthError as e:
-            response = await polar_exception_handler(request, e)
-            request.state.transaction_failed = True
+            response = await polar_exception_handler(connection, e)
+        else:
+            response = None
+
+        if response is not None:
+            if scope["type"] == "websocket":
+                return await WebSocket(scope, receive, send).send_denial_response(
+                    response
+                )
+            connection.state.transaction_failed = True
             return await response(scope, receive, send)
 
         scope["state"]["auth_subject"] = auth_subject
 
-        cookie = request.cookies.get(settings.USER_SESSION_COOKIE_KEY)
+        cookie = connection.cookies.get(settings.USER_SESSION_COOKIE_KEY)
         if not isinstance(auth_subject.subject, Anonymous):
-            token = get_bearer_token(request)
+            token = get_bearer_token(connection)
             if token is not None:
                 await write_cached_identity(
                     self.redis, token, auth_subject.rate_limit_key

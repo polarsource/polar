@@ -5,6 +5,8 @@ import httpx
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI
+from sqlalchemy.ext.asyncio import async_sessionmaker
+from starlette.types import Receive, Scope, Send
 
 from polar.app import app as polar_app
 from polar.auth.dependencies import _auth_subject_factory_cache
@@ -60,6 +62,7 @@ async def app(
 async def client(
     app: FastAPI,
     session: AsyncSession,
+    auth_subject: AuthSubject[Subject],
     request: pytest.FixtureRequest,
     api_version: APIVersion | None,
 ) -> AsyncGenerator[httpx.AsyncClient]:
@@ -67,10 +70,18 @@ async def client(
     keep_state = request.node.get_closest_marker("keep_session_state") is not None
     auto_expunge = not keep_state
 
+    sessionmaker = async_sessionmaker(bind=session.bind, expire_on_commit=False)
+
+    async def app_with_state(scope: Scope, receive: Receive, send: Send) -> None:
+        scope.setdefault("state", {}).update(
+            auth_subject=auth_subject, async_sessionmaker=sessionmaker
+        )
+        await app(scope, receive, send)
+
     async with IsolatedSessionTestClient(
         session=session,
         auto_expunge=auto_expunge,
-        transport=httpx.ASGITransport(app=app),
+        transport=httpx.ASGITransport(app=app_with_state),
         base_url="http://test",
         headers={VERSION_HEADER: str(api_version)} if api_version is not None else {},
     ) as client:

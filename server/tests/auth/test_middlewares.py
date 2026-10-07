@@ -4,6 +4,8 @@ from datetime import timedelta
 from uuid import UUID
 
 import pytest
+from sqlalchemy import inspect
+from sqlalchemy.ext.asyncio import async_sessionmaker
 from starlette.requests import Request
 from starlette.types import Message, Receive, Scope, Send
 
@@ -12,7 +14,11 @@ from polar.auth.exceptions import (
     RequestedOrganizationNotAccessible,
 )
 from polar.auth.middlewares import AuthSubjectMiddleware, get_auth_subject
-from polar.auth.models import ORGANIZATION_HEADER, is_single_organization_credential
+from polar.auth.models import (
+    ORGANIZATION_HEADER,
+    Anonymous,
+    is_single_organization_credential,
+)
 from polar.auth.service import auth as auth_service
 from polar.config import settings
 from polar.kit.crypto import get_token_hash
@@ -29,6 +35,7 @@ from polar.models.oauth2_token_organization import OAuth2TokenOrganization
 from polar.models.user_session_organization import UserSessionOrganization
 from polar.oauth2.constants import ACCESS_TOKEN_PREFIX
 from polar.oauth2.sub_type import SubType
+from polar.personal_access_token.service import TOKEN_PREFIX
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
@@ -532,6 +539,96 @@ class TestAuthSubjectMiddlewareRequestedOrganization:
         assert json.loads(messages[1]["body"])["error"] == (
             "RequestedOrganizationNotAccessible"
         )
+
+
+@pytest.mark.asyncio
+class TestAuthSubjectMiddlewareWebSocket:
+    @pytest.mark.parametrize(
+        ("credentials", "status_code"),
+        [("anonymous", None), ("valid", None), ("invalid", 401), ("forbidden", 403)],
+    )
+    async def test_authentication(
+        self,
+        credentials: str,
+        status_code: int | None,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        user: User,
+        organization_second: Organization,
+    ) -> None:
+        access_token = f"{TOKEN_PREFIX}test"
+        personal_access_token = PersonalAccessToken(
+            comment="test",
+            token=get_token_hash(access_token),
+            user=user,
+            expires_at=utc_now() + timedelta(days=1),
+            scope="",
+        )
+        await save_fixture(personal_access_token)
+        headers: list[tuple[bytes, bytes]] = []
+        if credentials != "anonymous":
+            token = "invalid" if credentials == "invalid" else access_token
+            headers.append((b"authorization", f"Bearer {token}".encode()))
+        if credentials == "forbidden":
+            headers.append(
+                (
+                    ORGANIZATION_HEADER.lower().encode(),
+                    str(organization_second.id).encode(),
+                )
+            )
+
+        app_called = False
+
+        async def app(scope: Scope, receive: Receive, send: Send) -> None:
+            nonlocal app_called
+            app_called = True
+            assert status_code is None
+            auth_subject = scope["state"]["auth_subject"]
+            if credentials == "anonymous":
+                assert isinstance(auth_subject.subject, Anonymous)
+            else:
+                assert auth_subject.subject.id == user.id
+                assert auth_subject.session.id == personal_access_token.id
+                assert inspect(auth_subject.subject).detached
+            assert "async_session" not in scope["state"]
+
+        messages: list[Message] = []
+
+        async def send(message: Message) -> None:
+            messages.append(message)
+
+        async def receive() -> Message:
+            return {"type": "websocket.connect"}
+
+        await AuthSubjectMiddleware(app, redis)(
+            {
+                "type": "websocket",
+                "headers": headers,
+                "extensions": {"websocket.http.response": {}},
+                "state": {
+                    "async_sessionmaker": async_sessionmaker(
+                        bind=session.bind, expire_on_commit=False
+                    ),
+                    "redis": redis,
+                },
+            },
+            receive,
+            send,
+        )
+
+        assert app_called == (status_code is None)
+        if status_code is None:
+            assert messages == []
+        else:
+            assert messages[0]["type"] == "websocket.http.response.start"
+            assert messages[0]["status"] == status_code
+            assert messages[1]["type"] == "websocket.http.response.body"
+            body = json.loads(messages[1]["body"])
+            if credentials == "invalid":
+                assert body["error"] == "invalid_token"
+            else:
+                assert body["error"] == "RequestedOrganizationNotAccessible"
 
 
 @pytest.mark.asyncio

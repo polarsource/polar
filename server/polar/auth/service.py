@@ -4,6 +4,7 @@ from uuid import UUID
 
 import structlog
 from fastapi import Request, Response
+from fastapi.requests import HTTPConnection
 from fastapi.responses import RedirectResponse
 from sqlalchemy import delete
 
@@ -67,10 +68,10 @@ class AuthService:
     async def authenticate(
         self,
         session: AsyncSession,
-        request: Request,
+        connection: HTTPConnection,
         cookie: str = settings.USER_SESSION_COOKIE_KEY,
     ) -> UserSession | None:
-        token = request.cookies.get(cookie)
+        token = connection.cookies.get(cookie)
         if token is None or not token.isascii():
             return None
 

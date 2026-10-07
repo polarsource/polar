@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 import redis as _sync_redis
 import redis.asyncio as _async_redis
-from fastapi import Request
+from fastapi.requests import HTTPConnection
 from redis import ConnectionError, ReadOnlyError, RedisError, TimeoutError
 from redis.asyncio.retry import Retry
 from redis.backoff import default_backoff
@@ -109,8 +109,8 @@ def create_redis(process_name: ProcessName) -> Redis:
     )
 
 
-async def get_redis(request: Request) -> Redis:
-    return request.state.redis
+async def get_redis(connection: HTTPConnection) -> Redis:
+    return connection.state.redis
 
 
 __all__ = [

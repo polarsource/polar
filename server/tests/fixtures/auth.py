@@ -1,5 +1,6 @@
 from datetime import timedelta
 from typing import Any, Literal
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -116,8 +117,6 @@ def auth_subject(
     # This matches real web session behavior where all User sessions are UserSessions.
     session: Any = None
     if isinstance(subject, User):
-        from unittest.mock import MagicMock
-
         session = MagicMock(spec=UserSession)
         session.created_at = utc_now()
 

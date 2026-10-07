@@ -1,5 +1,6 @@
 import { getCustomerMeter } from '../internal/api/customer-meters'
 import { ingestEvent } from '../internal/api/events'
+import { hasBenefit } from '../internal/api/benefits'
 import type {
   CustomerIdentifier,
   MemberIdentifier,
@@ -29,6 +30,12 @@ type Events<Config extends RuntimeSDKConfig> = {
   ) => Promise<number>
 }
 
+type Benefits<Config extends RuntimeSDKConfig> = {
+  has: (
+    name: keyof NonNullable<Config['benefits']> & string,
+  ) => Promise<boolean>
+}
+
 type ActorCustomerIdentifier =
   | { externalCustomerId: string; customerId?: never }
   | { customerId: string; externalCustomerId?: never }
@@ -44,6 +51,7 @@ export type Actor<Config extends RuntimeSDKConfig> = (
 ) => {
   meters: Meters<Config>
   events: Events<Config>
+  benefits: Benefits<Config>
 }
 
 const toCustomerIdentifier = (
@@ -169,6 +177,15 @@ export const createActor = <Config extends RuntimeSDKConfig>(
     return {
       meters: meters as Meters<Config>,
       events,
+      benefits: {
+        async has(name) {
+          const benefit = config.benefits?.[name]
+          if (benefit === undefined) {
+            throw new Error(`Unknown benefit: ${name}`)
+          }
+          return hasBenefit(sdk, toMemberIdentifier(identifier), benefit.id)
+        },
+      },
     }
   }
 }

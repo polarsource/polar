@@ -17,8 +17,9 @@ from sqlalchemy import (
     or_,
     select,
     text,
+    tuple_,
 )
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import aliased, joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
@@ -44,6 +45,7 @@ from polar.models import (
     Customer,
     Event,
     Meter,
+    MeterEvent,
     Product,
     ProductPrice,
     SubscriptionProductPrice,
@@ -516,8 +518,29 @@ class MeterService:
     async def enqueue_billing(self, session: AsyncSession) -> None:
         repository = MeterRepository.from_session(session)
 
-        base_statement = repository.get_base_statement().where(
-            Meter.archived_at.is_(None)
+        last_billed_event = aliased(Event)
+        has_events = (
+            select(MeterEvent.event_id).where(MeterEvent.meter_id == Meter.id).exists()
+        )
+        has_events_after_last_billed = (
+            select(MeterEvent.event_id)
+            .where(
+                MeterEvent.meter_id == Meter.id,
+                tuple_(MeterEvent.ingested_at, MeterEvent.event_id)
+                > tuple_(last_billed_event.ingested_at, last_billed_event.id),
+            )
+            .exists()
+        )
+        has_unbilled_events = or_(
+            and_(last_billed_event.id.is_(None), has_events),
+            has_events_after_last_billed,
+        )
+        base_statement = (
+            repository.get_base_statement()
+            .outerjoin(
+                last_billed_event, last_billed_event.id == Meter.last_billed_event_id
+            )
+            .where(Meter.archived_at.is_(None), has_unbilled_events)
         )
         count_result = await session.execute(
             base_statement.with_only_columns(func.count())

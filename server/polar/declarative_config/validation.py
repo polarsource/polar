@@ -45,23 +45,13 @@ class MeterChange:
 
     @property
     def diff(self) -> list[ConfigFieldChange]:
-        if self.meter is None:
-            changed = {
-                field: value
-                for field in _METER_FIELDS
-                if (value := getattr(self.config, field)) is not None
-            }
-            if "metadata" in self.config.model_fields_set:
-                changed["user_metadata"] = self.config.metadata
-        else:
-            changed = self.update_dict
         return [
             ConfigFieldChange(
                 field="metadata" if field == "user_metadata" else field,
                 before=None if self.meter is None else getattr(self.meter, field),
                 after=after,
             )
-            for field, after in changed.items()
+            for field, after in self.update_dict.items()
         ]
 
 
@@ -147,15 +137,16 @@ async def unknown_events(
     ]
 
 
-def _get_meter_update_dict(meter: Meter, meter_config: ConfigMeter) -> dict[str, Any]:
+def _get_meter_update_dict(
+    meter: Meter | None, meter_config: ConfigMeter
+) -> dict[str, Any]:
     update_dict: dict[str, Any] = {}
     for field in _METER_FIELDS:
         value = getattr(meter_config, field)
-        if getattr(meter, field) != value:
+        if getattr(meter, field, None) != value:
             update_dict[field] = value
-    if (
-        "metadata" in meter_config.model_fields_set
-        and meter.user_metadata != meter_config.metadata
+    if "metadata" in meter_config.model_fields_set and (
+        getattr(meter, "user_metadata", None) != meter_config.metadata
     ):
         update_dict["user_metadata"] = meter_config.metadata
     return update_dict
@@ -180,9 +171,7 @@ async def diff_meters(
     changes: list[MeterChange] = []
     for index, meter_config in enumerate(meter_configs):
         meter = existing_meters.get(meter_config.external_id)
-        update_dict = (
-            {} if meter is None else _get_meter_update_dict(meter, meter_config)
-        )
+        update_dict = _get_meter_update_dict(meter, meter_config)
         changes.append(MeterChange(index, meter_config, meter, update_dict))
     return changes
 

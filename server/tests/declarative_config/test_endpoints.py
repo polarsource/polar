@@ -196,7 +196,7 @@ class TestPlan:
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_diff(
+    async def test_diff_for_updated_and_created_meters(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,

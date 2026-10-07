@@ -15829,7 +15829,7 @@ export interface components {
       field: string
       /**
        * Before
-       * @description Current value, `null` on create.
+       * @description Current value, `None` on create.
        */
       before: unknown | null
       /**
@@ -15947,7 +15947,7 @@ export interface components {
       action: components['schemas']['ConfigAction']
       /**
        * Diff
-       * @description Fields that applying the config sets. Empty when unchanged.
+       * @description Fields that applying the config changes. On create, fields left empty are omitted.
        */
       diff: components['schemas']['ConfigFieldChange'][]
     }

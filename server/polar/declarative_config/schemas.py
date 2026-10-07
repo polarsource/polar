@@ -85,13 +85,16 @@ class ConfigApplyResult(Schema):
 
 class ConfigFieldChange(Schema):
     field: str = Field(description="Name of the changed field.")
-    before: Any | None = Field(description="Current value, `null` on create.")
+    before: Any | None = Field(description="Current value, `None` on create.")
     after: Any | None = Field(description="Value after applying the config.")
 
 
 class ConfigMeterChange(ConfigMeterResult):
     diff: list[ConfigFieldChange] = Field(
-        description="Fields that applying the config sets. Empty when unchanged."
+        description=(
+            "Fields that applying the config changes. "
+            "On create, fields left empty are omitted."
+        )
     )
 
 

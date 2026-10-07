@@ -1,12 +1,16 @@
 import { expect, test } from 'vitest'
-import { eq, fold, gte } from './meter'
+import { and, eq, gte, meter, or } from './meter'
 
 test('meter builders can be reused without sharing mutable data', () => {
-  const base = fold('Tokens', 'llm.completion')
-  const filtered = base.where({ tokens: gte(1000) })
+  const base = meter().displayName('Tokens').where(eq('name', 'llm.completion'))
+  const filtered = base
+    .displayName('Filtered Tokens')
+    .where(gte('tokens', 1000))
   const count = base.count()
   const sum = filtered.unit('custom', 'token').sum('tokens')
 
+  expect(count.name).toBe('Tokens')
+  expect(sum.name).toBe('Filtered Tokens')
   expect(count.filter.clauses).toHaveLength(1)
   expect(count.unit).toBe('scalar')
   expect(sum.filter.clauses).toHaveLength(2)
@@ -15,18 +19,49 @@ test('meter builders can be reused without sharing mutable data', () => {
   expect(base.count().filter.clauses).toHaveLength(1)
 })
 
-test('filter replaces the full filter and copies caller data', () => {
-  const filter = {
-    conjunction: 'or' as const,
-    clauses: [{ property: 'active', ...eq(true) }],
-  }
-  const builder = fold('Active users', 'user').filter(filter)
-  filter.clauses.length = 0
-  expect(builder.count().filter).toEqual({
-    conjunction: 'or',
-    clauses: [{ property: 'active', operator: 'eq', value: true }],
-  })
-  expect(() => builder.where({ name: eq('other') })).toThrow(
-    'where() requires an and filter',
+test('where composes groups while preserving the event, previous conditions, and input isolation', () => {
+  const models = or(
+    and(eq('model', 'claude'), eq('region', 'eu')),
+    and(eq('model', 'gpt'), eq('region', 'us')),
   )
+  const builder = meter()
+    .displayName('Tokens')
+    .where(eq('name', 'llm.completion'))
+    .where(and(eq('status', 'ok'), models))
+  Reflect.set(models.clauses, 'length', 0)
+  expect(builder.sum('inputTokens').filter).toEqual({
+    conjunction: 'and',
+    clauses: [
+      { property: 'name', operator: 'eq', value: 'llm.completion' },
+      { property: 'status', operator: 'eq', value: 'ok' },
+      {
+        conjunction: 'or',
+        clauses: [
+          {
+            conjunction: 'and',
+            clauses: [
+              { property: 'model', operator: 'eq', value: 'claude' },
+              { property: 'region', operator: 'eq', value: 'eu' },
+            ],
+          },
+          {
+            conjunction: 'and',
+            clauses: [
+              { property: 'model', operator: 'eq', value: 'gpt' },
+              { property: 'region', operator: 'eq', value: 'us' },
+            ],
+          },
+        ],
+      },
+    ],
+  })
+})
+
+test('where adds a requirement to an existing OR filter', () => {
+  const models = or(eq('model', 'claude'), eq('model', 'gpt'))
+  const definition = meter().where(models).where(eq('status', 'ok')).count()
+  expect(definition.filter).toEqual({
+    conjunction: 'and',
+    clauses: [models, { property: 'status', operator: 'eq', value: 'ok' }],
+  })
 })

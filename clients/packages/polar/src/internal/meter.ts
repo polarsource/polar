@@ -1,6 +1,6 @@
 import { Predicate } from 'effect'
 import type { RuntimeFilter, RuntimeMeterConfig } from '../schema/runtime'
-import type { MeterFilter } from '../schema/meter'
+import type { MeterFilterClause } from '../schema/meter'
 import type { models } from '../sdk'
 
 type IngestedEvent = {
@@ -30,7 +30,7 @@ const stringValue = (value: string | number | boolean): string =>
   typeof value === 'boolean' ? (value ? 'True' : 'False') : String(value)
 
 const matchesClause = (
-  clause: MeterFilter['clauses'][number],
+  clause: MeterFilterClause,
   event: IngestedEvent,
 ): boolean => {
   const value = eventProperty(event, clause.property)

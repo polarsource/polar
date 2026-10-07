@@ -50,6 +50,18 @@ test.each([
     },
   ],
   [
+    'invalid nested clause',
+    {
+      conjunction: 'and',
+      clauses: [
+        {
+          conjunction: 'or',
+          clauses: [{ property: 'tokens', operator: 'gt', value: null }],
+        },
+      ],
+    },
+  ],
+  [
     'invalid value',
     {
       conjunction: 'and',

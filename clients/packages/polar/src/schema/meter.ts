@@ -1,33 +1,43 @@
 import { Schema } from 'effect'
 
+export const MeterFilterClause = Schema.Struct({
+  property: Schema.String,
+  operator: Schema.Literals([
+    'eq',
+    'ne',
+    'gt',
+    'gte',
+    'lt',
+    'lte',
+    'like',
+    'not_like',
+  ]),
+  value: Schema.Union([
+    Schema.String.check(Schema.isMaxLength(1000)),
+    Schema.Int.check(
+      Schema.isGreaterThanOrEqualTo(-2147483648),
+      Schema.isLessThanOrEqualTo(2147483647),
+    ),
+    Schema.Boolean,
+  ]),
+})
+
+export type MeterFilterClause = typeof MeterFilterClause.Type
+
+export interface MeterFilter {
+  readonly conjunction: 'and' | 'or'
+  readonly clauses: readonly (MeterFilterClause | MeterFilter)[]
+}
+
 export const MeterFilter = Schema.Struct({
   conjunction: Schema.Literals(['and', 'or']),
   clauses: Schema.Array(
-    Schema.Struct({
-      property: Schema.String,
-      operator: Schema.Literals([
-        'eq',
-        'ne',
-        'gt',
-        'gte',
-        'lt',
-        'lte',
-        'like',
-        'not_like',
-      ]),
-      value: Schema.Union([
-        Schema.String.check(Schema.isMaxLength(1000)),
-        Schema.Int.check(
-          Schema.isGreaterThanOrEqualTo(-2147483648),
-          Schema.isLessThanOrEqualTo(2147483647),
-        ),
-        Schema.Boolean,
-      ]),
-    }),
+    Schema.Union([
+      MeterFilterClause,
+      Schema.suspend((): Schema.Codec<MeterFilter> => MeterFilter),
+    ]),
   ),
 })
-
-export type MeterFilter = typeof MeterFilter.Type
 
 export const MeterAggregation = Schema.Union([
   Schema.Struct({ func: Schema.Literal('count') }),
@@ -57,11 +67,13 @@ export const MeterConfig = Schema.Union([
 
 export type MeterConfig = typeof MeterConfig.Type
 
-type Comparison = Pick<MeterFilter['clauses'][number], 'operator' | 'value'>
-
 const comparison =
-  (operator: Comparison['operator']) =>
-  (value: Comparison['value']): Comparison => ({ operator, value })
+  (operator: MeterFilterClause['operator']) =>
+  (property: string, value: MeterFilterClause['value']): MeterFilterClause => ({
+    property,
+    operator,
+    value,
+  })
 
 export const eq = comparison('eq')
 export const ne = comparison('ne')
@@ -72,37 +84,52 @@ export const lte = comparison('lte')
 export const like = comparison('like')
 export const notLike = comparison('not_like')
 
+type Condition = MeterFilter['clauses'][number]
+
+const group =
+  (conjunction: MeterFilter['conjunction']) =>
+  (...clauses: readonly Condition[]): MeterFilter => ({ conjunction, clauses })
+
+export const and = group('and')
+export const or = group('or')
+
 type Unit =
   | { readonly unit: 'scalar' | 'token' }
   | { readonly unit: 'custom'; readonly custom_label: string }
 
 class MeterBuilder {
   constructor(
-    private readonly name: string,
-    private readonly meterFilter: MeterFilter,
+    private readonly name: string | undefined = undefined,
+    private readonly meterFilter: MeterFilter = {
+      conjunction: 'and',
+      clauses: [],
+    },
     private readonly meterUnit: Unit = { unit: 'scalar' },
   ) {}
 
-  where(conditions: Readonly<Record<string, Comparison>>): MeterBuilder {
-    if (this.meterFilter.conjunction !== 'and') {
-      throw new Error(
-        'where() requires an and filter; use filter() for or filters.',
-      )
-    }
-    return this.filter({
-      conjunction: 'and',
-      clauses: [
-        ...this.meterFilter.clauses,
-        ...Object.entries(conditions).map(([property, condition]) => ({
-          property,
-          ...condition,
-        })),
-      ],
-    })
+  displayName(name: string): MeterBuilder {
+    return new MeterBuilder(name, this.meterFilter, this.meterUnit)
   }
 
-  filter(filter: MeterFilter): MeterBuilder {
-    return new MeterBuilder(this.name, structuredClone(filter), this.meterUnit)
+  where(condition: Condition): MeterBuilder {
+    const filter = 'conjunction' in condition ? condition : and(condition)
+    const combined: MeterFilter =
+      this.meterFilter.clauses.length === 0
+        ? filter
+        : {
+            conjunction: 'and',
+            clauses: [
+              ...(this.meterFilter.conjunction === 'and'
+                ? this.meterFilter.clauses
+                : [this.meterFilter]),
+              ...(filter.conjunction === 'and' ? filter.clauses : [filter]),
+            ],
+          }
+    return new MeterBuilder(
+      this.name,
+      structuredClone(combined),
+      this.meterUnit,
+    )
   }
 
   unit(
@@ -151,11 +178,4 @@ class MeterBuilder {
 
 export type MeterDefinition = ReturnType<MeterBuilder['count']>
 
-export const fold = (name: string, event?: string): MeterBuilder =>
-  new MeterBuilder(name, {
-    conjunction: 'and',
-    clauses:
-      event === undefined
-        ? []
-        : [{ property: 'name', operator: 'eq', value: event }],
-  })
+export const meter = (): MeterBuilder => new MeterBuilder()

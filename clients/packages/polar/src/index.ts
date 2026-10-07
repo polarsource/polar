@@ -18,6 +18,8 @@ export { RuntimeSDK } from './runtime'
 export type { RuntimeConnection } from './runtime'
 
 export {
+  and,
+  or,
   eq,
   ne,
   gt,
@@ -26,7 +28,7 @@ export {
   lte,
   like,
   notLike,
-  fold,
+  meter,
   MeterAggregation,
   MeterConfig,
   MeterFilter,

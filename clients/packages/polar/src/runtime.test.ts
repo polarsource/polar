@@ -1,7 +1,7 @@
 import { afterEach, expect, expectTypeOf, test, vi } from 'vitest'
 import { RuntimeSDK } from './runtime'
 import { defineConfig } from './schema/config'
-import { gte } from './schema/meter'
+import { and, eq, gte } from './schema/meter'
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -50,9 +50,10 @@ test('defined configs connect lazily, resolve deployed IDs, and track metadata e
       throw new Error(`Unexpected request ${url}`)
     })
   const config = defineConfig({
-    meters: ({ fold }) => ({
-      tokens: fold('Tokens', 'llm.completion')
-        .where({ inputTokens: gte(1000) })
+    meters: ({ meter }) => ({
+      tokens: meter()
+        .displayName('Tokens')
+        .where(and(eq('name', 'llm.completion'), gte('inputTokens', 1000)))
         .sum('inputTokens'),
     }),
   })

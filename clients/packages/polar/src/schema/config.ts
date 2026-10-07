@@ -1,7 +1,7 @@
 import { Schema } from 'effect'
 import { RuntimeSDK, type RuntimeConnection } from '../runtime'
 import type { PolarOptions } from '../sdk'
-import { fold, MeterConfig } from './meter'
+import { meter, MeterConfig } from './meter'
 import type { MeterDefinition } from './meter'
 
 export const PolarConfig = Schema.Struct({
@@ -36,9 +36,9 @@ export interface Config<Meters extends MeterEntries = MeterEntries> {
 }
 
 export const defineConfig = <const Meters extends MeterEntries>(input: {
-  readonly meters: (helpers: { readonly fold: typeof fold }) => Meters
+  readonly meters: (helpers: { readonly meter: typeof meter }) => Meters
 }): Config<Meters> => {
-  const definitions = input.meters({ fold })
+  const definitions = input.meters({ meter })
   const entries = Array.isArray(definitions)
     ? definitions
     : Object.entries(definitions)
@@ -46,7 +46,11 @@ export const defineConfig = <const Meters extends MeterEntries>(input: {
     errors: 'all',
     onExcessProperty: 'error',
   })({
-    meters: entries.map(([external_id, meter]) => ({ ...meter, external_id })),
+    meters: entries.map(([external_id, definition]) => ({
+      ...definition,
+      external_id,
+      name: definition.name ?? external_id,
+    })),
   })
 
   return {

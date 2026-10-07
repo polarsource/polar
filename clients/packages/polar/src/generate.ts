@@ -1,6 +1,6 @@
 import { Effect } from 'effect'
 import { validateConfig } from './schema/config'
-import type { MeterConfig } from './schema/meter'
+import type { MeterConfig, MeterFilter } from './schema/meter'
 
 const literal = (value: string | number | boolean): string =>
   Object.is(value, -0) ? '-0' : JSON.stringify(value)
@@ -8,43 +8,33 @@ const literal = (value: string | number | boolean): string =>
 const key = (value: string): string =>
   value === '__proto__' ? `[${literal(value)}]` : literal(value)
 
-const renderMeter = (meter: MeterConfig, imports: Set<string>): string => {
-  const [first, ...remaining] = meter.filter.clauses
-  const event =
-    meter.filter.conjunction === 'and' &&
-    first?.property === 'name' &&
-    first.operator === 'eq' &&
-    typeof first.value === 'string'
-      ? first.value
-      : undefined
-  const lines = [
-    `fold(${literal(meter.name)}${event === undefined ? '' : `, ${literal(event)}`})`,
-  ]
+const renderCondition = (
+  condition: MeterFilter['clauses'][number],
+  imports: Set<string>,
+): string => {
+  if ('conjunction' in condition) {
+    imports.add(condition.conjunction)
+    return `${condition.conjunction}(${condition.clauses.map((clause) => renderCondition(clause, imports)).join(', ')})`
+  }
+  const helper =
+    condition.operator === 'not_like' ? 'notLike' : condition.operator
+  imports.add(helper)
+  return `${helper}(${literal(condition.property)}, ${literal(condition.value)})`
+}
 
-  if (meter.filter.conjunction === 'or') {
-    lines.push(
-      [
-        '.filter({',
-        '  conjunction: "or",',
-        '  clauses: [',
-        ...meter.filter.clauses.map(
-          (clause) =>
-            `    { property: ${literal(clause.property)}, operator: ${literal(clause.operator)}, value: ${literal(clause.value)} },`,
-        ),
-        '  ],',
-        '})',
-      ].join('\n'),
-    )
-  } else {
-    const clauses = event === undefined ? meter.filter.clauses : remaining
-    for (const clause of clauses) {
-      const helper =
-        clause.operator === 'not_like' ? 'notLike' : clause.operator
-      imports.add(helper)
-      lines.push(
-        `.where({ ${key(clause.property)}: ${helper}(${literal(clause.value)}) })`,
-      )
-    }
+const renderMeter = (meter: MeterConfig, imports: Set<string>): string => {
+  const lines = [`meter().displayName(${literal(meter.name)})`]
+  const filter = meter.filter
+  if (filter.conjunction === 'or' || filter.clauses.length > 0) {
+    const [only] = filter.clauses
+    const condition =
+      filter.conjunction === 'and' &&
+      filter.clauses.length === 1 &&
+      only &&
+      'property' in only
+        ? only
+        : filter
+    lines.push(`.where(${renderCondition(condition, imports)})`)
   }
 
   if (meter.unit === 'custom') {
@@ -83,7 +73,7 @@ export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
     `import { ${[...imports].join(', ')} } from '@polar-sh/polar'`,
     '',
     'export default defineConfig({',
-    `  meters: ${meters.length === 0 ? '()' : '({ fold })'} => (${useEntries ? '[' : '{'}`,
+    `  meters: ${meters.length === 0 ? '()' : '({ meter })'} => (${useEntries ? '[' : '{'}`,
     ...meters,
     `  ${useEntries ? ']' : '}'}),`,
     '})',

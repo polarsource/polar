@@ -6,10 +6,7 @@ export type BenefitConfig = {
   id: string
 }
 
-export type RuntimeFilter = {
-  readonly conjunction: 'and' | 'or'
-  readonly clauses: readonly (MeterFilter['clauses'][number] | RuntimeFilter)[]
-}
+export type RuntimeFilter = MeterFilter
 
 export type RuntimeMeterConfig = {
   readonly id?: string

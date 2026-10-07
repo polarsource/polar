@@ -55,6 +55,29 @@ const cases: [string, PolarConfig][] = [
     { meters: [{ ...meter, filter: { ...meter.filter, conjunction: 'or' } }] },
   ],
   [
+    'nested filter groups',
+    {
+      meters: [
+        {
+          ...meter,
+          filter: {
+            conjunction: 'and',
+            clauses: [
+              { property: 'name', operator: 'eq', value: 'llm.completion' },
+              {
+                conjunction: 'or',
+                clauses: [
+                  { property: 'model', operator: 'eq', value: 'gpt' },
+                  { conjunction: 'and', clauses },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    },
+  ],
+  [
     'all aggregations and custom unit',
     {
       meters: [

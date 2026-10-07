@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
+from polar.event.system import SystemEvent
 from polar.event_type.repository import EventTypeRepository
 from polar.meter.filter import Filter, FilterOperator
 from polar.meter.repository import MeterRepository
@@ -91,6 +92,7 @@ def _event_name_references(filter: Filter, loc: Loc) -> list[tuple[str, Loc]]:
             clause.property == "name"
             and clause.operator == FilterOperator.eq
             and isinstance(clause.value, str)
+            and clause.value not in SystemEvent
         ):
             references.append((clause.value, [*clause_loc, "value"]))
     return references

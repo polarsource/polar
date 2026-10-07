@@ -80,24 +80,22 @@ const actorsDoToolCalls = async () => {
   const upscaler = { externalEntityId: 'upscaler' }
 
   const workload: [ReturnType<typeof polar.actor>, number][] = [
-    // Usage that belongs to the customer itself
     [polar.actor(customer), 2],
     [polar.actor([customer, nightlySync]), 4],
     [polar.actor([customer, supportBot]), 3],
 
-    // The owner works outside any team
     [polar.actor({ ...customer, ...owner }), 2],
 
-    // Engineering: Alice drives a coding agent that spawns a test runner
     [polar.actor([customer, engineeringTeam, alice]), 1],
     [polar.actor([customer, engineeringTeam, alice, codingAgent]), 5],
-    [polar.actor([customer, engineeringTeam, alice, codingAgent, testRunner]), 8],
+    [
+      polar.actor([customer, engineeringTeam, alice, codingAgent, testRunner]),
+      8,
+    ],
 
-    // Engineering: Bob reviews code
     [polar.actor([customer, engineeringTeam, bob]), 2],
     [polar.actor([customer, engineeringTeam, bob, reviewAgent]), 4],
 
-    // Design: Carol generates and upscales images
     [polar.actor([customer, designTeam, carol, imageAgent]), 3],
     [polar.actor([customer, designTeam, carol, imageAgent, upscaler]), 3],
   ]
@@ -113,3 +111,38 @@ const actorsDoToolCalls = async () => {
 }
 
 void actorsDoToolCalls()
+
+// Alternative syntaxes for actor paths
+//
+// Each example builds the same three actors
+//   acme
+//   acme → engineering → alice
+//   acme → engineering → alice → coding_agent
+//
+// An array of identifier objects.
+//
+//    polar.actor({ externalCustomerId: 'acme' })
+//    polar.actor([
+//      { externalCustomerId: 'acme' },
+//      { externalEntityId: 'engineering' },
+//      { externalMemberId: 'alice' },
+//    ])
+//    polar.actor([
+//      { externalCustomerId: 'acme' },
+//      { externalEntityId: 'engineering' },
+//      { externalMemberId: 'alice' },
+//      { externalEntityId: 'coding_agent' },
+//    ])
+//
+// Method chaining
+//
+//    polar.customer('acme')
+//    polar.customer('acme').entity('engineering').member('alice')
+//    polar.customer('acme').entity('engineering').member('alice').entity('coding_agent')
+//
+// Parent references
+//
+//    const acme = polar.customer('acme')
+//    const engineering = polar.entity('engineering', { parent: acme })
+//    const alice = polar.member('alice', { parent: engineering })
+//    const codingAgent = polar.entity('coding_agent', { parent: alice })

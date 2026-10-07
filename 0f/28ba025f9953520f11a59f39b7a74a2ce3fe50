@@ -1,0 +1,29 @@
+clients/packages/cli/src/services/update-check.ts
+  s_1625c541b9dcf6::t_0af3acb2705663 8,12-13,17,22,37-51,54-69,71-74,77-78,81-82
+clients/.changeset/cli-update-check-source.md
+  s_1625c541b9dcf6::t_0bc7ff2f9b2ccd 1-5
+clients/packages/cli/src/services/update-check.test.ts
+  s_1625c541b9dcf6::t_79a53b4365fb90 160-163,165-170
+  s_1625c541b9dcf6::t_6f844c5974d843 6-7,9,18-19,31-38,49-63,68-80,88-89,92-99,102-113,115-116,121,126,128,130,132,138-146,148-152,157-159,164,171,176,181,192-206
+clients/packages/cli/src/cli.ts
+  s_1625c541b9dcf6::t_4c41bf94075e3f 110-116
+  s_1625c541b9dcf6::t_d63f7581f54e5a 76-85
+clients/packages/cli/README.md
+  s_1625c541b9dcf6::t_6630e327edf949 156-162
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "0f28ba025f9953520f11a59f39b7a74a2ce3fe50",
+  "prompts": {},
+  "sessions": {
+    "s_1625c541b9dcf6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cd64a755-5170-4458-8e51-a48b26db1b2f",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

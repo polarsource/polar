@@ -1,0 +1,24 @@
+server/polar/merchant_migration/cutover.py
+  s_3994309354b59a::t_39f2e0a08e3b8d 590-595
+server/polar/merchant_migration/adapters/stripe.py
+  s_3994309354b59a::t_91b850cc879192 787-791,793
+  s_3994309354b59a::t_fbae412c014559 1263-1266
+server/tests/merchant_migration/test_cutover.py
+  s_3994309354b59a::t_cd981757249ce0 2476-2499
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b9d2e04ab5b2f8f01dd3c3a53154140988a1f038",
+  "prompts": {},
+  "sessions": {
+    "s_3994309354b59a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "db4e6884-e94a-4022-8218-3a720538e6ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

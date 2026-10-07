@@ -1,0 +1,39 @@
+sdk/generator/cli_commands/template/src/command.ts
+  s_a401e2c887a9cf::t_2ad5e2c76219c2 55
+  s_a401e2c887a9cf::t_e506901a3a72a7 91-93
+sdk/cli-commands/src/meters/create.ts
+  s_a401e2c887a9cf::t_68a770c24abb15 73-85,98
+clients/packages/cli/src/commands/api-runtime.test.ts
+  s_a401e2c887a9cf::t_df2ed45e7d525b 581-584
+  s_a401e2c887a9cf::t_1a4e06be4c388c 579-580,585-601
+sdk/cli-commands/src/products/create.ts
+  s_a401e2c887a9cf::t_68a770c24abb15 122-140,153
+sdk/cli-commands/src/customers/create.ts
+  s_a401e2c887a9cf::t_68a770c24abb15 73-87,93
+sdk/cli-commands/src/webhooks/create_webhook_endpoint.ts
+  s_a401e2c887a9cf::t_68a770c24abb15 102-112,125
+sdk/cli-commands/src/custom_fields/create.ts
+  s_a401e2c887a9cf::t_68a770c24abb15 62-72,85
+sdk/cli-commands/src/benefits/create.ts
+  s_a401e2c887a9cf::t_68a770c24abb15 71-81,94
+sdk/cli-commands/src/discounts/create.ts
+  s_a401e2c887a9cf::t_68a770c24abb15 240-261,274
+sdk/generator/tests/test_cli_commands.py
+  s_a401e2c887a9cf::t_48c3fdc41fc244 413-419
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "6856b7ec62750c93c843cd3d75ec720d19232061",
+  "prompts": {},
+  "sessions": {
+    "s_a401e2c887a9cf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "397a9694-ad41-489c-b132-fef5a2158b42",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

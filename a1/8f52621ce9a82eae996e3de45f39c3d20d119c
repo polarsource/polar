@@ -1,0 +1,30 @@
+clients/packages/cli/scripts/release.js
+  s_1625c541b9dcf6::t_f7b58983dc0e59 39-40,47-50,61-62
+clients/packages/cli/scripts/release.test.ts
+  s_1625c541b9dcf6::t_a2bb210c6d63b3 72,74,77-86,88-92
+  s_1625c541b9dcf6::t_70a5fa21dd99be 42-43
+clients/packages/cli/README.md
+  s_1625c541b9dcf6::t_8f3d68f3ba396b 164-165
+  s_1625c541b9dcf6::t_592bc0086ca250 134-138
+  s_1625c541b9dcf6::t_7910b010e50815 187-194
+.github/workflows/release_cli.yml
+  s_1625c541b9dcf6::t_e08269deff40e9 46
+  s_1625c541b9dcf6::t_2ed74fb8640f13 30-31
+  s_1625c541b9dcf6::t_5d54d997ae2372 298,301-302,309-310,321-343
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "a18f52621ce9a82eae996e3de45f39c3d20d119c",
+  "prompts": {},
+  "sessions": {
+    "s_1625c541b9dcf6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cd64a755-5170-4458-8e51-a48b26db1b2f",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

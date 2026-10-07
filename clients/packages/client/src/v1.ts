@@ -15820,6 +15820,24 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** ConfigFieldChange */
+    ConfigFieldChange: {
+      /**
+       * Field
+       * @description Name of the changed field.
+       */
+      field: string
+      /**
+       * Before
+       * @description Current value, `None` on create.
+       */
+      before: unknown | null
+      /**
+       * After
+       * @description Value after applying the config.
+       */
+      after: unknown | null
+    }
     /** ConfigInvalid */
     ConfigInvalid: {
       /**
@@ -15918,6 +15936,21 @@ export interface components {
        */
       external_id: string
     }
+    /** ConfigMeterChange */
+    ConfigMeterChange: {
+      /**
+       * External Id
+       * @description The meter's `external_id`.
+       */
+      external_id: string
+      /** @description What applying the config does. */
+      action: components['schemas']['ConfigAction']
+      /**
+       * Diff
+       * @description Fields that applying the config changes. On create, fields left empty are omitted.
+       */
+      diff: components['schemas']['ConfigFieldChange'][]
+    }
     /** ConfigMeterConflict */
     ConfigMeterConflict: {
       /**
@@ -15942,7 +15975,7 @@ export interface components {
     /** ConfigPlan */
     ConfigPlan: {
       /** Changes */
-      changes: components['schemas']['ConfigMeterResult'][]
+      changes: components['schemas']['ConfigMeterChange'][]
       /** Issues */
       issues: components['schemas']['ConfigIssue'][]
     }

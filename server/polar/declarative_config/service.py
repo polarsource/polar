@@ -20,6 +20,7 @@ from .schemas import (
     ConfigApplyResult,
     ConfigIssue,
     ConfigIssueSeverity,
+    ConfigMeterChange,
     ConfigMeterResult,
     ConfigPlan,
 )
@@ -96,8 +97,10 @@ class DeclarativeConfigService:
         )
         return ConfigPlan(
             changes=[
-                ConfigMeterResult(
-                    external_id=change.config.external_id, action=change.action
+                ConfigMeterChange(
+                    external_id=change.config.external_id,
+                    action=change.action,
+                    diff=change.diff,
                 )
                 for change in changes
             ],

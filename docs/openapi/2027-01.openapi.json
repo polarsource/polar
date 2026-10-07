@@ -71741,8 +71741,7 @@
           "discount_unset": {
             "type": "boolean",
             "title": "Discount Unset",
-            "description": "Whether the subscription's current discount will be removed.",
-            "default": false
+            "description": "Whether the subscription's current discount will be removed."
           }
         },
         "type": "object",

@@ -219,8 +219,6 @@ class SubscriptionMeter(SubscriptionMeterBase):
 class PendingSubscriptionUpdate(IDSchema, TimestampedSchema):
     """Pending update to be applied to a subscription at the beginning of the next period."""
 
-    model_config = ConfigDict(json_schema_serialization_defaults_required=True)
-
     applies_at: datetime = Field(
         description="The date and time when the subscription update will be applied."
     )
@@ -242,14 +240,14 @@ class PendingSubscriptionUpdate(IDSchema, TimestampedSchema):
                 "If `null`, the subscription keeps its current discount."
             )
         ),
-    ] = None
+    ]
     discount_unset: Annotated[
         bool,
         Version(starting_from=V2027_01),
         Field(
             description="Whether the subscription's current discount will be removed."
         ),
-    ] = False
+    ]
 
 
 class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, SubscriptionBase):

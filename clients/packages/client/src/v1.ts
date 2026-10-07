@@ -32386,7 +32386,6 @@ export interface components {
       /**
        * Discount Unset
        * @description Whether the subscription's current discount will be removed.
-       * @default false
        */
       discount_unset: boolean
     }

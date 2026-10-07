@@ -182,24 +182,36 @@ class S3Service:
 
     def get_object_or_raise(self, path: str, s3_version_id: str = "") -> dict[str, Any]:
         try:
-            obj = self.client.get_object(
-                Bucket=self.bucket,
-                Key=path,
-                VersionId=s3_version_id,
-                ChecksumMode="ENABLED",
-            )
-        except ClientError:
-            raise S3FileError("No object on S3")
+            if s3_version_id:
+                obj = self.client.get_object(
+                    Bucket=self.bucket,
+                    Key=path,
+                    VersionId=s3_version_id,
+                    ChecksumMode="ENABLED",
+                )
+            else:
+                # An empty VersionId is sent as `?versionId=`, which S3 rejects
+                # with InvalidArgument. Callers that have no version must omit it.
+                obj = self.client.get_object(
+                    Bucket=self.bucket,
+                    Key=path,
+                    ChecksumMode="ENABLED",
+                )
+        except ClientError as exc:
+            raise S3FileError("No object on S3") from exc
 
         return cast(dict[str, Any], obj)
 
     def get_head_or_raise(self, path: str, s3_version_id: str = "") -> dict[str, Any]:
         try:
-            head = self.client.head_object(
-                Bucket=self.bucket, Key=path, VersionId=s3_version_id
-            )
-        except ClientError:
-            raise S3FileError("No metadata from S3")
+            if s3_version_id:
+                head = self.client.head_object(
+                    Bucket=self.bucket, Key=path, VersionId=s3_version_id
+                )
+            else:
+                head = self.client.head_object(Bucket=self.bucket, Key=path)
+        except ClientError as exc:
+            raise S3FileError("No metadata from S3") from exc
 
         return cast(dict[str, Any], head)
 

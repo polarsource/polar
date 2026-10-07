@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import BaseModel, Field, create_model
 from sqlalchemy.exc import IntegrityError
@@ -9,28 +9,22 @@ from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission
 from polar.exceptions import PolarError
 from polar.meter.repository import MeterRepository
-from polar.meter.schemas import MeterCreateBase
-from polar.meter.service import (
-    METER_LOCKED_FIELD_MESSAGE,
-    METER_LOCKED_FIELDS,
-)
 from polar.meter.service import meter as meter_service
-from polar.models import Meter, Organization, User
+from polar.models import Organization, User
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
 
+from . import validation
 from .schemas import (
     Config,
-    ConfigAction,
     ConfigApplyResult,
-    ConfigEntryError,
-    ConfigMeter,
+    ConfigIssue,
+    ConfigIssueSeverity,
     ConfigMeterResult,
+    ConfigPlan,
 )
+from .validation import MeterChange
 
-_METER_FIELDS = tuple(
-    field for field in MeterCreateBase.model_fields if field != "metadata"
-)
 _METER_EXTERNAL_ID_INDEX = "ix_meters_organization_id_external_id"
 
 
@@ -46,16 +40,13 @@ class ConfigMeterConflict(PolarError):
         )
 
 
-class ConfigMeterLocked(PolarError):
-    def __init__(self, errors: list[ConfigEntryError]) -> None:
-        super().__init__(
-            "Some meters can't be updated because they're already aggregating events.",
-            409,
-        )
+class ConfigInvalid(PolarError):
+    def __init__(self, errors: list[ConfigIssue]) -> None:
+        super().__init__("The config can't be applied.", 409)
         self.errors = errors
 
     @property
-    def detail(self) -> list[ConfigEntryError]:
+    def detail(self) -> list[ConfigIssue]:
         return self.errors
 
     @classmethod
@@ -64,7 +55,7 @@ class ConfigMeterLocked(PolarError):
             cls._schema = create_model(
                 cls.__name__,
                 error=(Literal[cls.__name__], Field(examples=[cls.__name__])),
-                detail=(list[ConfigEntryError], ...),
+                detail=(list[ConfigIssue], ...),
             )
         return cls._schema
 
@@ -76,65 +67,72 @@ class DeclarativeConfigService:
         auth_subject: AuthSubject[User | Organization],
         config: Config,
     ) -> ConfigApplyResult:
+        organization = await self._get_organization(
+            session, auth_subject, config, OrganizationPermission.products_manage
+        )
+        changes, issues = await validation.check(
+            session, organization, config, for_update=True
+        )
+        errors = [
+            issue for issue in issues if issue.severity == ConfigIssueSeverity.error
+        ]
+        if errors:
+            raise ConfigInvalid(errors)
+
+        meters = await self._apply_meters(session, organization, changes)
+        return ConfigApplyResult(meters=meters)
+
+    async def plan(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        config: Config,
+    ) -> ConfigPlan:
+        organization = await self._get_organization(
+            session, auth_subject, config, OrganizationPermission.products_read
+        )
+        changes, issues = await validation.check(
+            session, organization, config, for_update=False
+        )
+        return ConfigPlan(
+            changes=[
+                ConfigMeterResult(
+                    external_id=change.config.external_id, action=change.action
+                )
+                for change in changes
+            ],
+            issues=issues,
+        )
+
+    async def _get_organization(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        config: Config,
+        permission: OrganizationPermission,
+    ) -> Organization:
         organization = await get_payload_organization(session, auth_subject, config)
         await assert_organization_permission(
-            session,
-            auth_subject,
-            organization.id,
-            OrganizationPermission.products_manage,
+            session, auth_subject, organization.id, permission
         )
         if not organization.is_config_as_code_enabled:
             raise ConfigAsCodeNotEnabled()
-
-        meters = await self._apply_meters(session, organization, config.meters)
-        return ConfigApplyResult(meters=meters)
+        return organization
 
     async def _apply_meters(
         self,
         session: AsyncSession,
         organization: Organization,
-        meter_configs: Sequence[ConfigMeter],
+        changes: Sequence[MeterChange],
     ) -> list[ConfigMeterResult]:
         repository = MeterRepository.from_session(session)
-        existing_meters = {
-            meter.external_id: meter
-            for meter in await repository.get_all_by_external_ids(
-                organization.id,
-                [config.external_id for config in meter_configs],
-                for_update=True,
-            )
-        }
-
-        errors: list[ConfigEntryError] = []
-        changes: list[tuple[ConfigMeter, Meter | None, dict[str, Any]]] = []
-        for index, meter_config in enumerate(meter_configs):
-            meter = existing_meters.get(meter_config.external_id)
-            if meter is None:
-                changes.append((meter_config, None, {}))
-                continue
-
-            update_dict = self._get_meter_update_dict(meter, meter_config)
-            if meter.last_billed_event_id is not None:
-                errors.extend(
-                    ConfigEntryError(
-                        loc=["body", "meters", index, field],
-                        msg=METER_LOCKED_FIELD_MESSAGE,
-                    )
-                    for field in METER_LOCKED_FIELDS
-                    if field in update_dict
-                )
-            changes.append((meter_config, meter, update_dict))
-
-        if errors:
-            raise ConfigMeterLocked(errors)
-
         results: list[ConfigMeterResult] = []
-        for meter_config, meter, update_dict in changes:
-            if meter is None:
+        for change in changes:
+            if change.meter is None:
                 try:
                     async with session.begin_nested():
                         await meter_service.create_for_organization(
-                            session, organization, meter_config
+                            session, organization, change.config
                         )
                 except IntegrityError as e:
                     database_error = getattr(e.orig, "__cause__", None)
@@ -142,31 +140,14 @@ class DeclarativeConfigService:
                     if constraint_name != _METER_EXTERNAL_ID_INDEX:
                         raise
                     raise ConfigMeterConflict() from e
-                action = ConfigAction.created
-            elif update_dict:
-                await repository.update(meter, update_dict=update_dict)
-                action = ConfigAction.updated
-            else:
-                action = ConfigAction.unchanged
+            elif change.update_dict:
+                await repository.update(change.meter, update_dict=change.update_dict)
             results.append(
-                ConfigMeterResult(external_id=meter_config.external_id, action=action)
+                ConfigMeterResult(
+                    external_id=change.config.external_id, action=change.action
+                )
             )
         return results
-
-    def _get_meter_update_dict(
-        self, meter: Meter, meter_config: ConfigMeter
-    ) -> dict[str, Any]:
-        update_dict: dict[str, Any] = {}
-        for field in _METER_FIELDS:
-            value = getattr(meter_config, field)
-            if getattr(meter, field) != value:
-                update_dict[field] = value
-        if (
-            "metadata" in meter_config.model_fields_set
-            and meter.user_metadata != meter_config.metadata
-        ):
-            update_dict["user_metadata"] = meter_config.metadata
-        return update_dict
 
 
 declarative_config = DeclarativeConfigService()

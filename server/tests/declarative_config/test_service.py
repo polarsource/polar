@@ -5,8 +5,8 @@ from polar.auth.models import AuthSubject
 from polar.declarative_config.schemas import Config, ConfigAction
 from polar.declarative_config.service import (
     ConfigAsCodeNotEnabled,
+    ConfigInvalid,
     ConfigMeterConflict,
-    ConfigMeterLocked,
 )
 from polar.declarative_config.service import (
     declarative_config as declarative_config_service,
@@ -168,7 +168,7 @@ class TestApply:
             last_billed_event=event,
         )
 
-        with pytest.raises(ConfigMeterLocked) as exc_info:
+        with pytest.raises(ConfigInvalid) as exc_info:
             await declarative_config_service.apply(
                 session,
                 auth_subject,

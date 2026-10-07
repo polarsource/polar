@@ -140,7 +140,10 @@ if typing.TYPE_CHECKING:
         CustomerCreateParamsTaxIdDatum,
     )
     from stripe.params._customer_modify_params import CustomerModifyParams
-    from stripe.params._payment_intent_create_params import PaymentIntentCreateParams
+    from stripe.params._payment_intent_create_params import (
+        PaymentIntentCreateParams,
+        PaymentIntentCreateParamsPaymentMethodOptions,
+    )
     from stripe.params._setup_intent_create_params import SetupIntentCreateParams
 
 
@@ -1302,10 +1305,17 @@ class CheckoutService:
                                     "off_session"
                                 )
 
+                            payment_method_options: PaymentIntentCreateParamsPaymentMethodOptions = {}
                             if three_d_secure:
-                                payment_intent_params["payment_method_options"] = {
-                                    "card": {"request_three_d_secure": "any"}
+                                payment_method_options["card"] = {
+                                    "request_three_d_secure": "any"
                                 }
+                            if checkout.payment_method_type == "wechat_pay":
+                                payment_method_options["wechat_pay"] = {"client": "web"}
+                            if payment_method_options:
+                                payment_intent_params["payment_method_options"] = (
+                                    payment_method_options
+                                )
 
                             intent = await stripe_service.create_payment_intent(
                                 **payment_intent_params

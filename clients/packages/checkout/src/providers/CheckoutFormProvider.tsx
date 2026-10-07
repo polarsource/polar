@@ -327,6 +327,7 @@ export const CheckoutFormProvider = ({
         updatedCheckout = await _confirm({
           ...data,
           confirmation_token_id: confirmationToken.id,
+          payment_method_type: confirmationToken.payment_method_preview.type,
         })
       } catch (error) {
         setLoading(false)

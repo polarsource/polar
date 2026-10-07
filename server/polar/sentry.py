@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import sentry_sdk
 from dramatiq import get_broker
@@ -25,6 +25,58 @@ if TYPE_CHECKING:
     from sentry_sdk._types import Event, Hint
 
 POSTHOG_ID_TAG = "posthog_distinct_id"
+# Personal data, secrets, and merchant-supplied values on request bodies.
+# Keys are matched as they appear on the wire, so aliased fields are listed
+# under their alias. IP addresses and user agents are kept.
+_REQUEST_PII_KEYS = frozenset(
+    {
+        "access_token",
+        "account_email",
+        "account_username",
+        "api_key",
+        "billing_address",
+        "billing_manager_email",
+        "billing_name",
+        "cf-turnstile-response",
+        "client_secret",
+        "code",
+        "customer_billing_address",
+        "customer_billing_name",
+        "customer_email",
+        "customer_external_id",
+        "customer_metadata",
+        "customer_name",
+        "customer_tax_id",
+        "date_of_birth",
+        "email",
+        "expo_push_token",
+        "external_customer_id",
+        "external_id",
+        "first_name",
+        "from_email_addr",
+        "full_name",
+        "invitation_token",
+        "invited_email",
+        "inviter_email",
+        "last_name",
+        "metadata",
+        "name",
+        "new_email",
+        "owner_email",
+        "refresh_token",
+        "reply_to_email_addr",
+        "reply_to_name",
+        "secret",
+        "session_token",
+        "signing_secret",
+        "tax_id",
+        "to_email_addr",
+        "token",
+        "turnstile_token",
+        "verified_first_name",
+        "verified_last_name",
+    }
+)
 
 
 class DramatiqIntegration(_DramatiqIntegration):
@@ -42,6 +94,20 @@ class DramatiqIntegration(_DramatiqIntegration):
         broker.add_middleware(SentryMiddleware(), before=first_middleware)
 
 
+def _scrub_request_pii(value: object) -> None:
+    if isinstance(value, dict):
+        mapping = cast(dict[object, object], value)
+        for key in [
+            key for key in mapping if isinstance(key, str) and key in _REQUEST_PII_KEYS
+        ]:
+            mapping.pop(key, None)
+        for item in mapping.values():
+            _scrub_request_pii(item)
+    elif isinstance(value, list):
+        for item in cast(list[object], value):
+            _scrub_request_pii(item)
+
+
 def before_send(event: Event, hint: Hint) -> Event | None:
     tags = event.get("tags", {})
     if tags and tags.get("is_operational_error") == "true":
@@ -53,9 +119,7 @@ def before_send(event: Event, hint: Hint) -> Event | None:
             request["url"] = url_without_request_values(url)
         request.pop("query_string", None)
         request.pop("fragment", None)
-        data = request.get("data")
-        if isinstance(data, dict):
-            data.pop("customer_billing_address", None)
+        _scrub_request_pii(request.get("data"))
     return event
 
 

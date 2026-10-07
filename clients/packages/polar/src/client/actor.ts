@@ -89,15 +89,14 @@ export const createActor = <Config extends RuntimeSDKConfig>(
   // Also, for events, we allow external_customer_id
   return (identifier) => ({
     async access(name) {
-      const benefit = config.benefits?.[name]
-      if (benefit === undefined) {
+      if (config.benefits?.[name] === undefined) {
         throw new Error(`Unknown benefit: ${name}`)
       }
 
       const grant = await findBenefitGrant(
         sdk,
         toMemberIdentifier(identifier),
-        benefit.id,
+        name,
       )
       return grant === undefined
         ? { granted: false }

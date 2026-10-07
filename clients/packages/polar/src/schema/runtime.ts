@@ -2,9 +2,7 @@ import type { MeterAggregation, MeterFilter } from './meter'
 
 export type EventConfig = Record<string, never>
 
-export type BenefitConfig = {
-  id: string
-}
+export type BenefitConfig = Record<string, never>
 
 export type RuntimeFilter = MeterFilter
 

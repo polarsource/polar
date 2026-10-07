@@ -14,7 +14,7 @@
   "license": "ISC",
   "packageManager": "pnpm@12.8.0",
   "dependencies": {
-    "mintlify": "^4.2.922",
+    "mintlify": "^4.2.952",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },

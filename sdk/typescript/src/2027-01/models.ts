@@ -6502,7 +6502,7 @@ export interface Checkout {
    */
   payment_processor: PaymentProcessor;
   /**
-   * 
+   *
         Status of the checkout session.
 
         - Open: the checkout session was opened.
@@ -6510,7 +6510,7 @@ export interface Checkout {
         - Confirmed: the user on the checkout session clicked Pay. This is not indicative of the payment's success status.
         - Failed: the checkout definitely failed for technical reasons and cannot be retried. In most cases, this state is never reached.
         - Succeeded: the payment on the checkout was performed successfully.
-        
+
    */
   status: CheckoutStatus;
   /**
@@ -7858,7 +7858,7 @@ export interface CheckoutPublic {
    */
   payment_processor: PaymentProcessor;
   /**
-   * 
+   *
         Status of the checkout session.
 
         - Open: the checkout session was opened.
@@ -7866,7 +7866,7 @@ export interface CheckoutPublic {
         - Confirmed: the user on the checkout session clicked Pay. This is not indicative of the payment's success status.
         - Failed: the checkout definitely failed for technical reasons and cannot be retried. In most cases, this state is never reached.
         - Succeeded: the payment on the checkout was performed successfully.
-        
+
    */
   status: CheckoutStatus;
   /**

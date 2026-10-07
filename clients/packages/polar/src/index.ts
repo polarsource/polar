@@ -13,7 +13,7 @@ export type {
   RequestOptions,
 } from './sdk'
 
-export type { MeterBalance } from './client/actor'
+export type { BenefitAccess, EventMetadata, MeterBalance } from './client/actor'
 export type { RuntimeSDKConfig } from './schema/config'
 
 export function RuntimeSDK<const Config extends RuntimeSDKConfig>(

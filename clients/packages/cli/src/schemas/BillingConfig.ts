@@ -20,7 +20,7 @@ export const ValidationErrors = Schema.Struct({
 
 export const EntryAction = Schema.Literals(['created', 'updated', 'unchanged'])
 
-const EntryResult = Schema.Struct({
+export const EntryResult = Schema.Struct({
   external_id: Schema.optional(Schema.String),
   action: EntryAction,
 })
@@ -34,6 +34,16 @@ export interface AppliedEntry {
   readonly section: string
   readonly id: string
   readonly action: typeof EntryAction.Type
+}
+
+export const PlanResponse = Schema.Struct({
+  changes: Schema.Array(EntryResult),
+  issues: Schema.Array(ServerError),
+})
+
+export interface PlanResult {
+  readonly entries: ReadonlyArray<AppliedEntry>
+  readonly issues: ReadonlyArray<ConfigIssue>
 }
 
 export type ApplyResult =

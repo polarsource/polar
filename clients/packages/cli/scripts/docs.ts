@@ -25,7 +25,7 @@ const helpOnlyServices = Layer.mergeAll(
   Layer.succeed(Auth, fakeAuth().auth),
   Layer.succeed(
     BillingConfig,
-    BillingConfig.of({ load: unused, apply: unused }),
+    BillingConfig.of({ load: unused, plan: unused, apply: unused }),
   ),
   Layer.succeed(Organizations, fakeOrganizations().organizations),
   Layer.succeed(Trigger, Trigger.of({ listEvents: unused, send: unused })),

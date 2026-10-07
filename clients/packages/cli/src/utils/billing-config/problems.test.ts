@@ -40,6 +40,7 @@ describe('formatProblems for a generated config', () => {
       [
         '  Warning: No events named "tool_call" have been received yet',
         '    at polar.config.ts › meters.tool_calls.filter.clauses.0.value',
+        '  help: The meter counts events with this name, so it stays at zero until your app sends one. Fine for a new event; if the name looks wrong, compare it with polar events list_names.',
         '',
         '  Error: Cannot change "filter" of meters.tool_calls',
         '    at polar.config.ts › meters.tool_calls.filter',

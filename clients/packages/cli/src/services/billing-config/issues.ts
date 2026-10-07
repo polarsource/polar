@@ -1,4 +1,5 @@
 import { findNodeAtLocation, parseTree } from 'jsonc-parser'
+import { locateInScript } from '@/services/billing-config/script-locations'
 import type {
   ConfigIssue,
   LoadedConfig,
@@ -104,7 +105,7 @@ const issue = (
     message: tag ? `Input should be ${tag.expected}` : error.msg,
     got: got === undefined ? undefined : JSON.stringify(got),
     location: config.generated
-      ? undefined
+      ? locateInScript(config.source, config.input, path, got)
       : locate(
           config.source,
           path,

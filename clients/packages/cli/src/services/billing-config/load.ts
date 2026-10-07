@@ -56,8 +56,15 @@ export const loadFailure = (file: string, error: unknown) => {
   })
 }
 
-const loadScript = (file: string) =>
+const loadScript = (fs: FileSystem.FileSystem, file: string) =>
   Effect.gen(function* () {
+    const source = yield* fs
+      .readFileString(file)
+      .pipe(
+        Effect.mapError(
+          () => new BillingConfigError({ message: `Could not read ${file}` }),
+        ),
+      )
     const exported = yield* Effect.tryPromise({
       try: async () => {
         const module = (await import(pathToFileURL(resolve(file)).href)) as {
@@ -69,8 +76,8 @@ const loadScript = (file: string) =>
       },
       catch: (error) => loadFailure(file, error),
     })
-    const source = JSON.stringify(exported, null, 2) as string | undefined
-    if (source === undefined || !source.startsWith('{')) {
+    const json = JSON.stringify(exported) as string | undefined
+    if (json === undefined || !json.startsWith('{')) {
       return yield* new BillingConfigError({
         message: `${file} does not default export a billing config`,
         hint: 'Export the config object or a function returning it with `export default`.',
@@ -79,7 +86,7 @@ const loadScript = (file: string) =>
     return {
       file,
       source,
-      input: JSON.parse(source) as unknown,
+      input: JSON.parse(json) as unknown,
       generated: true,
     }
   })
@@ -127,7 +134,9 @@ export const loader = (fs: FileSystem.FileSystem) => {
         })
       }
       const extension = extname(resolved)
-      if (SCRIPT_EXTENSIONS.has(extension)) return yield* loadScript(resolved)
+      if (SCRIPT_EXTENSIONS.has(extension)) {
+        return yield* loadScript(fs, resolved)
+      }
       if (extension === '.json' || extension === '') {
         return yield* loadJson(resolved)
       }

@@ -601,6 +601,34 @@ class TestUserCreate:
 
         assert benefit.visibility == Visibility.public
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_existing_external_id(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_benefit(
+            save_fixture, organization=organization, external_id="ext_1337"
+        )
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await benefit_service.user_create(
+                session,
+                redis,
+                BenefitCustomCreate(
+                    type=BenefitType.custom,
+                    description="Benefit",
+                    properties=BenefitCustomCreateProperties(note=None),
+                    external_id="ext_1337",
+                ),
+                auth_subject,
+            )
+
+        assert e.value.errors()[0]["loc"] == ("body", "external_id")
+
 
 @pytest.mark.asyncio
 class TestUpdate:
@@ -767,6 +795,66 @@ class TestUpdate:
         )
 
         assert updated_benefit.visibility == Visibility.public
+
+    @pytest.mark.auth
+    async def test_existing_external_id(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        await create_benefit(
+            save_fixture, organization=organization, external_id="ext_1337"
+        )
+        benefit = await create_benefit(save_fixture, organization=organization)
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await benefit_service.update(
+                session,
+                redis,
+                benefit,
+                BenefitCustomUpdate(type=BenefitType.custom, external_id="ext_1337"),
+                auth_subject,
+            )
+
+        assert e.value.errors()[0]["loc"] == ("body", "external_id")
+
+    @pytest.mark.auth
+    async def test_same_external_id(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        mocker.patch.object(
+            benefit_grant_service,
+            "enqueue_benefit_grant_updates",
+            spec=BenefitGrantService.enqueue_benefit_grant_updates,
+        )
+        benefit = await create_benefit(
+            save_fixture, organization=organization, external_id="ext_1337"
+        )
+
+        updated_benefit = await benefit_service.update(
+            session,
+            redis,
+            benefit,
+            BenefitCustomUpdate(
+                type=BenefitType.custom,
+                description="Renamed",
+                external_id="ext_1337",
+            ),
+            auth_subject,
+        )
+
+        assert updated_benefit.external_id == "ext_1337"
 
 
 @pytest.mark.asyncio

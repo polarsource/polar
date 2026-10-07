@@ -1205,6 +1205,7 @@ async def create_benefit(
     selectable: bool = True,
     deletable: bool = True,
     properties: dict[str, Any] | None = None,
+    external_id: str | None = None,
 ) -> Benefit:
     if properties is None:
         properties = {"note": None}
@@ -1216,6 +1217,7 @@ async def create_benefit(
         selectable=selectable,
         deletable=deletable,
         properties=properties,
+        external_id=external_id,
     )
     await save_fixture(benefit)
     return benefit

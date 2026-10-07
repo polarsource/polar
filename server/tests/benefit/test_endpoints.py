@@ -6,6 +6,7 @@ import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.auth.scope import Scope
+from polar.benefit.repository import BenefitRepository
 from polar.kit.visibility import Visibility
 from polar.models import (
     Benefit,
@@ -19,6 +20,8 @@ from polar.models import (
 from polar.models.benefit import BenefitType
 from polar.models.downloadable import DownloadableStatus
 from polar.models.file import FileServiceTypes
+from polar.postgres import AsyncSession
+from polar.version import V2026_04, V2026_10, V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -511,6 +514,55 @@ class TestCreateBenefit:
 
         json = response.json()
         assert json["visibility"] == Visibility.private
+
+    @pytest.mark.api_version(V2026_04, V2026_10)
+    @pytest.mark.auth
+    async def test_external_id_ignored_before_2027_01(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/benefits/",
+            json={
+                "type": "custom",
+                "description": "Benefit",
+                "properties": {"note": None},
+                "organization_id": str(organization.id),
+                "external_id": "ext_1337",
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        assert "external_id" not in json
+        benefit = await BenefitRepository.from_session(session).get_by_id(json["id"])
+        assert benefit is not None
+        assert benefit.external_id is None
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_external_id_2027_01(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/benefits/",
+            json={
+                "type": "custom",
+                "description": "Benefit",
+                "properties": {"note": None},
+                "organization_id": str(organization.id),
+                "external_id": "ext_1337",
+            },
+        )
+
+        assert response.status_code == 201
+        assert response.json()["external_id"] == "ext_1337"
 
 
 @pytest.mark.asyncio

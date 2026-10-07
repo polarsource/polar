@@ -68,7 +68,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.1.0
+        uses: astral-sh/setup-uv@v10.2.0
 
       - name: Build Python SDK
         working-directory: sdk/python
@@ -212,7 +212,7 @@ jobs:
           ref: "sdk/${{ needs.detect-release.outputs.version }}"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.1.0
+        uses: astral-sh/setup-uv@v10.2.0
 
       - name: Extract release notes
         working-directory: sdk/generator

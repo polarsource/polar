@@ -11,7 +11,11 @@ from pydantic import UUID4, AwareDatetime, ValidationError
 from pydantic_extra_types.timezone_name import TimeZoneName
 
 from polar.customer.schemas.customer import CustomerID
-from polar.exceptions import PolarRequestValidationError, ResourceNotFound
+from polar.exceptions import (
+    NotPermitted,
+    PolarRequestValidationError,
+    ResourceNotFound,
+)
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import (
     ListResource,
@@ -20,6 +24,7 @@ from polar.kit.pagination import (
 )
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.time_queries import TimeInterval, is_under_limits
+from polar.kit.versioning import version
 from polar.meter.filter import Filter
 from polar.meter.schemas import MeterID
 from polar.models import Event
@@ -33,6 +38,7 @@ from polar.postgres import (
     get_db_session,
 )
 from polar.routing import APIRouter
+from polar.version import V2027_01
 
 from . import auth, sorting
 from .schemas import Event as EventSchema
@@ -610,6 +616,26 @@ async def get(
 async def ingest(
     ingest: EventsIngest,
     auth_subject: auth.EventWrite,
+    response: Response,
+    session: AsyncSession = Depends(get_db_session),
+) -> EventsIngestResponse:
+    """Ingest batch of events."""
+    ingested, sequence = await event_service.ingest(session, auth_subject, ingest)
+    if sequence is not None:
+        response.headers[INGEST_SEQUENCE_HEADER] = str(sequence)
+    return ingested
+
+
+@router.post(
+    "/ingest",
+    name="ingest",
+    summary="Ingest Events",
+    responses={**_INGEST_RESPONSES, 403: {"model": NotPermitted.schema()}},
+)
+@version(starting_from=V2027_01)
+async def ingest_v2027_01(
+    ingest: EventsIngest,
+    auth_subject: auth.EventWriteSingleOrganization,
     response: Response,
     session: AsyncSession = Depends(get_db_session),
 ) -> EventsIngestResponse:

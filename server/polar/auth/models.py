@@ -146,6 +146,22 @@ def is_web_session(auth_subject: AuthSubject[Any]) -> bool:
     return isinstance(auth_subject.session, UserSession)
 
 
+def is_single_organization_credential(auth_subject: AuthSubject[Any]) -> bool:
+    """
+    Check if the credential itself is bound to one organization: an organization
+    token, or a user OAuth token down-scoped to exactly one organization. Narrowing
+    a request with the ``Polar-Organization`` header does not count.
+    """
+    if is_organization(auth_subject):
+        return True
+    credential = auth_subject.session
+    return (
+        isinstance(credential, OAuth2Token)
+        and credential.organization_ids is not None
+        and len(credential.organization_ids) == 1
+    )
+
+
 __all__ = [
     # Re-export subject types for convenience
     "Anonymous",
@@ -160,6 +176,7 @@ __all__ = [
     "is_customer",
     "is_member",
     "is_organization",
+    "is_single_organization_credential",
     "is_user",
     "is_web_session",
 ]

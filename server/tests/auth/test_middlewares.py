@@ -12,7 +12,7 @@ from polar.auth.exceptions import (
     RequestedOrganizationNotAccessible,
 )
 from polar.auth.middlewares import AuthSubjectMiddleware, get_auth_subject
-from polar.auth.models import ORGANIZATION_HEADER
+from polar.auth.models import ORGANIZATION_HEADER, is_single_organization_credential
 from polar.auth.service import auth as auth_service
 from polar.config import settings
 from polar.kit.crypto import get_token_hash
@@ -532,3 +532,88 @@ class TestAuthSubjectMiddlewareRequestedOrganization:
         assert json.loads(messages[1]["body"])["error"] == (
             "RequestedOrganizationNotAccessible"
         )
+
+
+@pytest.mark.asyncio
+class TestIsSingleOrganizationCredential:
+    async def test_organization_token(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        access_token = f"{ACCESS_TOKEN_PREFIX[SubType.organization]}test"
+        await _create_oauth2_token(
+            save_fixture, access_token, organization=organization
+        )
+
+        auth_subject = await get_auth_subject(
+            _request_with_bearer_token(access_token), session
+        )
+
+        assert is_single_organization_credential(auth_subject)
+
+    async def test_user_token_scoped_to_one_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+        organization: Organization,
+    ) -> None:
+        access_token = f"{ACCESS_TOKEN_PREFIX[SubType.user]}test"
+        token = await _create_oauth2_token(save_fixture, access_token, user=user)
+        await save_fixture(
+            OAuth2TokenOrganization(
+                oauth2_token_id=token.id, organization_id=organization.id
+            )
+        )
+
+        auth_subject = await get_auth_subject(
+            _request_with_bearer_token(access_token), session
+        )
+
+        assert is_single_organization_credential(auth_subject)
+
+    async def test_user_token_scoped_to_several_organizations(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        access_token = f"{ACCESS_TOKEN_PREFIX[SubType.user]}test"
+        token = await _create_oauth2_token(save_fixture, access_token, user=user)
+        for scoped_organization in (organization, organization_second):
+            await save_fixture(
+                OAuth2TokenOrganization(
+                    oauth2_token_id=token.id, organization_id=scoped_organization.id
+                )
+            )
+
+        auth_subject = await get_auth_subject(
+            _request_with_bearer_token(access_token), session
+        )
+
+        assert not is_single_organization_credential(auth_subject)
+
+    async def test_unscoped_user_token_narrowed_by_header(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        access_token = f"{ACCESS_TOKEN_PREFIX[SubType.user]}test"
+        await _create_oauth2_token(save_fixture, access_token, user=user)
+
+        auth_subject = await get_auth_subject(
+            _request_with_bearer_token(
+                access_token, requested_organization=organization.id
+            ),
+            session,
+        )
+
+        assert auth_subject.organization_ids == frozenset({organization.id})
+        assert not is_single_organization_credential(auth_subject)

@@ -1367,7 +1367,10 @@ def classify_subscription(
         build_product(
             product_source_id="prod_slot",
             name="+ 1 Project",
-            prices=[build_price(source_id="price_slot", amount=250)],
+            prices=[
+                build_price(source_id="price_slot", amount=250),
+                build_price(source_id="price_slot_cent", amount=1),
+            ],
         ),
         build_customer(),
         *extra,
@@ -1407,6 +1410,12 @@ class TestClassifyAddOns:
                 {"price_source_id": "price_gone"},
                 "subscription_add_on_price_missing",
                 id="price-not-in-the-catalog",
+            ),
+            pytest.param(
+                {},
+                {"price_source_id": "price_slot_cent"},
+                "subscription_add_on_price_missing",
+                id="price-the-catalog-rejects",
             ),
             pytest.param(
                 {"price_tax_behavior": TaxBehavior.exclusive},

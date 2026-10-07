@@ -239,6 +239,7 @@ async def find_or_create_add_on_product(
     """
     repository = ProductRepository.from_session(session)
     reference = f"{plan.id}:{add_on_price_source_id}"
+    await repository.lock_metadata_reference(ADD_ON_PRODUCT_METADATA_KEY, reference)
     product = await repository.get_by_organization_and_metadata(
         plan.organization_id,
         ADD_ON_PRODUCT_METADATA_KEY,

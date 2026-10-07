@@ -2240,6 +2240,29 @@ class TestDiscountAttachments:
             2023, 11, 14, 22, 13, 20, tzinfo=UTC
         )
 
+    async def test_customer_coupon_limited_to_the_add_on_blocks(
+        self, mocker: MockerFixture
+    ) -> None:
+        subscription = _stripe_subscription(
+            items=[
+                _stripe_item(product_id="prod_plan"),
+                _stripe_item(price_id="price_slot", product_id="prod_slot", quantity=2),
+            ]
+        )
+        subscription["customer"] = {
+            "id": "cus_1",
+            "object": "customer",
+            "discount": _stripe_discount("coupon_cust", id="di_customer"),
+        }
+
+        record = await _extracted_subscription(
+            mocker, subscription, coupon=_coupon_restricted_to(["prod_slot"])
+        )
+
+        assert record.discount_block == "subscription_item_discount"
+        assert record.has_discount is True
+        assert record.discount_source_ids == []
+
     async def test_customer_coupon_for_another_product_is_ignored(
         self, mocker: MockerFixture
     ) -> None:

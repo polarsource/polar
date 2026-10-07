@@ -1896,7 +1896,8 @@ def plan_subscription_imports(
 def add_on_unit_amount(
     subscription: CanonicalSubscription, products: Iterable[CanonicalProduct]
 ) -> int | None:
-    """The add-on's per-unit amount in the subscription's currency."""
+    """The add-on's per-unit amount in the subscription's currency, from a
+    price the catalog would import."""
     if subscription.add_on is None:
         return None
     key = subscription_price_key_values(
@@ -1908,7 +1909,7 @@ def add_on_unit_amount(
         (
             price.amount
             for product in products
-            for price in product.prices
+            for price in _importable_prices(product)
             if canonical_price_key(price) == key
         ),
         None,

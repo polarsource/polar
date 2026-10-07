@@ -557,11 +557,15 @@ class StripeAdapter:
         ):
             return record
         applies_to = await self._coupon_product_ids(record.customer_discount_source_id)
-        return apply_customer_discount(
-            record,
-            self._subscription_product_id(subscription),
-            applies_to,
-        )
+        plan_product_id, add_on_product_id = self._item_product_ids(subscription)
+        # Stripe takes it off the add-on line only; Polar would discount both.
+        if applies_to and add_on_product_id in applies_to:
+            return replace(
+                record,
+                has_discount=True,
+                discount_block=SubscriptionDiscountBlock.item,
+            )
+        return apply_customer_discount(record, plan_product_id, applies_to)
 
     async def _coupon_product_ids(self, coupon_id: str) -> list[str] | None:
         if coupon_id in self._coupon_products:
@@ -587,14 +591,20 @@ class StripeAdapter:
             return []
         return [self._id_of(product) for product in applies_to.get("products") or []]
 
-    def _subscription_product_id(
+    def _item_product_ids(
         self, subscription: stripe_lib.Subscription
-    ) -> str | None:
+    ) -> tuple[str | None, str | None]:
+        """The plan's product and, when there is one, the add-on's."""
         items = subscription["items"]["data"]
         if not items:
-            return None
-        plan_item, _ = self._split_items(items)
-        price = plan_item.get("price")
+            return None, None
+        plan_item, add_on_item = self._split_items(items)
+        return self._item_product_id(plan_item), (
+            self._item_product_id(add_on_item) if add_on_item is not None else None
+        )
+
+    def _item_product_id(self, item: Any) -> str | None:
+        price = item.get("price")
         if price is None or isinstance(price, str):
             return None
         product = price.get("product")

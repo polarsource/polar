@@ -907,6 +907,11 @@ class SubscriptionService:
         source billed as a second item.
         """
         assert (unit_price is None) == (units is None)
+        if unit_price is not None and units is not None:
+            maximum_units = unit_price.get_maximum_units()
+            assert unit_price.price_currency == price.price_currency
+            assert units >= unit_price.get_minimum_purchasable_units()
+            assert maximum_units is None or units <= maximum_units
         assert product.recurring_interval is not None
         recurring_interval = product.recurring_interval
         recurring_interval_count = product.recurring_interval_count or 1

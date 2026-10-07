@@ -8,29 +8,17 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-test('defined configs connect lazily, resolve deployed IDs, and track metadata events', async () => {
+test('defined configs connect lazily, read balances by external meter ID, and track metadata events', async () => {
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(new Date('2026-10-01T12:00:00Z'))
   let modifiedAt = '2026-10-01T11:00:00Z'
-  let meterRequests = 0
   const fetch = vi
     .spyOn(globalThis, 'fetch')
     .mockImplementation(async (input, init) => {
       const url = new URL(String(input))
-      if (url.pathname.endsWith('/meters/')) {
-        meterRequests++
-        const page = Number(url.searchParams.get('page'))
-        expect(url.searchParams.get('is_archived')).toBe('false')
-        return Response.json({
-          items:
-            page === 1
-              ? []
-              : [{ id: 'deployed-tokens', external_id: 'tokens' }],
-          pagination: { max_page: 2 },
-        })
-      }
       if (url.pathname.endsWith('/customer-meters/')) {
-        expect(url.searchParams.get('meter_id')).toBe('deployed-tokens')
+        expect(url.searchParams.get('external_meter_id')).toBe('tokens')
+        expect(url.searchParams.get('meter_id')).toBeNull()
         expect(url.searchParams.get('external_customer_id')).toBe('customer-1')
         return Response.json({
           items: [
@@ -74,17 +62,21 @@ test('defined configs connect lazily, resolve deployed IDs, and track metadata e
   expect((await customer.balance('tokens')).pristine).toBe(false)
   modifiedAt = '2026-10-01T12:00:01Z'
   expect((await customer.balance('tokens')).pristine).toBe(true)
-  expect(meterRequests).toBe(2)
   expect(config.toJSON()).toEqual(json)
 })
 
-test('legacy RuntimeSDK configs retain typed events, nested filters, and explicit IDs', async () => {
+test('legacy RuntimeSDK configs retain typed events and nested filters', async () => {
+  let meterRequests = 0
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
     const url = new URL(String(input))
     if (url.pathname.endsWith('/events/ingest'))
       return Response.json({ inserted: 1 })
+    if (url.pathname.endsWith('/meters/external/calls')) {
+      meterRequests++
+      return Response.json({ id: 'meter-id', archived_at: null })
+    }
     expect(url.pathname).toContain('/customer-meters/')
-    expect(url.searchParams.get('meter_id')).toBe('legacy-id')
+    expect(url.searchParams.get('external_meter_id')).toBe('calls')
     return Response.json({ items: [] })
   })
   const client = RuntimeSDK(
@@ -92,7 +84,6 @@ test('legacy RuntimeSDK configs retain typed events, nested filters, and explici
       events: { tool_call: {} },
       meters: {
         calls: {
-          id: 'legacy-id',
           filter: {
             conjunction: 'and',
             clauses: [
@@ -115,7 +106,11 @@ test('legacy RuntimeSDK configs retain typed events, nested filters, and explici
     Parameters<typeof customer.track>[0]
   >().toEqualTypeOf<'tool_call'>()
   expectTypeOf(customer.track).returns.toEqualTypeOf<Promise<void>>()
-  expect((await customer.balance('calls')).pristine).toBe(true)
+  expect(await customer.balance('calls')).toEqual({
+    balance: 0,
+    pristine: true,
+  })
   await customer.track('tool_call')
   expect((await customer.balance('calls')).pristine).toBe(false)
+  expect(meterRequests).toBe(1)
 })

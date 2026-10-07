@@ -40,7 +40,7 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.lint.json"
   },
   "dependencies": {
-    "@polar-sh/sdk": "1.0.1",
+    "@polar-sh/sdk": "link:../../../sdk/typescript",
     "effect": "^4.0.1"
   },
   "devDependencies": {

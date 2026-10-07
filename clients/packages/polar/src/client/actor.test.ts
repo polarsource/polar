@@ -79,3 +79,66 @@ describe('actor benefits', () => {
     await expect(actor.benefits.has('custom_meters')).resolves.toBe(false)
   })
 })
+
+const metersConfig = {
+  meters: {
+    tool_call: {
+      filter: {
+        conjunction: 'and',
+        clauses: [
+          {
+            conjunction: 'or',
+            clauses: [{ property: 'name', operator: 'eq', value: 'tool_call' }],
+          },
+        ],
+      },
+      aggregation: { func: 'count' },
+    },
+  },
+} as const satisfies RuntimeSDKConfig
+
+describe('actor meters', () => {
+  it('resolves the meter by external ID once and reads its customer meter', async () => {
+    const getExternal = vi.fn().mockResolvedValue({ id: 'meter-id' })
+    const list = vi.fn().mockResolvedValue({ items: [{ balance: 42 }] })
+    const sdk = {
+      meters: { getExternal },
+      customerMeters: { list },
+    } as unknown as Polar
+    const actor = createActor(metersConfig, sdk)
+
+    for (const externalCustomerId of ['customer-a', 'customer-b']) {
+      await expect(
+        actor({ externalCustomerId }).meters.tool_call.balance(),
+      ).resolves.toEqual({ balance: 42, isPristine: true })
+      expect(list).toHaveBeenLastCalledWith({
+        external_customer_id: externalCustomerId,
+        meter_id: 'meter-id',
+      })
+    }
+    expect(getExternal).toHaveBeenCalledTimes(1)
+    expect(getExternal).toHaveBeenCalledWith('tool_call')
+  })
+
+  it('retries the meter lookup after a failure', async () => {
+    const getExternal = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('Meter not found'))
+      .mockResolvedValue({ id: 'meter-id' })
+    const list = vi.fn().mockResolvedValue({ items: [] })
+    const sdk = {
+      meters: { getExternal },
+      customerMeters: { list },
+    } as unknown as Polar
+    const actor = createActor(metersConfig, sdk)({ customerId: 'customer-id' })
+
+    await expect(actor.meters.tool_call.balance()).rejects.toThrow(
+      'Meter not found',
+    )
+    await expect(actor.meters.tool_call.balance()).resolves.toEqual({
+      balance: 0,
+      isPristine: true,
+    })
+    expect(getExternal).toHaveBeenCalledTimes(2)
+  })
+})

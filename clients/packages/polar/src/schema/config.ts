@@ -5,7 +5,6 @@ export type BenefitConfig = {
 }
 
 export type MeterConfig = {
-  id: string
   filter: {
     conjunction: 'and'
     clauses: readonly {

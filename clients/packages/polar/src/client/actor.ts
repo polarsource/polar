@@ -1,5 +1,6 @@
 import { getCustomerMeter } from '../internal/api/customer-meters'
 import { ingestEvent } from '../internal/api/events'
+import { getMeterId } from '../internal/api/meters'
 import { hasBenefit } from '../internal/api/benefits'
 import type {
   CustomerIdentifier,
@@ -91,10 +92,21 @@ export const createActor = <Config extends RuntimeSDKConfig>(
   // and meter. The server processes events asynchronously, so a customer meter
   // last modified before this timestamp doesn't reflect that event yet.
   const latestIngestedAt = new Map<string, Date>()
-  const cacheKey = (identifier: ActorIdentifier, meterId: string) =>
+  // A meter's ID never changes for its external ID, so it's resolved once
+  const meterIds = new Map<string, Promise<string>>()
+  const resolveMeterId = (externalId: string) => {
+    let meterId = meterIds.get(externalId)
+    if (meterId === undefined) {
+      meterId = getMeterId(sdk, externalId)
+      meterIds.set(externalId, meterId)
+      meterId.catch(() => meterIds.delete(externalId))
+    }
+    return meterId
+  }
+  const cacheKey = (identifier: ActorIdentifier, externalMeterId: string) =>
     identifier.customerId !== undefined
-      ? `customer:${identifier.customerId}:${meterId}`
-      : `external_customer:${identifier.externalCustomerId}:${meterId}`
+      ? `customer:${identifier.customerId}:${externalMeterId}`
+      : `external_customer:${identifier.externalCustomerId}:${externalMeterId}`
 
   // Should we validate if an actor exists before we allow this?
   // Or do we `upsert` the actor if it needs to be persisted
@@ -112,7 +124,7 @@ export const createActor = <Config extends RuntimeSDKConfig>(
             const customerMeter = await getCustomerMeter(
               sdk,
               toCustomerIdentifier(identifier),
-              meter.id,
+              await resolveMeterId(externalId),
             )
 
             const key = cacheKey(identifier, externalId)

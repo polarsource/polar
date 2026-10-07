@@ -384,7 +384,7 @@ export const OrderPaymentRetry = ({
           <div className="flex justify-between">
             <span>Amount:</span>
             <span>
-              {formatCurrency('accounting')(order.total_amount, order.currency)}
+              {formatCurrency('accounting')(order.due_amount, order.currency)}
             </span>
           </div>
         </div>

@@ -294,6 +294,9 @@ class InvoiceGenerator(FPDF):
     arabic_font_name: ClassVar[str] = "notosansarabic"
     """Font family name for Arabic fallback glyphs."""
 
+    thai_font_name: ClassVar[str] = "notosansthai"
+    """Font family name for Thai fallback glyphs."""
+
     cjk_font_name_prefix: ClassVar[str] = "notosans"
     """Prefix used to derive the fpdf font family name for each CJK script."""
 
@@ -316,6 +319,10 @@ class InvoiceGenerator(FPDF):
         arabic_font_name: (
             Path(__file__).parent / "fonts/NotoSansArabic-Regular.ttf",
             Path(__file__).parent / "fonts/NotoSansArabic-Bold.ttf",
+        ),
+        thai_font_name: (
+            Path(__file__).parent / "fonts/NotoSansThai-Regular.ttf",
+            Path(__file__).parent / "fonts/NotoSansThai-Bold.ttf",
         ),
         # Per-script TTFs, not the unified TTC: PDF.js can't decode the CFF subsets fpdf2 emits.
         f"{cjk_font_name_prefix}tc": (
@@ -463,6 +470,7 @@ class InvoiceGenerator(FPDF):
             self.latin_font_name,
             self.hebrew_font_name,
             self.arabic_font_name,
+            self.thai_font_name,
         ):
             regular, bold = self.font_files[family]
             if not (regular.exists() and bold.exists()):
@@ -488,6 +496,7 @@ class InvoiceGenerator(FPDF):
                 self.latin_font_name,
                 self.hebrew_font_name,
                 self.arabic_font_name,
+                self.thai_font_name,
             )
             if family in self.loaded_font_families
         ]

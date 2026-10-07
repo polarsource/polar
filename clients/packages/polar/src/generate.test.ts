@@ -105,11 +105,11 @@ const cases: [string, PolarConfig][] = [
   [
     'special IDs and strings',
     {
-      meters: ['__proto__', 'constructor', '', '"\\\n` ${notCode}'].map(
+      meters: ['__proto__', 'constructor', '"\\\n` ${notCode}'].map(
         (external_id) => ({
           ...meter,
           external_id,
-          name: external_id || 'Empty ID',
+          name: external_id,
           aggregation: { func: 'sum', property: external_id },
           unit: 'custom',
           custom_label: external_id,

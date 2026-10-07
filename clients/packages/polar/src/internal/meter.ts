@@ -95,5 +95,5 @@ export const matchesMeter = (
   const property = meter.aggregation.property.replace(/^metadata\./, '')
   if (['name', 'source', 'timestamp'].includes(property)) return true
   const value = eventProperty(event, meter.aggregation.property)
-  return typeof value === 'number' || typeof value === 'boolean'
+  return typeof value === 'number'
 }

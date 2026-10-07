@@ -104,6 +104,9 @@ test.each(['sum', 'unique'] as const)('handles %s aggregation', (func) => {
   const aggregation: MeterAggregation = { func, property: 'tokens' }
   expect(matchesMeter({ filter, aggregation }, event)).toBe(true)
   expect(
+    matchesMeter({ filter, aggregation: { func, property: 'active' } }, event),
+  ).toBe(func === 'unique')
+  expect(
     matchesMeter({ filter, aggregation: { func, property: 'missing' } }, event),
   ).toBe(func === 'unique')
 })

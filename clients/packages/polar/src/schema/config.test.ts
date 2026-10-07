@@ -28,6 +28,16 @@ test('connect rejects duplicate IDs without changing JSON serialization', () => 
   )
 })
 
+test('defineConfig rejects empty external IDs even with a valid display name', () => {
+  expect(() =>
+    defineConfig({
+      meters: ({ meter }) => ({
+        '': meter({ displayName: 'Requests' }).count(),
+      }),
+    }),
+  ).toThrow()
+})
+
 test('defineConfig rejects invalid builder values', () => {
   expect(() =>
     defineConfig({

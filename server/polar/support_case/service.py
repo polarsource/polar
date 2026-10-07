@@ -99,7 +99,7 @@ class SupportCaseService:
         statement = statement.options(
             joinedload(DisputeSupportCase.dispute)
             .joinedload(Dispute.order)
-            .joinedload(Order.customer)
+            .options(joinedload(Order.customer), joinedload(Order.organization))
         )
         statement = repository.apply_sorting(statement, sorting)
         return await repository.paginate(

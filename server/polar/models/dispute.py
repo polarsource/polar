@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import TYPE_CHECKING, Literal
 from uuid import UUID
@@ -27,9 +27,13 @@ from sqlalchemy.orm import (
 from polar.enums import PaymentProcessor
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
+from polar.kit.utils import utc_now
 
 if TYPE_CHECKING:
     from polar.models import Customer, Order, Payment
+
+
+EVIDENCE_REVIEW_MARGIN = timedelta(days=3)
 
 
 class DisputeStatus(StrEnum):
@@ -151,6 +155,22 @@ class Dispute(RecordModel):
     @property
     def customer(self) -> "Customer":
         return self.order.customer
+
+    @property
+    def merchant_evidence_due_by(self) -> datetime | None:
+        # Merchants on the disputes dashboard send evidence to Polar, which needs
+        # time to review it before the processor's deadline.
+        disputes_enabled = self.order.organization.feature_settings.get(
+            "disputes_enabled", False
+        )
+        if disputes_enabled and self.evidence_due_by is not None:
+            return self.evidence_due_by - EVIDENCE_REVIEW_MARGIN
+        return self.evidence_due_by
+
+    @property
+    def merchant_past_due(self) -> bool:
+        due_by = self.merchant_evidence_due_by
+        return self.past_due or (due_by is not None and due_by < utc_now())
 
     @hybrid_property
     def resolved(self) -> bool:

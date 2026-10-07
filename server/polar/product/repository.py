@@ -6,6 +6,8 @@ from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.currency import PresentmentCurrency
+from polar.kit.db.locking import pg_advisory_xact_lock
+from polar.kit.metadata import get_metadata_clause
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -45,6 +47,31 @@ class ProductRepository(
         statement = (
             self.get_base_statement()
             .where(Product.id == id, Product.organization_id == organization_id)
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
+    async def lock_metadata_reference(self, key: str, value: str) -> None:
+        """Serialize writers finding or creating a product by this metadata."""
+        await pg_advisory_xact_lock(self.session, f"product.metadata.{key}", value)
+
+    async def get_by_organization_and_metadata(
+        self,
+        organization_id: UUID,
+        key: str,
+        value: str,
+        *,
+        options: Options = (),
+    ) -> Product | None:
+        """The oldest product whose metadata maps ``key`` to ``value``."""
+        statement = (
+            self.get_base_statement()
+            .where(
+                Product.organization_id == organization_id,
+                get_metadata_clause(Product, {key: [value]}),
+            )
+            .order_by(Product.created_at, Product.id)
+            .limit(1)
             .options(*options)
         )
         return await self.get_one_or_none(statement)

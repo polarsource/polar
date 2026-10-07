@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime
 from typing import Any
 
@@ -26,7 +27,11 @@ from polar.merchant_migration.canonical import (
     serialize,
 )
 from polar.models.merchant_migration_record import MerchantMigrationRecordType
-from tests.merchant_migration._helpers import canonical_discount, canonical_subscription
+from tests.merchant_migration._helpers import (
+    canonical_add_on,
+    canonical_discount,
+    canonical_subscription,
+)
 
 
 class TestSerialize:
@@ -245,6 +250,22 @@ class TestDeserialize:
         del legacy["managed_payments"]
 
         result = deserialize(MerchantMigrationRecordType.subscription, legacy)
+
+        assert result == subscription
+
+    def test_add_on_round_trips(self) -> None:
+        subscription = canonical_subscription(
+            line_item_count=2,
+            add_on=replace(
+                canonical_add_on(),
+                price_tax_behavior=TaxBehavior.exclusive,
+                tax_rates_differ=True,
+            ),
+        )
+
+        result = deserialize(
+            MerchantMigrationRecordType.subscription, serialize(subscription)
+        )
 
         assert result == subscription
 

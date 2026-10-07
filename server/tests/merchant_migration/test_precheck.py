@@ -19,6 +19,7 @@ from polar.merchant_migration.canonical import (
     CanonicalProduct,
     CanonicalRecord,
     CanonicalSubscription,
+    CanonicalSubscriptionAddOn,
     CanonicalSubscriptionStatus,
 )
 from polar.merchant_migration.precheck import (
@@ -31,6 +32,7 @@ from polar.merchant_migration.precheck import (
     summarize_records,
 )
 from polar.merchant_migration.schemas import (
+    MerchantMigrationRecordItem,
     PrecheckEntity,
     PrecheckIssueLevel,
     PrecheckReasonLevel,
@@ -39,7 +41,7 @@ from polar.merchant_migration.schemas import (
 )
 from polar.models import Organization
 from polar.models.organization import OrganizationStatus
-from tests.merchant_migration._helpers import canonical_discount
+from tests.merchant_migration._helpers import canonical_add_on, canonical_discount
 
 
 async def aiter_records(
@@ -150,6 +152,8 @@ def build_subscription(
     discount_starts: dict[str, datetime] | None = None,
     discount_block: str | None = None,
     currency: str | None = "usd",
+    price_tax_behavior: TaxBehavior | None = None,
+    add_on: CanonicalSubscriptionAddOn | None = None,
 ) -> CanonicalSubscription:
     return CanonicalSubscription(
         source_id=source_id,
@@ -170,6 +174,8 @@ def build_subscription(
         discount_starts=discount_starts or {},
         discount_block=discount_block,
         currency=currency,
+        price_tax_behavior=price_tax_behavior,
+        add_on=add_on,
     )
 
 
@@ -1350,6 +1356,111 @@ class TestClassifyRecords:
         assert items[0].reason_code == "subscription_customer_balance"
         assert items[0].reason_level == PrecheckReasonLevel.action_required
         assert wording in (items[0].reason or "")
+
+
+def classify_subscription(
+    subscription: CanonicalSubscription, *extra: CanonicalRecord
+) -> list[MerchantMigrationRecordItem]:
+    records: list[CanonicalRecord] = [
+        build_product(prices=[build_price(source_id="price_1")]),
+        build_product(
+            product_source_id="prod_slot",
+            name="+ 1 Project",
+            prices=[
+                build_price(source_id="price_slot", amount=250),
+                build_price(source_id="price_slot_cent", amount=1),
+            ],
+        ),
+        build_customer(),
+        *extra,
+        subscription,
+    ]
+    return classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+
+class TestClassifyAddOns:
+    def test_plan_with_add_on_and_unrestricted_coupon_imports(self) -> None:
+        items = classify_subscription(
+            build_subscription(
+                line_item_count=2,
+                add_on=canonical_add_on(),
+                has_discount=True,
+                discount_source_ids=["coupon_1"],
+            ),
+            canonical_discount(),
+        )
+
+        assert items[0].status == PrecheckRecordStatus.importable
+        assert items[0].reason_code == "subscription_add_on"
+        assert items[0].reason_level == PrecheckReasonLevel.info
+        assert "2 × '+ 1 Project'" in (items[0].reason or "")
+        assert items[0].discount_name == "Launch"
+
+    @pytest.mark.parametrize(
+        ("subscription_fields", "add_on_fields", "code"),
+        [
+            pytest.param(
+                {},
+                {"pricing_scheme": CanonicalPricingScheme.tiered},
+                "unsupported_add_on_price",
+                id="tiered",
+            ),
+            pytest.param(
+                {},
+                {"price_source_id": "price_gone"},
+                "subscription_add_on_price_missing",
+                id="price-not-in-the-catalog",
+            ),
+            pytest.param(
+                {},
+                {"price_source_id": "price_slot_cent"},
+                "subscription_add_on_price_missing",
+                id="price-the-catalog-rejects",
+            ),
+            pytest.param(
+                {"price_tax_behavior": TaxBehavior.exclusive},
+                {"price_tax_behavior": TaxBehavior.inclusive},
+                "add_on_tax_mismatch",
+                id="taxed-differently",
+            ),
+            pytest.param(
+                {}, {"tax_rates_differ": True}, "add_on_tax_mismatch", id="tax-rates"
+            ),
+            pytest.param(
+                {}, {"quantity": 0}, "unsupported_add_on_quantity", id="zero-units"
+            ),
+        ],
+    )
+    def test_add_on_polar_cannot_bill_the_same_stays_on_the_source(
+        self,
+        subscription_fields: dict[str, Any],
+        add_on_fields: dict[str, Any],
+        code: str,
+    ) -> None:
+        items = classify_subscription(
+            build_subscription(
+                line_item_count=2,
+                add_on=replace(canonical_add_on(), **add_on_fields),
+                **subscription_fields,
+            )
+        )
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == code
+
+    def test_coupon_restricted_to_some_products_stays_on_the_source(self) -> None:
+        items = classify_subscription(
+            build_subscription(
+                line_item_count=2,
+                add_on=canonical_add_on(),
+                has_discount=True,
+                discount_source_ids=["coupon_1"],
+            ),
+            canonical_discount(product_source_ids=["prod_1"]),
+        )
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == "subscription_add_on_discount"
 
 
 class TestSummarizeRecords:

@@ -4,8 +4,11 @@ Idempotent; subscriptions are created later, during cutover.
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import Any, TypeVar
 from uuid import UUID
+
+from sqlalchemy.orm import joinedload, selectinload
 
 from polar.auth.models import AuthSubject
 from polar.customer.repository import CustomerRepository
@@ -25,6 +28,9 @@ from polar.models import (
     MerchantMigrationRecord,
     Organization,
     Product,
+    ProductBenefit,
+    ProductPrice,
+    ProductPriceUnit,
     Subscription,
     User,
 )
@@ -46,6 +52,7 @@ from polar.product.schemas import (
     ProductPriceFixedCreate,
 )
 from polar.product.service import product as product_service
+from polar.product.tiers import Tier, Tiers, TierType
 from polar.subscription.service import subscription as subscription_service
 
 from .canonical import (
@@ -82,6 +89,7 @@ from .schemas import (
 _CanonicalT = TypeVar("_CanonicalT")
 
 IMPORT_BATCH_SIZE = 100
+ADD_ON_PRODUCT_METADATA_KEY = "merchant_migration_add_on"
 
 _DEPENDENCY_CODE = "subscription_dependency_not_imported"
 _PRICES_ALREADY_IMPORTED = Reason(
@@ -205,6 +213,110 @@ def find_imported_price(
     )
 
 
+async def find_or_create_add_on_product(
+    session: AsyncSession,
+    plan: Product,
+    plan_price: ProductPriceFixed,
+    *,
+    add_on_price_source_id: str,
+    unit_amount: int,
+) -> tuple[Product, ProductPriceFixed, ProductPriceUnit]:
+    """The product a plan-plus-add-on subscription moves onto: the plan's price
+    with the add-on as a unit price. One per plan and add-on price, shared by
+    every subscriber on that pair.
+
+    Archived and kept apart from the plan, because a unit price is the
+    product's own quantity: on the plan itself, every new buyer and every
+    subscriber without the add-on would have to take at least one unit. It
+    keeps the plan's name, which customers see on their invoices.
+    """
+    repository = ProductRepository.from_session(session)
+    reference = f"{plan.id}:{add_on_price_source_id}"
+    await repository.lock_metadata_reference(ADD_ON_PRODUCT_METADATA_KEY, reference)
+    product = await repository.get_by_organization_and_metadata(
+        plan.organization_id,
+        ADD_ON_PRODUCT_METADATA_KEY,
+        reference,
+        options=(
+            selectinload(Product.all_prices),
+            joinedload(Product.organization),
+        ),
+    )
+    if product is None:
+        product = await repository.create(
+            Product(
+                name=plan.name,
+                organization=plan.organization,
+                recurring_interval=plan.recurring_interval,
+                recurring_interval_count=plan.recurring_interval_count,
+                is_archived=True,
+                is_tax_applicable=plan.is_tax_applicable,
+                tax_code=plan.tax_code,
+                user_metadata={ADD_ON_PRODUCT_METADATA_KEY: reference},
+                all_prices=[],
+                product_benefits=[
+                    ProductBenefit(benefit=link.benefit, order=link.order)
+                    for link in plan.product_benefits
+                ],
+                product_medias=[],
+                attached_custom_fields=[],
+            ),
+        )
+    currency = plan_price.price_currency
+    fixed = next(
+        (
+            price
+            for price in product.all_prices
+            if isinstance(price, ProductPriceFixed)
+            and price.price_currency == currency
+            and price.price_amount == plan_price.price_amount
+        ),
+        None,
+    )
+    if fixed is None:
+        fixed = ProductPriceFixed(
+            price_currency=currency,
+            price_amount=plan_price.price_amount,
+            is_archived=_has_live_price(product, ProductPriceFixed, currency),
+        )
+        product.all_prices.append(fixed)
+    tiers = Tiers(
+        type=TierType.volume,
+        tiers=[Tier(bound=None, unit_amount=Decimal(unit_amount))],
+    )
+    unit = next(
+        (
+            price
+            for price in product.all_prices
+            if isinstance(price, ProductPriceUnit)
+            and price.price_currency == currency
+            and price.tiers == tiers
+        ),
+        None,
+    )
+    if unit is None:
+        unit = ProductPriceUnit(
+            price_currency=currency,
+            tiers=tiers,
+            is_archived=_has_live_price(product, ProductPriceUnit, currency),
+        )
+        product.all_prices.append(unit)
+    await session.flush()
+    return product, fixed, unit
+
+
+def _has_live_price(
+    product: Product, price_type: type[ProductPrice], currency: str
+) -> bool:
+    """A product sells one price of each type per currency; others are archived."""
+    return any(
+        isinstance(price, price_type)
+        and price.price_currency == currency
+        and not price.is_archived
+        for price in product.all_prices
+    )
+
+
 async def create_imported_subscription(
     session: AsyncSession,
     subscription: CanonicalSubscription,
@@ -214,8 +326,13 @@ async def create_imported_subscription(
     *,
     provider: str,
     discount: Discount | None = None,
+    add_on_price: ProductPriceUnit | None = None,
 ) -> Subscription:
     applied_at = subscription.discount_started_at
+    units: int | None = None
+    if add_on_price is not None:
+        assert subscription.add_on is not None
+        units = subscription.add_on.quantity
     return await subscription_service.create_imported(
         session,
         product=product,
@@ -232,6 +349,8 @@ async def create_imported_subscription(
         tax_exempted=False,
         discount=discount,
         discount_applied_at=applied_at if discount is not None else None,
+        unit_price=add_on_price,
+        units=units,
     )
 
 

@@ -7,11 +7,11 @@ import type {
 } from '@/schemas/Auth'
 import { apiUrl, describeApiFailure, withOrganization } from '@/services/api'
 import { type ApiClient, authenticatedClient } from '@/services/client'
-
-export class TriggerError extends Data.TaggedError('TriggerError')<{
-  message: string
-  hint?: string
-}> {}
+import {
+  TriggerError,
+  type TriggerEvent,
+  TriggerEventSchema,
+} from '@/schemas/Trigger'
 
 export class NoActiveListener extends Data.TaggedError('NoActiveListener')<{
   organization: ActiveOrganization
@@ -25,12 +25,6 @@ export class UnknownEvent extends Data.TaggedError('UnknownEvent')<{
 export class PayloadRejected extends Data.TaggedError('PayloadRejected')<{
   detail: unknown
 }> {}
-
-const TriggerEventSchema = Schema.Struct({
-  type: Schema.String,
-  description: Schema.String,
-})
-export type TriggerEvent = typeof TriggerEventSchema.Type
 
 const TriggerResponseSchema = Schema.Struct({
   webhook_event_id: Schema.String,

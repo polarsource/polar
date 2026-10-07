@@ -38,3 +38,35 @@ export const isFile = (context, ...paths) => {
   const filename = filenameOf(context)
   return paths.some((path) => filename.endsWith(`/src/${path}`))
 }
+
+const sourceOf = (node) =>
+  node.source?.type === 'Literal' && typeof node.source.value === 'string'
+    ? node.source.value
+    : undefined
+
+const specifiersTypeOnly = (specifiers, kind) =>
+  specifiers.length > 0 &&
+  specifiers.every((specifier) => specifier[kind] === 'type')
+
+export const typeOnly = (node) =>
+  node.type === 'TSImportType' ||
+  node.importKind === 'type' ||
+  node.exportKind === 'type' ||
+  (node.type === 'ImportDeclaration' &&
+    specifiersTypeOnly(node.specifiers, 'importKind')) ||
+  (node.type === 'ExportNamedDeclaration' &&
+    specifiersTypeOnly(node.specifiers, 'exportKind'))
+
+export const onModuleReference = (visit) => {
+  const handle = (node) => {
+    const source = sourceOf(node)
+    if (source !== undefined) visit(node, source)
+  }
+  return {
+    ImportDeclaration: handle,
+    ImportExpression: handle,
+    ExportNamedDeclaration: handle,
+    ExportAllDeclaration: handle,
+    TSImportType: handle,
+  }
+}

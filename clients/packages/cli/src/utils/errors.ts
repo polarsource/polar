@@ -1,6 +1,6 @@
 import type { ApiCommandError } from '@polar-sh/cli-commands'
 import type { ListenError } from '@/services/listen'
-import type { TriggerError } from '@/services/trigger'
+import type { TriggerError } from '@/schemas/Trigger'
 import type { UpdateError } from '@/services/update'
 import type { AuthError } from '@/schemas/Auth'
 import type { BillingConfigError } from '@/schemas/BillingConfig'

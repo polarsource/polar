@@ -1,4 +1,4 @@
-import { inDirectory, isMember } from '../ast.js'
+import { inDirectory, isMember, onModuleReference } from '../ast.js'
 
 const forbiddenImports = [
   {
@@ -41,11 +41,10 @@ export default {
   create(context) {
     if (!inDirectory(context, 'commands')) return {}
     return {
-      ImportDeclaration(node) {
-        const source = node.source.value
+      ...onModuleReference((node, source) => {
         const rule = forbiddenImports.find(({ matches }) => matches(source))
         if (rule) context.report({ node, messageId: rule.messageId })
-      },
+      }),
       CallExpression(node) {
         const { callee } = node
         const bare = callee.type === 'Identifier' && callee.name === 'fetch'

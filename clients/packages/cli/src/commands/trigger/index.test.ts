@@ -8,9 +8,9 @@ import {
   NoActiveListener,
   PayloadRejected,
   Trigger,
-  TriggerError,
   UnknownEvent,
 } from '@/services/trigger'
+import { TriggerError } from '@/schemas/Trigger'
 import {
   keys,
   runCli,

@@ -1,4 +1,4 @@
-import { inDirectory, isMember } from '../ast.js'
+import { inDirectory, isMember, onModuleReference } from '../ast.js'
 
 const forbiddenImports = [
   {
@@ -41,11 +41,10 @@ export default {
   create(context) {
     if (!inDirectory(context, 'services')) return {}
     return {
-      ImportDeclaration(node) {
-        const source = node.source.value
+      ...onModuleReference((node, source) => {
         const rule = forbiddenImports.find(({ matches }) => matches(source))
         if (rule) context.report({ node, messageId: rule.messageId })
-      },
+      }),
       MemberExpression(node) {
         if (isMember(node, 'Console') || isMember(node, 'console')) {
           context.report({ node, messageId: 'print' })

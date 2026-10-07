@@ -44,6 +44,7 @@ class CustomerMeterService:
         customer_id: Sequence[uuid.UUID] | None = None,
         external_customer_id: Sequence[str] | None = None,
         meter_id: Sequence[uuid.UUID] | None = None,
+        external_meter_id: Sequence[str] | None = None,
         pagination: PaginationParams,
         sorting: Sequence[Sorting[CustomerMeterSortProperty]] = (
             (CustomerMeterSortProperty.modified_at, True),
@@ -68,8 +69,12 @@ class CustomerMeterService:
 
         if meter_id is not None:
             statement = statement.where(Meter.id.in_(meter_id))
-        else:
-            # Only filter archived meters when not querying for specific meter IDs
+
+        if external_meter_id is not None:
+            statement = statement.where(Meter.external_id.in_(external_meter_id))
+
+        if meter_id is None and external_meter_id is None:
+            # Only filter archived meters when not querying for specific meters
             statement = statement.where(Meter.archived_at.is_(None))
 
         statement = repository.apply_sorting(statement, sorting)

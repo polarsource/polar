@@ -31,7 +31,7 @@ const acme = {
 }
 
 const entries = [
-  { section: 'meters', id: 'tool-calls', action: 'created' as const },
+  { section: 'meters', id: 'tool-calls', action: 'created' as const, diff: [] },
 ]
 
 const warning = {

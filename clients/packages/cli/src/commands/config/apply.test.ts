@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { Effect } from 'effect'
-import { apply, formatEntries } from '@/commands/config/apply'
-import { formatProblems } from '@/commands/config/problems'
+import { apply } from '@/commands/config/apply'
+import { formatProblems } from '@/utils/billing-config/problems'
 import type {
   ApplyResult,
   ConfigIssue,
@@ -29,28 +29,6 @@ const config: LoadedConfig = {
 }
 
 const location = { line: 3, column: 5, length: 1 }
-
-describe('formatEntries', () => {
-  test('groups entries under their section with a mark for what happened', () => {
-    const output = stripAnsi(
-      formatEntries([
-        { section: 'meters', id: 'tool-calls', action: 'created' },
-        { section: 'meters', id: 'tokens', action: 'updated' },
-        { section: 'organization', id: 'organization', action: 'unchanged' },
-      ]),
-    )
-    expect(output).toBe(
-      [
-        '  meters',
-        '    + tool-calls    created',
-        '    ~ tokens        updated',
-        '',
-        '  organization',
-        '    = organization  unchanged',
-      ].join('\n'),
-    )
-  })
-})
 
 describe('formatProblems', () => {
   test('titles missing keys, unknown keys, locked fields and value errors', () => {
@@ -159,8 +137,8 @@ describe('polar config apply', () => {
     const { output, failed } = await run({
       status: 'applied',
       entries: [
-        { section: 'meters', id: 'tool-calls', action: 'created' },
-        { section: 'meters', id: 'tokens', action: 'unchanged' },
+        { section: 'meters', id: 'tool-calls', action: 'created', diff: [] },
+        { section: 'meters', id: 'tokens', action: 'unchanged', diff: [] },
       ],
     })
     expect(failed).toBe(false)

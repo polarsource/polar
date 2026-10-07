@@ -13,7 +13,7 @@ import { Auth } from '@/services/auth'
 import { Organizations } from '@/services/organizations'
 import { printJson } from '@/utils/json'
 import * as ui from '@/utils/ui'
-import { json, production, sandbox } from '@/commands/flags'
+import { json, production, sandbox } from '@/utils/flags'
 
 const isSelected = (
   organization: ActiveOrganization,

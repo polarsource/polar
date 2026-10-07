@@ -2,7 +2,7 @@ import { commands } from '@polar-sh/cli-commands'
 import { Command, GlobalFlag } from 'effect/cli'
 import { auth } from '@/commands/auth'
 import { config } from '@/commands/config'
-import { home } from '@/commands/home'
+import { polar } from '@/commands/home'
 import { listen } from '@/commands/listen'
 import { trigger } from '@/commands/trigger'
 import { update } from '@/commands/update'
@@ -17,7 +17,7 @@ export interface ProgramOptions {
 }
 
 export const program = ({ preview }: ProgramOptions) =>
-  Command.make('polar', {}, () => home).pipe(
+  polar.pipe(
     Command.withSubcommands([
       {
         group: 'CLI COMMANDS',

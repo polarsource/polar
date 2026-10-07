@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { formatCatalog } from '@/commands/trigger/catalog'
+import { formatCatalog } from '@/utils/trigger/catalog'
 import { stripAnsi } from '@/utils/test-utils/cli'
 
 test('groups events by resource with aligned descriptions', () => {

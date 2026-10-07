@@ -1,7 +1,8 @@
 import { Console, Duration, Effect, Option } from 'effect'
 import { Argument, Command } from 'effect/cli'
-import { formatProblems, plural } from '@/commands/config/problems'
-import { org } from '@/commands/flags'
+import { DONE, formatEntries, tally } from '@/utils/billing-config/entries'
+import { formatProblems, plural } from '@/utils/billing-config/problems'
+import { org } from '@/utils/flags'
 import {
   type AppliedEntry,
   BillingConfigError,
@@ -18,58 +19,6 @@ const file = Argument.String('file').pipe(
   ),
   Argument.optional,
 )
-
-const MARKS: Record<AppliedEntry['action'], string> = {
-  created: ui.green('+'),
-  updated: ui.yellow('~'),
-  unchanged: ui.dim('='),
-}
-
-const bySection = (entries: ReadonlyArray<AppliedEntry>) =>
-  [...new Set(entries.map((entry) => entry.section))].map((section) => ({
-    section,
-    entries: entries.filter((entry) => entry.section === section),
-  }))
-
-type Labels = Record<AppliedEntry['action'], string>
-
-export const DONE: Labels = {
-  created: 'created',
-  updated: 'updated',
-  unchanged: 'unchanged',
-}
-
-export const PLANNED: Labels = {
-  created: 'will be created',
-  updated: 'will be updated',
-  unchanged: 'unchanged',
-}
-
-export const formatEntries = (
-  entries: ReadonlyArray<AppliedEntry>,
-  labels: Labels = DONE,
-) => {
-  const width = Math.max(...entries.map((entry) => entry.id.length))
-  return bySection(entries)
-    .map(({ section, entries }) =>
-      [
-        `${ui.INDENT}${ui.bold(section)}`,
-        ...entries.map(
-          (entry) =>
-            `${ui.INDENT}${ui.INDENT}${MARKS[entry.action]} ${entry.id.padEnd(width)}  ${ui.dim(labels[entry.action])}`,
-        ),
-      ].join('\n'),
-    )
-    .join('\n\n')
-}
-
-const tally = (entries: ReadonlyArray<AppliedEntry>) =>
-  (['created', 'updated', 'unchanged'] as const)
-    .map(
-      (action) =>
-        `${entries.filter((entry) => entry.action === action).length} ${action}`,
-    )
-    .join(', ')
 
 export const applied = (
   config: LoadedConfig,
@@ -114,7 +63,7 @@ export const apply = Command.make('apply', { file, org }, ({ file, org }) =>
       })
     }
     if (result.entries.length > 0) {
-      yield* Console.log(formatEntries(result.entries))
+      yield* Console.log(formatEntries(result.entries, DONE))
       yield* Console.log(ui.blank)
     }
     yield* Console.log(applied(config, result.entries))

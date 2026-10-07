@@ -1,4 +1,5 @@
 import { Console, Effect, Option } from 'effect'
+import { Command } from 'effect/cli'
 import {
   loginCommand,
   orgCommand,
@@ -98,3 +99,7 @@ export const home = Effect.gen(function* () {
     ].join('\n'),
   )
 })
+
+export const polar = Command.make('polar', {}, () => home).pipe(
+  Command.withDescription('Polar from your terminal'),
+)

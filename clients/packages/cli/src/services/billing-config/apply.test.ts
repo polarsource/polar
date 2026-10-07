@@ -92,8 +92,8 @@ describe('apply', () => {
     expect(result).toEqual({
       status: 'applied',
       entries: [
-        { section: 'meters', id: 'tool-calls', action: 'created' },
-        { section: 'meters', id: 'tokens', action: 'updated' },
+        { section: 'meters', id: 'tool-calls', action: 'created', diff: [] },
+        { section: 'meters', id: 'tokens', action: 'updated', diff: [] },
       ],
     })
   })
@@ -109,7 +109,12 @@ describe('apply', () => {
     expect(result).toEqual({
       status: 'applied',
       entries: [
-        { section: 'organization', id: 'organization', action: 'updated' },
+        {
+          section: 'organization',
+          id: 'organization',
+          action: 'updated',
+          diff: [],
+        },
       ],
     })
   })

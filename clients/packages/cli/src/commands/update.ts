@@ -1,3 +1,5 @@
+import { existsSync, realpathSync } from 'node:fs'
+import { basename, dirname, join } from 'node:path'
 import { Console, Effect, Option } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import {
@@ -76,6 +78,24 @@ export const update = Command.make(
   },
   ({ method }) =>
     Effect.gen(function* () {
+      const executable = yield* Effect.try(() =>
+        realpathSync(process.execPath),
+      ).pipe(Effect.orElseSucceed(() => process.execPath))
+      if (
+        basename(executable) === 'polar' &&
+        existsSync(join(dirname(dirname(executable)), 'INSTALL_RECEIPT.json'))
+      ) {
+        yield* Console.log(ui.blank)
+        yield* Console.log(ui.warning('Polar is managed by Homebrew'))
+        yield* Console.log(
+          ui.step(
+            `Run ${ui.command('brew upgrade polarsource/tap/cli')} to update`,
+          ),
+        )
+        yield* Console.log(ui.blank)
+        return
+      }
+
       yield* Console.log(ui.blank)
       yield* Console.log(ui.step('Checking for updates...'))
 

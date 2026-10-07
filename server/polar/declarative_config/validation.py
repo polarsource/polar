@@ -15,6 +15,7 @@ from .schemas import (
     ConfigAction,
     ConfigIssue,
     ConfigIssueSeverity,
+    ConfigIssueType,
     ConfigMeter,
 )
 
@@ -61,7 +62,7 @@ async def unique_external_ids(
             issues.append(
                 ConfigIssue(
                     severity=ConfigIssueSeverity.error,
-                    type="duplicate_external_id",
+                    type=ConfigIssueType.duplicate_external_id,
                     loc=_meter_loc(change.index, "external_id"),
                     msg="Another meter in this config has the same external_id.",
                     input=external_id,
@@ -77,9 +78,10 @@ async def locked_meter_fields(
     return [
         ConfigIssue(
             severity=ConfigIssueSeverity.error,
-            type="meter_locked",
+            type=ConfigIssueType.meter_locked,
             loc=_meter_loc(change.index, field),
             msg=METER_LOCKED_FIELD_MESSAGE,
+            input=None,
         )
         for change in changes
         if change.meter is not None and change.meter.last_billed_event_id is not None
@@ -113,8 +115,6 @@ async def unknown_events(
             change.config.filter, _meter_loc(change.index, "filter")
         )
     ]
-    if not references:
-        return []
     repository = EventTypeRepository.from_session(session)
     known = await repository.get_by_names_and_organization(
         sorted({name for name, _ in references}), organization.id
@@ -122,9 +122,9 @@ async def unknown_events(
     return [
         ConfigIssue(
             severity=ConfigIssueSeverity.warning,
-            type="unknown_event",
+            type=ConfigIssueType.unknown_event,
             loc=loc,
-            msg=f'No "{name}" events have been received yet.',
+            msg="No events with this name have been received yet.",
             input=name,
         )
         for name, loc in references

@@ -15835,11 +15835,8 @@ export interface components {
     ConfigIssue: {
       /** @description `error` blocks applying the config, `warning` doesn't. */
       severity: components['schemas']['ConfigIssueSeverity']
-      /**
-       * Type
-       * @description Machine-readable reason, e.g. `meter_locked`.
-       */
-      type: string
+      /** @description Machine-readable reason. */
+      type: components['schemas']['ConfigIssueType']
       /**
        * Loc
        * @description Location of the issue in the request body.
@@ -15852,15 +15849,20 @@ export interface components {
       msg: string
       /**
        * Input
-       * @description The value at `loc`.
+       * @description The value at `loc`, if relevant.
        */
-      input?: unknown | null
+      input: unknown | null
     }
     /**
      * ConfigIssueSeverity
      * @enum {string}
      */
     ConfigIssueSeverity: 'error' | 'warning'
+    /**
+     * ConfigIssueType
+     * @enum {string}
+     */
+    ConfigIssueType: 'duplicate_external_id' | 'meter_locked' | 'unknown_event'
     /** ConfigMeter */
     ConfigMeter: {
       /**
@@ -70450,6 +70452,9 @@ export const configActionValues: ReadonlyArray<
 export const configIssueSeverityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueSeverity']
 > = ['error', 'warning']
+export const configIssueTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigIssueType']
+> = ['duplicate_external_id', 'meter_locked', 'unknown_event']
 export const countAggregationFuncValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CountAggregation']['func']
 > = ['count']

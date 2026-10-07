@@ -50,16 +50,22 @@ class ConfigIssueSeverity(StrEnum):
     warning = "warning"
 
 
+class ConfigIssueType(StrEnum):
+    duplicate_external_id = "duplicate_external_id"
+    meter_locked = "meter_locked"
+    unknown_event = "unknown_event"
+
+
 class ConfigIssue(Schema):
     severity: ConfigIssueSeverity = Field(
         description="`error` blocks applying the config, `warning` doesn't."
     )
-    type: str = Field(description="Machine-readable reason, e.g. `meter_locked`.")
+    type: ConfigIssueType = Field(description="Machine-readable reason.")
     loc: list[str | int] = Field(
         description="Location of the issue in the request body."
     )
     msg: str = Field(description="Human-readable description of the issue.")
-    input: Any | None = Field(default=None, description="The value at `loc`.")
+    input: Any | None = Field(description="The value at `loc`, if relevant.")
 
 
 class ConfigAction(StrEnum):

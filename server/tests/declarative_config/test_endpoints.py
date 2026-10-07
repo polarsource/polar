@@ -166,7 +166,7 @@ class TestApply:
 class TestPlan:
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_valid(
+    async def test_locked_meter_reports_issues(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,

@@ -455,6 +455,7 @@ async def create_product(
     trial_interval: TrialInterval | None = None,
     trial_interval_count: int | None = None,
     is_tax_applicable: bool = True,
+    external_id: str | None = None,
 ) -> Product:
     recurring_interval_count = (
         None if recurring_interval is None else recurring_interval_count
@@ -475,6 +476,7 @@ async def create_product(
         organization=organization,
         trial_interval=trial_interval,
         trial_interval_count=trial_interval_count,
+        external_id=external_id,
         all_prices=[],
         prices=[],
         product_benefits=[],

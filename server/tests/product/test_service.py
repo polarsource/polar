@@ -420,6 +420,40 @@ class TestCreate:
         price = product.prices[0]
         assert is_static_price(price)
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_existing_external_id(
+        self,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="ext_1337",
+        )
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await product_service.create(
+                session,
+                ProductCreateOneTime(
+                    name="Product",
+                    external_id="ext_1337",
+                    prices=[
+                        ProductPriceFixedCreate(
+                            amount_type=ProductPriceAmountType.fixed,
+                            price_amount=1000,
+                            price_currency=PresentmentCurrency.usd,
+                        )
+                    ],
+                ),
+                auth_subject,
+            )
+
+        assert e.value.errors()[0]["loc"] == ("body", "external_id")
+
     @pytest.mark.auth
     async def test_active_organization_enqueues_review(
         self,
@@ -2469,6 +2503,57 @@ class TestUpdate:
 
         assert product.trial_interval is None
         assert product.trial_interval_count is None
+
+    @pytest.mark.auth
+    async def test_existing_external_id(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="ext_1337",
+        )
+        product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await product_service.update(
+                session, product, ProductUpdate(external_id="ext_1337"), auth_subject
+            )
+
+        assert e.value.errors()[0]["loc"] == ("body", "external_id")
+
+    @pytest.mark.auth
+    async def test_same_external_id(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="ext_1337",
+        )
+
+        updated_product = await product_service.update(
+            session,
+            product,
+            ProductUpdate(name="Renamed", external_id="ext_1337"),
+            auth_subject,
+        )
+
+        assert updated_product.external_id == "ext_1337"
 
 
 @pytest.mark.asyncio

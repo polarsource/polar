@@ -32896,6 +32896,12 @@ export interface components {
        * @description The ID of the organization owning the product.
        */
       organization_id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Is Deletable
@@ -32947,6 +32953,12 @@ export interface components {
       | components['schemas']['ProductCreateOneTime']
     /** ProductCreateOneTime */
     ProductCreateOneTime: {
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id?: string | null
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -33019,6 +33031,12 @@ export interface components {
     }
     /** ProductCreateRecurring */
     ProductCreateRecurring: {
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id?: string | null
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -34221,6 +34239,12 @@ export interface components {
      * @description Schema to update a product.
      */
     ProductUpdate: {
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id?: string | null
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.

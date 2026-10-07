@@ -9,6 +9,7 @@ from polar.kit.currency import PresentmentCurrency
 from polar.kit.repository import (
     Options,
     RepositoryBase,
+    RepositoryExternalIDMixin,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
     RepositorySortingMixin,
@@ -28,6 +29,7 @@ from .sorting import ProductSortProperty
 
 
 class ProductRepository(
+    RepositoryExternalIDMixin[Product],
     RepositorySortingMixin[Product, ProductSortProperty],
     RepositorySoftDeletionIDMixin[Product, UUID],
     RepositorySoftDeletionMixin[Product],

@@ -1,0 +1,19 @@
+server/polar/organization/schemas.py
+  s_3b18f1951c2139::t_34e34398ef559c 50,247
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1cd22eb5ef8e37e07b8cb4b3ad587d64cfdffc56",
+  "prompts": {},
+  "sessions": {
+    "s_3b18f1951c2139": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "17947e4c-4005-4360-84de-0edc0c4f8dec",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

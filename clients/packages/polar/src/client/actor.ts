@@ -6,35 +6,31 @@ import type {
   MemberIdentifier,
 } from '../internal/api/utils'
 import type { MeterConfig, RuntimeSDKConfig } from '../schema/config'
-import type { Polar } from '../sdk'
+import type { models, Polar } from '../sdk'
 
 export type MeterBalance = {
   balance: number
-  isPristine: boolean
+  pristine: boolean
 }
 
-type MeterConfigs<Config extends RuntimeSDKConfig> = NonNullable<
+export type BenefitCheck = {
+  allowed: boolean
+}
+
+export type EventMetadata = models.EventMetadataInput
+
+type BenefitName<Config extends RuntimeSDKConfig> = keyof NonNullable<
+  Config['benefits']
+> &
+  string
+type MeterName<Config extends RuntimeSDKConfig> = keyof NonNullable<
   Config['meters']
->
-
-type Meters<Config extends RuntimeSDKConfig> = {
-  [ExternalId in keyof MeterConfigs<Config> &
-    string]: MeterConfigs<Config>[ExternalId] & {
-    balance: () => Promise<MeterBalance>
-  }
-}
-
-type Events<Config extends RuntimeSDKConfig> = {
-  ingest: (
-    name: keyof NonNullable<Config['events']> & string,
-  ) => Promise<number>
-}
-
-type Benefits<Config extends RuntimeSDKConfig> = {
-  has: (
-    name: keyof NonNullable<Config['benefits']> & string,
-  ) => Promise<boolean>
-}
+> &
+  string
+type EventName<Config extends RuntimeSDKConfig> = keyof NonNullable<
+  Config['events']
+> &
+  string
 
 type ActorCustomerIdentifier =
   | { externalCustomerId: string; customerId?: never }
@@ -49,9 +45,9 @@ type ActorIdentifier = ActorCustomerIdentifier & ActorMemberIdentifier
 export type Actor<Config extends RuntimeSDKConfig> = (
   identifier: ActorIdentifier,
 ) => {
-  meters: Meters<Config>
-  events: Events<Config>
-  benefits: Benefits<Config>
+  can: (name: BenefitName<Config>) => Promise<BenefitCheck>
+  balance: (name: MeterName<Config>) => Promise<MeterBalance>
+  track: (name: EventName<Config>, metadata?: EventMetadata) => Promise<void>
 }
 
 const toCustomerIdentifier = (
@@ -99,93 +95,81 @@ export const createActor = <Config extends RuntimeSDKConfig>(
   // Should we validate if an actor exists before we allow this?
   // Or do we `upsert` the actor if it needs to be persisted
   // Also, for events, we allow external_customer_id
-  return (identifier) => {
-    const meters = Object.entries(config.meters ?? {}).reduce(
-      (acc, [externalId, meter]) => {
-        acc[externalId] = {
-          ...meter,
-          async balance() {
-            // To investigate: a customer meter only gets created in 2 cases:
-            //
-            // #1 - a benefit has granted meter credits for that meter -> customer meter gets created upon benefit grant
-            // #2 - an event has been ingested that matches the meter's filter definition -> customer meter gets created
-            const customerMeter = await getCustomerMeter(
-              sdk,
-              toCustomerIdentifier(identifier),
-              meter.id,
-            )
+  return (identifier) => ({
+    async can(name) {
+      const benefit = config.benefits?.[name]
+      if (benefit === undefined) {
+        throw new Error(`Unknown benefit: ${name}`)
+      }
 
-            const key = cacheKey(identifier, externalId)
-            const ingestedAt = latestIngestedAt.get(key)
-
-            const updatedAt = customerMeter
-              ? new Date(customerMeter.modified_at ?? customerMeter.created_at)
-              : undefined
-            const isPristine =
-              ingestedAt === undefined ||
-              (updatedAt !== undefined && updatedAt >= ingestedAt)
-
-            if (isPristine) {
-              latestIngestedAt.delete(key)
-            }
-
-            return {
-              balance: customerMeter?.balance ?? 0,
-              isPristine,
-            }
-          },
-        }
-
-        return acc
-      },
-      {} as Record<
-        string,
-        MeterConfig & { balance: () => Promise<MeterBalance> }
-      >,
-    )
-
-    const events: Events<Config> = {
-      async ingest(name) {
-        const timestamp = new Date()
-
-        const inserted = await ingestEvent(
+      return {
+        allowed: await hasBenefit(
           sdk,
           toMemberIdentifier(identifier),
-          name,
-          timestamp,
-        )
+          benefit.id,
+        ),
+      }
+    },
 
-        if (inserted > 0) {
-          for (const [externalId, meter] of Object.entries(
-            config.meters ?? {},
-          )) {
-            if (matchesFilter(meter.filter, { name })) {
-              const key = cacheKey(identifier, externalId)
-              const current = latestIngestedAt.get(key)
+    async balance(name) {
+      const meter = config.meters?.[name]
+      if (meter === undefined) {
+        throw new Error(`Unknown meter: ${name}`)
+      }
 
-              if (current === undefined || timestamp > current) {
-                latestIngestedAt.set(key, timestamp)
-              }
+      // To investigate: a customer meter only gets created in 2 cases:
+      //
+      // #1 - a benefit has granted meter credits for that meter -> customer meter gets created upon benefit grant
+      // #2 - an event has been ingested that matches the meter's filter definition -> customer meter gets created
+      const customerMeter = await getCustomerMeter(
+        sdk,
+        toCustomerIdentifier(identifier),
+        meter.id,
+      )
+
+      const key = cacheKey(identifier, name)
+      const ingestedAt = latestIngestedAt.get(key)
+
+      const updatedAt = customerMeter
+        ? new Date(customerMeter.modified_at ?? customerMeter.created_at)
+        : undefined
+      const pristine =
+        ingestedAt === undefined ||
+        (updatedAt !== undefined && updatedAt >= ingestedAt)
+
+      if (pristine) {
+        latestIngestedAt.delete(key)
+      }
+
+      return {
+        balance: customerMeter?.balance ?? 0,
+        pristine,
+      }
+    },
+
+    async track(name, metadata) {
+      const timestamp = new Date()
+
+      const inserted = await ingestEvent(
+        sdk,
+        toMemberIdentifier(identifier),
+        name,
+        timestamp,
+        metadata,
+      )
+
+      if (inserted > 0) {
+        for (const [externalId, meter] of Object.entries(config.meters ?? {})) {
+          if (matchesFilter(meter.filter, { ...metadata, name })) {
+            const key = cacheKey(identifier, externalId)
+            const current = latestIngestedAt.get(key)
+
+            if (current === undefined || timestamp > current) {
+              latestIngestedAt.set(key, timestamp)
             }
           }
         }
-
-        return inserted
-      },
-    }
-
-    return {
-      meters: meters as Meters<Config>,
-      events,
-      benefits: {
-        async has(name) {
-          const benefit = config.benefits?.[name]
-          if (benefit === undefined) {
-            throw new Error(`Unknown benefit: ${name}`)
-          }
-          return hasBenefit(sdk, toMemberIdentifier(identifier), benefit.id)
-        },
-      },
-    }
-  }
+      }
+    },
+  })
 }

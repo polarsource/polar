@@ -7,21 +7,21 @@ const config = {
   benefits: { custom_meters: { id: 'benefit-id' } },
 } as const satisfies RuntimeSDKConfig
 
-describe('actor benefits', () => {
+describe('actor.can', () => {
   it('accepts only configured benefit names', () => {
     const actor = createActor(
       config,
       {} as Polar,
     )({ customerId: 'customer-id' })
-    expectTypeOf(actor.benefits.has)
-      .parameter(0)
-      .toEqualTypeOf<'custom_meters'>()
-    expectTypeOf(actor.benefits.has).returns.toEqualTypeOf<Promise<boolean>>()
+    expectTypeOf(actor.can).parameter(0).toEqualTypeOf<'custom_meters'>()
+    expectTypeOf(actor.can).returns.toEqualTypeOf<
+      Promise<{ allowed: boolean }>
+    >()
     const unconfigured = createActor(
       {},
       {} as Polar,
     )({ customerId: 'customer-id' })
-    expectTypeOf(unconfigured.benefits.has).parameter(0).toEqualTypeOf<never>()
+    expectTypeOf(unconfigured.can).parameter(0).toEqualTypeOf<never>()
   })
 
   it.each([
@@ -38,7 +38,9 @@ describe('actor benefits', () => {
     } as unknown as Polar
     const actor = createActor(config, sdk)(identifier)
 
-    await expect(actor.benefits.has('custom_meters')).resolves.toBe(true)
+    await expect(actor.can('custom_meters')).resolves.toEqual({
+      allowed: true,
+    })
     expect(iterGrants).toHaveBeenCalledWith('benefit-id', {
       customer_id: 'customer-id',
       is_granted: true,
@@ -68,7 +70,9 @@ describe('actor benefits', () => {
       sdk,
     )({ customerId: 'customer-id', ...identifier })
 
-    await expect(actor.benefits.has('custom_meters')).resolves.toBe(true)
+    await expect(actor.can('custom_meters')).resolves.toEqual({
+      allowed: true,
+    })
   })
 
   it('returns false when no matching grant exists', async () => {
@@ -76,6 +80,8 @@ describe('actor benefits', () => {
     const sdk = { benefits: { iterGrants } } as unknown as Polar
     const actor = createActor(config, sdk)({ customerId: 'customer-id' })
 
-    await expect(actor.benefits.has('custom_meters')).resolves.toBe(false)
+    await expect(actor.can('custom_meters')).resolves.toEqual({
+      allowed: false,
+    })
   })
 })

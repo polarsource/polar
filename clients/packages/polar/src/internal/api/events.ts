@@ -1,4 +1,4 @@
-import type { Polar } from '../../sdk'
+import type { models, Polar } from '../../sdk'
 import type { MemberIdentifier } from './utils'
 
 export const ingestEvent = async (
@@ -6,6 +6,7 @@ export const ingestEvent = async (
   identifier: MemberIdentifier,
   name: string,
   timestamp: Date,
+  metadata?: models.EventMetadataInput,
 ) => {
   const { inserted } = await sdk.events.ingest({
     events: [
@@ -13,6 +14,7 @@ export const ingestEvent = async (
         ...identifier,
         name,
         timestamp: timestamp.toISOString(),
+        ...(metadata !== undefined ? { metadata } : {}),
       },
     ],
   })

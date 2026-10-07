@@ -24,20 +24,19 @@ const expensiveToolCall = async () => {
 
   const benefitsSpan = log.start('Checking benefits')
 
-  const shouldEmbedCustomServers = await customer.benefits.has('custom_servers')
-  benefitsSpan.end()
-
-  if (shouldEmbedCustomServers) {
+  if ((await customer.can('custom_servers')).allowed) {
     log('Customer has custom servers benefit, embedding custom servers')
   }
 
+  benefitsSpan.end()
+
   const balanceSpan = log.start('Fetching initial balance')
-  const balance = await customer.meters.tool_call.balance()
+  const balance = await customer.balance('tool_call')
   balanceSpan.end()
 
   log('Current balance before tool call:', balance)
 
-  if (!balance.isPristine) {
+  if (!balance.pristine) {
     throw new Error(
       'Balance is not pristine, meaning the last event ingested has not yet been reflected in the balance. Please wait a few seconds and try again.',
     )
@@ -47,17 +46,17 @@ const expensiveToolCall = async () => {
     log('Balance is sufficient, doing the tool call')
 
     const ingestSpan = log.start('Ingesting tool_call')
-    await customer.events.ingest('tool_call')
+    await customer.track('tool_call')
     ingestSpan.end()
 
     const pollingSpan = log.start('Waiting for pristine balance')
     const start = performance.now()
-    let newBalance = await customer.meters.tool_call.balance()
+    let newBalance = await customer.balance('tool_call')
 
-    while (!newBalance.isPristine) {
+    while (!newBalance.pristine) {
       pollingSpan.log('New balance is not pristine yet, polling again in 1s')
       await new Promise((resolve) => setTimeout(resolve, 1000))
-      newBalance = await customer.meters.tool_call.balance()
+      newBalance = await customer.balance('tool_call')
 
       if (performance.now() - start > 60000) {
         throw new Error(

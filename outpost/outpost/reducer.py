@@ -77,11 +77,12 @@ def get_matcher(clause: Filter | FilterClause) -> EventMatcher:
 
         return matcher
 
+    child_matchers = [get_matcher(child) for child in clause["clauses"]]
     conjunction_operator = all if clause["conjunction"] == "and" else any
 
     def matcher(event: EventCreate) -> bool:
         return conjunction_operator(
-            get_matcher(child)(event) for child in clause["clauses"]
+            child_matcher(event) for child_matcher in child_matchers
         )
 
     return matcher

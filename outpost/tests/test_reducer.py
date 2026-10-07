@@ -1,5 +1,6 @@
 import typing
 from datetime import UTC, datetime
+from unittest.mock import patch
 
 import pytest
 
@@ -89,9 +90,12 @@ class TestReduce:
             ),
             matching.model_copy(update={"metadata": {"tier": "paid", "enabled": True}}),
         ]
-        assert reduce([(meter, get_matcher(meter["filter"]))], events) == {
-            ("customer", "count", "count"): 1
-        }
+        matcher = get_matcher(meter["filter"])
+        with patch("outpost.reducer.get_matcher", wraps=get_matcher) as compile_matcher:
+            assert reduce([(meter, matcher)], events) == {
+                ("customer", "count", "count"): 1
+            }
+            compile_matcher.assert_not_called()
 
     @pytest.mark.parametrize("amount", [None, "3", True])
     def test_skips_non_numeric_values(

@@ -20,21 +20,21 @@ from polar.kit.utils import utc_now
 
 if TYPE_CHECKING:
     from .customer import Customer
-    from .meter import Meter
     from .organization import Organization
+    from .reducer import Reducer
 
 
-class MeterBucket(RecordModel):
-    __tablename__ = "meter_buckets"
+class ReducerBucket(RecordModel):
+    __tablename__ = "reducer_buckets"
     __table_args__ = (
         UniqueConstraint(
             "organization_id",
-            "meter_id",
+            "reducer_id",
             "customer_id",
             "external_customer_id",
             "bucket_start",
             "generation",
-            name="meter_buckets_identity_generation_key",
+            name="reducer_buckets_identity_generation_key",
             postgresql_nulls_not_distinct=True,
         ),
     )
@@ -45,8 +45,8 @@ class MeterBucket(RecordModel):
     organization_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("organizations.id", ondelete="cascade"), nullable=False
     )
-    meter_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("meters.id", ondelete="cascade"), nullable=False
+    reducer_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("reducers.id", ondelete="cascade"), nullable=False
     )
     customer_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("customers.id"), nullable=True
@@ -64,9 +64,8 @@ class MeterBucket(RecordModel):
     )
 
     organization: Mapped["Organization"] = relationship(lazy="raise")
-    meter: Mapped["Meter"] = relationship(lazy="raise")
+    reducer: Mapped["Reducer"] = relationship(lazy="raise")
     customer: Mapped["Customer | None"] = relationship(lazy="raise")
 
-    # After a bucket is sealed (e.g. has been billed), we need to open a new bucket in the same slot but with a new generation.
-    # This allows us to update a bucket after it has been billed. Every time we bill a bucket we will seal it.
+    # Sealing freezes this generation; billing attribution belongs to each consumer.
     generation: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

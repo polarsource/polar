@@ -58,8 +58,8 @@ from .merchant_migration_record import (
     MerchantMigrationRecordType,
 )
 from .meter import Meter
-from .meter_bucket import MeterBucket
 from .meter_event import MeterEvent
+from .meter_reducer import MeterReducer
 from .metric_dashboard import MetricDashboard
 from .notification import Notification
 from .notification_recipient import NotificationRecipient
@@ -103,6 +103,8 @@ from .product_price import (
     ProductPriceSeatUnit,
     ProductPriceUnit,
 )
+from .reducer import Reducer
+from .reducer_bucket import ReducerBucket
 from .refund import Refund
 from .slack_app import SlackApp
 from .subscription import Subscription
@@ -192,8 +194,8 @@ __all__ = [
     "MerchantMigrationSourcePlatform",
     "MerchantMigrationStep",
     "Meter",
-    "MeterBucket",
     "MeterEvent",
+    "MeterReducer",
     "MetricDashboard",
     "Model",
     "Notification",
@@ -236,6 +238,8 @@ __all__ = [
     "ProductPriceSeatUnit",
     "ProductPriceUnit",
     "ProductVisibility",
+    "Reducer",
+    "ReducerBucket",
     "Refund",
     "ReviewAppealSupportCase",
     "SeatStatus",

@@ -2930,6 +2930,10 @@ export interface BenefitCustom {
    */
   organization_id: string;
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -2951,6 +2955,10 @@ export interface BenefitCustom {
  * Schema to create a benefit of type `custom`.
  */
 export interface BenefitCustomCreate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -3114,6 +3122,10 @@ export interface BenefitCustomSubscriberProperties {
  */
 export interface BenefitCustomUpdate {
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
+  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -3250,6 +3262,10 @@ export interface BenefitDiscord {
    */
   organization_id: string;
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -3271,6 +3287,10 @@ export interface BenefitDiscord {
  * BenefitDiscordCreate
  */
 export interface BenefitDiscordCreate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -3450,6 +3470,10 @@ export interface BenefitDiscordSubscriberProperties {
  */
 export interface BenefitDiscordUpdate {
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
+  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -3600,6 +3624,10 @@ export interface BenefitDownloadables {
    */
   organization_id: string;
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -3621,6 +3649,10 @@ export interface BenefitDownloadables {
  * BenefitDownloadablesCreate
  */
 export interface BenefitDownloadablesCreate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -3792,6 +3824,10 @@ export interface BenefitDownloadablesSubscriberProperties {
  */
 export interface BenefitDownloadablesUpdate {
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
+  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -3863,6 +3899,10 @@ export interface BenefitFeatureFlag {
    */
   organization_id: string;
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -3884,6 +3924,10 @@ export interface BenefitFeatureFlag {
  * Schema to create a benefit of type `feature_flag`.
  */
 export interface BenefitFeatureFlagCreate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -4032,6 +4076,10 @@ export interface BenefitFeatureFlagSubscriberProperties extends Record<string, n
  */
 export interface BenefitFeatureFlagUpdate {
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
+  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -4106,6 +4154,10 @@ export interface BenefitGitHubRepository {
    */
   organization_id: string;
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -4127,6 +4179,10 @@ export interface BenefitGitHubRepository {
  * BenefitGitHubRepositoryCreate
  */
 export interface BenefitGitHubRepositoryCreate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -4309,6 +4365,10 @@ export interface BenefitGitHubRepositorySubscriberProperties {
  * BenefitGitHubRepositoryUpdate
  */
 export interface BenefitGitHubRepositoryUpdate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -5361,6 +5421,10 @@ export interface BenefitLicenseKeys {
    */
   organization_id: string;
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -5382,6 +5446,10 @@ export interface BenefitLicenseKeys {
  * BenefitLicenseKeysCreate
  */
 export interface BenefitLicenseKeysCreate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -5581,6 +5649,10 @@ export interface BenefitLicenseKeysSubscriberProperties {
  */
 export interface BenefitLicenseKeysUpdate {
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
+  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -5655,6 +5727,10 @@ export interface BenefitMeterCredit {
    */
   organization_id: string;
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -5676,6 +5752,10 @@ export interface BenefitMeterCredit {
  * Schema to create a benefit of type `meter_unit`.
  */
 export interface BenefitMeterCreditCreate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -5883,6 +5963,10 @@ export interface BenefitMeterCreditSubscriberProperties {
  */
 export interface BenefitMeterCreditUpdate {
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
+  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -6017,6 +6101,10 @@ export interface BenefitSlackSharedChannel {
    */
   organization_id: string;
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -6038,6 +6126,10 @@ export interface BenefitSlackSharedChannel {
  * BenefitSlackSharedChannelCreate
  */
 export interface BenefitSlackSharedChannelCreate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -6235,6 +6327,10 @@ export interface BenefitSlackSharedChannelSubscriberProperties extends Record<st
  * BenefitSlackSharedChannelUpdate
  */
 export interface BenefitSlackSharedChannelUpdate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 

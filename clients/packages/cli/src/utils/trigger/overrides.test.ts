@@ -4,7 +4,7 @@ import {
   describeRejection,
   parseOverride,
   parseOverrides,
-} from '@/commands/trigger/overrides'
+} from '@/utils/trigger/overrides'
 
 describe('parseOverride', () => {
   test.each([

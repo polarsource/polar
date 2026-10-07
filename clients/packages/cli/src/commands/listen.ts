@@ -1,7 +1,7 @@
 import { connect } from 'node:net'
 import { Console, Effect, Option, Stdio } from 'effect'
 import { Argument, Command, Flag } from 'effect/cli'
-import { org } from '@/commands/flags'
+import { org } from '@/utils/flags'
 import {
   type ListenEvent,
   ListenError,

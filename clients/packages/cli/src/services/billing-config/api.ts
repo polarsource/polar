@@ -48,6 +48,7 @@ export const entries = (
       section,
       id: entry.external_id ?? section,
       action: entry.action,
+      diff: entry.diff ?? [],
     }),
   )
 

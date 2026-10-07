@@ -21,9 +21,16 @@ export const ValidationErrors = Schema.Struct({
 
 export const EntryAction = Schema.Literals(['created', 'updated', 'unchanged'])
 
+export const FieldChange = Schema.Struct({
+  field: Schema.String,
+  before: Schema.optional(Schema.Unknown),
+  after: Schema.optional(Schema.Unknown),
+})
+
 export const EntryResult = Schema.Struct({
   external_id: Schema.optional(Schema.String),
   action: EntryAction,
+  diff: Schema.optional(Schema.Array(FieldChange)),
 })
 
 export const ApplyResponse = Schema.Record(
@@ -35,6 +42,7 @@ export interface AppliedEntry {
   readonly section: string
   readonly id: string
   readonly action: typeof EntryAction.Type
+  readonly diff: ReadonlyArray<typeof FieldChange.Type>
 }
 
 export const PlanResponse = Schema.Struct({

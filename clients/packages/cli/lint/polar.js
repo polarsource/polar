@@ -1,5 +1,6 @@
 import commandBoundaries from './rules/command-boundaries.js'
 import commandDescriptions from './rules/command-descriptions.js'
+import commandsOnly from './rules/commands-only.js'
 import noAnsiEscapes from './rules/no-ansi-escapes.js'
 import noEffectRunOutsideEntrypoint from './rules/no-effect-run-outside-entrypoint.js'
 import noHardcodedHosts from './rules/no-hardcoded-hosts.js'
@@ -12,6 +13,7 @@ export default {
   rules: {
     'command-boundaries': commandBoundaries,
     'command-descriptions': commandDescriptions,
+    'commands-only': commandsOnly,
     'no-ansi-escapes': noAnsiEscapes,
     'no-effect-run-outside-entrypoint': noEffectRunOutsideEntrypoint,
     'no-hardcoded-hosts': noHardcodedHosts,

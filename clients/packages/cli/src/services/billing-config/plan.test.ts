@@ -78,7 +78,13 @@ const failure = (promise: Promise<unknown>) =>
 describe('plan', () => {
   test('returns the planned changes and the issues mapped onto the file', async () => {
     api.routes[`POST ${planUrl}`] = Response.json({
-      changes: [{ external_id: 'tool-calls', action: 'created' }],
+      changes: [
+        {
+          external_id: 'tool-calls',
+          action: 'created',
+          diff: [{ field: 'name', before: null, after: 'Tool calls' }],
+        },
+      ],
       issues: [
         {
           severity: 'warning',
@@ -93,7 +99,12 @@ describe('plan', () => {
     const result = await run(await write(source))
 
     expect(result.entries).toEqual([
-      { section: 'meters', id: 'tool-calls', action: 'created' },
+      {
+        section: 'meters',
+        id: 'tool-calls',
+        action: 'created',
+        diff: [{ field: 'name', before: null, after: 'Tool calls' }],
+      },
     ])
     expect(result.issues).toEqual([
       {

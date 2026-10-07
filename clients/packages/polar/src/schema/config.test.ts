@@ -38,6 +38,20 @@ test('defineConfig rejects empty external IDs even with a valid display name', (
   ).toThrow()
 })
 
+test('short meter keys require an explicit display name', () => {
+  expect(() =>
+    defineConfig({ meters: ({ meter }) => ({ x: meter().count() }) }),
+  ).toThrow('Provide a displayName for meter "x"')
+
+  const config = defineConfig({
+    meters: ({ meter }) => ({ x: meter({ displayName: 'Requests' }).count() }),
+  })
+  expect(config.toJSON().meters[0]).toMatchObject({
+    external_id: 'x',
+    name: 'Requests',
+  })
+})
+
 test('defineConfig rejects invalid builder values', () => {
   expect(() =>
     defineConfig({

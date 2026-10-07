@@ -15,6 +15,22 @@ export const validateConfig = Schema.decodeUnknownEffect(PolarConfig, {
   onExcessProperty: 'error',
 })
 
+const validateMeterNaming = Schema.decodeUnknownSync(
+  Schema.Struct({
+    external_id: Schema.String,
+    displayName: Schema.optional(Schema.String),
+  }).check(
+    Schema.makeFilter(({ external_id, displayName }) =>
+      displayName !== undefined || external_id.length >= 3
+        ? undefined
+        : {
+            path: ['displayName'],
+            issue: `Provide a displayName for meter "${external_id}" because its key is shorter than 3 characters.`,
+          },
+    ),
+  ),
+)
+
 type MeterEntries =
   | Readonly<Record<string, MeterDefinition>>
   | ReadonlyArray<readonly [externalId: string, meter: MeterDefinition]>
@@ -46,11 +62,13 @@ export const defineConfig = <const Meters extends MeterEntries>(input: {
     errors: 'all',
     onExcessProperty: 'error',
   })({
-    meters: entries.map(([external_id, definition]) => ({
-      ...definition,
-      external_id,
-      name: definition.name ?? external_id,
-    })),
+    meters: entries.map(([external_id, definition]) => {
+      const { displayName } = validateMeterNaming({
+        external_id,
+        displayName: definition.name,
+      })
+      return { ...definition, external_id, name: displayName ?? external_id }
+    }),
   })
 
   return {

@@ -5,11 +5,19 @@ from sqlalchemy import Select
 from sqlalchemy.orm import undefer
 
 from polar.authz.types import AccessibleOrganizationID
-from polar.kit.repository import RepositoryBase, RepositoryIDMixin
+from polar.kit.repository import (
+    RepositoryBase,
+    RepositoryExternalIDMixin,
+    RepositoryIDMixin,
+)
 from polar.models import Meter
 
 
-class MeterRepository(RepositoryBase[Meter], RepositoryIDMixin[Meter, UUID]):
+class MeterRepository(
+    RepositoryExternalIDMixin[Meter],
+    RepositoryBase[Meter],
+    RepositoryIDMixin[Meter, UUID],
+):
     model = Meter
 
     def get_statement_by_org_ids(

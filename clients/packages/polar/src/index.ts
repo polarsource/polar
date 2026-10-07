@@ -1,6 +1,3 @@
-import { Schema } from 'effect'
-import { PolarConfig } from './schema/config'
-
 export { createPolar, createPolarCore, errors, webhooks } from './sdk'
 export type {
   Environment,
@@ -29,17 +26,13 @@ export {
   like,
   notLike,
   meter,
+} from './schema/meter'
+export type {
   MeterAggregation,
   MeterConfig,
+  MeterDefinition,
   MeterFilter,
 } from './schema/meter'
-export type { MeterDefinition } from './schema/meter'
-export { defineConfig, validateConfig } from './schema/config'
-export type { Config } from './schema/config'
+export { defineConfig } from './schema/config'
+export type { Config, PolarConfig } from './schema/config'
 export { generateConfig } from './generate'
-export { PolarConfig }
-
-export const parseConfig = Schema.decodeUnknownEffect(
-  Schema.fromJsonString(PolarConfig),
-  { errors: 'all', onExcessProperty: 'error' },
-)

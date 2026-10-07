@@ -603,3 +603,12 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         )
         result = await self.session.execute(statement)
         return result.scalar_one()
+
+    async def get_max_ingest_sequence(
+        self, organization_id: UUID, external_ids: Collection[str]
+    ) -> int | None:
+        statement = select(func.max(Event.ingest_sequence)).where(
+            Event.organization_id == organization_id,
+            Event.external_id.in_(external_ids),
+        )
+        return await self.session.scalar(statement)

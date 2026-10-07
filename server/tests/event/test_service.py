@@ -72,6 +72,19 @@ def enqueue_events_mock(mocker: MockerFixture) -> AsyncMock:
     return mocker.patch("polar.event.service.enqueue_events")
 
 
+def _ingest_request(*external_ids: str) -> EventsIngest:
+    return EventsIngest(
+        events=[
+            EventCreateExternalCustomer(
+                name="api.request",
+                external_customer_id="customer",
+                external_id=external_id,
+            )
+            for external_id in external_ids
+        ]
+    )
+
+
 @pytest.mark.asyncio
 class TestList:
     @pytest.mark.auth
@@ -1231,6 +1244,97 @@ class TestIngest:
         assert len(events) == 1
         assert events[0].member_id is None
         assert events[0].external_member_id is None
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_sequence_numbers_each_request(
+        self,
+        enqueue_events_mock: AsyncMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        _, first = await event_service.ingest(
+            session, auth_subject, _ingest_request("a", "b")
+        )
+        _, second = await event_service.ingest(
+            session, auth_subject, _ingest_request("c")
+        )
+
+        assert (first, second) == (1, 2)
+        events = await get_all_by_organization(session, auth_subject.subject.id)
+        assert {e.external_id: e.ingest_sequence for e in events} == {
+            "a": 1,
+            "b": 1,
+            "c": 2,
+        }
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_sequence_of_a_resent_request_is_the_original(
+        self,
+        enqueue_events_mock: AsyncMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        await event_service.ingest(session, auth_subject, _ingest_request("a", "b"))
+        await event_service.ingest(session, auth_subject, _ingest_request("c"))
+
+        response, sequence = await event_service.ingest(
+            session, auth_subject, _ingest_request("a", "b")
+        )
+
+        assert response.duplicates == 2
+        assert sequence == 1
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_sequence_of_a_mixed_request_covers_every_event(
+        self,
+        enqueue_events_mock: AsyncMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        await event_service.ingest(session, auth_subject, _ingest_request("a"))
+
+        response, sequence = await event_service.ingest(
+            session, auth_subject, _ingest_request("a", "b")
+        )
+
+        assert response.duplicates == 1
+        assert sequence == 2
+
+    @pytest.mark.auth
+    async def test_no_sequence_across_organizations(
+        self,
+        enqueue_events_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(
+                user=auth_subject.subject, organization=organization_second
+            )
+        )
+        ingest = EventsIngest(
+            events=[
+                EventCreateExternalCustomer(
+                    name="api.request",
+                    external_customer_id="customer",
+                    organization_id=organization_id,
+                )
+                for organization_id in (organization.id, organization_second.id)
+            ]
+        )
+
+        _, sequence = await event_service.ingest(session, auth_subject, ingest)
+
+        assert sequence is None
+        events = [
+            *await get_all_by_organization(session, organization.id),
+            *await get_all_by_organization(session, organization_second.id),
+        ]
+        assert [e.ingest_sequence for e in events] == [None, None]
 
 
 @pytest.mark.asyncio

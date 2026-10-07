@@ -357,6 +357,12 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
@@ -428,6 +434,12 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
@@ -507,6 +519,12 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
@@ -580,6 +598,12 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
@@ -648,6 +672,12 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
@@ -747,6 +777,12 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
@@ -823,6 +859,12 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
@@ -896,6 +938,12 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']

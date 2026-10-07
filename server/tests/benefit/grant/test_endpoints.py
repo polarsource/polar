@@ -131,6 +131,22 @@ class TestListBenefitGrants:
         benefit_organization: Benefit,
         customer: Customer,
     ) -> None:
+        deleted_member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="deleted-member@example.com",
+            external_id="member-1",
+        )
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            member=deleted_member,
+        )
+        deleted_member.set_deleted_at()
+        await save_fixture(deleted_member)
         member = await create_member(
             save_fixture,
             customer=customer,

@@ -147,7 +147,10 @@ class BenefitGrantService:
         if external_member_id is not None:
             statement = statement.join(
                 Member, BenefitGrant.member_id == Member.id
-            ).where(Member.external_id.in_(external_member_id))
+            ).where(
+                Member.external_id.in_(external_member_id),
+                Member.deleted_at.is_(None),
+            )
 
         statement = repository.apply_sorting(statement, sorting)
 

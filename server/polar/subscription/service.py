@@ -737,9 +737,7 @@ class SubscriptionService:
                 or product.organization.default_presentment_currency
             )
             try:
-                default_price = PriceSet.from_product(
-                    product, currency
-                ).get_default_price()
+                currency_prices = PriceSet.from_product(product, currency)
             except NoPricesForCurrencies:
                 errors.append(
                     {
@@ -750,7 +748,7 @@ class SubscriptionService:
                     }
                 )
             else:
-                if not default_price.is_free:
+                if any(not price.is_free for price in currency_prices):
                     errors.append(
                         {
                             "type": "value_error",

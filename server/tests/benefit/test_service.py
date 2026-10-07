@@ -856,6 +856,31 @@ class TestUpdate:
 
         assert updated_benefit.external_id == "ext_1337"
 
+    @pytest.mark.auth
+    async def test_external_id_cannot_be_changed(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture, organization=organization, external_id="ext_1337"
+        )
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await benefit_service.update(
+                session,
+                redis,
+                benefit,
+                BenefitCustomUpdate(type=BenefitType.custom, external_id="ext_42"),
+                auth_subject,
+            )
+
+        assert e.value.errors()[0]["loc"] == ("body", "external_id")
+
 
 @pytest.mark.asyncio
 class TestDelete:

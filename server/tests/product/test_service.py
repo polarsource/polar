@@ -2555,6 +2555,29 @@ class TestUpdate:
 
         assert updated_product.external_id == "ext_1337"
 
+    @pytest.mark.auth
+    async def test_external_id_cannot_be_changed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="ext_1337",
+        )
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await product_service.update(
+                session, product, ProductUpdate(external_id="ext_42"), auth_subject
+            )
+
+        assert e.value.errors()[0]["loc"] == ("body", "external_id")
+
 
 @pytest.mark.asyncio
 class TestUpdateBenefits:

@@ -14,6 +14,7 @@ from polar.postgres import AsyncSession
 from .schemas import (
     Config,
     ConfigAction,
+    ConfigFieldChange,
     ConfigIssue,
     ConfigIssueSeverity,
     ConfigIssueType,
@@ -41,6 +42,27 @@ class MeterChange:
         if self.update_dict:
             return ConfigAction.updated
         return ConfigAction.unchanged
+
+    @property
+    def diff(self) -> list[ConfigFieldChange]:
+        if self.meter is None:
+            changed = {
+                field: value
+                for field in _METER_FIELDS
+                if (value := getattr(self.config, field)) is not None
+            }
+            if "metadata" in self.config.model_fields_set:
+                changed["user_metadata"] = self.config.metadata
+        else:
+            changed = self.update_dict
+        return [
+            ConfigFieldChange(
+                field="metadata" if field == "user_metadata" else field,
+                before=None if self.meter is None else getattr(self.meter, field),
+                after=after,
+            )
+            for field, after in changed.items()
+        ]
 
 
 def _meter_loc(index: int, *path: str | int) -> Loc:

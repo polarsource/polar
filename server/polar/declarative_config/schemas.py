@@ -83,6 +83,18 @@ class ConfigApplyResult(Schema):
     meters: list[ConfigMeterResult]
 
 
+class ConfigFieldChange(Schema):
+    field: str = Field(description="Name of the changed field.")
+    before: Any | None = Field(description="Current value, `null` on create.")
+    after: Any | None = Field(description="Value after applying the config.")
+
+
+class ConfigMeterChange(ConfigMeterResult):
+    diff: list[ConfigFieldChange] = Field(
+        description="Fields that applying the config sets. Empty when unchanged."
+    )
+
+
 class ConfigPlan(Schema):
-    changes: list[ConfigMeterResult]
+    changes: list[ConfigMeterChange]
     issues: list[ConfigIssue]

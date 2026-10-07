@@ -5,7 +5,7 @@ from pytest_mock import MockerFixture
 from polar.models import Organization, UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_event, create_meter
+from tests.fixtures.random_objects import METER_TEST_EVENT, create_event, create_meter
 
 METER = {
     "external_id": "sdk-tool-calls",
@@ -188,10 +188,52 @@ class TestPlan:
 
         assert response.status_code == 200
         json = response.json()
-        assert json["changes"] == [
-            {"external_id": "sdk-tool-calls", "action": "updated"}
-        ]
+        assert [change["action"] for change in json["changes"]] == ["updated"]
         assert [(issue["severity"], issue["type"]) for issue in json["issues"]] == [
             ("error", "meter_locked"),
             ("warning", "unknown_event"),
         ]
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_diff(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_meter(
+            save_fixture, organization=organization, external_id="my-meter"
+        )
+        renamed_meter = {
+            "external_id": "my-meter",
+            "name": "Renamed",
+            "filter": {
+                "conjunction": "and",
+                "clauses": [
+                    {"property": "name", "operator": "eq", "value": METER_TEST_EVENT}
+                ],
+            },
+            "aggregation": {"func": "count"},
+        }
+
+        response = await client.post(
+            "/v1/config/plan",
+            json={
+                "meters": [renamed_meter, METER],
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 200
+        updated, created = response.json()["changes"]
+        assert updated["diff"] == [
+            {"field": "name", "before": "My Meter", "after": "Renamed"}
+        ]
+        assert created["action"] == "created"
+        assert {
+            "field": "name",
+            "before": None,
+            "after": "SDK - Tool Calls",
+        } in created["diff"]

@@ -1,7 +1,7 @@
 import re
 from collections.abc import Sequence
 from datetime import date
-from typing import Annotated
+from typing import Annotated, Any
 from zoneinfo import ZoneInfo
 
 from annotated_types import Len, Predicate
@@ -50,6 +50,19 @@ from .schemas import (
 from .service import event as event_service
 
 INGEST_SEQUENCE_HEADER = "Polar-Ingest-Sequence"
+_INGEST_RESPONSES: dict[int | str, dict[str, Any]] = {
+    200: {
+        "headers": {
+            INGEST_SEQUENCE_HEADER: {
+                "description": (
+                    "Sequence number covering every event of the request, "
+                    "including duplicates stored by an earlier request."
+                ),
+                "schema": {"type": "integer"},
+            }
+        }
+    }
+}
 
 router = APIRouter(prefix="/events", tags=["events", APITag.public])
 
@@ -593,23 +606,7 @@ async def get(
     return event
 
 
-@router.post(
-    "/ingest",
-    summary="Ingest Events",
-    responses={
-        200: {
-            "headers": {
-                INGEST_SEQUENCE_HEADER: {
-                    "description": (
-                        "Sequence number covering every event of the request, "
-                        "including duplicates stored by an earlier request."
-                    ),
-                    "schema": {"type": "integer"},
-                }
-            }
-        }
-    },
-)
+@router.post("/ingest", summary="Ingest Events", responses=_INGEST_RESPONSES)
 async def ingest(
     ingest: EventsIngest,
     auth_subject: auth.EventWrite,

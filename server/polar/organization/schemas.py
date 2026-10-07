@@ -47,7 +47,7 @@ from polar.models.user_organization import (
     OrganizationRole,
 )
 from polar.organization.embed_hosts import InvalidEmbedHost, validate_host_pattern
-from polar.version import NEXT_API_VERSION
+from polar.version import V2027_01
 
 OrganizationID = Annotated[
     UUID4,
@@ -244,7 +244,7 @@ class OrganizationFeatureSettings(Schema):
     )
     config_as_code_enabled: Annotated[
         bool,
-        Version(starting_from=NEXT_API_VERSION),
+        Version(starting_from=V2027_01),
         Field(
             description=(
                 "If this organization can manage its configuration from a "

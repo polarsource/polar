@@ -50,6 +50,7 @@ from polar.models import (
 )
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.reducer.service import reducer as reducer_service
 from polar.subscription.repository import SubscriptionProductPriceRepository
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
@@ -206,6 +207,8 @@ class MeterService:
             meter, update_dict={"last_billed_event": last_billed_event}
         )
 
+        await reducer_service.sync_meter(session, meter)
+
         enqueue_job("meter.backfill_events", meter.id)
 
         return meter
@@ -271,7 +274,9 @@ class MeterService:
             else:
                 meter = await self.unarchive(session, meter)
 
-        return await repository.update(meter, update_dict=update_dict)
+        meter = await repository.update(meter, update_dict=update_dict)
+        await reducer_service.sync_meter(session, meter)
+        return meter
 
     async def archive(self, session: AsyncSession, meter: Meter) -> Meter:
         # Check if meter is attached to any active metered price

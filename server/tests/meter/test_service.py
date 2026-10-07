@@ -10,6 +10,7 @@ import pytest
 import pytest_asyncio
 from pydantic import ValidationError
 from pytest_mock import MockerFixture
+from sqlalchemy import select
 
 from polar.auth.models import AuthSubject
 from polar.enums import SubscriptionRecurringInterval
@@ -37,8 +38,10 @@ from polar.models import (
     Event,
     Meter,
     MeterEvent,
+    MeterReducer,
     Organization,
     Product,
+    Reducer,
     Subscription,
     User,
     UserOrganization,
@@ -116,6 +119,16 @@ class TestCreate:
         )
 
         assert meter.last_billed_event == events[1]
+        reducer = (
+            await session.scalars(
+                select(Reducer)
+                .join(MeterReducer)
+                .where(MeterReducer.meter_id == meter.id)
+            )
+        ).one()
+        assert reducer.organization_id == meter.organization_id
+        assert reducer.filter == meter.filter
+        assert reducer.aggregation == meter.aggregation
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_default_unit_is_scalar(
@@ -294,6 +307,7 @@ class TestUpdate:
         ],
     )
     @pytest.mark.auth
+    @pytest.mark.parametrize("has_reducer", [False, True])
     async def test_sensitive_update_allowed(
         self,
         auth_subject: AuthSubject[User],
@@ -302,10 +316,19 @@ class TestUpdate:
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
+        has_reducer: bool,
     ) -> None:
         meter = await create_meter(
             save_fixture, organization=organization, last_billed_event=None
         )
+        original_reducer = None
+        if has_reducer:
+            original_reducer = Reducer(
+                organization=organization,
+                filter=meter.filter,
+                aggregation=meter.aggregation,
+            )
+            await save_fixture(MeterReducer(meter=meter, reducer=original_reducer))
 
         updated_meter = await meter_service.update(
             session, meter, meter_update, auth_subject
@@ -315,6 +338,19 @@ class TestUpdate:
             assert updated_meter.filter == meter_update.filter
         if meter_update.aggregation:
             assert updated_meter.aggregation == meter_update.aggregation
+        reducer = (
+            await session.scalars(
+                select(Reducer)
+                .join(MeterReducer)
+                .where(MeterReducer.meter_id == meter.id)
+            )
+        ).one()
+        await session.refresh(reducer)
+        assert reducer.organization_id == meter.organization_id
+        assert reducer.filter == updated_meter.filter
+        assert reducer.aggregation == updated_meter.aggregation
+        if original_reducer is not None:
+            assert reducer.id == original_reducer.id
 
     @pytest.mark.auth
     async def test_insensitive_update(

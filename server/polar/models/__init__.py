@@ -58,6 +58,7 @@ from .merchant_migration_record import (
     MerchantMigrationRecordType,
 )
 from .meter import Meter
+from .meter_bucket import MeterBucket
 from .meter_event import MeterEvent
 from .metric_dashboard import MetricDashboard
 from .notification import Notification
@@ -191,6 +192,7 @@ __all__ = [
     "MerchantMigrationSourcePlatform",
     "MerchantMigrationStep",
     "Meter",
+    "MeterBucket",
     "MeterEvent",
     "MetricDashboard",
     "Model",

@@ -11,6 +11,7 @@ from polar.integrations.tinybird.client import TinybirdClient
 from polar.kit.utils import utc_now
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import Event, Organization, UserOrganization
+from polar.version import V2026_10, V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_event
@@ -432,6 +433,49 @@ class TestIngest:
 
         assert response.status_code == 200
         assert "Polar-Ingest-Sequence" not in response.headers
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_2027_01_organization_token(self, client: AsyncClient) -> None:
+        events = [{"name": "event1", "external_customer_id": "CUSTOMER_ID"}]
+
+        response = await client.post("/v1/events/ingest", json={"events": events})
+
+        assert response.status_code == 200
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_2027_01_user_session(
+        self, client: AsyncClient, user_organization: UserOrganization
+    ) -> None:
+        events = [
+            {
+                "name": "event1",
+                "external_customer_id": "CUSTOMER_ID",
+                "organization_id": str(user_organization.organization_id),
+            }
+        ]
+
+        response = await client.post("/v1/events/ingest", json={"events": events})
+
+        assert response.status_code == 403
+
+    @pytest.mark.api_version(V2026_10)
+    @pytest.mark.auth
+    async def test_2026_10_user_session(
+        self, client: AsyncClient, user_organization: UserOrganization
+    ) -> None:
+        events = [
+            {
+                "name": "event1",
+                "external_customer_id": "CUSTOMER_ID",
+                "organization_id": str(user_organization.organization_id),
+            }
+        ]
+
+        response = await client.post("/v1/events/ingest", json={"events": events})
+
+        assert response.status_code == 200
 
 
 SQLI_PAYLOADS = [

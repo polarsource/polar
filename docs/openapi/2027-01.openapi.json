@@ -22925,6 +22925,16 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotPermitted"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {

@@ -1,7 +1,7 @@
 import re
 from collections.abc import Sequence
 from datetime import date
-from typing import Annotated
+from typing import Annotated, Any
 from zoneinfo import ZoneInfo
 
 from annotated_types import Len, Predicate
@@ -11,7 +11,11 @@ from pydantic import UUID4, AwareDatetime, ValidationError
 from pydantic_extra_types.timezone_name import TimeZoneName
 
 from polar.customer.schemas.customer import CustomerID
-from polar.exceptions import PolarRequestValidationError, ResourceNotFound
+from polar.exceptions import (
+    NotPermitted,
+    PolarRequestValidationError,
+    ResourceNotFound,
+)
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import (
     ListResource,
@@ -20,6 +24,7 @@ from polar.kit.pagination import (
 )
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.time_queries import TimeInterval, is_under_limits
+from polar.kit.versioning import version
 from polar.meter.filter import Filter
 from polar.meter.schemas import MeterID
 from polar.models import Event
@@ -33,6 +38,7 @@ from polar.postgres import (
     get_db_session,
 )
 from polar.routing import APIRouter
+from polar.version import V2027_01
 
 from . import auth, sorting
 from .schemas import Event as EventSchema
@@ -50,6 +56,19 @@ from .schemas import (
 from .service import event as event_service
 
 INGEST_SEQUENCE_HEADER = "Polar-Ingest-Sequence"
+_INGEST_RESPONSES: dict[int | str, dict[str, Any]] = {
+    200: {
+        "headers": {
+            INGEST_SEQUENCE_HEADER: {
+                "description": (
+                    "Sequence number covering every event of the request, "
+                    "including duplicates stored by an earlier request."
+                ),
+                "schema": {"type": "integer"},
+            }
+        }
+    }
+}
 
 router = APIRouter(prefix="/events", tags=["events", APITag.public])
 
@@ -593,26 +612,30 @@ async def get(
     return event
 
 
-@router.post(
-    "/ingest",
-    summary="Ingest Events",
-    responses={
-        200: {
-            "headers": {
-                INGEST_SEQUENCE_HEADER: {
-                    "description": (
-                        "Sequence number covering every event of the request, "
-                        "including duplicates stored by an earlier request."
-                    ),
-                    "schema": {"type": "integer"},
-                }
-            }
-        }
-    },
-)
+@router.post("/ingest", summary="Ingest Events", responses=_INGEST_RESPONSES)
 async def ingest(
     ingest: EventsIngest,
     auth_subject: auth.EventWrite,
+    response: Response,
+    session: AsyncSession = Depends(get_db_session),
+) -> EventsIngestResponse:
+    """Ingest batch of events."""
+    ingested, sequence = await event_service.ingest(session, auth_subject, ingest)
+    if sequence is not None:
+        response.headers[INGEST_SEQUENCE_HEADER] = str(sequence)
+    return ingested
+
+
+@router.post(
+    "/ingest",
+    name="ingest",
+    summary="Ingest Events",
+    responses={**_INGEST_RESPONSES, 403: {"model": NotPermitted.schema()}},
+)
+@version(starting_from=V2027_01)
+async def ingest_v2027_01(
+    ingest: EventsIngest,
+    auth_subject: auth.EventWriteSingleOrganization,
     response: Response,
     session: AsyncSession = Depends(get_db_session),
 ) -> EventsIngestResponse:

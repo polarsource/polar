@@ -60818,6 +60818,15 @@ export interface operations {
           'application/json': components['schemas']['EventsIngestResponse']
         }
       }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {

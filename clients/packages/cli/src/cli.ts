@@ -7,6 +7,7 @@ import { stdoutConsole } from '@/utils/console'
 import { describeError } from '@/utils/errors'
 import * as ApiRuntime from '@/commands/api-runtime'
 import * as Auth from '@/services/auth'
+import * as BillingConfig from '@/services/billing-config'
 import * as Credentials from '@/services/credentials'
 import * as Deliveries from '@/services/deliveries'
 import * as Config from '@/services/config'
@@ -33,6 +34,11 @@ const authLayer = Auth.layer.pipe(
   Layer.provide(Layer.mergeAll(Credentials.layer, oauthLayer, configLayer)),
 )
 const polarLayer = Polar.layer.pipe(Layer.provide(authLayer))
+const billingConfigLayer = BillingConfig.layer.pipe(
+  Layer.provide(
+    Layer.mergeAll(BunServices.layer, authLayer, FetchHttpClient.layer),
+  ),
+)
 const organizationsLayer = Organizations.layer.pipe(
   Layer.provide(Layer.mergeAll(authLayer, polarLayer, configLayer)),
 )
@@ -50,6 +56,7 @@ const services = Layer.mergeAll(
     Layer.provide(Layer.mergeAll(polarLayer, organizationsLayer)),
   ),
   authLayer,
+  billingConfigLayer,
   Deliveries.layer,
   polarLayer,
   organizationsLayer,

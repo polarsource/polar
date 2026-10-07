@@ -1,6 +1,7 @@
 import pc from 'picocolors'
+import type { SourceLocation } from '@/schemas/BillingConfig'
 
-const INDENT = '  '
+export const INDENT = '  '
 
 export const dim = pc.dim
 export const bold = pc.bold
@@ -81,3 +82,44 @@ export const pushTitle = (title: string) =>
   `\x1b[22;0t\x1b]0;${[...title].filter(isPrintable).join('')}\x07`
 
 export const popTitle = '\x1b]0;\x07\x1b[23;0t'
+
+export interface CodeFrameOptions {
+  readonly file: string
+  readonly location: SourceLocation
+  readonly label: string
+  readonly color?: (text: string) => string
+}
+
+const expandTabs = (text: string) => text.replaceAll('\t', '  ')
+
+export const codeFrame = (source: string, options: CodeFrameOptions) => {
+  const { file, location, label, color = pc.red } = options
+  const lines = printable(source).split('\n')
+  const first = Math.max(location.line - 1, 1)
+  const last = Math.min(location.line + 1, lines.length)
+  const gutterWidth = String(last).length
+  const blank = ' '.repeat(gutterWidth)
+  const row = (number: number) =>
+    `${pc.dim(`${String(number).padStart(gutterWidth)} │`)} ${expandTabs(lines[number - 1] ?? '')}`
+  const length = Math.max(location.length, 1)
+  const middle = Math.floor((length - 1) / 2)
+  const underline = `${'─'.repeat(middle)}┬${'─'.repeat(length - middle - 1)}`
+  const target = lines[location.line - 1] ?? ''
+  const offset = ' '.repeat(
+    expandTabs(target.slice(0, Math.max(location.column - 1, 0))).length,
+  )
+  const frame = [
+    `${blank} ${pc.dim(`╭─[${file}:${location.line}:${location.column}]`)}`,
+    ...Array.from({ length: location.line - first }, (_, index) =>
+      row(first + index),
+    ),
+    row(location.line),
+    `${blank} ${pc.dim('·')} ${offset}${color(underline)}`,
+    `${blank} ${pc.dim('·')} ${offset}${' '.repeat(middle)}${color('╰──')} ${label}`,
+    ...Array.from({ length: last - location.line }, (_, index) =>
+      row(location.line + 1 + index),
+    ),
+    `${blank} ${pc.dim('╰────')}`,
+  ]
+  return frame.map((line) => `${INDENT}${line}`).join('\n')
+}

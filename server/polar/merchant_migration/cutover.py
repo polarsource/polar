@@ -108,9 +108,10 @@ _NO_PAYMENT_METHOD = (
     "No copied payment method has landed on Polar for this customer. Unless "
     "they have a default one by the next renewal, it fails and goes to dunning."
 )
-_NOT_A_CARD = (
-    "It renews with a payment method that isn't a card, which Polar can't "
-    "check ahead of the first charge. If that renewal fails, it goes to dunning."
+_NOT_COPYABLE = (
+    "It renews with a payment method that can't be copied to Polar. Its next "
+    "renewal fails and goes to dunning unless the customer re-enters their "
+    "billing details first."
 )
 _NOT_PAUSED = "It isn't paused in Polar any more, so it was left alone."
 _CARD_EXPIRED = (
@@ -483,7 +484,7 @@ class SubscriptionCutover:
             subscription_id=subscription.id,
             source_id=record.source_id,
         )
-        return _moved(self._card_note(payment_method))
+        return _moved(self._card_note(payment_method, source))
 
     async def _stop_source(
         self, record: MerchantMigrationRecord, *, cancel_at_period_end: bool
@@ -835,18 +836,23 @@ class SubscriptionCutover:
                     PaymentProcessor.stripe,
                     staged.payment_method.source_id,
                 )
-                if payment_method is not None:
+                if payment_method is not None and payment_method.type == CARD_TYPE:
                     return payment_method
-            if customer.default_payment_method_id is not None:
-                return await repository.get_by_id_and_customer(
-                    customer.default_payment_method_id, customer.id
-                )
-            return None
+            if customer.default_payment_method_id is None:
+                return None
+            default = await repository.get_by_id_and_customer(
+                customer.default_payment_method_id, customer.id
+            )
+            if default is None or default.type != CARD_TYPE:
+                return None
+            return default
         return await link_payment_method(
             self.session, customer, source_method=source.payment_method
         )
 
-    def _card_note(self, payment_method: PaymentMethod | None) -> str | None:
+    def _card_note(
+        self, payment_method: PaymentMethod | None, source: CanonicalSubscription
+    ) -> str | None:
         """What the merchant should chase, not a reason to hold the switch back.
 
         A card only proves itself on a real charge, and a first renewal that
@@ -855,9 +861,12 @@ class SubscriptionCutover:
         the answer travels with a subscription that moved.
         """
         if payment_method is None:
+            if (
+                source.payment_method is not None
+                and source.payment_method.type.requires_reentry
+            ):
+                return _NOT_COPYABLE
             return _NO_PAYMENT_METHOD
-        if payment_method.type != CARD_TYPE:
-            return _NOT_A_CARD
         expires_at = payment_method.expires_at
         if expires_at is None or expires_at > utc_now():
             return None

@@ -29,7 +29,11 @@ export const {{ method.name | exported_operation_name(service.name) }} = (
 {% endif %}
 * @param requestOptions - Request options
 {% if method.response_type == 'json' %}
-* @returns {{'{'}}{{ method.response | ts_type }}{% if method.pending_response %} | undefined{% endif %}{{'}'}}{% if method.pending_response %} undefined means the receipt is still being generated.{% endif %}
+{% if method.pending_response %}
+* @returns {{'{'}}{{ method.response | ts_type }} | undefined{{'}'}} undefined means the receipt is still being generated.
+{% else %}
+* @returns {{'{'}}{{ method.response | ts_type }}{{'}'}}
+{% endif %}
 {% elif method.response_type == 'text' %}
 * @returns {string}
 {% else %}

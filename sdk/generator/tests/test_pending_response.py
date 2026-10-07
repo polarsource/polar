@@ -80,14 +80,14 @@ def test_pending_response_widens_only_that_return_type(
     ).read_text()
     pending_doc = (
         "@returns {OrderReceipt | undefined} undefined means the receipt "
-        "is still being generated."
+        "is still being generated.\n"
     )
     assert "Promise<OrderReceipt | undefined>" in typescript
     assert "parseResponse<OrderReceipt | undefined>" in typescript
     assert pending_doc in typescript
     assert re.search(r"Promise<Order>(?!Receipt)", typescript)
     assert re.search(r"parseResponse<Order>(?!Receipt)", typescript)
-    assert re.search(r"@returns \{Order\}(?!Receipt)", typescript)
+    assert re.search(r"@returns \{Order\}\n", typescript)
     assert "Promise<Order | undefined>" not in typescript
     assert "parseResponse<Order | undefined>" not in typescript
     assert (

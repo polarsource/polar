@@ -6039,6 +6039,31 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/config/plan': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Plan Config
+     * @description Preview what applying a declarative config document would do, without applying it.
+     *
+     *     Returns the action for each meter, and every issue: `error` issues make
+     *     apply fail, `warning` issues don't.
+     *
+     *     **Scopes**: `meters:read` `meters:write`
+     */
+    post: operations['config:plan']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organization-access-tokens/': {
     parameters: {
       query?: never
@@ -15795,19 +15820,49 @@ export interface components {
       /** Detail */
       detail: string
     }
-    /** ConfigEntryError */
-    ConfigEntryError: {
+    /** ConfigInvalid */
+    ConfigInvalid: {
+      /**
+       * Error
+       * @example ConfigInvalid
+       * @constant
+       */
+      error: 'ConfigInvalid'
+      /** Detail */
+      detail: components['schemas']['ConfigIssue'][]
+    }
+    /** ConfigIssue */
+    ConfigIssue: {
+      /** @description `error` blocks applying the config, `warning` doesn't. */
+      severity: components['schemas']['ConfigIssueSeverity']
+      /** @description Machine-readable reason. */
+      type: components['schemas']['ConfigIssueType']
       /**
        * Loc
-       * @description Location of the blocked value in the request body.
+       * @description Location of the issue in the request body.
        */
       loc: (string | number)[]
       /**
        * Msg
-       * @description Why the value can't be applied.
+       * @description Human-readable description of the issue.
        */
       msg: string
+      /**
+       * Input
+       * @description The value at `loc`, if relevant.
+       */
+      input: unknown | null
     }
+    /**
+     * ConfigIssueSeverity
+     * @enum {string}
+     */
+    ConfigIssueSeverity: 'error' | 'warning'
+    /**
+     * ConfigIssueType
+     * @enum {string}
+     */
+    ConfigIssueType: 'duplicate_external_id' | 'meter_locked' | 'unknown_event'
     /** ConfigMeter */
     ConfigMeter: {
       /**
@@ -15874,17 +15929,6 @@ export interface components {
       /** Detail */
       detail: string
     }
-    /** ConfigMeterLocked */
-    ConfigMeterLocked: {
-      /**
-       * Error
-       * @example ConfigMeterLocked
-       * @constant
-       */
-      error: 'ConfigMeterLocked'
-      /** Detail */
-      detail: components['schemas']['ConfigEntryError'][]
-    }
     /** ConfigMeterResult */
     ConfigMeterResult: {
       /**
@@ -15892,8 +15936,15 @@ export interface components {
        * @description The meter's `external_id`.
        */
       external_id: string
-      /** @description What applying the config did. */
+      /** @description What applying the config does. */
       action: components['schemas']['ConfigAction']
+    }
+    /** ConfigPlan */
+    ConfigPlan: {
+      /** Changes */
+      changes: components['schemas']['ConfigMeterResult'][]
+      /** Issues */
+      issues: components['schemas']['ConfigIssue'][]
     }
     /** CostMetadata */
     'CostMetadata-Input': {
@@ -61689,15 +61740,68 @@ export interface operations {
             | components['schemas']['ConfigAsCodeNotEnabled']
         }
       }
-      /** @description A meter is already aggregating events and its filter or aggregation would change, or another request created the same meter concurrently. */
+      /** @description The config has blocking issues, or another request created the same meter concurrently. */
       409: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json':
-            | components['schemas']['ConfigMeterLocked']
+            | components['schemas']['ConfigInvalid']
             | components['schemas']['ConfigMeterConflict']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'config:plan': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['Config']
+      }
+    }
+    responses: {
+      /** @description Config checked. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConfigPlan']
+        }
+      }
+      /** @description Not authenticated. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Unauthorized']
+        }
+      }
+      /** @description Not allowed to read this organization's products, or config as code isn't enabled for it. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['NotPermitted']
+            | components['schemas']['ConfigAsCodeNotEnabled']
         }
       }
       /** @description Validation Error */
@@ -70345,6 +70449,12 @@ export const confidenceLevelValues: ReadonlyArray<
 export const configActionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigAction']
 > = ['created', 'updated', 'unchanged']
+export const configIssueSeverityValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigIssueSeverity']
+> = ['error', 'warning']
+export const configIssueTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigIssueType']
+> = ['duplicate_external_id', 'meter_locked', 'unknown_event']
 export const countAggregationFuncValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CountAggregation']['func']
 > = ['count']

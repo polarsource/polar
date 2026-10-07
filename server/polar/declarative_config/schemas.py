@@ -1,6 +1,7 @@
 from enum import StrEnum
+from typing import Any
 
-from pydantic import ConfigDict, Field, field_validator
+from pydantic import ConfigDict, Field
 
 from polar.kit.schemas import Schema
 from polar.meter.schemas import MeterCreateBase
@@ -43,29 +44,28 @@ class Config(Schema):
         ),
     )
 
-    @field_validator("meters")
-    @classmethod
-    def validate_unique_external_ids(
-        cls, value: list[ConfigMeter]
-    ) -> list[ConfigMeter]:
-        seen: set[str] = set()
-        duplicates: set[str] = set()
-        for meter in value:
-            if meter.external_id in seen:
-                duplicates.add(meter.external_id)
-            seen.add(meter.external_id)
-        if duplicates:
-            raise ValueError(
-                f"Duplicate external_id values: {', '.join(sorted(duplicates))}."
-            )
-        return value
+
+class ConfigIssueSeverity(StrEnum):
+    error = "error"
+    warning = "warning"
 
 
-class ConfigEntryError(Schema):
-    loc: list[str | int] = Field(
-        description="Location of the blocked value in the request body."
+class ConfigIssueType(StrEnum):
+    duplicate_external_id = "duplicate_external_id"
+    meter_locked = "meter_locked"
+    unknown_event = "unknown_event"
+
+
+class ConfigIssue(Schema):
+    severity: ConfigIssueSeverity = Field(
+        description="`error` blocks applying the config, `warning` doesn't."
     )
-    msg: str = Field(description="Why the value can't be applied.")
+    type: ConfigIssueType = Field(description="Machine-readable reason.")
+    loc: list[str | int] = Field(
+        description="Location of the issue in the request body."
+    )
+    msg: str = Field(description="Human-readable description of the issue.")
+    input: Any | None = Field(description="The value at `loc`, if relevant.")
 
 
 class ConfigAction(StrEnum):
@@ -76,8 +76,13 @@ class ConfigAction(StrEnum):
 
 class ConfigMeterResult(Schema):
     external_id: str = Field(description="The meter's `external_id`.")
-    action: ConfigAction = Field(description="What applying the config did.")
+    action: ConfigAction = Field(description="What applying the config does.")
 
 
 class ConfigApplyResult(Schema):
     meters: list[ConfigMeterResult]
+
+
+class ConfigPlan(Schema):
+    changes: list[ConfigMeterResult]
+    issues: list[ConfigIssue]

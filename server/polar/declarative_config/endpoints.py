@@ -1,13 +1,13 @@
 from fastapi import Depends
 
 from polar.exceptions import NotPermitted, Unauthorized
-from polar.meter.auth import MeterWrite
+from polar.meter.auth import MeterRead, MeterWrite
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
-from .schemas import Config, ConfigApplyResult
-from .service import ConfigAsCodeNotEnabled, ConfigMeterConflict, ConfigMeterLocked
+from .schemas import Config, ConfigApplyResult, ConfigPlan
+from .service import ConfigAsCodeNotEnabled, ConfigInvalid, ConfigMeterConflict
 from .service import declarative_config as declarative_config_service
 
 router = APIRouter(prefix="/config", tags=["config", APITag.private])
@@ -29,11 +29,10 @@ router = APIRouter(prefix="/config", tags=["config", APITag.private])
         },
         409: {
             "description": (
-                "A meter is already aggregating events and its filter or "
-                "aggregation would change, or another request created the "
-                "same meter concurrently."
+                "The config has blocking issues, "
+                "or another request created the same meter concurrently."
             ),
-            "model": ConfigMeterLocked.schema() | ConfigMeterConflict.schema(),
+            "model": ConfigInvalid.schema() | ConfigMeterConflict.schema(),
         },
     },
 )
@@ -50,3 +49,33 @@ async def apply(
     in one transaction.
     """
     return await declarative_config_service.apply(session, auth_subject, config)
+
+
+@router.post(
+    "/plan",
+    response_model=ConfigPlan,
+    summary="Plan Config",
+    responses={
+        200: {"description": "Config checked."},
+        401: {"description": "Not authenticated.", "model": Unauthorized.schema()},
+        403: {
+            "description": (
+                "Not allowed to read this organization's products, "
+                "or config as code isn't enabled for it."
+            ),
+            "model": NotPermitted.schema() | ConfigAsCodeNotEnabled.schema(),
+        },
+    },
+)
+async def plan(
+    config: Config,
+    auth_subject: MeterRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> ConfigPlan:
+    """
+    Preview what applying a declarative config document would do, without applying it.
+
+    Returns the action for each meter, and every issue: `error` issues make
+    apply fail, `warning` issues don't.
+    """
+    return await declarative_config_service.plan(session, auth_subject, config)

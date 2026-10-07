@@ -1,10 +1,12 @@
 import uuid
+from datetime import datetime, timedelta
 
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
+from polar.kit.utils import utc_now
 from polar.models import Customer, Dispute, Organization, Product, UserOrganization
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -154,6 +156,44 @@ class TestGetDispute:
         assert json["id"] == str(dispute.id)
         assert json["customer"]["id"] == str(customer.id)
         assert json["customer"]["email"] == customer.email
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("disputes_enabled", "due_in", "expected_due_in", "expected_past_due"),
+        [
+            (False, timedelta(days=10), timedelta(days=10), False),
+            (True, timedelta(days=10), timedelta(days=7), False),
+            (True, timedelta(days=1), timedelta(days=-2), True),
+        ],
+    )
+    async def test_evidence_due_by_leaves_review_margin(
+        self,
+        disputes_enabled: bool,
+        due_in: timedelta,
+        expected_due_in: timedelta,
+        expected_past_due: bool,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"disputes_enabled": disputes_enabled}
+        await save_fixture(organization)
+        now = utc_now()
+        order = await create_order(save_fixture, customer=customer, product=product)
+        payment = await create_payment(save_fixture, organization, order=order)
+        dispute = await create_dispute(
+            save_fixture, order, payment, evidence_due_by=now + due_in
+        )
+
+        response = await client.get(f"/v1/disputes/{dispute.id}")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert datetime.fromisoformat(json["evidence_due_by"]) == now + expected_due_in
+        assert json["past_due"] is expected_past_due
 
 
 @pytest.mark.asyncio

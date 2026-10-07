@@ -111,6 +111,24 @@ class Dispute(DisputeBase):
     A dispute is a challenge raised by a customer or their bank regarding a payment.
     """
 
+    evidence_due_by: Annotated[
+        datetime | None,
+        Field(
+            validation_alias="merchant_evidence_due_by",
+            description=(
+                "Deadline to submit evidence in response to the dispute. "
+                "`None` when no response is required."
+            ),
+        ),
+    ]
+    past_due: Annotated[
+        bool,
+        Field(
+            validation_alias="merchant_past_due",
+            description="Whether the evidence submission deadline has passed.",
+            examples=[False],
+        ),
+    ]
     customer: Annotated[
         DisputeCustomer,
         Field(description="The customer who was charged for the disputed payment."),

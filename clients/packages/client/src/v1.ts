@@ -5963,6 +5963,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/meters/external/{external_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Meter by External ID
+     * @description Get a meter by external ID.
+     *
+     *     **Scopes**: `meters:read` `meters:write`
+     */
+    get: operations['meters:get_external']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/meters/{id}': {
     parameters: {
       query?: never
@@ -8256,6 +8278,17 @@ export interface components {
        * @constant
        */
       error: 'AmbiguousExternalCustomerID'
+      /** Detail */
+      detail: string
+    }
+    /** AmbiguousExternalMeterID */
+    AmbiguousExternalMeterID: {
+      /**
+       * Error
+       * @example AmbiguousExternalMeterID
+       * @constant
+       */
+      error: 'AmbiguousExternalMeterID'
       /** Detail */
       detail: string
     }
@@ -60986,6 +61019,55 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Meter']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'meters:get_external': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        external_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Meter']
+        }
+      }
+      /** @description Meter not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The external ID matches meters in several accessible organizations. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AmbiguousExternalMeterID']
         }
       }
       /** @description Validation Error */

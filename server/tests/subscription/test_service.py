@@ -128,6 +128,7 @@ from tests.fixtures.random_objects import (
     create_payment_method,
     create_product,
     create_product_fixed_and_seat,
+    create_product_price_unit_based,
     create_product_unit_based,
     create_subscription,
     create_subscription_with_seats,
@@ -796,6 +797,158 @@ class TestCreate:
             errors[0]["msg"]
             == "Product is not free. The customer should go through a checkout to create a paid subscription."
         )
+
+    @pytest.mark.auth
+    async def test_free_fixed_and_paid_seat_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        customer: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(None, "usd"), ("seat", 1000, "usd")],
+        )
+
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product.id,
+            customer_id=customer.id,
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.create(
+                session, subscription_create, auth_subject
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "product_id")
+        assert (
+            errors[0]["msg"]
+            == "Product is not free. The customer should go through a checkout to create a paid subscription."
+        )
+
+    @pytest.mark.auth
+    async def test_free_fixed_and_paid_unit_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        customer: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(None, "usd")],
+        )
+        unit_price = await create_product_price_unit_based(
+            save_fixture,
+            product=product,
+            price_per_unit=1000,
+            currency="usd",
+        )
+        product.prices.append(unit_price)
+        product.all_prices.append(unit_price)
+
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product.id,
+            customer_id=customer.id,
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.create(
+                session, subscription_create, auth_subject
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "product_id")
+        assert (
+            errors[0]["msg"]
+            == "Product is not free. The customer should go through a checkout to create a paid subscription."
+        )
+
+    @pytest.mark.auth
+    async def test_free_fixed_and_paid_seat_alternate_currency_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        customer: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(None, "usd"), (None, "pln"), ("seat", 1000, "pln")],
+        )
+
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product.id,
+            customer_id=customer.id,
+            currency=PresentmentCurrency.pln,
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.create(
+                session, subscription_create, auth_subject
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "product_id")
+        assert (
+            errors[0]["msg"]
+            == "Product is not free. The customer should go through a checkout to create a paid subscription."
+        )
+
+    @pytest.mark.auth
+    async def test_fully_free_product(
+        self,
+        enqueue_benefits_grants_mock: MagicMock,
+        subscription_hooks: Hooks,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        customer: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(None, "usd"), ("seat", 0, "usd")],
+        )
+
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product.id,
+            customer_id=customer.id,
+        )
+
+        subscription = await subscription_service.create(
+            session, subscription_create, auth_subject
+        )
+
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.product_id == product.id
+        assert subscription.customer_id == customer.id
+        assert subscription.amount == 0
+        assert subscription.currency == "usd"
+        assert subscription.seats == 1
+
+        assert_hooks_called_once(subscription_hooks, {"activated", "updated"})
+        enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
 
 
 @pytest.mark.asyncio

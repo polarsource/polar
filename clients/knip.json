@@ -7,6 +7,10 @@
     },
     "packages/client": {
       "ignore": ["src/v1.ts"]
+    },
+    "apps/mcp": {
+      "entry": ["cloudflare.config.ts", "scripts/generate-spec.ts"],
+      "ignoreDependencies": ["cloudflare"]
     }
   }
 }

@@ -40,7 +40,7 @@ export const CheckoutLinkManagementModal = ({
   }
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto">
+    <div className="flex flex-col">
       <InlineModalHeader hide={hide}>
         <h1 className="text-xl">{title}</h1>
       </InlineModalHeader>

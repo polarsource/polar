@@ -33,6 +33,11 @@ export const options: UserConfig[] = [
       'src/providers/index.ts',
     ],
     format: ['cjs', 'esm'],
+    platform: 'browser',
+    inputOptions: (options, format, { cjsDts }) => {
+      if (format !== 'cjs' || cjsDts) return
+      return { ...options, platform: 'browser' }
+    },
     minify: true,
     dts: process.env.POLAR_SKIP_DTS === '1' ? false : { sourcemap: false },
     fixedExtension: false,

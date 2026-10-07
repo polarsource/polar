@@ -196,18 +196,15 @@ _TAX_BEHAVIOR_UNSPECIFIED_REASON = (
 )
 _TRIALING_REASON = "On trial. Billing resumes on Polar when the trial ends."
 _PAYMENT_REENTRY_REASON = (
-    "The payment method can't be copied. It still moves to Polar, but its next "
-    "renewal fails and goes to dunning unless the customer re-enters their "
+    "The payment method can't be copied. It still moves to Polar, and renews "
+    "with another card copied for this customer if there is one. Otherwise its "
+    "next renewal fails and goes to dunning unless the customer re-enters their "
     "billing details first."
 )
 _PAYMENT_METHOD_MISSING_REASON = (
     "The source has no payment method for this subscription. It still moves "
     "to Polar, but its next renewal fails and goes to dunning unless the "
     "customer adds one first."
-)
-_PAYMENT_METHOD_NOT_CARD_REASON = (
-    "Bank debits are copied without a card check, so the first Polar renewal is "
-    "their first real charge. If it fails, the subscription goes to dunning."
 )
 _SUBSCRIPTION_DISCOUNT_REASON = (
     "This subscription's coupon isn't one Polar can import, so it stays on the "
@@ -933,8 +930,6 @@ def payment_method_reason(
         return Reason("payment_method_missing", _PAYMENT_METHOD_MISSING_REASON)
     if payment_method.type.requires_reentry:
         return Reason("payment_method_requires_reentry", _PAYMENT_REENTRY_REASON)
-    if payment_method.type != CanonicalPaymentMethodType.card:
-        return Reason("payment_method_not_card", _PAYMENT_METHOD_NOT_CARD_REASON)
     return None
 
 

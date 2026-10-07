@@ -1193,6 +1193,31 @@ class TestRun:
         subscription = await _created(session, pending_record)
         assert subscription.payment_method_id == payment_method.id
 
+    async def test_ignores_a_bank_debit_default_for_an_uncovered_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        cutover: RunCutover,
+        imported_customer: Customer,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, "verify_cards"
+        )
+        payment_method = await create_payment_method(
+            save_fixture, imported_customer, type="sepa_debit"
+        )
+        imported_customer.default_payment_method_id = payment_method.id
+        await save_fixture(imported_customer)
+        await save_fixture(migration)
+
+        outcome = await cutover(_source())
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.payment_method_id is None
+
     async def test_uses_the_exact_mapped_method_already_in_polar(
         self,
         mocker: MockerFixture,
@@ -1440,8 +1465,10 @@ class TestRun:
         assert subscription.status == SubscriptionStatus.active
         assert subscription.payment_method_id is None
 
-    async def test_moves_a_copied_bank_debit_and_says_so(
+    @pytest.mark.parametrize("type", ["us_bank_account", "sepa_debit"])
+    async def test_moves_without_a_copied_bank_debit_and_says_so(
         self,
+        type: str,
         mocker: MockerFixture,
         session: AsyncSession,
         cutover: RunCutover,
@@ -1450,16 +1477,24 @@ class TestRun:
         copied_cards(
             mocker,
             build_stripe_payment_method(
-                customer="cus_1", type="us_bank_account", details={"last4": "6789"}
+                customer="cus_1", type=type, details={"last4": "6789"}
             ),
         )
 
-        outcome = await cutover(_source())
+        outcome = await cutover(
+            _source(
+                payment_method=CanonicalPaymentMethod(
+                    source_id="pm_source",
+                    type=CanonicalPaymentMethodType(type),
+                    last4="6789",
+                )
+            )
+        )
 
         assert outcome.status == MerchantMigrationCutoverStatus.moved
-        assert "isn't a card" in (outcome.message or "")
+        assert "can't be copied" in (outcome.message or "")
         subscription = await _created(session, pending_record)
-        assert subscription.payment_method_id is not None
+        assert subscription.payment_method_id is None
 
     async def test_a_stopped_move_left_lapsed_for_months_fails(
         self,

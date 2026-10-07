@@ -261,8 +261,10 @@ class TestLinkPaymentMethod:
                 ),
             )
 
-    async def test_prefers_a_card_over_a_bank_account(
+    @pytest.mark.parametrize("type", ["us_bank_account", "sepa_debit"])
+    async def test_leaves_copied_bank_debits_out(
         self,
+        type: str,
         mocker: MockerFixture,
         session: AsyncSession,
         imported_customer: Customer,
@@ -270,17 +272,87 @@ class TestLinkPaymentMethod:
         _listing(
             mocker,
             [
-                _stripe_payment_method("pm_bank", type="us_bank_account"),
+                _stripe_payment_method("pm_bank", type=type, details={"last4": "6789"}),
                 _stripe_payment_method("pm_card"),
             ],
         )
 
-        payment_method = await link_payment_method(session, imported_customer)
+        payment_method = await link_payment_method(
+            session,
+            imported_customer,
+            source_method=CanonicalPaymentMethod(
+                source_id="pm_source",
+                type=CanonicalPaymentMethodType(type),
+                last4="6789",
+            ),
+        )
 
         assert payment_method is not None
         assert payment_method.processor_id == "pm_card"
-        # Both are stored: the merchant may want either one later.
-        assert len(await _payment_methods(session, imported_customer)) == 2
+        stored = await _payment_methods(session, imported_customer)
+        assert [method.processor_id for method in stored] == ["pm_card"]
+
+    async def test_only_a_copied_bank_debit_links_nothing(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        imported_customer: Customer,
+    ) -> None:
+        _listing(mocker, [_stripe_payment_method("pm_bank", type="sepa_debit")])
+
+        assert await link_payment_method(session, imported_customer) is None
+        assert imported_customer.default_payment_method_id is None
+        assert await _payment_methods(session, imported_customer) == []
+
+    async def test_ignores_a_mapped_bank_debit(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        imported_customer: Customer,
+    ) -> None:
+        mocker.patch(
+            "polar.merchant_migration.cards.stripe_service.get_payment_method",
+            new=mocker.AsyncMock(
+                return_value=_stripe_payment_method("pm_mapped", type="sepa_debit")
+            ),
+        )
+
+        payment_method = await link_mapped_payment_method(
+            session,
+            imported_customer,
+            PaymentMethodMapping(
+                customer_id="cus_1",
+                source_payment_method_id="pm_source",
+                destination_payment_method_id="pm_mapped",
+            ),
+        )
+
+        assert payment_method is None
+        assert await _payment_methods(session, imported_customer) == []
+
+    async def test_rejects_a_mapped_method_missing_on_polar(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        imported_customer: Customer,
+    ) -> None:
+        mocker.patch(
+            "polar.merchant_migration.cards.stripe_service.get_payment_method",
+            new=mocker.AsyncMock(
+                side_effect=stripe_lib.InvalidRequestError("No such method", "id")
+            ),
+        )
+
+        with pytest.raises(PaymentMethodMappingCSVError):
+            await link_mapped_payment_method(
+                session,
+                imported_customer,
+                PaymentMethodMapping(
+                    customer_id="cus_1",
+                    source_payment_method_id="pm_source",
+                    destination_payment_method_id="pm_mapped",
+                ),
+            )
 
     async def test_keeps_an_existing_default(
         self,

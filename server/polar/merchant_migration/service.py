@@ -60,7 +60,6 @@ from .canonical import (
 from .cards import (
     AmbiguousCopiedCard,
     PaymentMethodMapping,
-    PaymentMethodMappingCSVError,
     link_mapped_payment_method,
     link_payment_method,
     parse_payment_method_mapping_csv,
@@ -1100,10 +1099,7 @@ class MerchantMigrationService:
                 mapping,
             )
             if payment_method is None:
-                raise PaymentMethodMappingCSVError(
-                    f"Copied payment method {mapping.destination_payment_method_id} "
-                    "does not exist on Polar's Stripe account."
-                )
+                continue
             payment_methods[mapping.customer_id, mapping.source_payment_method_id] = (
                 payment_method
             )

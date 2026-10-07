@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  BANK_DEBITS_STAY_BEHIND,
-  isPaymentMethodReason,
-  rowPaymentMethod,
-} from './paymentMethod'
+import { isPaymentMethodReason, rowPaymentMethod } from './paymentMethod'
 import type { ReviewRow } from './reviewRows'
 
 function row(overrides: Partial<ReviewRow>): ReviewRow {
@@ -26,12 +22,15 @@ describe('rowPaymentMethod', () => {
 
   it.each([
     ['link', 'Link'],
+    ['sepa_debit', 'SEPA Debit'],
+    ['us_bank_account', 'ACH Debit'],
     ['bacs_debit', 'Bacs Debit'],
     ['other', 'Other method'],
   ] as const)('flags %s as moving without a card', (type, label) => {
     const method = rowPaymentMethod(row({ payment_method_type: type }))
     expect(method).toMatchObject({ label, kind: 'no_card' })
     expect(method?.note?.body).toContain("can't be copied")
+    expect(method?.note?.body).toContain('another card copied')
   })
 
   it('flags a subscription with no payment method', () => {
@@ -39,15 +38,6 @@ describe('rowPaymentMethod', () => {
     expect(method).toMatchObject({ label: 'No method', kind: 'no_card' })
     expect(method?.note?.body).toContain('no saved payment method')
   })
-
-  it.each(['sepa_debit', 'us_bank_account'] as const)(
-    'follows the bank-debit switch for %s',
-    (type) => {
-      expect(rowPaymentMethod(row({ payment_method_type: type }))?.kind).toBe(
-        BANK_DEBITS_STAY_BEHIND ? 'no_card' : 'bank_debit',
-      )
-    },
-  )
 
   it('says nothing when the API omits the field', () => {
     expect(rowPaymentMethod(row({ payment_method_type: undefined }))).toBeNull()

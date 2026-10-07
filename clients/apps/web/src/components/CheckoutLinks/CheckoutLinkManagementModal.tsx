@@ -44,7 +44,7 @@ export const CheckoutLinkManagementModal = ({
       <InlineModalHeader hide={hide}>
         <h1 className="text-xl">{title}</h1>
       </InlineModalHeader>
-      <div className="flex h-full flex-col gap-8 px-8 pb-12">
+      <div className="flex flex-col gap-8 px-8 pb-12">
         <CheckoutLinkForm
           organization={organization}
           onClose={onClose}

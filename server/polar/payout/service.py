@@ -1003,7 +1003,10 @@ class PayoutService:
 
         account_currency = ""
         account_payout_total: float | str = ""
-        if payout_transaction.transfer_id is not None:
+        if (
+            payout.currency == payout.account_currency
+            or payout_transaction.transfer_id is not None
+        ):
             account_currency = payout.account_currency
             account_payout_total = abs(
                 payout.account_amount

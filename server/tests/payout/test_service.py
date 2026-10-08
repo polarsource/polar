@@ -1235,6 +1235,49 @@ class TestGetCSV:
         assert rows[0]["Account Currency"] == ""
         assert rows[0]["Account Payout Total"] == ""
 
+    async def test_manual_usd_payout_populates_account_columns(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        account = await create_account(save_fixture, user)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.manual
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            account_amount=900,
+            status=PayoutStatus.pending,
+            attempts=[],
+        )
+        payout_transaction = await create_transaction(
+            save_fixture,
+            account=account,
+            type=TransactionType.payout,
+            amount=-payout.amount,
+            account_currency="usd",
+            payout=payout,
+        )
+        await create_transaction(
+            save_fixture,
+            account=account,
+            type=TransactionType.balance,
+            amount=payout.amount,
+            account_currency="usd",
+            payout_transaction=payout_transaction,
+        )
+
+        await payout_service.mark_manual_as_paid(session, payout)
+        rows = await _get_csv_rows(session, payout)
+
+        assert len(rows) == 1
+        assert rows[0]["Account Currency"] == "usd"
+        assert float(rows[0]["Account Payout Total"]) == 9.0
+
 
 @pytest.mark.asyncio
 class TestCancel:

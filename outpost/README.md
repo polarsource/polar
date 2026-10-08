@@ -2,7 +2,7 @@
 
 ## Development
 
-Outpost reads its meters from Polar over a WebSocket. It needs an organization token with
+Outpost reads its reducers from Polar over a WebSocket. It needs an organization token with
 `events:write`:
 
 ```sh

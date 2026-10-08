@@ -10,6 +10,7 @@ from polar.meter.repository import MeterRepository
 from polar.models import Benefit, Organization, Product
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncReadSession
+from polar.product.guard import is_metered_price
 from polar.product.repository import ProductRepository
 
 from . import schemas
@@ -26,7 +27,6 @@ from .schemas import (
 )
 from .validation import (
     BENEFIT_PROPERTIES,
-    METERED_PRICES,
     benefit_properties,
     price_config,
 )
@@ -162,7 +162,7 @@ def _product_document(
         if config is None:
             return (
                 ConfigSkippedReason.unknown_reference
-                if isinstance(price, METERED_PRICES)
+                if is_metered_price(price)
                 and str(price.meter_id) not in meter_external_ids
                 else ConfigSkippedReason.not_supported
             )

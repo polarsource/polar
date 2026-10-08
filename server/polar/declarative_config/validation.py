@@ -22,13 +22,13 @@ from polar.models import (
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
-    ProductPriceMeteredTiers,
     ProductPriceMeteredUnit,
     ProductPriceSeatUnit,
     ProductPriceUnit,
 )
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
+from polar.product.guard import is_metered_price
 from polar.product.repository import ProductRepository
 
 from .schemas import (
@@ -163,7 +163,13 @@ def unknown_references(config: Config) -> list[ConfigIssue]:
             )
     for index, product in enumerate(config.products):
         for price_index, price in enumerate(product.prices):
-            if isinstance(price, METERED_CONFIG_PRICES) and price.meter not in meters:
+            if (
+                isinstance(
+                    price,
+                    ConfigProductPriceMeteredUnit | ConfigProductPriceMeteredTiers,
+                )
+                and price.meter not in meters
+            ):
                 issues.append(
                     _unknown_reference(
                         ConfigResource.meter,
@@ -198,8 +204,6 @@ def unknown_references(config: Config) -> list[ConfigIssue]:
     return issues
 
 
-METERED_PRICES = (ProductPriceMeteredUnit, ProductPriceMeteredTiers)
-METERED_CONFIG_PRICES = (ConfigProductPriceMeteredUnit, ConfigProductPriceMeteredTiers)
 _NOT_SUPPORTED_PRODUCT_FIELDS = ("custom_fields",)
 
 
@@ -539,7 +543,7 @@ def price_config(
             "minimum_units": price.minimum_units,
             "unit_label": price.unit_label,
         }
-    if not isinstance(price, METERED_PRICES):
+    if not is_metered_price(price):
         return None
     meter_id = str(price.meter_id)
     if meter_id not in meter_external_ids:

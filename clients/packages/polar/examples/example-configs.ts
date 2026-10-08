@@ -1,4 +1,4 @@
-import { and, defineConfig, eq, gte, lt, or } from '@polar-sh/polar'
+import { and, defineConfig, eq, gte, like, lt, ne, or } from '@polar-sh/polar'
 import { Schema } from 'effect'
 import { z } from 'zod'
 
@@ -145,4 +145,41 @@ export const storageConfig = defineConfig({
       .where(eq(events['storage.upload'].region, 'eu'))
       .count(),
   }),
+})
+
+export const checkoutConfig = defineConfig({
+  events: {
+    'checkout.completed': z.object({
+      plan: z.enum(['starter', 'pro', 'enterprise']),
+      seats: z.int(),
+      annual: z.boolean(),
+      coupon: z.string().optional(),
+    }),
+  },
+  meters: ({ meter, events }) => {
+    const checkout = events['checkout.completed']
+    const plan = checkout.plan
+    const seats = checkout.seats
+    const annual = checkout.annual
+    const coupon = checkout.coupon
+
+    return {
+      proSeats: meter('Pro Seats')
+        .on(checkout)
+        .where(eq(plan, 'pro'))
+        .sum('seats'),
+      annualCheckouts: meter('Annual Checkouts')
+        .on(checkout)
+        .where(eq(annual, true))
+        .count(),
+      largeTeams: meter('Large Teams')
+        .on(checkout)
+        .where(and(gte(seats, 50), ne(plan, 'starter')))
+        .count(),
+      launchCoupons: meter('Launch Coupons')
+        .on(checkout)
+        .where(like(coupon, 'LAUNCH'))
+        .count(),
+    }
+  },
 })

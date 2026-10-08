@@ -37,6 +37,7 @@ from polar.postgres import (
     get_db_read_session,
     get_db_session,
 )
+from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 from polar.version import V2027_01
 
@@ -618,9 +619,12 @@ async def ingest(
     auth_subject: auth.EventWrite,
     response: Response,
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> EventsIngestResponse:
     """Ingest batch of events."""
-    ingested, sequence = await event_service.ingest(session, auth_subject, ingest)
+    ingested, sequence = await event_service.ingest(
+        session, auth_subject, ingest, redis=redis
+    )
     if sequence is not None:
         response.headers[INGEST_SEQUENCE_HEADER] = str(sequence)
     return ingested
@@ -638,9 +642,12 @@ async def ingest_v2027_01(
     auth_subject: auth.EventWriteSingleOrganization,
     response: Response,
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> EventsIngestResponse:
     """Ingest batch of events."""
-    ingested, sequence = await event_service.ingest(session, auth_subject, ingest)
+    ingested, sequence = await event_service.ingest(
+        session, auth_subject, ingest, redis=redis
+    )
     if sequence is not None:
         response.headers[INGEST_SEQUENCE_HEADER] = str(sequence)
     return ingested

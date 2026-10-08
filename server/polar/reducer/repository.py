@@ -62,3 +62,18 @@ class ReducerRepository(RepositoryBase[Reducer]):
             delete(Reducer).where(Reducer.id.in_(orphaned_ids)).returning(Reducer.id)
         )
         return len((await self.session.scalars(statement)).all())
+
+    async def get_all_active_by_organization(
+        self, organization_id: UUID
+    ) -> Sequence[Reducer]:
+        """Reducers of the organization used by at least one active meter."""
+        active_reducer_ids = (
+            select(MeterReducer.reducer_id)
+            .join(MeterReducer.meter)
+            .where(Meter.archived_at.is_(None), Meter.deleted_at.is_(None))
+        )
+        statement = self.get_base_statement().where(
+            Reducer.organization_id == organization_id,
+            Reducer.id.in_(active_reducer_ids),
+        )
+        return await self.get_all(statement)

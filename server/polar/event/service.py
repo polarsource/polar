@@ -1,4 +1,5 @@
 import uuid
+from collections import defaultdict
 from collections.abc import Callable, Mapping, Sequence
 from datetime import date, datetime
 from decimal import Decimal
@@ -48,6 +49,8 @@ from polar.models import (
 )
 from polar.models.event import EventSource
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.redis import Redis
+from polar.reducer_bucket.service import reducer_bucket as reducer_bucket_service
 from polar.worker import enqueue_events, enqueue_job
 
 from .repository import EventRepository
@@ -896,6 +899,8 @@ class EventService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         ingest: EventsIngest,
+        *,
+        redis: Redis | None = None,
     ) -> tuple[EventsIngestResponse, int | None]:
         validate_organization_id = await self._get_organization_validation_function(
             session, auth_subject
@@ -990,6 +995,28 @@ class EventService:
                     repository.get_base_statement().where(Event.id.in_(event_ids))
                 )
                 await self._create_meter_events(session, inserted_events)
+
+        # Rollup reducer buckets in redis
+        if redis is not None and event_ids:
+            inserted_ids = set(event_ids)
+            events_by_organization: dict[uuid.UUID, list[Event]] = defaultdict(list)
+            for event in events:
+                if event["id"] in inserted_ids:
+                    events_by_organization[event["organization_id"]].append(
+                        Event(**event)
+                    )
+            with logfire.span(
+                "rollup_reducer_buckets",
+                organization_count=len(events_by_organization),
+                event_count=len(inserted_ids),
+            ):
+                for (
+                    organization_id,
+                    organization_events,
+                ) in events_by_organization.items():
+                    await reducer_bucket_service.rollup(
+                        session, redis, organization_id, organization_events
+                    )
 
         # Parent resolution and root_id propagation run out-of-band in the
         # `event.ingested` task — they're not needed on the request path and

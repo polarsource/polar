@@ -1,6 +1,7 @@
 import type {
   AlreadyCanceledSubscription as AlreadyCanceledSubscriptionModel,
   AmbiguousExternalCustomerID as AmbiguousExternalCustomerIDModel,
+  AmbiguousExternalMeterID as AmbiguousExternalMeterIDModel,
   BadRequest as BadRequestModel,
   CannotCreateOrganizationError as CannotCreateOrganizationErrorModel,
   CheckoutForbiddenError as CheckoutForbiddenErrorModel,
@@ -1136,5 +1137,17 @@ export class EventTypesUpdate404Error extends PolarClientError<null> {
   ) {
     super(statusCode, error);
     this.name = "EventTypesUpdate404Error";
+  }
+}
+/**
+ * The external ID matches meters in several accessible organizations.
+ */
+export class AmbiguousExternalMeterID extends PolarClientError<AmbiguousExternalMeterIDModel> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: AmbiguousExternalMeterIDModel,
+  ) {
+    super(statusCode, error);
+    this.name = "AmbiguousExternalMeterID";
   }
 }

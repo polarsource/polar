@@ -18,6 +18,7 @@ from sqlalchemy import (
     select,
     text,
 )
+from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
@@ -32,7 +33,7 @@ from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.event.repository import EventRepository
 from polar.event.tinybird_repository import TinybirdEventRepository
-from polar.exceptions import PolarRequestValidationError, ValidationError
+from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause, get_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -71,6 +72,17 @@ METER_LOCKED_FIELDS = ("filter", "aggregation")
 METER_LOCKED_FIELD_MESSAGE = (
     "This field can't be updated because the meter is already aggregating events."
 )
+
+
+class AmbiguousExternalMeterID(PolarError):
+    def __init__(self, external_id: str) -> None:
+        self.external_id = external_id
+        super().__init__(
+            "Several meters across your organizations share this external ID. "
+            "Use an organization-scoped token, the Polar meter ID, "
+            "or a unique external ID to disambiguate.",
+            409,
+        )
 
 
 class MeterService:
@@ -138,6 +150,26 @@ class MeterService:
             .options(joinedload(Meter.last_billed_event))
         )
         return await repository.get_one_or_none(statement)
+
+    async def get_external(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        external_id: str,
+    ) -> Meter | None:
+        repository = MeterRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.products_read
+        )
+        statement = (
+            repository.get_statement_by_org_ids(org_ids)
+            .where(Meter.external_id == external_id)
+            .options(joinedload(Meter.last_billed_event))
+        )
+        try:
+            return await repository.get_one_or_none(statement)
+        except MultipleResultsFound as e:
+            raise AmbiguousExternalMeterID(external_id) from e
 
     async def create(
         self,

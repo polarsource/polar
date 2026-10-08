@@ -116,23 +116,7 @@ async def resolve_member(
     *,
     include_deleted: bool = False,
 ) -> Member | None:
-    member_model_enabled = organization.feature_settings.get(
-        "member_model_enabled", False
-    )
-
     member_repository = MemberRepository.from_session(session)
-
-    if not member_model_enabled:
-        if member_id is not None:
-            member = await member_repository.get_by_id(member_id)
-            return member  # may be None if member was deleted
-
-        if is_seat_based:
-            return None
-
-        return await _resolve_owner_member(
-            session, customer_id, organization, include_deleted=include_deleted
-        )
 
     if member_id is not None:
         member = await member_repository.get_by_id(member_id)

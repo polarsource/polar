@@ -19,11 +19,9 @@ from polar.customer_portal.service.customer_session import (
 from polar.customer_portal.service.customer_session import (
     customer_session as customer_session_service,
 )
-from polar.customer_session.service import CUSTOMER_SESSION_TOKEN_PREFIX
 from polar.kit.utils import utc_now
 from polar.models import (
     Account,
-    CustomerSession,
     CustomerSessionCode,
     Member,
     MemberSession,
@@ -116,30 +114,6 @@ class TestRequestLegacyOrg:
         )
 
         assert customer_session_code.customer.id == customer.id
-
-    async def test_customer_id_parameter_ignored(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        """Test that customer_id is ignored in legacy path (looks up by email only)."""
-        customer = await create_customer(
-            save_fixture, organization=organization, email="test@example.com"
-        )
-
-        # Pass a random customer_id - should be ignored in legacy path
-        customer_session_code, code = await customer_session_service.request(
-            session, "test@example.com", organization.id, customer_id=uuid.uuid4()
-        )
-
-        # Should still work because legacy path uses email lookup only
-        assert customer_session_code.customer.id == customer.id
-
-
-@pytest.mark.asyncio
-class TestRequestMemberEnabledOrg:
-    """Tests for orgs with member_model_enabled=true (member-based lookup)."""
 
     async def test_no_members_found(
         self,
@@ -626,32 +600,6 @@ class TestAuthenticate:
 
         with pytest.raises(CustomerSessionCodeInvalidOrExpired):
             await customer_session_service.authenticate(session, code)
-
-    async def test_legacy_org_returns_customer_session(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        """Test that legacy org (member_model_enabled=false) returns CustomerSession."""
-        # organization defaults to member_model_enabled=false
-        customer = await create_customer(
-            save_fixture, organization=organization, email="test@example.com"
-        )
-
-        # Request and get code
-        customer_session_code, code = await customer_session_service.request(
-            session, "test@example.com", organization.id
-        )
-        await session.flush()
-
-        # Authenticate
-        token, session_obj = await customer_session_service.authenticate(session, code)
-
-        # Should return CustomerSession with polar_cst_ prefix
-        assert token.startswith(CUSTOMER_SESSION_TOKEN_PREFIX)
-        assert isinstance(session_obj, CustomerSession)
-        assert session_obj.customer_id == customer.id
 
     async def test_member_enabled_org_returns_member_session(
         self,

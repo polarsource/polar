@@ -3,7 +3,6 @@ import uuid
 import pytest
 from httpx import AsyncClient
 
-from polar.customer_session.service import CUSTOMER_SESSION_TOKEN_PREFIX
 from polar.models import Customer, Member, Organization, User, UserOrganization
 from polar.models.customer import CustomerType
 from polar.models.member import MemberRole
@@ -51,7 +50,7 @@ class TestCreate:
 
         json = response.json()
 
-        assert json["token"].startswith(CUSTOMER_SESSION_TOKEN_PREFIX)
+        assert json["token"].startswith(MEMBER_SESSION_TOKEN_PREFIX)
         assert json["customer_id"] == str(customer.id)
         assert json["token"] in json["customer_portal_url"]
 
@@ -73,7 +72,7 @@ class TestCreate:
 
         json = response.json()
 
-        assert json["token"].startswith(CUSTOMER_SESSION_TOKEN_PREFIX)
+        assert json["token"].startswith(MEMBER_SESSION_TOKEN_PREFIX)
         assert json["customer_id"] == str(customer_external_id.id)
         assert json["token"] in json["customer_portal_url"]
 
@@ -98,7 +97,7 @@ class TestCreate:
 
         json = response.json()
 
-        assert json["token"].startswith(CUSTOMER_SESSION_TOKEN_PREFIX)
+        assert json["token"].startswith(MEMBER_SESSION_TOKEN_PREFIX)
         assert json["customer_id"] == str(customer_external_id.id)
         assert json["token"] in json["customer_portal_url"]
         assert json["return_url"] == "https://example.com/return"

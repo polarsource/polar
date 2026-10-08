@@ -1,6 +1,6 @@
 import json
 import uuid
-from collections.abc import Callable, Iterator
+from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
@@ -21,12 +21,10 @@ from polar.cli.service import (
     trigger_event,
 )
 from polar.exceptions import PolarRequestValidationError
-from polar.kit.versioning import api_version_context
 from polar.models import Organization
 from polar.models.organization import STATUS_CAPABILITIES, OrganizationStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.redis import Redis
-from polar.version import CURRENT_API_VERSION
 
 
 @pytest.fixture
@@ -191,11 +189,6 @@ class TestApplyOverrides:
 
 @pytest.mark.asyncio
 class TestTriggerEvent:
-    @pytest.fixture(autouse=True)
-    def api_version(self) -> Iterator[None]:
-        with api_version_context(CURRENT_API_VERSION):
-            yield
-
     async def test_requires_an_active_listener(
         self, redis: Redis, organization: Organization
     ) -> None:

@@ -612,3 +612,13 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             Event.external_id.in_(external_ids),
         )
         return await self.session.scalar(statement)
+
+    async def set_ingest_sequence(
+        self, event_ids: Collection[UUID], sequence: int
+    ) -> None:
+        statement = (
+            update(Event)
+            .where(Event.id.in_(event_ids))
+            .values(ingest_sequence=sequence)
+        )
+        await self.session.execute(statement)

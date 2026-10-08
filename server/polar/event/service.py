@@ -962,31 +962,7 @@ class EventService:
             raise PolarRequestValidationError(errors)
 
         repository = EventRepository.from_session(session)
-        # Only single-organization requests are numbered: that is what Outpost
-        # sends, and multi-organization requests go away with 2027-01.
-        organization_ids = {event["organization_id"] for event in events}
-        sequence: int | None = None
-        if len(organization_ids) == 1:
-            (organization_id,) = organization_ids
-            sequence = await repository.next_ingest_sequence(organization_id)
-            for event in events:
-                event["ingest_sequence"] = sequence
-
         event_ids, duplicates_count = await repository.insert_batch(events)
-        if sequence is not None and duplicates_count:
-            # A duplicate keeps the number of the request that first stored it.
-            external_ids = [
-                event["external_id"]
-                for event in events
-                if event.get("external_id") is not None
-            ]
-            if len(external_ids) == len(events):
-                sequence = (
-                    await repository.get_max_ingest_sequence(
-                        organization_id, external_ids
-                    )
-                    or sequence
-                )
 
         # Temporarily: fetch inserted events and create meter_events
         with logfire.span("create_meter_events", event_count=len(event_ids)):
@@ -1022,6 +998,30 @@ class EventService:
         # `event.ingested` task — they're not needed on the request path and
         # can be slow under contention.
         enqueue_events(*event_ids)
+
+        # Only single-organization requests are numbered: that is what Outpost
+        # sends, and multi-organization requests go away with 2027-01.
+        sequence: int | None = None
+        sequence_organization_ids = {event["organization_id"] for event in events}
+        if len(sequence_organization_ids) == 1:
+            (sequence_organization_id,) = sequence_organization_ids
+            sequence = await repository.next_ingest_sequence(sequence_organization_id)
+            if event_ids:
+                await repository.set_ingest_sequence(event_ids, sequence)
+            if duplicates_count:
+                # A duplicate keeps the number of the request that first stored it.
+                external_ids = [
+                    event["external_id"]
+                    for event in events
+                    if event.get("external_id") is not None
+                ]
+                if len(external_ids) == len(events):
+                    sequence = (
+                        await repository.get_max_ingest_sequence(
+                            sequence_organization_id, external_ids
+                        )
+                        or sequence
+                    )
 
         return (
             EventsIngestResponse(inserted=len(event_ids), duplicates=duplicates_count),

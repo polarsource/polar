@@ -5,7 +5,7 @@ import typing
 from redis.asyncio import Redis
 
 from outpost.env import Environment
-from outpost.reducer import Updates
+from outpost.reducer import EventKey, Updates
 
 BUCKET_TTL = 86400
 
@@ -63,3 +63,14 @@ class RedisStorage:
             keys.append(f"outpost:buckets:{customer_id}")
             args.extend((f"{reducer_id}:{bucket_start}", func, value))
         await self.write_updates_script(keys=keys, args=args)
+
+    async def claim(self, keys: collections.abc.Sequence[EventKey]) -> list[bool]:
+        if not keys:
+            return []
+        async with self.redis.pipeline(transaction=False) as pipe:
+            for customer_id, bucket_start, external_id in keys:
+                key = f"outpost:events:{customer_id}:{bucket_start}"
+                pipe.sadd(key, external_id)
+                pipe.expire(key, BUCKET_TTL)
+            results = await pipe.execute()
+        return [bool(added) for added in results[::2]]

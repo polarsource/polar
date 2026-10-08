@@ -71,7 +71,7 @@ async def benchmark(args: argparse.Namespace) -> tuple[list[float], float, float
                 content=body,
                 headers={"Content-Type": "application/json"},
             )
-            if response.status_code != 202:
+            if response.status_code != 200:
                 message = f"Ingest returned {response.status_code}: {response.text}"
                 raise RuntimeError(message)
             if record:

@@ -25,3 +25,12 @@ async def test_memory_aggregations() -> None:
         ("other", "sum", 300): 4 * (2**63 + 1),
     }
     assert MemoryStorage().buckets == {}
+
+
+@pytest.mark.anyio
+async def test_memory_claim() -> None:
+    storage = MemoryStorage()
+    keys = [("customer", 300, "a"), ("customer", 300, "a"), ("customer", 600, "a")]
+    assert await storage.claim(keys) == [True, False, True]
+    assert await storage.claim(keys[:1]) == [False]
+    assert await storage.claim([]) == []

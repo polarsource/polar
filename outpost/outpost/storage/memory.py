@@ -3,12 +3,13 @@ import contextlib
 import typing
 
 from outpost.env import Environment
-from outpost.reducer import Updates
+from outpost.reducer import EventKey, Updates
 
 
 class MemoryStorage:
     def __init__(self) -> None:
         self.buckets: dict[tuple[str, str, int], int | float] = {}
+        self.event_keys: set[EventKey] = set()
 
     @classmethod
     @contextlib.asynccontextmanager
@@ -32,3 +33,10 @@ class MemoryStorage:
                     message = f"Invalid aggregation function: {func}"
                     raise ValueError(message)
             self.buckets[key] = value
+
+    async def claim(self, keys: collections.abc.Sequence[EventKey]) -> list[bool]:
+        claimed: list[bool] = []
+        for key in keys:
+            claimed.append(key not in self.event_keys)
+            self.event_keys.add(key)
+        return claimed

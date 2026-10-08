@@ -99,6 +99,8 @@ def get_bucket_start(timestamp: datetime.datetime) -> int:
 
 type Updates = dict[tuple[str, str, int, str], int | float]
 
+type EventKey = tuple[str, int, str]
+
 
 def reduce(
     reducers: collections.abc.Sequence[tuple[Reducer, EventMatcher]],

@@ -23757,6 +23757,124 @@
         ]
       }
     },
+    "/v1/meters/external/{external_id}": {
+      "get": {
+        "tags": [
+          "meters",
+          "public",
+          "mcp",
+          "cli"
+        ],
+        "summary": "Get Meter by External ID",
+        "description": "Get a meter by external ID.\n\n**Scopes**: `meters:read` `meters:write`",
+        "operationId": "meters:get_external",
+        "security": [
+          {
+            "oidc": [
+              "meters:read",
+              "meters:write"
+            ]
+          },
+          {
+            "pat": [
+              "meters:read",
+              "meters:write"
+            ]
+          },
+          {
+            "oat": [
+              "meters:read",
+              "meters:write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "external_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "External Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Meter"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Meter not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The external ID matches meters in several accessible organizations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AmbiguousExternalMeterID"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-polar-cli-preview": {
+          "fields": [
+            {
+              "key": "id",
+              "label": "ID"
+            },
+            {
+              "key": "name",
+              "label": "Name"
+            },
+            {
+              "key": "unit",
+              "label": "Unit"
+            }
+          ]
+        },
+        "x-speakeasy-group": "meters",
+        "x-speakeasy-name-override": "get_external",
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.meters.get_external(\n    'string',\n)\nprint(response)\n"
+          },
+          {
+            "lang": "typescript",
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.meters.getExternal(\n  \"string\",\n);\nconsole.log(response);\n"
+          }
+        ]
+      }
+    },
     "/v1/meters/{id}": {
       "get": {
         "tags": [
@@ -28654,6 +28772,28 @@
           "detail"
         ],
         "title": "AmbiguousExternalCustomerID"
+      },
+      "AmbiguousExternalMeterID": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "AmbiguousExternalMeterID",
+            "title": "Error",
+            "examples": [
+              "AmbiguousExternalMeterID"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "AmbiguousExternalMeterID"
       },
       "AttachedCustomField": {
         "properties": {
@@ -50199,12 +50339,6 @@
       },
       "CustomerOrganizationFeatureSettings": {
         "properties": {
-          "member_model_enabled": {
-            "type": "boolean",
-            "title": "Member Model Enabled",
-            "description": "Whether the member model is enabled for this organization.",
-            "default": false
-          },
           "checkout_localization_enabled": {
             "type": "boolean",
             "title": "Checkout Localization Enabled",
@@ -70633,12 +70767,6 @@
             "description": "If this organization has Wallets enabled",
             "default": false
           },
-          "member_model_enabled": {
-            "type": "boolean",
-            "title": "Member Model Enabled",
-            "description": "If this organization has the Member model enabled",
-            "default": false
-          },
           "checkout_localization_enabled": {
             "type": "boolean",
             "title": "Checkout Localization Enabled",
@@ -70720,10 +70848,10 @@
             "description": "If this organization can migrate its billing from another provider (e.g. Stripe) to Polar.",
             "default": false
           },
-          "frame_ancestors_enforced": {
+          "config_as_code_enabled": {
             "type": "boolean",
-            "title": "Frame Ancestors Enforced",
-            "description": "If this organization's checkout tells the browser to refuse framing from any host outside its embed hosts.",
+            "title": "Config As Code Enabled",
+            "description": "If this organization can manage its configuration from a declarative config document.",
             "default": false
           }
         },
@@ -70732,12 +70860,6 @@
       },
       "OrganizationFeatureSettingsUpdate": {
         "properties": {
-          "member_model_enabled": {
-            "type": "boolean",
-            "title": "Member Model Enabled",
-            "description": "If this organization has the Member model enabled",
-            "default": false
-          },
           "checkout_localization_enabled": {
             "type": "boolean",
             "title": "Checkout Localization Enabled",

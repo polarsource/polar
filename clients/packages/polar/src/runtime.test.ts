@@ -39,13 +39,16 @@ test('defined configs connect lazily, read balances by external meter ID, and tr
     })
   const config = defineConfig({
     meters: ({ meter }) => ({
-      tokens: meter({ displayName: 'Tokens' })
+      tokens: meter('Tokens')
         .where(and(eq('name', 'llm.completion'), gte('inputTokens', 1000)))
         .sum('inputTokens'),
     }),
   })
   const json = config.toJSON()
-  const client = config.connect({ accessToken: 'test', environment: 'sandbox' })
+  const client = RuntimeSDK(config, {
+    accessToken: 'test',
+    environment: 'sandbox',
+  })
   const customer = client.actor({
     externalCustomerId: 'customer-1',
     externalMemberId: 'member-1',
@@ -63,54 +66,4 @@ test('defined configs connect lazily, read balances by external meter ID, and tr
   modifiedAt = '2026-10-01T12:00:01Z'
   expect((await customer.balance('tokens')).pristine).toBe(true)
   expect(config.toJSON()).toEqual(json)
-})
-
-test('legacy RuntimeSDK configs retain typed events and nested filters', async () => {
-  let meterRequests = 0
-  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
-    const url = new URL(String(input))
-    if (url.pathname.endsWith('/events/ingest'))
-      return Response.json({ inserted: 1 })
-    if (url.pathname.endsWith('/meters/external/calls')) {
-      meterRequests++
-      return Response.json({ id: 'meter-id', archived_at: null })
-    }
-    expect(url.pathname).toContain('/customer-meters/')
-    expect(url.searchParams.get('external_meter_id')).toBe('calls')
-    return Response.json({ items: [] })
-  })
-  const client = RuntimeSDK(
-    {
-      events: { tool_call: {} },
-      meters: {
-        calls: {
-          filter: {
-            conjunction: 'and',
-            clauses: [
-              {
-                conjunction: 'or',
-                clauses: [
-                  { property: 'name', operator: 'eq', value: 'tool_call' },
-                ],
-              },
-            ],
-          },
-          aggregation: { func: 'count' },
-        },
-      },
-    },
-    { accessToken: 'test' },
-  )
-  const customer = client.actor({ customerId: 'customer-1' })
-  expectTypeOf<
-    Parameters<typeof customer.track>[0]
-  >().toEqualTypeOf<'tool_call'>()
-  expectTypeOf(customer.track).returns.toEqualTypeOf<Promise<void>>()
-  expect(await customer.balance('calls')).toEqual({
-    balance: 0,
-    pristine: true,
-  })
-  await customer.track('tool_call')
-  expect((await customer.balance('calls')).pristine).toBe(false)
-  expect(meterRequests).toBe(1)
 })

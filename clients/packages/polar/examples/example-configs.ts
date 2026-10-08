@@ -8,7 +8,7 @@ export const requestCountConfig = defineConfig({
 
 export const completionTokensConfig = defineConfig({
   meters: ({ meter }) => ({
-    completionTokens: meter({ displayName: 'Completion Tokens' })
+    completionTokens: meter('Completion Tokens')
       .where(
         and(
           eq('name', 'llm.completions'),
@@ -33,19 +33,19 @@ export const apiMetricsConfig = defineConfig({
     )
 
     return {
-      requests: meter({ displayName: 'Successful Requests' })
+      requests: meter('Successful Requests')
         .where(successfulRequests)
         .unit('custom', 'request')
         .count(),
-      averageLatency: meter({ displayName: 'Average Latency' })
+      averageLatency: meter('Average Latency')
         .where(successfulRequests)
         .unit('custom', 'ms')
         .avg('durationMs'),
-      peakLatency: meter({ displayName: 'Peak Latency' })
+      peakLatency: meter('Peak Latency')
         .where(successfulRequests)
         .unit('custom', 'ms')
         .max('durationMs'),
-      activeAccounts: meter({ displayName: 'Active Accounts' })
+      activeAccounts: meter('Active Accounts')
         .where(successfulRequests)
         .unique('accountId'),
     }

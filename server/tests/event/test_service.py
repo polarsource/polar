@@ -1,13 +1,14 @@
 import uuid
 from collections.abc import Awaitable, Callable
-from datetime import timedelta
-from typing import Any
+from datetime import datetime, timedelta
+from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock, call
 from zoneinfo import ZoneInfo
 
 import pytest
 from pydantic import ValidationError
 from pytest_mock import MockerFixture
+from redis.exceptions import ConnectionError as RedisConnectionError
 
 from polar.auth.models import AuthSubject, is_user
 from polar.event.repository import EventRepository
@@ -25,7 +26,13 @@ from polar.integrations.tinybird.service import TinybirdEventTypeStats
 from polar.kit.pagination import PaginationParams
 from polar.kit.time_queries import TimeInterval
 from polar.kit.utils import utc_now
-from polar.meter.aggregation import AggregationFunction, PropertyAggregation
+from polar.meter.aggregation import (
+    Aggregation,
+    AggregationFunction,
+    CountAggregation,
+    PropertyAggregation,
+    UniqueAggregation,
+)
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import (
     Customer,
@@ -34,6 +41,7 @@ from polar.models import (
     Meter,
     Organization,
     Product,
+    Reducer,
     User,
     UserOrganization,
 )
@@ -45,20 +53,29 @@ from polar.models.subscription import CustomerCancellationReason
 from polar.models.user_organization import OrganizationRole
 from polar.order.service import order as order_service
 from polar.postgres import AsyncSession
+from polar.redis import Redis
+from polar.reducer_bucket.service import (
+    REDUCER_BUCKET_SIZE,
+    get_reducer_bucket_key,
+    get_reducer_bucket_start,
+)
 from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.events import get_all_by_name, get_all_by_organization
 from tests.fixtures.random_objects import (
+    METER_TEST_EVENT,
     create_active_subscription,
     create_checkout,
     create_customer,
     create_discount,
     create_event,
     create_member,
+    create_meter,
     create_order,
     create_payment,
+    create_reducer,
 )
 
 
@@ -801,6 +818,221 @@ class TestIngest:
 
         enqueue_events_mock.assert_called_once()
         assert set(enqueue_events_mock.call_args[0]) == {event.id for event in events}
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_rollup_reducer_buckets(
+        self,
+        mocker: MockerFixture,
+        enqueue_events_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        organization = auth_subject.subject
+
+        name_filter = Filter(
+            conjunction=FilterConjunction.and_,
+            clauses=[
+                FilterClause(property="name", operator=FilterOperator.eq, value="test")
+            ],
+        )
+
+        async def create(
+            aggregation: Aggregation = CountAggregation(), meter_count: int = 1
+        ) -> tuple[list[Meter], Reducer]:
+            meters = [
+                await create_meter(
+                    save_fixture,
+                    id=uuid.uuid4(),
+                    organization=organization,
+                    filter=name_filter,
+                    aggregation=aggregation,
+                )
+                for _ in range(meter_count)
+            ]
+            reducer = await create_reducer(
+                save_fixture, organization=organization, meters=meters
+            )
+            return meters, reducer
+
+        _, count_reducer = await create(meter_count=2)
+        _, sum_reducer = await create(
+            PropertyAggregation(func=AggregationFunction.sum, property="tokens")
+        )
+        _, unique_reducer = await create(UniqueAggregation(property="tokens"))
+        [archived_meter], archived_reducer = await create()
+        archived_meter.archived_at = utc_now()
+        await save_fixture(archived_meter)
+
+        timestamp = utc_now() - timedelta(minutes=1)
+        late_timestamp = timestamp - 2 * REDUCER_BUCKET_SIZE
+        mocker.patch("polar.reducer_bucket.service.utc_now", return_value=timestamp)
+        ingest = EventsIngest(
+            events=[
+                EventCreateExternalCustomer.model_validate(
+                    {
+                        "name": name,
+                        "timestamp": event_timestamp,
+                        "external_customer_id": "test",
+                        "metadata": {"tokens": tokens},
+                    }
+                )
+                for name, tokens, event_timestamp in [
+                    ("test", 3, timestamp),
+                    ("test", 4, timestamp),
+                    ("other", 5, timestamp),
+                    ("test", 100, late_timestamp),
+                ]
+            ]
+        )
+
+        await event_service.ingest(session, auth_subject, ingest, redis=redis)
+
+        def key(reducer: Reducer, timestamp: datetime = timestamp) -> str:
+            return get_reducer_bucket_key(
+                reducer.id, get_reducer_bucket_start(timestamp), None, "test"
+            )
+
+        assert cast(bytes | None, await redis.get(key(count_reducer))) == b"2"
+        assert cast(bytes | None, await redis.get(key(sum_reducer))) == b"7"
+        assert await redis.exists(key(unique_reducer)) == 0
+        assert await redis.exists(key(archived_reducer)) == 0
+        assert await redis.exists(key(count_reducer, late_timestamp)) == 0
+        assert await redis.exists(key(sum_reducer, late_timestamp)) == 0
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_rollup_reducer_buckets_duplicates(
+        self,
+        mocker: MockerFixture,
+        enqueue_events_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        meter: Meter,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        organization = auth_subject.subject
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+
+        timestamp = utc_now() - timedelta(minutes=1)
+        mocker.patch("polar.reducer_bucket.service.utc_now", return_value=timestamp)
+
+        def build_ingest() -> EventsIngest:
+            return EventsIngest(
+                events=[
+                    EventCreateExternalCustomer(
+                        name=METER_TEST_EVENT,
+                        timestamp=timestamp,
+                        external_customer_id="test",
+                        external_id=external_id,
+                    )
+                    for external_id in ("first", "second")
+                ]
+            )
+
+        await event_service.ingest(session, auth_subject, build_ingest(), redis=redis)
+        await event_service.ingest(session, auth_subject, build_ingest(), redis=redis)
+
+        key = get_reducer_bucket_key(
+            reducer.id, get_reducer_bucket_start(timestamp), None, "test"
+        )
+        assert cast(bytes | None, await redis.get(key)) == b"2"
+        assert len(await get_all_by_organization(session, organization.id)) == 2
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_rollup_reducer_buckets_redis_error(
+        self,
+        mocker: MockerFixture,
+        enqueue_events_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        meter: Meter,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        organization = auth_subject.subject
+        await create_reducer(save_fixture, organization=organization, meters=[meter])
+
+        timestamp = utc_now() - timedelta(minutes=1)
+        mocker.patch("polar.reducer_bucket.service.utc_now", return_value=timestamp)
+        mocker.patch.object(
+            redis, "pipeline", side_effect=RedisConnectionError("Connection refused")
+        )
+        ingest = EventsIngest(
+            events=[
+                EventCreateExternalCustomer(
+                    name=METER_TEST_EVENT,
+                    timestamp=timestamp,
+                    external_customer_id="test",
+                )
+            ]
+        )
+
+        response, _ = await event_service.ingest(
+            session, auth_subject, ingest, redis=redis
+        )
+
+        assert response.inserted == 1
+        assert len(await get_all_by_organization(session, organization.id)) == 1
+
+    @pytest.mark.auth
+    async def test_rollup_reducer_buckets_multiple_organizations(
+        self,
+        mocker: MockerFixture,
+        enqueue_events_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        meter: Meter,
+        redis: Redis,
+        auth_subject: AuthSubject[User],
+        user: User,
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(
+                user=user,
+                organization=organization_second,
+                role=OrganizationRole.member,
+            )
+        )
+        meter_second = await create_meter(
+            save_fixture, id=uuid.uuid4(), organization=organization_second
+        )
+        reducers = [
+            await create_reducer(
+                save_fixture, organization=organization, meters=[meter]
+            ),
+            await create_reducer(
+                save_fixture, organization=organization_second, meters=[meter_second]
+            ),
+        ]
+
+        timestamp = utc_now() - timedelta(minutes=1)
+        mocker.patch("polar.reducer_bucket.service.utc_now", return_value=timestamp)
+        ingest = EventsIngest(
+            events=[
+                EventCreateExternalCustomer(
+                    name=METER_TEST_EVENT,
+                    timestamp=timestamp,
+                    external_customer_id="test",
+                    organization_id=organization_id,
+                )
+                for organization_id in (organization.id, organization_second.id)
+            ]
+        )
+
+        await event_service.ingest(session, auth_subject, ingest, redis=redis)
+
+        for reducer in reducers:
+            key = get_reducer_bucket_key(
+                reducer.id, get_reducer_bucket_start(timestamp), None, "test"
+            )
+            assert cast(bytes | None, await redis.get(key)) == b"1"
 
     @pytest.mark.parametrize(
         "metadata",

@@ -103,6 +103,53 @@ const cases: [string, PolarConfig][] = [
     },
   ],
   [
+    'benefits linked to meters',
+    {
+      meters: [meter],
+      benefits: [
+        {
+          external_id: 'custom_servers',
+          type: 'feature_flag',
+          description: 'Custom servers',
+          properties: {},
+        },
+        {
+          external_id: 'included_tokens',
+          type: 'meter_credit',
+          description: 'Included tokens',
+          properties: {
+            meter_external_id: 'tokens',
+            units: 1000,
+            rollover: false,
+          },
+        },
+        {
+          external_id: 'rollover_tokens',
+          type: 'meter_credit',
+          description: 'Rollover tokens',
+          properties: {
+            meter_external_id: 'tokens',
+            units: 50,
+            rollover: true,
+          },
+        },
+      ],
+    },
+  ],
+  ['empty benefits', { meters: [], benefits: [] }],
+  [
+    'duplicate benefit IDs',
+    {
+      meters: [],
+      benefits: ['First', 'Second'].map((description) => ({
+        external_id: 'flag',
+        type: 'feature_flag' as const,
+        description,
+        properties: {},
+      })),
+    },
+  ],
+  [
     'special IDs and strings',
     {
       meters: ['__proto__', 'constructor', '"\\\n` ${notCode}'].map(

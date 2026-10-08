@@ -201,9 +201,7 @@ class TestCreate:
 
         assert organization.name == "My New Organization"
         assert organization.slug == slug
-        assert organization.feature_settings == {
-            "member_model_enabled": True,
-        }
+        assert organization.feature_settings == {}
 
         user_organization = await user_organization_service.get_by_user_and_org(
             session, auth_subject.subject.id, organization.id
@@ -269,7 +267,6 @@ class TestCreate:
 
         assert organization.feature_settings == {
             "checkout_localization_enabled": True,
-            "member_model_enabled": True,
         }
 
     @pytest.mark.auth
@@ -4381,37 +4378,13 @@ class TestUpdateFeatureSettings:
         assert result.feature_settings["preview_access_enabled"] is True
         assert result.feature_settings["checkout_localization_enabled"] is True
 
-    async def test_enable_member_model_enqueues_backfill(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
-        organization.feature_settings = {}
-        await save_fixture(organization)
-
-        result = await organization_service.update(
-            session,
-            organization,
-            OrganizationUpdate.model_validate(
-                {"feature_settings": {"member_model_enabled": True}}
-            ),
-        )
-
-        assert result.feature_settings["member_model_enabled"] is True
-        enqueue_job_mock.assert_called_once_with(
-            "organization.backfill_members", organization_id=organization.id
-        )
-
     async def test_overview_metrics_updated(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        organization.feature_settings = {"member_model_enabled": True}
+        organization.feature_settings = {"checkout_localization_enabled": True}
         await save_fixture(organization)
 
         result = await organization_service.update(
@@ -4423,7 +4396,7 @@ class TestUpdateFeatureSettings:
         )
 
         assert result.feature_settings["overview_metrics"] == ["revenue", "orders"]
-        assert result.feature_settings["member_model_enabled"] is True
+        assert result.feature_settings["checkout_localization_enabled"] is True
 
 
 @pytest.mark.asyncio

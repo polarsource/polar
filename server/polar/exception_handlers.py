@@ -3,6 +3,7 @@ from urllib.parse import urlencode
 from fastapi import FastAPI, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
+from fastapi.requests import HTTPConnection
 from fastapi.responses import JSONResponse, RedirectResponse
 
 from polar.config import settings
@@ -13,7 +14,9 @@ from polar.exceptions import (
 )
 
 
-async def polar_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+async def polar_exception_handler(
+    connection: HTTPConnection, exc: Exception
+) -> JSONResponse:
     assert isinstance(exc, PolarError)
     return JSONResponse(
         status_code=exc.status_code,

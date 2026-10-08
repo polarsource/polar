@@ -19005,10 +19005,6 @@ export interface OrganizationFeatureSettings {
    * If this organization can migrate its billing from another provider (e.g. Stripe) to Polar.
    */
   merchant_migration_enabled?: boolean;
-  /**
-   * If this organization's checkout tells the browser to refuse framing from any host outside its embed hosts.
-   */
-  frame_ancestors_enforced?: boolean;
 }
 
 /**

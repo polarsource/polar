@@ -4,6 +4,7 @@ import { Effect } from 'effect'
 import { Argument, Command, Flag } from 'effect/cli'
 import { ApiRuntime, ApiCommandError } from '../../runtime'
 import {
+  fields,
   data,
   mergeInput,
   missingFlags,
@@ -17,6 +18,7 @@ type Body = NonNullable<
 export const command = Command.make(
   'create_external',
   {
+    fields,
     path: {
       external_id: Argument.String('external_id'),
     },
@@ -65,6 +67,7 @@ export const command = Command.make(
         method: 'POST',
         requiresConfirmation: false,
         confirm: false,
+        fields: config.fields,
         invoke: (client) =>
           client.customers.members.createExternal(
             config.path.external_id,

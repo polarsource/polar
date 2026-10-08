@@ -6,6 +6,7 @@ import sys
 import openapi_pydantic as op
 
 from generator.docs_openapi import DOCS_OPENAPI_PATH, generate_docs_openapi
+from generator.emitter import Prerelease
 from generator.ir import generate_ir
 from generator.release import regenerate_openapi, release_sdk
 from python.emitter import PythonEmitter
@@ -61,6 +62,12 @@ parser_generate.add_argument(
     help="Version of the SDK to emit (default: 0.0.0).",
 )
 parser_generate.add_argument(
+    "--prerelease",
+    type=str,
+    default=None,
+    help="Prerelease identifier in the form <label>.<number>, e.g. alpha.1, beta.2, rc.1.",
+)
+parser_generate.add_argument(
     "--clear",
     action="store_true",
     help="Clear the output directory before emitting the SDK (default: false).",
@@ -69,13 +76,22 @@ parser_generate.add_argument(
 # Release subcommand
 parser_release = subparsers.add_parser("release", help="Release a new SDK version")
 parser_release.add_argument(
-    "version", type=str, help="Version to release (e.g., 1.0.0)"
+    "version", type=str, help="Base version to release (e.g., 1.0.0)"
+)
+parser_release.add_argument(
+    "--prerelease",
+    type=str,
+    default=None,
+    help="Prerelease identifier in the form <label>.<number>, e.g. alpha.1, beta.2, rc.1.",
 )
 parser_release.add_argument(
     "--skip-openapi", action="store_true", help="Skip OpenAPI regeneration"
 )
 parser_release.add_argument(
     "--skip-commit", action="store_true", help="Skip git commit"
+)
+parser_release.add_argument(
+    "--dry-run", action="store_true", help="Dry run without making changes"
 )
 
 args = parser.parse_args()
@@ -108,14 +124,26 @@ elif args.command == "generate":
         if output_path.exists():
             shutil.rmtree(output_path)
 
+    prerelease: Prerelease | None = None
+    if args.prerelease is not None:
+        try:
+            prerelease = Prerelease.parse(args.prerelease)
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+
     language = args.language
     match language:
         case "python":
-            emitter = PythonEmitter(generate_ir(*specs), args.version)
+            emitter = PythonEmitter(
+                generate_ir(*specs), args.version, prerelease=prerelease
+            )
         case "typescript":
             from typescript.emitter import TypeScriptEmitter
 
-            emitter = TypeScriptEmitter(generate_ir(*specs), args.version)
+            emitter = TypeScriptEmitter(
+                generate_ir(*specs), args.version, prerelease=prerelease
+            )
         case "cli":
             from cli_commands.emitter import CLICommandsEmitter
             from cli_commands.ir import is_private_cli_operation
@@ -142,8 +170,18 @@ elif args.command == "docs-openapi":
     generate_docs_openapi(args.spec_paths, args.output, args.version)
 
 elif args.command == "release":
+    prerelease = None
+    if args.prerelease is not None:
+        try:
+            prerelease = Prerelease.parse(args.prerelease)
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+
     release_sdk(
         version=args.version,
+        prerelease=prerelease,
         skip_openapi=args.skip_openapi,
         skip_commit=args.skip_commit,
+        dry_run=args.dry_run,
     )

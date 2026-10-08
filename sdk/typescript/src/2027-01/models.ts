@@ -11086,10 +11086,6 @@ export interface CustomerOrganizationData {
  */
 export interface CustomerOrganizationFeatureSettings {
   /**
-   * Whether the member model is enabled for this organization.
-   */
-  member_model_enabled?: boolean;
-  /**
    * Whether localization is enabled for this organization.
    */
   checkout_localization_enabled?: boolean;
@@ -16267,6 +16263,10 @@ export type MetadataOutputType = Record<string, string | number | boolean>;
  */
 export interface Meter {
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -16320,6 +16320,10 @@ export interface Meter {
  * MeterCreate
  */
 export interface MeterCreate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -16548,6 +16552,10 @@ export interface MeterResetMetadata {
  * MeterUpdate
  */
 export interface MeterUpdate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -19128,10 +19136,6 @@ export interface OrganizationFeatureSettings {
    */
   wallets_enabled?: boolean;
   /**
-   * If this organization has the Member model enabled
-   */
-  member_model_enabled?: boolean;
-  /**
    * If this organization has checkout localization enabled
    */
   checkout_localization_enabled?: boolean;
@@ -19180,9 +19184,9 @@ export interface OrganizationFeatureSettings {
    */
   merchant_migration_enabled?: boolean;
   /**
-   * If this organization's checkout tells the browser to refuse framing from any host outside its embed hosts.
+   * If this organization can manage its configuration from a declarative config document.
    */
-  frame_ancestors_enforced?: boolean;
+  config_as_code_enabled?: boolean;
 }
 
 /**
@@ -19192,10 +19196,6 @@ Other feature settings are managed by Polar staff: they're ignored if
 provided and keep their current value.
  */
 export interface OrganizationFeatureSettingsUpdate {
-  /**
-   * If this organization has the Member model enabled
-   */
-  member_model_enabled?: boolean;
   /**
    * If this organization has checkout localization enabled
    */
@@ -19650,6 +19650,14 @@ export interface PendingSubscriptionUpdate {
    * Number of units to apply to the subscription. If `null`, the number of units won't be changed.
    */
   units: number | null;
+  /**
+   * ID of the new discount to apply to the subscription. If `null`, the subscription keeps its current discount.
+   */
+  discount_id: string | null;
+  /**
+   * Whether the subscription's current discount will be removed.
+   */
+  discount_unset: boolean;
 }
 
 /**
@@ -19747,6 +19755,10 @@ export interface Product {
    */
   organization_id: string;
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -19786,6 +19798,10 @@ export interface ProductBenefitsUpdate {
  * ProductCreateOneTime
  */
 export interface ProductCreateOneTime {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -19849,6 +19865,10 @@ You can store up to **50 key-value pairs**.
  * ProductCreateRecurring
  */
 export interface ProductCreateRecurring {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -20977,6 +20997,10 @@ export interface ProductPriceUnitBasedCreate {
  */
 export interface ProductUpdate {
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
+  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -22024,6 +22048,10 @@ You can store up to **50 key-value pairs**.
    */
   product_id: string;
   /**
+   * The currency of the subscription. The product must have a free price in this currency. If not set, the organization's default currency is used.
+   */
+  currency?: PresentmentCurrency | null;
+  /**
    * The ID of the customer to create the subscription for.
    */
   customer_id: string;
@@ -22051,6 +22079,10 @@ You can store up to **50 key-value pairs**.
    * The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow.
    */
   product_id: string;
+  /**
+   * The currency of the subscription. The product must have a free price in this currency. If not set, the organization's default currency is used.
+   */
+  currency?: PresentmentCurrency | null;
   /**
    * The ID of the customer in your system to create the subscription for. It must already exist in Polar.
    */

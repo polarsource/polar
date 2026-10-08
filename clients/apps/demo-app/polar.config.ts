@@ -1,26 +1,17 @@
-// import { defineConfig } from '@polar-sh/polar'
+import { defineConfig, eq } from '@polar-sh/polar'
 
-import { RuntimeSDKConfig } from '@polar-sh/polar'
-
-export default {
-  events: {
-    tool_call: {},
-  },
-  benefits: {
-    custom_servers: {},
-  },
-  meters: {
-    tool_call: {
-      filter: {
-        conjunction: 'and',
-        clauses: [
-          {
-            conjunction: 'or',
-            clauses: [{ property: 'name', operator: 'eq', value: 'tool_call' }],
-          },
-        ],
-      },
-      aggregation: { func: 'count' },
-    },
-  },
-} as const satisfies RuntimeSDKConfig
+export default defineConfig({
+  // events: {
+  //   tool_call: {},
+  // },
+  meters: ({ meter }) => ({
+    tool_call: meter()
+      .where(eq('name', 'tool_call'))
+      .unit('custom', 'tool call')
+      .count(),
+  }),
+  benefits: ({ flag, credits }) => ({
+    custom_servers: flag('Custom servers'),
+    tool_calls: credits('Included tool calls').meter('tool_call').units(1000),
+  }),
+})

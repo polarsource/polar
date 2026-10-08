@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/cli'
 import { ApiRuntime, ApiCommandError, executeRequest } from '../runtime'
-import { data, mergeInput, missingFlags } from '../inputs'
+import { fields, data, mergeInput, missingFlags } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['customerSeats']['claimSeat']>[0]>
 
@@ -14,6 +14,7 @@ export const command = Command.make(
       Flag.withDefault('production'),
       Flag.withDescription('Environment for this unauthenticated request'),
     ),
+    fields,
     data,
     input: {
       invitation_token: Flag.String('invitation-token').pipe(
@@ -42,6 +43,7 @@ export const command = Command.make(
         confirm: false,
         requiresAuthentication: false,
         environment: config.environment,
+        fields: config.fields,
         invoke: (_client, core) =>
           executeRequest(
             core,

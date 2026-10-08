@@ -9,7 +9,6 @@ export type {
 } from './sdk'
 
 export type { BenefitAccess, EventMetadata, MeterBalance } from './client/actor'
-export type { RuntimeSDKConfig } from './schema/runtime'
 
 export { RuntimeSDK } from './runtime'
 export type { RuntimeConnection } from './runtime'
@@ -33,6 +32,8 @@ export type {
   MeterDefinition,
   MeterFilter,
 } from './schema/meter'
+export { flag, credits } from './schema/benefit'
+export type { BenefitConfig, BenefitDefinition } from './schema/benefit'
 export { defineConfig } from './schema/config'
 export type { Config, PolarConfig } from './schema/config'
 export { generateConfig } from './generate'

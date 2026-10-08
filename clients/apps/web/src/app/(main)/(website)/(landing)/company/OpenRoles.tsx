@@ -5,19 +5,15 @@ import Link from 'next/link'
 
 const JOBS = [
   {
-    category: 'Product & Engineering',
+    category: 'Always Open',
     roles: [
       {
-        role: 'Senior Platform Engineer',
-        location: 'Remote, Europe',
-        experience: '5-8+ Years Experience',
-        link: 'https://jobs.ashbyhq.com/polar/8a82633e-e7b9-42f4-92e1-33032a56097a',
+        role: 'Platform Engineering',
+        link: 'https://jobs.ashbyhq.com/polar/0b058d3d-f00a-480c-9e3b-481aa8904f09',
       },
       {
-        role: 'Senior Product Engineer',
-        location: 'Remote, Europe',
-        experience: '7+ Years Experience',
-        link: 'https://jobs.ashbyhq.com/polar/955c6935-6d03-46e5-b649-a8b958a52962',
+        role: 'Product Engineering',
+        link: 'https://jobs.ashbyhq.com/polar/d2f09190-24ec-444f-8642-98596af4a793',
       },
     ],
   },
@@ -27,9 +23,16 @@ export const OpenRoles = () => (
   <Box flexDirection="column" rowGap="3xl">
     {JOBS.map(({ category, roles }) => (
       <Box key={category} flexDirection="column" rowGap="xl">
-        <Text variant="heading-s" as="h3">
-          {category}
-        </Text>
+        <Box flexDirection="column" rowGap="l">
+          <Text variant="heading-s" as="h3">
+            {category}
+          </Text>
+          <Text variant="heading-xs" as="p" color="muted" wrap="pretty">
+            We hire when we meet exceptional people and review applications on a
+            rolling basis. While this means we can&apos;t guarantee a specific
+            response timeline, strong applications always get our attention.
+          </Text>
+        </Box>
         <Box flexDirection="column">
           {roles.map((job) => (
             <Link
@@ -51,21 +54,6 @@ export const OpenRoles = () => (
                   <Text variant="heading-xxs" as="span">
                     <span className="group-hover:underline">{job.role}</span>
                   </Text>
-                  <Box columnGap="s">
-                    {job.experience && (
-                      <>
-                        <Text as="span" color="muted" variant="heading-xxs">
-                          {job.experience}
-                        </Text>
-                        <Text as="span" color="muted" variant="heading-xxs">
-                          ·
-                        </Text>
-                      </>
-                    )}
-                    <Text as="span" color="muted" variant="heading-xxs">
-                      {job.location}
-                    </Text>
-                  </Box>
                 </Box>
                 <ArrowOutwardOutlined fontSize="inherit" />
               </Box>

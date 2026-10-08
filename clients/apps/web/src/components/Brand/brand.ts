@@ -51,11 +51,10 @@ export interface BrandSectionMeta {
 }
 
 export const brandSections: BrandSectionMeta[] = [
-  { id: 'logo', index: '001', label: 'Logo' },
-  { id: 'color', index: '002', label: 'Color' },
-  { id: 'typography', index: '003', label: 'Typography' },
-  { id: 'illustration', index: '004', label: 'Illustration' },
-  { id: 'voice', index: '005', label: 'Voice' },
-  { id: 'marketing', index: '006', label: 'Marketing' },
-  { id: 'design', index: '007', label: 'Design' },
+  { id: 'logo', index: '01', label: 'Logo' },
+  { id: 'color', index: '02', label: 'Color' },
+  { id: 'typography', index: '03', label: 'Typography' },
+  { id: 'illustration', index: '04', label: 'Illustration' },
+  { id: 'voice', index: '05', label: 'Voice' },
+  { id: 'marketing', index: '06', label: 'Marketing' },
 ]

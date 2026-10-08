@@ -1,5 +1,5 @@
 import type { Environment, Polar, PolarCore } from '@polar-sh/sdk/2026-10'
-import { Context, Data, type Effect, type Stdio } from 'effect'
+import { Context, Data, type Effect, type Option, type Stdio } from 'effect'
 import type { Prompt } from 'effect/cli'
 
 export type { Environment } from '@polar-sh/sdk/2026-10'
@@ -28,6 +28,7 @@ export interface ApiOperation<A> {
   requiresAuthentication?: boolean
   environment?: Environment
   organizationId?: string | ReadonlyArray<string> | null | undefined
+  fields?: Option.Option<string>
   preview?: ApiPreview
   invoke: (client: Polar, core: PolarCore) => Promise<A>
 }

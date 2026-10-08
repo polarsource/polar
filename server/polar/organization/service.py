@@ -479,9 +479,7 @@ class OrganizationService:
             )
 
         create_data = create_schema.model_dump(exclude_unset=True, exclude_none=True)
-        feature_settings = create_data.get("feature_settings", {})
-        feature_settings["member_model_enabled"] = True
-        create_data["feature_settings"] = feature_settings
+        create_data["feature_settings"] = create_data.get("feature_settings", {})
 
         if settings.is_sandbox():
             create_data["status"] = OrganizationStatus.ACTIVE
@@ -584,26 +582,12 @@ class OrganizationService:
             organization.onboarded_at = datetime.now(UTC)
 
         if update_schema.feature_settings is not None:
-            old_member_model = organization.feature_settings.get(
-                "member_model_enabled", False
-            )
-
             organization.feature_settings = {
                 **organization.feature_settings,
                 **update_schema.feature_settings.model_dump(
                     mode="json", exclude_unset=True, exclude_none=True
                 ),
             }
-
-            new_member_model = organization.feature_settings.get(
-                "member_model_enabled", False
-            )
-
-            if not old_member_model and new_member_model:
-                enqueue_job(
-                    "organization.backfill_members",
-                    organization_id=organization.id,
-                )
 
         if update_schema.subscription_settings is not None:
             if (

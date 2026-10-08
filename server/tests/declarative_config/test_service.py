@@ -55,6 +55,7 @@ from tests.fixtures.random_objects import (
     create_meter,
     create_product,
     create_product_price_seat_unit,
+    set_product_benefits,
 )
 
 TOOL_CALLS_METER = {
@@ -866,6 +867,62 @@ class TestApply:
             (attached.custom_field.slug, attached.required)
             for attached in product.attached_custom_fields
         ] == [("vat-number", False), ("company", True)]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_unmanaged_benefits_stay_attached(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        beta = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.feature_flag,
+            description="Beta access",
+            properties={},
+            external_id="beta",
+        )
+        unmanaged = await create_benefit(
+            save_fixture, organization=organization, description="Unmanaged"
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Pack",
+            external_id="pack",
+        )
+        await set_product_benefits(
+            save_fixture, product=product, benefits=[beta, unmanaged]
+        )
+        config = Config.model_validate(
+            {
+                "benefits": [BETA_BENEFIT],
+                "products": [
+                    {
+                        "external_id": "pack",
+                        "name": "Pack",
+                        "description": "Description",
+                        "prices": [{"amount_type": "fixed", "price_amount": 1000}],
+                    }
+                ],
+            }
+        )
+
+        plan = await declarative_config_service.plan(session, auth_subject, config)
+        await declarative_config_service.apply(session, redis, auth_subject, config)
+
+        assert [change.field for change in plan.changes[1].diff] == ["benefits"]
+        assert [(issue.severity, issue.loc) for issue in plan.issues] == [
+            (ConfigIssueSeverity.warning, ["body", "products", 0, "benefits"])
+        ]
+        await session.refresh(product, {"product_benefits"})
+        assert [
+            product_benefit.benefit_id for product_benefit in product.product_benefits
+        ] == [unmanaged.id]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_create_product_meter_interval(

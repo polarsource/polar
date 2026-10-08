@@ -819,15 +819,20 @@ class TestExport:
                 save_fixture, product=bounded_seats, maximum_seats=10
             )
         )
-        unknown_benefit = await create_product(
+        partial = await create_product(
             save_fixture,
             organization=organization,
-            recurring_interval=None,
-            name="With custom benefit",
-            external_id="with-custom-benefit",
+            recurring_interval=SubscriptionRecurringInterval.month,
+            name="Partial",
+            external_id="partial",
+        )
+        partial.prices.append(
+            await create_product_price_seat_unit(
+                save_fixture, product=partial, maximum_seats=10
+            )
         )
         await set_product_benefits(
-            save_fixture, product=unknown_benefit, benefits=[downloadables]
+            save_fixture, product=partial, benefits=[downloadables]
         )
 
         response = await client.get(
@@ -836,7 +841,13 @@ class TestExport:
 
         assert response.status_code == 200
         json = response.json()
-        assert json["config"] == {"meters": [], "benefits": [], "products": []}
+        assert (json["config"]["meters"], json["config"]["benefits"]) == ([], [])
+        [exported_partial] = json["config"]["products"]
+        assert exported_partial["external_id"] == "partial"
+        assert [price["amount_type"] for price in exported_partial["prices"]] == [
+            "fixed"
+        ]
+        assert exported_partial["benefits"] == []
         assert [
             (skipped["resource"], skipped["id"], skipped["reason"])
             for skipped in json["skipped"]
@@ -847,7 +858,18 @@ class TestExport:
             ("benefit", str(unknown_meter.id), "unknown_reference"),
             ("product", str(archived.id), "archived"),
             ("product", str(bounded_seats.id), "not_supported"),
-            ("product", str(unknown_benefit.id), "unknown_reference"),
+        ]
+
+        plan_response = await client.post(
+            "/v1/config/plan",
+            json={**json["config"], "organization_id": str(organization.id)},
+        )
+
+        plan = plan_response.json()
+        assert [change["action"] for change in plan["changes"]] == ["unchanged"]
+        assert [(issue["severity"], issue["loc"]) for issue in plan["issues"]] == [
+            ("warning", ["body", "products", 0, "prices"]),
+            ("warning", ["body", "products", 0, "benefits"]),
         ]
 
     @pytest.mark.auth(

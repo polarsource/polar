@@ -61,11 +61,13 @@ async def export(
     Resources without an `external_id`, archived ones, ones config can't manage
     yet, ones referencing a skipped resource, ones that wouldn't pass config
     validation, and ones beyond the config limit are listed in `skipped`.
+    Products are exported with the prices and benefits config can manage, and
+    only skipped when none of their prices can be; the rest stays untouched on
+    apply.
 
     `benefits` is only exported with the `benefits:read` or `benefits:write`
     scope, and `products` with `products:read` or `products:write`; otherwise
-    they're empty. Without a benefits scope, products granting benefits are
-    skipped as `unknown_reference`.
+    they're empty.
     """
     return await declarative_config_service.export(
         session, auth_subject, organization_id

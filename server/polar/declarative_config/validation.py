@@ -299,6 +299,24 @@ def unsupported_prices(changes: Sequence[ProductChange]) -> list[ConfigIssue]:
     return issues
 
 
+def unmanaged_benefits(changes: Sequence[ProductChange]) -> list[ConfigIssue]:
+    return [
+        ConfigIssue(
+            severity=ConfigIssueSeverity.warning,
+            type=ConfigIssueType.not_supported,
+            loc=_loc(ConfigResource.product, change.index, "benefits"),
+            msg=(
+                "This product grants benefits that aren't in this config. "
+                "They stay attached."
+            ),
+            input=None,
+        )
+        for change in changes
+        if change.existing is not None
+        and len(change.before["benefits"]) != len(change.existing.product_benefits)
+    ]
+
+
 _LOCKED_INTERVALS = {
     "billing": ("recurring_interval", "recurring_interval_count"),
     "meter": ("meter_interval", "meter_interval_count"),
@@ -686,8 +704,9 @@ async def diff_products(
             continue
         prices = [price_config(price, meter_external_ids) for price in product.prices]
         product_benefits = [
-            benefit_external_ids.get(str(benefit.id), str(benefit.id))
-            for benefit in product.benefits
+            benefit_external_ids[benefit_id]
+            for product_benefit in product.product_benefits
+            if (benefit_id := str(product_benefit.benefit_id)) in benefit_external_ids
         ]
         changes.append(
             ProductChange(
@@ -744,6 +763,7 @@ async def check(
         *await unknown_events(session, organization, meters),
         *benefit_type_changes(benefits),
         *unsupported_prices(products),
+        *unmanaged_benefits(products),
         *changed_intervals(products),
     ]
     return ConfigChanges(meters, benefits, products, custom_field_ids), issues

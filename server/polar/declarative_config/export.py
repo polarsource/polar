@@ -157,23 +157,26 @@ def _product_document(
 ) -> dict[str, Any] | ConfigSkippedReason:
     if product.is_legacy_recurring_price:
         return ConfigSkippedReason.not_supported
-    prices: list[dict[str, Any]] = []
-    for price in product.prices:
-        config = price_config(price, meter_external_ids)
-        if config is None:
-            return (
-                ConfigSkippedReason.unknown_reference
-                if is_metered_price(price)
+    prices = [
+        config
+        for price in product.prices
+        if (config := price_config(price, meter_external_ids)) is not None
+    ]
+    if not prices:
+        return (
+            ConfigSkippedReason.unknown_reference
+            if any(
+                is_metered_price(price)
                 and str(price.meter_id) not in meter_external_ids
-                else ConfigSkippedReason.not_supported
+                for price in product.prices
             )
-        prices.append(config)
-    benefits: list[str] = []
-    for product_benefit in product.product_benefits:
-        benefit = benefit_external_ids.get(str(product_benefit.benefit_id))
-        if benefit is None:
-            return ConfigSkippedReason.unknown_reference
-        benefits.append(benefit)
+            else ConfigSkippedReason.not_supported
+        )
+    benefits = [
+        benefit_external_ids[benefit_id]
+        for product_benefit in product.product_benefits
+        if (benefit_id := str(product_benefit.benefit_id)) in benefit_external_ids
+    ]
     return {
         "external_id": product.external_id,
         "name": product.name,

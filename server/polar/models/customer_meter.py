@@ -61,6 +61,10 @@ class CustomerMeter(RecordModel):
     def last_balanced_event(cls) -> Mapped["Event | None"]:
         return relationship("Event", lazy="raise_on_sql")
 
+    @property
+    def external_customer_id(self) -> str | None:
+        return self.customer.external_id
+
     organization: AssociationProxy["Organization"] = association_proxy(
         "customer", "organization"
     )

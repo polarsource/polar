@@ -1326,6 +1326,7 @@ def _make_product(
             "id": id,
             "created_at": "2026-01-01T00:00:00Z",
             "modified_at": None,
+            "is_deletable": False,
             "trial_interval": None,
             "trial_interval_count": None,
             "name": name,

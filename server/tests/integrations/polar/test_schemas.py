@@ -12,6 +12,7 @@ _PRODUCT_BASE: dict[str, Any] = {
     "id": "prod_1",
     "created_at": "2026-01-01T00:00:00Z",
     "modified_at": None,
+    "is_deletable": False,
     "trial_interval": None,
     "trial_interval_count": None,
     "name": "Pro",

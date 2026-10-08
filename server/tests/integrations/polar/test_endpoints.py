@@ -122,6 +122,7 @@ _SUBSCRIPTION: dict[str, Any] = {
         "id": "00000000-0000-0000-0000-0000000000c1",
         "created_at": "2026-01-01T00:00:00Z",
         "modified_at": None,
+        "is_deletable": False,
         "trial_interval": None,
         "trial_interval_count": None,
         "name": "Pro",

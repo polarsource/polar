@@ -20,7 +20,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.downloadable import TestDownloadable
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDownloadablesEndpoints:
     async def test_anonymous_list_401s(self, client: AsyncClient) -> None:
         response = await client.get("/v1/customer-portal/downloadables/")

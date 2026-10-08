@@ -8,7 +8,6 @@ recorded on the order. Uses exclusive tax (added on top of price).
 from unittest.mock import MagicMock
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.enums import TaxBehavior, TaxProcessor
@@ -22,7 +21,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_product
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def taxed_product(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -35,7 +34,7 @@ async def taxed_product(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestWithTax:
     @E2E_AUTH
     async def test_tax_applied_to_order(

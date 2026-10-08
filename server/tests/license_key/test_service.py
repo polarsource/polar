@@ -80,7 +80,7 @@ async def _attempt_activation(
         return True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestConcurrentActivation:
     async def test_limit_enforced_under_concurrency(self, worker_id: str) -> None:
         engine = create_async_engine(
@@ -166,7 +166,7 @@ async def _attempt_validation(
         return True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestConcurrentValidation:
     async def test_usage_limit_enforced_under_concurrency(self, worker_id: str) -> None:
         engine = create_async_engine(
@@ -256,7 +256,7 @@ async def _license_key_and_grant(
     return license_key, grant
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdate:
     @pytest.mark.parametrize(
         "status", [LicenseKeyStatus.granted, LicenseKeyStatus.disabled]
@@ -404,7 +404,7 @@ class TestUpdate:
         assert webhook_send_mock.call_args[0][3].id == grant.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRotate:
     async def test_rotates_key_and_updates_grant_display_key(
         self,

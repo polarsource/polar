@@ -6,7 +6,6 @@ reflect the discounted price.
 """
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.kit.db.postgres import AsyncSession
@@ -19,7 +18,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_discount, create_product
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_with_discount(
     save_fixture: SaveFixture, organization: Organization
 ) -> tuple[Product, DiscountPercentage]:
@@ -41,7 +40,7 @@ async def product_with_discount(
     return product, discount
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestWithDiscount:
     @E2E_AUTH
     async def test_discount_applied_to_order(

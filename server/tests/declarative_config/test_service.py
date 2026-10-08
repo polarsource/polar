@@ -89,7 +89,7 @@ PRO_PRODUCT = {
 }
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 class TestApply:
     async def test_not_enabled(
@@ -384,7 +384,7 @@ class TestApply:
         ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 class TestPlan:
     @pytest.mark.usefixtures("config_as_code_enabled")

@@ -26,7 +26,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListProducts:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -158,7 +158,7 @@ class TestListProducts:
         assert response.json()["pagination"]["total_count"] == 2
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetProduct:
     async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
         response = await client.get(f"/v1/products/{product.id}")
@@ -306,7 +306,7 @@ class TestGetProduct:
         assert "price_per_seat" not in price
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateProduct:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
@@ -693,7 +693,7 @@ class TestCreateProduct:
         assert response.json()["external_id"] == "ext_1337"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateProduct:
     async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
         response = await client.patch(
@@ -849,7 +849,7 @@ class TestUpdateProduct:
         assert response.status_code == 422
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateProductBenefits:
     async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
         response = await client.post(
@@ -901,7 +901,7 @@ class TestUpdateProductBenefits:
         assert len(json["benefits"]) == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteProduct:
     async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
         response = await client.delete(f"/v1/products/{product.id}")

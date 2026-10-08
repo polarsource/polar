@@ -37,7 +37,7 @@ class TestCanChangePlan:
         assert organization.can_change_plan() is False
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestReviewRelationship:
     async def test_resolves_to_live_review_when_soft_deleted_exists(
         self,

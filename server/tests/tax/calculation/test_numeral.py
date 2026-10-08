@@ -22,7 +22,7 @@ def sample_address() -> Address:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.respx(base_url="https://api.numeralhq.com")
 class TestNumeralCalculateTax:
     async def test_inclusive(

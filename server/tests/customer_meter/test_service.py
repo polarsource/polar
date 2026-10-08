@@ -3,7 +3,6 @@ from datetime import timedelta
 from decimal import Decimal
 
 import pytest
-import pytest_asyncio
 
 from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.event.repository import EventRepository
@@ -37,7 +36,7 @@ def lstr(s: str) -> str:
     return f"{s}_{uuid.uuid4().hex[:8]}"
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def customer_with_external_id(
     save_fixture: SaveFixture, organization: Organization
 ) -> Customer:
@@ -51,7 +50,7 @@ async def customer_with_external_id(
     return customer
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
     return await create_meter(
         save_fixture,
@@ -69,7 +68,7 @@ async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def events(
     save_fixture: SaveFixture, customer: Customer, meter: Meter
 ) -> list[Event]:
@@ -149,7 +148,7 @@ async def events(
     ]
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def events_for_external_customer(
     save_fixture: SaveFixture, customer_with_external_id: Customer, meter: Meter
 ) -> list[Event]:
@@ -182,7 +181,7 @@ async def events_for_external_customer(
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateCustomerMeter:
     async def test_no_matching_event_not_existing_customer_meter(
         self, session: AsyncSession, customer: Customer, meter: Meter
@@ -859,7 +858,7 @@ class TestUpdateCustomerMeter:
         assert updated is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetRolloverUnits:
     async def test_excludes_usage_at_or_after_cutoff(
         self,
@@ -1208,7 +1207,7 @@ class TestGetRolloverUnits:
         assert rollover_units == 100
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateCustomer:
     async def test_archived_meter_excluded(
         self,
@@ -1261,7 +1260,7 @@ class TestUpdateCustomer:
         assert customer_meter.consumed_units > 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBulkEventProcessing:
     async def test_process_50k_events(
         self,

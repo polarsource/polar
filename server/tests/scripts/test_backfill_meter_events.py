@@ -14,7 +14,7 @@ from scripts.backfill_meter_events import run_backfill
 from tests.fixtures.database import SaveFixture
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBackfillMeterEvents:
     async def test_backfills_meter_events(
         self,

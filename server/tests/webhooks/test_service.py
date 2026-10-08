@@ -45,7 +45,7 @@ def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
 webhook_url = cast(HttpsUrl, "https://example.com/hook")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateEndpoint:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
@@ -107,7 +107,7 @@ class TestCreateEndpoint:
         assert endpoint.secret_generated_at is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateEndpoint:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
@@ -180,7 +180,7 @@ class TestUpdateEndpoint:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestResetEndpointSecret:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
@@ -200,7 +200,7 @@ class TestResetEndpointSecret:
         assert updated_endpoint.secret_generated_at is not None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteEndpoint:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
@@ -217,7 +217,7 @@ class TestDeleteEndpoint:
         assert deleted_endpoint.deleted_at is not None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRedeliverEvent:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization_second", scopes={Scope.webhooks_write})
@@ -249,7 +249,7 @@ class TestRedeliverEvent:
         enqueue_job_mock.assert_called_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOnEventSuccess:
     async def test_not_existing_event(self, session: AsyncSession) -> None:
         with pytest.raises(EventDoesNotExist):
@@ -313,7 +313,7 @@ class TestOnEventSuccess:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCountEarlierPendingEvents:
     async def test_single_event(
         self,
@@ -458,7 +458,7 @@ class TestCountEarlierPendingEvents:
         assert await webhook_service.count_earlier_pending_events(session, event) == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestArchiveDeliveryPayloads:
     async def _delivery(
         self,
@@ -599,7 +599,7 @@ class TestArchiveDeliveryPayloads:
         assert scrubbed == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCountScrubbableResponses:
     async def test_counts_only_stored_old_responses(
         self,

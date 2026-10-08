@@ -17,7 +17,7 @@ from tests.fixtures.file import TestFile
 from tests.fixtures.random_objects import create_support_case_attachment_file
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEndpoints:
     async def test_anonymous_create_401(
         self, client: AsyncClient, organization: Organization
@@ -148,7 +148,7 @@ class TestEndpoints:
         assert record.is_uploaded is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -222,7 +222,7 @@ class TestList:
         assert "flagged_malicious_at" not in items[str(media.id)]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDownload:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/files/{uuid.uuid4()}/download")
@@ -319,7 +319,7 @@ class TestDownload:
         assert json["download"]["expires_at"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdate:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -341,7 +341,7 @@ class TestUpdate:
         assert response.status_code == 403
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDelete:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

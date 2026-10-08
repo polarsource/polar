@@ -18,7 +18,7 @@ _CustomerAdapter: TypeAdapter[Customer] = TypeAdapter(Customer)
 _CustomerStateAdapter: TypeAdapter[CustomerState] = TypeAdapter(CustomerState)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.parametrize(
     ("external_id", "user_metadata", "expected"),
     [
@@ -45,7 +45,7 @@ async def test_external_id(
     assert customer_schema.external_id == expected
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_state_external_id(
     save_fixture: SaveFixture, organization: Organization
 ) -> None:
@@ -72,7 +72,7 @@ async def test_state_external_id(
     assert customer_state_deserialized.external_id == "EXTERNAL_ID"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_avatar_url_serializes_null_without_email(
     save_fixture: SaveFixture,
     session: AsyncSession,

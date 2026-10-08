@@ -34,7 +34,7 @@ create_balance_transaction = partial(
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestHeldPayoutLedger:
     async def test_cancel_held_returns_gross_and_fees(
         self,

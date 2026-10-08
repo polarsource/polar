@@ -25,7 +25,7 @@ def _make_request(disconnect_after: int) -> AsyncMock:
     return request
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscribeOnIteration:
     async def test_on_iteration_called_each_loop(self, redis: Redis) -> None:
         """on_iteration callback is invoked on every loop iteration."""

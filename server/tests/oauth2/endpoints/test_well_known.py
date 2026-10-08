@@ -2,7 +2,7 @@ import pytest
 from httpx import AsyncClient
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_jwks(client: AsyncClient) -> None:
     response = await client.get("/.well-known/jwks.json")
 
@@ -15,7 +15,7 @@ async def test_jwks(client: AsyncClient) -> None:
         assert "d" not in key
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.parametrize(
     "path",
     [

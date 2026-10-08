@@ -42,7 +42,7 @@ async def _create_event(
     return event
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCustomerFilterClause:
     async def test_customer_id_matches_external_id_within_organization(
         self,
@@ -123,7 +123,7 @@ class TestCustomerFilterClause:
         assert list(result) == [matching_event]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetLatestPolarSelfIngestionTimestamp:
     async def test_returns_latest_for_organization(
         self,
@@ -235,7 +235,7 @@ async def _create_balance_order(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetRecentBalanceOrderExchangeRate:
     async def test_returns_most_recent_prior_match(
         self,

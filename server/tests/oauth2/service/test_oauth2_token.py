@@ -21,7 +21,7 @@ def enqueue_email_mock(mocker: MockerFixture) -> MagicMock:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRevokeLeaked:
     @pytest.mark.parametrize(
         ("token", "token_type"),
@@ -148,7 +148,7 @@ class TestRevokeLeaked:
         enqueue_email_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetByAccessToken:
     async def test_unknown_token(self, session: AsyncSession) -> None:
         result = await oauth2_token_service.get_by_access_token(
@@ -255,7 +255,7 @@ class TestGetByAccessToken:
         assert result is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteExpired:
     async def test_deletes_expired_without_refresh_token(
         self,
@@ -356,7 +356,7 @@ class TestDeleteExpired:
         assert preserved is not None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRevokeForSSOEnforcement:
     async def test_revokes_token_scoped_to_org(
         self,

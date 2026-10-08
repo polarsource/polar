@@ -11,7 +11,7 @@ from polar.version import V2026_04, V2026_10
 from tests.fixtures.auth import AuthSubjectFixture
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListWebhookEndpoints:
     async def test_unauthenticated(
         self,
@@ -55,7 +55,7 @@ class TestListWebhookEndpoints:
         assert json["items"][0]["id"] == str(webhook_endpoint_organization.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateWebhookEndpoint:
     @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
     async def test_user_missing_scope(self, client: AsyncClient) -> None:
@@ -158,7 +158,7 @@ class TestCreateWebhookEndpoint:
         assert response.json()["secret"].startswith("whsec_")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateWebhookEndpoint:
     @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
     async def test_user_missing_scope(
@@ -248,7 +248,7 @@ class TestUpdateWebhookEndpoint:
         assert json["url"] == "https://example.com/hook-updated"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteWebhookEndpoint:
     @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
     async def test_user_missing_scope(
@@ -301,7 +301,7 @@ class TestDeleteWebhookEndpoint:
         assert response.status_code == 204
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListWebhookDeliveries:
     @pytest.mark.auth
     async def test_user_not_member(

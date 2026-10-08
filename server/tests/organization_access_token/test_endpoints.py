@@ -30,7 +30,7 @@ async def _build_oat(
     return token
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateOrganizationAccessToken:
     @pytest.mark.parametrize("expires_in", [None, 3600])
     @pytest.mark.auth
@@ -102,7 +102,7 @@ class TestCreateOrganizationAccessToken:
         assert response.status_code == 401
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateOrganizationAccessToken:
     @pytest.mark.auth
     async def test_valid(

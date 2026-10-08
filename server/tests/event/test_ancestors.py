@@ -16,7 +16,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetAncestorsBatch:
     async def test_root_event_has_no_ancestors(
         self, save_fixture: SaveFixture, session: AsyncSession, account: Account

@@ -36,7 +36,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetByExternalID:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
@@ -120,7 +120,7 @@ class TestGetByExternalID:
         assert result is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     @pytest.mark.auth
     async def test_not_accessible_organization(
@@ -273,7 +273,7 @@ class TestList:
         assert total == 5
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateOwnerMember:
     async def test_creates_owner_member(
         self,
@@ -514,7 +514,7 @@ class TestCreateOwnerMember:
         await session.flush()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
@@ -780,7 +780,7 @@ class TestCreate:
         await session.flush()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdate:
     @pytest.mark.auth
     async def test_update_name(
@@ -1206,7 +1206,7 @@ class TestUpdate:
         assert updated_member.modified_at == original_updated_at
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateEmail:
     @pytest.mark.auth
     async def test_update_email(
@@ -1471,7 +1471,7 @@ class TestUpdateEmail:
         assert unconnected_seat.email == "member@example.com"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDelete:
     async def test_delete_member_enqueues_seat_revocation_job(
         self,
@@ -1595,7 +1595,7 @@ class TestDelete:
         assert "only owner" in exc_info.value.errors()[0]["msg"].lower()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteByCustomer:
     async def test_enqueues_seat_revocation_for_each_member(
         self,
@@ -1715,7 +1715,7 @@ class TestDeleteByCustomer:
         assert deleted == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetOrCreateByEmail:
     async def test_creates_new_member(
         self,

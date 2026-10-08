@@ -4,7 +4,6 @@ from datetime import timedelta
 
 import httpx
 import pytest
-import pytest_asyncio
 from pytest_mock import MockerFixture
 
 from polar.backoffice import app as backoffice_app
@@ -41,7 +40,7 @@ from tests.fixtures.database import SaveFixture
 from tests.merchant_migration._helpers import pan_step_required_inputs
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def backoffice_client(
     session: AsyncSession, user: User, redis: Redis
 ) -> AsyncGenerator[httpx.AsyncClient]:
@@ -126,7 +125,7 @@ async def _reload(session: AsyncSession, migration: MerchantMigration) -> None:
     await session.refresh(migration)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     async def test_lists_a_migration_with_its_organization(
         self,
@@ -311,7 +310,7 @@ async def _stage_monthly_subscription(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMrr:
     async def test_list_shows_the_monthly_total(
         self,
@@ -377,7 +376,7 @@ class TestMrr:
         assert "No recurring revenue staged" in response.text
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDetail:
     async def test_shows_the_checklist_and_the_ops_action(
         self,
@@ -492,7 +491,7 @@ class TestDetail:
         assert "close the migration out" not in response.text
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCompleteStep:
     async def test_completes_an_ops_owned_step(
         self,
@@ -660,7 +659,7 @@ class TestCompleteStep:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAnnotateStep:
     async def test_saves_the_note_and_the_expected_date(
         self,

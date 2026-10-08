@@ -61,7 +61,7 @@ def receipt() -> Receipt:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRenderReceiptPDF:
     async def test_concurrent_renders(self, receipt: Receipt) -> None:
         pdfs = await asyncio.gather(

@@ -26,7 +26,7 @@ async def create_dashboard(
     return dashboard
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListDashboards:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/metrics/dashboards")
@@ -120,7 +120,7 @@ class TestListDashboards:
         assert response.json() == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateDashboard:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
@@ -223,7 +223,7 @@ class TestCreateDashboard:
         assert response.json()["organization_id"] == str(organization.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetDashboard:
     async def test_anonymous(
         self,
@@ -276,7 +276,7 @@ class TestGetDashboard:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateDashboard:
     async def test_anonymous(
         self,
@@ -373,7 +373,7 @@ class TestUpdateDashboard:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteDashboard:
     async def test_anonymous(
         self,

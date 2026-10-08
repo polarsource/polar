@@ -17,7 +17,7 @@ def client() -> DiscordClient:
     return DiscordClient("Bot", "token")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAddMember:
     async def test_everyone_role_member_already_in_guild(
         self, client: DiscordClient, respx_mock: respx.MockRouter
@@ -70,7 +70,7 @@ class TestAddMember:
         assert add_member_role.called
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAddMemberRole:
     async def test_everyone_role(
         self, client: DiscordClient, respx_mock: respx.MockRouter
@@ -82,7 +82,7 @@ class TestAddMemberRole:
         assert len(respx_mock.calls) == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRemoveMemberRole:
     async def test_everyone_role(
         self, client: DiscordClient, respx_mock: respx.MockRouter

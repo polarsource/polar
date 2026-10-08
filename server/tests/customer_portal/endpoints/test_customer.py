@@ -1,7 +1,6 @@
 from unittest.mock import MagicMock
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
@@ -24,7 +23,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetEmbedPolicy:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/customer-portal/customers/me/embed-policy")
@@ -107,7 +106,7 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     return mock
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def organization_allow_email_change(
     save_fixture: SaveFixture, organization: Organization
 ) -> Organization:
@@ -119,7 +118,7 @@ async def organization_allow_email_change(
     return organization
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeletePaymentMethod:
     async def test_anonymous(
         self,
@@ -304,7 +303,7 @@ class TestDeletePaymentMethod:
         assert payment_method.deleted_at is not None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateDefaultPaymentMethod:
     async def test_anonymous(
         self,
@@ -398,7 +397,7 @@ class TestUpdateDefaultPaymentMethod:
         }
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateCustomerTaxId:
     """E2E HTTP verification of tax_id clearing via the customer portal API."""
 
@@ -452,7 +451,7 @@ async def _create_verification(
     return record, token
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRequestEmailUpdate:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
@@ -505,7 +504,7 @@ class TestRequestEmailUpdate:
         assert response.status_code == 422
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCheckEmailUpdate:
     async def test_valid_token(
         self,
@@ -528,7 +527,7 @@ class TestCheckEmailUpdate:
         assert response.status_code == 401
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestVerifyEmailUpdate:
     async def test_invalid_token(self, client: AsyncClient) -> None:
         response = await client.post(

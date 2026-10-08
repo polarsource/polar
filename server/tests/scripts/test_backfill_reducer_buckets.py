@@ -51,7 +51,7 @@ class TestBucketRange:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBackfillBucket:
     async def test_range_filter_and_customer_groups(
         self,

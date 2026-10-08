@@ -65,7 +65,7 @@ async def _session_maker(session: AsyncSession) -> AsyncIterator[AsyncSession]:
     yield session
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPostDisputeGreeting:
     async def test_posts_greeting(
         self,
@@ -122,7 +122,7 @@ class TestPostDisputeGreeting:
         assert len(greetings) == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEnqueueAutoAccepts:
     async def test_enqueues_only_aged_opted_in_disputes(
         self,
@@ -222,7 +222,7 @@ class TestEnqueueAutoAccepts:
         enqueue_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAutoAccept:
     async def test_noop_when_no_longer_eligible(
         self,

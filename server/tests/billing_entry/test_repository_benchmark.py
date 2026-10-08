@@ -28,7 +28,6 @@ from decimal import Decimal
 from itertools import batched
 
 import pytest
-import pytest_asyncio
 from sqlalchemy import insert, select, update
 
 from polar.billing_entry.repository import BillingEntryRepository
@@ -64,7 +63,7 @@ ENTRIES = 20_000
 BATCH_SIZE = 1000
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
     return await create_meter(
         save_fixture,
@@ -76,7 +75,7 @@ async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product(
     save_fixture: SaveFixture, organization: Organization, meter: Meter
 ) -> Product:
@@ -88,7 +87,7 @@ async def product(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def subscription(
     save_fixture: SaveFixture, product: Product, customer: Customer
 ) -> Subscription:
@@ -97,7 +96,7 @@ async def subscription(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def order(
     save_fixture: SaveFixture,
     product: Product,
@@ -206,7 +205,7 @@ async def _clear_order_item_id(session: AsyncSession, ids: Sequence[uuid.UUID]) 
 
 
 @pytest.mark.benchmark
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_real_flow_speedup(
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -280,7 +279,7 @@ async def test_real_flow_speedup(
     assert len(updated.scalars().all()) == ENTRIES
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def static_product(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -291,7 +290,7 @@ async def static_product(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def static_subscription(
     save_fixture: SaveFixture, static_product: Product, customer: Customer
 ) -> Subscription:
@@ -359,7 +358,7 @@ async def _unfixed_update_order_item_id(
 
 
 @pytest.mark.benchmark
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.parametrize("count", [500, 1000, 2000, 4000])
 @pytest.mark.parametrize("fixed", [False, True], ids=["before-fix", "after-fix"])
 async def test_static_flow_quadratic_blowup(
@@ -420,7 +419,7 @@ async def test_static_flow_quadratic_blowup(
 
 
 @pytest.mark.benchmark
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_per_batch_cost_scales_with_identity_map(
     session: AsyncSession,
     save_fixture: SaveFixture,

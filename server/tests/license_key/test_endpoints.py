@@ -2,7 +2,6 @@ import uuid
 from uuid import UUID
 
 import pytest
-import pytest_asyncio
 from dateutil.relativedelta import relativedelta
 from httpx import AsyncClient
 
@@ -35,7 +34,7 @@ from tests.fixtures.license_key import TestLicenseKey
 from tests.fixtures.random_objects import create_member, create_order
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestLicenseKeyEndpoints:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -644,7 +643,7 @@ class TestLicenseKeyEndpoints:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCustomerUpdateGrant:
     @pytest.mark.parametrize(
         "preserved_status",
@@ -746,7 +745,7 @@ class TestCustomerUpdateGrant:
         assert lk.status == expected_status
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def license_key_organization_second(
     session: AsyncSession,
     redis: Redis,
@@ -770,7 +769,7 @@ async def license_key_organization_second(
     return lk
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListLicenseKeys:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/license-keys/")
@@ -778,7 +777,7 @@ class TestListLicenseKeys:
         assert response.status_code == 401
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetLicenseKey:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/license-keys/{uuid.uuid4()}")
@@ -799,7 +798,7 @@ class TestGetLicenseKey:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateLicenseKey:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.patch(f"/v1/license-keys/{uuid.uuid4()}")
@@ -821,7 +820,7 @@ class TestUpdateLicenseKey:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRotateLicenseKey:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(f"/v1/license-keys/{uuid.uuid4()}/rotate")
@@ -842,7 +841,7 @@ class TestRotateLicenseKey:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetActivation:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(
@@ -866,7 +865,7 @@ class TestGetActivation:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestValidateLicenseKey:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post("/v1/license-keys/validate")
@@ -1086,7 +1085,7 @@ class TestValidateLicenseKey:
         assert data["order"]["id"] == str(order.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestActivateLicenseKey:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post("/v1/license-keys/activate")
@@ -1153,7 +1152,7 @@ class TestActivateLicenseKey:
         assert response.json()["license_key"]["subscription"] is not None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeactivateLicenseKey:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post("/v1/license-keys/deactivate")
@@ -1179,7 +1178,7 @@ class TestDeactivateLicenseKey:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCustomerPortalRotateLicenseKey:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(

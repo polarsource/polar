@@ -15,7 +15,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_checkout, create_discount
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestExpireOpenCheckouts:
     async def test_valid(
         self, save_fixture: SaveFixture, session: AsyncSession, product: Product
@@ -60,7 +60,7 @@ class TestExpireOpenCheckouts:
         assert updated_successful_checkout.status == CheckoutStatus.succeeded
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_for_update_eager_loading(
     save_fixture: SaveFixture,
     session: AsyncSession,
@@ -98,7 +98,7 @@ async def test_for_update_eager_loading(
     assert fetched_checkout.discount.products == [product]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAnonymizeExpired:
     async def _create_checkout_with_pii(
         self,

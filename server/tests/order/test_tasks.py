@@ -51,7 +51,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateSubscriptionOrder:
     async def test_uses_cutoff_from_job_payload(
         self,
@@ -86,7 +86,7 @@ class TestCreateSubscriptionOrder:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestProcessDunning:
     async def test_enqueues_tasks_for_due_orders(
         self,
@@ -185,7 +185,7 @@ class TestProcessDunning:
         enqueue_job_mock.assert_any_call("order.process_dunning_order", order2.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestProcessDunningOrder:
     async def test_order_without_subscription_skipped(
         self,
@@ -487,7 +487,7 @@ class TestProcessDunningOrder:
         assert updated_subscription.status == SubscriptionStatus.canceled
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEnqueueStalePaymentLocks:
     async def test_enqueues_stale_payment_lock(
         self,
@@ -519,7 +519,7 @@ class TestEnqueueStalePaymentLocks:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestProcessStalePaymentLock:
     async def test_releases_payment_lock(
         self,
@@ -547,7 +547,7 @@ class TestProcessStalePaymentLock:
         assert updated_order.payment_lock_acquired_at is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTriggerPayment:
     async def test_trigger_payment_success(
         self,
@@ -806,7 +806,7 @@ async def _add_member(
     await save_fixture(user_organization)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOrderSubscriptionRenewalNotification:
     async def test_missing_order_raises(self) -> None:
         with pytest.raises(OrderDoesNotExist):

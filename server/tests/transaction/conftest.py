@@ -1,7 +1,7 @@
 from collections.abc import AsyncIterator, Sequence
 from datetime import datetime
 
-import pytest_asyncio
+import pytest
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.models import (
@@ -84,7 +84,7 @@ async def create_transaction(
     return transaction
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def transaction_pledge(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -97,7 +97,7 @@ async def transaction_pledge(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def transaction_issue_reward(
     save_fixture: SaveFixture, transaction_pledge: Pledge
 ) -> IssueReward:
@@ -109,7 +109,7 @@ async def transaction_issue_reward(
     return issue_reward
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def transaction_order_subscription(
     save_fixture: SaveFixture, organization: Organization, customer: Customer
 ) -> Order:
@@ -126,7 +126,7 @@ async def transaction_order_subscription(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def account_transactions(
     save_fixture: SaveFixture,
     account: Account,
@@ -166,14 +166,14 @@ async def account_transactions(
     ]
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def readable_user_transactions(
     account_transactions: list[Transaction],
 ) -> list[Transaction]:
     return account_transactions
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def all_transactions(
     save_fixture: SaveFixture, readable_user_transactions: list[Transaction]
 ) -> list[Transaction]:

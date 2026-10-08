@@ -198,7 +198,7 @@ async def run(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPrecheckEngine:
     async def test_clean_catalog_can_start(self) -> None:
         report = await run([build_product(), build_customer(), build_subscription()])

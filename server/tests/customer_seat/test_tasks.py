@@ -17,7 +17,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRevokeSeatForMember:
     async def test_no_active_seats(
         self,

@@ -3,7 +3,6 @@ from unittest.mock import MagicMock
 
 import httpx
 import pytest
-import pytest_asyncio
 from fastapi import FastAPI
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
@@ -22,7 +21,7 @@ from tests.fixtures.base import IsolatedSessionTestClient
 from tests.fixtures.database import SaveFixture
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def cookie_client(
     app: FastAPI, session: AsyncSession
 ) -> AsyncIterator[httpx.AsyncClient]:
@@ -53,7 +52,7 @@ async def create_completable_authentication_session(
     return token
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestComplete:
     async def test_anonymous(self, cookie_client: httpx.AsyncClient) -> None:
         response = await cookie_client.get("/v1/auth/complete")
@@ -109,7 +108,7 @@ class TestComplete:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTOTPEnroll:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post("/v1/auth/totp")
@@ -137,7 +136,7 @@ class TestTOTPEnroll:
         assert json["provisioning_uri"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTOTPEnable:
     @pytest.mark.auth
     async def test_stale_session(
@@ -158,7 +157,7 @@ class TestTOTPEnable:
         assert response.json()["error"] != "SessionNotFreshError"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTOTPDelete:
     @pytest.mark.auth
     async def test_stale_session(
@@ -178,7 +177,7 @@ class TestTOTPDelete:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBackupCodesEnroll:
     @pytest.mark.auth
     async def test_stale_session(
@@ -222,7 +221,7 @@ async def request_email_otp(
     return response, enqueue_email_template
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEmailOTPRequest:
     async def test_without_sso(
         self, login_client: httpx.AsyncClient, mocker: MockerFixture

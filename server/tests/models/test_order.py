@@ -79,7 +79,7 @@ from tests.fixtures.random_objects import create_order
         ),
     ],
 )
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_calculate_refunded_tax_from_total(
     tax_behavior: TaxBehavior,
     subtotal_amount: int,
@@ -172,7 +172,7 @@ async def test_calculate_refunded_tax_from_total(
         ),
     ],
 )
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_calculate_refunded_tax_from_subtotal(
     tax_behavior: TaxBehavior,
     subtotal_amount: int,

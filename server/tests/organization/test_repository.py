@@ -19,7 +19,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetOwnerUser:
     async def test_excludes_soft_deleted_membership(
         self,
@@ -58,7 +58,7 @@ class TestGetOwnerUser:
         assert owner_after_removal is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRemovePayoutAccount:
     async def test_removes_matching_payout_account(
         self,
@@ -102,7 +102,7 @@ async def _set_status(
     await save_fixture(organization)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetStatusCancellationExpired:
     async def test_returns_expired_org_with_billable_subscription(
         self,

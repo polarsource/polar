@@ -26,7 +26,7 @@ def _build_verification_session(
     return stripe_lib.identity.VerificationSession.construct_from(data, None)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCollectIdentityData:
     async def test_none(self) -> None:
         result = await collect_identity_data(None)

@@ -3,7 +3,6 @@ from decimal import Decimal
 import httpx
 import httpx_ws
 import pytest
-import pytest_asyncio
 
 from polar.models import Customer, CustomerMeter, Meter
 from polar.outpost.stream import publish
@@ -11,7 +10,7 @@ from polar.redis import Redis
 from tests.fixtures import AuthSubjectFixture, SaveFixture
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def customer_meter(
     save_fixture: SaveFixture, customer: Customer, meter: Meter
 ) -> CustomerMeter:
@@ -28,11 +27,13 @@ async def customer_meter(
 
 
 @pytest.mark.anyio
+@pytest.mark.websocket
 class TestOutpost:
     async def test_anonymous(self, client: httpx.AsyncClient, meter: Meter) -> None:
-        with pytest.raises(httpx_ws.WebSocketDisconnect):
+        with pytest.raises(httpx_ws.WebSocketUpgradeError) as exc:
             async with httpx_ws.aconnect_ws("/v1/outpost/", client=client):
                 pass
+        assert exc.value.response.status_code == 401
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_request_configuration(

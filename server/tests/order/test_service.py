@@ -6,7 +6,6 @@ from typing import cast
 from unittest.mock import ANY, AsyncMock, MagicMock, call
 
 import pytest
-import pytest_asyncio
 import stripe as stripe_lib
 from freezegun import freeze_time
 from pydantic import BaseModel
@@ -261,7 +260,7 @@ def calculate_tax_mock(tax_service_mock: MagicMock) -> AsyncMock:
     return tax_service_mock.calculate
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     @pytest.mark.auth
     async def test_user_not_organization_member(
@@ -484,7 +483,7 @@ class TestList:
         assert order2 in orders
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdate:
     @pytest.mark.parametrize(
         ("set_address", "address_update"),
@@ -549,7 +548,7 @@ class TestUpdate:
         assert updated_order.billing_address.line1 == "Rue de la Paix"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateFromCheckoutOneTime:
     async def test_recurring_product(
         self, save_fixture: SaveFixture, session: AsyncSession, product: Product
@@ -905,7 +904,7 @@ class TestCreateFromCheckoutOneTime:
             assert c.args[0] != "benefit.enqueue_benefits_grants"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateFromCheckoutSubscription:
     async def test_not_recurring_product(
         self,
@@ -1089,7 +1088,7 @@ class ProrationFixture(BaseModel):
     expected_tax: int
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateSubscriptionOrder:
     async def test_no_pending_billing_items(
         self, session: AsyncSession, subscription: Subscription
@@ -2613,7 +2612,7 @@ class TestCreateSubscriptionOrder:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSettleMeterCycleOrder:
     async def _metered_subscription(
         self,
@@ -2830,7 +2829,7 @@ class TestSettleMeterCycleOrder:
         assert order.discount_amount == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateTrialOrder:
     async def test_not_trial(
         self,
@@ -2874,7 +2873,7 @@ class TestCreateTrialOrder:
         assert order.items[0].end_timestamp == subscription.trial_end
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateWalletOrder:
     async def test_basic(
         self,
@@ -2944,7 +2943,7 @@ class TestCreateWalletOrder:
         tax_service_mock.record.assert_called_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateOrderBalance:
     async def test_no_payment_transaction(
         self,
@@ -3054,7 +3053,7 @@ class TestCreateOrderBalance:
         assert updated_payment_transaction.payment_customer == order.customer
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSendConfirmationEmail:
     async def test_billing_not_set(
         self,
@@ -3289,7 +3288,7 @@ class TestSendConfirmationEmail:
         assert email.props.regular_amount is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTriggerInvoiceGeneration:
     async def test_not_paid_triggers_generation(
         self,
@@ -3489,7 +3488,7 @@ class TestTriggerInvoiceGeneration:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGenerateInvoice:
     async def test_persists_checksum(
         self,
@@ -3575,7 +3574,7 @@ class TestGenerateInvoice:
         assert updated.invoice_path == "invoices/regenerated.pdf"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestHandlePayment:
     async def test_already_paid_is_idempotent(
         self,
@@ -3891,7 +3890,7 @@ class TestHandlePayment:
         assert subscription.status == SubscriptionStatus.past_due
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestHandlePaymentFailure:
     """Test order service handle payment failure functionality"""
 
@@ -4788,7 +4787,7 @@ class TestHandlePaymentFailure:
         mock_revoke.assert_called_once_with(session, ANY, subscription)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestProcessDunningOrder:
     """Test order service process dunning order functionality"""
 
@@ -4988,7 +4987,7 @@ class TestProcessDunningOrder:
         assert result_order.next_payment_attempt_at is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestScheduleRetryForPastDueOrders:
     """Test scheduling dunning retries when a customer saves a new payment method."""
 
@@ -5214,7 +5213,7 @@ class TestScheduleRetryForPastDueOrders:
         enqueue_job_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTriggerPayment:
     """Test payment lock mechanism in trigger_payment service method."""
 
@@ -5686,7 +5685,7 @@ class TestTriggerPayment:
         assert descriptor.startswith(organization.slug[:4])
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAcquirePaymentLock:
     async def test_acquire_payment_lock_success(
         self,
@@ -5760,7 +5759,7 @@ class TestAcquirePaymentLock:
         assert order.payment_lock_acquired_at is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestProcessRetryPayment:
     @pytest.mark.parametrize("method_type", ["card", "sepa_debit"])
     async def test_saved_payment_method_types(
@@ -6149,7 +6148,7 @@ class TestProcessRetryPayment:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCustomerBasedInvoiceNumbering:
     async def test_different_customers_different_invoice_numbers(
         self,
@@ -6224,8 +6223,8 @@ class TestCustomerBasedInvoiceNumbering:
         )
 
 
-@pytest.mark.asyncio
-@pytest.mark.asyncio
+@pytest.mark.anyio
+@pytest.mark.anyio
 class TestUpdateProductBenefitsGrants:
     async def test_enqueues_jobs_for_one_time_orders(
         self,
@@ -6362,7 +6361,7 @@ class TestUpdateProductBenefitsGrants:
 
 
 class TestVoidOrder:
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_void_pending_order(
         self,
         session: AsyncSession,
@@ -6390,7 +6389,7 @@ class TestVoidOrder:
         assert len(events) == 1
         assert events[0].user_metadata["order_id"] == str(order.id)
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_void_order_payment_in_progress(
         self,
         session: AsyncSession,
@@ -6414,7 +6413,7 @@ class TestVoidOrder:
 
         assert exc_info.value.order == order
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_void_non_pending_order(
         self,
         session: AsyncSession,
@@ -6437,7 +6436,7 @@ class TestVoidOrder:
 
         assert exc_info.value.order.id == order.id
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_void_clears_next_payment_attempt(
         self,
         session: AsyncSession,
@@ -6463,7 +6462,7 @@ class TestVoidOrder:
         assert result_order.status == OrderStatus.void
         assert result_order.next_payment_attempt_at is None
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_void_reduces_customer_balance(
         self,
         session: AsyncSession,
@@ -6499,7 +6498,7 @@ class TestVoidOrder:
         )
         assert new_balance == 200
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_void_restores_balance_consumed_by_order(
         self,
         session: AsyncSession,
@@ -6536,7 +6535,7 @@ class TestVoidOrder:
         )
         assert new_balance == 1000
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_void_restores_consumed_balance_and_reduces_credit(
         self,
         session: AsyncSession,
@@ -6576,7 +6575,7 @@ class TestVoidOrder:
         )
         assert new_balance == 1000
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_void_leaves_negative_balance_untouched(
         self,
         session: AsyncSession,
@@ -6611,7 +6610,7 @@ class TestVoidOrder:
 
 
 class TestUnvoidOrder:
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_unvoid_order(
         self,
         mocker: MockerFixture,
@@ -6645,7 +6644,7 @@ class TestUnvoidOrder:
             session, order, WebhookEventType.order_updated
         )
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_unvoid_non_void_order(
         self,
         session: AsyncSession,
@@ -6663,7 +6662,7 @@ class TestUnvoidOrder:
         with pytest.raises(OrderNotVoid):
             await order_service.unvoid(session, order)
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_unvoid_reconsumes_restored_balance(
         self,
         session: AsyncSession,
@@ -6699,7 +6698,7 @@ class TestUnvoidOrder:
         )
         assert new_balance == 0
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_void_unvoid_round_trip_leaves_balance_unchanged(
         self,
         session: AsyncSession,
@@ -6735,9 +6734,9 @@ class TestUnvoidOrder:
         assert new_balance == 1000
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestVoidPendingOrdersForSubscription:
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_void_pending_orders_for_subscription(
         self,
         session: AsyncSession,
@@ -6787,7 +6786,7 @@ class TestVoidPendingOrdersForSubscription:
             assert order.subscription_id == subscription.id
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def off_session_organization(
     save_fixture: SaveFixture, organization: Organization
 ) -> Organization:
@@ -6799,7 +6798,7 @@ async def off_session_organization(
     return organization
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateDraftOrder:
     async def test_feature_flag_disabled(
         self,
@@ -7365,7 +7364,7 @@ class TestCreateDraftOrder:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFinalizeOrder:
     async def test_order_not_draft(
         self,
@@ -7955,7 +7954,7 @@ class TestFinalizeOrder:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionRenewalNotification:
     @pytest.mark.parametrize(
         "billing_reason",

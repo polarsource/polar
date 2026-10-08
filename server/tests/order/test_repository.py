@@ -15,7 +15,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_order
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestReleasePaymentLock:
     @pytest.mark.parametrize("stale", [False, True])
     async def test_releases_lock(
@@ -43,7 +43,7 @@ class TestReleasePaymentLock:
         assert order.payment_lock_acquired_at is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetSortingClause:
     async def test_status(
         self,
@@ -72,7 +72,7 @@ class TestGetSortingClause:
         assert [order.status for order in orders] == expected_statuses
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestStreamStalePaymentLock:
     async def test_predicate_stays_indexable(
         self, mocker: MockerFixture, session: AsyncSession

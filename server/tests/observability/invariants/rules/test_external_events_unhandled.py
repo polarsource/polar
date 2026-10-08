@@ -14,7 +14,7 @@ from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCheck:
     @pytest.mark.parametrize("count", [0, 1, 15])
     async def test_unhandled_events(

@@ -129,7 +129,7 @@ class TestPickUnknownWebhookHost:
 
 
 class TestCollectWebhookHost:
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_returns_none_when_no_host_to_fetch(self) -> None:
         org = _make_org("https://example.com")
         setup = _make_setup(webhook_domains=["example.com"])  # same domain → skip
@@ -141,7 +141,7 @@ class TestCollectWebhookHost:
         assert result is None
         fetch.assert_not_awaited()
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_fetches_unknown_host(self) -> None:
         org = _make_org("https://example.com")
         setup = _make_setup(webhook_domains=["api.different.com"])
@@ -158,7 +158,7 @@ class TestCollectWebhookHost:
             organization_slug=org.slug,
         )
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_swallows_fetch_exception(self) -> None:
         """A scrape failure should not propagate — the review continues."""
         org = _make_org("https://example.com")

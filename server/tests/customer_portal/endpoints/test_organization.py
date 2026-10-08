@@ -7,7 +7,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_benefit, set_product_benefits
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetOrganization:
     async def test_excludes_non_public_benefits(
         self,

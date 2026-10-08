@@ -44,7 +44,7 @@ const render = (file: string, config: PulledConfig) =>
   Effect.gen(function* () {
     const json = JSON.stringify(config, null, 2)
     const extension = extname(file)
-    if (extension === '.json') return `${json}\n`
+    if (extension === '.json' || extension === '') return `${json}\n`
     if (ESM_EXTENSIONS.has(extension)) return `export default ${json}\n`
     if (CJS_EXTENSIONS.has(extension)) return `module.exports = ${json}\n`
     return yield* new BillingConfigError({

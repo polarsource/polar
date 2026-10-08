@@ -149,6 +149,12 @@ describe('save', () => {
     expect(await readFile('polar.config.json', 'utf8')).toBe(json)
   })
 
+  test('writes extensionless files as JSON, like the loader reads them', async () => {
+    await save('billing')
+
+    expect(await readFile('billing', 'utf8')).toBe(json)
+  })
+
   test('rejects file types it cannot write', async () => {
     const error = await failure(save('billing.yaml'))
     expect(error.message).toBe('Cannot write a config to billing.yaml')

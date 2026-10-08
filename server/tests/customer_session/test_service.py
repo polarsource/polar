@@ -62,38 +62,3 @@ class TestCreateGracefulFallback:
         members = db_result.scalars().all()
         assert len(members) == 1
         assert members[0].email == "no-member@example.com"
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
-    async def test_returns_customer_session_when_flag_disabled(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user: User,
-        user_organization: UserOrganization,
-        auth_subject: AuthSubject[User | Organization],
-    ) -> None:
-        """When member_model disabled, should return CustomerSession (not MemberSession)."""
-        # organization defaults to member_model_enabled=false
-        customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="legacy@example.com",
-        )
-
-        from polar.customer_session.schemas import CustomerSessionCustomerIDCreate
-        from polar.models import CustomerSession
-
-        create_schema = CustomerSessionCustomerIDCreate(
-            customer_id=customer.id,
-        )
-
-        result = await customer_session_service.create(
-            session, auth_subject, create_schema
-        )
-
-        assert result is not None
-        assert isinstance(result, CustomerSession)

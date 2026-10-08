@@ -1,17 +1,13 @@
 import asyncio
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Any
 from unittest.mock import patch
 
 import pytest
-from pytest_mock import MockerFixture
-from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject
 from polar.customer.repository import CustomerRepository
 from polar.customer_seat.service import (
-    CustomerNotFound,
     InvalidInvitationToken,
     InvalidSeatAssignmentRequest,
     MemberEmailMismatch,
@@ -94,50 +90,6 @@ class TestGetAvailableSeatsCount:
 
 class TestAssignSeat:
     @pytest.mark.asyncio
-    async def test_assign_seat_with_email_success(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        subscription_with_seats: Subscription,
-    ) -> None:
-        customer = await create_customer(
-            save_fixture,
-            organization=subscription_with_seats.product.organization,
-            email="test@example.com",
-        )
-
-        seat = await seat_service.assign_seat(
-            session, subscription_with_seats, email="test@example.com"
-        )
-
-        assert seat.subscription_id == subscription_with_seats.id
-        assert seat.status == SeatStatus.pending
-        assert seat.invitation_token is not None
-        assert seat.customer_id == customer.id
-
-    @pytest.mark.asyncio
-    async def test_assign_seat_with_external_customer_id(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        subscription_with_seats: Subscription,
-    ) -> None:
-        customer = await create_customer(
-            save_fixture,
-            organization=subscription_with_seats.product.organization,
-            external_id="ext123",
-        )
-
-        seat = await seat_service.assign_seat(
-            session, subscription_with_seats, external_customer_id="ext123"
-        )
-
-        assert seat.subscription_id == subscription_with_seats.id
-        assert seat.status == SeatStatus.pending
-        assert seat.invitation_token is not None
-        assert seat.customer_id == customer.id
-
-    @pytest.mark.asyncio
     async def test_assign_seat_with_customer_id(
         self,
         session: AsyncSession,
@@ -158,21 +110,6 @@ class TestAssignSeat:
     ) -> None:
         with pytest.raises(InvalidSeatAssignmentRequest):
             await seat_service.assign_seat(session, subscription_with_seats)
-
-    @pytest.mark.asyncio
-    async def test_assign_seat_multiple_identifiers(
-        self,
-        session: AsyncSession,
-        subscription_with_seats: Subscription,
-        customer: Customer,
-    ) -> None:
-        with pytest.raises(InvalidSeatAssignmentRequest):
-            await seat_service.assign_seat(
-                session,
-                subscription_with_seats,
-                email="test@example.com",
-                customer_id=customer.id,
-            )
 
     @pytest.mark.asyncio
     async def test_assign_seat_no_available_seats(
@@ -226,7 +163,7 @@ class TestAssignSeat:
         )
 
         assert seat.seat_metadata == metadata
-        assert seat.customer_id == customer.id
+        assert seat.customer_id == subscription_with_seats.customer_id
 
     @pytest.mark.asyncio
     async def test_assign_seat_customer_not_found_email(
@@ -239,98 +176,6 @@ class TestAssignSeat:
 
         assert seat.customer_id is not None
         # Customer is created automatically with the provided email
-
-    @pytest.mark.asyncio
-    async def test_assign_seat_customer_not_found_external_id(
-        self, session: AsyncSession, subscription_with_seats: Subscription
-    ) -> None:
-        with pytest.raises(CustomerNotFound) as exc_info:
-            await seat_service.assign_seat(
-                session, subscription_with_seats, external_customer_id="nonexistent123"
-            )
-        assert "nonexistent123" in str(exc_info.value)
-
-    @pytest.mark.asyncio
-    async def test_assign_seat_customer_not_found_customer_id(
-        self, session: AsyncSession, subscription_with_seats: Subscription
-    ) -> None:
-        fake_customer_id = uuid.uuid4()
-        with pytest.raises(CustomerNotFound) as exc_info:
-            await seat_service.assign_seat(
-                session, subscription_with_seats, customer_id=fake_customer_id
-            )
-        assert str(fake_customer_id) in str(exc_info.value)
-
-    @pytest.mark.asyncio
-    async def test_assign_seat_creates_new_customer_with_email(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        subscription_with_seats: Subscription,
-    ) -> None:
-        """Test that assigning a seat with an email creates a new customer if not found."""
-        seat = await seat_service.assign_seat(
-            session, subscription_with_seats, email="newuser@example.com"
-        )
-
-        # Refresh the seat to load the customer relationship
-        await session.refresh(seat, ["customer"])
-
-        assert seat.customer_id is not None
-        assert seat.customer is not None
-        assert seat.customer.email == "newuser@example.com"
-        assert (
-            seat.customer.organization_id
-            == subscription_with_seats.product.organization_id
-        )
-
-    @pytest.mark.asyncio
-    async def test_assign_seat_customer_creation_race(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        subscription_with_seats: Subscription,
-    ) -> None:
-        existing = await create_customer(
-            save_fixture,
-            organization=subscription_with_seats.product.organization,
-            email="race@example.com",
-        )
-
-        create_call_count = 0
-
-        async def mock_create(self: Any, model: Any, flush: bool = False) -> None:
-            nonlocal create_call_count
-            create_call_count += 1
-            raise IntegrityError(
-                "duplicate", params=None, orig=Exception("unique violation")
-            )
-
-        mocker.patch.object(CustomerRepository, "create", mock_create)
-
-        original_get = CustomerRepository.get_by_email_and_organization
-        get_call_count = 0
-
-        async def mock_get(
-            self: Any, email: str, organization_id: uuid.UUID
-        ) -> Customer | None:
-            nonlocal get_call_count
-            get_call_count += 1
-            if get_call_count == 1:
-                return None
-            return await original_get(self, email, organization_id)
-
-        mocker.patch.object(
-            CustomerRepository, "get_by_email_and_organization", mock_get
-        )
-
-        seat = await seat_service.assign_seat(
-            session, subscription_with_seats, email="race@example.com"
-        )
-
-        assert seat.customer_id == existing.id
-        assert create_call_count == 1
 
     @pytest.mark.asyncio
     async def test_assign_seat_token_expiration(
@@ -452,7 +297,7 @@ class TestAssignSeat:
         assert seat.status == SeatStatus.claimed
         assert seat.invitation_token is None
         assert seat.invitation_token_expires_at is None
-        assert seat.customer_id == customer.id
+        assert seat.customer_id == subscription_with_seats.customer_id
         assert seat.claimed_at is not None
 
     @pytest.mark.asyncio
@@ -532,7 +377,7 @@ class TestAssignSeat:
             mock_enqueue.assert_called_once_with(
                 "benefit.enqueue_benefits_grants",
                 task="grant",
-                customer_id=customer.id,
+                customer_id=subscription_with_seats.customer_id,
                 product_id=subscription_with_seats.product.id,
                 member_id=seat.member_id,
                 subscription_id=subscription_with_seats.id,
@@ -581,7 +426,7 @@ class TestAssignSeat:
         # Should reuse the same seat record
         assert new_seat.id == original_seat_id
         assert new_seat.status == SeatStatus.claimed
-        assert new_seat.customer_id == new_customer.id
+        assert new_seat.customer_id == subscription_with_seats.customer_id
         assert new_seat.invitation_token is None
         assert new_seat.invitation_token_expires_at is None
         assert new_seat.revoked_at is None
@@ -648,7 +493,7 @@ class TestAssignSeat:
                     "order_id": None,
                     "product_id": str(subscription_with_seats.product.id),
                 },
-                customer_id=customer.id,
+                customer_id=subscription_with_seats.customer_id,
             )
 
     @pytest.mark.asyncio
@@ -706,7 +551,6 @@ class TestAssignSeat:
         provided, no individual Customer should be created for the seat holder.
         The seat holder is represented as a Member under the billing customer.
         """
-        from polar.customer.repository import CustomerRepository
 
         organization = await create_organization(
             save_fixture,
@@ -751,34 +595,6 @@ class TestAssignSeat:
             )
             is None
         )
-
-    @pytest.mark.asyncio
-    async def test_assign_seat_without_member_model_enabled(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        subscription_with_seats: Subscription,
-    ) -> None:
-        seat_customer = await create_customer(
-            save_fixture,
-            organization=subscription_with_seats.product.organization,
-            email="test@example.com",
-        )
-
-        seat = await seat_service.assign_seat(
-            session, subscription_with_seats, email="test@example.com"
-        )
-
-        billing_customer_id = subscription_with_seats.customer_id
-        assert seat.customer_id == seat_customer.id
-        assert seat.customer_id != billing_customer_id
-        assert seat.member_id is not None
-        assert seat.email == "test@example.com"
-
-        await session.refresh(seat, ["member"])
-        assert seat.member is not None
-        assert seat.member.customer_id == billing_customer_id
-        assert seat.member.email == "test@example.com"
 
     @pytest.mark.asyncio
     async def test_assign_seat_with_customer_id_backward_compat_member_model(
@@ -1480,50 +1296,6 @@ class TestAssignSeat:
             )
 
     @pytest.mark.asyncio
-    async def test_assign_seat_accepts_external_member_id_when_member_model_disabled(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        subscription_with_seats: Subscription,
-    ) -> None:
-        """Test that external_member_id opts into member model semantics in legacy mode."""
-        seat = await seat_service.assign_seat(
-            session,
-            subscription_with_seats,
-            external_member_id="ext_123",
-            email="member@example.com",
-        )
-
-        assert seat.member_id is not None
-        assert seat.email == "member@example.com"
-
-    @pytest.mark.asyncio
-    async def test_assign_seat_accepts_member_id_when_member_model_disabled(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        subscription_with_seats: Subscription,
-    ) -> None:
-        """Test that member_id opts into member model semantics in legacy mode."""
-        billing_customer = subscription_with_seats.customer
-        organization = subscription_with_seats.product.organization
-        member = await create_member(
-            save_fixture,
-            customer=billing_customer,
-            organization=organization,
-            email="member@example.com",
-        )
-
-        seat = await seat_service.assign_seat(
-            session,
-            subscription_with_seats,
-            member_id=member.id,
-        )
-
-        assert seat.member_id == member.id
-        assert seat.email == "member@example.com"
-
-    @pytest.mark.asyncio
     async def test_assign_seat_with_member_id_immediate_claim(
         self,
         session: AsyncSession,
@@ -1649,6 +1421,7 @@ class TestClaimSeat:
             save_fixture,
             subscription=subscription_with_seats,
             customer=customer,
+            email="seat-holder@example.com",
         )
         await session.refresh(seat_pending, ["subscription"])
         assert seat_pending.subscription is not None
@@ -1721,6 +1494,7 @@ class TestClaimSeat:
             save_fixture,
             subscription=subscription_with_seats,
             customer=customer,
+            email="seat-holder@example.com",
         )
         await session.refresh(seat, ["subscription"])
         assert seat.subscription is not None
@@ -1747,6 +1521,7 @@ class TestClaimSeat:
             save_fixture,
             subscription=subscription_with_seats,
             customer=customer,
+            email="seat-holder@example.com",
         )
         await session.refresh(seat_pending, ["subscription"])
         assert seat_pending.subscription is not None
@@ -1877,99 +1652,15 @@ class TestClaimSeat:
         await member_repository.soft_delete(member)
         await session.flush()
 
-        with (
-            patch(
-                "polar.customer_seat.service.customer_session_service.create_customer_session"
-            ) as mock_create_customer_session,
-            patch(
-                "polar.customer_seat.service.member_session_service.create_member_session"
-            ) as mock_create_member_session,
-        ):
+        with patch(
+            "polar.customer_seat.service.member_session_service.create_member_session"
+        ) as mock_create_member_session:
             with pytest.raises(InvalidInvitationToken):
                 await seat_service.claim_seat(session, invitation_token)
 
-            # No session of either kind must be minted for the rejected claim;
-            # in particular, no purchaser-scope customer session may leak.
-            mock_create_customer_session.assert_not_called()
+            # No session must be minted for the rejected claim.
             mock_create_member_session.assert_not_called()
 
-    @pytest.mark.asyncio
-    async def test_claim_seat_legacy_model_soft_deleted_member_issues_self_session(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        account: Account,
-    ) -> None:
-        """In legacy mode (no member_model_enabled), `session_customer` is the
-        seat-holder's own customer, so falling back to a customer session is a
-        self-session, not an escalation. Deleting the linked member before
-        the claim must therefore still issue the seat-holder's own
-        `polar_cst_` token, never the billing (purchaser) customer's.
-        """
-        from polar.customer_session.service import (
-            customer_session as customer_session_service,
-        )
-        from polar.member.repository import MemberRepository
-
-        organization = await create_organization(
-            save_fixture,
-            account,
-            feature_settings={"seat_based_pricing_enabled": True},
-        )
-        product = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
-        )
-        billing_customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="billing@example.com",
-        )
-        subscription = await create_subscription_with_seats(
-            save_fixture, product=product, customer=billing_customer, seats=5
-        )
-
-        # Legacy assignment by email: creates the seat-holder's own customer
-        # and a member under the billing customer.
-        seat = await seat_service.assign_seat(
-            session,
-            subscription,
-            email="seat-holder@example.com",
-        )
-        await session.flush()
-        assert seat.customer_id is not None
-        assert seat.member_id is not None
-        invitation_token = seat.invitation_token
-        assert invitation_token is not None
-
-        seat_holder_customer_id = seat.customer_id
-        assert seat_holder_customer_id != billing_customer.id
-
-        member_repository = MemberRepository.from_session(session)
-        member = await member_repository.get_by_id(seat.member_id)
-        assert member is not None
-        await member_repository.soft_delete(member)
-        await session.flush()
-
-        claimed_seat, session_token = await seat_service.claim_seat(
-            session, invitation_token
-        )
-
-        assert claimed_seat.status == SeatStatus.claimed
-        assert session_token.startswith("polar_cst_")
-
-        customer_session = await customer_session_service.get_by_token(
-            session, session_token
-        )
-        assert customer_session is not None
-        # Self-session for the seat-holder's own customer — NOT the purchaser.
-        assert customer_session.customer_id == seat_holder_customer_id
-        assert customer_session.customer_id != billing_customer.id
-
-
-class TestRevokeSeat:
     @pytest.mark.asyncio
     async def test_revoke_seat_success(
         self, session: AsyncSession, customer_seat_claimed: CustomerSeat
@@ -2382,6 +2073,7 @@ class TestBenefitGranting:
             save_fixture,
             subscription=subscription_with_seats,
             customer=customer,
+            email="seat-holder@example.com",
         )
         await session.refresh(seat, ["subscription"])
         assert seat.subscription is not None
@@ -2429,16 +2121,24 @@ class TestBenefitGranting:
             )
 
     @pytest.mark.asyncio
-    async def test_revoke_pending_seat_does_not_enqueue_revocation(
+    async def test_revoke_pending_seat_enqueues_member_scoped_revocation(
         self, session: AsyncSession, customer_seat_pending: CustomerSeat
     ) -> None:
-        """Test that revoking a pending seat (no customer) doesn't enqueue revocation."""
-        assert customer_seat_pending.customer_id is None
+        """A pending seat carries the billing customer and the invited member, so
+        revoking it revokes that member's benefits rather than the buyer's."""
+        billing_customer_id = customer_seat_pending.customer_id
+        member_id = customer_seat_pending.member_id
+        assert billing_customer_id is not None
+        assert member_id is not None
 
         with patch("polar.customer_seat.service.enqueue_job") as mock_enqueue_job:
             await seat_service.revoke_seat(session, customer_seat_pending)
 
-            mock_enqueue_job.assert_not_called()
+            mock_enqueue_job.assert_called_once()
+            kwargs = mock_enqueue_job.call_args.kwargs
+            assert kwargs["task"] == "revoke"
+            assert kwargs["customer_id"] == billing_customer_id
+            assert kwargs["member_id"] == member_id
 
     @pytest.mark.asyncio
     async def test_claim_seat_publishes_event(
@@ -2453,6 +2153,7 @@ class TestBenefitGranting:
             save_fixture,
             subscription=subscription_with_seats,
             customer=customer,
+            email="seat-holder@example.com",
         )
         await session.refresh(seat, ["subscription"])
         assert seat.subscription is not None

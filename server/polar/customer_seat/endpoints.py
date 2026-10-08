@@ -261,7 +261,6 @@ async def get_claim_info(
         raise ResourceNotFound("Organization not found")
 
     # Get customer email with priority: seat.email > seat.member.email > seat.customer.email
-    # This handles both member_model_enabled=True (email on seat) and False (email on customer)
     customer_email = ""
     if seat.email:
         customer_email = seat.email

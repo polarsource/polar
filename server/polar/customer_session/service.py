@@ -48,22 +48,12 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
     ) -> CustomerSession | MemberSession:
         customer = await self._get_customer(session, auth_subject, customer_create)
 
-        feature_settings = customer.organization.feature_settings
-        member_model_enabled = feature_settings.get("member_model_enabled", False)
-
-        if member_model_enabled:
-            member = await self._resolve_member(session, customer, customer_create)
-            token, member_session = await member_session_service.create_member_session(
-                session, member, customer_create.return_url
-            )
-            member_session.raw_token = token
-            return member_session
-
-        token, customer_session = await self.create_customer_session(
-            session, customer, customer_create.return_url
+        member = await self._resolve_member(session, customer, customer_create)
+        token, member_session = await member_session_service.create_member_session(
+            session, member, customer_create.return_url
         )
-        customer_session.raw_token = token
-        return customer_session
+        member_session.raw_token = token
+        return member_session
 
     async def _get_customer(
         self,

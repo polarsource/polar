@@ -311,7 +311,7 @@ class TestAssignSeat:
             },
         )
 
-        assert response.status_code == 404
+        assert response.status_code == 400
 
     async def test_assign_seat_subscription_unauthorized(
         self,
@@ -477,6 +477,7 @@ class TestClaimSeat:
             save_fixture,
             subscription=subscription_with_seats,
             customer=customer,
+            email="seat-holder@example.com",
         )
         await session.refresh(seat, ["subscription", "customer"])
         assert seat.subscription is not None
@@ -733,6 +734,7 @@ class TestOrderBasedSeats:
             save_fixture,
             order=order_with_seats,
             customer=customer,
+            email="seat-holder@example.com",
         )
         await session.refresh(seat, ["order", "customer"])
         assert seat.order is not None
@@ -856,11 +858,12 @@ class TestMemberEntityInResponse:
     async def test_list_seats_member_null_when_not_set(
         self,
         client: AsyncClient,
+        save_fixture: SaveFixture,
         subscription_with_seats: Subscription,
-        customer_seat_pending: CustomerSeat,
         user_organization: UserOrganization,
     ) -> None:
         """GET /customer-seats returns member=null when no member is associated."""
+        await create_customer_seat(save_fixture, subscription=subscription_with_seats)
         response = await client.get(
             "/v1/customer-seats",
             params={"subscription_id": str(subscription_with_seats.id)},

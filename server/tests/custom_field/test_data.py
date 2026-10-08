@@ -66,7 +66,8 @@ async def custom_field_data_schema(
         pytest.param({"number1": 123, "select1": "c"}, id="missing required"),
     ],
 )
-def test_invalid_input(
+@pytest.mark.anyio
+async def test_invalid_input(
     input: dict[str, typing.Any], custom_field_data_schema: type[BaseModel]
 ) -> None:
     with pytest.raises(ValidationError):
@@ -82,7 +83,8 @@ def test_invalid_input(
         ),
     ],
 )
-def test_valid_input(
+@pytest.mark.anyio
+async def test_valid_input(
     input: dict[str, typing.Any], custom_field_data_schema: type[BaseModel]
 ) -> None:
     data = custom_field_data_schema.model_validate(input)

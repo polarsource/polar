@@ -68,6 +68,26 @@ const valueAt = (input: unknown, path: Path): unknown =>
 const supplied = (config: LoadedConfig, path: Path, input: unknown) =>
   input === null ? valueAt(config.input, path) === null : input !== undefined
 
+const externalIdOf = (input: unknown, path: Path) => {
+  const entry = valueAt(input, path)
+  const externalId =
+    typeof entry === 'object' && entry !== null && 'external_id' in entry
+      ? entry.external_id
+      : undefined
+  return typeof externalId === 'string' && externalId !== ''
+    ? externalId
+    : undefined
+}
+
+const readablePath = (config: LoadedConfig, path: Path) =>
+  path
+    .map((segment, index) =>
+      index === 1 && typeof segment === 'number'
+        ? (externalIdOf(config.input, path.slice(0, 2)) ?? segment)
+        : segment,
+    )
+    .join('.')
+
 const issue = (
   config: LoadedConfig,
   error: typeof ServerError.Type,
@@ -80,14 +100,16 @@ const issue = (
   return {
     severity: error.severity ?? 'error',
     code: error.type,
-    path: path.join('.'),
+    path: readablePath(config, path),
     message: tag ? `Input should be ${tag.expected}` : error.msg,
     got: got === undefined ? undefined : JSON.stringify(got),
-    location: locate(
-      config.source,
-      path,
-      KEY_ISSUES.has(error.type) ? 'key' : 'value',
-    ),
+    location: config.generated
+      ? undefined
+      : locate(
+          config.source,
+          path,
+          KEY_ISSUES.has(error.type) ? 'key' : 'value',
+        ),
   }
 }
 

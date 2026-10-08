@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { BunServices } from '@effect/platform-bun'
 import { Effect, FileSystem } from 'effect'
-import { loader } from '@/services/billing-config/load'
+import { loadFailure, loader } from '@/services/billing-config/load'
 
 const source = [
   '{',
@@ -125,9 +125,36 @@ describe('load', () => {
     expect(error.message).toContain('is not valid JSON')
   })
 
-  test('fails when the file cannot be read', async () => {
-    const error = await failure(load(join(directory, 'missing.json')))
-    expect(error.message).toContain('Could not read')
+  test('says when the file does not exist', async () => {
+    const error = await failure(load(join(directory, 'missing.ts')))
+    expect(error.message).toBe(
+      `${join(directory, 'missing.ts')} does not exist`,
+    )
+    expect(error.hint).toBeUndefined()
+  })
+
+  test('points at the line of a syntax error', () => {
+    const bunBuildMessage = Object.assign(new Error('Unexpected end of file'), {
+      position: { line: 2, column: 12, lineText: '  meters: (' },
+    })
+    const error = loadFailure('broken.ts', bunBuildMessage)
+    expect(error.message).toBe('Could not parse broken.ts:2:12')
+    expect(error.hint).toBe('Unexpected end of file')
+  })
+
+  test('tells you to install a package the script imports', async () => {
+    const error = await failure(
+      load(
+        await write(
+          "import { defineConfig } from '@polar-sh/nope'\nexport default defineConfig({})",
+          'polar.config.ts',
+        ),
+      ),
+    )
+    expect(error.message).toContain('Could not load')
+    expect(error.hint).toBe(
+      'It imports @polar-sh/nope, which is not installed. Run npm install @polar-sh/nope.',
+    )
   })
 })
 

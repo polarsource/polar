@@ -429,13 +429,13 @@ describe('destructive flags', () => {
 describe('organization resolution', () => {
   const root = Command.make('polar').pipe(Command.withSubcommands(commands))
   const production = {
-    id: 'org-production',
+    id: '00000000-0000-4000-8000-00000000aa01',
     name: 'Production',
     slug: 'production',
     environment: 'production' as const,
   }
   const sandbox = {
-    id: 'org-sandbox',
+    id: '00000000-0000-4000-8000-00000000aa02',
     name: 'Sandbox',
     slug: 'sandbox',
     environment: 'sandbox' as const,
@@ -539,10 +539,23 @@ describe('organization resolution', () => {
   )
 
   test.each([
-    { args: ['--org=org-sandbox'], selection: production },
-    { args: ['-d', '{"organization_id":"org-sandbox"}'], selection: undefined },
     {
-      args: ['-d', '{"organization_id":"org-production"}', '--org=org-sandbox'],
+      args: ['--org=00000000-0000-4000-8000-00000000aa02'],
+      selection: production,
+    },
+    {
+      args: [
+        '-d',
+        '{"organization_id":"00000000-0000-4000-8000-00000000aa02"}',
+      ],
+      selection: undefined,
+    },
+    {
+      args: [
+        '-d',
+        '{"organization_id":"00000000-0000-4000-8000-00000000aa01"}',
+        '--org=00000000-0000-4000-8000-00000000aa02',
+      ],
       selection: production,
     },
   ])(
@@ -555,7 +568,7 @@ describe('organization resolution', () => {
       expect(url.searchParams.getAll('organization_id')).toEqual([sandbox.id])
       expect(requests).toHaveLength(2)
       expect(new URL(requests[0]!.url).pathname).toBe(
-        '/v1/organizations/org-sandbox',
+        '/v1/organizations/00000000-0000-4000-8000-00000000aa02',
       )
       expect(requests.map(scope)).toEqual([sandbox.id, sandbox.id])
       expect(config.state.activeOrganization).toEqual(selection)
@@ -564,22 +577,35 @@ describe('organization resolution', () => {
   )
 
   test('repeated organization flags filter by every organization without scoping to one', async () => {
-    organizations.push({ ...production, id: 'org-other' })
-    await run(['products', 'list', '--org=org-production', '--org=org-other'])
-      .promise
+    organizations.push({
+      ...production,
+      id: '00000000-0000-4000-8000-00000000aa03',
+    })
+    await run([
+      'products',
+      'list',
+      '--org=00000000-0000-4000-8000-00000000aa01',
+      '--org=00000000-0000-4000-8000-00000000aa03',
+    ]).promise
     const url = new URL(requests.at(-1)!.url)
     expect(url.hostname).toBe('api.polar.sh')
     expect(url.searchParams.getAll('organization_id')).toEqual([
       production.id,
-      'org-other',
+      '00000000-0000-4000-8000-00000000aa03',
     ])
     expect(scope(requests.at(-1)!)).toBeNull()
   })
 
   test.each([
-    { args: ['--org=org-sandbox'], organization: sandbox },
     {
-      args: ['-d', '{"organization_id":"org-sandbox"}'],
+      args: ['--org=00000000-0000-4000-8000-00000000aa02'],
+      organization: sandbox,
+    },
+    {
+      args: [
+        '-d',
+        '{"organization_id":"00000000-0000-4000-8000-00000000aa02"}',
+      ],
       organization: sandbox,
     },
     { args: ['-d', '{"organization_id":null}'], organization: production },
@@ -612,7 +638,7 @@ describe('organization resolution', () => {
         new URL(request.url).pathname,
       ]),
     ).toEqual([
-      ['GET', '/v1/organizations/org-production'],
+      ['GET', '/v1/organizations/00000000-0000-4000-8000-00000000aa01'],
       ['GET', '/v1/products/product-1'],
       ['PATCH', '/v1/products/product-1'],
     ])
@@ -646,7 +672,7 @@ describe('organization resolution', () => {
     )
     expect(requests).toHaveLength(1)
     expect(new URL(requests[0]!.url).pathname).toBe(
-      '/v1/organizations/org-production',
+      '/v1/organizations/00000000-0000-4000-8000-00000000aa01',
     )
     expect(config.state.activeOrganization).toEqual(production)
   })

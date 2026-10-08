@@ -148,7 +148,7 @@ describe('apply', () => {
         {
           severity: 'error',
           code: 'enum',
-          path: 'meters.0.filter.conjunction',
+          path: 'meters.tool-calls.filter.conjunction',
           message: "Input should be 'and' or 'or'",
           got: '"qwe"',
           location: { line: 5, column: 34, length: 5 },
@@ -156,7 +156,7 @@ describe('apply', () => {
         {
           severity: 'error',
           code: 'missing',
-          path: 'meters.0.name',
+          path: 'meters.tool-calls.name',
           message: 'Field required',
           got: undefined,
           location: { line: 3, column: 5, length: 1 },
@@ -196,8 +196,8 @@ describe('apply', () => {
     expect(
       result.issues.map((issue) => [issue.severity, issue.code, issue.path]),
     ).toEqual([
-      ['error', 'duplicate_external_id', 'meters.0.external_id'],
-      ['warning', 'unknown_event', 'meters.0.filter.clauses.0.value'],
+      ['error', 'duplicate_external_id', 'meters.tool-calls.external_id'],
+      ['warning', 'unknown_event', 'meters.tool-calls.filter.clauses.0.value'],
     ])
   })
 

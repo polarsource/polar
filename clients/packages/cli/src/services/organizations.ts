@@ -23,6 +23,9 @@ export class Organizations extends Context.Service<
   }
 >()('Organizations') {}
 
+const isUuid = (value: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
+
 export const layer = Layer.effect(
   Organizations,
   Effect.gen(function* () {
@@ -70,23 +73,44 @@ export const layer = Layer.effect(
           environment,
         }),
       )
-    const find = (id: string) =>
+    const getBySlug = (slug: string, environment: PolarEnvironment) =>
       Effect.gen(function* () {
+        const response = yield* polar.use(
+          (client) => client.organizations.list({ slug, limit: 1 }),
+          environment,
+        )
+        const organization = response.items[0]
+        if (organization === undefined) {
+          return yield* new AuthError({
+            message: `No organization with the slug ${slug} in ${environment}.`,
+          })
+        }
+        return {
+          id: organization.id,
+          name: organization.name,
+          slug: organization.slug,
+          environment,
+        }
+      })
+    const find = (reference: string) =>
+      Effect.gen(function* () {
+        const lookup = isUuid(reference) ? get : getBySlug
         const available = yield* auth.environments
         if (available.length === 0) {
           return yield* new AuthError({
             message: 'Not logged in. Run polar auth login.',
           })
         }
-        if (available.length === 1) return yield* get(id, available[0]!)
+        if (available.length === 1)
+          return yield* lookup(reference, available[0]!)
         for (const environment of available) {
-          const found = yield* get(id, environment).pipe(
+          const found = yield* lookup(reference, environment).pipe(
             Effect.orElseSucceed(() => undefined),
           )
           if (found) return found
         }
         return yield* new AuthError({
-          message: `Organization ${id} is missing or inaccessible in ${available.join(' and ')}. Check --org or run polar auth list.`,
+          message: `Organization ${reference} is missing or inaccessible in ${available.join(' and ')}. Check --org or run polar auth list.`,
         })
       })
     return Organizations.of({

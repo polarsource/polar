@@ -1,5 +1,5 @@
 import { Duration, Effect, Option } from 'effect'
-import { Argument, Command } from 'effect/cli'
+import { Command } from 'effect/cli'
 import {
   BillingConfigError,
   type ConfigIssue,
@@ -12,16 +12,9 @@ import { Organizations } from '@/services/organizations'
 import { PLANNED, formatEntries } from '@/utils/billing-config/entries'
 import { formatProblems, plural } from '@/utils/billing-config/problems'
 import { output } from '@/utils/command'
-import { org } from '@/utils/flags'
+import { configFile as file, org } from '@/utils/flags'
 import { withProgress } from '@/utils/progress'
 import * as ui from '@/utils/ui'
-
-const file = Argument.String('file').pipe(
-  Argument.withDescription(
-    'Path to the billing config file. Defaults to polar.config.ts, polar.config.js or polar.json in the current directory',
-  ),
-  Argument.optional,
-)
 
 const count = (
   issues: ReadonlyArray<ConfigIssue>,
@@ -45,6 +38,24 @@ export const plan = Command.make('plan', { file, org }).pipe(
   Command.withDescription(
     'Show what applying a billing config file would change, without applying it',
   ),
+  Command.withExamples([
+    {
+      command: 'polar config plan',
+      description: 'Check polar.config.ts in the current directory',
+    },
+    {
+      command: 'polar config plan billing/polar.json',
+      description: 'Check a specific file',
+    },
+    {
+      command: 'polar config plan --org acme',
+      description: 'Check against another organization, by slug or ID',
+    },
+    {
+      command: 'polar config plan --json',
+      description: 'Print the changes and issues as JSON',
+    },
+  ]),
   output({
     result: PlanOutput,
     run: ({ file, org }) =>

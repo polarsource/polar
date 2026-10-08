@@ -110,7 +110,7 @@ describe('plan', () => {
       {
         severity: 'warning',
         code: 'unknown_event',
-        path: 'meters.0.filter.clauses.0.value',
+        path: 'meters.tool-calls.filter.clauses.0.value',
         message: 'No events with this name have been received yet.',
         got: '"tool_call"',
         location: { line: 5, column: 52, length: 2 },

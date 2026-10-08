@@ -1,9 +1,9 @@
 import { Duration, Effect, Option } from 'effect'
-import { Argument, Command } from 'effect/cli'
+import { Command } from 'effect/cli'
 import { DONE, formatEntries, tally } from '@/utils/billing-config/entries'
 import { formatProblems, plural } from '@/utils/billing-config/problems'
 import { output } from '@/utils/command'
-import { org } from '@/utils/flags'
+import { configFile as file, org } from '@/utils/flags'
 import {
   type AppliedEntry,
   type ApplyResult,
@@ -16,20 +16,15 @@ import { Organizations } from '@/services/organizations'
 import { withProgress } from '@/utils/progress'
 import * as ui from '@/utils/ui'
 
-const file = Argument.String('file').pipe(
-  Argument.withDescription(
-    'Path to the billing config file. Defaults to polar.config.ts, polar.config.js or polar.json in the current directory',
-  ),
-  Argument.optional,
-)
-
 export const applied = (
   config: LoadedConfig,
   entries: ReadonlyArray<AppliedEntry>,
 ) =>
-  ui.success(
-    `${config.file} applied: ${plural(entries.length, 'entry', 'entries')} (${tally(entries)})`,
-  )
+  entries.every((entry) => entry.action === 'unchanged')
+    ? ui.success(`${config.file} is up to date, nothing to apply`)
+    : ui.success(
+        `${config.file} applied: ${plural(entries.length, 'entry', 'entries')} (${tally(entries)})`,
+      )
 
 const render = (config: LoadedConfig, result: ApplyResult) =>
   result.status === 'rejected'
@@ -51,6 +46,24 @@ export const apply = Command.make('apply', { file, org }).pipe(
   Command.withDescription(
     'Create or update everything in a billing config file for your organization',
   ),
+  Command.withExamples([
+    {
+      command: 'polar config apply',
+      description: 'Apply polar.config.ts in the current directory',
+    },
+    {
+      command: 'polar config apply billing/polar.json',
+      description: 'Apply a specific file',
+    },
+    {
+      command: 'polar config apply --org acme',
+      description: 'Apply to another organization, by slug or ID',
+    },
+    {
+      command: 'polar config apply --json',
+      description: 'Print what was applied as JSON, for scripts and agents',
+    },
+  ]),
   output({
     result: ApplyOutput,
     run: ({ file, org }) =>

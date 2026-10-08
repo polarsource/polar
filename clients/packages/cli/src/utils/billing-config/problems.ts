@@ -15,6 +15,7 @@ interface Problem {
   readonly label: string
   readonly help?: string | undefined
   readonly location?: SourceLocation | undefined
+  readonly path: string
 }
 
 const lowercaseFirst = (text: string) =>
@@ -35,18 +36,24 @@ const describe = (issue: ConfigIssue): Problem => {
     return {
       mark: ui.bold(ui.yellow('Warning:')),
       color: ui.yellow,
-      title: issue.message,
+      title:
+        issue.code === 'unknown_event' && issue.got !== undefined
+          ? `No events named ${issue.got} have been received yet`
+          : issue.message,
       label:
         issue.code === 'unknown_event'
           ? 'no events with this name yet'
           : lowercaseFirst(issue.message),
       location: issue.location,
+      path: issue.path,
     }
   }
   const base = {
     mark: ui.bold(ui.red('Error:')),
     color: ui.red,
     location: issue.location,
+    path: issue.path,
+    help: issue.location ? undefined : issue.got && `Got ${issue.got}.`,
   }
   const message = issue.message.replace(/^Value error, /, '')
   const label = lowercaseFirst(message).replace(
@@ -100,13 +107,17 @@ const render = (config: LoadedConfig, problem: Problem) =>
     ...(problem.location
       ? [
           ui.codeFrame(config.source, {
-            file: config.generated ? `${config.file} as JSON` : config.file,
+            file: config.file,
             location: problem.location,
             label: problem.label,
             color: problem.color,
           }),
         ]
-      : []),
+      : problem.path
+        ? [
+            `${ui.INDENT}${ui.INDENT}${ui.dim('at')} ${config.file} ${ui.dim('›')} ${problem.path}`,
+          ]
+        : []),
     ...(problem.help ? [`${ui.INDENT}${ui.dim('help:')} ${problem.help}`] : []),
   ].join('\n')
 

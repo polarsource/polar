@@ -3,6 +3,9 @@ import { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Brand',
+  alternates: {
+    canonical: 'https://polar.sh/brand',
+  },
   description:
     'The Polar brand system: logo, color, typography, illustration, voice and marketing.',
   openGraph: {

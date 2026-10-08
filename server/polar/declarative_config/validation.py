@@ -261,6 +261,16 @@ def unknown_custom_fields(
     return issues
 
 
+def product_benefits(
+    product: Product, benefit_external_ids: dict[str, str]
+) -> list[str]:
+    return [
+        benefit_external_ids[benefit_id]
+        for product_benefit in product.product_benefits
+        if (benefit_id := str(product_benefit.benefit_id)) in benefit_external_ids
+    ]
+
+
 def product_custom_fields(product: Product) -> list[dict[str, Any]]:
     return [
         {"slug": attached.custom_field.slug, "required": attached.required}
@@ -703,22 +713,18 @@ async def diff_products(
             changes.append(ProductChange(index, product_config, None, create_dict))
             continue
         prices = [price_config(price, meter_external_ids) for price in product.prices]
-        product_benefits = [
-            benefit_external_ids[benefit_id]
-            for product_benefit in product.product_benefits
-            if (benefit_id := str(product_benefit.benefit_id)) in benefit_external_ids
-        ]
+        managed_benefits = product_benefits(product, benefit_external_ids)
         changes.append(
             ProductChange(
                 index,
                 product_config,
                 product,
                 _get_product_update_dict(
-                    product, product_config, prices, product_benefits
+                    product, product_config, prices, managed_benefits
                 ),
                 {
                     "prices": [price for price in prices if price is not None],
-                    "benefits": product_benefits,
+                    "benefits": managed_benefits,
                     "custom_fields": product_custom_fields(product),
                 },
             )

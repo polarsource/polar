@@ -769,7 +769,7 @@ class TestExport:
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_skipped_benefits_and_products(
+    async def test_skipped_and_partial_products(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,

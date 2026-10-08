@@ -29,6 +29,7 @@ from .validation import (
     BENEFIT_PROPERTIES,
     benefit_properties,
     price_config,
+    product_benefits,
     product_custom_fields,
 )
 
@@ -172,11 +173,7 @@ def _product_document(
             )
             else ConfigSkippedReason.not_supported
         )
-    benefits = [
-        benefit_external_ids[benefit_id]
-        for product_benefit in product.product_benefits
-        if (benefit_id := str(product_benefit.benefit_id)) in benefit_external_ids
-    ]
+    benefits = product_benefits(product, benefit_external_ids)
     return {
         "external_id": product.external_id,
         "name": product.name,

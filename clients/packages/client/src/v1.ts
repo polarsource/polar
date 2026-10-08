@@ -6085,7 +6085,8 @@ export interface paths {
      *
      *     Meters, benefits and products are matched by `external_id`: missing ones are
      *     created, changed ones are updated, and ones not listed are left untouched.
-     *     Everything is applied in one transaction.
+     *     Everything is applied in one transaction. A product's `benefits` only
+     *     attaches and detaches benefits declared in the config; others stay attached.
      *
      *     A `benefits` section also requires the `benefits:write` scope, and a
      *     `products` section the `products:write` scope.

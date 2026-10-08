@@ -5692,7 +5692,8 @@ export interface paths {
      * @description Create a customer session.
      *
      *     This creates a member session: for the member given by `member_id` or
-     *     `external_member_id`, or for the owner member of the customer otherwise.
+     *     `external_member_id`, or for the owner member otherwise. Team customers
+     *     must name a member.
      *
      *     **Scopes**: `customer_sessions:write`
      */
@@ -19823,7 +19824,7 @@ export interface components {
     CustomerSessionCustomerExternalIDCreate: {
       /**
        * Member Id
-       * @description ID of the member to create a session for. When not provided, the owner member of the customer is used.
+       * @description ID of the member to create a session for. When not set, individual customers fall back to their owner member; team customers must set one.
        */
       member_id?: string | null
       /**
@@ -19850,7 +19851,7 @@ export interface components {
     CustomerSessionCustomerIDCreate: {
       /**
        * Member Id
-       * @description ID of the member to create a session for. When not provided, the owner member of the customer is used.
+       * @description ID of the member to create a session for. When not set, individual customers fall back to their owner member; team customers must set one.
        */
       member_id?: string | null
       /**

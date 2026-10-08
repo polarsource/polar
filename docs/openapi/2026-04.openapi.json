@@ -22022,7 +22022,7 @@
           "public"
         ],
         "summary": "Create Customer Session",
-        "description": "Create a customer session.\n\nThis creates a member session: for the member given by `member_id` or\n`external_member_id`, or for the owner member of the customer otherwise.\n\n**Scopes**: `customer_sessions:write`",
+        "description": "Create a customer session.\n\nThis creates a member session: for the member given by `member_id` or\n`external_member_id`, or for the owner member otherwise. Team customers\nmust name a member.\n\n**Scopes**: `customer_sessions:write`",
         "operationId": "customer-sessions:create",
         "requestBody": {
           "content": {
@@ -51136,7 +51136,7 @@
               }
             ],
             "title": "Member Id",
-            "description": "ID of the member to create a session for. When not provided, the owner member of the customer is used."
+            "description": "ID of the member to create a session for. When not set, individual customers fall back to their owner member; team customers must set one."
           },
           "external_member_id": {
             "anyOf": [
@@ -51194,7 +51194,7 @@
               }
             ],
             "title": "Member Id",
-            "description": "ID of the member to create a session for. When not provided, the owner member of the customer is used."
+            "description": "ID of the member to create a session for. When not set, individual customers fall back to their owner member; team customers must set one."
           },
           "external_member_id": {
             "anyOf": [

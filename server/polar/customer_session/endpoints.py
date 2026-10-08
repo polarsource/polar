@@ -42,7 +42,8 @@ async def create(
     Create a customer session.
 
     This creates a member session: for the member given by `member_id` or
-    `external_member_id`, or for the owner member of the customer otherwise.
+    `external_member_id`, or for the owner member otherwise. Team customers
+    must name a member.
     """
     return await customer_session_service.create(
         session, auth_subject, customer_session_create

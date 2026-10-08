@@ -14,7 +14,8 @@ class CustomerSessionCreateBase(Schema):
         Field(
             description=(
                 "ID of the member to create a session for. "
-                "When not provided, the owner member of the customer is used."
+                "When not set, individual customers fall back to their owner "
+                "member; team customers must set one."
             ),
         ),
     ] = None

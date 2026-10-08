@@ -337,6 +337,11 @@ class ProductService:
             session, auth_subject, product, OrganizationPermission.products_manage
         )
 
+        # Serialize concurrent updates of the same product, e.g. two requests
+        # replacing the medias at the same time would violate the
+        # (product_id, order) unique constraint.
+        product = await ProductRepository.from_session(session).lock_for_update(product)
+
         errors: list[ValidationError] = []
 
         if (

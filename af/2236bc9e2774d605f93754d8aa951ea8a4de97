@@ -1,0 +1,38 @@
+server/polar/event/service.py
+  s_d3ae8d5cd7c768::t_7ecf0cc914daef 902-903,1000,1002-1008,1010,1012-1013,1017-1018,1021
+  h_cc2173b7b86bcc 999,1001
+server/polar/reducer_bucket/service.py
+  s_d3ae8d5cd7c768::t_354427fe0c7512 13,50,62-63,66,73,78-79,82,87,133,141,148-151,153-159
+server/tests/event/test_ancestors.py
+  s_d3ae8d5cd7c768::t_4224aa44036288 202
+server/polar/reducer/repository.py
+  s_d3ae8d5cd7c768::t_354427fe0c7512 66-67,69,76
+server/polar/event/endpoints.py
+  s_d3ae8d5cd7c768::t_aa809d42d1fb41 624,646
+server/tests/event/test_service.py
+  s_d3ae8d5cd7c768::t_7c54075ea4d52c 993-995
+  s_d3ae8d5cd7c768::t_4224aa44036288 683,710,754,781,811,902,953-954,1032,1068,1091,1113,1154,1200,1218,1375,1402,1433,1452,1475,1490,1493,1511-1512,1515,1528,1531,1550,1563-1564,1567,1600
+server/tests/reducer_bucket/test_service.py
+  s_d3ae8d5cd7c768::t_be3df5dc56b7cc 132,158,180,184
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "af2236bc9e2774d605f93754d8aa951ea8a4de97",
+  "prompts": {},
+  "humans": {
+    "h_cc2173b7b86bcc": {
+      "author": "Joel Bonander <joel@polar.sh>"
+    }
+  },
+  "sessions": {
+    "s_d3ae8d5cd7c768": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4463dab5-4038-442a-9aac-220e3dda6930",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

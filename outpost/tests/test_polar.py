@@ -11,7 +11,13 @@ from starlette.websockets import WebSocket
 from outpost.polar import Configuration, Snapshots, listen
 from outpost.storage.memory import MemoryStorage
 
-from .conftest import POLAR_REDUCERS, polar_app, polar_snapshot, polar_websocket
+from .conftest import (
+    POLAR_REDUCERS,
+    POLAR_SNAPSHOT_REQUESTS,
+    polar_app,
+    polar_snapshot,
+    polar_websocket,
+)
 
 
 def test_configuration_skips_unsupported_reducers() -> None:
@@ -108,3 +114,34 @@ async def test_listen_applies_snapshots() -> None:
         "credited": polar_snapshot("customer")["credited"],
         "buckets": {},
     }
+
+
+@pytest.mark.anyio
+async def test_snapshots_read_requests_an_expired_snapshot() -> None:
+    configuration = Configuration()
+    snapshots = Snapshots()
+    storage = MemoryStorage()
+    async with (
+        AsyncClient(
+            base_url="http://polar", transport=ASGIWebSocketTransport(polar_app)
+        ) as client,
+        anyio.create_task_group() as tg,
+    ):
+        tg.start_soon(listen, client, configuration, snapshots, storage)
+        with anyio.fail_after(5):
+            await configuration.ready.wait()
+            await snapshots.read(storage, "customer", timeout=5)
+            storage.snapshots.clear()
+            customer = await snapshots.read(storage, "customer", timeout=5)
+        tg.cancel_scope.cancel()
+
+    assert customer is not None
+    assert customer["cold"] == polar_snapshot("customer")["cold"]
+    assert POLAR_SNAPSHOT_REQUESTS.count("customer") == 2
+
+
+@pytest.mark.anyio
+async def test_snapshots_read_times_out() -> None:
+    snapshots = Snapshots()
+
+    assert await snapshots.read(MemoryStorage(), "customer", timeout=0.01) is None

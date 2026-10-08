@@ -94,13 +94,12 @@ async def customer_meters(request: Request) -> Response:
         if reducer is None:
             return JSONResponse({"items": []})
 
-        warm = state["snapshots"].warm_up(external_customer_id)
-        with anyio.move_on_after(SNAPSHOT_TIMEOUT):
-            await warm.wait()
-        if not warm.is_set():
+        customer = await state["snapshots"].read(
+            state["storage"], external_customer_id, timeout=SNAPSHOT_TIMEOUT
+        )
+        if customer is None:
             return Response(status_code=504)
 
-        customer = await state["storage"].read(external_customer_id)
         consumed = get_consumed(reducer, customer)
         credited = customer["credited"].get(meter_id, 0)
         return JSONResponse(

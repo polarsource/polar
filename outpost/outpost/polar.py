@@ -8,7 +8,13 @@ from pydantic import TypeAdapter, ValidationError
 
 from outpost.env import Environment
 from outpost.logging import get_logger
-from outpost.reducer import EventMatcher, Reducer, Snapshot, get_matcher
+from outpost.reducer import (
+    CustomerState,
+    EventMatcher,
+    Reducer,
+    Snapshot,
+    get_matcher,
+)
 from outpost.storage import Storage
 
 log = get_logger(__name__)
@@ -58,6 +64,21 @@ class Snapshots:
             warm = self.warm[external_customer_id] = anyio.Event()
             self.requests.send_nowait(external_customer_id)
         return warm
+
+    async def read(
+        self, storage: Storage, external_customer_id: str, *, timeout: float
+    ) -> CustomerState | None:
+        for _ in range(2):
+            warm = self.warm_up(external_customer_id)
+            with anyio.move_on_after(timeout):
+                await warm.wait()
+            if not warm.is_set():
+                return None
+            customer = await storage.read(external_customer_id)
+            if customer["cold_until"] is not None:
+                return customer
+            del self.warm[external_customer_id]
+        return None
 
     async def apply(self, storage: Storage, payload: typing.Any) -> None:
         snapshot = SnapshotAdapter.validate_python(payload)

@@ -8,7 +8,9 @@ export type {
   RequestOptions,
 } from './sdk'
 
-export type { BenefitAccess, EventMetadata, MeterBalance } from './client/actor'
+export { EventValidationError } from './client/actor'
+export type { BenefitAccess, MeterBalance } from './client/actor'
+export type { EventMetadata } from './schema/event'
 
 export { RuntimeSDK } from './runtime'
 export type { RuntimeConnection } from './runtime'

@@ -168,7 +168,7 @@ export const DesignPartnerForm = () => {
           id="industry"
           value={form.industry}
           onChange={(e) => set('industry')(e.target.value)}
-          placeholder="e.g. SaaS, Fintech, Healthcare"
+          placeholder="e.g. SaaS, Fintech"
         />
       </Field>
 

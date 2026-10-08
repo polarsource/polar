@@ -2,6 +2,13 @@ import { Schema } from 'effect'
 import { runtimeConfig, type RuntimeBenefitConfig } from './runtime'
 import { BenefitConfig, flag, credits } from './benefit'
 import type { BenefitDefinition, BenefitHelpers } from './benefit'
+import {
+  createEventReferences,
+  type EventDefinitions,
+  type EventReferences,
+  type EventSchemas,
+  type ValidEvents,
+} from './event'
 import { meter, MeterConfig } from './meter'
 import type { MeterDefinition } from './meter'
 import { fixed, free, metered, seats, tier, units } from './price'
@@ -91,6 +98,9 @@ type BenefitKey<Benefits extends BenefitEntries> =
     ? Key & string
     : keyof Benefits & string
 
+type DeclaredEvents<Events extends EventDefinitions | undefined> =
+  Events extends EventDefinitions ? Events : Record<never, never>
+
 type ProductEntries<
   Meter extends string = string,
   Benefit extends string = string,
@@ -103,19 +113,23 @@ type ProductEntries<
 type ConnectedConfig<
   Meters extends MeterEntries,
   Benefits extends BenefitEntries,
+  Events extends EventDefinitions | undefined,
 > = {
   readonly meters: Readonly<Record<MeterKey<Meters>, MeterConfig>>
   readonly benefits: Readonly<
     Record<BenefitKey<Benefits>, BenefitConfig & RuntimeBenefitConfig>
   >
-}
+} & (Events extends EventDefinitions
+  ? { readonly events: Extract<Events, EventSchemas> }
+  : unknown)
 
 export interface Config<
   Meters extends MeterEntries = MeterEntries,
   Benefits extends BenefitEntries = BenefitEntries,
+  Events extends EventDefinitions | undefined = undefined,
 > {
   readonly toJSON: () => PolarConfig
-  readonly [runtimeConfig]: () => ConnectedConfig<Meters, Benefits>
+  readonly [runtimeConfig]: () => ConnectedConfig<Meters, Benefits, Events>
 }
 
 const byExternalId = <Resource extends { readonly external_id: string }>(
@@ -143,14 +157,26 @@ export const defineConfig = <
     MeterKey<Meters>,
     BenefitKey<Benefits>
   > = never,
+  Events extends EventDefinitions | undefined = undefined,
 >(input: {
-  readonly meters: (helpers: { readonly meter: typeof meter }) => Meters
+  readonly events?: Events &
+    (Events extends EventDefinitions ? ValidEvents<Events> : unknown)
+  readonly meters: (helpers: {
+    readonly meter: typeof meter<DeclaredEvents<Events>>
+    readonly events: EventReferences<DeclaredEvents<Events>>
+  }) => Meters
   readonly benefits?: (helpers: BenefitHelpers<MeterKey<Meters>>) => Benefits
   readonly products?: (
     helpers: ProductHelpers<MeterKey<Meters>, BenefitKey<Benefits>>,
   ) => Products
-}): Config<Meters, Benefits> => {
-  const entries = toEntries(input.meters({ meter }))
+}): Config<Meters, Benefits, Events> => {
+  const events = input.events as Events
+  const entries = toEntries(
+    input.meters({
+      meter: meter<DeclaredEvents<Events>>,
+      events: createEventReferences((events ?? {}) as DeclaredEvents<Events>),
+    }),
+  )
   const meterIds = new Set(entries.map(([external_id]) => external_id))
   const benefits = input.benefits?.({ flag, credits })
   const benefitEntries =
@@ -221,17 +247,14 @@ export const defineConfig = <
     }),
   })
 
+  type Connected = ConnectedConfig<Meters, Benefits, Events>
   return {
     toJSON: () => structuredClone(config),
-    [runtimeConfig]: () => ({
-      meters: byExternalId('meter', config.meters) as ConnectedConfig<
-        Meters,
-        Benefits
-      >['meters'],
-      benefits: byExternalId(
-        'benefit',
-        config.benefits ?? [],
-      ) as ConnectedConfig<Meters, Benefits>['benefits'],
-    }),
+    [runtimeConfig]: () =>
+      ({
+        ...(events !== undefined && { events }),
+        meters: byExternalId('meter', config.meters),
+        benefits: byExternalId('benefit', config.benefits ?? []),
+      }) as Connected,
   }
 }

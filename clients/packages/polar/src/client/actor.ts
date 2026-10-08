@@ -1,3 +1,5 @@
+import type { StandardSchemaV1 } from '@standard-schema/spec'
+import { Data, Predicate } from 'effect'
 import { getCustomerMeter } from '../internal/api/customer-meters'
 import { ingestEvent } from '../internal/api/events'
 import {
@@ -10,7 +12,8 @@ import type {
   CustomerIdentifier,
   MemberIdentifier,
 } from '../internal/api/utils'
-import type { RuntimeSDKConfig } from '../schema/runtime'
+import type { EventInput, EventMetadata, EventSchema } from '../schema/event'
+import type { EventConfig, RuntimeSDKConfig } from '../schema/runtime'
 import type { models, Polar } from '../sdk'
 
 export type MeterBalance = {
@@ -21,8 +24,6 @@ export type MeterBalance = {
 export type BenefitAccess =
   | { granted: true; metadata: models.MetadataOutputType }
   | { granted: false }
-
-export type EventMetadata = models.EventMetadataInput
 
 type BenefitName<Config extends RuntimeSDKConfig> = keyof NonNullable<
   Config['benefits']
@@ -37,6 +38,43 @@ type EventName<Config extends RuntimeSDKConfig> = Config extends {
 }
   ? keyof Events & string
   : string
+
+type TrackArguments<
+  Config extends RuntimeSDKConfig,
+  Name extends string,
+> = Config extends { readonly events: infer Events }
+  ? Events[Name & keyof Events] extends infer Event extends EventSchema
+    ? Partial<EventInput<Event>> extends EventInput<Event>
+      ? [metadata?: EventInput<Event>]
+      : [metadata: EventInput<Event>]
+    : [metadata?: EventMetadata]
+  : [metadata?: EventMetadata]
+
+const formatPath = (path: StandardSchemaV1.Issue['path']) =>
+  path
+    ?.map((segment) => {
+      const key = typeof segment === 'object' ? segment.key : segment
+      return `[${typeof key === 'string' ? JSON.stringify(key) : String(key)}]`
+    })
+    .join('')
+
+export class EventValidationError extends Data.TaggedError(
+  'EventValidationError',
+)<{
+  readonly event: string
+  readonly issues: readonly StandardSchemaV1.Issue[]
+}> {
+  override get message() {
+    const issues = this.issues.map((issue) => {
+      const path = formatPath(issue.path)
+      return path ? `${issue.message}\n  at ${path}` : issue.message
+    })
+    return [`Invalid metadata for event "${this.event}"`, ...issues].join('\n')
+  }
+}
+
+const isEventSchema = (event: EventConfig): event is EventSchema =>
+  Predicate.hasProperty(event, '~standard')
 
 type ActorCustomerIdentifier =
   | { externalCustomerId: string; customerId?: never }
@@ -53,7 +91,10 @@ export type Actor<Config extends RuntimeSDKConfig> = (
 ) => {
   access: (name: BenefitName<Config>) => Promise<BenefitAccess>
   balance: (name: MeterName<Config>) => Promise<MeterBalance>
-  track: (name: EventName<Config>, metadata?: EventMetadata) => Promise<void>
+  track: <Name extends EventName<Config>>(
+    name: Name,
+    ...args: TrackArguments<Config, Name>
+  ) => Promise<void>
 }
 
 const toCustomerIdentifier = (
@@ -156,7 +197,23 @@ export const createActor = <Config extends RuntimeSDKConfig>(
       }
     },
 
-    async track(name, metadata) {
+    async track(name, ...[input]) {
+      const event = config.events?.[name]
+      if (config.events !== undefined && !Object.hasOwn(config.events, name)) {
+        throw new Error(`Unknown event: ${name}`)
+      }
+
+      let metadata: EventMetadata | undefined = input
+      if (event !== undefined && isEventSchema(event)) {
+        const result = await event['~standard'].validate(
+          input === undefined ? {} : input,
+        )
+        if (result.issues !== undefined) {
+          throw new EventValidationError({ event: name, issues: result.issues })
+        }
+        metadata = result.value
+      }
+
       const timestamp = new Date()
 
       const inserted = await ingestEvent(

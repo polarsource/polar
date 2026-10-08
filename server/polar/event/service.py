@@ -901,7 +901,7 @@ class EventService:
         ingest: EventsIngest,
         *,
         redis: Redis | None = None,
-    ) -> tuple[EventsIngestResponse, int | None]:
+    ) -> EventsIngestResponse:
         validate_organization_id = await self._get_organization_validation_function(
             session, auth_subject
         )
@@ -962,31 +962,7 @@ class EventService:
             raise PolarRequestValidationError(errors)
 
         repository = EventRepository.from_session(session)
-        # Only single-organization requests are numbered: that is what Outpost
-        # sends, and multi-organization requests go away with 2027-01.
-        organization_ids = {event["organization_id"] for event in events}
-        sequence: int | None = None
-        if len(organization_ids) == 1:
-            (organization_id,) = organization_ids
-            sequence = await repository.next_ingest_sequence(organization_id)
-            for event in events:
-                event["ingest_sequence"] = sequence
-
         event_ids, duplicates_count = await repository.insert_batch(events)
-        if sequence is not None and duplicates_count:
-            # A duplicate keeps the number of the request that first stored it.
-            external_ids = [
-                event["external_id"]
-                for event in events
-                if event.get("external_id") is not None
-            ]
-            if len(external_ids) == len(events):
-                sequence = (
-                    await repository.get_max_ingest_sequence(
-                        organization_id, external_ids
-                    )
-                    or sequence
-                )
 
         # Temporarily: fetch inserted events and create meter_events
         with logfire.span("create_meter_events", event_count=len(event_ids)):
@@ -1023,9 +999,8 @@ class EventService:
         # can be slow under contention.
         enqueue_events(*event_ids)
 
-        return (
-            EventsIngestResponse(inserted=len(event_ids), duplicates=duplicates_count),
-            sequence,
+        return EventsIngestResponse(
+            inserted=len(event_ids), duplicates=duplicates_count
         )
 
     async def create_event(self, session: AsyncSession, event: Event) -> Event:

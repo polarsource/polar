@@ -3894,9 +3894,6 @@ async def edit_features(
                     feature_flags[field_name] = field_name in data
 
             # Merge with existing feature_settings
-            old_member_model = organization.feature_settings.get(
-                "member_model_enabled", False
-            )
             updated_feature_settings = {
                 **organization.feature_settings,
                 **feature_flags,
@@ -3914,15 +3911,6 @@ async def edit_features(
                 update_dict=update_dict,
             )
 
-            # Trigger backfill when member_model transitions False → True
-            new_member_model = updated_feature_settings.get(
-                "member_model_enabled", False
-            )
-            if not old_member_model and new_member_model:
-                enqueue_job(
-                    "organization.backfill_members",
-                    organization_id=organization.id,
-                )
             redirect_url = (
                 str(
                     request.url_for(

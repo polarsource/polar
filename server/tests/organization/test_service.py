@@ -4381,30 +4381,6 @@ class TestUpdateFeatureSettings:
         assert result.feature_settings["preview_access_enabled"] is True
         assert result.feature_settings["checkout_localization_enabled"] is True
 
-    async def test_enable_member_model_enqueues_backfill(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
-        organization.feature_settings = {}
-        await save_fixture(organization)
-
-        result = await organization_service.update(
-            session,
-            organization,
-            OrganizationUpdate.model_validate(
-                {"feature_settings": {"member_model_enabled": True}}
-            ),
-        )
-
-        assert result.feature_settings["member_model_enabled"] is True
-        enqueue_job_mock.assert_called_once_with(
-            "organization.backfill_members", organization_id=organization.id
-        )
-
     async def test_overview_metrics_updated(
         self,
         session: AsyncSession,

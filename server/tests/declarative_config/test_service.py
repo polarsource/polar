@@ -30,7 +30,14 @@ from polar.kit.trial import TrialInterval
 from polar.kit.visibility import Visibility
 from polar.meter.repository import MeterRepository
 from polar.meter.unit import MeterUnit
-from polar.models import Organization, User, UserOrganization
+from polar.models import (
+    Organization,
+    Product,
+    ProductPriceCustom,
+    ProductPriceSeatUnit,
+    User,
+    UserOrganization,
+)
 from polar.models.benefit import BenefitType
 from polar.models.product_price import ProductPriceAmountType
 from polar.models.user_organization import OrganizationRole
@@ -106,6 +113,13 @@ PRO_PRODUCT = {
     ],
     "benefits": ["tool-call-credits", "beta"],
 }
+
+
+async def _bound_seat_price(save_fixture: SaveFixture, product: Product) -> None:
+    seat_price = product.prices[-1]
+    assert isinstance(seat_price, ProductPriceSeatUnit)
+    seat_price.maximum_units = 10
+    await save_fixture(seat_price)
 
 
 @pytest.mark.anyio
@@ -662,6 +676,74 @@ class TestApply:
         assert cleared.trial_interval_count is None
 
     @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_custom_and_seat_based_prices(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        pwyw = {
+            "external_id": "pwyw",
+            "name": "Pay what you want",
+            "prices": [
+                {"amount_type": "custom", "minimum_amount": 500, "preset_amount": 1000}
+            ],
+        }
+
+        def team(unit_amount: str) -> dict[str, Any]:
+            return {
+                "external_id": "team",
+                "name": "Team",
+                "recurring_interval": "month",
+                "prices": [
+                    {
+                        "amount_type": "seat_based",
+                        "tiers": {
+                            "type": "volume",
+                            "tiers": [{"unit_amount": unit_amount}],
+                        },
+                        "minimum_units": 2,
+                    }
+                ],
+            }
+
+        async def apply(*products: dict[str, Any]) -> list[ConfigAction]:
+            result = await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate({"products": list(products)}),
+            )
+            return [change.action for change in result.changes]
+
+        assert await apply(pwyw, team("1000")) == [ConfigAction.created] * 2
+        repository = ProductRepository.from_session(session)
+        products = {
+            product.external_id: product
+            for product in await repository.get_all_by_external_ids(
+                organization.id, ["pwyw", "team"]
+            )
+        }
+        custom_price = products["pwyw"].prices[0]
+        seat_price = products["team"].prices[0]
+        assert isinstance(custom_price, ProductPriceCustom)
+        assert (custom_price.minimum_amount, custom_price.preset_amount) == (500, 1000)
+        assert isinstance(seat_price, ProductPriceSeatUnit)
+        assert seat_price.minimum_units == 2
+
+        assert await apply(pwyw, team("1000.0")) == [ConfigAction.unchanged] * 2
+        assert await apply(pwyw, team("1500")) == [
+            ConfigAction.unchanged,
+            ConfigAction.updated,
+        ]
+        await session.refresh(products["team"], {"prices"})
+        [new_seat_price] = products["team"].prices
+        assert new_seat_price.id != seat_price.id
+        assert isinstance(new_seat_price, ProductPriceSeatUnit)
+        assert new_seat_price.tiers.tiers[0].unit_amount == Decimal(1500)
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_create_product_meter_interval(
         self,
         save_fixture: SaveFixture,
@@ -1031,13 +1113,14 @@ class TestPlan:
         auth_subject: AuthSubject[Organization],
         organization: Organization,
     ) -> None:
-        await create_product(
+        product = await create_product(
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
             prices=[("seat", 1000, "usd")],
             external_id="team",
         )
+        await _bound_seat_price(save_fixture, product)
 
         plan = await declarative_config_service.plan(
             session,
@@ -1076,6 +1159,7 @@ class TestPlan:
             prices=[(1000, "usd"), ("seat", 500, "usd")],
             external_id="team",
         )
+        await _bound_seat_price(save_fixture, product)
 
         config = Config.model_validate(
             {
@@ -1239,7 +1323,13 @@ class TestPlan:
                             "custom_fields": [{"slug": "company"}],
                             "prices": [
                                 {"amount_type": "fixed", "price_amount": 1000},
-                                {"amount_type": "custom", "minimum_amount": 500},
+                                {
+                                    "amount_type": "unit_based",
+                                    "tiers": {
+                                        "type": "volume",
+                                        "tiers": [{"unit_amount": "100"}],
+                                    },
+                                },
                             ],
                         }
                     ],

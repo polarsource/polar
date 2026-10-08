@@ -12,7 +12,7 @@ from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
 from polar.meter.unit import MeterUnit
-from polar.models import Organization, UserOrganization
+from polar.models import Organization, ProductPriceSeatUnit, UserOrganization
 from polar.models.benefit import BenefitType
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -592,6 +592,22 @@ class TestExport:
         await set_product_benefits(
             save_fixture, product=product, benefits=[beta, credits, support]
         )
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Pay what you want",
+            prices=[(500, 5000, 1000, "usd")],
+            external_id="pwyw",
+        )
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            name="Team",
+            prices=[("seat", 1000, "usd")],
+            external_id="team",
+        )
 
         response = await client.get(
             "/v1/config/", params={"organization_id": str(organization.id)}
@@ -638,7 +654,22 @@ class TestExport:
                 "metadata": {},
             },
         ]
-        [exported_product] = json["config"]["products"]
+        exported_product, pwyw, team = json["config"]["products"]
+        assert pwyw["prices"] == [
+            {
+                "amount_type": "custom",
+                "price_currency": "usd",
+                "tax_behavior": None,
+                "minimum_amount": 500,
+                "maximum_amount": 5000,
+                "preset_amount": 1000,
+            }
+        ]
+        [seat_price] = team["prices"]
+        assert (seat_price["amount_type"], seat_price["minimum_units"]) == (
+            "seat_based",
+            1,
+        )
         fixed_price, metered_price = exported_product["prices"]
         assert {
             key: value for key, value in exported_product.items() if key != "prices"
@@ -690,6 +721,8 @@ class TestExport:
             ("benefit", "unchanged"),
             ("benefit", "unchanged"),
             ("product", "unchanged"),
+            ("product", "unchanged"),
+            ("product", "unchanged"),
         ]
         assert all(issue["severity"] != "error" for issue in plan["issues"])
 
@@ -732,14 +765,18 @@ class TestExport:
             is_archived=True,
             external_id="archived",
         )
-        custom_price = await create_product(
+        bounded_seats = await create_product(
             save_fixture,
             organization=organization,
-            recurring_interval=None,
-            name="Pay what you want",
-            prices=[(50, None, None, "usd")],
-            external_id="pwyw",
+            recurring_interval=SubscriptionRecurringInterval.month,
+            name="Bounded seats",
+            prices=[("seat", 1000, "usd")],
+            external_id="bounded-seats",
         )
+        seat_price = bounded_seats.prices[0]
+        assert isinstance(seat_price, ProductPriceSeatUnit)
+        seat_price.maximum_units = 10
+        await save_fixture(seat_price)
         unknown_benefit = await create_product(
             save_fixture,
             organization=organization,
@@ -767,7 +804,7 @@ class TestExport:
             ("benefit", str(downloadables.id), "not_supported"),
             ("benefit", str(unknown_meter.id), "unknown_reference"),
             ("product", str(archived.id), "archived"),
-            ("product", str(custom_price.id), "not_supported"),
+            ("product", str(bounded_seats.id), "not_supported"),
             ("product", str(unknown_benefit.id), "unknown_reference"),
         ]
 

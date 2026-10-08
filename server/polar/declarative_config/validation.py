@@ -20,8 +20,10 @@ from polar.models import (
     Organization,
     Product,
     ProductPrice,
+    ProductPriceCustom,
     ProductPriceFixed,
     ProductPriceMeteredUnit,
+    ProductPriceSeatUnit,
 )
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
@@ -41,10 +43,8 @@ from .schemas import (
     ConfigIssueType,
     ConfigMeter,
     ConfigProduct,
-    ConfigProductPriceCustom,
     ConfigProductPriceMeteredTiers,
     ConfigProductPriceMeteredUnit,
-    ConfigProductPriceSeatBased,
     ConfigProductPriceUnitBased,
     ConfigResource,
 )
@@ -201,8 +201,6 @@ def unknown_references(config: Config) -> list[ConfigIssue]:
 
 
 _NOT_SUPPORTED_PRICES = (
-    ConfigProductPriceCustom,
-    ConfigProductPriceSeatBased,
     ConfigProductPriceUnitBased,
     ConfigProductPriceMeteredTiers,
 )
@@ -253,9 +251,9 @@ def unsupported_prices(changes: Sequence[ProductChange]) -> list[ConfigIssue]:
                 type=ConfigIssueType.not_supported,
                 loc=_loc(ConfigResource.product, change.index, "prices"),
                 msg=(
-                    "This product has prices config can't manage yet: custom or "
-                    "seat-based prices, or metered prices on meters not in this "
-                    "config. "
+                    "This product has prices config can't manage yet: unit-based "
+                    "or metered tiered prices, seat-based prices with a maximum, "
+                    "or metered prices on meters not in this config. "
                     + (
                         "Its prices can't be changed from config."
                         if changed
@@ -529,6 +527,21 @@ def price_config(
     }
     if isinstance(price, ProductPriceFixed):
         return {**config, "price_amount": price.price_amount}
+    if isinstance(price, ProductPriceCustom):
+        return {
+            **config,
+            "minimum_amount": price.minimum_amount,
+            "maximum_amount": price.maximum_amount,
+            "preset_amount": price.preset_amount,
+        }
+    if isinstance(price, ProductPriceSeatUnit):
+        if price.maximum_units is not None:
+            return None
+        return {
+            **config,
+            "tiers": price.tiers.model_dump(),
+            "minimum_units": price.minimum_units,
+        }
     if isinstance(price, ProductPriceMeteredUnit):
         meter_id = str(price.meter_id)
         if meter_id not in meter_external_ids:
@@ -545,13 +558,18 @@ def price_config(
 type PriceKey = tuple[tuple[str, str], ...]
 
 
+def _price_value(value: Any) -> str:
+    if isinstance(value, Decimal):
+        return str(value.normalize())
+    if isinstance(value, dict):
+        return str(sorted((key, _price_value(item)) for key, item in value.items()))
+    if isinstance(value, list):
+        return str([_price_value(item) for item in value])
+    return str(value)
+
+
 def price_key(price: dict[str, Any]) -> PriceKey:
-    return tuple(
-        sorted(
-            (key, str(value.normalize() if isinstance(value, Decimal) else value))
-            for key, value in price.items()
-        )
-    )
+    return tuple(sorted((key, _price_value(value)) for key, value in price.items()))
 
 
 def _get_product_update_dict(

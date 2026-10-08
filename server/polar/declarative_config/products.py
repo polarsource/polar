@@ -9,8 +9,10 @@ from polar.product.schemas import (
     ProductCreateOneTime,
     ProductCreateRecurring,
     ProductPriceCreate,
+    ProductPriceCustomCreate,
     ProductPriceFixedCreate,
     ProductPriceMeteredUnitCreate,
+    ProductPriceSeatBasedCreate,
     ProductPriceUpdate,
     ProductUpdate,
 )
@@ -18,8 +20,10 @@ from polar.product.schemas import (
 from .schemas import (
     ConfigProduct,
     ConfigProductPrice,
+    ConfigProductPriceCustom,
     ConfigProductPriceFixed,
     ConfigProductPriceMeteredUnit,
+    ConfigProductPriceSeatBased,
 )
 from .validation import PriceKey, ProductChange, price_config, price_key
 
@@ -59,12 +63,16 @@ def product_error(
 def price_create(
     price: ConfigProductPrice,
     meter_ids: dict[str, UUID],
-) -> ProductPriceFixedCreate | ProductPriceMeteredUnitCreate:
+) -> ProductPriceCreate:
     if isinstance(price, ConfigProductPriceMeteredUnit):
         return ProductPriceMeteredUnitCreate(
             **price.model_dump(exclude={"meter"}),
             meter_id=meter_ids[price.meter],
         )
+    if isinstance(price, ConfigProductPriceCustom):
+        return ProductPriceCustomCreate(**price.model_dump())
+    if isinstance(price, ConfigProductPriceSeatBased):
+        return ProductPriceSeatBasedCreate(**price.model_dump())
     if not isinstance(price, ConfigProductPriceFixed):
         raise NotImplementedError(price.amount_type)
     return ProductPriceFixedCreate(**price.model_dump())

@@ -597,8 +597,11 @@ class TestApply:
         assert product.trial_interval_count == 14
 
         assert await apply() == ConfigAction.updated
-        await session.refresh(product)
-        assert (product.trial_interval, product.trial_interval_count) == (None, None)
+        [cleared] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["team"])
+        assert cleared.trial_interval is None
+        assert cleared.trial_interval_count is None
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")

@@ -3,7 +3,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { ChapterHeadline } from './Chapter'
-import { StillaAI, StillaAIWordmark } from './Logos'
+import { StillaAI } from './Logos'
 
 const STORY = {
   href: '/customers/stilla-ai',

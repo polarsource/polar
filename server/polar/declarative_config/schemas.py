@@ -131,6 +131,7 @@ class ConfigSkippedReason(StrEnum):
     missing_external_id = "missing_external_id"
     archived = "archived"
     invalid = "invalid"
+    over_limit = "over_limit"
 
 
 class ConfigSkippedMeter(Schema):

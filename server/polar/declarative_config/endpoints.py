@@ -49,9 +49,11 @@ async def export(
     """
     Export the organization's current config as a declarative config document.
 
-    `config` can be passed to plan or apply as is: planning it without edits
-    reports no changes. Meters without an `external_id`, archived meters, and
-    meters that wouldn't pass config validation are listed in `skipped`.
+    `config` has the shape plan and apply accept, without `organization_id`:
+    planning it for the same organization without edits reports no changes.
+    Meters without an `external_id`, archived meters, meters that wouldn't pass
+    config validation, and meters beyond the config limit are listed in
+    `skipped`.
     """
     return await declarative_config_service.export(
         session, auth_subject, organization_id

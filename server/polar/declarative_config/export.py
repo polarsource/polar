@@ -157,11 +157,6 @@ def _product_document(
 ) -> dict[str, Any] | ConfigSkippedReason:
     if product.is_legacy_recurring_price:
         return ConfigSkippedReason.not_supported
-    if any(
-        attached.custom_field.deleted_at is not None
-        for attached in product.attached_custom_fields
-    ):
-        return ConfigSkippedReason.unknown_reference
     prices: list[dict[str, Any]] = []
     for price in product.prices:
         config = price_config(price, meter_external_ids)

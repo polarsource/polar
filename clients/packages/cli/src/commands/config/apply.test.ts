@@ -116,6 +116,8 @@ const run = async (result: ApplyResult) => {
         BillingConfig.of({
           load: () => Effect.succeed(config),
           plan: () => Effect.die('unused'),
+          pull: () => Effect.die('unused'),
+          save: () => Effect.die('unused'),
           apply: () => Effect.succeed(result),
         }),
       ),

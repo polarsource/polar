@@ -97,6 +97,33 @@ export const ApplyOutput = Schema.Union(
   ),
 )
 
+export const SkippedMeter = Schema.Struct({
+  id: Schema.String,
+  name: Schema.String,
+  reason: Schema.String,
+})
+export type SkippedMeter = typeof SkippedMeter.Type
+
+export const PulledConfig = Schema.Struct({
+  meters: Schema.Array(Schema.Unknown),
+})
+export type PulledConfig = typeof PulledConfig.Type
+
+export const PullResponse = Schema.Struct({
+  config: PulledConfig,
+  skipped: Schema.Array(SkippedMeter),
+})
+export type PullResponse = typeof PullResponse.Type
+
+export const SaveStatus = Schema.Literals(['written', 'unchanged'])
+export type SaveStatus = typeof SaveStatus.Type
+
+export const PullOutput = Schema.Struct({
+  file: Schema.String,
+  status: SaveStatus,
+  ...PullResponse.fields,
+})
+
 export interface LoadedConfig {
   readonly file: string
   readonly source: string

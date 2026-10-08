@@ -5,10 +5,14 @@ import type {
   BillingConfigError,
   LoadedConfig,
   PlanResult,
+  PulledConfig,
+  PullResponse,
+  SaveStatus,
 } from '@/schemas/BillingConfig'
 import { apply } from '@/services/billing-config/apply'
 import { loader } from '@/services/billing-config/load'
 import { plan } from '@/services/billing-config/plan'
+import { pull, saver } from '@/services/billing-config/pull'
 import { authenticatedClient } from '@/services/client'
 
 export class BillingConfig extends Context.Service<
@@ -23,6 +27,14 @@ export class BillingConfig extends Context.Service<
       config: LoadedConfig,
       organization: ActiveOrganization,
     ) => Effect.Effect<ApplyResult, AuthError | BillingConfigError>
+    pull: (
+      organization: ActiveOrganization,
+    ) => Effect.Effect<PullResponse, AuthError | BillingConfigError>
+    save: (
+      file: string | undefined,
+      config: PulledConfig,
+      force: boolean,
+    ) => Effect.Effect<{ file: string; status: SaveStatus }, BillingConfigError>
   }
 >()('BillingConfig') {}
 
@@ -36,6 +48,8 @@ export const make = Effect.gen(function* () {
     load: loader(fs),
     plan: plan(clients),
     apply: apply(clients),
+    pull: pull(clients),
+    save: saver(fs),
   })
 })
 

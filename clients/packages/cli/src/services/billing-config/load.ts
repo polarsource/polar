@@ -12,7 +12,7 @@ const SCRIPT_EXTENSIONS = new Set([
   '.cjs',
 ])
 
-const DEFAULT_FILES = [
+export const DEFAULT_FILES = [
   'polar.config.ts',
   'polar.config.mts',
   'polar.config.cts',

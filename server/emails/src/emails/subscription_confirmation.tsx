@@ -10,6 +10,7 @@ import {
 } from '../components/foundation'
 import Benefits from '../components/Benefits'
 import OrderSummary from '../components/OrderSummary'
+import SubscriptionTermsNotice from '../components/SubscriptionTermsNotice'
 import { order, organization, product } from '../preview'
 import type { schemas } from '../types'
 
@@ -18,8 +19,10 @@ export function SubscriptionConfirmation({
   organization,
   product,
   order,
+  subscription,
   url,
   previous_billing_provider,
+  regular_amount,
 }: schemas['SubscriptionConfirmationProps']) {
   return (
     <WrapperOrganization
@@ -50,6 +53,12 @@ export function SubscriptionConfirmation({
       <Button href={url}>Access purchase</Button>
       <Divider />
       <OrderSummary order={order} />
+      <SubscriptionTermsNotice
+        productName={product.name}
+        subscription={subscription}
+        regularAmount={regular_amount}
+        portalUrl={url}
+      />
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>
   )
@@ -60,6 +69,17 @@ SubscriptionConfirmation.PreviewProps = {
   organization,
   product,
   order,
+  subscription: {
+    id: '12345',
+    status: 'active',
+    amount: 900,
+    currency: 'usd',
+    recurring_interval: 'month',
+    recurring_interval_count: 1,
+    current_period_end: '2024-02-15T10:30:00Z',
+    trial_end: null,
+    tax_behavior: 'exclusive',
+  },
   previous_billing_provider: 'Stripe',
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
 }

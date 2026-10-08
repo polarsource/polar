@@ -6,6 +6,7 @@ import {
   Text,
   WrapperOrganization,
 } from '../components/foundation'
+import { formatDate } from '../utils/formatters'
 import { organization, product } from '../preview'
 import type { schemas } from '../types'
 
@@ -17,12 +18,6 @@ export function SubscriptionPaused({
   url,
   previous_billing_provider,
 }: schemas['SubscriptionPausedProps']) {
-  const formatDate = (value: string) =>
-    new Date(value).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })
   const accessUntil = formatDate(subscription.current_period_end!)
   const resumeDate = subscription.resumes_at
     ? formatDate(subscription.resumes_at)

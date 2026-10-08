@@ -5,6 +5,7 @@ import {
   Text,
   WrapperPolar,
 } from '../components/foundation'
+import { formatDate } from '../utils/formatters'
 import type { schemas } from '../types'
 
 export function NotificationSubscriptionCancellation({
@@ -31,14 +32,7 @@ export function NotificationSubscriptionCancellation({
   )
 
   const formattedEndsAt =
-    cancel_at_period_end && ends_at
-      ? new Date(ends_at).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          timeZone: 'UTC',
-        })
-      : null
+    cancel_at_period_end && ends_at ? formatDate(ends_at) : null
 
   return (
     <WrapperPolar

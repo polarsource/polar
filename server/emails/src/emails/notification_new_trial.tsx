@@ -1,4 +1,5 @@
 import { Footer, Intro, Text, WrapperPolar } from '../components/foundation'
+import { formatDate } from '../utils/formatters'
 import type { schemas } from '../types'
 
 export function NotificationNewTrial({
@@ -20,14 +21,7 @@ export function NotificationNewTrial({
     </Text>
   )
 
-  const formattedTrialEnd = trial_end
-    ? new Date(trial_end).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        timeZone: 'UTC',
-      })
-    : null
+  const formattedTrialEnd = trial_end ? formatDate(trial_end) : null
 
   return (
     <WrapperPolar

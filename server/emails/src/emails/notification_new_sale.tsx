@@ -1,5 +1,6 @@
 import { Button, Footer, Text, WrapperPolar } from '../components/foundation'
 import SaleSummary from '../components/SaleSummary'
+import { formatShortDate } from '../utils/formatters'
 import type { schemas } from '../types'
 
 export function NotificationNewSale({
@@ -17,12 +18,7 @@ export function NotificationNewSale({
 }: schemas['MaintainerNewProductSaleNotificationPayload']) {
   const displayName = customer_name || customer_email || 'A customer'
 
-  const formattedDate = order_date
-    ? new Date(order_date).toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-      })
-    : null
+  const formattedDate = order_date ? formatShortDate(order_date) : null
 
   const addressParts = [billing_address_line1, billing_address_city].filter(
     Boolean,

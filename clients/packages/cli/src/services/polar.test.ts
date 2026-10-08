@@ -213,6 +213,24 @@ test.each([
       'The request is invalid:\n    prices: Field required\n    config.body: Too long\n    prices.0.price_amount: Input should be a valid integer',
   },
   {
+    name: 'an ID that is not a UUID',
+    rejection: {
+      statusCode: 422,
+      error: {
+        detail: [
+          {
+            loc: ['path', 'id'],
+            msg: 'Input should be a valid UUID, invalid character: found `n` at 1',
+            type: 'uuid_parsing',
+            input: 'nope',
+          },
+        ],
+      },
+    },
+    message:
+      '"nope" is not a valid id. IDs look like 7ede44eb-3e1d-445d-8d03-b4bb5bdeb4b4.',
+  },
+  {
     name: 'a body without detail',
     rejection: { statusCode: 422, error: 'Unprocessable Entity' },
     message: 'The Polar API rejected the request (422).',

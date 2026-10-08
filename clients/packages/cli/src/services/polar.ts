@@ -39,20 +39,32 @@ const isOrganizationNotAccessible = (body: unknown) =>
 const ValidationIssue = Schema.Struct({
   loc: Schema.Array(Schema.Union([Schema.String, Schema.Finite])),
   msg: Schema.String,
+  input: Schema.optional(Schema.Unknown),
 })
+
+const EXAMPLE_ID = '7ede44eb-3e1d-445d-8d03-b4bb5bdeb4b4'
+
+const invalidId = (issue: typeof ValidationIssue.Type) =>
+  issue.loc[0] === 'path' &&
+  issue.msg.startsWith('Input should be a valid UUID')
+    ? `${JSON.stringify(issue.input)} is not a valid ${issue.loc.slice(1).join('.')}. IDs look like ${EXAMPLE_ID}.`
+    : undefined
 
 const ErrorDetail = Schema.Struct({
   detail: Schema.Union([Schema.String, Schema.Array(ValidationIssue)]),
 })
 
-const describeIssues = (issues: ReadonlyArray<typeof ValidationIssue.Type>) =>
-  [
+const describeIssues = (issues: ReadonlyArray<typeof ValidationIssue.Type>) => {
+  const single = issues.length === 1 ? invalidId(issues[0]!) : undefined
+  if (single !== undefined) return single
+  return [
     'The request is invalid:',
     ...issues.map(({ loc, msg }) => {
       const field = (loc[0] === 'body' ? loc.slice(1) : loc).join('.')
       return field ? `${field}: ${msg}` : msg
     }),
   ].join('\n    ')
+}
 
 const detailOf = (body: unknown) => {
   const detail = Option.getOrUndefined(

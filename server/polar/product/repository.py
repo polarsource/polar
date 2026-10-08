@@ -144,6 +144,15 @@ class ProductRepository(
             statement = statement.limit(limit)
         return await self.get_all(statement)
 
+    def get_organization_statement(
+        self, organization_id: UUID
+    ) -> Select[tuple[Product]]:
+        return (
+            self.get_base_statement()
+            .where(Product.organization_id == organization_id)
+            .order_by(Product.created_at, Product.id)
+        )
+
     async def get_by_id_and_checkout(
         self,
         id: UUID,

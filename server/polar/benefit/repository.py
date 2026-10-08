@@ -77,6 +77,15 @@ class BenefitRepository(
             statement = statement.with_for_update(of=Benefit, key_share=True)
         return await self.get_all(statement)
 
+    def get_organization_statement(
+        self, organization_id: UUID
+    ) -> Select[tuple[Benefit]]:
+        return (
+            self.get_base_statement()
+            .where(Benefit.organization_id == organization_id)
+            .order_by(Benefit.created_at, Benefit.id)
+        )
+
     async def list_by_organization_and_type(
         self, organization_id: UUID, benefit_type: BenefitType
     ) -> Sequence[Benefit]:

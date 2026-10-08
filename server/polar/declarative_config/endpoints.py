@@ -64,7 +64,8 @@ async def export(
 
     `benefits` is only exported with the `benefits:read` or `benefits:write`
     scope, and `products` with `products:read` or `products:write`; otherwise
-    they're empty.
+    they're empty. Without a benefits scope, products granting benefits are
+    skipped as `unknown_reference`.
     """
     return await declarative_config_service.export(
         session, auth_subject, organization_id

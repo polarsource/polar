@@ -6054,7 +6054,8 @@ export interface paths {
      *
      *     `benefits` is only exported with the `benefits:read` or `benefits:write`
      *     scope, and `products` with `products:read` or `products:write`; otherwise
-     *     they're empty.
+     *     they're empty. Without a benefits scope, products granting benefits are
+     *     skipped as `unknown_reference`.
      *
      *     **Scopes**: `meters:read` `meters:write`
      */

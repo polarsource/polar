@@ -1,7 +1,6 @@
 from typing import Any, cast
 
 from pydantic import TypeAdapter, ValidationError
-from sqlalchemy.orm import undefer
 
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.strategies.meter_credit.properties import (
@@ -25,7 +24,7 @@ from .schemas import (
     ConfigSkippedReason,
     ConfigSkippedResource,
 )
-from .validation import price_config
+from .validation import benefit_properties, price_config
 
 _benefit_adapter: TypeAdapter[ConfigBenefit] = TypeAdapter(ConfigBenefit)
 _export_benefit_adapter: TypeAdapter[ConfigExportBenefit] = TypeAdapter(
@@ -97,14 +96,9 @@ def _benefit_document(
     if benefit.type != BenefitType.meter_credit:
         return ConfigSkippedReason.not_supported
     properties = cast(BenefitMeterCreditProperties, benefit.properties)
-    meter = meter_external_ids.get(str(properties["meter_id"]))
-    if meter is None:
+    if str(properties["meter_id"]) not in meter_external_ids:
         return ConfigSkippedReason.unknown_reference
-    document["properties"] = {
-        "meter": meter,
-        "units": properties["units"],
-        "rollover": properties["rollover"],
-    }
+    document["properties"] = benefit_properties(benefit, meter_external_ids)
     return document
 
 
@@ -117,12 +111,7 @@ async def export_benefits(
     repository = BenefitRepository.from_session(session)
     benefits: list[ConfigExportBenefit] = []
     external_ids: ExternalIDs = {}
-    statement = (
-        repository.get_base_statement()
-        .where(Benefit.organization_id == organization.id)
-        .order_by(Benefit.created_at, Benefit.id)
-        .options(undefer(Benefit.external_id))
-    )
+    statement = repository.get_organization_statement(organization.id)
     async for benefit in repository.stream(statement):
         result: dict[str, Any] | ConfigSkippedReason
         if benefit.external_id is None:
@@ -198,12 +187,7 @@ async def export_products(
 ) -> list[ConfigExportProduct]:
     repository = ProductRepository.from_session(session)
     products: list[ConfigExportProduct] = []
-    statement = (
-        repository.get_base_statement()
-        .where(Product.organization_id == organization.id)
-        .order_by(Product.created_at, Product.id)
-        .options(undefer(Product.external_id))
-    )
+    statement = repository.get_organization_statement(organization.id)
     async for product in repository.stream(statement):
         result: dict[str, Any] | ConfigSkippedReason
         if product.external_id is None:

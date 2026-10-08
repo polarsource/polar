@@ -1,11 +1,11 @@
 import re
 from collections.abc import Sequence
 from datetime import date
-from typing import Annotated, Any
+from typing import Annotated
 from zoneinfo import ZoneInfo
 
 from annotated_types import Len, Predicate
-from fastapi import Depends, Query, Response
+from fastapi import Depends, Query
 from fastapi.exceptions import RequestValidationError
 from pydantic import UUID4, AwareDatetime, ValidationError
 from pydantic_extra_types.timezone_name import TimeZoneName
@@ -55,21 +55,6 @@ from .schemas import (
     ListVarianceEvents,
 )
 from .service import event as event_service
-
-INGEST_SEQUENCE_HEADER = "Polar-Ingest-Sequence"
-_INGEST_RESPONSES: dict[int | str, dict[str, Any]] = {
-    200: {
-        "headers": {
-            INGEST_SEQUENCE_HEADER: {
-                "description": (
-                    "Sequence number covering every event of the request, "
-                    "including duplicates stored by an earlier request."
-                ),
-                "schema": {"type": "integer"},
-            }
-        }
-    }
-}
 
 router = APIRouter(prefix="/events", tags=["events", APITag.public])
 
@@ -613,41 +598,29 @@ async def get(
     return event
 
 
-@router.post("/ingest", summary="Ingest Events", responses=_INGEST_RESPONSES)
+@router.post("/ingest", summary="Ingest Events")
 async def ingest(
     ingest: EventsIngest,
     auth_subject: auth.EventWrite,
-    response: Response,
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
 ) -> EventsIngestResponse:
     """Ingest batch of events."""
-    ingested, sequence = await event_service.ingest(
-        session, auth_subject, ingest, redis=redis
-    )
-    if sequence is not None:
-        response.headers[INGEST_SEQUENCE_HEADER] = str(sequence)
-    return ingested
+    return await event_service.ingest(session, auth_subject, ingest, redis=redis)
 
 
 @router.post(
     "/ingest",
     name="ingest",
     summary="Ingest Events",
-    responses={**_INGEST_RESPONSES, 403: {"model": NotPermitted.schema()}},
+    responses={403: {"model": NotPermitted.schema()}},
 )
 @version(starting_from=V2027_01)
 async def ingest_v2027_01(
     ingest: EventsIngest,
     auth_subject: auth.EventWriteSingleOrganization,
-    response: Response,
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
 ) -> EventsIngestResponse:
     """Ingest batch of events."""
-    ingested, sequence = await event_service.ingest(
-        session, auth_subject, ingest, redis=redis
-    )
-    if sequence is not None:
-        response.headers[INGEST_SEQUENCE_HEADER] = str(sequence)
-    return ingested
+    return await event_service.ingest(session, auth_subject, ingest, redis=redis)

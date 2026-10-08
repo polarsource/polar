@@ -67,7 +67,6 @@ class CustomerMeterOutgoingMessagePayload(MessageBase):
     consumed_units: float
     credited_units: int
     balance: float
-    last_balance_event_ingest_sequence: int | None
 
 
 class CustomerMeterOutgoingMessage(OutgoingMessageBase):

@@ -67,7 +67,6 @@ class TestOutpost:
             assert response["payload"]["consumed_units"] == 90.0
             assert response["payload"]["credited_units"] == 100
             assert response["payload"]["balance"] == 10.0
-            assert response["payload"]["last_balance_event_ingest_sequence"] is None
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_event_customer_meter(
@@ -90,4 +89,3 @@ class TestOutpost:
             assert response["payload"]["consumed_units"] == 90.0
             assert response["payload"]["credited_units"] == 100
             assert response["payload"]["balance"] == 10.0
-            assert response["payload"]["last_balance_event_ingest_sequence"] is None

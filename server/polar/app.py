@@ -19,7 +19,6 @@ from polar.backoffice import app as backoffice_app
 from polar.checkout import ip_geolocation
 from polar.checkout_link.app import app as checkout_link_redirect_app
 from polar.config import settings
-from polar.event.endpoints import INGEST_SEQUENCE_HEADER
 from polar.exception_handlers import add_exception_handlers
 from polar.health.endpoints import router as health_router
 from polar.kit.cors import CORSConfig, CORSMatcherMiddleware, Scope
@@ -105,7 +104,7 @@ def configure_cors(app: FastAPI) -> None:
         allow_credentials=False,  # No cookies allowed
         allow_methods=["*"],
         allow_headers=["Authorization", VERSION_HEADER, ORGANIZATION_HEADER],
-        expose_headers=[VERSION_HEADER, INGEST_SEQUENCE_HEADER],
+        expose_headers=[VERSION_HEADER],
     )
     configs.append(api_config)
 

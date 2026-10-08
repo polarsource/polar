@@ -61366,8 +61366,6 @@ export interface operations {
       /** @description Successful Response */
       200: {
         headers: {
-          /** @description Sequence number covering every event of the request, including duplicates stored by an earlier request. */
-          'Polar-Ingest-Sequence'?: number
           [name: string]: unknown
         }
         content: {

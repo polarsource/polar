@@ -394,46 +394,6 @@ class TestIngest:
         json = response.json()
         assert json == {"inserted": len(events), "duplicates": 0}
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_sequence_header(self, client: AsyncClient) -> None:
-        events = [{"name": "event1", "external_customer_id": "CUSTOMER_ID"}]
-
-        first = await client.post("/v1/events/ingest", json={"events": events})
-        second = await client.post("/v1/events/ingest", json={"events": events})
-
-        assert first.headers["Polar-Ingest-Sequence"] == "1"
-        assert second.headers["Polar-Ingest-Sequence"] == "2"
-
-    @pytest.mark.auth
-    async def test_no_sequence_header_across_organizations(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        user_organization: UserOrganization,
-        organization_second: Organization,
-    ) -> None:
-        await save_fixture(
-            UserOrganization(
-                user=user_organization.user, organization=organization_second
-            )
-        )
-        events = [
-            {
-                "name": "event1",
-                "external_customer_id": "CUSTOMER_ID",
-                "organization_id": str(organization_id),
-            }
-            for organization_id in (
-                user_organization.organization_id,
-                organization_second.id,
-            )
-        ]
-
-        response = await client.post("/v1/events/ingest", json={"events": events})
-
-        assert response.status_code == 200
-        assert "Polar-Ingest-Sequence" not in response.headers
-
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_2027_01_organization_token(self, client: AsyncClient) -> None:

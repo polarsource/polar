@@ -3,13 +3,12 @@ import uuid
 import structlog
 from anyio.streams.memory import MemoryObjectSendStream
 from pydantic import ValidationError
-from sqlalchemy.orm import joinedload
 
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.kit.db.postgres import AsyncReadSession
 from polar.logging import Logger
 from polar.meter.repository import MeterRepository
-from polar.models import CustomerMeter, Organization
+from polar.models import Organization
 
 from .schemas import (
     CustomerMeterOutgoingMessage,
@@ -97,10 +96,7 @@ class OutpostService:
         customer_meter_repository = CustomerMeterRepository.from_session(session)
         customer_meter = (
             await customer_meter_repository.get_by_organization_customer_and_meter(
-                organization.id,
-                customer_id,
-                meter_id,
-                options=(joinedload(CustomerMeter.last_balanced_event),),
+                organization.id, customer_id, meter_id
             )
         )
         if customer_meter is None:

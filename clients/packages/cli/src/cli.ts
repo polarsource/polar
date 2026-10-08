@@ -1,10 +1,15 @@
 import { BunRuntime, BunServices } from '@effect/platform-bun'
 import { Cause, Console, Effect, Layer, Runtime, Stdio } from 'effect'
-import { CliConfig, Command } from 'effect/cli'
+import { CliConfig, CliOutput, Command } from 'effect/cli'
 import { FetchHttpClient } from 'effect/http'
 import { builtIns, program } from '@/program'
 import { stdoutConsole } from '@/utils/console'
 import { describeError, errorJson } from '@/utils/errors'
+import {
+  describeUnknownCommand,
+  formatter,
+  unknownCommand,
+} from '@/utils/parse-errors'
 import * as ApiRuntime from '@/api-runtime'
 import * as Auth from '@/services/auth'
 import * as BillingConfig from '@/services/billing-config/service'
@@ -67,6 +72,7 @@ const services = Layer.mergeAll(
   FetchHttpClient.layer,
   Layer.succeed(Console.Console, stdoutConsole),
   CliConfig.layer({ builtIns }),
+  CliOutput.layer(formatter),
 )
 
 const reportError = (cause: Cause.Cause<unknown>) => {
@@ -104,11 +110,15 @@ const instrumented = Effect.gen(function* () {
   )
 })
 
+let unknown: ReturnType<typeof unknownCommand>
 if (process.argv[2] === Telemetry.SENDER_COMMAND) {
   Telemetry.sendFromStdin.pipe(
     Effect.provide(FetchHttpClient.layer),
     BunRuntime.runMain({ disableErrorReporting: true }),
   )
+} else if ((unknown = unknownCommand(polar, process.argv.slice(2)))) {
+  process.stderr.write(`\n${describeUnknownCommand(unknown)}\n\n`)
+  process.exitCode = 1
 } else {
   removeRetiredBinary()
   const latestVersion = availableUpdate()

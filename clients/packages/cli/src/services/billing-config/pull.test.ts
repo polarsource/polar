@@ -120,6 +120,15 @@ describe('save', () => {
     })
   })
 
+  test('ignores organization_id when comparing with the existing file', async () => {
+    await writeFile(
+      'polar.config.json',
+      JSON.stringify({ ...config, organization_id: 'org-1' }),
+    )
+
+    expect((await save(undefined)).status).toBe('unchanged')
+  })
+
   test('writes a default export to script files', async () => {
     await save('billing.ts')
 

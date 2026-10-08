@@ -53,6 +53,13 @@ const render = (file: string, config: PulledConfig) =>
     })
   })
 
+const withoutOrganization = (input: unknown) =>
+  input !== null && typeof input === 'object' && !Array.isArray(input)
+    ? Object.fromEntries(
+        Object.entries(input).filter(([key]) => key !== 'organization_id'),
+      )
+    : input
+
 export const saver =
   (
     fs: FileSystem.FileSystem,
@@ -79,7 +86,7 @@ export const saver =
       const contents = yield* render(target, config)
       if (yield* exists(target)) {
         const current = yield* load(target).pipe(
-          Effect.map((loaded) => loaded.input),
+          Effect.map((loaded) => withoutOrganization(loaded.input)),
           Effect.orElseSucceed(() => undefined),
         )
         if (isDeepStrictEqual(current, config)) {

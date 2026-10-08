@@ -139,9 +139,9 @@ export default function CompanyPage() {
       <Chapter
         index="04"
         name="Join us"
-        title="Open roles"
+        title="Exceptional Talent"
         subtitle="Remote, senior, high ownership"
-        description="We're a small, senior team working remotely across the world. High ownership, high pace and a direct line to the people using what you build."
+        description="We're a small, senior team working remotely across the world. High ownership and pace, building the finance layer for the next generation of AI products."
       >
         <OpenRoles />
       </Chapter>

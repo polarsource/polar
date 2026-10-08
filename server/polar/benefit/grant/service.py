@@ -98,7 +98,7 @@ class BenefitGrantService:
         is_granted: bool | None = None,
         customer_id: Sequence[UUID] | None = None,
         external_customer_id: Sequence[str] | None = None,
-        benefit_external_id: Sequence[str] | None = None,
+        external_benefit_id: Sequence[str] | None = None,
         member_id: Sequence[UUID] | None = None,
         external_member_id: Sequence[str] | None = None,
         pagination: PaginationParams,
@@ -133,11 +133,11 @@ class BenefitGrantService:
         if external_customer_id is not None:
             statement = statement.where(Customer.external_id.in_(external_customer_id))
 
-        if benefit_external_id is not None:
+        if external_benefit_id is not None:
             # A deleted benefit's external ID can be reused before its grants are
             # revoked, so only match the live benefit.
             statement = statement.where(
-                Benefit.external_id.in_(benefit_external_id),
+                Benefit.external_id.in_(external_benefit_id),
                 Benefit.deleted_at.is_(None),
             )
 

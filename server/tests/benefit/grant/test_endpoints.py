@@ -86,7 +86,7 @@ class TestListBenefitGrants:
 
     @pytest.mark.auth
     @pytest.mark.api_version(V2027_01)
-    async def test_filter_by_benefit_external_id(
+    async def test_filter_by_external_benefit_id(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -112,7 +112,7 @@ class TestListBenefitGrants:
         await create_benefit_grant(save_fixture, customer, other_benefit, granted=True)
 
         response = await client.get(
-            "/v1/benefit-grants/", params={"benefit_external_id": "pro"}
+            "/v1/benefit-grants/", params={"external_benefit_id": "pro"}
         )
 
         assert response.status_code == 200

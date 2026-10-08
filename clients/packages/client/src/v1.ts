@@ -47133,7 +47133,7 @@ export interface operations {
         /** @description Filter by customer external ID. */
         external_customer_id?: string | string[] | null
         /** @description Filter by benefit external ID. */
-        benefit_external_id?: string | string[] | null
+        external_benefit_id?: string | string[] | null
         /** @description Filter by member ID. */
         member_id?: string | string[] | null
         /** @description Filter by member external ID. */

@@ -3368,7 +3368,7 @@
             "description": "Filter by customer external ID."
           },
           {
-            "name": "benefit_external_id",
+            "name": "external_benefit_id",
             "in": "query",
             "required": false,
             "schema": {
@@ -3386,7 +3386,7 @@
                   "type": "null"
                 }
               ],
-              "title": "BenefitExternalID Filter",
+              "title": "ExternalBenefitID Filter",
               "description": "Filter by benefit external ID."
             },
             "description": "Filter by benefit external ID."

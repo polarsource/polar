@@ -94,9 +94,9 @@ async def list_v2027_01(
         title="ExternalCustomerID Filter",
         description="Filter by customer external ID.",
     ),
-    benefit_external_id: MultipleQueryFilter[str] | None = Query(
+    external_benefit_id: MultipleQueryFilter[str] | None = Query(
         None,
-        title="BenefitExternalID Filter",
+        title="ExternalBenefitID Filter",
         description="Filter by benefit external ID.",
     ),
     member_id: MultipleQueryFilter[UUID4] | None = Query(
@@ -125,7 +125,7 @@ async def list_v2027_01(
         is_granted=is_granted,
         customer_id=customer_id,
         external_customer_id=external_customer_id,
-        benefit_external_id=benefit_external_id,
+        external_benefit_id=external_benefit_id,
         member_id=member_id,
         external_member_id=external_member_id,
         pagination=pagination,

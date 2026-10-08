@@ -1,5 +1,6 @@
 import { Console, Effect, Schema } from 'effect'
 import { Command } from 'effect/cli'
+import { printJson } from '@/utils/json'
 import { Output } from '@/utils/output'
 
 type Json<P> = Schema.Codec<P, unknown>
@@ -19,7 +20,7 @@ type RequiresProjection<A, P> = A extends P
 const encode = <P>(schema: Json<P>, value: P) =>
   Schema.encodeEffect(schema)(value).pipe(
     Effect.orDie,
-    Effect.flatMap((v) => Console.log(JSON.stringify(v, null, 2))),
+    Effect.flatMap(printJson),
   )
 
 export const output =

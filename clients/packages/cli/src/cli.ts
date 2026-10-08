@@ -4,6 +4,7 @@ import { CliConfig, Command } from 'effect/cli'
 import { FetchHttpClient } from 'effect/http'
 import { builtIns, program } from '@/program'
 import { stdoutConsole } from '@/utils/console'
+import { Environment as JsonEnvironment } from '@/utils/json'
 import { isJsonFlag, reportedError } from '@/utils/errors'
 import * as ApiRuntime from '@/api-runtime'
 import * as Auth from '@/services/auth'
@@ -66,6 +67,7 @@ const services = Layer.mergeAll(
   BunServices.layer,
   FetchHttpClient.layer,
   Layer.succeed(Console.Console, stdoutConsole),
+  Layer.succeed(JsonEnvironment, process.env),
   CliConfig.layer({ builtIns }),
 )
 

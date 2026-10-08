@@ -1,4 +1,5 @@
 import { Footer, Intro, Text, WrapperPolar } from '../components/foundation'
+import { formatDate } from '../formatters'
 import type { schemas } from '../types'
 
 export function PolarSelfSubscriptionCancellation({
@@ -6,13 +7,7 @@ export function PolarSelfSubscriptionCancellation({
   product_name,
   ends_at,
 }: schemas['PolarSelfSubscriptionCancellationProps']) {
-  const endDate = ends_at
-    ? new Date(ends_at).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
-    : null
+  const endDate = ends_at ? formatDate(ends_at) : null
 
   return (
     <WrapperPolar

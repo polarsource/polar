@@ -6,6 +6,7 @@ import {
   Text,
   WrapperOrganization,
 } from '../components/foundation'
+import { formatDate } from '../formatters'
 import { organization, product } from '../preview'
 import type { schemas } from '../types'
 
@@ -18,13 +19,6 @@ export function SubscriptionPastDue({
   deadline,
   previous_billing_provider,
 }: schemas['SubscriptionPastDueProps']) {
-  const formatDate = (value: string) =>
-    new Date(value).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })
-
   return (
     <WrapperOrganization
       organization={organization}

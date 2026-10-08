@@ -6,6 +6,7 @@ import {
   Text,
   WrapperOrganization,
 } from '../components/foundation'
+import { formatDate } from '../formatters'
 import { organization, product } from '../preview'
 import type { schemas } from '../types'
 
@@ -17,11 +18,7 @@ export function SubscriptionCancellation({
   url,
   previous_billing_provider,
 }: schemas['SubscriptionCancellationProps']) {
-  const endDate = new Date(subscription.ends_at!).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
+  const endDate = formatDate(subscription.ends_at!)
 
   return (
     <WrapperOrganization

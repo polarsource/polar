@@ -1,20 +1,7 @@
 import { Link } from 'react-email'
 import { Divider, Text } from './foundation'
-import { formatCurrency } from './OrderSummary'
+import { formatCurrency, formatDate, formatInterval } from '../formatters'
 import type { schemas } from '../types'
-
-const formatDate = (value: string): string =>
-  new Date(value).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    timeZone: 'UTC',
-  })
-
-const formatInterval = (
-  interval: schemas['SubscriptionEmail']['recurring_interval'],
-  count: number,
-): string => (count > 1 ? `every ${count} ${interval}s` : `every ${interval}`)
 
 interface SubscriptionTermsNoticeProps {
   productName: string

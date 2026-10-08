@@ -6,6 +6,7 @@ import {
   Text,
   WrapperPolar,
 } from '../components/foundation'
+import { formatDate } from '../formatters'
 import type { schemas } from '../types'
 
 export function ChargebackPreventionRefund({
@@ -15,13 +16,7 @@ export function ChargebackPreventionRefund({
   formatted_amount,
   refund_date,
 }: schemas['ChargebackPreventionRefundProps']) {
-  const formattedDate = refund_date
-    ? new Date(refund_date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
-    : refund_date
+  const formattedDate = refund_date ? formatDate(refund_date) : refund_date
 
   return (
     <WrapperPolar

@@ -22,8 +22,10 @@ from polar.models import (
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
+    ProductPriceMeteredTiers,
     ProductPriceMeteredUnit,
     ProductPriceSeatUnit,
+    ProductPriceUnit,
 )
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
@@ -45,7 +47,6 @@ from .schemas import (
     ConfigProduct,
     ConfigProductPriceMeteredTiers,
     ConfigProductPriceMeteredUnit,
-    ConfigProductPriceUnitBased,
     ConfigResource,
 )
 
@@ -162,10 +163,7 @@ def unknown_references(config: Config) -> list[ConfigIssue]:
             )
     for index, product in enumerate(config.products):
         for price_index, price in enumerate(product.prices):
-            if (
-                isinstance(price, ConfigProductPriceMeteredUnit)
-                and price.meter not in meters
-            ):
+            if isinstance(price, METERED_CONFIG_PRICES) and price.meter not in meters:
                 issues.append(
                     _unknown_reference(
                         ConfigResource.meter,
@@ -200,10 +198,8 @@ def unknown_references(config: Config) -> list[ConfigIssue]:
     return issues
 
 
-_NOT_SUPPORTED_PRICES = (
-    ConfigProductPriceUnitBased,
-    ConfigProductPriceMeteredTiers,
-)
+METERED_PRICES = (ProductPriceMeteredUnit, ProductPriceMeteredTiers)
+METERED_CONFIG_PRICES = (ConfigProductPriceMeteredUnit, ConfigProductPriceMeteredTiers)
 _NOT_SUPPORTED_PRODUCT_FIELDS = ("custom_fields",)
 
 
@@ -224,14 +220,6 @@ def not_supported_yet(config: Config) -> list[ConfigIssue]:
         for name in _NOT_SUPPORTED_PRODUCT_FIELDS:
             if getattr(product, name):
                 issues.append(_not_supported([*loc, name], None))
-        for price_index, price in enumerate(product.prices):
-            if isinstance(price, _NOT_SUPPORTED_PRICES):
-                issues.append(
-                    _not_supported(
-                        [*loc, "prices", price_index, "amount_type"],
-                        price.amount_type,
-                    )
-                )
     return issues
 
 
@@ -251,9 +239,9 @@ def unsupported_prices(changes: Sequence[ProductChange]) -> list[ConfigIssue]:
                 type=ConfigIssueType.not_supported,
                 loc=_loc(ConfigResource.product, change.index, "prices"),
                 msg=(
-                    "This product has prices config can't manage yet: unit-based "
-                    "or metered tiered prices, seat-based prices with a maximum, "
-                    "or metered prices on meters not in this config. "
+                    "This product has prices config can't manage yet: seat-based "
+                    "or unit-based prices with a maximum, or metered prices on "
+                    "meters not in this config. "
                     + (
                         "Its prices can't be changed from config."
                         if changed
@@ -542,17 +530,30 @@ def price_config(
             "tiers": price.tiers.model_dump(),
             "minimum_units": price.minimum_units,
         }
-    if isinstance(price, ProductPriceMeteredUnit):
-        meter_id = str(price.meter_id)
-        if meter_id not in meter_external_ids:
+    if isinstance(price, ProductPriceUnit):
+        if price.tiers is None or price.maximum_units is not None:
             return None
         return {
             **config,
-            "meter": meter_external_ids[meter_id],
-            "unit_amount": price.unit_amount,
-            "cap_amount": price.cap_amount,
+            "tiers": price.tiers.model_dump(),
+            "minimum_units": price.minimum_units,
+            "unit_label": price.unit_label,
         }
-    return None
+    if not isinstance(price, METERED_PRICES):
+        return None
+    meter_id = str(price.meter_id)
+    if meter_id not in meter_external_ids:
+        return None
+    config = {
+        **config,
+        "meter": meter_external_ids[meter_id],
+        "cap_amount": price.cap_amount,
+    }
+    if isinstance(price, ProductPriceMeteredUnit):
+        return {**config, "unit_amount": price.unit_amount}
+    if price.tiers is None:
+        return None
+    return {**config, "tiers": price.tiers.model_dump()}
 
 
 type PriceKey = tuple[tuple[str, str], ...]

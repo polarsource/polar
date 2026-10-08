@@ -14,6 +14,7 @@ from polar.kit.visibility import Visibility
 from polar.meter.unit import MeterUnit
 from polar.models import Organization, UserOrganization
 from polar.models.benefit import BenefitType
+from polar.product.tiers import Tier, Tiers, TierType
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -22,6 +23,7 @@ from tests.fixtures.random_objects import (
     create_event,
     create_meter,
     create_product,
+    create_product_price_metered_tiers,
     create_product_price_seat_unit,
     set_product_benefits,
 )
@@ -609,6 +611,28 @@ class TestExport:
             prices=[("seat", 1000, "usd")],
             external_id="team",
         )
+        usage = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            name="Usage",
+            prices=[],
+            external_id="usage",
+        )
+        usage.prices.append(
+            await create_product_price_metered_tiers(
+                save_fixture,
+                product=usage,
+                meter=meter,
+                tiers=Tiers(
+                    type=TierType.graduated,
+                    tiers=[
+                        Tier(bound=100, unit_amount=Decimal(10)),
+                        Tier(unit_amount=Decimal(5)),
+                    ],
+                ),
+            )
+        )
 
         response = await client.get(
             "/v1/config/", params={"organization_id": str(organization.id)}
@@ -655,7 +679,12 @@ class TestExport:
                 "metadata": {},
             },
         ]
-        exported_product, pwyw, team = json["config"]["products"]
+        exported_product, pwyw, team, usage_product = json["config"]["products"]
+        [metered_tiers] = usage_product["prices"]
+        assert (metered_tiers["amount_type"], metered_tiers["meter"]) == (
+            "metered_tiers",
+            "api-calls",
+        )
         assert pwyw["prices"] == [
             {
                 "amount_type": "custom",
@@ -721,6 +750,7 @@ class TestExport:
             ("benefit", "unchanged"),
             ("benefit", "unchanged"),
             ("benefit", "unchanged"),
+            ("product", "unchanged"),
             ("product", "unchanged"),
             ("product", "unchanged"),
             ("product", "unchanged"),

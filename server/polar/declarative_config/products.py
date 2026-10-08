@@ -11,8 +11,10 @@ from polar.product.schemas import (
     ProductPriceCreate,
     ProductPriceCustomCreate,
     ProductPriceFixedCreate,
+    ProductPriceMeteredTiersCreate,
     ProductPriceMeteredUnitCreate,
     ProductPriceSeatBasedCreate,
+    ProductPriceUnitBasedCreate,
     ProductPriceUpdate,
     ProductUpdate,
 )
@@ -22,8 +24,10 @@ from .schemas import (
     ConfigProductPrice,
     ConfigProductPriceCustom,
     ConfigProductPriceFixed,
+    ConfigProductPriceMeteredTiers,
     ConfigProductPriceMeteredUnit,
     ConfigProductPriceSeatBased,
+    ConfigProductPriceUnitBased,
 )
 from .validation import PriceKey, ProductChange, price_config, price_key
 
@@ -64,18 +68,25 @@ def price_create(
     price: ConfigProductPrice,
     meter_ids: dict[str, UUID],
 ) -> ProductPriceCreate:
-    if isinstance(price, ConfigProductPriceMeteredUnit):
-        return ProductPriceMeteredUnitCreate(
-            **price.model_dump(exclude={"meter"}),
-            meter_id=meter_ids[price.meter],
-        )
-    if isinstance(price, ConfigProductPriceCustom):
-        return ProductPriceCustomCreate(**price.model_dump())
-    if isinstance(price, ConfigProductPriceSeatBased):
-        return ProductPriceSeatBasedCreate(**price.model_dump())
-    if not isinstance(price, ConfigProductPriceFixed):
-        raise NotImplementedError(price.amount_type)
-    return ProductPriceFixedCreate(**price.model_dump())
+    match price:
+        case ConfigProductPriceMeteredUnit():
+            return ProductPriceMeteredUnitCreate(
+                **price.model_dump(exclude={"meter"}),
+                meter_id=meter_ids[price.meter],
+            )
+        case ConfigProductPriceMeteredTiers():
+            return ProductPriceMeteredTiersCreate(
+                **price.model_dump(exclude={"meter"}),
+                meter_id=meter_ids[price.meter],
+            )
+        case ConfigProductPriceCustom():
+            return ProductPriceCustomCreate(**price.model_dump())
+        case ConfigProductPriceSeatBased():
+            return ProductPriceSeatBasedCreate(**price.model_dump())
+        case ConfigProductPriceUnitBased():
+            return ProductPriceUnitBasedCreate(**price.model_dump())
+        case ConfigProductPriceFixed():
+            return ProductPriceFixedCreate(**price.model_dump())
 
 
 def product_create(

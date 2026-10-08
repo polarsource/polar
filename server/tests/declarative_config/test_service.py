@@ -99,6 +99,11 @@ BETA_BENEFIT = {
     "description": "Beta access",
 }
 
+TIERS = {
+    "type": "graduated",
+    "tiers": [{"bound": 100, "unit_amount": "10"}, {"unit_amount": "5"}],
+}
+
 PRO_PRODUCT = {
     "external_id": "pro",
     "name": "Pro",
@@ -737,6 +742,77 @@ class TestApply:
         assert new_seat_price.tiers.tiers[0].unit_amount == Decimal(1500)
 
     @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_tiered_prices(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.meter.service.enqueue_job")
+        config = Config.model_validate(
+            {
+                "meters": [TOOL_CALLS_METER],
+                "products": [
+                    {
+                        "external_id": "usage",
+                        "name": "Usage",
+                        "recurring_interval": "month",
+                        "prices": [
+                            {
+                                "amount_type": "metered_tiers",
+                                "meter": "sdk-tool-calls",
+                                "tiers": TIERS,
+                                "cap_amount": 10000,
+                            }
+                        ],
+                    },
+                    {
+                        "external_id": "credits",
+                        "name": "Credits",
+                        "prices": [
+                            {
+                                "amount_type": "unit_based",
+                                "tiers": TIERS,
+                                "minimum_units": 10,
+                                "unit_label": {
+                                    "en": {"=1": "credit", "other": "credits"}
+                                },
+                            }
+                        ],
+                    },
+                ],
+            }
+        )
+
+        created = await declarative_config_service.apply(
+            session, redis, auth_subject, config
+        )
+        unchanged = await declarative_config_service.apply(
+            session, redis, auth_subject, config
+        )
+
+        assert [change.action for change in created.changes] == [
+            ConfigAction.created
+        ] * 3
+        assert [change.action for change in unchanged.changes] == [
+            ConfigAction.unchanged
+        ] * 3
+        products = {
+            product.external_id: product
+            for product in await ProductRepository.from_session(
+                session
+            ).get_all_by_external_ids(organization.id, ["usage", "credits"])
+        }
+        assert [price.amount_type for price in products["usage"].prices] == [
+            ProductPriceAmountType.metered_tiers
+        ]
+        assert [price.amount_type for price in products["credits"].prices] == [
+            ProductPriceAmountType.unit_based
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_create_product_meter_interval(
         self,
         save_fixture: SaveFixture,
@@ -1322,16 +1398,7 @@ class TestPlan:
                             "trial_interval": "day",
                             "trial_interval_count": 14,
                             "custom_fields": [{"slug": "company"}],
-                            "prices": [
-                                {"amount_type": "fixed", "price_amount": 1000},
-                                {
-                                    "amount_type": "unit_based",
-                                    "tiers": {
-                                        "type": "volume",
-                                        "tiers": [{"unit_amount": "100"}],
-                                    },
-                                },
-                            ],
+                            "prices": [{"amount_type": "fixed", "price_amount": 1000}],
                         }
                     ],
                 }
@@ -1342,9 +1409,40 @@ class TestPlan:
             issue.loc
             for issue in plan.issues
             if issue.type == ConfigIssueType.not_supported
-        ] == [
-            ["body", "products", 0, "custom_fields"],
-            ["body", "products", 0, "prices", 1, "amount_type"],
+        ] == [["body", "products", 0, "custom_fields"]]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_metered_tiers_unknown_meter(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "products": [
+                        {
+                            "external_id": "usage",
+                            "name": "Usage",
+                            "recurring_interval": "month",
+                            "prices": [
+                                {
+                                    "amount_type": "metered_tiers",
+                                    "meter": "api-calls",
+                                    "tiers": TIERS,
+                                }
+                            ],
+                        }
+                    ]
+                }
+            ),
+        )
+
+        assert [(issue.type, issue.loc) for issue in plan.issues] == [
+            (
+                ConfigIssueType.unknown_reference,
+                ["body", "products", 0, "prices", 0, "meter"],
+            )
         ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")

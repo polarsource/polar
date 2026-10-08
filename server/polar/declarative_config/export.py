@@ -7,7 +7,7 @@ from polar.benefit.strategies.meter_credit.properties import (
     BenefitMeterCreditProperties,
 )
 from polar.meter.repository import MeterRepository
-from polar.models import Benefit, Organization, Product, ProductPriceMeteredUnit
+from polar.models import Benefit, Organization, Product
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncReadSession
 from polar.product.repository import ProductRepository
@@ -24,7 +24,12 @@ from .schemas import (
     ConfigSkippedReason,
     ConfigSkippedResource,
 )
-from .validation import BENEFIT_PROPERTIES, benefit_properties, price_config
+from .validation import (
+    BENEFIT_PROPERTIES,
+    METERED_PRICES,
+    benefit_properties,
+    price_config,
+)
 
 _benefit_adapter: TypeAdapter[ConfigBenefit] = TypeAdapter(ConfigBenefit)
 _export_benefit_adapter: TypeAdapter[ConfigExportBenefit] = TypeAdapter(
@@ -157,7 +162,8 @@ def _product_document(
         if config is None:
             return (
                 ConfigSkippedReason.unknown_reference
-                if isinstance(price, ProductPriceMeteredUnit)
+                if isinstance(price, METERED_PRICES)
+                and str(price.meter_id) not in meter_external_ids
                 else ConfigSkippedReason.not_supported
             )
         prices.append(config)

@@ -2,7 +2,6 @@ import uuid
 from decimal import Decimal
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.models import (
@@ -16,7 +15,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_meter
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def customer_meter_organization_second(
     save_fixture: SaveFixture,
     organization_second: Organization,
@@ -38,7 +37,7 @@ async def customer_meter_organization_second(
     return customer_meter
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def customer_meters_with_external_ids(
     save_fixture: SaveFixture, organization: Organization, customer: Customer
 ) -> tuple[CustomerMeter, CustomerMeter]:
@@ -62,7 +61,7 @@ async def customer_meters_with_external_ids(
     return customer_meters[0], customer_meters[1]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListCustomerMeters:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/customer-meters/")
@@ -102,7 +101,7 @@ class TestListCustomerMeters:
         assert json["items"][0]["id"] == str(tool_call.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetCustomerMeter:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/customer-meters/{uuid.uuid4()}")

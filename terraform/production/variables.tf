@@ -443,6 +443,12 @@ variable "attio_startup_list_id" {
   sensitive   = true
 }
 
+variable "attio_design_partner_list_id" {
+  description = "Attio design partner list ID for the Vercel frontend"
+  type        = string
+  sensitive   = true
+}
+
 variable "mcp_oauth2_client_id" {
   description = "MCP OAuth2 client ID for the Vercel frontend"
   type        = string

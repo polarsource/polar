@@ -4,7 +4,6 @@ from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
-import pytest_asyncio
 import stripe as stripe_lib
 from freezegun import freeze_time
 from pytest_mock import MockerFixture
@@ -219,14 +218,14 @@ def _discounted_renewals(subscription: Subscription, renewals: int) -> list[bool
     return discounted
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def migration(
     save_fixture: SaveFixture, organization: Organization
 ) -> MerchantMigration:
     return await build_connected_migration(save_fixture, organization)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def imported_customer(
     save_fixture: SaveFixture, organization: Organization
 ) -> Customer:
@@ -238,7 +237,7 @@ async def imported_customer(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def pending_record(
     save_fixture: SaveFixture,
     migration: MerchantMigration,
@@ -311,7 +310,7 @@ def cutover(
     return run
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRun:
     @pytest.mark.parametrize(
         ("canonical_kwargs", "tax"),
@@ -1573,11 +1572,11 @@ class TestRun:
         _assert_left_alone(adapter, pending_record)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAlreadyLiveOnPolar:
     """Reconciling: whatever activated it, the source must not still be billing."""
 
-    @pytest_asyncio.fixture
+    @pytest.fixture
     async def live_record(
         self,
         save_fixture: SaveFixture,
@@ -1651,7 +1650,7 @@ class TestAlreadyLiveOnPolar:
         assert adapter.stopped == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCancelAtPeriodEnd:
     """A selected ending subscription moves, and still ends on that date."""
 
@@ -2015,7 +2014,7 @@ class TestCancelAtPeriodEnd:
         assert subscription.ended_at is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSkips:
     """Every skip leaves the source billing."""
 
@@ -2183,7 +2182,7 @@ class TestSkips:
         _assert_left_alone(adapter, record)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFailures:
     async def test_stripe_error_is_retryable(
         self, cutover: RunCutover, pending_record: MerchantMigrationRecord
@@ -2410,9 +2409,9 @@ class TestFailures:
         assert adapter.stopped == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAddOn:
-    @pytest_asyncio.fixture(autouse=True)
+    @pytest.fixture(autouse=True)
     async def add_on_record(
         self,
         save_fixture: SaveFixture,

@@ -231,7 +231,7 @@ class TestBuildToolResponse:
 
 
 class TestFetchPage:
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_rejects_off_origin_url(self) -> None:
         client, requests = _make_client(lambda request: httpx.Response(200))
         deps = WebsiteDeps(client=client, allowed_domain="example.com")
@@ -244,7 +244,7 @@ class TestFetchPage:
         assert deps.pages_navigated == 0
         assert requests == []
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_respects_page_limit(self) -> None:
         client, requests = _make_client(lambda request: httpx.Response(200))
         deps = WebsiteDeps(
@@ -260,7 +260,7 @@ class TestFetchPage:
         assert "Page limit reached" in result
         assert requests == []
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_successful_fetch(self) -> None:
         html = """
         <html>
@@ -285,7 +285,7 @@ class TestFetchPage:
         assert deps.pages_visited[0].title == "My Site"
         assert "Page: My Site" in result
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_http_error(self) -> None:
         client, requests = _make_client(lambda request: httpx.Response(404))
         deps = WebsiteDeps(client=client, allowed_domain="example.com")
@@ -298,7 +298,7 @@ class TestFetchPage:
         assert "Error: HTTP 404" in result
         assert deps.pages_navigated == 1
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_connection_error(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
             raise httpx.ConnectError("Connection refused")
@@ -314,7 +314,7 @@ class TestFetchPage:
         assert "Error fetching" in result
         assert deps.pages_navigated == 1
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_content_truncation(self) -> None:
         long_body = "x" * (MAX_CHARS_PER_PAGE + 5_000)
         html = f"<html><head><title>Big</title></head><body><p>{long_body}</p></body></html>"
@@ -331,7 +331,7 @@ class TestFetchPage:
         assert len(deps.pages_visited[0].content) <= MAX_CHARS_PER_PAGE
         assert "(content truncated)" in result
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_rejects_binary_content_type(self) -> None:
         client, requests = _make_client(
             lambda request: httpx.Response(
@@ -350,7 +350,7 @@ class TestFetchPage:
         assert "unsupported content type" in result
         assert deps.pages_visited == []
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_rejects_oversized_response(self) -> None:
         client, requests = _make_client(
             lambda request: httpx.Response(
@@ -369,7 +369,7 @@ class TestFetchPage:
         assert "response too large" in result
         assert deps.pages_visited == []
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_rejects_oversized_streamed_response(self) -> None:
         class _BigStream(httpx.AsyncByteStream):
             async def __aiter__(self) -> AsyncIterator[bytes]:
@@ -400,7 +400,7 @@ class TestFetchPage:
 
 
 class TestCollectWebsiteData:
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_prepends_https_if_missing(self) -> None:
         with patch(
             "polar.organization_review.collectors.website._run_website_agent",
@@ -417,7 +417,7 @@ class TestCollectWebsiteData:
             )
             assert result.base_url == "https://example.com"
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_strips_trailing_slash(self) -> None:
         with patch(
             "polar.organization_review.collectors.website._run_website_agent",
@@ -433,7 +433,7 @@ class TestCollectWebsiteData:
                 organization_slug=None,
             )
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_timeout_returns_error_data(self) -> None:
         async def slow_agent(url: str) -> WebsiteData:
             await asyncio.sleep(999)
@@ -453,7 +453,7 @@ class TestCollectWebsiteData:
         assert result.scrape_error is not None
         assert "timeout" in result.scrape_error.lower()
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_exception_returns_error_data(self) -> None:
         with patch(
             "polar.organization_review.collectors.website._run_website_agent",
@@ -472,7 +472,7 @@ class TestCollectWebsiteData:
 
 
 class TestFetchPageSSRF:
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_blocks_initial_ssrf(self) -> None:
         """fetch_page should block a URL that resolves to a private IP."""
         client, requests = _make_client(lambda request: httpx.Response(200))
@@ -491,7 +491,7 @@ class TestFetchPageSSRF:
         assert deps.pages_navigated == 0
         assert requests == []
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_blocks_redirect_to_private_ip(self) -> None:
         """Redirect targets that resolve to private IPs should be blocked."""
         client, requests = _make_client(
@@ -520,7 +520,7 @@ class TestFetchPageSSRF:
 
         assert "private IP" in result
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_blocks_redirect_to_different_domain(self) -> None:
         """Redirects to a different domain should be blocked."""
         client, requests = _make_client(
@@ -537,7 +537,7 @@ class TestFetchPageSSRF:
 
         assert "off-origin" in result
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_follows_valid_same_origin_redirect(self) -> None:
         """Valid same-origin redirects should be followed."""
 
@@ -562,7 +562,7 @@ class TestFetchPageSSRF:
         assert len(requests) == 2
         assert "Page: New" in result
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_follows_www_to_non_www_redirect(self) -> None:
         """www -> non-www redirects should work when allowed_domain is the root."""
 
@@ -587,7 +587,7 @@ class TestFetchPageSSRF:
         assert len(requests) == 2
         assert "Page: Home" in result
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_max_redirects_exceeded(self) -> None:
         """Exceeding MAX_REDIRECTS should return an error."""
         client, requests = _make_client(
@@ -627,7 +627,7 @@ def _patch_scrape_markdown(result: ScrapeResult | Exception) -> Any:
 
 
 class TestBrowsePageFirecrawl:
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_successful_scrape(self) -> None:
         client = AsyncMock(spec=httpx.AsyncClient)
         deps = WebsiteDeps(client=client, allowed_domain="example.com")
@@ -652,7 +652,7 @@ class TestBrowsePageFirecrawl:
         assert "real business" in page.content
         assert "Page: My Site" in response
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_rejects_off_origin_url(self) -> None:
         client = AsyncMock(spec=httpx.AsyncClient)
         deps = WebsiteDeps(client=client, allowed_domain="example.com")
@@ -670,7 +670,7 @@ class TestBrowsePageFirecrawl:
         assert deps.pages_navigated == 0
         mock_scrape.assert_not_called()
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_respects_page_limit(self) -> None:
         client = AsyncMock(spec=httpx.AsyncClient)
         deps = WebsiteDeps(
@@ -689,7 +689,7 @@ class TestBrowsePageFirecrawl:
         assert "Page limit reached" in response
         mock_scrape.assert_not_called()
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_off_origin_final_url_blocked(self) -> None:
         """A JS/HTTP redirect that lands off-origin is rejected via the final URL."""
         client = AsyncMock(spec=httpx.AsyncClient)
@@ -707,7 +707,7 @@ class TestBrowsePageFirecrawl:
         assert "https://evil.com/landing" in response
         assert deps.pages_visited == []
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_http_error(self) -> None:
         client = AsyncMock(spec=httpx.AsyncClient)
         deps = WebsiteDeps(client=client, allowed_domain="example.com")
@@ -723,7 +723,7 @@ class TestBrowsePageFirecrawl:
         assert "Error: HTTP 404" in response
         assert deps.pages_visited == []
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_scrape_exception(self) -> None:
         client = AsyncMock(spec=httpx.AsyncClient)
         deps = WebsiteDeps(client=client, allowed_domain="example.com")
@@ -736,7 +736,7 @@ class TestBrowsePageFirecrawl:
         assert "Error navigating" in response
         assert deps.pages_visited == []
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_content_truncation(self) -> None:
         client = AsyncMock(spec=httpx.AsyncClient)
         deps = WebsiteDeps(client=client, allowed_domain="example.com")

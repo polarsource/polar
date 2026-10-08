@@ -9,7 +9,6 @@ from uuid import UUID
 from zoneinfo import ZoneInfo
 
 import pytest
-import pytest_asyncio
 from alembic_utils.pg_trigger import PGTrigger
 from alembic_utils.replaceable_entity import registry as entities_registry
 from sqlalchemy.schema import CreateSequence
@@ -1580,7 +1579,7 @@ async def _query_metrics(
     )
 
 
-@pytest_asyncio.fixture(scope="module", loop_scope="module")
+@pytest.fixture(scope="module")
 async def tinybird_metrics_database_url(worker_id: str) -> AsyncIterator[str]:
     # The harness commits shared seed data once for speed, so it can't use the
     # worker database that regular tests rely on transaction rollbacks to isolate.
@@ -1619,7 +1618,7 @@ async def tinybird_metrics_database_url(worker_id: str) -> AsyncIterator[str]:
         drop_database(sync_database_url)
 
 
-@pytest_asyncio.fixture(scope="module", loop_scope="module")
+@pytest.fixture(scope="module")
 async def metrics_harness(
     tinybird_metrics_database_url: str,
     worker_id: str,

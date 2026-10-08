@@ -31,7 +31,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetSubscription:
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_excludes_non_public_benefits(
@@ -69,7 +69,7 @@ class TestGetSubscription:
         assert str(private_benefit.id) not in benefit_ids
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetCancelPreview:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(
@@ -111,7 +111,7 @@ class TestGetCancelPreview:
         assert json["outstanding_amount"] == 1000
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCustomerSubscriptionProductUpdate:
     async def test_anonymous(
         self, client: AsyncClient, session: AsyncSession, subscription: Subscription
@@ -292,7 +292,7 @@ class TestCustomerSubscriptionProductUpdate:
         assert "below the minimum of 5 seats" in error["detail"][0]["msg"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCustomerSubscriptionUpdateUnknownFields:
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_unknown_field(
@@ -305,7 +305,7 @@ class TestCustomerSubscriptionUpdateUnknownFields:
         assert response.status_code == 422
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCustomerSubscriptionUpdateCancel:
     async def test_anonymous(
         self,
@@ -386,7 +386,7 @@ class TestCustomerSubscriptionUpdateCancel:
         assert updated_subscription["customer_cancellation_comment"] == comment
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionUpdateUncancel:
     async def test_anonymous(
         self,
@@ -536,7 +536,7 @@ class TestSubscriptionUpdateUncancel:
         }
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCustomerSubscriptionCancel:
     async def test_anonymous(
         self,
@@ -603,7 +603,7 @@ class TestCustomerSubscriptionCancel:
         assert updated_subscription["ends_at"] == current_period_end
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCustomerSubscriptionRevoke:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
@@ -712,7 +712,7 @@ class TestCustomerSubscriptionRevoke:
         assert response.status_code == 403
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMemberRoleEnforcementSubscriptionUpdate:
     """Tests for role-based access control on subscription update endpoint.
 
@@ -808,7 +808,7 @@ class TestMemberRoleEnforcementSubscriptionUpdate:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMemberRoleEnforcementSubscriptionCancel:
     """Tests for role-based access control on subscription cancel endpoint.
 
@@ -893,7 +893,7 @@ class TestMemberRoleEnforcementSubscriptionCancel:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPreviewChange:
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_product_change(

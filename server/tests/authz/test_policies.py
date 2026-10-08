@@ -20,7 +20,7 @@ async def _set_role(
     await save_fixture(user_organization)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFinanceCanRead:
     @pytest.mark.auth
     async def test_admin_allowed(
@@ -105,7 +105,7 @@ class TestFinanceCanRead:
         assert result is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOrgCanManage:
     @pytest.mark.auth
     async def test_admin_allowed(
@@ -150,7 +150,7 @@ class TestOrgCanManage:
         assert result == "You don't have permission to manage the organization"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMembersCanManage:
     @pytest.mark.auth
     async def test_admin_allowed(

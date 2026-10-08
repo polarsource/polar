@@ -14,7 +14,7 @@ def mock_enqueue_email(mocker: MockerFixture) -> MagicMock:
     return mocker.patch("polar.email_update.service.enqueue_email_template")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRequestEmailUpdate:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(

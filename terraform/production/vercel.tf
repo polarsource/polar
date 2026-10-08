@@ -99,6 +99,7 @@ module "vercel" {
     { key = "MCP_OAUTH2_CLIENT_SECRET", value = var.mcp_oauth2_client_secret, target = ["production", "preview"] },
     { key = "ATTIO_API_KEY", value = var.attio_api_key, target = ["production", "preview"], sensitive = true },
     { key = "ATTIO_STARTUP_LIST_ID", value = var.attio_startup_list_id, target = ["production", "preview"], sensitive = true },
+    { key = "ATTIO_DESIGN_PARTNER_LIST_ID", value = var.attio_design_partner_list_id, target = ["production", "preview"], sensitive = true },
   ]
 }
 

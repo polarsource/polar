@@ -8,7 +8,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_user
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_backfills_missing_keys_and_keeps_existing_values(
     session: AsyncSession, save_fixture: SaveFixture, organization: Organization
 ) -> None:

@@ -98,6 +98,7 @@ class ProductService:
         auth_subject: AuthSubject[User | Organization],
         *,
         id: Sequence[uuid.UUID] | None = None,
+        external_id: Sequence[str] | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
@@ -135,6 +136,9 @@ class ProductService:
 
         if id is not None:
             statement = statement.where(Product.id.in_(id))
+
+        if external_id is not None:
+            statement = statement.where(Product.external_id.in_(external_id))
 
         if organization_id is not None:
             statement = statement.where(Product.organization_id.in_(organization_id))

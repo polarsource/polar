@@ -18,7 +18,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer, create_event, create_meter
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMeterBackfillEvents:
     async def test_not_existing_meter(self, session: AsyncSession) -> None:
         session.expunge_all()

@@ -14,7 +14,7 @@ class OrganizationIDPayload(BaseModel):
     organization_id: UUID4 | None = None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetPayloadOrganization:
     @pytest.mark.auth
     async def test_single_org_down_scope_resolves_implicitly(

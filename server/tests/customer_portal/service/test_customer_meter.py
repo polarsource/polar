@@ -15,7 +15,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_active_subscription, create_meter
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
     async def test_query_filters_by_meter_name(

@@ -101,7 +101,7 @@ async def _create_messages(
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate:
     @pytest.mark.auth
     async def test_user_thread_is_owned_and_titled(
@@ -166,7 +166,7 @@ class TestCreate:
         assert existing.deleted_at is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     @pytest.mark.auth
     async def test_user_sees_only_their_threads(
@@ -217,7 +217,7 @@ class TestList:
         assert [t.id for t in results] == [older.id, newer.id]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRecordTurn:
     @pytest.mark.auth
     async def test_appends_message_and_touches_thread(
@@ -262,7 +262,7 @@ class TestRecordTurn:
         assert message is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListMessages:
     @pytest.mark.auth
     async def test_returns_turns_oldest_first(
@@ -332,7 +332,7 @@ class TestListMessages:
         assert [message.prompt for message in third] == ["q0"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBuildMessageHistory:
     @pytest.mark.auth
     async def test_no_messages_is_no_history(
@@ -491,7 +491,7 @@ class TestBuildMessageHistory:
         ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGet:
     @pytest.mark.auth
     async def test_own_thread_is_readable(

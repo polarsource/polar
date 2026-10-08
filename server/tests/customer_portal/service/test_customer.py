@@ -34,7 +34,7 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     return mock
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAddPaymentMethod:
     async def test_setup_intent_creation_error_propagates(
         self,
@@ -235,7 +235,7 @@ class TestAddPaymentMethod:
         assert customer.default_payment_method_id == response.payment_method.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeletePaymentMethod:
     async def test_default_sends_customer_update_events(
         self,
@@ -289,7 +289,7 @@ class TestDeletePaymentMethod:
         enqueue_job_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdate:
     async def test_tax_id_no_country(
         self,

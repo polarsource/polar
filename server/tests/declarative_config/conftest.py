@@ -1,10 +1,10 @@
-import pytest_asyncio
+import pytest
 
 from polar.models import Organization
 from tests.fixtures.database import SaveFixture
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def config_as_code_enabled(
     save_fixture: SaveFixture, organization: Organization
 ) -> None:

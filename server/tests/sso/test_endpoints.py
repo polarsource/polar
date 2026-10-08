@@ -1,7 +1,6 @@
 import uuid
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.auth.models import AuthSubject
@@ -50,7 +49,7 @@ async def create_sso_connection(
     return connection
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def sso_enabled_organization(
     save_fixture: SaveFixture, organization: Organization
 ) -> Organization:
@@ -62,14 +61,14 @@ async def sso_enabled_organization(
     return organization
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def sso_connection(
     save_fixture: SaveFixture, organization: Organization
 ) -> OrganizationSSOConnection:
     return await create_sso_connection(save_fixture, organization)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListSSOConnections:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -109,7 +108,7 @@ class TestListSSOConnections:
         assert "client_secret" not in item["configuration"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListSSODomains:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -151,7 +150,7 @@ class TestListSSODomains:
         assert json["items"][0]["domain"] == "acme.com"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetSSOConnection:
     async def test_anonymous(
         self,
@@ -221,7 +220,7 @@ class TestGetSSOConnection:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateSSOConnection:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -428,7 +427,7 @@ class TestCreateSSOConnection:
         assert response.status_code == 422
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateSSOConnection:
     async def test_anonymous(
         self,
@@ -706,7 +705,7 @@ class TestUpdateSSOConnection:
         assert response.status_code == 200
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteSSOConnection:
     async def test_anonymous(
         self,
@@ -801,7 +800,7 @@ class TestDeleteSSOConnection:
         assert response.status_code == 409
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFeatureGate:
     """A member of an organization without the `sso_enabled` feature is denied."""
 

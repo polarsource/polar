@@ -35,7 +35,7 @@ METER = {
 }
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestApply:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post("/v1/config/apply", json={"meters": [METER]})
@@ -216,7 +216,7 @@ class TestApply:
         ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPlan:
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -308,7 +308,7 @@ class TestPlan:
         } in created["diff"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestExport:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/config/")

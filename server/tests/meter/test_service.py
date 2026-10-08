@@ -7,7 +7,6 @@ from unittest.mock import AsyncMock
 from zoneinfo import ZoneInfo
 
 import pytest
-import pytest_asyncio
 from pydantic import ValidationError
 from pytest_mock import MockerFixture
 from sqlalchemy import select
@@ -71,7 +70,7 @@ def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
     return mocker.patch("polar.meter.service.enqueue_job")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate:
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_last_billed_event_set(
@@ -238,7 +237,7 @@ class TestCreate:
         assert e.value.errors()[0]["loc"] == ("body", "external_id")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdate:
     @pytest.mark.parametrize(
         "meter_update",
@@ -453,7 +452,7 @@ class TestUpdate:
         assert updated_meter.external_id == "ext_1337"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetQuantities:
     @pytest.mark.parametrize(
         "aggregation",
@@ -1410,7 +1409,7 @@ class TestGetQuantities:
         assert result.total == 2
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetQuantity:
     async def test_excludes_non_numeric_values(
         self,
@@ -1461,7 +1460,7 @@ class TestGetQuantity:
         assert quantity == 30.0
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
     return await create_meter(
         save_fixture,
@@ -1479,7 +1478,7 @@ async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def events(
     save_fixture: SaveFixture, session: AsyncSession, customer: Customer, meter: Meter
 ) -> list[Event]:
@@ -1544,7 +1543,7 @@ async def events(
     return events
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_metered_unit(
     save_fixture: SaveFixture, meter: Meter, organization: Organization
 ) -> Product:
@@ -1556,7 +1555,7 @@ async def product_metered_unit(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def metered_subscription(
     save_fixture: SaveFixture, customer: Customer, product_metered_unit: Product
 ) -> Subscription:
@@ -1565,7 +1564,7 @@ async def metered_subscription(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateBillingEntries:
     async def test_no_subscription(
         self,
@@ -1922,7 +1921,7 @@ class TestCreateBillingEntries:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateBillingEntriesWithSeats:
     async def test_seat_holder_overage_charges_billing_manager(
         self,

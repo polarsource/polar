@@ -25,7 +25,7 @@ def get_gauge_value(gauge: Any, labels: dict[str, str]) -> float:
 
 
 class TestCollectQueueMetrics:
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_empty_queues(self, redis: FakeAsyncRedis) -> None:
         await collect_queue_metrics(redis)
 
@@ -33,7 +33,7 @@ class TestCollectQueueMetrics:
             assert get_gauge_value(QUEUE_SIZE, {"queue": queue_name}) == 0
             assert get_gauge_value(QUEUE_OLDEST_MESSAGE_AGE, {"queue": queue_name}) == 0
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_queue_with_messages(self, redis: FakeAsyncRedis) -> None:
         queue_name = "high_priority"
         queue_key = f"dramatiq:{queue_name}"
@@ -53,7 +53,7 @@ class TestCollectQueueMetrics:
         age_value = get_gauge_value(QUEUE_OLDEST_MESSAGE_AGE, {"queue": queue_name})
         assert 4.0 <= age_value <= 10.0
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_queue_with_eta_timestamp(self, redis: FakeAsyncRedis) -> None:
         queue_name = "medium_priority"
         queue_key = f"dramatiq:{queue_name}"
@@ -71,7 +71,7 @@ class TestCollectQueueMetrics:
         age_value = get_gauge_value(QUEUE_OLDEST_MESSAGE_AGE, {"queue": queue_name})
         assert 9.0 <= age_value <= 15.0
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_queue_with_no_timestamp(self, redis: FakeAsyncRedis) -> None:
         queue_name = "low_priority"
         queue_key = f"dramatiq:{queue_name}"
@@ -86,7 +86,7 @@ class TestCollectQueueMetrics:
 
         assert get_gauge_value(QUEUE_OLDEST_MESSAGE_AGE, {"queue": queue_name}) == 0
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_invalid_json_message(self, redis: FakeAsyncRedis) -> None:
         queue_name = "high_priority"
         queue_key = f"dramatiq:{queue_name}"
@@ -101,7 +101,7 @@ class TestCollectQueueMetrics:
         assert get_gauge_value(QUEUE_SIZE, {"queue": queue_name}) == 1
         assert get_gauge_value(QUEUE_OLDEST_MESSAGE_AGE, {"queue": queue_name}) == 0
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_non_dict_json_message(self, redis: FakeAsyncRedis) -> None:
         queue_name = "high_priority"
         queue_key = f"dramatiq:{queue_name}"
@@ -115,7 +115,7 @@ class TestCollectQueueMetrics:
 
         assert get_gauge_value(QUEUE_OLDEST_MESSAGE_AGE, {"queue": queue_name}) == 0
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_redis_error_on_queue_size(self) -> None:
         redis = AsyncMock()
         redis.llen.side_effect = RedisError("Connection refused")
@@ -125,7 +125,7 @@ class TestCollectQueueMetrics:
         for queue_name in QUEUE_NAMES:
             assert get_gauge_value(QUEUE_SIZE, {"queue": queue_name}) == 0
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_redis_error_on_queue_age(self) -> None:
         redis = AsyncMock()
         redis.llen.side_effect = [10] * len(QUEUE_NAMES) + [
@@ -138,7 +138,7 @@ class TestCollectQueueMetrics:
         for queue_name in QUEUE_NAMES:
             assert get_gauge_value(QUEUE_OLDEST_MESSAGE_AGE, {"queue": queue_name}) == 0
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_message_id_exists_but_no_data(self, redis: FakeAsyncRedis) -> None:
         queue_name = "high_priority"
         queue_key = f"dramatiq:{queue_name}"
@@ -150,7 +150,7 @@ class TestCollectQueueMetrics:
         assert get_gauge_value(QUEUE_SIZE, {"queue": queue_name}) == 1
         assert get_gauge_value(QUEUE_OLDEST_MESSAGE_AGE, {"queue": queue_name}) == 0
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_negative_age_clamped_to_zero(self, redis: FakeAsyncRedis) -> None:
         queue_name = "high_priority"
         queue_key = f"dramatiq:{queue_name}"

@@ -3,7 +3,6 @@ from datetime import UTC, datetime
 
 import httpx
 import pytest
-import pytest_asyncio
 from pytest_mock import MockerFixture
 
 from polar.backoffice import app as backoffice_app
@@ -26,7 +25,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def backoffice_client(
     session: AsyncSession, user: User
 ) -> AsyncGenerator[httpx.AsyncClient]:
@@ -80,7 +79,7 @@ class TestStripeRejectReasonForAup:
             }
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDenyDialog:
     @pytest.mark.parametrize(
         ("section", "label", "reason"),
@@ -230,7 +229,7 @@ class TestDenyDialog:
         assert current is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBlockDialog:
     async def test_disables_stripe_account_when_opted_in(
         self,
@@ -280,7 +279,7 @@ class TestBlockDialog:
         assert organization.status == previous_status
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestResetOnboardingDialog:
     async def test_warns_that_held_payouts_are_canceled(
         self,
@@ -337,7 +336,7 @@ class TestResetOnboardingDialog:
         ) in response.text
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOffboardDialog:
     async def test_missing_aup_section_does_not_offboard(
         self,
@@ -362,7 +361,7 @@ class TestOffboardDialog:
         assert organization.status == previous_status
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeletePayoutAccount:
     async def test_soft_deleted_organization_can_open_delete_modal(
         self,
@@ -421,7 +420,7 @@ class TestDeletePayoutAccount:
         assert persisted.deleted_at is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDetailRiskSignals:
     async def _create_signal(
         self, save_fixture: SaveFixture, organization: Organization
@@ -489,7 +488,7 @@ class TestDetailRiskSignals:
         assert self.TAB_DOT not in response.text
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEditFeatures:
     async def test_disabling_sso_lifts_enforcement(
         self,
@@ -531,7 +530,7 @@ class TestEditFeatures:
         assert organization.sso_enforced is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEditOrganization:
     async def test_syncs_customer_slug_when_slug_changes(
         self,
@@ -592,7 +591,7 @@ class TestEditOrganization:
         enqueue_update_customer_slug_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOverviewLazyCards:
     async def test_overview_defers_slow_cards(
         self,
@@ -647,7 +646,7 @@ class TestOverviewLazyCards:
         assert "<html" not in response.text
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListSearch:
     async def test_matches_slug_case_insensitively(
         self,
@@ -709,7 +708,7 @@ class TestListSearch:
         assert positions == sorted(positions)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestStatusCounts:
     async def test_whitespace_only_search_excludes_deleted(
         self,

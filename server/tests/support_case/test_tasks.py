@@ -70,7 +70,7 @@ async def _message(
     return message
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestNotifyOrganization:
     async def test_emails_each_org_member(
         self,
@@ -172,7 +172,7 @@ def _pdf_bytes() -> bytes:
     return bytes(pdf.output())
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMergeCaseAttachments:
     async def test_stores_merged_pdf_as_case_level_attachment(
         self,

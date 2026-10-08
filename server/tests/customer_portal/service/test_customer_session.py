@@ -40,7 +40,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRequest:
     async def test_organization_does_not_exist(
         self,
@@ -57,7 +57,7 @@ class TestRequest:
         assert exc_info.value.organization_id == fake_org_id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRequestLegacyOrg:
     """Tests for orgs with member_model_enabled=false (legacy customer lookup)."""
 
@@ -464,7 +464,7 @@ class TestRequestLegacyOrg:
         assert customer_session_code2.customer.id == customer.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRequestMemberEnabledOrgGracefulFallback:
     """Tests for the graceful fallback: auto-create owner member for existing customers."""
 
@@ -516,7 +516,7 @@ class TestRequestMemberEnabledOrgGracefulFallback:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSend:
     @pytest.mark.parametrize(
         "customer_email",
@@ -565,7 +565,7 @@ class TestSend:
         assert kwargs["to_email_addr"] == "member@example.com"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAuthenticate:
     """Tests for authenticate() method that exchanges code for session token."""
 
@@ -889,7 +889,7 @@ class TestAuthenticate:
         assert session_obj.member_id != member2.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteExpired:
     async def test_deletes_only_expired(
         self,

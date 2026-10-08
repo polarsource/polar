@@ -45,7 +45,7 @@ async def create_sso_connection(
     return connection
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetSSOConnection:
     async def test_unknown_slug(self, session: AsyncSession) -> None:
         with pytest.raises(ResourceNotFound):
@@ -105,7 +105,7 @@ class TestGetSSOConnection:
         assert result.id == connection.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestStart:
     async def test_unknown_slug(self, client: AsyncClient) -> None:
         response = await client.post("/v1/auth/does-not-exist/start", json={})

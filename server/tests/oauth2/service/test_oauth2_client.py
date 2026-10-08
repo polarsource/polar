@@ -15,7 +15,7 @@ def enqueue_email_mock(mocker: MockerFixture) -> MagicMock:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRevokeLeaked:
     @pytest.mark.parametrize(
         ("token", "token_type"),

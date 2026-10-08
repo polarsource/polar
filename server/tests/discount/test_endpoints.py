@@ -2,7 +2,6 @@ import uuid
 from typing import Any
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.discount.repository import DiscountRepository
@@ -18,7 +17,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_discount
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def discount_organization_second(
     save_fixture: SaveFixture,
     organization_second: Organization,
@@ -32,7 +31,7 @@ async def discount_organization_second(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListDiscounts:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/discounts/")
@@ -104,7 +103,7 @@ class TestListDiscounts:
         assert isinstance(fixed_discount, DiscountFixed)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateDiscount:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -389,7 +388,7 @@ class TestCreateDiscount:
         assert response.json()["duration"] == duration
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetDiscount:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/discounts/{uuid.uuid4()}")
@@ -408,7 +407,7 @@ class TestGetDiscount:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateDiscount:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.patch(f"/v1/discounts/{uuid.uuid4()}")
@@ -452,7 +451,7 @@ class TestUpdateDiscount:
         assert updated.max_redemptions_per_customer == 5
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteDiscount:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.delete(f"/v1/discounts/{uuid.uuid4()}")

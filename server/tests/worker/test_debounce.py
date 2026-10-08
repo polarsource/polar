@@ -37,7 +37,7 @@ def redis() -> AsyncMock:
     return mock
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSetDebounceKey:
     async def test_no_debounce_key_factory(self, redis: AsyncMock) -> None:
         """Actor without debounce_key option returns None immediately."""
@@ -88,7 +88,7 @@ class TestSetDebounceKey:
         redis.pipeline.assert_called_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCheckDebounce:
     async def test_missing_hash_runs(self, fake_redis: FakeAsyncRedis) -> None:
         actor = make_actor()
@@ -143,7 +143,7 @@ class TestCheckDebounce:
         assert context.max_threshold_execution
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFinalizeDebounce:
     async def test_success_marks_executed(self, fake_redis: FakeAsyncRedis) -> None:
         actor = make_actor(debounce_key=lambda: "test:key")

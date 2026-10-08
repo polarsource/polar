@@ -3,7 +3,6 @@ from pathlib import Path
 
 import httpx
 import pytest
-import pytest_asyncio
 
 from polar.backoffice import app as backoffice_app
 from polar.backoffice.versioned_static import get_file_version
@@ -13,7 +12,7 @@ STATIC_DIRECTORY = (
 ).resolve()
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def backoffice_client() -> AsyncGenerator[httpx.AsyncClient]:
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=backoffice_app), base_url="http://test"
@@ -21,7 +20,7 @@ async def backoffice_client() -> AsyncGenerator[httpx.AsyncClient]:
         yield client
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFileResponse:
     async def test_current_version_is_cached_immutably(
         self, backoffice_client: httpx.AsyncClient
@@ -53,7 +52,7 @@ class TestFileResponse:
         assert response.headers["Cache-Control"] == "no-cache"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCall:
     async def test_compresses_static_files(
         self, backoffice_client: httpx.AsyncClient

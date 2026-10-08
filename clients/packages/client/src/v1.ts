@@ -47290,6 +47290,8 @@ export interface operations {
           | null
         /** @description Filter by benefit IDs. */
         id?: string | string[] | null
+        /** @description Filter by benefit external ID. */
+        external_id?: string | string[] | null
         /** @description Exclude benefits with these IDs. */
         exclude_id?: string | string[] | null
         /** @description Filter by description. */
@@ -48012,6 +48014,8 @@ export interface operations {
       query?: {
         /** @description Filter by product ID. */
         id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_id?: string | string[] | null
         /** @description Filter by organization ID. */
         organization_id?: string | string[] | null
         /** @description Filter by product name. */
@@ -61650,6 +61654,8 @@ export interface operations {
       query?: {
         /** @description Filter by organization ID. */
         organization_id?: string | string[] | null
+        /** @description Filter by meter external ID. */
+        external_id?: string | string[] | null
         /** @description Filter by name. */
         query?: string | null
         /** @description Filter on archived meters. */

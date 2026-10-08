@@ -14,7 +14,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListMembers:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/members/")
@@ -224,7 +224,7 @@ class TestListMembers:
         assert json["pagination"]["total_count"] == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateMember:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
@@ -461,7 +461,7 @@ class TestCreateMember:
         assert json["role"] == "member"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetMemberByExternalID:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/members/external/ext_123")
@@ -571,7 +571,7 @@ class TestGetMemberByExternalID:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateMemberByExternalID:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.patch(
@@ -726,7 +726,7 @@ class TestUpdateMemberByExternalID:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteMemberByExternalID:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.delete("/v1/members/external/ext_123")
@@ -837,7 +837,7 @@ class TestDeleteMemberByExternalID:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetMember:
     async def test_anonymous(self, client: AsyncClient) -> None:
         member_id = str(uuid.uuid4())
@@ -934,7 +934,7 @@ class TestGetMember:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateMember:
     async def test_anonymous(self, client: AsyncClient) -> None:
         member_id = str(uuid.uuid4())
@@ -1262,7 +1262,7 @@ class TestUpdateMember:
         assert json["role"] == "member"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteMember:
     async def test_anonymous(self, client: AsyncClient) -> None:
         member_id = str(uuid.uuid4())
@@ -1362,7 +1362,7 @@ class TestDeleteMember:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListCustomerMembers:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/customers/{uuid.uuid4()}/members")
@@ -1482,7 +1482,7 @@ class TestListCustomerMembers:
         assert json["items"][0]["id"] == str(owner.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListCustomerMembersByExternalID:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/customers/external/cus_123/members")
@@ -1560,7 +1560,7 @@ class TestListCustomerMembersByExternalID:
         assert response.status_code == 409
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateCustomerMember:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
@@ -1757,7 +1757,7 @@ class TestCreateCustomerMember:
         assert response.status_code == 409
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetCustomerMember:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(
@@ -2010,7 +2010,7 @@ class TestGetCustomerMember:
         assert response.status_code == 409
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateCustomerMember:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.patch(
@@ -2118,7 +2118,7 @@ class TestUpdateCustomerMember:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteCustomerMember:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.delete(

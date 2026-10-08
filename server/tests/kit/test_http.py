@@ -19,7 +19,7 @@ from polar.kit.http import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_get_safe_return_url() -> None:
     assert get_safe_return_url("/foo") == "http://127.0.0.1:3000/foo"
 
@@ -45,7 +45,7 @@ def _fake_getaddrinfo(*addrs: str) -> list[tuple[int, int, int, str, tuple[str, 
 
 
 class TestResolveAndValidateIp:
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_blocks_loopback(self) -> None:
         with patch(
             "anyio.getaddrinfo",
@@ -54,7 +54,7 @@ class TestResolveAndValidateIp:
             with pytest.raises(SSRFBlockedError, match="private/reserved"):
                 await resolve_and_validate_ip("localhost")
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_blocks_private_10x(self) -> None:
         with patch(
             "anyio.getaddrinfo",
@@ -63,7 +63,7 @@ class TestResolveAndValidateIp:
             with pytest.raises(SSRFBlockedError):
                 await resolve_and_validate_ip("internal.example.com")
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_blocks_private_172_16(self) -> None:
         with patch(
             "anyio.getaddrinfo",
@@ -72,7 +72,7 @@ class TestResolveAndValidateIp:
             with pytest.raises(SSRFBlockedError):
                 await resolve_and_validate_ip("internal.example.com")
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_blocks_private_192_168(self) -> None:
         with patch(
             "anyio.getaddrinfo",
@@ -81,7 +81,7 @@ class TestResolveAndValidateIp:
             with pytest.raises(SSRFBlockedError):
                 await resolve_and_validate_ip("internal.example.com")
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_blocks_link_local_metadata(self) -> None:
         """169.254.169.254 (AWS/GCP metadata) is link-local and must be blocked."""
         with patch(
@@ -91,7 +91,7 @@ class TestResolveAndValidateIp:
             with pytest.raises(SSRFBlockedError, match="private/reserved"):
                 await resolve_and_validate_ip("metadata.internal")
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_blocks_ipv6_loopback(self) -> None:
         info = [
             (
@@ -106,7 +106,7 @@ class TestResolveAndValidateIp:
             with pytest.raises(SSRFBlockedError):
                 await resolve_and_validate_ip("localhost6")
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_allows_public_ip(self) -> None:
         with patch(
             "anyio.getaddrinfo",
@@ -115,7 +115,7 @@ class TestResolveAndValidateIp:
             # Should not raise
             await resolve_and_validate_ip("example.com")
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_blocks_mixed_public_and_private(self) -> None:
         """If even one resolved IP is private, the request must be blocked."""
         with patch(
@@ -125,7 +125,7 @@ class TestResolveAndValidateIp:
             with pytest.raises(SSRFBlockedError):
                 await resolve_and_validate_ip("dual-homed.example.com")
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_dns_failure(self) -> None:
         with patch(
             "anyio.getaddrinfo",
@@ -150,7 +150,7 @@ def _mock_transport(
 
 
 class TestCheckUrlReachable:
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_follows_relative_redirect_location(self) -> None:
         """A relative `Location` (e.g. `/login`) must be resolved, not rejected.
 
@@ -178,7 +178,7 @@ class TestCheckUrlReachable:
         assert result.reachable is True
         assert result.status == 200
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_blocks_redirect_to_private_host(self) -> None:
         """SSRF protection still holds: a redirect to a private IP is blocked."""
 
@@ -203,7 +203,7 @@ class TestCheckUrlReachable:
         assert result.reachable is False
         assert result.error is not None
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_malformed_redirect_location(self) -> None:
         """A malformed `Location` (e.g. invalid port) is unreachable, not a 500.
 
@@ -229,7 +229,7 @@ class TestCheckUrlReachable:
         assert result.reachable is False
         assert result.error is not None
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_unreachable_on_4xx(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
             return httpx.Response(404)

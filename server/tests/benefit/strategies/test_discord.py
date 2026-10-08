@@ -53,7 +53,7 @@ def _mock_discord(mocker: MockerFixture) -> None:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestValidateProperties:
     @pytest.mark.auth
     async def test_guild_not_connected(

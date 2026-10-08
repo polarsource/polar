@@ -11,7 +11,7 @@ from tests.fixtures.database import SaveFixture
 from ..conftest import create_oauth2_authorization_code
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRevokeLeaked:
     async def test_false_positive(self, session: AsyncSession) -> None:
         result = await oauth2_authorization_code_service.revoke_leaked(

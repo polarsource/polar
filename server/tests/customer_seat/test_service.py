@@ -52,7 +52,7 @@ from tests.fixtures.random_objects import (
 
 
 class TestListSeats:
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_list_seats_success(
         self,
         session: AsyncSession,
@@ -66,7 +66,7 @@ class TestListSeats:
 
 
 class TestGetAvailableSeatsCount:
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_available_seats_with_none_claimed(
         self, session: AsyncSession, subscription_with_seats: Subscription
     ) -> None:
@@ -75,7 +75,7 @@ class TestGetAvailableSeatsCount:
         )
         assert count == 5
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_available_seats_with_claimed_seat(
         self,
         session: AsyncSession,
@@ -89,7 +89,7 @@ class TestGetAvailableSeatsCount:
 
 
 class TestAssignSeat:
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_with_customer_id(
         self,
         session: AsyncSession,
@@ -104,14 +104,14 @@ class TestAssignSeat:
         assert seat.customer_id == customer.id
         assert seat.status == SeatStatus.pending
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_no_identifiers(
         self, session: AsyncSession, subscription_with_seats: Subscription
     ) -> None:
         with pytest.raises(InvalidSeatAssignmentRequest):
             await seat_service.assign_seat(session, subscription_with_seats)
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_no_available_seats(
         self,
         session: AsyncSession,
@@ -128,7 +128,7 @@ class TestAssignSeat:
                 email="test@example.com",
             )
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_customer_already_has_seat(
         self,
         session: AsyncSession,
@@ -141,7 +141,7 @@ class TestAssignSeat:
                 session, subscription_with_seats, customer_id=customer.id
             )
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_with_metadata(
         self,
         session: AsyncSession,
@@ -165,7 +165,7 @@ class TestAssignSeat:
         assert seat.seat_metadata == metadata
         assert seat.customer_id == subscription_with_seats.customer_id
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_customer_not_found_email(
         self, session: AsyncSession, subscription_with_seats: Subscription
     ) -> None:
@@ -177,7 +177,7 @@ class TestAssignSeat:
         assert seat.customer_id is not None
         # Customer is created automatically with the provided email
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_token_expiration(
         self,
         session: AsyncSession,
@@ -203,7 +203,7 @@ class TestAssignSeat:
         )
         assert time_diff < 60  # Within 1 minute
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_reuses_revoked_seat(
         self,
         session: AsyncSession,
@@ -248,7 +248,7 @@ class TestAssignSeat:
         assert new_seat.revoked_at is None
         assert new_seat.claimed_at is None
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_sends_webhook(
         self,
         session: AsyncSession,
@@ -273,7 +273,7 @@ class TestAssignSeat:
             assert args[0][2] == WebhookEventType.customer_seat_assigned
             assert args[0][3].id == seat.id
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_immediate_claim_with_email(
         self,
         session: AsyncSession,
@@ -300,7 +300,7 @@ class TestAssignSeat:
         assert seat.customer_id == subscription_with_seats.customer_id
         assert seat.claimed_at is not None
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_immediate_claim_no_invitation_email(
         self,
         session: AsyncSession,
@@ -325,7 +325,7 @@ class TestAssignSeat:
             # Email should NOT be sent for immediate claims
             mock_email.assert_not_called()
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_immediate_claim_sends_claimed_webhook(
         self,
         session: AsyncSession,
@@ -353,7 +353,7 @@ class TestAssignSeat:
             assert args[0][2] == WebhookEventType.customer_seat_claimed
             assert args[0][3].id == seat.id
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_immediate_claim_enqueues_benefits(
         self,
         session: AsyncSession,
@@ -383,7 +383,7 @@ class TestAssignSeat:
                 subscription_id=subscription_with_seats.id,
             )
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_immediate_claim_revoked_seat_reuse(
         self,
         session: AsyncSession,
@@ -432,7 +432,7 @@ class TestAssignSeat:
         assert new_seat.revoked_at is None
         assert new_seat.claimed_at is not None
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_immediate_claim_customer_already_has_seat(
         self,
         session: AsyncSession,
@@ -464,7 +464,7 @@ class TestAssignSeat:
             )
         assert "test@example.com" not in str(exc_info.value)
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_immediate_claim_publishes_event(
         self,
         session: AsyncSession,
@@ -496,7 +496,7 @@ class TestAssignSeat:
                 customer_id=subscription_with_seats.customer_id,
             )
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_with_member_model_enabled(
         self,
         session: AsyncSession,
@@ -540,7 +540,7 @@ class TestAssignSeat:
         assert seat.member.email == "seat@example.com"
         assert seat.member.organization_id == organization.id
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_with_email_only_member_model_enabled_does_not_create_customer(
         self,
         session: AsyncSession,
@@ -596,7 +596,7 @@ class TestAssignSeat:
             is None
         )
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_with_customer_id_backward_compat_member_model(
         self,
         session: AsyncSession,
@@ -639,7 +639,7 @@ class TestAssignSeat:
         # customer and the seat holder is represented as a Member.
         assert seat.customer_id == billing_customer.id
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_with_external_customer_id_backward_compat(
         self,
         session: AsyncSession,
@@ -684,7 +684,7 @@ class TestAssignSeat:
         # customer and the seat holder is represented as a Member.
         assert seat.customer_id == billing_customer.id
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_customer_id_not_found_member_model(
         self,
         session: AsyncSession,
@@ -717,7 +717,7 @@ class TestAssignSeat:
                 session, subscription, customer_id=uuid.uuid4()
             )
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_requires_email_when_member_model_enabled(
         self,
         session: AsyncSession,
@@ -749,7 +749,7 @@ class TestAssignSeat:
         with pytest.raises(InvalidSeatAssignmentRequest):
             await seat_service.assign_seat(session, subscription)
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_does_not_change_customer_type(
         self,
         session: AsyncSession,
@@ -798,7 +798,7 @@ class TestAssignSeat:
         await session.refresh(billing_customer)
         assert billing_customer.type == CustomerType.team
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_with_external_member_id_existing_member(
         self,
         session: AsyncSession,
@@ -844,7 +844,7 @@ class TestAssignSeat:
         assert seat.member_id == member.id
         assert seat.email == "member@example.com"
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_with_external_member_id_not_found(
         self,
         session: AsyncSession,
@@ -877,7 +877,7 @@ class TestAssignSeat:
                 session, subscription, external_member_id="nonexistent_ext_id"
             )
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_with_external_member_id_and_email_creates_member(
         self,
         session: AsyncSession,
@@ -923,7 +923,7 @@ class TestAssignSeat:
         assert seat.member.external_id == "ext_new_member"
         assert seat.member.customer_id == billing_customer.id
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_with_external_member_id_links_to_existing_member_by_email(
         self,
         session: AsyncSession,
@@ -981,7 +981,7 @@ class TestAssignSeat:
         await session.refresh(existing_member)
         assert existing_member.external_id == "ext_new_id"
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_with_external_member_id_rejects_conflicting_external_id(
         self,
         session: AsyncSession,
@@ -1032,7 +1032,7 @@ class TestAssignSeat:
                 email="member@example.com",
             )
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_with_external_member_id_and_email_existing_member(
         self,
         session: AsyncSession,
@@ -1079,7 +1079,7 @@ class TestAssignSeat:
         assert seat.member_id == member.id
         assert seat.email == "member@example.com"
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_with_external_member_id_and_email_mismatch(
         self,
         session: AsyncSession,
@@ -1125,7 +1125,7 @@ class TestAssignSeat:
             )
         assert "different@example.com" not in str(exc_info.value)
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_with_member_id(
         self,
         session: AsyncSession,
@@ -1168,7 +1168,7 @@ class TestAssignSeat:
         assert seat.member_id == member.id
         assert seat.email == "member@example.com"
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_with_member_id_not_found(
         self,
         session: AsyncSession,
@@ -1202,7 +1202,7 @@ class TestAssignSeat:
                 session, subscription, member_id=fake_member_id
             )
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_with_member_id_wrong_customer(
         self,
         session: AsyncSession,
@@ -1246,7 +1246,7 @@ class TestAssignSeat:
         with pytest.raises(MemberNotFound):
             await seat_service.assign_seat(session, subscription, member_id=member.id)
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_with_external_member_id_duplicate_seat(
         self,
         session: AsyncSession,
@@ -1295,7 +1295,7 @@ class TestAssignSeat:
                 session, subscription, external_member_id="ext_dup"
             )
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_with_member_id_immediate_claim(
         self,
         session: AsyncSession,
@@ -1343,7 +1343,7 @@ class TestAssignSeat:
 
 
 class TestGetSeatByToken:
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_get_seat_by_token_success(
         self, session: AsyncSession, customer_seat_pending: CustomerSeat
     ) -> None:
@@ -1355,12 +1355,12 @@ class TestGetSeatByToken:
         assert seat is not None
         assert seat.id == customer_seat_pending.id
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_get_seat_by_token_invalid(self, session: AsyncSession) -> None:
         seat = await seat_service.get_seat_by_token(session, "invalid_token")
         assert seat is None
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_get_seat_by_token_revoked(
         self,
         session: AsyncSession,
@@ -1375,7 +1375,7 @@ class TestGetSeatByToken:
         seat = await seat_service.get_seat_by_token(session, old_token)
         assert seat is None
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_get_seat_by_token_claimed(
         self,
         session: AsyncSession,
@@ -1390,7 +1390,7 @@ class TestGetSeatByToken:
         seat = await seat_service.get_seat_by_token(session, old_token)
         assert seat is None
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_get_seat_by_token_expired(
         self,
         session: AsyncSession,
@@ -1409,7 +1409,7 @@ class TestGetSeatByToken:
 
 
 class TestClaimSeat:
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_claim_seat_success(
         self,
         session: AsyncSession,
@@ -1442,12 +1442,12 @@ class TestClaimSeat:
         assert session_token is not None
         assert len(session_token) > 0
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_claim_seat_invalid_token(self, session: AsyncSession) -> None:
         with pytest.raises(InvalidInvitationToken):
             await seat_service.claim_seat(session, "invalid_token")
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_claim_seat_revoked_seat(
         self,
         session: AsyncSession,
@@ -1464,7 +1464,7 @@ class TestClaimSeat:
                 customer_seat_pending.invitation_token,
             )
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_claim_seat_expired_token(
         self,
         session: AsyncSession,
@@ -1481,7 +1481,7 @@ class TestClaimSeat:
         with pytest.raises(InvalidInvitationToken):
             await seat_service.claim_seat(session, old_token)
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_claim_seat_clears_token(
         self,
         session: AsyncSession,
@@ -1509,7 +1509,7 @@ class TestClaimSeat:
 
         assert claimed_seat.invitation_token is None
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_claim_seat_sends_webhook(
         self,
         session: AsyncSession,
@@ -1542,7 +1542,7 @@ class TestClaimSeat:
             assert args[0][2] == WebhookEventType.customer_seat_claimed
             assert args[0][3].id == seat.id
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_claim_seat_with_member_model_enabled(
         self,
         session: AsyncSession,
@@ -1592,7 +1592,7 @@ class TestClaimSeat:
         assert len(session_token) > 0
         assert session_token.startswith("polar_mst_")
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_claim_seat_member_model_soft_deleted_member_rejects(
         self,
         session: AsyncSession,
@@ -1661,7 +1661,7 @@ class TestClaimSeat:
             # No session must be minted for the rejected claim.
             mock_create_member_session.assert_not_called()
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_revoke_seat_success(
         self, session: AsyncSession, customer_seat_claimed: CustomerSeat
     ) -> None:
@@ -1673,7 +1673,7 @@ class TestClaimSeat:
         assert seat.invitation_token is None
         assert isinstance(seat.revoked_at, datetime)
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_revoke_seat_pending(
         self, session: AsyncSession, customer_seat_pending: CustomerSeat
     ) -> None:
@@ -1682,7 +1682,7 @@ class TestClaimSeat:
         assert seat.status == SeatStatus.revoked
         assert seat.revoked_at is not None
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_revoke_seat_sends_webhook(
         self, session: AsyncSession, customer_seat_claimed: CustomerSeat
     ) -> None:
@@ -1700,7 +1700,7 @@ class TestClaimSeat:
             assert args[0][2] == WebhookEventType.customer_seat_revoked
             assert args[0][3].id == seat.id
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_revoke_seat_is_idempotent(
         self, session: AsyncSession, customer_seat_claimed: CustomerSeat
     ) -> None:
@@ -1716,7 +1716,7 @@ class TestClaimSeat:
             assert seat.revoked_at == first_revoked_at
             mock_send.assert_called_once()
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_revoke_seat_with_member_model_enabled(
         self,
         session: AsyncSession,
@@ -1774,7 +1774,7 @@ class TestClaimSeat:
 
 
 class TestGetSeat:
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_get_seat_as_organization(
         self,
         session: AsyncSession,
@@ -1790,7 +1790,7 @@ class TestGetSeat:
         assert seat is not None
         assert seat.id == customer_seat_claimed.id
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_get_seat_as_user(
         self,
         session: AsyncSession,
@@ -1807,7 +1807,7 @@ class TestGetSeat:
         assert seat is not None
         assert seat.id == customer_seat_claimed.id
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_get_seat_as_user_not_member(
         self, session: AsyncSession, customer_seat_claimed: CustomerSeat, user: User
     ) -> None:
@@ -1819,7 +1819,7 @@ class TestGetSeat:
 
         assert seat is None
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_get_seat_wrong_organization(
         self,
         session: AsyncSession,
@@ -1859,7 +1859,7 @@ class TestGetSeat:
         result = await seat_service.get_seat(session, auth_subject, seat.id)
         assert result is None
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_get_seat_not_found(self, session: AsyncSession, user: User) -> None:
         auth_subject = AuthSubject(subject=user, scopes=set(), session=None)
 
@@ -1869,7 +1869,7 @@ class TestGetSeat:
 
 
 class TestResendInvitation:
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_resend_invitation_success(
         self,
         session: AsyncSession,
@@ -1917,7 +1917,7 @@ class TestResendInvitation:
                 == subscription_with_seats.customer.email
             )
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_resend_invitation_not_pending(
         self,
         session: AsyncSession,
@@ -1927,7 +1927,7 @@ class TestResendInvitation:
         with pytest.raises(SeatNotPending):
             await seat_service.resend_invitation(session, customer_seat_claimed)
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_resend_invitation_no_customer(
         self,
         session: AsyncSession,
@@ -1951,7 +1951,7 @@ class TestResendInvitation:
         with pytest.raises(InvalidInvitationToken):
             await seat_service.resend_invitation(session, seat)
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_resend_invitation_no_token(
         self,
         session: AsyncSession,
@@ -1977,7 +1977,7 @@ class TestResendInvitation:
         with pytest.raises(InvalidInvitationToken):
             await seat_service.resend_invitation(session, seat)
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_resend_invitation_revoked_seat(
         self,
         session: AsyncSession,
@@ -2002,7 +2002,7 @@ class TestResendInvitation:
         with pytest.raises(SeatNotPending):
             await seat_service.resend_invitation(session, seat)
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_resend_invitation_with_member_model_enabled(
         self,
         session: AsyncSession,
@@ -2060,7 +2060,7 @@ class TestResendInvitation:
 class TestBenefitGranting:
     """Tests for benefit granting when claiming and revoking seats."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_claim_seat_enqueues_benefit_grants(
         self,
         session: AsyncSession,
@@ -2098,7 +2098,7 @@ class TestBenefitGranting:
                 subscription_id=claimed_seat.subscription_id,
             )
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_revoke_seat_enqueues_benefit_revocation(
         self, session: AsyncSession, customer_seat_claimed: CustomerSeat
     ) -> None:
@@ -2120,7 +2120,7 @@ class TestBenefitGranting:
                 subscription_id=seat.subscription_id,
             )
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_revoke_pending_seat_enqueues_member_scoped_revocation(
         self, session: AsyncSession, customer_seat_pending: CustomerSeat
     ) -> None:
@@ -2140,7 +2140,7 @@ class TestBenefitGranting:
             assert kwargs["customer_id"] == billing_customer_id
             assert kwargs["member_id"] == member_id
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_claim_seat_publishes_event(
         self,
         session: AsyncSession,
@@ -2181,7 +2181,7 @@ class TestBenefitGranting:
 class TestRevokeAllSeatsForSubscription:
     """Tests for revoking all seats when a subscription is cancelled."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_revoke_all_seats_for_subscription_success(
         self,
         session: AsyncSession,
@@ -2256,7 +2256,7 @@ class TestRevokeAllSeatsForSubscription:
         assert seat3.revoked_at is not None
         assert seat3.customer_id is None
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_revoke_all_seats_skips_already_revoked(
         self,
         session: AsyncSession,
@@ -2307,7 +2307,7 @@ class TestRevokeAllSeatsForSubscription:
         await session.refresh(seat1)
         assert seat1.status == SeatStatus.revoked
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_revoke_all_seats_no_active_seats(
         self,
         session: AsyncSession,
@@ -2323,7 +2323,7 @@ class TestRevokeAllSeatsForSubscription:
 
         assert revoked_count == 0
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_revoke_all_seats_enqueues_benefit_revocations(
         self,
         session: AsyncSession,
@@ -2380,7 +2380,7 @@ class TestRevokeAllSeatsForSubscription:
                 # Customer ID should be either customer1 or customer2
                 assert call[1]["customer_id"] in [customer1.id, customer2.id]
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_revoke_all_seats_for_blocked_organization(
         self,
         session: AsyncSession,
@@ -2426,7 +2426,7 @@ class TestRevokeAllSeatsForSubscription:
 class TestAssignSeatToDeletedMember:
     """Tests for assigning seats to previously deleted members."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_assign_seat_to_deleted_member_email(
         self,
         session: AsyncSession,
@@ -2510,7 +2510,7 @@ class TestAssignSeatToDeletedMember:
         assert new_seat.email == seat_member_email
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateProductBenefitsGrants:
     async def test_enqueues_grants_for_claimed_subscription_seats(
         self,
@@ -2773,7 +2773,7 @@ async def _attempt_assign_seat(
         return seat
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAssignSeatConcurrency:
     """Regression tests for the TOCTOU race between seat assignment and
     subscription seat-count updates.

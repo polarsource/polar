@@ -36,7 +36,7 @@ def _patch_client(doc: SimpleNamespace) -> Any:
 
 
 class TestScrapeMarkdown:
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_uses_metadata_url_as_final_url(self) -> None:
         """metadata.url is the post-redirect final URL, used in preference to the request."""
         doc = _doc(
@@ -63,7 +63,7 @@ class TestScrapeMarkdown:
         assert "wait_for" in kwargs
         assert "timeout" in kwargs
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_falls_back_to_requested_url_when_metadata_url_missing(self) -> None:
         doc = _doc(markdown="x", url=None, status_code=200)
         with _patch_client(doc):
@@ -71,7 +71,7 @@ class TestScrapeMarkdown:
 
         assert result.url == "https://requested.example.com/"
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_falls_back_to_requested_url_when_metadata_missing(self) -> None:
         doc = _doc(markdown="x", with_metadata=False)
         with _patch_client(doc):
@@ -81,7 +81,7 @@ class TestScrapeMarkdown:
         assert result.status_code is None
         assert result.title is None
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_none_markdown_becomes_empty_string(self) -> None:
         doc = _doc(markdown=None, url="https://example.com/", status_code=200)
         with _patch_client(doc):
@@ -89,7 +89,7 @@ class TestScrapeMarkdown:
 
         assert result.markdown == ""
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_missing_api_key_raises(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:

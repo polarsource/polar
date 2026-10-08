@@ -68,7 +68,7 @@ async def _count(session: AsyncSession, *, revoke: bool) -> int:
     return result.scalar_one()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBackfillLicenseKeyGrantState:
     async def test_revoked_key_revokes_the_grant(
         self,

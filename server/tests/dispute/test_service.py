@@ -3,7 +3,6 @@ from typing import Literal
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-import pytest_asyncio
 from pytest_mock import MockerFixture
 
 from polar.benefit.grant.service import BenefitGrantService
@@ -95,7 +94,7 @@ async def _message_types(
     return [message.type for message in messages]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpsertFromStripe:
     async def test_not_existing_order(self, session: AsyncSession) -> None:
         stripe_dispute = build_stripe_dispute(
@@ -689,7 +688,7 @@ class TestUpsertFromStripe:
         assert subscription.status == "canceled"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpsertFromStripeDisputeCase:
     async def test_opens_case_when_needs_response(
         self,
@@ -1069,7 +1068,7 @@ class TestUpsertFromStripeDisputeCase:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpsertFromChargebackStop:
     async def test_not_existing_order(
         self, session: AsyncSession, mocker: MockerFixture
@@ -1513,7 +1512,7 @@ class TestUpsertFromChargebackStop:
         assert await dispute_case_service.is_open(session, case)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAccept:
     async def test_concedes_and_marks_lost(
         self,
@@ -1627,7 +1626,7 @@ def balance_mock(mocker: MockerFixture) -> MagicMock:
     return mock
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def organization_with_account(
     save_fixture: SaveFixture, organization: Organization, user: User
 ) -> Organization:
@@ -1637,7 +1636,7 @@ async def organization_with_account(
     return organization
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAutoAcceptApplies:
     async def test_under_threshold(
         self,
@@ -1846,7 +1845,7 @@ class TestAutoAcceptApplies:
         assert await dispute_service.auto_accept_applies(session, dispute) is False
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAnnounceAutoAccept:
     async def test_announces_when_eligible(
         self,
@@ -1903,7 +1902,7 @@ class TestAnnounceAutoAccept:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAutoAcceptCancelledByReply:
     async def test_merchant_reply_blocks_and_retracts(
         self,

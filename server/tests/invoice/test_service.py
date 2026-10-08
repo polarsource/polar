@@ -1,5 +1,4 @@
 import pytest
-import pytest_asyncio
 
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.address import Address, CountryAlpha2
@@ -9,7 +8,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_order
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def order_with_billing(
     save_fixture: SaveFixture, product: Product, customer: Customer
 ) -> Order:
@@ -22,7 +21,7 @@ async def order_with_billing(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_create_order_invoice(
     save_fixture: SaveFixture, product: Product, customer: Customer
 ) -> None:
@@ -44,7 +43,7 @@ async def test_create_order_invoice(
     invoice_path = await invoice_service.create_order_invoice(order)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestComputeOrderChecksum:
     async def test_deterministic(self, order_with_billing: Order) -> None:
         assert invoice_service.compute_order_checksum(

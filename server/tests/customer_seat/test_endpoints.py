@@ -32,7 +32,7 @@ SEAT_AUTH = AuthSubjectFixture(
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListSeats:
     @pytest.mark.auth(SEAT_AUTH)
     async def test_list_seats_success(
@@ -100,7 +100,7 @@ class TestListSeats:
         assert response.status_code == 401
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.keep_session_state
 class TestAssignSeat:
     @pytest.mark.auth(SEAT_AUTH)
@@ -359,7 +359,7 @@ class TestAssignSeat:
         assert data["invitation_token_expires_at"] is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetClaimInfo:
     async def test_get_claim_info_success(
         self,
@@ -463,7 +463,7 @@ class TestGetClaimInfo:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestClaimSeat:
     async def test_claim_seat_success(
         self,
@@ -546,7 +546,7 @@ class TestClaimSeat:
         assert response.status_code == 400
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRevokeSeat:
     @pytest.mark.auth(SEAT_AUTH)
     async def test_revoke_seat_success(
@@ -647,7 +647,7 @@ class TestRevokeSeat:
         assert response.status_code == 401
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOrderBasedSeats:
     """Tests for order-based seat management (one-time purchases)."""
 
@@ -791,7 +791,7 @@ class TestOrderBasedSeats:
 # (token-gated) and unaffected.
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestResendInvitation:
     async def test_anonymous(
         self,
@@ -805,7 +805,7 @@ class TestResendInvitation:
         assert response.status_code == 401
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMemberEntityInResponse:
     """Tests for member entity nested in seat API responses."""
 

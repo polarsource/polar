@@ -69,7 +69,7 @@ def build_stripe_payment_intent(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAccountRiskSignal:
     def _mock_event(self, mocker: MockerFixture, data: dict[str, object]) -> None:
         event_mock = mocker.MagicMock()
@@ -225,7 +225,7 @@ class TestAccountRiskSignal:
             await account_risk_signal(uuid.uuid4())
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPaymentIntentSucceeded:
     async def test_retry_payment_saves_payment_method_and_updates_subscription(
         self,
@@ -438,7 +438,7 @@ def patch_stripe_event(
     context_mock.return_value.__aexit__ = AsyncMock(return_value=None)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPaymentMethodDetached:
     async def test_soft_deletes_matching_payment_method(
         self,
@@ -503,7 +503,7 @@ class TestPaymentMethodDetached:
         delete_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPaymentMethodAutomaticallyUpdated:
     async def test_updates_matching_payment_method(
         self,

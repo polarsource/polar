@@ -16,7 +16,7 @@ from tests.fixtures.auth import (
 from tests.fixtures.database import SaveFixture
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListMembers:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/customer-portal/members")
@@ -113,7 +113,7 @@ class TestListMembers:
         assert response.status_code == 200
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAddMember:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
@@ -288,7 +288,7 @@ class TestAddMember:
         assert response.status_code == 201
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateMember:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.patch(
@@ -528,7 +528,7 @@ class TestUpdateMember:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRemoveMember:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.delete(f"/v1/customer-portal/members/{uuid.uuid4()}")

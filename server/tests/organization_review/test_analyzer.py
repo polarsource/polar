@@ -231,7 +231,7 @@ class TestBuildPromptRiskSignals:
         assert "(5 more signal(s) omitted)" in prompt
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAnalyzeReraisesOnError:
     """ReviewAnalyzer re-raises every non-timeout failure so the Dramatiq
     actor retries it and Sentry captures the final failure. Persisting a

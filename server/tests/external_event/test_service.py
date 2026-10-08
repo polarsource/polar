@@ -15,7 +15,7 @@ def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
     return mocker.patch("polar.external_event.service.enqueue_job")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEnqueue:
     async def test_basic(
         self, session: AsyncSession, enqueue_job_mock: AsyncMock

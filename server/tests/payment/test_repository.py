@@ -36,7 +36,7 @@ def test_every_payment_trigger_is_classified() -> None:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCountFailedPaymentsForOrder:
     """The dunning ceiling counts failed payments to decide when to revoke a
     subscription. Only the original ``purchase`` attempt and automated dunning
@@ -271,7 +271,7 @@ class TestCountFailedPaymentsForOrder:
         assert count == 2
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCountCustomerRetryPaymentsForOrder:
     """The manual retry ceiling counts *all* payments (any status) with
     ``trigger = retry_customer`` to cap how many times a customer can

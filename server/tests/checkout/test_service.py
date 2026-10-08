@@ -6,7 +6,6 @@ from typing import Any
 from unittest.mock import ANY, AsyncMock, MagicMock
 
 import pytest
-import pytest_asyncio
 import stripe as stripe_lib
 from pydantic import HttpUrl, ValidationError
 from pytest_mock import MockerFixture
@@ -195,42 +194,42 @@ def product_parametrization_helper(request: pytest.FixtureRequest) -> Product:
     return request.getfixturevalue(request.param)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def checkout_one_time_fixed(
     save_fixture: SaveFixture, product_one_time: Product
 ) -> Checkout:
     return await create_checkout(save_fixture, products=[product_one_time])
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def checkout_one_time_custom(
     save_fixture: SaveFixture, product_one_time_custom_price: Product
 ) -> Checkout:
     return await create_checkout(save_fixture, products=[product_one_time_custom_price])
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def checkout_one_time_free(
     save_fixture: SaveFixture, product_one_time_free_price: Product
 ) -> Checkout:
     return await create_checkout(save_fixture, products=[product_one_time_free_price])
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def checkout_recurring_fixed(
     save_fixture: SaveFixture, product: Product
 ) -> Checkout:
     return await create_checkout(save_fixture, products=[product])
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def checkout_recurring_free(
     save_fixture: SaveFixture, product_recurring_free_price: Product
 ) -> Checkout:
     return await create_checkout(save_fixture, products=[product_recurring_free_price])
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def checkout_confirmed_one_time(
     save_fixture: SaveFixture, product_one_time: Product
 ) -> Checkout:
@@ -239,7 +238,7 @@ async def checkout_confirmed_one_time(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def checkout_confirmed_recurring(
     save_fixture: SaveFixture, product: Product
 ) -> Checkout:
@@ -248,7 +247,7 @@ async def checkout_confirmed_recurring(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def checkout_confirmed_recurring_upgrade(
     save_fixture: SaveFixture,
     product: Product,
@@ -266,7 +265,7 @@ async def checkout_confirmed_recurring_upgrade(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def checkout_discount_percentage_100(
     save_fixture: SaveFixture, product: Product, discount_percentage_100: Discount
 ) -> Checkout:
@@ -278,7 +277,7 @@ async def checkout_discount_percentage_100(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def checkout_discount_percentage_100_forever(
     save_fixture: SaveFixture,
     product: Product,
@@ -292,7 +291,7 @@ async def checkout_discount_percentage_100_forever(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_custom_fields(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -316,14 +315,14 @@ async def product_custom_fields(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def checkout_custom_fields(
     save_fixture: SaveFixture, product_custom_fields: Product
 ) -> Checkout:
     return await create_checkout(save_fixture, products=[product_custom_fields])
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_tax_not_applicable(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -335,14 +334,14 @@ async def product_tax_not_applicable(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def checkout_tax_not_applicable(
     save_fixture: SaveFixture, product_tax_not_applicable: Product
 ) -> Checkout:
     return await create_checkout(save_fixture, products=[product_tax_not_applicable])
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_custom_price_minimum(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -354,7 +353,7 @@ async def product_custom_price_minimum(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_custom_price_preset(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -366,7 +365,7 @@ async def product_custom_price_preset(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_seat_based(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -378,7 +377,7 @@ async def product_seat_based(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_one_time_seat_based(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -390,14 +389,14 @@ async def product_one_time_seat_based(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def checkout_seat_based(
     save_fixture: SaveFixture, product_seat_based: Product
 ) -> Checkout:
     return await create_checkout(save_fixture, products=[product_seat_based], seats=5)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_fixed_seat(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -410,7 +409,7 @@ async def product_fixed_seat(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_unit_based(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -420,7 +419,7 @@ async def product_unit_based(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_unit_based_with_min(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -438,7 +437,7 @@ async def product_unit_based_with_min(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_unit_based_with_max(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -455,7 +454,7 @@ async def product_unit_based_with_max(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_seat_based_with_min(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -473,7 +472,7 @@ async def product_seat_based_with_min(
     return product
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_seat_based_with_max(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -491,7 +490,7 @@ async def product_seat_based_with_max(
     return product
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_seat_based_with_min_max(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -513,7 +512,7 @@ async def product_seat_based_with_min_max(
     return product
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate:
     @pytest.mark.auth
     async def test_not_existing_price(
@@ -2555,7 +2554,7 @@ class TestCreate:
         assert checkout.currency == ad_hoc_price.price_currency
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCheckoutLinkCreate:
     async def test_all_archived_products(
         self,
@@ -3102,7 +3101,7 @@ class TestCheckoutLinkCreate:
         assert checkout.user_metadata == {"key": "value"}
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetByClientSecret:
     async def test_returns_checkout_when_org_can_authenticate(
         self,
@@ -3160,7 +3159,7 @@ class TestGetByClientSecret:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdate:
     async def test_not_existing_product(
         self,
@@ -4791,7 +4790,7 @@ class TestUpdate:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestConfirm:
     @pytest.mark.parametrize(
         ("payload", "missing_fields"),
@@ -7055,7 +7054,7 @@ class TestConfirm:
         assert checkout.customer_session_token is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestHandleSuccess:
     async def test_not_confirmed_checkout(
         self, session: AsyncSession, checkout_one_time_fixed: Checkout
@@ -7406,7 +7405,7 @@ class TestHandleSuccess:
         seat_service_mock.assign_seat.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestHandleFailure:
     @pytest.mark.parametrize(
         "status",
@@ -7481,7 +7480,7 @@ class TestHandleFailure:
         remove_redemption.assert_called_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCancelPayment:
     @pytest.mark.parametrize(
         "status",
@@ -7622,7 +7621,7 @@ class TestCancelPayment:
         assert checkout.status == expected_status
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCheckoutCreatedEvent:
     @pytest.mark.auth(AuthSubjectFixture(subject="user"))
     async def test_event_created(
@@ -7650,7 +7649,7 @@ class TestCheckoutCreatedEvent:
         assert event.user_metadata["product_id"] == str(checkout.product_id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMarkOpened:
     async def test_sets_opened_at(
         self,
@@ -7743,7 +7742,7 @@ class TestMarkOpened:
         log_mock.error.assert_called_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestHandleSuccessPostHogTracking:
     async def test_fires_checkout_complete_event(
         self,
@@ -7812,7 +7811,7 @@ class TestHandleSuccessPostHogTracking:
         log_mock.error.assert_called_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_send_expiration_events(
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -7836,7 +7835,7 @@ async def test_send_expiration_events(
     assert args[0][3].id == checkout.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateUnitBasedCheckout:
     @pytest.mark.auth
     async def test_with_units(

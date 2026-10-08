@@ -141,7 +141,7 @@ async def assert_billing_entries(
         # assert billing_entry.currency == old_price.price_currency
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateProductProrations:
     @pytest.mark.parametrize(
         (
@@ -1363,7 +1363,7 @@ class TestUpdateProductProrations:
             # fmt: on
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestImmediateSeatChangeWithPendingProductChange:
     """End-to-end for #11129: schedule A→B `next_period`, change seats
     with `prorate`, cycle. Parametrised to pin the proration math and
@@ -1667,7 +1667,7 @@ def _seat_price_id(product: Product) -> UUID:
     return next(p.id for p in product.prices if is_seat_price(p))
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestComposedStaticPriceDiscountAllocation:
     async def test_product_change_fixed_discount_distributes(
         self,
@@ -1945,7 +1945,7 @@ class TestComposedStaticPriceDiscountAllocation:
         assert entry.amount == 45_00
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFixedSeatProrations:
     """Fixed base price composed with a seat-based price bills `F + S(n)`."""
 
@@ -2087,7 +2087,7 @@ async def _go_and_pro_products(
     return go, pro
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestProrationDiscountProductApplicability:
     """Product applicability gates redemption, not the subscription's lifetime.
 

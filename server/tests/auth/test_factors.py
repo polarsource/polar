@@ -59,7 +59,7 @@ async def create_sso_connection(
     return connection
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetOrgFactors:
     async def test_unknown_slug(self, session: AsyncSession) -> None:
         with pytest.raises(ResourceNotFound):
@@ -158,7 +158,7 @@ class TestGetOrgFactors:
         assert factors == {base_factor}
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBackupCodesFactorVerify:
     @pytest.fixture
     def rotated(self, monkeypatch: pytest.MonkeyPatch) -> None:

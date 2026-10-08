@@ -106,7 +106,7 @@ PRO_PRODUCT = {
 }
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 class TestApply:
     async def test_not_enabled(
@@ -686,7 +686,7 @@ class TestApply:
         assert error["input"] == "sdk-tool-calls"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 class TestPlan:
     @pytest.mark.auth(

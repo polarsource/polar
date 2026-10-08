@@ -9,7 +9,7 @@ from polar.integrations.stripe.service import FX_QUOTES_API_VERSION
 from polar.integrations.stripe.service import stripe as stripe_service
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateSetupIntent:
     async def test_excludes_sepa_payment_methods(self, mocker: MockerFixture) -> None:
         create = mocker.patch("stripe.SetupIntent.create_async")
@@ -35,7 +35,7 @@ class TestCreateSetupIntent:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreatePaymentIntent:
     @pytest.mark.parametrize("setup_future_usage", [None, "off_session"])
     async def test_excludes_sepa_only_when_saving_for_recurring_payments(
@@ -69,7 +69,7 @@ class TestCreatePaymentIntent:
             ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetUsdBaseRates:
     async def test_valid(self, mocker: MockerFixture) -> None:
         fetch = mocker.patch(

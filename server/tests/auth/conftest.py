@@ -1,14 +1,14 @@
 from collections.abc import AsyncIterator
 
 import httpx
-import pytest_asyncio
+import pytest
 from fastapi import FastAPI
 
 from polar.postgres import AsyncSession
 from tests.fixtures.base import IsolatedSessionTestClient
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def login_client(
     app: FastAPI, session: AsyncSession
 ) -> AsyncIterator[httpx.AsyncClient]:

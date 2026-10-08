@@ -13,7 +13,7 @@ import type {
   MetadataQuery,
 } from "../models";
 
-import { HTTPValidationError, ResourceNotFound } from "../errors";
+import { HTTPValidationError, NotPermitted, ResourceNotFound } from "../errors";
 
 export const listEvents = (client: ClientBase) => {
   /**
@@ -221,6 +221,7 @@ export const ingestEvents = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
+   * @throws {NotPermitted} Forbidden
    * @throws {HTTPValidationError} Validation Error
    */
   return async (
@@ -232,6 +233,7 @@ export const ingestEvents = (client: ClientBase) => {
     const request = client.buildRequest("POST", "/v1/events/ingest", pathParams, queryParams, body);
     const response = await client.sendRequest(request, requestOptions);
     return client.parseResponse<EventsIngestResponse>(response, "json", {
+      403: NotPermitted,
       422: HTTPValidationError,
     });
   };

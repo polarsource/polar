@@ -8789,9 +8789,6 @@ class OrganizationFeatureSettings:
     merchant_migration_enabled: bool = False
     """If this organization can migrate its billing from another provider (e.g. Stripe) to Polar."""
 
-    frame_ancestors_enforced: bool = False
-    """If this organization's checkout tells the browser to refuse framing from any host outside its embed hosts."""
-
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class OrganizationNotReadyForPayments:

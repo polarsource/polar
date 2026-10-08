@@ -8,6 +8,9 @@ from polar.v2027_01.outputs import (
     AmbiguousExternalCustomerID as AmbiguousExternalCustomerIDModel,
 )
 from polar.v2027_01.outputs import (
+    AmbiguousExternalMeterID as AmbiguousExternalMeterIDModel,
+)
+from polar.v2027_01.outputs import (
     BadRequest as BadRequestModel,
 )
 from polar.v2027_01.outputs import (
@@ -988,5 +991,14 @@ class EventTypesUpdate404Error(PolarClientError):
     error: None
 
     def __init__(self, status_code: int, error: None) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class AmbiguousExternalMeterID(PolarClientError):
+    error_type = AmbiguousExternalMeterIDModel
+    error: AmbiguousExternalMeterIDModel
+
+    def __init__(self, status_code: int, error: AmbiguousExternalMeterIDModel) -> None:
         self.error = error
         super().__init__(status_code, error)

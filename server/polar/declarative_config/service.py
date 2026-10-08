@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field, ValidationError, create_model
@@ -20,19 +20,20 @@ from . import validation
 from .schemas import (
     Config,
     ConfigApplyResult,
+    ConfigChange,
     ConfigExport,
     ConfigExportDocument,
     ConfigExportMeter,
     ConfigIssue,
     ConfigIssueSeverity,
     ConfigMeter,
-    ConfigMeterChange,
-    ConfigMeterResult,
     ConfigPlan,
+    ConfigResource,
+    ConfigResult,
     ConfigSkippedMeter,
     ConfigSkippedReason,
 )
-from .validation import MeterChange
+from .validation import MeterChange, ResourceChange
 
 _METER_EXTERNAL_ID_INDEX = "ix_meters_organization_id_external_id"
 
@@ -93,8 +94,8 @@ class DeclarativeConfigService:
         if errors:
             raise ConfigInvalid(errors)
 
-        meters = await self._apply_meters(session, organization, changes)
-        return ConfigApplyResult(meters=meters)
+        meters = await self._apply_meters(session, organization, changes.meters)
+        return ConfigApplyResult(meters=meters, benefits=[], products=[])
 
     async def plan(
         self,
@@ -110,12 +111,9 @@ class DeclarativeConfigService:
         )
         return ConfigPlan(
             changes=[
-                ConfigMeterChange(
-                    external_id=change.config.external_id,
-                    action=change.action,
-                    diff=change.diff,
-                )
-                for change in changes
+                *self._plan_changes(ConfigResource.meter, changes.meters),
+                *self._plan_changes(ConfigResource.benefit, changes.benefits),
+                *self._plan_changes(ConfigResource.product, changes.products),
             ],
             issues=issues,
         )
@@ -167,6 +165,19 @@ class DeclarativeConfigService:
                 )
         return ConfigExport(config=ConfigExportDocument(meters=meters), skipped=skipped)
 
+    def _plan_changes(
+        self, resource: ConfigResource, changes: Sequence[ResourceChange[Any, Any]]
+    ) -> list[ConfigChange]:
+        return [
+            ConfigChange(
+                resource=resource,
+                external_id=change.config.external_id,
+                action=change.action,
+                diff=change.diff,
+            )
+            for change in changes
+        ]
+
     async def _get_organization(
         self,
         session: AsyncReadSession,
@@ -187,11 +198,11 @@ class DeclarativeConfigService:
         session: AsyncSession,
         organization: Organization,
         changes: Sequence[MeterChange],
-    ) -> list[ConfigMeterResult]:
+    ) -> list[ConfigResult]:
         repository = MeterRepository.from_session(session)
-        results: list[ConfigMeterResult] = []
+        results: list[ConfigResult] = []
         for change in changes:
-            if change.meter is None:
+            if change.existing is None:
                 try:
                     async with session.begin_nested():
                         await meter_service.create_for_organization(
@@ -204,9 +215,9 @@ class DeclarativeConfigService:
                         raise
                     raise ConfigMeterConflict() from e
             elif change.update_dict:
-                await repository.update(change.meter, update_dict=change.update_dict)
+                await repository.update(change.existing, update_dict=change.update_dict)
             results.append(
-                ConfigMeterResult(
+                ConfigResult(
                     external_id=change.config.external_id, action=change.action
                 )
             )

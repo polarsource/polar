@@ -2,7 +2,12 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
-from polar.declarative_config.schemas import Config, ConfigAction
+from polar.declarative_config.schemas import (
+    Config,
+    ConfigAction,
+    ConfigIssueType,
+    ConfigResource,
+)
 from polar.declarative_config.service import (
     ConfigAsCodeNotEnabled,
     ConfigInvalid,
@@ -51,6 +56,35 @@ FIXTURE_METER = {
         "clauses": [{"property": "name", "operator": "eq", "value": METER_TEST_EVENT}],
     },
     "aggregation": {"func": "count"},
+}
+
+
+CREDITS_BENEFIT = {
+    "type": "meter_credit",
+    "external_id": "tool-call-credits",
+    "description": "1,000 tool calls",
+    "properties": {"meter": "sdk-tool-calls", "units": 1000},
+}
+
+BETA_BENEFIT = {
+    "type": "feature_flag",
+    "external_id": "beta",
+    "description": "Beta access",
+}
+
+PRO_PRODUCT = {
+    "external_id": "pro",
+    "name": "Pro",
+    "recurring_interval": "month",
+    "prices": [
+        {"amount_type": "fixed", "price_amount": 2000},
+        {
+            "amount_type": "metered_unit",
+            "meter": "sdk-tool-calls",
+            "unit_amount": "0.5",
+        },
+    ],
+    "benefits": ["tool-call-credits", "beta"],
 }
 
 
@@ -284,3 +318,105 @@ class TestApply:
                 auth_subject,
                 Config.model_validate({"meters": [TOOL_CALLS_METER]}),
             )
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_products_and_benefits_not_supported(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        with pytest.raises(ConfigInvalid) as exc_info:
+            await declarative_config_service.apply(
+                session,
+                auth_subject,
+                Config.model_validate({"meters": [], "benefits": [BETA_BENEFIT]}),
+            )
+
+        [error] = exc_info.value.errors
+        assert error.type == ConfigIssueType.not_supported
+
+
+@pytest.mark.asyncio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+class TestPlan:
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_products_and_benefits_not_supported(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "meters": [TOOL_CALLS_METER],
+                    "benefits": [CREDITS_BENEFIT, BETA_BENEFIT],
+                    "products": [PRO_PRODUCT],
+                }
+            ),
+        )
+
+        assert [
+            (change.resource, change.external_id, change.action)
+            for change in plan.changes
+        ] == [
+            (ConfigResource.meter, "sdk-tool-calls", ConfigAction.created),
+            (ConfigResource.benefit, "tool-call-credits", ConfigAction.created),
+            (ConfigResource.benefit, "beta", ConfigAction.created),
+            (ConfigResource.product, "pro", ConfigAction.created),
+        ]
+        product_diff = {change.field: change.after for change in plan.changes[3].diff}
+        assert product_diff["recurring_interval_count"] == 1
+        assert product_diff["benefits"] == ["tool-call-credits", "beta"]
+        assert [
+            issue.loc
+            for issue in plan.issues
+            if issue.type == ConfigIssueType.not_supported
+        ] == [["body", "benefits", 0], ["body", "benefits", 1], ["body", "products", 0]]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_unknown_references(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {"meters": [], "benefits": [CREDITS_BENEFIT], "products": [PRO_PRODUCT]}
+            ),
+        )
+
+        assert [
+            (issue.loc, issue.input)
+            for issue in plan.issues
+            if issue.type == ConfigIssueType.unknown_reference
+        ] == [
+            (["body", "benefits", 0, "properties", "meter"], "sdk-tool-calls"),
+            (["body", "products", 0, "prices", 1, "meter"], "sdk-tool-calls"),
+            (["body", "products", 0, "benefits", 1], "beta"),
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_duplicate_external_ids_per_resource(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "meters": [],
+                    "benefits": [BETA_BENEFIT, BETA_BENEFIT],
+                    "products": [
+                        {
+                            "external_id": "beta",
+                            "name": "Beta",
+                            "prices": [{"amount_type": "fixed", "price_amount": 0}],
+                        }
+                    ],
+                }
+            ),
+        )
+
+        assert [
+            issue.loc
+            for issue in plan.issues
+            if issue.type == ConfigIssueType.duplicate_external_id
+        ] == [["body", "benefits", 1, "external_id"]]

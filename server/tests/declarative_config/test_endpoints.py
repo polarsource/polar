@@ -71,6 +71,8 @@ class TestApply:
         assert response.status_code == 200
         assert response.json() == {
             "meters": [{"external_id": "sdk-tool-calls", "action": "created"}],
+            "benefits": [],
+            "products": [],
         }
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
@@ -103,6 +105,33 @@ class TestApply:
         assert response.status_code == 422
         [error] = response.json()["detail"]
         assert error["loc"] == ["body", "meters", 0, "agregation"]
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_unsupported_benefit_type(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/config/apply",
+            json={
+                "meters": [],
+                "benefits": [
+                    {
+                        "type": "github_repository",
+                        "external_id": "repo",
+                        "description": "Repository access",
+                    }
+                ],
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 422
+        [error] = response.json()["detail"]
+        assert error["loc"] == ["body", "benefits", 0]
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")

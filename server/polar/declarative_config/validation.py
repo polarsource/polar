@@ -8,17 +8,22 @@ from polar.meter.filter import Filter, FilterOperator
 from polar.meter.repository import MeterRepository
 from polar.meter.schemas import MeterCreateBase
 from polar.meter.service import METER_LOCKED_FIELD_MESSAGE, METER_LOCKED_FIELDS
-from polar.models import Meter, Organization
+from polar.models import Benefit, Meter, Organization, Product
 from polar.postgres import AsyncSession
 
 from .schemas import (
     Config,
     ConfigAction,
+    ConfigBenefit,
+    ConfigBenefitMeterCredit,
     ConfigFieldChange,
     ConfigIssue,
     ConfigIssueSeverity,
     ConfigIssueType,
     ConfigMeter,
+    ConfigProduct,
+    ConfigProductPriceMeteredUnit,
+    ConfigResource,
 )
 
 Loc = list[str | int]
@@ -29,15 +34,15 @@ _METER_FIELDS = tuple(
 
 
 @dataclass
-class MeterChange:
+class ResourceChange[ConfigT, ModelT]:
     index: int
-    config: ConfigMeter
-    meter: Meter | None
+    config: ConfigT
+    existing: ModelT | None
     update_dict: dict[str, Any]
 
     @property
     def action(self) -> ConfigAction:
-        if self.meter is None:
+        if self.existing is None:
             return ConfigAction.created
         if self.update_dict:
             return ConfigAction.updated
@@ -48,18 +53,36 @@ class MeterChange:
         return [
             ConfigFieldChange(
                 field="metadata" if field == "user_metadata" else field,
-                before=None if self.meter is None else getattr(self.meter, field),
+                before=None if self.existing is None else getattr(self.existing, field),
                 after=after,
             )
             for field, after in self.update_dict.items()
         ]
 
 
+MeterChange = ResourceChange[ConfigMeter, Meter]
+BenefitChange = ResourceChange[ConfigBenefit, Benefit]
+ProductChange = ResourceChange[ConfigProduct, Product]
+
+
+@dataclass
+class ConfigChanges:
+    meters: list[MeterChange]
+    benefits: list[BenefitChange]
+    products: list[ProductChange]
+
+
+def _loc(resource: ConfigResource, index: int, *path: str | int) -> Loc:
+    return ["body", f"{resource}s", index, *path]
+
+
 def _meter_loc(index: int, *path: str | int) -> Loc:
-    return ["body", "meters", index, *path]
+    return _loc(ConfigResource.meter, index, *path)
 
 
-def unique_external_ids(changes: list[MeterChange]) -> list[ConfigIssue]:
+def unique_external_ids(
+    resource: ConfigResource, changes: Sequence[ResourceChange[Any, Any]]
+) -> list[ConfigIssue]:
     seen: set[str] = set()
     issues: list[ConfigIssue] = []
     for change in changes:
@@ -69,13 +92,87 @@ def unique_external_ids(changes: list[MeterChange]) -> list[ConfigIssue]:
                 ConfigIssue(
                     severity=ConfigIssueSeverity.error,
                     type=ConfigIssueType.duplicate_external_id,
-                    loc=_meter_loc(change.index, "external_id"),
-                    msg="Another meter in this config has the same external_id.",
+                    loc=_loc(resource, change.index, "external_id"),
+                    msg=f"Another {resource} in this config has the same external_id.",
                     input=external_id,
                 )
             )
         seen.add(external_id)
     return issues
+
+
+def _unknown_reference(
+    resource: ConfigResource, external_id: str, loc: Loc
+) -> ConfigIssue:
+    return ConfigIssue(
+        severity=ConfigIssueSeverity.error,
+        type=ConfigIssueType.unknown_reference,
+        loc=loc,
+        msg=f"No {resource} in this config has this external_id.",
+        input=external_id,
+    )
+
+
+def unknown_references(config: Config) -> list[ConfigIssue]:
+    meters = {meter.external_id for meter in config.meters}
+    benefits = {benefit.external_id for benefit in config.benefits}
+    issues: list[ConfigIssue] = []
+    for index, benefit in enumerate(config.benefits):
+        if (
+            isinstance(benefit, ConfigBenefitMeterCredit)
+            and benefit.properties.meter not in meters
+        ):
+            issues.append(
+                _unknown_reference(
+                    ConfigResource.meter,
+                    benefit.properties.meter,
+                    _loc(ConfigResource.benefit, index, "properties", "meter"),
+                )
+            )
+    for index, product in enumerate(config.products):
+        for price_index, price in enumerate(product.prices):
+            if (
+                isinstance(price, ConfigProductPriceMeteredUnit)
+                and price.meter not in meters
+            ):
+                issues.append(
+                    _unknown_reference(
+                        ConfigResource.meter,
+                        price.meter,
+                        _loc(
+                            ConfigResource.product,
+                            index,
+                            "prices",
+                            price_index,
+                            "meter",
+                        ),
+                    )
+                )
+        for benefit_index, benefit_external_id in enumerate(product.benefits):
+            if benefit_external_id not in benefits:
+                issues.append(
+                    _unknown_reference(
+                        ConfigResource.benefit,
+                        benefit_external_id,
+                        _loc(ConfigResource.product, index, "benefits", benefit_index),
+                    )
+                )
+    return issues
+
+
+def not_supported(
+    resource: ConfigResource, changes: Sequence[ResourceChange[Any, Any]]
+) -> list[ConfigIssue]:
+    return [
+        ConfigIssue(
+            severity=ConfigIssueSeverity.error,
+            type=ConfigIssueType.not_supported,
+            loc=_loc(resource, change.index),
+            msg=f"Applying {resource}s isn't supported yet.",
+            input=None,
+        )
+        for change in changes
+    ]
 
 
 def locked_meter_fields(changes: list[MeterChange]) -> list[ConfigIssue]:
@@ -88,7 +185,8 @@ def locked_meter_fields(changes: list[MeterChange]) -> list[ConfigIssue]:
             input=None,
         )
         for change in changes
-        if change.meter is not None and change.meter.last_billed_event_id is not None
+        if change.existing is not None
+        and change.existing.last_billed_event_id is not None
         for field in METER_LOCKED_FIELDS
         if field in change.update_dict
     ]
@@ -176,19 +274,50 @@ async def diff_meters(
     return changes
 
 
+def _create_update_dict(config: ConfigBenefit | ConfigProduct) -> dict[str, Any]:
+    update_dict: dict[str, Any] = {}
+    for field in type(config).model_fields:
+        value = getattr(config, field)
+        if field == "external_id" or value in (None, [], {}):
+            continue
+        update_dict["user_metadata" if field == "metadata" else field] = value
+    return update_dict
+
+
+def diff_benefits(benefit_configs: Sequence[ConfigBenefit]) -> list[BenefitChange]:
+    return [
+        BenefitChange(index, benefit_config, None, _create_update_dict(benefit_config))
+        for index, benefit_config in enumerate(benefit_configs)
+    ]
+
+
+def diff_products(product_configs: Sequence[ConfigProduct]) -> list[ProductChange]:
+    return [
+        ProductChange(index, product_config, None, _create_update_dict(product_config))
+        for index, product_config in enumerate(product_configs)
+    ]
+
+
 async def check(
     session: AsyncSession,
     organization: Organization,
     config: Config,
     *,
     for_update: bool,
-) -> tuple[list[MeterChange], list[ConfigIssue]]:
-    changes = await diff_meters(
+) -> tuple[ConfigChanges, list[ConfigIssue]]:
+    meters = await diff_meters(
         session, organization, config.meters, for_update=for_update
     )
+    benefits = diff_benefits(config.benefits)
+    products = diff_products(config.products)
     issues = [
-        *unique_external_ids(changes),
-        *locked_meter_fields(changes),
-        *await unknown_events(session, organization, changes),
+        *unique_external_ids(ConfigResource.meter, meters),
+        *unique_external_ids(ConfigResource.benefit, benefits),
+        *unique_external_ids(ConfigResource.product, products),
+        *unknown_references(config),
+        *locked_meter_fields(meters),
+        *await unknown_events(session, organization, meters),
+        *not_supported(ConfigResource.benefit, benefits),
+        *not_supported(ConfigResource.product, products),
     ]
-    return changes, issues
+    return ConfigChanges(meters, benefits, products), issues

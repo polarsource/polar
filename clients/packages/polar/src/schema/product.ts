@@ -46,7 +46,7 @@ const compositionIssues = (
       )
     }
     const meters = inCurrency.flatMap((price) =>
-      'meter_external_id' in price ? [price.meter_external_id] : [],
+      'meter' in price ? [price.meter] : [],
     )
     meters
       .filter((meter, index) => meters.indexOf(meter) !== index)
@@ -75,7 +75,7 @@ export const ProductConfig = Schema.Struct({
     ),
   ),
   prices: Schema.Array(PriceConfig).check(Schema.isMinLength(1)),
-  benefit_external_ids: Schema.Array(Schema.String),
+  benefits: Schema.Array(Schema.String),
 }).check(
   Schema.makeFilter(({ prices }) =>
     compositionIssues(prices).map((issue) => ({ path: ['prices'], issue })),

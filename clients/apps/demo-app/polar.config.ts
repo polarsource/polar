@@ -14,23 +14,24 @@ export default defineConfig({
     custom_servers: flag('Custom servers'),
     tool_calls: credits('Included tool calls').meter('tool_call').units(1000),
   }),
-  products: ({ product, seats, tier, meter }) => ({
+  products: ({ product, fixed, meter }) => ({
     pro: product('Pro')
       .prices(
-        seats()
-          .graduated(
-            tier().max(5).amount(usd(20), eur(18)),
-            tier().max(10).amount(usd(18), eur(16)),
-            tier().amount(usd(15), eur(14)),
-          )
-          .min(1),
+        fixed().amount(usd(99.99), eur(99.99)),
+        // seats()
+        //   .graduated(
+        //     tier().max(5).amount(usd(20), eur(18)),
+        //     tier().max(10).amount(usd(18), eur(16)),
+        //     tier().amount(usd(15), eur(14)),
+        //   )
+        //   .min(1),
         meter('tool_call')
           .flat()
           .amount(perThousand(usd(1)), perThousand(eur(0.9)))
           .cap(usd(100), eur(90)),
       )
       .recurring('monthly')
-      .trial(14, 'days')
+      // .trial(14, 'days')
       .grants(['custom_servers', 'tool_calls']),
   }),
 })

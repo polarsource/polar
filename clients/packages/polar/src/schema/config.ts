@@ -207,7 +207,7 @@ export const defineConfig = <
         validateBenefitNaming({ external_id, name })
         if (definition.type === 'meter_credit') {
           assertKnown(`Benefit "${external_id}"`, 'meter', meterIds, [
-            definition.properties.meter_external_id,
+            definition.properties.meter,
           ])
         }
         return {
@@ -240,7 +240,7 @@ export const defineConfig = <
             ...definition.billing,
             ...definition.trialPeriod,
             prices: productPrices(external_id, definition),
-            benefit_external_ids: definition.benefits,
+            benefits: definition.benefits,
           }
         },
       ),

@@ -22,7 +22,7 @@ type TiersConfig = typeof TiersConfig.Type
 
 const meteredFields = {
   price_currency: Currency,
-  meter_external_id: Schema.String.check(Schema.isMinLength(1)),
+  meter: Schema.String.check(Schema.isMinLength(1)),
   cap_amount: Schema.optionalKey(
     Cents.check(Schema.isLessThanOrEqualTo(2147483647)),
   ),
@@ -446,7 +446,7 @@ export const priceConfigs = (
         const cap = price.caps.find((money) => money.currency === currency)
         const fields = {
           price_currency: currency,
-          meter_external_id: price.meter,
+          meter: price.meter,
           ...(cap !== undefined && { cap_amount: cap.amount }),
         }
         if (price.structure === 'flat') {

@@ -159,14 +159,14 @@ test('flat metered prices become a metered unit price with a sub-cent rate', () 
     {
       amount_type: 'metered_unit',
       price_currency: 'usd',
-      meter_external_id: 'tool_call',
+      meter: 'tool_call',
       unit_amount: '0.1',
       cap_amount: 10000,
     },
     {
       amount_type: 'metered_unit',
       price_currency: 'eur',
-      meter_external_id: 'tool_call',
+      meter: 'tool_call',
       unit_amount: '0.09',
     },
   ])
@@ -185,7 +185,7 @@ test('tiered metered prices must leave their last tier unbounded', () => {
     {
       amount_type: 'metered_tiers',
       price_currency: 'usd',
-      meter_external_id: 'tool_call',
+      meter: 'tool_call',
       tiers: {
         type: 'graduated',
         tiers: [{ bound: 5, unit_amount: '0.1' }, { unit_amount: '0.08' }],

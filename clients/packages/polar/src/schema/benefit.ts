@@ -12,13 +12,12 @@ export const BenefitConfig = Schema.Union([
   Schema.Struct({
     ...benefitFields,
     type: Schema.Literal('feature_flag'),
-    properties: Schema.Struct({}),
   }),
   Schema.Struct({
     ...benefitFields,
     type: Schema.Literal('meter_credit'),
     properties: Schema.Struct({
-      meter_external_id: Schema.String.check(Schema.isMinLength(1)),
+      meter: Schema.String.check(Schema.isMinLength(1)),
       units: Schema.Int.check(
         Schema.isGreaterThan(0),
         Schema.isLessThanOrEqualTo(2147483647),
@@ -34,13 +33,12 @@ export type BenefitDefinition<Meter extends string = string> =
   | {
       readonly name: string | undefined
       readonly type: 'feature_flag'
-      readonly properties: Record<string, never>
     }
   | {
       readonly name: string | undefined
       readonly type: 'meter_credit'
       readonly properties: {
-        readonly meter_external_id: Meter
+        readonly meter: Meter
         readonly units: number
         readonly rollover: boolean
       }
@@ -49,7 +47,6 @@ export type BenefitDefinition<Meter extends string = string> =
 export const flag = (name?: string): BenefitDefinition<never> => ({
   name,
   type: 'feature_flag',
-  properties: {},
 })
 
 class CreditsDefinition<Meter extends string> {
@@ -58,7 +55,7 @@ class CreditsDefinition<Meter extends string> {
   constructor(
     readonly name: string | undefined,
     readonly properties: {
-      readonly meter_external_id: Meter
+      readonly meter: Meter
       readonly units: number
       readonly rollover: boolean
     },
@@ -80,7 +77,7 @@ class CreditsBuilder<Meter extends string> {
 
   units(units: number): CreditsDefinition<Meter> {
     return new CreditsDefinition(this.name, {
-      meter_external_id: this.meterExternalId,
+      meter: this.meterExternalId,
       units,
       rollover: false,
     })

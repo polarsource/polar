@@ -44,7 +44,7 @@ test('free prices follow the currencies of the other prices', () => {
     {
       amount_type: 'metered_unit',
       price_currency: 'eur',
-      meter_external_id: 'calls',
+      meter: 'calls',
       unit_amount: '0.005',
     },
   ])
@@ -85,7 +85,7 @@ const decodeProduct = (
         .prices(...prices)
         .recurring('monthly'),
     ),
-    benefit_external_ids: [],
+    benefits: [],
   })
 
 test('products allow one fixed price with seats or units plus a price per meter', () => {

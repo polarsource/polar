@@ -30,6 +30,7 @@ const outcome: CommandOutcome = {
   flags: ['production'],
   outcome: 'success',
   durationMs: 42.6,
+  tty: true,
 }
 
 type Env = Record<string, string>
@@ -233,7 +234,7 @@ describe('outcomes', () => {
           new CliError.ShowHelp({ commandPath: ['polar'], errors: [] }),
         ),
       ),
-    ).toEqual({ outcome: 'success' })
+    ).toEqual({ outcome: 'help' })
     expect(
       outcomeOf(
         Exit.fail(
@@ -327,6 +328,15 @@ describe('outcomes', () => {
         }),
       ),
     ).toEqual({ error: 'ShowHelp:UnknownSubcommand' })
+    expect(
+      usage(
+        new CliError.UnknownSubcommand({
+          subcommand: 'porducts',
+          parent: ['polar'],
+          suggestions: ['products'],
+        }),
+      ),
+    ).toEqual({ error: 'ShowHelp:UnknownSubcommand', errorMessage: 'products' })
     expect(
       usage(
         new CliError.UnexpectedArgument({ arguments: ['a private value'] }),
@@ -514,10 +524,13 @@ describe('Telemetry.record', () => {
         arch: process.arch,
         agent: 'claude-code',
         ci: true,
+        tty: true,
+        first_run: true,
         build: 'release',
         $process_person_profile: false,
       },
     })
+    expect(second.properties['first_run']).toBe(false)
     expect(first.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/)
     expect(first.properties['runtime']).toMatch(/^bun \d/)
     expect(first.properties['cli_version']).toMatch(/^\d+\.\d+\.\d+/)
@@ -528,6 +541,16 @@ describe('Telemetry.record', () => {
     expect(second.properties['error_code']).toBeNull()
     const [stored] = [...files.values()]
     expect(JSON.parse(stored!).installId).toBe(first.distinct_id.slice(4))
+  })
+
+  test('counts --help as a help view', async () => {
+    const { record, events } = telemetry()
+    await record({ ...outcome, flags: ['help'] })
+    await record({ ...outcome, flags: ['h'], outcome: 'failure' })
+    expect(events.map((event) => event.properties['outcome'])).toEqual([
+      'help',
+      'failure',
+    ])
   })
 
   test('reports the environments the command talked to', async () => {

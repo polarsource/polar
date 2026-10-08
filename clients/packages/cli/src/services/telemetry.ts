@@ -118,8 +118,9 @@ export interface Failure {
 export interface CommandOutcome extends Partial<Failure> {
   command: string[]
   flags: string[]
-  outcome: 'success' | 'failure' | 'interrupted'
+  outcome: 'success' | 'failure' | 'interrupted' | 'help'
   durationMs: number
+  tty: boolean
 }
 
 const redactions: ReadonlyArray<RegExp> = [
@@ -149,7 +150,11 @@ const field = (value: unknown, key: string): unknown =>
     : undefined
 
 const usageName = (error: unknown) => {
-  const name = field(error, 'option') ?? field(error, 'argument')
+  const suggestions = field(error, 'suggestions')
+  const name =
+    field(error, 'option') ??
+    field(error, 'argument') ??
+    (Array.isArray(suggestions) ? suggestions[0] : undefined)
   return typeof name === 'string' && /^-{0,2}[a-z][\w-]{0,39}$/i.test(name)
     ? name
     : undefined
@@ -188,7 +193,9 @@ export const outcomeOf = (
   if (Exit.isSuccess(exit)) return { outcome: 'success' }
   if (Cause.hasInterruptsOnly(exit.cause)) return { outcome: 'interrupted' }
   const error = Cause.squash(exit.cause)
-  if (Runtime.getErrorExitCode(error) === 0) return { outcome: 'success' }
+  if (Runtime.getErrorExitCode(error) === 0) {
+    return { outcome: field(error, '_tag') === 'ShowHelp' ? 'help' : 'success' }
+  }
   return { outcome: 'failure', ...describeFailure(error) }
 }
 
@@ -221,7 +228,7 @@ const installId = (fs: FileSystem.FileSystem) =>
       Effect.orElseSucceed(() => ({}) as { installId?: unknown }),
     )
     const existing = field(stored, 'installId')
-    if (typeof existing === 'string') return existing
+    if (typeof existing === 'string') return { id: existing, firstRun: false }
     const id = randomUUID()
     yield* fs
       .makeDirectory(dirname(stateFile), { recursive: true })
@@ -234,7 +241,7 @@ const installId = (fs: FileSystem.FileSystem) =>
         ),
         Effect.ignore,
       )
-    return id
+    return { id, firstRun: true }
   })
 
 export const layer = Layer.effect(
@@ -255,7 +262,7 @@ export const layer = Layer.effect(
       record: (result) =>
         Effect.gen(function* () {
           if (!active) return
-          const id = yield* installId(fs)
+          const { id, firstRun } = yield* installId(fs)
           yield* sender.dispatch({
             api_key: projectKey,
             event: EVENT,
@@ -264,7 +271,11 @@ export const layer = Layer.effect(
             properties: {
               command: result.command.join(' '),
               flags: result.flags,
-              outcome: result.outcome,
+              outcome:
+                result.outcome === 'success' &&
+                result.flags.some((flag) => flag === 'help' || flag === 'h')
+                  ? 'help'
+                  : result.outcome,
               error: result.error ?? null,
               error_message: result.errorMessage ?? null,
               error_code: result.errorCode ?? null,
@@ -276,6 +287,8 @@ export const layer = Layer.effect(
               runtime: `bun ${Bun.version}`,
               agent: detectAgent(env) ?? null,
               ci: isCI(env),
+              tty: result.tty,
+              first_run: firstRun,
               build,
               $process_person_profile: false,
             },

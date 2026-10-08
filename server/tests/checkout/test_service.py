@@ -598,6 +598,25 @@ class TestCreate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
+    async def test_price_of_composed_product(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_fixed_seat: Product,
+    ) -> None:
+        for price in product_fixed_seat.prices:
+            with pytest.raises(PolarRequestValidationError):
+                await checkout_service.create(
+                    session,
+                    CheckoutPriceCreate(product_price_id=price.id),
+                    auth_subject,
+                )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
     @pytest.mark.parametrize("amount", [500, 10000])
     async def test_amount_invalid_limits(
         self,
@@ -3188,6 +3207,25 @@ class TestUpdate:
                 checkout_one_time_fixed,
                 CheckoutUpdate(product_id=product_one_time_custom_price.id),
             )
+
+    async def test_price_of_composed_product(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_fixed_seat: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture, products=[product_fixed_seat], seats=5
+        )
+        for price in product_fixed_seat.prices:
+            with pytest.raises(PolarRequestValidationError):
+                await checkout_service.update(
+                    session,
+                    checkout,
+                    CheckoutUpdate(
+                        product_id=product_fixed_seat.id, product_price_id=price.id
+                    ),
+                )
 
     @pytest.mark.parametrize("amount", [10, 25, 49])
     async def test_amount_update_stripe_gap(

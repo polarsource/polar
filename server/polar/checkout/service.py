@@ -102,7 +102,9 @@ from polar.product.guard import (
     UnitPrice,
     is_custom_price,
     is_discount_applicable,
+    is_legacy_price,
     is_seat_price,
+    is_static_price,
 )
 from polar.product.price_set import (
     NoPricesForCurrencies,
@@ -1807,9 +1809,34 @@ class CheckoutService:
         # Legacy explicit-price checkout: the caller picked one price by ID, so
         # the set is exactly that price. Keeps the amount/seat math identical to
         # selecting it directly (e.g. a metered price still contributes nothing).
-        price_set = PriceSet.from_prices([price], currency)
+        price_set = self._get_explicit_price_set(price, product.prices)
 
         return [product], product, price_set, currency
+
+    def _get_explicit_price_set(
+        self, price: ProductPrice, product_prices: Sequence[ProductPrice]
+    ) -> PriceSet:
+        # Legacy prices are one per interval and picked alone by design; other prices
+        # are billed together, so one can only be selected if it stands alone.
+        if not is_legacy_price(price) and any(
+            is_static_price(p) and p.price_currency == price.price_currency
+            for p in product_prices
+            if p.id != price.id
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": (
+                            "Price is combined with other prices "
+                            "and can't be selected alone."
+                        ),
+                        "input": price.id,
+                    }
+                ]
+            )
+        return PriceSet.from_prices([price], price.price_currency)
 
     async def _get_validated_product(
         self,
@@ -2204,7 +2231,9 @@ class CheckoutService:
                 # Currency follows the selected price (mirrors creation in
                 # `_get_validated_price`) so switching to a price in a different
                 # currency doesn't require updating `checkout.currency` first.
-                currency_prices = PriceSet.from_prices([price], price.price_currency)
+                currency_prices = self._get_explicit_price_set(
+                    price, checkout.prices[product.id]
+                )
                 checkout.currency = price.price_currency
             else:
                 # Product and currency are both updated, make sure the product supports it

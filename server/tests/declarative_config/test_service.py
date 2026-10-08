@@ -32,7 +32,6 @@ from polar.meter.repository import MeterRepository
 from polar.meter.unit import MeterUnit
 from polar.models import (
     Organization,
-    Product,
     ProductPriceCustom,
     ProductPriceSeatUnit,
     User,
@@ -53,6 +52,7 @@ from tests.fixtures.random_objects import (
     create_event,
     create_meter,
     create_product,
+    create_product_price_seat_unit,
 )
 
 TOOL_CALLS_METER = {
@@ -113,13 +113,6 @@ PRO_PRODUCT = {
     ],
     "benefits": ["tool-call-credits", "beta"],
 }
-
-
-async def _bound_seat_price(save_fixture: SaveFixture, product: Product) -> None:
-    seat_price = product.prices[-1]
-    assert isinstance(seat_price, ProductPriceSeatUnit)
-    seat_price.maximum_units = 10
-    await save_fixture(seat_price)
 
 
 @pytest.mark.anyio
@@ -1117,10 +1110,14 @@ class TestPlan:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            prices=[],
             external_id="team",
         )
-        await _bound_seat_price(save_fixture, product)
+        product.prices.append(
+            await create_product_price_seat_unit(
+                save_fixture, product=product, maximum_seats=10
+            )
+        )
 
         plan = await declarative_config_service.plan(
             session,
@@ -1156,10 +1153,14 @@ class TestPlan:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(1000, "usd"), ("seat", 500, "usd")],
+            prices=[(1000, "usd")],
             external_id="team",
         )
-        await _bound_seat_price(save_fixture, product)
+        product.prices.append(
+            await create_product_price_seat_unit(
+                save_fixture, product=product, price_per_seat=500, maximum_seats=10
+            )
+        )
 
         config = Config.model_validate(
             {

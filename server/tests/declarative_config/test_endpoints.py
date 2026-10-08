@@ -12,7 +12,7 @@ from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
 from polar.meter.unit import MeterUnit
-from polar.models import Organization, ProductPriceSeatUnit, UserOrganization
+from polar.models import Organization, UserOrganization
 from polar.models.benefit import BenefitType
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -22,6 +22,7 @@ from tests.fixtures.random_objects import (
     create_event,
     create_meter,
     create_product,
+    create_product_price_seat_unit,
     set_product_benefits,
 )
 
@@ -770,13 +771,14 @@ class TestExport:
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
             name="Bounded seats",
-            prices=[("seat", 1000, "usd")],
+            prices=[],
             external_id="bounded-seats",
         )
-        seat_price = bounded_seats.prices[0]
-        assert isinstance(seat_price, ProductPriceSeatUnit)
-        seat_price.maximum_units = 10
-        await save_fixture(seat_price)
+        bounded_seats.prices.append(
+            await create_product_price_seat_unit(
+                save_fixture, product=bounded_seats, maximum_seats=10
+            )
+        )
         unknown_benefit = await create_product(
             save_fixture,
             organization=organization,

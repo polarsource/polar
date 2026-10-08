@@ -12,16 +12,18 @@ from polar.auth.scope import Scope
 from polar.authz.service import assert_organization_permission
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.service import benefit as benefit_service
-from polar.exceptions import PolarError
+from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
 from polar.models import Organization, User
 from polar.oauth2.exceptions import InsufficientScopeError
 from polar.organization.resolver import OrganizationIDModel, get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.product.repository import ProductRepository
+from polar.product.service import product as product_service
 from polar.redis import Redis
 
-from . import benefits, validation
+from . import benefits, products, validation
 from .schemas import (
     MAXIMUM_METERS,
     Config,
@@ -39,22 +41,28 @@ from .schemas import (
     ConfigSkippedMeter,
     ConfigSkippedReason,
 )
-from .validation import BenefitChange, MeterChange, ResourceChange
+from .validation import BenefitChange, MeterChange, ProductChange, ResourceChange
 
 _METER_EXTERNAL_ID_INDEX = "ix_meters_organization_id_external_id"
 _BENEFIT_EXTERNAL_ID_INDEX = "ix_benefits_organization_id_external_id"
+_PRODUCT_EXTERNAL_ID_INDEX = "ix_products_organization_id_external_id"
+
+
+_SECTION_SCOPES = {
+    "benefits": (Scope.benefits_read, Scope.benefits_write),
+    "products": (Scope.products_read, Scope.products_write),
+}
 
 
 def _assert_section_scopes(
     auth_subject: AuthSubject[User | Organization], config: Config, *, write: bool
 ) -> None:
-    if "benefits" not in config.model_fields_set:
-        return
-    required = (
-        {Scope.benefits_write} if write else {Scope.benefits_read, Scope.benefits_write}
-    )
-    if not auth_subject.scopes & required:
-        raise InsufficientScopeError({str(scope) for scope in required})
+    for section, (read_scope, write_scope) in _SECTION_SCOPES.items():
+        if section not in config.model_fields_set:
+            continue
+        required = {write_scope} if write else {read_scope, write_scope}
+        if not auth_subject.scopes & required:
+            raise InsufficientScopeError({str(scope) for scope in required})
 
 
 def _constraint_name(error: IntegrityError) -> str | None:
@@ -134,13 +142,23 @@ class DeclarativeConfigService:
         if errors:
             raise ConfigInvalid(errors)
 
-        meters, meter_ids = await self._apply_meters(
+        meter_results, meter_ids = await self._apply_meters(
             session, organization, changes.meters
         )
-        benefits = await self._apply_benefits(
+        benefit_results, benefit_ids = await self._apply_benefits(
             session, redis, auth_subject, organization, changes.benefits, meter_ids
         )
-        return ConfigApplyResult(changes=[*meters, *benefits])
+        product_results = await self._apply_products(
+            session,
+            auth_subject,
+            organization,
+            changes.products,
+            meter_ids,
+            benefit_ids,
+        )
+        return ConfigApplyResult(
+            changes=[*meter_results, *benefit_results, *product_results]
+        )
 
     async def plan(
         self,
@@ -288,11 +306,13 @@ class DeclarativeConfigService:
         organization: Organization,
         changes: Sequence[BenefitChange],
         meter_ids: dict[str, UUID],
-    ) -> list[ConfigResult]:
+    ) -> tuple[list[ConfigResult], dict[str, UUID]]:
         repository = BenefitRepository.from_session(session)
         results: list[ConfigResult] = []
+        benefit_ids: dict[str, UUID] = {}
         for change in changes:
-            if change.existing is None:
+            benefit = change.existing
+            if benefit is None:
                 try:
                     async with session.begin_nested():
                         benefit = await benefit_service.user_create(
@@ -319,14 +339,85 @@ class DeclarativeConfigService:
                 await benefit_service.update(
                     session,
                     redis,
-                    change.existing,
+                    benefit,
                     benefits.benefit_update(change, meter_ids),
                     auth_subject,
                 )
+            benefit_ids[change.config.external_id] = benefit.id
             results.append(
                 ConfigResult(
                     resource=ConfigResource.benefit,
                     external_id=change.config.external_id,
+                    action=change.action,
+                )
+            )
+        return results, benefit_ids
+
+    async def _apply_products(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        changes: Sequence[ProductChange],
+        meter_ids: dict[str, UUID],
+        benefit_ids: dict[str, UUID],
+    ) -> list[ConfigResult]:
+        repository = ProductRepository.from_session(session)
+        external_ids = {
+            str(id): external_id
+            for ids in (meter_ids, benefit_ids)
+            for external_id, id in ids.items()
+        }
+        results: list[ConfigResult] = []
+        for change in changes:
+            config = change.config
+            product = change.existing
+            try:
+                if product is None:
+                    try:
+                        async with session.begin_nested():
+                            product = await product_service.create(
+                                session,
+                                products.product_create(
+                                    config,
+                                    None
+                                    if is_organization(auth_subject)
+                                    else organization.id,
+                                    meter_ids,
+                                ),
+                                auth_subject,
+                            )
+                            await repository.update(
+                                product, update_dict={"external_id": config.external_id}
+                            )
+                    except IntegrityError as e:
+                        if _constraint_name(e) != _PRODUCT_EXTERNAL_ID_INDEX:
+                            raise
+                        raise ConfigProductConflict() from e
+                elif change.update_dict.keys() - {"benefits"}:
+                    product = await product_service.update(
+                        session,
+                        product,
+                        products.product_update(
+                            change, product, meter_ids, external_ids
+                        ),
+                        auth_subject,
+                    )
+                if (change.existing is None and config.benefits) or (
+                    "benefits" in change.update_dict
+                ):
+                    await product_service.update_benefits(
+                        session,
+                        product,
+                        [benefit_ids[benefit] for benefit in config.benefits],
+                        auth_subject,
+                    )
+            except PolarRequestValidationError as e:
+                raise products.product_error(e, change.index, external_ids) from e
+            results.append(
+                ConfigResult(
+                    resource=ConfigResource.product,
+                    external_id=config.external_id,
                     action=change.action,
                 )
             )

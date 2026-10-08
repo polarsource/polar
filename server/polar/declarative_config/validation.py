@@ -207,7 +207,7 @@ _NOT_SUPPORTED_PRICES = (
     ConfigProductPriceUnitBased,
     ConfigProductPriceMeteredTiers,
 )
-_NOT_SUPPORTED_PRODUCT_FIELDS = ("trial_interval", "meter_interval", "custom_fields")
+_NOT_SUPPORTED_PRODUCT_FIELDS = ("custom_fields",)
 
 
 def _not_supported(loc: Loc, input: Any) -> ConfigIssue:
@@ -275,27 +275,34 @@ def unsupported_prices(changes: Sequence[ProductChange]) -> list[ConfigIssue]:
     return issues
 
 
+_LOCKED_INTERVALS = {
+    "billing": ("recurring_interval", "recurring_interval_count"),
+    "meter": ("meter_interval", "meter_interval_count"),
+}
+
+
 def changed_intervals(changes: Sequence[ProductChange]) -> list[ConfigIssue]:
     issues: list[ConfigIssue] = []
     for change in changes:
         if change.existing is None:
             continue
-        for name in ("recurring_interval", "recurring_interval_count"):
-            value = getattr(change.config, name)
-            if getattr(change.existing, name) != value:
-                issues.append(
-                    ConfigIssue(
-                        severity=ConfigIssueSeverity.error,
-                        type=ConfigIssueType.interval_changed,
-                        loc=_loc(ConfigResource.product, change.index, name),
-                        msg=(
-                            "The billing interval of an existing product "
-                            "can't be changed."
-                        ),
-                        input=value,
+        for interval, names in _LOCKED_INTERVALS.items():
+            for name in names:
+                value = getattr(change.config, name)
+                if getattr(change.existing, name) != value:
+                    issues.append(
+                        ConfigIssue(
+                            severity=ConfigIssueSeverity.error,
+                            type=ConfigIssueType.interval_changed,
+                            loc=_loc(ConfigResource.product, change.index, name),
+                            msg=(
+                                f"The {interval} interval of an existing product "
+                                "can't be changed."
+                            ),
+                            input=value,
+                        )
                     )
-                )
-                break
+                    break
     return issues
 
 
@@ -499,7 +506,13 @@ def benefit_type_changes(changes: Sequence[BenefitChange]) -> list[ConfigIssue]:
     ]
 
 
-_PRODUCT_FIELDS = ("name", "description", "visibility")
+_PRODUCT_FIELDS = (
+    "name",
+    "description",
+    "visibility",
+    "trial_interval",
+    "trial_interval_count",
+)
 
 
 def price_config(

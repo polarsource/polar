@@ -151,12 +151,7 @@ def _product_document(
     meter_external_ids: ExternalIDs,
     benefit_external_ids: ExternalIDs,
 ) -> dict[str, Any] | ConfigSkippedReason:
-    if (
-        product.is_legacy_recurring_price
-        or product.trial_interval is not None
-        or product.meter_interval is not None
-        or product.attached_custom_fields
-    ):
+    if product.is_legacy_recurring_price or product.attached_custom_fields:
         return ConfigSkippedReason.not_supported
     prices: list[dict[str, Any]] = []
     for price in product.prices:
@@ -181,10 +176,10 @@ def _product_document(
         "visibility": product.visibility,
         "recurring_interval": product.recurring_interval,
         "recurring_interval_count": product.recurring_interval_count,
-        "trial_interval": None,
-        "trial_interval_count": None,
-        "meter_interval": None,
-        "meter_interval_count": None,
+        "trial_interval": product.trial_interval,
+        "trial_interval_count": product.trial_interval_count,
+        "meter_interval": product.meter_interval,
+        "meter_interval_count": product.meter_interval_count,
         "prices": prices,
         "benefits": benefits,
         "custom_fields": [],

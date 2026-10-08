@@ -87,11 +87,22 @@ def product_create(
         )
     return ProductCreateRecurring(
         **fields,
+        **config.model_dump(
+            include={
+                "trial_interval",
+                "trial_interval_count",
+                "meter_interval",
+                "meter_interval_count",
+            }
+        ),
         recurring_interval=config.recurring_interval,
         recurring_interval_count=config.recurring_interval_count or 1,
         prices=prices,
         organization_id=organization_id,
     )
+
+
+_TRIAL_FIELDS = {"trial_interval", "trial_interval_count"}
 
 
 def product_update(
@@ -105,6 +116,8 @@ def product_update(
         for name, value in change.update_dict.items()
         if name not in {"prices", "benefits"}
     }
+    if update.keys() & _TRIAL_FIELDS:
+        update.update(change.config.model_dump(include=_TRIAL_FIELDS))
     if "prices" in change.update_dict:
         existing_prices: dict[PriceKey, ProductPrice] = {}
         for price in product.prices:

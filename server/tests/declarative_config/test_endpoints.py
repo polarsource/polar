@@ -562,6 +562,9 @@ class TestExport:
             recurring_interval=SubscriptionRecurringInterval.month,
             name="Pro",
             prices=[(2000, "usd"), (meter, Decimal("0.5"), 5000, "usd")],
+            trial_interval=TrialInterval.day,
+            trial_interval_count=7,
+            meter_interval=SubscriptionRecurringInterval.month,
             external_id="pro",
         )
         await set_product_benefits(
@@ -603,10 +606,10 @@ class TestExport:
             "visibility": "public",
             "recurring_interval": "month",
             "recurring_interval_count": 1,
-            "trial_interval": None,
-            "trial_interval_count": None,
-            "meter_interval": None,
-            "meter_interval_count": None,
+            "trial_interval": "day",
+            "trial_interval_count": 7,
+            "meter_interval": "month",
+            "meter_interval_count": 1,
             "benefits": ["beta", "api-credits"],
             "custom_fields": [],
             "metadata": {},
@@ -709,14 +712,6 @@ class TestExport:
         await set_product_benefits(
             save_fixture, product=unknown_benefit, benefits=[custom]
         )
-        with_trial = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            trial_interval=TrialInterval.day,
-            trial_interval_count=7,
-            external_id="with-trial",
-        )
 
         response = await client.get(
             "/v1/config/", params={"organization_id": str(organization.id)}
@@ -737,7 +732,6 @@ class TestExport:
             ("product", str(archived.id), "archived"),
             ("product", str(custom_price.id), "not_supported"),
             ("product", str(unknown_benefit.id), "unknown_reference"),
-            ("product", str(with_trial.id), "not_supported"),
         ]
 
     @pytest.mark.auth(

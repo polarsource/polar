@@ -26,6 +26,7 @@ from polar.declarative_config.service import (
 )
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import NotPermitted, PolarRequestValidationError
+from polar.kit.trial import TrialInterval
 from polar.meter.repository import MeterRepository
 from polar.meter.unit import MeterUnit
 from polar.models import Organization, User, UserOrganization
@@ -554,6 +555,51 @@ class TestApply:
         assert product.prices[1].id == metered_price.id
         assert [benefit.description for benefit in product.benefits] == ["Beta access"]
 
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_product_trial(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        product_config = {
+            "external_id": "team",
+            "name": "Team",
+            "recurring_interval": "month",
+            "prices": [{"amount_type": "fixed", "price_amount": 1000}],
+        }
+
+        async def apply(**fields: Any) -> ConfigAction:
+            result = await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate({"products": [{**product_config, **fields}]}),
+            )
+            return result.changes[0].action
+
+        trial = {"trial_interval": "day", "trial_interval_count": 7}
+        assert await apply(**trial) == ConfigAction.created
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["team"])
+        assert (product.trial_interval, product.trial_interval_count) == (
+            TrialInterval.day,
+            7,
+        )
+
+        assert await apply(**trial) == ConfigAction.unchanged
+        assert await apply(**{**trial, "trial_interval_count": 14}) == (
+            ConfigAction.updated
+        )
+        await session.refresh(product)
+        assert product.trial_interval_count == 14
+
+        assert await apply() == ConfigAction.updated
+        await session.refresh(product)
+        assert (product.trial_interval, product.trial_interval_count) == (None, None)
+
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_unchanged_product_requires_products_manage(
@@ -1003,6 +1049,10 @@ class TestPlan:
                 {"recurring_interval": "month", "recurring_interval_count": 3},
                 "recurring_interval_count",
             ),
+            (
+                {"recurring_interval": "month", "meter_interval": "month"},
+                "meter_interval",
+            ),
         ],
     )
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -1109,7 +1159,6 @@ class TestPlan:
         ] == [
             ["body", "benefits", 0, "visibility"],
             ["body", "benefits", 1, "type"],
-            ["body", "products", 0, "trial_interval"],
             ["body", "products", 0, "custom_fields"],
             ["body", "products", 0, "prices", 1, "amount_type"],
         ]

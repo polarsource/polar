@@ -866,7 +866,7 @@ class TestIngest:
         await save_fixture(archived_meter)
 
         timestamp = utc_now() - timedelta(minutes=1)
-        late_timestamp = timestamp - REDUCER_BUCKET_SIZE
+        late_timestamp = timestamp - 2 * REDUCER_BUCKET_SIZE
         mocker.patch("polar.reducer_bucket.service.utc_now", return_value=timestamp)
         ingest = EventsIngest(
             events=[

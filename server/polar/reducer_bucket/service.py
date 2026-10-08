@@ -50,21 +50,24 @@ class ReducerBucketService:
         organization_id: uuid.UUID,
         events: Sequence[Event],
     ) -> None:
-        active_bucket_start = get_reducer_bucket_start(utc_now())
+        # The current and the previous bucket are considered "active".
+        oldest_active_bucket_start = (
+            get_reducer_bucket_start(utc_now()) - REDUCER_BUCKET_SIZE
+        )
         active_events: list[Event] = []
         outdated_events: list[Event] = []
         for event in events:
-            if get_reducer_bucket_start(event.timestamp) == active_bucket_start:
+            if get_reducer_bucket_start(event.timestamp) >= oldest_active_bucket_start:
                 active_events.append(event)
             else:
                 outdated_events.append(event)
 
         if outdated_events:
-            self.rollup_outdated(organization_id, outdated_events, active_bucket_start)
-        if active_events:
-            await self.rollup_active(
-                session, redis, organization_id, active_events, active_bucket_start
+            self.rollup_outdated(
+                organization_id, outdated_events, oldest_active_bucket_start
             )
+        if active_events:
+            await self.rollup_active(session, redis, organization_id, active_events)
 
     async def rollup_active(
         self,
@@ -72,17 +75,17 @@ class ReducerBucketService:
         redis: Redis,
         organization_id: uuid.UUID,
         events: Sequence[Event],
-        bucket_start: datetime,
     ) -> None:
         reducer_repository = ReducerRepository.from_session(session)
         reducers = await reducer_repository.get_all_active_by_organization(
             organization_id
         )
 
-        # (reducer, customer_id, external_customer_id) -> the values events add
-        buckets: dict[tuple[Reducer, uuid.UUID | None, str | None], list[float]] = (
-            defaultdict(list)
-        )
+        # (reducer, bucket_start, customer_id, external_customer_id) -> the values
+        # events add
+        buckets: dict[
+            tuple[Reducer, datetime, uuid.UUID | None, str | None], list[float]
+        ] = defaultdict(list)
         for event in events:
             for reducer in reducers:
                 if not reducer.filter.matches(event):
@@ -94,14 +97,19 @@ class ReducerBucketService:
                     if property_value is None:
                         continue
                     value = property_value
-                bucket_id = (reducer, event.customer_id, event.external_customer_id)
+                bucket_id = (
+                    reducer,
+                    get_reducer_bucket_start(event.timestamp),
+                    event.customer_id,
+                    event.external_customer_id,
+                )
                 buckets[bucket_id].append(value)
 
         ttl = int(REDUCER_BUCKET_TTL.total_seconds())
         try:
             async with redis.pipeline(transaction=False) as pipe:
                 for bucket_id, values in buckets.items():
-                    reducer, customer_id, external_customer_id = bucket_id
+                    reducer, bucket_start, customer_id, external_customer_id = bucket_id
                     key = get_reducer_bucket_key(
                         reducer.id, bucket_start, customer_id, external_customer_id
                     )
@@ -139,7 +147,6 @@ class ReducerBucketService:
         log.info(
             "Active reducer buckets updated in Redis",
             organization_id=organization_id,
-            bucket_start=bucket_start.isoformat(),
             bucket_count=len(buckets),
             event_count=len(events),
         )
@@ -148,14 +155,14 @@ class ReducerBucketService:
         self,
         organization_id: uuid.UUID,
         events: Sequence[Event],
-        active_bucket_start: datetime,
+        oldest_active_bucket_start: datetime,
     ) -> None:
         log.info(
             "Not touching non-active reducer buckets for outdated events",
             organization_id=organization_id,
             event_count=len(events),
             oldest_timestamp=min(e.timestamp for e in events).isoformat(),
-            active_bucket_start=active_bucket_start.isoformat(),
+            oldest_active_bucket_start=oldest_active_bucket_start.isoformat(),
         )
 
 

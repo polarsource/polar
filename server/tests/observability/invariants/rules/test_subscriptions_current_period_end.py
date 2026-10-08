@@ -1,7 +1,6 @@
 from datetime import timedelta
 
 import pytest
-import pytest_asyncio
 
 from polar.kit.utils import utc_now
 from polar.models import Customer, Product
@@ -16,12 +15,12 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_subscription
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def invariant(session: AsyncSession) -> SubscriptionsCurrentPeriodEndInvariant:
     return SubscriptionsCurrentPeriodEndInvariant(session)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_failure(
     invariant: SubscriptionsCurrentPeriodEndInvariant,
     save_fixture: SaveFixture,
@@ -47,7 +46,7 @@ async def test_failure(
     }
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_failure_never_updated_subscription(
     invariant: SubscriptionsCurrentPeriodEndInvariant,
     save_fixture: SaveFixture,
@@ -73,7 +72,7 @@ async def test_failure_never_updated_subscription(
     }
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_failure_over_limit(
     invariant: SubscriptionsCurrentPeriodEndInvariant,
     save_fixture: SaveFixture,
@@ -99,7 +98,7 @@ async def test_failure_over_limit(
     assert exc_info.value.context["subscriptions"]["has_more"] is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_success(
     invariant: SubscriptionsCurrentPeriodEndInvariant,
     save_fixture: SaveFixture,
@@ -124,7 +123,7 @@ async def test_success(
     await invariant.check()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_success_just_created_subscription(
     invariant: SubscriptionsCurrentPeriodEndInvariant,
     save_fixture: SaveFixture,
@@ -143,7 +142,7 @@ async def test_success_just_created_subscription(
     await invariant.check()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_success_just_updated_subscription(
     session: AsyncSession,
     invariant: SubscriptionsCurrentPeriodEndInvariant,

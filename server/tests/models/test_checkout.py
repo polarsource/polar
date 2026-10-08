@@ -15,7 +15,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_checkout, create_product
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.parametrize(
     ("initial_status", "expected_status"),
     [
@@ -52,7 +52,7 @@ async def test_checkout_expired_status_update(
     assert checkout.status == expected_status
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.parametrize(
     ("country", "require_billing_address", "expected_state_mode"),
     [
@@ -82,7 +82,7 @@ async def test_billing_address_fields(
     assert checkout.billing_address_fields["state"] == expected_state_mode
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.parametrize(
     ("success_url_input", "expected_factory"),
     [
@@ -130,7 +130,7 @@ async def test_success_url(
     assert checkout.success_url == expected
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_is_free_product_price_for_zero_fixed_price(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -149,7 +149,7 @@ async def test_is_free_product_price_for_zero_fixed_price(
     assert checkout.is_payment_form_required is False
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestIsFreeProductPrice:
     @pytest.mark.parametrize(
         ("currency", "expected_free"), [("usd", True), ("eur", False)]
@@ -189,7 +189,7 @@ class TestIsFreeProductPrice:
         assert checkout.is_free_product_price is False
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestHasMeteredPrices:
     @pytest.mark.parametrize(
         ("currency", "expected_metered"), [("usd", False), ("eur", True)]
@@ -217,7 +217,7 @@ class TestHasMeteredPrices:
         assert checkout.has_metered_prices is expected_metered
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestIsDiscountApplicable:
     @pytest.mark.parametrize(
         ("currency", "expected_applicable"), [("usd", False), ("eur", True)]
@@ -242,7 +242,7 @@ class TestIsDiscountApplicable:
         assert checkout.is_discount_applicable is expected_applicable
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_active_trial_interval_none_for_non_recurring_product(
     save_fixture: SaveFixture,
     product_one_time: Product,
@@ -257,7 +257,7 @@ async def test_active_trial_interval_none_for_non_recurring_product(
     assert checkout.active_trial_interval is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_active_trial_interval_count_none_for_non_recurring_product(
     save_fixture: SaveFixture,
     product_one_time: Product,

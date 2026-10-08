@@ -70,7 +70,7 @@ async def create_payout(
     return payout, payout_fees_balances
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate:
     async def test_stripe(
         self,
@@ -158,7 +158,7 @@ class TestCreate:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestReverse:
     async def test_stripe(
         self,

@@ -124,7 +124,7 @@ def feedback_thread_client(mocker: MockerFixture, plain_client: MagicMock) -> Ma
     return plain_client
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateFeedbackThread:
     async def test_impersonates_with_note_and_notes_transcript(
         self,
@@ -188,7 +188,7 @@ class TestCreateFeedbackThread:
         assert f"/feedbacks/{_FEEDBACK_ID}" in note_input.markdown
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGenerateThreadSubject:
     async def test_returns_model_output(self, mocker: MockerFixture) -> None:
         from polar.integrations.plain.service import _generate_thread_subject
@@ -235,7 +235,7 @@ class TestGenerateThreadSubject:
         assert subject == "Re: your recent question"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpsertCustomer:
     async def test_noop_when_existing_customer_has_matching_external_id(
         self,

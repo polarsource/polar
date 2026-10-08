@@ -6,7 +6,7 @@ from logfire.testing import CaptureLogfire
 from polar.logfire import instrument_fastapi
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_instrument_fastapi(
     capfire: CaptureLogfire,
 ) -> None:

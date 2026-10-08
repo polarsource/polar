@@ -26,7 +26,7 @@ def _with_kid(token: str, kid: str) -> str:
     return f"{header.decode()}.{claims}.{signature}"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_encode_signs_with_the_current_key() -> None:
     token = await jwt.encode(data=dict(CLAIMS), type="discord_oauth")
 
@@ -35,7 +35,7 @@ async def test_encode_signs_with_the_current_key() -> None:
     assert decoded["user_id"] == CLAIMS["user_id"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_rejects_a_token_signed_by_an_unpublished_key() -> None:
     with pytest.raises(jwt.DecodeError):
         await jwt.decode(
@@ -44,13 +44,13 @@ async def test_rejects_a_token_signed_by_an_unpublished_key() -> None:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_guards_the_token_type_of_a_signed_token() -> None:
     with pytest.raises(jwt.InvalidTokenTypeError):
         await jwt.decode(token=_signed(), type="customer_oauth")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_expired_signed_token_raises_expired_signature() -> None:
     with pytest.raises(jwt.ExpiredSignatureError):
         await jwt.decode(

@@ -83,7 +83,6 @@ dev = [
   "coverage>=7.14.1",
   "pytest-mock>=3.10.0",
   "ruff>=0.15.16",
-  "pytest-asyncio>=1.4.0",
   "types-redis>=4.6.0.20240903",
   "pytest-subtests>=0.13.1",
   "pytest-recording>=0.13.1",
@@ -140,12 +139,11 @@ pre_deploy = { cmd = "task db_migrate", help = "Pre-deploy command run by Render
 [tool.pytest.ini_options]
 markers = [
   "auth",
+  "websocket: Use the WebSocket transport for the test client",
   "api_version(*versions): Run the test for each APIVersion with its Polar-Version client header",
   "benchmark: performance benchmark, deselected by default (run with -m benchmark)",
 ]
 addopts = "-m 'not benchmark'"
-asyncio_mode = "strict"
-asyncio_default_fixture_loop_scope = "function"
 
 [tool.coverage.run]
 concurrency = ["thread", "greenlet"]

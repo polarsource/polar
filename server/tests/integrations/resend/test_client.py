@@ -6,7 +6,7 @@ import respx
 from polar.integrations.resend.client import ResendAPIError, ResendClient
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_get_contact_server_error_excludes_identifier(
     respx_mock: respx.MockRouter,
 ) -> None:

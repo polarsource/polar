@@ -1,7 +1,6 @@
 from datetime import timedelta
 
 import pytest
-import pytest_asyncio
 
 from polar.kit.utils import utc_now
 from polar.models import Customer, Product
@@ -14,19 +13,19 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_order
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def invariant(session: AsyncSession) -> NoRecentOrdersInvariant:
     return NoRecentOrdersInvariant(session)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_failure_no_orders(invariant: NoRecentOrdersInvariant) -> None:
     with pytest.raises(NoRecentOrdersInvariantError) as exc_info:
         await invariant.check()
     assert exc_info.value.context["last_order_at"] is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_failure_stale_order(
     invariant: NoRecentOrdersInvariant,
     save_fixture: SaveFixture,
@@ -45,7 +44,7 @@ async def test_failure_stale_order(
     assert exc_info.value.context["last_order_at"] is not None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_success_recent_order(
     invariant: NoRecentOrdersInvariant,
     save_fixture: SaveFixture,

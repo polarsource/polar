@@ -42,7 +42,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRemoveMemberSafe:
     async def test_remove_member_success(
         self,
@@ -169,7 +169,7 @@ class TestRemoveMemberSafe:
         assert user_org is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRemoveMember:
     async def test_remove_member_soft_delete(
         self,
@@ -326,7 +326,7 @@ async def _attempt_role_change(
         return True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestConcurrentRemoval:
     async def test_admin_capability_invariant_under_concurrency(
         self, worker_id: str
@@ -402,7 +402,7 @@ class TestConcurrentRemoval:
             await engine.dispose()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestConcurrentDemotion:
     async def test_admin_capability_invariant_under_concurrency(
         self, worker_id: str
@@ -570,7 +570,7 @@ async def _owner_count(session: Any, organization_id: UUID) -> int:
     ).scalar_one()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSetRoleTransferOwnershipRace:
     async def test_set_role_aborts_when_concurrent_transfer_promotes_target(
         self, worker_id: str, mocker: MockerFixture
@@ -665,7 +665,7 @@ class TestSetRoleTransferOwnershipRace:
             await engine.dispose()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListByOrg:
     async def test_list_by_org_excludes_deleted(
         self,
@@ -693,7 +693,7 @@ class TestListByOrg:
         assert members[0].user_id == user.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSetRole:
     async def test_promote_member_to_admin(
         self,
@@ -889,7 +889,7 @@ class TestSetRole:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTransferOwnership:
     async def test_promotes_new_owner_and_demotes_previous(
         self,

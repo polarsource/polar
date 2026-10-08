@@ -101,7 +101,7 @@ def _mock_stripe_adapter(
     mocker.patch("polar.merchant_migration.service.StripeAdapter", return_value=adapter)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -292,7 +292,7 @@ class TestCreate:
         assert body["source"]["stripe_user_id"] == "acct_test"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGet:
     async def test_anonymous(
         self, client: AsyncClient, save_fixture: SaveFixture, organization: Organization
@@ -350,7 +350,7 @@ class TestGet:
         assert response.json()["operation"]["stalled"] is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -387,7 +387,7 @@ class TestList:
         assert "source_credentials" not in item
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPrecheck:
     async def test_anonymous(
         self, client: AsyncClient, save_fixture: SaveFixture, organization: Organization
@@ -460,7 +460,7 @@ def _catalog() -> list[CanonicalRecord]:
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRecords:
     async def test_anonymous(
         self, client: AsyncClient, save_fixture: SaveFixture, organization: Organization
@@ -552,7 +552,7 @@ def _catalog_with_customer() -> list[CanonicalRecord]:
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestImport:
     async def test_anonymous(
         self, client: AsyncClient, save_fixture: SaveFixture, organization: Organization
@@ -662,7 +662,7 @@ def _configure_destination(mocker: MockerFixture) -> None:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetPanTransfer:
     async def test_anonymous(
         self, client: AsyncClient, save_fixture: SaveFixture, organization: Organization
@@ -713,7 +713,7 @@ class TestGetPanTransfer:
         assert response.status_code == 200
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestStartPanTransfer:
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_start_requires_an_imported_catalog(
@@ -804,7 +804,7 @@ class TestStartPanTransfer:
         assert response.status_code == 409
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCompletePanTransferStep:
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_complete_advances_and_persists(
@@ -989,7 +989,7 @@ class TestCompletePanTransferStep:
         assert response.status_code == 409
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCutover:
     async def test_anonymous(
         self, client: AsyncClient, save_fixture: SaveFixture, organization: Organization
@@ -1086,7 +1086,7 @@ class TestCutover:
         assert body["completed"] is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestExportCustomerIds:
     async def test_anonymous(
         self, client: AsyncClient, save_fixture: SaveFixture, organization: Organization
@@ -1153,7 +1153,7 @@ class TestExportCustomerIds:
         assert response.text == "cus_second\r\ncus_first\r\n"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateRecord:
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_foreign_record_returns_404(
@@ -1232,7 +1232,7 @@ class TestUpdateRecord:
         assert reloaded.canonical["tax_behavior"] == "exclusive"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSetTaxBehavior:
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_sets_every_subscription_not_moved(
@@ -1337,7 +1337,7 @@ class TestSetTaxBehavior:
         assert detail in response.json()["detail"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateBillingAddress:
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_updates_staged_customer(

@@ -1,7 +1,6 @@
 import typing
 
 import pytest
-import pytest_asyncio
 from pydantic import BaseModel, ValidationError
 
 from polar.custom_field.data import (
@@ -14,7 +13,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_custom_field
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def custom_field_data_schema(
     save_fixture: SaveFixture, organization: Organization
 ) -> type[BaseModel]:
@@ -90,7 +89,7 @@ def test_valid_input(
     assert data.model_dump(exclude_unset=True) == input
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_checkbox_input(
     save_fixture: SaveFixture, organization: Organization
 ) -> None:

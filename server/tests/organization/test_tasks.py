@@ -23,7 +23,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_payout_account
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOrganizationCreated:
     async def test_not_existing_organization(self, session: AsyncSession) -> None:
         # then
@@ -41,7 +41,7 @@ class TestOrganizationCreated:
         await organization_created(organization.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOrganizationUnderReview:
     async def test_not_existing_organization(self, session: AsyncSession) -> None:
         # then
@@ -106,7 +106,7 @@ class TestOrganizationUnderReview:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOrganizationOffboarded:
     async def test_not_existing_organization(self, session: AsyncSession) -> None:
         session.expunge_all()
@@ -138,7 +138,7 @@ class TestOrganizationOffboarded:
         assert email.props.account_url == organization.account_url
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOrganizationCancelExpiredSubscriptions:
     async def test_invokes_service(
         self,
@@ -155,7 +155,7 @@ class TestOrganizationCancelExpiredSubscriptions:
         cancel_mock.assert_called_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSyncPayoutAccountWebsite:
     async def test_pushes_website_to_stripe(
         self,
@@ -202,7 +202,7 @@ class TestSyncPayoutAccountWebsite:
         await sync_payout_account_website(organization.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEvaluateWebsiteRisk:
     async def test_triggers_evaluation_for_org_with_website(
         self,

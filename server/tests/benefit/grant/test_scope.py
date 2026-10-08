@@ -15,7 +15,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer, create_organization
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestResolveMember:
     """Tests for resolve_member() function in scope.py"""
 

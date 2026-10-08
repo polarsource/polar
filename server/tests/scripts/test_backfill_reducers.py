@@ -10,7 +10,7 @@ from scripts.backfill_reducers import backfill_batch
 from tests.fixtures.database import SaveFixture
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBackfillReducers:
     async def test_batch_limits(
         self,

@@ -9,7 +9,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_product, create_product_price_fixed
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetProductsWithoutCurrency:
     async def test_returns_product_without_currency(
         self,

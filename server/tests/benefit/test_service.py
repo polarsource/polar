@@ -83,7 +83,7 @@ def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
     return mocker.patch("polar.benefit.service.enqueue_job")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
     async def test_user(
@@ -192,7 +192,7 @@ class TestList:
         assert results[0].id == benefit_organization.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGet:
     @pytest.mark.auth
     async def test_user(
@@ -257,7 +257,7 @@ class TestGet:
         assert organization_benefit is not None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUserCreate:
     @pytest.mark.auth
     async def test_user_missing_organization(
@@ -630,7 +630,7 @@ class TestUserCreate:
         assert e.value.errors()[0]["loc"] == ("body", "external_id")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdate:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -856,7 +856,7 @@ class TestUpdate:
         assert e.value.errors()[0]["loc"] == ("body", "external_id")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDelete:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

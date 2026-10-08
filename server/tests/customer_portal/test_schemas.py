@@ -13,7 +13,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCustomerProduct:
     async def test_excludes_non_public_benefits(
         self,

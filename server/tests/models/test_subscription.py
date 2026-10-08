@@ -96,7 +96,7 @@ async def _matches_expression(
     return result.scalar_one_or_none() is not None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRequiresPaymentMethod:
     @pytest.mark.parametrize(
         ("status", "cancel_at_period_end", "expected"),

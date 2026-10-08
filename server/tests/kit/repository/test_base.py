@@ -15,7 +15,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_user
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPaginateHasMore:
     @pytest.mark.parametrize(
         "build_statement",

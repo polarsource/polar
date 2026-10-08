@@ -30,7 +30,7 @@ def _patch_locker(mocker: MockerFixture, *, raises_timeout: bool = False) -> Non
     mocker.patch("polar.receipt.tasks.RedisMiddleware.get")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestReceiptRender:
     async def test_raises_when_order_missing(self, mocker: MockerFixture) -> None:
         _patch_locker(mocker)

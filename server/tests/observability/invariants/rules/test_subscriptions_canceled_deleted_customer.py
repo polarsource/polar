@@ -1,5 +1,4 @@
 import pytest
-import pytest_asyncio
 
 from polar.models import Organization, Product
 from polar.models.subscription import SubscriptionStatus
@@ -12,14 +11,14 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer, create_subscription
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def invariant(
     session: AsyncSession,
 ) -> SubscriptionsCanceledDeletedCustomerInvariant:
     return SubscriptionsCanceledDeletedCustomerInvariant(session)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_failure(
     invariant: SubscriptionsCanceledDeletedCustomerInvariant,
     save_fixture: SaveFixture,
@@ -48,7 +47,7 @@ async def test_failure(
     }
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_failure_over_limit(
     invariant: SubscriptionsCanceledDeletedCustomerInvariant,
     save_fixture: SaveFixture,
@@ -79,7 +78,7 @@ async def test_failure_over_limit(
     assert exc_info.value.context["subscriptions"]["has_more"] is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_success(
     invariant: SubscriptionsCanceledDeletedCustomerInvariant,
     save_fixture: SaveFixture,

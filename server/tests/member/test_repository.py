@@ -16,7 +16,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListByEmailAndOrganization:
     async def test_no_members_returns_empty(
         self,
@@ -245,7 +245,7 @@ class TestListByEmailAndOrganization:
         assert members[0].customer.name == "Test Customer"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTransferOwnership:
     async def test_succeeds_when_new_owner_id_sorts_before_current(
         self,

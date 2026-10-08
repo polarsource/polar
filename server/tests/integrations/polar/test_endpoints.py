@@ -241,7 +241,7 @@ def enqueue_mock(mocker: MockerFixture) -> AsyncMock:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestWebhook:
     async def test_invalid_signature_returns_401(
         self, client: AsyncClient, enqueue_mock: AsyncMock

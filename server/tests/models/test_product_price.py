@@ -29,7 +29,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.parametrize(
     ("unit_amount", "cap_amount", "units", "expected_amount", "expected_label"),
     [
@@ -351,7 +351,7 @@ class TestSeatTiersApiView:
             {"min_seats": 5, "max_seats": 20, "price_per_seat": 250}
         ]
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_database_round_trip_returns_tiers_model(
         self,
         save_fixture: SaveFixture,
@@ -495,7 +495,7 @@ class TestUnitBasedPrice:
         assert price.get_unit_noun(2, "de") == "sièges"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestProductPriceMeteredTiers:
     def _price(
         self, tiers: Tiers, cap_amount: int | None = None

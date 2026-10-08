@@ -40,7 +40,7 @@ def plain_service_mock(mocker: MockerFixture) -> MagicMock:
     return mock
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateCustomer:
     async def test_creates_customer_and_plain_tenant(
         self,
@@ -99,7 +99,7 @@ class TestCreateCustomer:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAddMember:
     async def test_adds_member_to_existing_customer(
         self,
@@ -175,7 +175,7 @@ class TestAddMember:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRemoveMember:
     async def test_removes_member_and_unlinks_plain_tenant(
         self,
@@ -261,7 +261,7 @@ class TestRemoveMember:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateMember:
     async def test_updates_member_name(
         self,
@@ -350,7 +350,7 @@ class TestUpdateMember:
         client.update_member.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateCustomerSlug:
     async def test_merges_slug_into_existing_metadata(
         self,
@@ -400,7 +400,7 @@ class TestUpdateCustomerSlug:
         client.update_customer_metadata.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteCustomer:
     async def test_deletes_customer_by_external_id(
         self,
@@ -414,7 +414,7 @@ class TestDeleteCustomer:
         client.delete_customer.assert_called_once_with(external_id="org-123")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFlushEventIngestion:
     SELF_ORG_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
 
@@ -490,7 +490,7 @@ class TestFlushEventIngestion:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTrackOrganizationReviewUsage:
     async def test_calls_client_with_decimal_cost(
         self,
@@ -546,7 +546,7 @@ def webhook_order_created_context(mocker: MockerFixture) -> None:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestWebhookOrderCreated:
     async def test_retries_on_invoice_not_ready(
         self,

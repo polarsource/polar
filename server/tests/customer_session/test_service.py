@@ -11,7 +11,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateGracefulFallback:
     """Tests for graceful owner member auto-creation in customer session service."""
 

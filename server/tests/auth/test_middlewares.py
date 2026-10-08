@@ -98,7 +98,7 @@ async def _create_oauth2_token(
     return token
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetAuthSubjectUserSessionScope:
     async def test_unscoped_session_is_unrestricted(
         self,
@@ -141,7 +141,7 @@ class TestGetAuthSubjectUserSessionScope:
         assert auth_subject.organization_ids == frozenset({organization.id})
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetAuthSubjectOAuth2TokenScope:
     async def test_unscoped_user_token_is_unrestricted(
         self,
@@ -200,7 +200,7 @@ class TestGetAuthSubjectOAuth2TokenScope:
         assert auth_subject.organization_ids is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetAuthSubjectRequestedOrganization:
     async def test_user_token_narrows_to_requested_organization(
         self,
@@ -506,7 +506,7 @@ class TestGetAuthSubjectRequestedOrganization:
         assert auth_subject.organization_ids is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAuthSubjectMiddlewareRequestedOrganization:
     async def test_inaccessible_organization_returns_403(
         self,
@@ -543,7 +543,7 @@ class TestAuthSubjectMiddlewareRequestedOrganization:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAuthSubjectMiddlewareWebSocket:
     @pytest.mark.parametrize(
         ("credentials", "status_code"),
@@ -651,7 +651,7 @@ class TestAuthSubjectMiddlewareWebSocket:
                 assert body["error"] == "RequestedOrganizationNotAccessible"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestIsSingleOrganizationCredential:
     async def test_organization_token(
         self,

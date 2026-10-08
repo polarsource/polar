@@ -28,7 +28,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestProductTransferService:
     """Test the ProductTransferService class."""
 
@@ -1134,7 +1134,7 @@ class TestProductTransferService:
         assert event2.id in [e.id for e in service.events_to_transfer]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestProductTransferIntegration:
     """Integration tests for the complete product transfer workflow."""
 

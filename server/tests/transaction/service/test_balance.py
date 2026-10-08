@@ -13,7 +13,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_payment_transaction
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateBalance:
     async def test_valid(
         self,
@@ -50,7 +50,7 @@ class TestCreateBalance:
         assert outgoing.balance_correlation_key == incoming.balance_correlation_key
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateBalanceFromCharge:
     async def test_not_existing_charge(
         self, session: AsyncSession, user: User, account: Account
@@ -146,7 +146,7 @@ async def load_balance_transactions(
     return loaded_outgoing, loaded_incoming
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateReversalBalance:
     async def test_valid(
         self,

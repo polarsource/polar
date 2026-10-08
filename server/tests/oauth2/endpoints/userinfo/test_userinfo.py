@@ -1,5 +1,4 @@
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.models import OAuth2Client, User
@@ -8,7 +7,7 @@ from tests.fixtures.database import SaveFixture
 from ...conftest import create_oauth2_token
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2Client:
     oauth2_client = OAuth2Client(
         client_id="polar_ci_123",
@@ -28,7 +27,7 @@ async def oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2Client:
     return oauth2_client
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.parametrize("method", ["GET", "POST"])
 class TestOAuth2UserInfo:
     async def test_no_scope(

@@ -15,7 +15,7 @@ from tests.fixtures.database import SaveFixture
 NONEXISTENT_ORG_ID = UUID("00000000-0000-0000-0000-000000000000")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetAccessibleOrganization:
     @pytest.mark.auth
     async def test_user_with_no_orgs(
@@ -69,7 +69,7 @@ class TestGetAccessibleOrganization:
         assert result is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetAccessibleOrgIds:
     @pytest.mark.auth
     async def test_user_with_no_orgs(
@@ -131,7 +131,7 @@ class TestGetAccessibleOrgIds:
         assert result == set()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetAccessibleOrgIdsSSOEnforced:
     """A non-SSO user session cannot reach organizations that enforce SSO."""
 
@@ -229,7 +229,7 @@ class TestGetAccessibleOrgIdsSSOEnforced:
         assert result == {organization.id}
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetAccessibleOrgIdsScopedTo:
     """`AuthSubject.organization_ids` down-scopes the accessible set."""
 
@@ -300,7 +300,7 @@ class TestGetAccessibleOrgIdsScopedTo:
         assert result == set()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetAccessibleOrganizationScopedTo:
     @pytest.mark.auth
     async def test_returned_when_in_scope(

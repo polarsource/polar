@@ -87,7 +87,7 @@ class TestFilterClauseValueValidation:
             FilterClause(property="test", operator=FilterOperator.eq, value=value)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFilter:
     async def test_nested_property_path(
         self,

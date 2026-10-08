@@ -110,7 +110,7 @@ async def create_order_and_refund(
     return refund, order, payment
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate:
     @pytest.mark.parametrize("status", [RefundStatus.pending, RefundStatus.failed])
     async def test_not_succeeded_refund(
@@ -437,7 +437,7 @@ class TestCreate:
         create_refund_fees_mock.assert_awaited_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRevert:
     @pytest.mark.parametrize("status", [RefundStatus.pending, RefundStatus.succeeded])
     async def test_not_canceled_refund(

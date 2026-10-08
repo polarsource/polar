@@ -102,7 +102,7 @@ def _ingest_request(*external_ids: str) -> EventsIngest:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     @pytest.mark.auth
     async def test_not_organization_member(
@@ -289,7 +289,7 @@ class TestList:
         assert events[0].id == event1.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGet:
     @pytest.mark.auth
     async def test_not_existing(
@@ -390,7 +390,7 @@ class TestGet:
         assert result.user_metadata["_cost"]["currency"] == "usd"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListNames:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -629,7 +629,7 @@ class TestListNames:
         assert labels["custom.event"] == "Custom Event"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestIngest:
     @pytest.mark.auth
     async def test_invalid_future_timestamp(self, organization: Organization) -> None:
@@ -1605,7 +1605,7 @@ class TestIngest:
         assert [e.ingest_sequence for e in events] == [None, None]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListWithAggregateCosts:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -1714,7 +1714,7 @@ class TestListWithAggregateCosts:
         assert root2_agg.user_metadata["conversationId"] == "123"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListStatisticsTimeseries:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -2073,7 +2073,7 @@ class TestListStatisticsTimeseries:
         assert result.totals[0].customers == 2
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAggregateFieldsDoNotPersist:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -2135,7 +2135,7 @@ class TestAggregateFieldsDoNotPersist:
         assert child_after.user_metadata["_cost"]["amount"] == original_child_cost
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestIngested:
     async def test_basic(
         self,
@@ -2408,7 +2408,7 @@ class TestIngested:
     #     assert meter_event.customer_id == customer.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestIngestedFirstUserEventAt:
     async def test_enqueues_for_user_events(
         self,
@@ -2486,7 +2486,7 @@ class TestIngestedFirstUserEventAt:
         ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSystemEvents:
     async def test_order_paid_one_time(
         self,

@@ -1,7 +1,6 @@
 import uuid
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.auth.scope import Scope
@@ -32,7 +31,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def checkout_link(save_fixture: SaveFixture, product: Product) -> CheckoutLink:
     return await create_checkout_link(
         save_fixture,
@@ -42,7 +41,7 @@ async def checkout_link(save_fixture: SaveFixture, product: Product) -> Checkout
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def checkout_link_organization_second(
     save_fixture: SaveFixture,
     product_organization_second: Product,
@@ -54,7 +53,7 @@ async def checkout_link_organization_second(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListCheckoutLinks:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/checkout-links/")
@@ -62,7 +61,7 @@ class TestListCheckoutLinks:
         assert response.status_code == 401
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetCheckoutLink:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/checkout-links/{uuid.uuid4()}")
@@ -116,7 +115,7 @@ class TestGetCheckoutLink:
         assert str(private_benefit.id) not in benefit_ids
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateCheckoutLink:
     async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
         response = await client.post(
@@ -198,7 +197,7 @@ class TestCreateCheckoutLink:
         assert response.status_code == 422
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateCheckoutLink:
     async def test_anonymous(
         self, client: AsyncClient, checkout_link: CheckoutLink
@@ -266,7 +265,7 @@ class TestUpdateCheckoutLink:
         assert json["metadata"] == {"test": "test"}
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteCheckoutLink:
     async def test_anonymous(
         self, client: AsyncClient, checkout_link: CheckoutLink
@@ -311,7 +310,7 @@ class TestDeleteCheckoutLink:
         assert response.status_code == 204
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRedirect:
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.get("/v1/checkout-links/not-existing/redirect")

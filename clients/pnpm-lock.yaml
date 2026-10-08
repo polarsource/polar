@@ -1446,8 +1446,8 @@ importers:
   packages/polar:
     dependencies:
       '@polar-sh/sdk':
-        specifier: 1.0.1
-        version: 1.0.1
+        specifier: 1.0.3-alpha.1
+        version: 1.0.3-alpha.1
       effect:
         specifier: ^4.0.1
         version: 4.0.1
@@ -4704,13 +4704,13 @@ packages:
   '@polar-sh/sdk@0.46.7':
     resolution: {integrity: sha512-g8/goRQFfnik9Ood2Ej5AsbEXv2rohzhVlmW7wjkCuwdc8i59FWhdBjolX2tUwcXXjugziXrhCZJLivY3W6ytQ==}
 
-  '@polar-sh/sdk@1.0.1':
-    resolution: {integrity: sha512-//SIpog6sairTzqC04mIsdp8fqeHfpCd3iweLUOyCm7c4IHlRoaUEWFMGRTDPUjvyu4KBYODaI7aODr9acLQhA==}
-    engines: {node: '>=22'}
-
   '@polar-sh/sdk@1.0.2':
     resolution: {integrity: sha512-c3jdqYloVfcejKsAqYfYcW4bG7KkXj5bXkgdsdx4GHlJPzHFV5tysfeZGf9V7dJReLBirAluchsuHWiAIBco8w==}
     engines: {node: '>=22'}
+
+  '@polar-sh/sdk@1.0.3-alpha.1':
+    resolution: {integrity: sha512-YzxYN39L7c6vHTLJNYRdaJquHu5yexo1hhFJFTdV08RE/Zp+1bRMxcGJgCh8N1Wf1Ma/xSAy1bKRqY8Rs35rSg==}
+    engines: {node: '>=24'}
 
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
@@ -18454,9 +18454,9 @@ snapshots:
       standardwebhooks: 1.1.1
       zod: 4.6.5
 
-  '@polar-sh/sdk@1.0.1': {}
-
   '@polar-sh/sdk@1.0.2': {}
+
+  '@polar-sh/sdk@1.0.3-alpha.1': {}
 
   '@polka/url@1.0.0-next.29': {}
 

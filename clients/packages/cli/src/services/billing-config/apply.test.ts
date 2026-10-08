@@ -78,9 +78,9 @@ const failure = (promise: Promise<unknown>) =>
 describe('apply', () => {
   test('posts the config for the organization and reports what happened', async () => {
     api.routes[`POST ${applyUrl}`] = Response.json({
-      meters: [
-        { external_id: 'tool-calls', action: 'created' },
-        { external_id: 'tokens', action: 'updated' },
+      changes: [
+        { resource: 'meter', external_id: 'tool-calls', action: 'created' },
+        { resource: 'benefit', external_id: 'pro', action: 'updated' },
       ],
     })
 
@@ -93,28 +93,7 @@ describe('apply', () => {
       status: 'applied',
       entries: [
         { section: 'meters', id: 'tool-calls', action: 'created', diff: [] },
-        { section: 'meters', id: 'tokens', action: 'updated', diff: [] },
-      ],
-    })
-  })
-
-  test('names entries of singleton sections after the section', async () => {
-    api.routes[`POST ${applyUrl}`] = Response.json({
-      meters: [],
-      organization: { action: 'updated' },
-    })
-
-    const result = await run(await write(source))
-
-    expect(result).toEqual({
-      status: 'applied',
-      entries: [
-        {
-          section: 'organization',
-          id: 'organization',
-          action: 'updated',
-          diff: [],
-        },
+        { section: 'benefits', id: 'pro', action: 'updated', diff: [] },
       ],
     })
   })

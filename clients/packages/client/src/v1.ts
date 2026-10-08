@@ -15844,10 +15844,7 @@ export interface components {
     ConfigAction: 'created' | 'updated' | 'unchanged'
     /** ConfigApplyResult */
     ConfigApplyResult: {
-      /**
-       * Changes
-       * @description What was applied, in the order it was applied.
-       */
+      /** Changes */
       changes: components['schemas']['ConfigResult'][]
     }
     /** ConfigAsCodeNotEnabled */
@@ -16156,10 +16153,7 @@ export interface components {
     }
     /** ConfigPlan */
     ConfigPlan: {
-      /**
-       * Changes
-       * @description What applying the config would do, in the order it would apply.
-       */
+      /** Changes */
       changes: components['schemas']['ConfigChange'][]
       /** Issues */
       issues: components['schemas']['ConfigIssue'][]

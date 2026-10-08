@@ -722,6 +722,21 @@ class TestPlan:
             ConfigAction.created,
         )
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.meters_read})
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_empty_sections_need_no_scope(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate({"benefits": [], "products": []}),
+        )
+
+        assert plan.changes == []
+
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_benefit_diff(
         self,

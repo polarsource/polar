@@ -5,8 +5,11 @@ from uuid import UUID
 
 import typer
 from sqlalchemy import (
+    TIMESTAMP,
     ColumnElement,
     Numeric,
+    String,
+    Uuid,
     cast,
     delete,
     func,
@@ -88,15 +91,19 @@ async def backfill_bucket(
         else:
             value = cast(get_nested_metadata_attr(Event, prop).astext, Numeric)
 
+    aggregates = (
+        func.count().label("count"),
+        func.coalesce(func.sum(value), 0).label("sum"),
+        func.min(value).label("min"),
+        func.max(value).label("max"),
+    )
     orders = (
         select(
             BillingEntry.customer_id,
+            literal(None, type_=String).label("external_customer_id"),
             Order.id.label("order_id"),
             Order.created_at.label("sealed_at"),
-            func.count().label("count"),
-            func.coalesce(func.sum(value), 0).label("sum"),
-            func.min(value).label("min"),
-            func.max(value).label("max"),
+            *aggregates,
         )
         .select_from(BillingEntry)
         .join(Event, Event.id == BillingEntry.event_id)
@@ -116,26 +123,84 @@ async def backfill_bucket(
         )
         .group_by(BillingEntry.customer_id, Order.id, Order.created_at)
     )
+    has_billing_entry = (
+        select(BillingEntry.id)
+        .join(ProductPrice, ProductPrice.id == BillingEntry.product_price_id)
+        .join(MeterReducer, MeterReducer.meter_id == ProductPrice.__table__.c.meter_id)
+        .where(
+            BillingEntry.event_id == Event.id,
+            BillingEntry.type == BillingEntryType.metered,
+            BillingEntry.deleted_at.is_(None),
+            MeterReducer.reducer_id == reducer.id,
+        )
+        .exists()
+    )
+    usage_only = (
+        select(
+            Event.customer_id,
+            Event.external_customer_id,
+            literal(None, type_=Uuid).label("order_id"),
+            literal(None, type_=TIMESTAMP(timezone=True)).label("sealed_at"),
+            *aggregates,
+        )
+        .where(
+            Event.organization_id == reducer.organization_id,
+            Event.source == EventSource.user,
+            Event.timestamp >= start,
+            Event.timestamp < end,
+            reducer.filter.get_sql_clause(Event),
+            reducer.aggregation.get_sql_clause(Event),
+            ~has_billing_entry,
+        )
+        .group_by(Event.customer_id, Event.external_customer_id)
+    )
     delete_statement = delete(ReducerBucket).where(
         ReducerBucket.organization_id == reducer.organization_id,
         ReducerBucket.reducer_id == reducer.id,
         ReducerBucket.bucket_start == start,
     )
     if customer_id is not None:
+        external_customer_id = (
+            select(Customer.external_id)
+            .where(
+                Customer.id == customer_id,
+                Customer.organization_id == reducer.organization_id,
+            )
+            .scalar_subquery()
+        )
         orders = orders.where(BillingEntry.customer_id == customer_id)
+        usage_only = usage_only.where(
+            or_(
+                Event.customer_id == customer_id,
+                Event.external_customer_id == external_customer_id,
+            )
+        )
         delete_statement = delete_statement.where(
             or_(
                 ReducerBucket.customer_id == customer_id,
-                ReducerBucket.external_customer_id
-                == select(Customer.external_id)
-                .where(
-                    Customer.id == customer_id,
-                    Customer.organization_id == reducer.organization_id,
-                )
-                .scalar_subquery(),
+                ReducerBucket.external_customer_id == external_customer_id,
             )
         )
-    grouped = orders.subquery()
+    generations = orders.union_all(usage_only).subquery()
+    grouped = (
+        select(
+            generations.c.customer_id,
+            generations.c.external_customer_id,
+            generations.c.order_id,
+            generations.c.sealed_at,
+            func.sum(generations.c.count).label("count"),
+            func.sum(generations.c.sum).label("sum"),
+            func.min(generations.c.min).label("min"),
+            func.max(generations.c.max).label("max"),
+        )
+        .group_by(
+            generations.c.customer_id,
+            generations.c.external_customer_id,
+            generations.c.order_id,
+            generations.c.sealed_at,
+        )
+        .subquery()
+    )
     statement = (
         insert(ReducerBucket)
         .from_select(
@@ -144,6 +209,7 @@ async def backfill_bucket(
                 "organization_id",
                 "reducer_id",
                 "customer_id",
+                "external_customer_id",
                 "bucket_start",
                 "count",
                 "sum",
@@ -157,13 +223,17 @@ async def backfill_bucket(
                 literal(reducer.organization_id),
                 literal(reducer.id),
                 grouped.c.customer_id,
+                grouped.c.external_customer_id,
                 literal(start),
                 grouped.c.count,
                 grouped.c.sum,
                 grouped.c.min,
                 grouped.c.max,
                 func.row_number().over(
-                    partition_by=grouped.c.customer_id,
+                    partition_by=(
+                        grouped.c.customer_id,
+                        grouped.c.external_customer_id,
+                    ),
                     order_by=(
                         grouped.c.sealed_at.asc().nulls_last(),
                         grouped.c.order_id.asc().nulls_last(),
@@ -187,7 +257,7 @@ async def backfill(
     meter_id: UUID | None = None,
     customer_id: UUID | None = None,
 ) -> None:
-    """Rebuild buckets from billing entries, excluding the latest ten minutes.
+    """Rebuild usage and billing buckets, excluding the latest ten minutes.
 
     Expands START/END to full buckets; naive timestamps are UTC.
     Replaces all generations in the selected scope, including sealed ones.

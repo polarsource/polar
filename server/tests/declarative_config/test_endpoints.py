@@ -70,7 +70,13 @@ class TestApply:
 
         assert response.status_code == 200
         assert response.json() == {
-            "meters": [{"external_id": "sdk-tool-calls", "action": "created"}],
+            "changes": [
+                {
+                    "resource": "meter",
+                    "external_id": "sdk-tool-calls",
+                    "action": "created",
+                }
+            ],
         }
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
@@ -103,6 +109,39 @@ class TestApply:
         assert response.status_code == 422
         [error] = response.json()["detail"]
         assert error["loc"] == ["body", "meters", 0, "agregation"]
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_one_time_product_metered_price(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/config/apply",
+            json={
+                "meters": [METER],
+                "products": [
+                    {
+                        "external_id": "pack",
+                        "name": "Pack",
+                        "prices": [
+                            {
+                                "amount_type": "metered_unit",
+                                "meter": "sdk-tool-calls",
+                                "unit_amount": "0.5",
+                            }
+                        ],
+                    }
+                ],
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 422
+        [error] = response.json()["detail"]
+        assert error["loc"] == ["body", "products", 0]
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -168,6 +207,21 @@ class TestApply:
 
 @pytest.mark.asyncio
 class TestPlan:
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_empty_config(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/config/plan", json={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"changes": [], "issues": []}
+
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_locked_meter_reports_issues(

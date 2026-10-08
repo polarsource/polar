@@ -10,10 +10,17 @@ from polar.postgres import (
     get_db_read_session,
     get_db_session,
 )
+from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from .schemas import Config, ConfigApplyResult, ConfigExport, ConfigPlan
-from .service import ConfigAsCodeNotEnabled, ConfigInvalid, ConfigMeterConflict
+from .service import (
+    ConfigAsCodeNotEnabled,
+    ConfigBenefitConflict,
+    ConfigInvalid,
+    ConfigMeterConflict,
+    ConfigProductConflict,
+)
 from .service import declarative_config as declarative_config_service
 
 router = APIRouter(prefix="/config", tags=["config", APITag.private])
@@ -70,6 +77,8 @@ async def export(
         403: {
             "description": (
                 "Not allowed to manage this organization, "
+                "missing the `benefits:write` or `products:write` scope "
+                "for a `benefits` or `products` section, "
                 "or config as code isn't enabled for it."
             ),
             "model": NotPermitted.schema() | ConfigAsCodeNotEnabled.schema(),
@@ -77,9 +86,12 @@ async def export(
         409: {
             "description": (
                 "The config has blocking issues, "
-                "or another request created the same meter concurrently."
+                "or another request created the same resource concurrently."
             ),
-            "model": ConfigInvalid.schema() | ConfigMeterConflict.schema(),
+            "model": ConfigInvalid.schema()
+            | ConfigMeterConflict.schema()
+            | ConfigBenefitConflict.schema()
+            | ConfigProductConflict.schema(),
         },
     },
 )
@@ -87,15 +99,19 @@ async def apply(
     config: Config,
     auth_subject: MeterWrite,
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> ConfigApplyResult:
     """
     Apply a declarative config document to the organization.
 
-    Meters are matched by `external_id`: missing ones are created, changed ones
-    are updated, and meters not listed are left untouched. Everything is applied
-    in one transaction.
+    Meters, benefits and products are matched by `external_id`: missing ones are
+    created, changed ones are updated, and ones not listed are left untouched.
+    Everything is applied in one transaction.
+
+    A `benefits` section also requires the `benefits:write` scope, and a
+    `products` section the `products:write` scope.
     """
-    return await declarative_config_service.apply(session, auth_subject, config)
+    return await declarative_config_service.apply(session, redis, auth_subject, config)
 
 
 @router.post(
@@ -108,6 +124,7 @@ async def apply(
         403: {
             "description": (
                 "Not allowed to read this organization's products, "
+                "missing a benefits or products scope for those sections, "
                 "or config as code isn't enabled for it."
             ),
             "model": NotPermitted.schema() | ConfigAsCodeNotEnabled.schema(),
@@ -122,7 +139,10 @@ async def plan(
     """
     Preview what applying a declarative config document would do, without applying it.
 
-    Returns the action for each meter, and every issue: `error` issues make
+    Returns the action for each resource, and every issue: `error` issues make
     apply fail, `warning` issues don't.
+
+    A `benefits` section also requires the `benefits:read` or `benefits:write`
+    scope, and a `products` section `products:read` or `products:write`.
     """
     return await declarative_config_service.plan(session, auth_subject, config)

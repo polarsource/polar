@@ -2,7 +2,12 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
-from polar.declarative_config.schemas import Config, ConfigAction
+from polar.declarative_config.schemas import (
+    Config,
+    ConfigAction,
+    ConfigIssueType,
+    ConfigResource,
+)
 from polar.declarative_config.service import (
     ConfigAsCodeNotEnabled,
     ConfigInvalid,
@@ -15,6 +20,7 @@ from polar.meter.repository import MeterRepository
 from polar.meter.unit import MeterUnit
 from polar.models import Organization
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -54,15 +60,47 @@ FIXTURE_METER = {
 }
 
 
+CREDITS_BENEFIT = {
+    "type": "meter_credit",
+    "external_id": "tool-call-credits",
+    "description": "1,000 tool calls",
+    "properties": {"meter": "sdk-tool-calls", "units": 1000},
+}
+
+BETA_BENEFIT = {
+    "type": "feature_flag",
+    "external_id": "beta",
+    "description": "Beta access",
+}
+
+PRO_PRODUCT = {
+    "external_id": "pro",
+    "name": "Pro",
+    "recurring_interval": "month",
+    "prices": [
+        {"amount_type": "fixed", "price_amount": 2000},
+        {
+            "amount_type": "metered_unit",
+            "meter": "sdk-tool-calls",
+            "unit_amount": "0.5",
+        },
+    ],
+    "benefits": ["tool-call-credits", "beta"],
+}
+
+
 @pytest.mark.asyncio
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 class TestApply:
     async def test_not_enabled(
-        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
     ) -> None:
         with pytest.raises(ConfigAsCodeNotEnabled):
             await declarative_config_service.apply(
-                session, auth_subject, Config.model_validate({"meters": []})
+                session, redis, auth_subject, Config.model_validate({"meters": []})
             )
 
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -70,16 +108,20 @@ class TestApply:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Organization],
         organization: Organization,
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.meter.service.enqueue_job")
 
         result = await declarative_config_service.apply(
-            session, auth_subject, Config.model_validate({"meters": [TOOL_CALLS_METER]})
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"meters": [TOOL_CALLS_METER]}),
         )
 
-        assert result.meters[0].action == ConfigAction.created
+        assert result.changes[0].action == ConfigAction.created
         [meter] = await MeterRepository.from_session(session).get_all_by_external_ids(
             organization.id, ["sdk-tool-calls"]
         )
@@ -94,6 +136,7 @@ class TestApply:
         mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Organization],
         organization: Organization,
     ) -> None:
@@ -103,10 +146,13 @@ class TestApply:
         enqueue_job_mock = mocker.patch("polar.meter.service.enqueue_job")
 
         result = await declarative_config_service.apply(
-            session, auth_subject, Config.model_validate({"meters": [FIXTURE_METER]})
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"meters": [FIXTURE_METER]}),
         )
 
-        assert result.meters[0].action == ConfigAction.unchanged
+        assert result.changes[0].action == ConfigAction.unchanged
         enqueue_job_mock.assert_not_called()
 
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -114,6 +160,7 @@ class TestApply:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Organization],
         organization: Organization,
     ) -> None:
@@ -122,10 +169,13 @@ class TestApply:
         )
 
         result = await declarative_config_service.apply(
-            session, auth_subject, Config.model_validate({"meters": [TOOL_CALLS_METER]})
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"meters": [TOOL_CALLS_METER]}),
         )
 
-        assert result.meters[0].action == ConfigAction.updated
+        assert result.changes[0].action == ConfigAction.updated
         assert meter.name == "SDK - Tool Calls"
         assert meter.unit == MeterUnit.custom
         assert meter.custom_label == "call"
@@ -137,6 +187,7 @@ class TestApply:
         mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Organization],
         organization_second: Organization,
     ) -> None:
@@ -146,10 +197,13 @@ class TestApply:
         mocker.patch("polar.meter.service.enqueue_job")
 
         result = await declarative_config_service.apply(
-            session, auth_subject, Config.model_validate({"meters": [TOOL_CALLS_METER]})
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"meters": [TOOL_CALLS_METER]}),
         )
 
-        assert result.meters[0].action == ConfigAction.created
+        assert result.changes[0].action == ConfigAction.created
         assert other_meter.name == "My Meter"
 
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -157,6 +211,7 @@ class TestApply:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Organization],
         organization: Organization,
     ) -> None:
@@ -171,6 +226,7 @@ class TestApply:
         with pytest.raises(ConfigInvalid) as exc_info:
             await declarative_config_service.apply(
                 session,
+                redis,
                 auth_subject,
                 Config.model_validate(
                     {
@@ -192,6 +248,7 @@ class TestApply:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Organization],
         organization: Organization,
     ) -> None:
@@ -205,11 +262,12 @@ class TestApply:
 
         result = await declarative_config_service.apply(
             session,
+            redis,
             auth_subject,
             Config.model_validate({"meters": [{**FIXTURE_METER, "name": "Renamed"}]}),
         )
 
-        assert result.meters[0].action == ConfigAction.updated
+        assert result.changes[0].action == ConfigAction.updated
         assert meter.name == "Renamed"
 
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -217,28 +275,7 @@ class TestApply:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        auth_subject: AuthSubject[Organization],
-        organization: Organization,
-    ) -> None:
-        meter = await create_meter(
-            save_fixture,
-            organization=organization,
-            external_id="my-meter",
-            user_metadata={"team": "sdk"},
-        )
-
-        result = await declarative_config_service.apply(
-            session, auth_subject, Config.model_validate({"meters": [FIXTURE_METER]})
-        )
-
-        assert result.meters[0].action == ConfigAction.unchanged
-        assert meter.user_metadata == {"team": "sdk"}
-
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_metadata_update(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Organization],
         organization: Organization,
     ) -> None:
@@ -251,13 +288,40 @@ class TestApply:
 
         result = await declarative_config_service.apply(
             session,
+            redis,
+            auth_subject,
+            Config.model_validate({"meters": [FIXTURE_METER]}),
+        )
+
+        assert result.changes[0].action == ConfigAction.unchanged
+        assert meter.user_metadata == {"team": "sdk"}
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_metadata_update(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            external_id="my-meter",
+            user_metadata={"team": "sdk"},
+        )
+
+        result = await declarative_config_service.apply(
+            session,
+            redis,
             auth_subject,
             Config.model_validate(
                 {"meters": [{**FIXTURE_METER, "metadata": {"team": "billing"}}]}
             ),
         )
 
-        assert result.meters[0].action == ConfigAction.updated
+        assert result.changes[0].action == ConfigAction.updated
         assert meter.user_metadata == {"team": "billing"}
 
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -266,6 +330,7 @@ class TestApply:
         mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Organization],
         organization: Organization,
     ) -> None:
@@ -281,6 +346,77 @@ class TestApply:
         with pytest.raises(ConfigMeterConflict):
             await declarative_config_service.apply(
                 session,
+                redis,
                 auth_subject,
                 Config.model_validate({"meters": [TOOL_CALLS_METER]}),
             )
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_products_and_benefits_not_supported(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        with pytest.raises(ConfigInvalid) as exc_info:
+            await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate(
+                    {
+                        "benefits": [BETA_BENEFIT],
+                        "products": [
+                            {
+                                "external_id": "beta",
+                                "name": "Beta",
+                                "prices": [{"amount_type": "fixed", "price_amount": 0}],
+                                "benefits": ["beta"],
+                            }
+                        ],
+                    }
+                ),
+            )
+
+        assert [(error.type, error.loc) for error in exc_info.value.errors] == [
+            (ConfigIssueType.not_supported, ["body", "benefits", 0]),
+            (ConfigIssueType.not_supported, ["body", "products", 0]),
+        ]
+
+
+@pytest.mark.asyncio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+class TestPlan:
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_products_and_benefits_not_supported(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "meters": [TOOL_CALLS_METER],
+                    "benefits": [CREDITS_BENEFIT, BETA_BENEFIT],
+                    "products": [PRO_PRODUCT],
+                }
+            ),
+        )
+
+        assert [
+            (change.resource, change.external_id, change.action)
+            for change in plan.changes
+        ] == [
+            (ConfigResource.meter, "sdk-tool-calls", ConfigAction.created),
+            (ConfigResource.benefit, "tool-call-credits", ConfigAction.created),
+            (ConfigResource.benefit, "beta", ConfigAction.created),
+            (ConfigResource.product, "pro", ConfigAction.created),
+        ]
+        product_diff = {change.field: change.after for change in plan.changes[3].diff}
+        assert product_diff["recurring_interval_count"] == 1
+        assert product_diff["benefits"] == ["tool-call-credits", "beta"]
+        assert [
+            issue.loc
+            for issue in plan.issues
+            if issue.type == ConfigIssueType.not_supported
+        ] == [["body", "benefits", 0], ["body", "benefits", 1], ["body", "products", 0]]

@@ -6076,9 +6076,12 @@ export interface paths {
      * Apply Config
      * @description Apply a declarative config document to the organization.
      *
-     *     Meters are matched by `external_id`: missing ones are created, changed ones
-     *     are updated, and meters not listed are left untouched. Everything is applied
-     *     in one transaction.
+     *     Meters, benefits and products are matched by `external_id`: missing ones are
+     *     created, changed ones are updated, and ones not listed are left untouched.
+     *     Everything is applied in one transaction.
+     *
+     *     A `benefits` section also requires the `benefits:write` scope, and a
+     *     `products` section the `products:write` scope.
      *
      *     **Scopes**: `meters:write`
      */
@@ -6102,8 +6105,11 @@ export interface paths {
      * Plan Config
      * @description Preview what applying a declarative config document would do, without applying it.
      *
-     *     Returns the action for each meter, and every issue: `error` issues make
+     *     Returns the action for each resource, and every issue: `error` issues make
      *     apply fail, `warning` issues don't.
+     *
+     *     A `benefits` section also requires the `benefits:read` or `benefits:write`
+     *     scope, and a `products` section `products:read` or `products:write`.
      *
      *     **Scopes**: `meters:read` `meters:write`
      */
@@ -15997,7 +16003,17 @@ export interface components {
        * Meters
        * @description Meters to create or update, matched by `external_id`. Omitted fields are set to their default, except `metadata`, which is left untouched when omitted. Existing meters that aren't listed are left untouched, and archived meters stay archived.
        */
-      meters: components['schemas']['ConfigMeter'][]
+      meters?: components['schemas']['ConfigMeter'][]
+      /**
+       * Benefits
+       * @description Benefits to create or update, matched by `external_id`. Existing benefits that aren't listed are left untouched.
+       */
+      benefits?: components['schemas']['ConfigBenefit'][]
+      /**
+       * Products
+       * @description Products to create or update, matched by `external_id`. Existing products that aren't listed are left untouched.
+       */
+      products?: components['schemas']['ConfigProduct'][]
       /**
        * Organization Id
        * @description The ID of the organization to apply the config to. **Required unless you use an organization token.**
@@ -16011,8 +16027,8 @@ export interface components {
     ConfigAction: 'created' | 'updated' | 'unchanged'
     /** ConfigApplyResult */
     ConfigApplyResult: {
-      /** Meters */
-      meters: components['schemas']['ConfigMeterResult'][]
+      /** Changes */
+      changes: components['schemas']['ConfigResult'][]
     }
     /** ConfigAsCodeNotEnabled */
     ConfigAsCodeNotEnabled: {
@@ -16024,6 +16040,127 @@ export interface components {
       error: 'ConfigAsCodeNotEnabled'
       /** Detail */
       detail: string
+    }
+    ConfigBenefit:
+      | components['schemas']['ConfigBenefitFeatureFlag']
+      | components['schemas']['ConfigBenefitMeterCredit']
+    /** ConfigBenefitConflict */
+    ConfigBenefitConflict: {
+      /**
+       * Error
+       * @example ConfigBenefitConflict
+       * @constant
+       */
+      error: 'ConfigBenefitConflict'
+      /** Detail */
+      detail: string
+    }
+    /** ConfigBenefitFeatureFlag */
+    ConfigBenefitFeatureFlag: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * External Id
+       * @description Your identifier for the benefit, used to match it.
+       */
+      external_id: string
+      /**
+       * Description
+       * @description The description of the benefit. Will be displayed on products having this benefit.
+       */
+      description: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'feature_flag'
+    }
+    /** ConfigBenefitMeterCredit */
+    ConfigBenefitMeterCredit: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * External Id
+       * @description Your identifier for the benefit, used to match it.
+       */
+      external_id: string
+      /**
+       * Description
+       * @description The description of the benefit. Will be displayed on products having this benefit.
+       */
+      description: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'meter_credit'
+      properties: components['schemas']['ConfigBenefitMeterCreditProperties']
+    }
+    /** ConfigBenefitMeterCreditProperties */
+    ConfigBenefitMeterCreditProperties: {
+      /**
+       * Meter
+       * @description The `external_id` of a meter declared in the same config.
+       */
+      meter: string
+      /**
+       * Units
+       * @description Number of units credited on the meter each cycle.
+       */
+      units: number
+      /**
+       * Rollover
+       * @description Whether unused units carry over to the next cycle.
+       * @default false
+       */
+      rollover: boolean
+    }
+    /** ConfigChange */
+    ConfigChange: {
+      /** @description The type of resource. */
+      resource: components['schemas']['ConfigResource']
+      /**
+       * External Id
+       * @description The resource's `external_id`.
+       */
+      external_id: string
+      /** @description What applying the config does. */
+      action: components['schemas']['ConfigAction']
+      /**
+       * Diff
+       * @description Fields that applying the config changes. On create, fields left empty are omitted.
+       */
+      diff: components['schemas']['ConfigFieldChange'][]
     }
     /** ConfigExport */
     ConfigExport: {
@@ -16136,7 +16273,14 @@ export interface components {
      * ConfigIssueType
      * @enum {string}
      */
-    ConfigIssueType: 'duplicate_external_id' | 'meter_locked' | 'unknown_event'
+    ConfigIssueType:
+      | 'duplicate_external_id'
+      | 'interval_changed'
+      | 'meter_locked'
+      | 'not_supported'
+      | 'type_changed'
+      | 'unknown_event'
+      | 'unknown_reference'
     /** ConfigMeter */
     ConfigMeter: {
       /**
@@ -16192,21 +16336,6 @@ export interface components {
        */
       external_id: string
     }
-    /** ConfigMeterChange */
-    ConfigMeterChange: {
-      /**
-       * External Id
-       * @description The meter's `external_id`.
-       */
-      external_id: string
-      /** @description What applying the config does. */
-      action: components['schemas']['ConfigAction']
-      /**
-       * Diff
-       * @description Fields that applying the config changes. On create, fields left empty are omitted.
-       */
-      diff: components['schemas']['ConfigFieldChange'][]
-    }
     /** ConfigMeterConflict */
     ConfigMeterConflict: {
       /**
@@ -16218,28 +16347,151 @@ export interface components {
       /** Detail */
       detail: string
     }
-    /** ConfigMeterResult */
-    ConfigMeterResult: {
-      /**
-       * External Id
-       * @description The meter's `external_id`.
-       */
-      external_id: string
-      /** @description What applying the config does. */
-      action: components['schemas']['ConfigAction']
-    }
     /** ConfigPlan */
     ConfigPlan: {
       /** Changes */
-      changes: components['schemas']['ConfigMeterChange'][]
+      changes: components['schemas']['ConfigChange'][]
       /** Issues */
       issues: components['schemas']['ConfigIssue'][]
+    }
+    /** ConfigProduct */
+    ConfigProduct: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * External Id
+       * @description Your identifier for the product, used to match it.
+       */
+      external_id: string
+      /**
+       * Name
+       * @description The name of the product.
+       */
+      name: string
+      /**
+       * Description
+       * @description The description of the product.
+       */
+      description?: string | null
+      /**
+       * @description The visibility of the product.
+       * @default public
+       */
+      visibility: components['schemas']['ProductVisibility']
+      /** @description The recurring interval of the product. Leave it empty for a one-time purchase. */
+      recurring_interval?: components['schemas']['RecurringInterval'] | null
+      /**
+       * Recurring Interval Count
+       * @description Billing cycle length in intervals. Defaults to 1.
+       */
+      recurring_interval_count?: number | null
+      /**
+       * Prices
+       * @description The prices of the product.
+       */
+      prices: components['schemas']['ConfigProductPrice'][]
+      /**
+       * Benefits
+       * @description The benefits granted by the product.
+       */
+      benefits?: string[]
+    }
+    /** ConfigProductConflict */
+    ConfigProductConflict: {
+      /**
+       * Error
+       * @example ConfigProductConflict
+       * @constant
+       */
+      error: 'ConfigProductConflict'
+      /** Detail */
+      detail: string
+    }
+    ConfigProductPrice:
+      | components['schemas']['ConfigProductPriceFixed']
+      | components['schemas']['ConfigProductPriceMeteredUnit']
+    /** ConfigProductPriceFixed */
+    ConfigProductPriceFixed: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'fixed'
+      /**
+       * @description The currency in which the customer will be charged.
+       * @default usd
+       */
+      price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
+      /**
+       * Price Amount
+       * @description The price in cents. Set to `0` for a free price. Must be at least the currency's minimum amount.
+       */
+      price_amount: number
+    }
+    /** ConfigProductPriceMeteredUnit */
+    ConfigProductPriceMeteredUnit: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'metered_unit'
+      /**
+       * @description The currency in which the customer will be charged.
+       * @default usd
+       */
+      price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
+      /**
+       * Meter
+       * @description The `external_id` of a meter declared in the same config.
+       */
+      meter: string
+      /**
+       * Unit Amount
+       * @description The price per unit in cents. Supports up to 12 decimal places.
+       */
+      unit_amount: number | string
+      /**
+       * Cap Amount
+       * @description Optional maximum charge in cents.
+       */
+      cap_amount?: number | null
     }
     /**
      * ConfigResource
      * @enum {string}
      */
-    ConfigResource: 'meter'
+    ConfigResource: 'meter' | 'benefit' | 'product'
+    /** ConfigResult */
+    ConfigResult: {
+      /** @description The type of resource. */
+      resource: components['schemas']['ConfigResource']
+      /**
+       * External Id
+       * @description The resource's `external_id`.
+       */
+      external_id: string
+      /** @description What applying the config does. */
+      action: components['schemas']['ConfigAction']
+    }
     /** ConfigSkippedMeter */
     ConfigSkippedMeter: {
       /** @description The type of resource. */
@@ -62184,7 +62436,7 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
-      /** @description Not allowed to manage this organization, or config as code isn't enabled for it. */
+      /** @description Not allowed to manage this organization, missing the `benefits:write` or `products:write` scope for a `benefits` or `products` section, or config as code isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown
@@ -62195,7 +62447,7 @@ export interface operations {
             | components['schemas']['ConfigAsCodeNotEnabled']
         }
       }
-      /** @description The config has blocking issues, or another request created the same meter concurrently. */
+      /** @description The config has blocking issues, or another request created the same resource concurrently. */
       409: {
         headers: {
           [name: string]: unknown
@@ -62204,6 +62456,8 @@ export interface operations {
           'application/json':
             | components['schemas']['ConfigInvalid']
             | components['schemas']['ConfigMeterConflict']
+            | components['schemas']['ConfigBenefitConflict']
+            | components['schemas']['ConfigProductConflict']
         }
       }
       /** @description Validation Error */
@@ -62248,7 +62502,7 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
-      /** @description Not allowed to read this organization's products, or config as code isn't enabled for it. */
+      /** @description Not allowed to read this organization's products, missing a benefits or products scope for those sections, or config as code isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown
@@ -70906,15 +71160,35 @@ export const confidenceLevelValues: ReadonlyArray<
 export const configActionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigAction']
 > = ['created', 'updated', 'unchanged']
+export const configBenefitFeatureFlagTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigBenefitFeatureFlag']['type']
+> = ['feature_flag']
+export const configBenefitMeterCreditTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigBenefitMeterCredit']['type']
+> = ['meter_credit']
 export const configIssueSeverityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueSeverity']
 > = ['error', 'warning']
 export const configIssueTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueType']
-> = ['duplicate_external_id', 'meter_locked', 'unknown_event']
+> = [
+  'duplicate_external_id',
+  'interval_changed',
+  'meter_locked',
+  'not_supported',
+  'type_changed',
+  'unknown_event',
+  'unknown_reference',
+]
+export const configProductPriceFixedAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceFixed']['amount_type']
+> = ['fixed']
+export const configProductPriceMeteredUnitAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredUnit']['amount_type']
+> = ['metered_unit']
 export const configResourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigResource']
-> = ['meter']
+> = ['meter', 'benefit', 'product']
 export const configSkippedReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigSkippedReason']
 > = ['missing_external_id', 'archived', 'invalid', 'over_limit']

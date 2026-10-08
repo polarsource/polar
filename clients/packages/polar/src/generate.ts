@@ -179,7 +179,7 @@ const renderTiers = (
           imports,
         )}),`
       }
-      return index === 0 && bound !== undefined
+      return type === 'graduated' && index === 0 && bound !== undefined
         ? `  tier().included(${literal(bound)}),`
         : `  tier()${max}.free(),`
     }),

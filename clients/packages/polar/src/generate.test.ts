@@ -352,6 +352,30 @@ test('renders free tiers with free() and included()', async () => {
   expect(source).toContain('tier().max(20).free(),')
 })
 
+test('renders free volume tiers without included()', async () => {
+  const source = await Effect.runPromise(
+    generateConfig(
+      api
+        .defineConfig({
+          meters: () => ({}),
+          products: ({ product, seats }) => ({
+            team: product('Team')
+              .prices(
+                seats().volume(
+                  api.tier().max(3).free(),
+                  api.tier().amount(api.usd(100)),
+                ),
+              )
+              .recurring('monthly'),
+          }),
+        })
+        .toJSON(),
+    ),
+  )
+  expect(source).toContain('tier().max(3).free(),')
+  expect(source).not.toContain('included(')
+})
+
 test('generates rates padded with trailing zeros', async () => {
   const source = await Effect.runPromise(
     generateConfig({

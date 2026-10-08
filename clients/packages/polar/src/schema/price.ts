@@ -23,7 +23,9 @@ type TiersConfig = typeof TiersConfig.Type
 const meteredFields = {
   price_currency: Currency,
   meter_external_id: Schema.String.check(Schema.isMinLength(1)),
-  cap_amount: Schema.optionalKey(Cents),
+  cap_amount: Schema.optionalKey(
+    Cents.check(Schema.isLessThanOrEqualTo(2147483647)),
+  ),
 }
 
 export const PriceConfig = Schema.Union([
@@ -80,6 +82,14 @@ export interface Tier<Rate extends Money = Money> {
 
 type Tiers<Rate extends Money> = readonly [Tier<Rate>, ...Tier<Rate>[]]
 
+/** Volume pricing charges every unit at the matching tier's rate, so no units are ever included. */
+type VolumeTier<Rate extends Money> = Tier<Rate> & { readonly included?: never }
+
+type VolumeTiers<Rate extends Money> = readonly [
+  VolumeTier<Rate>,
+  ...VolumeTier<Rate>[],
+]
+
 class PricedTier<Rate extends Money> implements Tier<Rate> {
   constructor(
     readonly bound: number | undefined,
@@ -89,6 +99,21 @@ class PricedTier<Rate extends Money> implements Tier<Rate> {
   max(bound: number): PricedTier<Rate> {
     return new PricedTier(bound, this.amounts)
   }
+}
+
+class IncludedTier extends PricedTier<never> {
+  readonly included = true
+}
+
+const volumeTiers = <Rate extends Money>(
+  tiers: VolumeTiers<Rate>,
+): Tiers<Rate> => {
+  if (tiers.some((tier) => tier instanceof IncludedTier)) {
+    throw new Error(
+      'Volume pricing charges every unit at its tier rate, so it has no included units. Use .graduated() or tier().max(units).free().',
+    )
+  }
+  return tiers
 }
 
 class TierBuilder {
@@ -109,9 +134,9 @@ class TierBuilder {
     return new PricedTier(this.bound, [])
   }
 
-  /** The first `units` units are free: shorthand for `.max(units).free()`. */
-  included(units: number): PricedTier<never> {
-    return new PricedTier(units, [])
+  /** The first `units` units are free. Only for graduated pricing. */
+  included(units: number): IncludedTier {
+    return new IncludedTier(units, [])
   }
 }
 
@@ -221,8 +246,8 @@ class QuantityBuilder {
     return new QuantityPrice(this.type, 'graduated', tiers)
   }
 
-  volume(...tiers: Tiers<Money<1>>): QuantityPrice {
-    return new QuantityPrice(this.type, 'volume', tiers)
+  volume(...tiers: VolumeTiers<Money<1>>): QuantityPrice {
+    return new QuantityPrice(this.type, 'volume', volumeTiers(tiers))
   }
 }
 
@@ -247,8 +272,8 @@ class MeteredBuilder<Meter extends string> {
     return new MeteredPrice(this.meter, 'graduated', tiers)
   }
 
-  volume(...tiers: Tiers<Money>): MeteredPrice<Meter> {
-    return new MeteredPrice(this.meter, 'volume', tiers)
+  volume(...tiers: VolumeTiers<Money>): MeteredPrice<Meter> {
+    return new MeteredPrice(this.meter, 'volume', volumeTiers(tiers))
   }
 }
 

@@ -268,6 +268,27 @@ test('flat metered prices need a rate above zero', () => {
   expect(decode(freeTier)).toEqual(freeTier)
 })
 
+test('caps fit in the server Int32 column', () => {
+  const [capped] = priceConfigs(
+    metered('calls').flat().amount(usd(1)).cap(usd(2_147_483_648)),
+    ['usd'],
+    'Price',
+  )
+  expect(() => decode(capped)).toThrow()
+})
+
+test('volume prices have no included units', () => {
+  expect(() =>
+    // @ts-expect-error every unit is charged at the matching tier's rate
+    units().volume(tier().included(3), tier().amount(usd(100))),
+  ).toThrow('Volume pricing charges every unit at its tier rate')
+  expect(() =>
+    // @ts-expect-error every unit is charged at the matching tier's rate
+    metered('calls').volume(tier().included(3), tier().amount(usd(1))),
+  ).toThrow('Volume pricing charges every unit at its tier rate')
+  units().volume(tier().max(3).free(), tier().amount(usd(100)))
+})
+
 test('free and included tiers charge 0 in each currency the price uses', () => {
   const price = seats().graduated(
     tier().included(3),

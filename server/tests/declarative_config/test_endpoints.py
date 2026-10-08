@@ -376,6 +376,43 @@ class TestExport:
             {"id": str(invalid.id), "name": "My Meter", "reason": "invalid"},
         ]
 
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_meters_over_limit(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch("polar.declarative_config.service.MAXIMUM_METERS", 1)
+        await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="first-meter",
+        )
+        second = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="second-meter",
+        )
+
+        response = await client.get(
+            "/v1/config/", params={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert [meter["external_id"] for meter in json["config"]["meters"]] == [
+            "first-meter"
+        ]
+        assert json["skipped"] == [
+            {"id": str(second.id), "name": "My Meter", "reason": "over_limit"}
+        ]
+
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_organization_token(

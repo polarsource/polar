@@ -94,6 +94,22 @@ class TestReduce:
             ("customer", "count", BUCKET + BUCKET_SIZE, "count"): 1,
         }
 
+    def test_sums_decimals(self, event: EventCreate) -> None:
+        reducer: Reducer = {
+            "id": "sum",
+            "filter": {"conjunction": "and", "clauses": []},
+            "aggregation": {"func": "sum", "property": "amount"},
+        }
+        events = [
+            event.model_copy(update={"metadata": {"amount": amount}})
+            for amount in (0.5, 1.25, 2)
+        ]
+        assert reduce(
+            [(reducer, get_matcher(reducer["filter"]))],
+            events,
+            oldest_bucket_start=BUCKET,
+        ) == {("customer", "sum", BUCKET, "sum"): 3.75}
+
     def test_filters(self, event: EventCreate) -> None:
         reducer: Reducer = {
             "id": "count",
@@ -155,7 +171,6 @@ class TestReduce:
     @pytest.mark.parametrize(
         ("func", "amount", "message"),
         [
-            ("sum", 1.5, "integer"),
             ("min", float("inf"), "finite"),
             ("max", float("nan"), "finite"),
         ],

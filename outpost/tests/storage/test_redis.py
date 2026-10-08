@@ -21,7 +21,7 @@ class TestWriteUpdates:
             {
                 ("customer", "count", 300, "count"): 2,
                 ("customer", "min", 300, "min"): -4.5,
-                ("other", "sum", 300, "sum"): 2**53 + 1,
+                ("other", "sum", 300, "sum"): 1.5,
                 ("other", "max", 300, "max"): 10.5,
             },
         )
@@ -30,7 +30,7 @@ class TestWriteUpdates:
             b"min:300": b"-4.5",
         }
         assert await redis.redis.hgetall("outpost:buckets:other") == {
-            b"sum:300": str(2**53 + 1).encode(),
+            b"sum:300": b"1.5",
             b"max:300": b"10.5",
         }
 
@@ -38,13 +38,13 @@ class TestWriteUpdates:
     async def test_integer_boundaries(
         self, anyio_backend: str, redis: RedisStorage, value: int
     ) -> None:
-        await redis.write_updates({("customer", "sum", 300, "sum"): value})
+        await redis.write_updates({("customer", "count", 300, "count"): value})
         with pytest.raises(ResponseError):
             await redis.write_updates(
-                {("customer", "sum", 300, "sum"): 1 if value > 0 else -1}
+                {("customer", "count", 300, "count"): 1 if value > 0 else -1}
             )
         assert (
-            await redis.redis.hget("outpost:buckets:customer", "sum:300")
+            await redis.redis.hget("outpost:buckets:customer", "count:300")
             == str(value).encode()
         )
 
@@ -54,19 +54,19 @@ class TestWriteUpdates:
             {
                 ("customer", "count", 300, "count"): 3,
                 ("customer", "sum", 300, "sum"): 6,
-                ("customer", "large", 300, "sum"): 1,
+                ("customer", "large", 300, "count"): 1,
                 ("other", "count", 300, "count"): 1,
             },
         )
         await redis.write_updates(
             {
                 ("customer", "count", 300, "count"): 2,
-                ("customer", "sum", 300, "sum"): -7,
+                ("customer", "sum", 300, "sum"): -7.25,
             },
         )
         assert await redis.redis.hgetall("outpost:buckets:customer") == {
             b"count:300": b"5",
-            b"sum:300": b"-1",
+            b"sum:300": b"-1.25",
             b"large:300": str(2**53 + 1).encode(),
         }
         assert await redis.redis.hgetall("outpost:buckets:other") == {

@@ -6054,9 +6054,12 @@ export interface paths {
      * Apply Config
      * @description Apply a declarative config document to the organization.
      *
-     *     Meters are matched by `external_id`: missing ones are created, changed ones
-     *     are updated, and meters not listed are left untouched. Everything is applied
-     *     in one transaction.
+     *     Meters, benefits and products are matched by `external_id`: missing ones are
+     *     created, changed ones are updated, and ones not listed are left untouched.
+     *     Everything is applied in one transaction.
+     *
+     *     A `benefits` section also requires the `benefits:write` scope, and a
+     *     `products` section the `products:write` scope.
      *
      *     **Scopes**: `meters:write`
      */
@@ -6080,8 +6083,11 @@ export interface paths {
      * Plan Config
      * @description Preview what applying a declarative config document would do, without applying it.
      *
-     *     Returns the action for each meter, and every issue: `error` issues make
+     *     Returns the action for each resource, and every issue: `error` issues make
      *     apply fail, `warning` issues don't.
+     *
+     *     A `benefits` section also requires the `benefits:read` or `benefits:write`
+     *     scope, and a `products` section `products:read` or `products:write`.
      *
      *     **Scopes**: `meters:read` `meters:write`
      */
@@ -15861,6 +15867,17 @@ export interface components {
     ConfigBenefit:
       | components['schemas']['ConfigBenefitFeatureFlag']
       | components['schemas']['ConfigBenefitMeterCredit']
+    /** ConfigBenefitConflict */
+    ConfigBenefitConflict: {
+      /**
+       * Error
+       * @example ConfigBenefitConflict
+       * @constant
+       */
+      error: 'ConfigBenefitConflict'
+      /** Detail */
+      detail: string
+    }
     /** ConfigBenefitFeatureFlag */
     ConfigBenefitFeatureFlag: {
       /**
@@ -15882,7 +15899,7 @@ export interface components {
       }
       /**
        * External Id
-       * @description Your identifier for the benefit. Used to match the config entry with an existing benefit, and to reference it from products.
+       * @description Your identifier for the benefit.
        */
       external_id: string
       /**
@@ -15917,7 +15934,7 @@ export interface components {
       }
       /**
        * External Id
-       * @description Your identifier for the benefit. Used to match the config entry with an existing benefit, and to reference it from products.
+       * @description Your identifier for the benefit.
        */
       external_id: string
       /**
@@ -16081,8 +16098,10 @@ export interface components {
      */
     ConfigIssueType:
       | 'duplicate_external_id'
+      | 'interval_changed'
       | 'meter_locked'
       | 'not_supported'
+      | 'type_changed'
       | 'unknown_event'
       | 'unknown_reference'
     /** ConfigMeter */
@@ -16179,7 +16198,7 @@ export interface components {
       }
       /**
        * External Id
-       * @description Your identifier for the product. Used to match the config entry with an existing product.
+       * @description Your identifier for the product.
        */
       external_id: string
       /**
@@ -16201,7 +16220,7 @@ export interface components {
       recurring_interval?: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription. Defaults to 1 for recurring products.
+       * @description Defaults to 1 for recurring products.
        */
       recurring_interval_count?: number | null
       /**
@@ -16214,6 +16233,17 @@ export interface components {
        * @description The benefits granted by the product.
        */
       benefits?: string[]
+    }
+    /** ConfigProductConflict */
+    ConfigProductConflict: {
+      /**
+       * Error
+       * @example ConfigProductConflict
+       * @constant
+       */
+      error: 'ConfigProductConflict'
+      /** Detail */
+      detail: string
     }
     ConfigProductPrice:
       | components['schemas']['ConfigProductPriceFixed']
@@ -16264,7 +16294,7 @@ export interface components {
       unit_amount: number | string
       /**
        * Cap Amount
-       * @description Optional maximum amount in cents that can be charged, regardless of the number of units consumed.
+       * @description Optional maximum charge in cents.
        */
       cap_amount?: number | null
     }
@@ -62168,7 +62198,7 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
-      /** @description Not allowed to manage this organization, or config as code isn't enabled for it. */
+      /** @description Not allowed to manage this organization, missing the `benefits:write` or `products:write` scope for a `benefits` or `products` section, or config as code isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown
@@ -62179,7 +62209,7 @@ export interface operations {
             | components['schemas']['ConfigAsCodeNotEnabled']
         }
       }
-      /** @description The config has blocking issues, or another request created the same meter concurrently. */
+      /** @description The config has blocking issues, or another request created the same resource concurrently. */
       409: {
         headers: {
           [name: string]: unknown
@@ -62188,6 +62218,8 @@ export interface operations {
           'application/json':
             | components['schemas']['ConfigInvalid']
             | components['schemas']['ConfigMeterConflict']
+            | components['schemas']['ConfigBenefitConflict']
+            | components['schemas']['ConfigProductConflict']
         }
       }
       /** @description Validation Error */
@@ -62232,7 +62264,7 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
-      /** @description Not allowed to read this organization's products, or config as code isn't enabled for it. */
+      /** @description Not allowed to read this organization's products, missing a benefits or products scope for those sections, or config as code isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown
@@ -70901,8 +70933,10 @@ export const configIssueTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueType']
 > = [
   'duplicate_external_id',
+  'interval_changed',
   'meter_locked',
   'not_supported',
+  'type_changed',
   'unknown_event',
   'unknown_reference',
 ]

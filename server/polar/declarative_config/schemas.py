@@ -68,13 +68,7 @@ class ConfigBenefitBase(MetadataInputMixin, Schema):
     model_config = ConfigDict(extra="forbid")
 
     external_id: str = Field(
-        ...,
-        min_length=1,
-        description=(
-            "Your identifier for the benefit. "
-            "Used to match the config entry with an existing benefit, "
-            "and to reference it from products."
-        ),
+        ..., min_length=1, description="Your identifier for the benefit."
     )
     description: str = Field(
         ...,
@@ -143,12 +137,7 @@ class ConfigProductPriceMeteredUnit(ProductPriceCreateBase):
         description="The price per unit in cents. Supports up to 12 decimal places.",
     )
     cap_amount: Int32 | None = Field(
-        default=None,
-        ge=0,
-        description=(
-            "Optional maximum amount in cents that can be charged, "
-            "regardless of the number of units consumed."
-        ),
+        default=None, ge=0, description="Optional maximum charge in cents."
     )
 
 
@@ -163,12 +152,7 @@ class ConfigProduct(MetadataInputMixin, Schema):
     model_config = ConfigDict(extra="forbid")
 
     external_id: str = Field(
-        ...,
-        min_length=1,
-        description=(
-            "Your identifier for the product. "
-            "Used to match the config entry with an existing product."
-        ),
+        ..., min_length=1, description="Your identifier for the product."
     )
     name: ProductName
     description: ProductDescription = None
@@ -183,13 +167,7 @@ class ConfigProduct(MetadataInputMixin, Schema):
         ),
     )
     recurring_interval_count: int | None = Field(
-        default=None,
-        ge=1,
-        le=999,
-        description=(
-            "Number of interval units of the subscription. "
-            "Defaults to 1 for recurring products."
-        ),
+        default=None, ge=1, le=999, description="Defaults to 1 for recurring products."
     )
     prices: list[ConfigProductPrice] = Field(
         min_length=1, description="The prices of the product."
@@ -264,8 +242,10 @@ class ConfigIssueSeverity(StrEnum):
 
 class ConfigIssueType(StrEnum):
     duplicate_external_id = "duplicate_external_id"
+    interval_changed = "interval_changed"
     meter_locked = "meter_locked"
     not_supported = "not_supported"
+    type_changed = "type_changed"
     unknown_event = "unknown_event"
     unknown_reference = "unknown_reference"
 

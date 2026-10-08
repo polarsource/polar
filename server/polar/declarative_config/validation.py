@@ -15,14 +15,12 @@ from .schemas import (
     Config,
     ConfigAction,
     ConfigBenefit,
-    ConfigBenefitMeterCredit,
     ConfigFieldChange,
     ConfigIssue,
     ConfigIssueSeverity,
     ConfigIssueType,
     ConfigMeter,
     ConfigProduct,
-    ConfigProductPriceMeteredUnit,
     ConfigResource,
 )
 
@@ -98,65 +96,6 @@ def unique_external_ids(
                 )
             )
         seen.add(external_id)
-    return issues
-
-
-def _unknown_reference(
-    resource: ConfigResource, external_id: str, loc: Loc
-) -> ConfigIssue:
-    return ConfigIssue(
-        severity=ConfigIssueSeverity.error,
-        type=ConfigIssueType.unknown_reference,
-        loc=loc,
-        msg=f"No {resource} in this config has this external_id.",
-        input=external_id,
-    )
-
-
-def unknown_references(config: Config) -> list[ConfigIssue]:
-    meters = {meter.external_id for meter in config.meters}
-    benefits = {benefit.external_id for benefit in config.benefits}
-    issues: list[ConfigIssue] = []
-    for index, benefit in enumerate(config.benefits):
-        if (
-            isinstance(benefit, ConfigBenefitMeterCredit)
-            and benefit.properties.meter not in meters
-        ):
-            issues.append(
-                _unknown_reference(
-                    ConfigResource.meter,
-                    benefit.properties.meter,
-                    _loc(ConfigResource.benefit, index, "properties", "meter"),
-                )
-            )
-    for index, product in enumerate(config.products):
-        for price_index, price in enumerate(product.prices):
-            if (
-                isinstance(price, ConfigProductPriceMeteredUnit)
-                and price.meter not in meters
-            ):
-                issues.append(
-                    _unknown_reference(
-                        ConfigResource.meter,
-                        price.meter,
-                        _loc(
-                            ConfigResource.product,
-                            index,
-                            "prices",
-                            price_index,
-                            "meter",
-                        ),
-                    )
-                )
-        for benefit_index, benefit_external_id in enumerate(product.benefits):
-            if benefit_external_id not in benefits:
-                issues.append(
-                    _unknown_reference(
-                        ConfigResource.benefit,
-                        benefit_external_id,
-                        _loc(ConfigResource.product, index, "benefits", benefit_index),
-                    )
-                )
     return issues
 
 
@@ -314,7 +253,6 @@ async def check(
         *unique_external_ids(ConfigResource.meter, meters),
         *unique_external_ids(ConfigResource.benefit, benefits),
         *unique_external_ids(ConfigResource.product, products),
-        *unknown_references(config),
         *locked_meter_fields(meters),
         *await unknown_events(session, organization, meters),
         *not_supported(ConfigResource.benefit, benefits),

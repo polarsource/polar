@@ -15,6 +15,7 @@ from polar.meter.service import meter as meter_service
 from polar.models import Organization, User
 from polar.organization.resolver import OrganizationIDModel, get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.redis import Redis
 
 from . import validation
 from .schemas import (
@@ -56,6 +57,20 @@ class ConfigMeterConflict(PolarError):
         )
 
 
+class ConfigBenefitConflict(PolarError):
+    def __init__(self) -> None:
+        super().__init__(
+            "A benefit in this config was created by a concurrent request. Retry.", 409
+        )
+
+
+class ConfigProductConflict(PolarError):
+    def __init__(self) -> None:
+        super().__init__(
+            "A product in this config was created by a concurrent request. Retry.", 409
+        )
+
+
 class ConfigInvalid(PolarError):
     def __init__(self, errors: list[ConfigIssue]) -> None:
         super().__init__("The config can't be applied.", 409)
@@ -80,6 +95,7 @@ class DeclarativeConfigService:
     async def apply(
         self,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[User | Organization],
         config: Config,
     ) -> ConfigApplyResult:

@@ -20,6 +20,7 @@ from polar.meter.repository import MeterRepository
 from polar.meter.unit import MeterUnit
 from polar.models import Organization
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -92,11 +93,14 @@ PRO_PRODUCT = {
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 class TestApply:
     async def test_not_enabled(
-        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
     ) -> None:
         with pytest.raises(ConfigAsCodeNotEnabled):
             await declarative_config_service.apply(
-                session, auth_subject, Config.model_validate({"meters": []})
+                session, redis, auth_subject, Config.model_validate({"meters": []})
             )
 
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -104,13 +108,17 @@ class TestApply:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Organization],
         organization: Organization,
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.meter.service.enqueue_job")
 
         result = await declarative_config_service.apply(
-            session, auth_subject, Config.model_validate({"meters": [TOOL_CALLS_METER]})
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"meters": [TOOL_CALLS_METER]}),
         )
 
         assert result.changes[0].action == ConfigAction.created
@@ -128,6 +136,7 @@ class TestApply:
         mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Organization],
         organization: Organization,
     ) -> None:
@@ -137,7 +146,10 @@ class TestApply:
         enqueue_job_mock = mocker.patch("polar.meter.service.enqueue_job")
 
         result = await declarative_config_service.apply(
-            session, auth_subject, Config.model_validate({"meters": [FIXTURE_METER]})
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"meters": [FIXTURE_METER]}),
         )
 
         assert result.changes[0].action == ConfigAction.unchanged
@@ -148,6 +160,7 @@ class TestApply:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Organization],
         organization: Organization,
     ) -> None:
@@ -156,7 +169,10 @@ class TestApply:
         )
 
         result = await declarative_config_service.apply(
-            session, auth_subject, Config.model_validate({"meters": [TOOL_CALLS_METER]})
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"meters": [TOOL_CALLS_METER]}),
         )
 
         assert result.changes[0].action == ConfigAction.updated
@@ -171,6 +187,7 @@ class TestApply:
         mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Organization],
         organization_second: Organization,
     ) -> None:
@@ -180,7 +197,10 @@ class TestApply:
         mocker.patch("polar.meter.service.enqueue_job")
 
         result = await declarative_config_service.apply(
-            session, auth_subject, Config.model_validate({"meters": [TOOL_CALLS_METER]})
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"meters": [TOOL_CALLS_METER]}),
         )
 
         assert result.changes[0].action == ConfigAction.created
@@ -191,6 +211,7 @@ class TestApply:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Organization],
         organization: Organization,
     ) -> None:
@@ -205,6 +226,7 @@ class TestApply:
         with pytest.raises(ConfigInvalid) as exc_info:
             await declarative_config_service.apply(
                 session,
+                redis,
                 auth_subject,
                 Config.model_validate(
                     {
@@ -226,6 +248,7 @@ class TestApply:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Organization],
         organization: Organization,
     ) -> None:
@@ -239,6 +262,7 @@ class TestApply:
 
         result = await declarative_config_service.apply(
             session,
+            redis,
             auth_subject,
             Config.model_validate({"meters": [{**FIXTURE_METER, "name": "Renamed"}]}),
         )
@@ -251,28 +275,7 @@ class TestApply:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        auth_subject: AuthSubject[Organization],
-        organization: Organization,
-    ) -> None:
-        meter = await create_meter(
-            save_fixture,
-            organization=organization,
-            external_id="my-meter",
-            user_metadata={"team": "sdk"},
-        )
-
-        result = await declarative_config_service.apply(
-            session, auth_subject, Config.model_validate({"meters": [FIXTURE_METER]})
-        )
-
-        assert result.changes[0].action == ConfigAction.unchanged
-        assert meter.user_metadata == {"team": "sdk"}
-
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_metadata_update(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Organization],
         organization: Organization,
     ) -> None:
@@ -285,6 +288,33 @@ class TestApply:
 
         result = await declarative_config_service.apply(
             session,
+            redis,
+            auth_subject,
+            Config.model_validate({"meters": [FIXTURE_METER]}),
+        )
+
+        assert result.changes[0].action == ConfigAction.unchanged
+        assert meter.user_metadata == {"team": "sdk"}
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_metadata_update(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            external_id="my-meter",
+            user_metadata={"team": "sdk"},
+        )
+
+        result = await declarative_config_service.apply(
+            session,
+            redis,
             auth_subject,
             Config.model_validate(
                 {"meters": [{**FIXTURE_METER, "metadata": {"team": "billing"}}]}
@@ -300,6 +330,7 @@ class TestApply:
         mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[Organization],
         organization: Organization,
     ) -> None:
@@ -315,17 +346,22 @@ class TestApply:
         with pytest.raises(ConfigMeterConflict):
             await declarative_config_service.apply(
                 session,
+                redis,
                 auth_subject,
                 Config.model_validate({"meters": [TOOL_CALLS_METER]}),
             )
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_products_and_benefits_not_supported(
-        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
     ) -> None:
         with pytest.raises(ConfigInvalid) as exc_info:
             await declarative_config_service.apply(
                 session,
+                redis,
                 auth_subject,
                 Config.model_validate(
                     {
@@ -384,52 +420,3 @@ class TestPlan:
             for issue in plan.issues
             if issue.type == ConfigIssueType.not_supported
         ] == [["body", "benefits", 0], ["body", "benefits", 1], ["body", "products", 0]]
-
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_unknown_references(
-        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
-    ) -> None:
-        plan = await declarative_config_service.plan(
-            session,
-            auth_subject,
-            Config.model_validate(
-                {"meters": [], "benefits": [CREDITS_BENEFIT], "products": [PRO_PRODUCT]}
-            ),
-        )
-
-        assert [
-            (issue.loc, issue.input)
-            for issue in plan.issues
-            if issue.type == ConfigIssueType.unknown_reference
-        ] == [
-            (["body", "benefits", 0, "properties", "meter"], "sdk-tool-calls"),
-            (["body", "products", 0, "prices", 1, "meter"], "sdk-tool-calls"),
-            (["body", "products", 0, "benefits", 1], "beta"),
-        ]
-
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_duplicate_external_ids_per_resource(
-        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
-    ) -> None:
-        plan = await declarative_config_service.plan(
-            session,
-            auth_subject,
-            Config.model_validate(
-                {
-                    "benefits": [BETA_BENEFIT, BETA_BENEFIT],
-                    "products": [
-                        {
-                            "external_id": "beta",
-                            "name": "Beta",
-                            "prices": [{"amount_type": "fixed", "price_amount": 0}],
-                        }
-                    ],
-                }
-            ),
-        )
-
-        assert [
-            issue.loc
-            for issue in plan.issues
-            if issue.type == ConfigIssueType.duplicate_external_id
-        ] == [["body", "benefits", 1, "external_id"]]

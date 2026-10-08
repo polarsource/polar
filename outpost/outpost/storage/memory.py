@@ -4,13 +4,21 @@ import datetime
 import typing
 
 from outpost.env import Environment
-from outpost.reducer import BUCKET_SIZE, EventKey, Updates, get_bucket_start
+from outpost.reducer import (
+    BUCKET_SIZE,
+    CustomerState,
+    EventKey,
+    Snapshot,
+    Updates,
+    get_bucket_start,
+)
 
 
 class MemoryStorage:
     def __init__(self) -> None:
         self.buckets: dict[tuple[str, str, int], int | float] = {}
         self.event_keys: set[EventKey] = set()
+        self.snapshots: dict[str, Snapshot] = {}
 
     @classmethod
     @contextlib.asynccontextmanager
@@ -21,6 +29,9 @@ class MemoryStorage:
 
     async def write_updates(self, updates: Updates) -> None:
         for (customer_id, reducer_id, bucket_start, func), value in updates.items():
+            snapshot = self.snapshots.get(customer_id)
+            if snapshot is not None and bucket_start < snapshot["sealed_until"]:
+                continue
             key = (customer_id, reducer_id, bucket_start)
             previous = self.buckets.get(key)
             match func:
@@ -47,3 +58,32 @@ class MemoryStorage:
             claimed.append(key not in self.event_keys)
             self.event_keys.add(key)
         return claimed
+
+    async def apply_snapshot(self, snapshot: Snapshot) -> None:
+        customer_id = snapshot["external_customer_id"]
+        current = self.snapshots.get(customer_id)
+        if current is not None and current["sealed_until"] > snapshot["sealed_until"]:
+            return
+        self.snapshots[customer_id] = snapshot
+        # ponytail: full scan, index buckets per customer if the memory store grows
+        self.buckets = {
+            key: value
+            for key, value in self.buckets.items()
+            if key[0] != customer_id or key[2] >= snapshot["sealed_until"]
+        }
+        if current is None:
+            for bucket in snapshot["buckets"]:
+                key = (customer_id, bucket["reducer_id"], bucket["bucket_start"])
+                self.buckets[key] = bucket["value"]
+
+    async def read(self, customer_id: str) -> CustomerState:
+        snapshot = self.snapshots.get(customer_id)
+        return {
+            "sealed_until": snapshot["sealed_until"] if snapshot else None,
+            "sealed": snapshot["sealed"] if snapshot else {},
+            "buckets": {
+                (reducer_id, bucket_start): value
+                for (customer, reducer_id, bucket_start), value in self.buckets.items()
+                if customer == customer_id
+            },
+        }

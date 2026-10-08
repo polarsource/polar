@@ -114,6 +114,25 @@ def get_event_keys(events: collections.abc.Sequence[EventCreate]) -> list[EventK
     ]
 
 
+class SnapshotBucket(typing.TypedDict):
+    reducer_id: str
+    bucket_start: int
+    value: int | float
+
+
+class Snapshot(typing.TypedDict):
+    external_customer_id: str
+    sealed_until: int
+    sealed: dict[str, int | float]
+    buckets: list[SnapshotBucket]
+
+
+class CustomerState(typing.TypedDict):
+    sealed_until: int | None
+    sealed: dict[str, int | float]
+    buckets: dict[tuple[str, int], int | float]
+
+
 def reduce(
     reducers: collections.abc.Sequence[tuple[Reducer, EventMatcher]],
     events: collections.abc.Sequence[EventCreate],

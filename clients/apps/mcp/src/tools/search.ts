@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/server'
-import { z } from 'zod'
-import { toolError, toolResult } from '../results'
-import { runInSandbox } from '../sandbox'
+import { Effect, Schema } from 'effect'
+import { makeToolRunner } from '../results'
+import { Sandbox } from '../sandbox'
 import { spec } from '../spec'
 
 const SEARCH_LIMITS = { cpuMs: 5_000, subRequests: 0 }
@@ -47,36 +47,36 @@ async () => {
   return spec.schemas[ref.split('/').pop()]
 }`
 
-export const registerSearchTool = (server: McpServer) => {
+export const registerSearchTool = Effect.fn('registerSearchTool')(function* (
+  server: McpServer,
+) {
+  const runTool = yield* makeToolRunner
+  const sandbox = yield* Sandbox
   server.registerTool(
     'search',
     {
       title: 'Search the Polar API',
       description,
-      inputSchema: z.object({
-        code: z
-          .string()
-          .describe('JavaScript async arrow function that searches `spec`'),
-      }),
+      inputSchema: Schema.Struct({
+        code: Schema.String.annotate({
+          description: 'JavaScript async arrow function that searches `spec`',
+        }),
+      }).pipe(Schema.toStandardSchemaV1, Schema.toStandardJSONSchemaV1),
       annotations: {
         readOnlyHint: true,
         openWorldHint: false,
       },
     },
-    async ({ code }) => {
-      try {
-        return toolResult(
-          await runInSandbox({
-            code,
-            prelude: `import spec from './spec.json'`,
-            modules: { 'spec.json': { json: spec } },
-            globalOutbound: null,
-            limits: SEARCH_LIMITS,
-          }),
-        )
-      } catch (error) {
-        return toolError(error)
-      }
-    },
+    ({ code }, context) =>
+      runTool(
+        sandbox.run({
+          code,
+          prelude: `import spec from './spec.json'`,
+          modules: { 'spec.json': { json: spec } },
+          globalOutbound: null,
+          limits: SEARCH_LIMITS,
+        }),
+        context.mcpReq.signal,
+      ),
   )
-}
+})

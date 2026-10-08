@@ -3,9 +3,12 @@ import {
   getOAuthProtectedResourceMetadataUrl,
 } from '@modelcontextprotocol/server'
 import { env } from 'cloudflare:workers'
-import { getBearerToken, isTokenValid, unauthorized } from './auth'
+import { Effect, Layer, ManagedRuntime } from 'effect'
+import { FetchHttpClient, HttpClient } from 'effect/http'
+import { Auth, getBearerToken, unauthorized } from './auth'
 import { detectClient, toolModeFor } from './clients'
 import { createServer } from './server'
+import { Sandbox } from './sandbox'
 
 export { PolarApiOutbound } from './outbound'
 
@@ -23,6 +26,12 @@ const CORS_HEADERS = {
 }
 
 const servers: Record<string, string | undefined> = env.POLAR_SERVERS
+const runtime = ManagedRuntime.make(
+  Layer.mergeAll(Auth.layer, Sandbox.layer(env.LOADER)).pipe(
+    Layer.provideMerge(FetchHttpClient.layer),
+    Layer.provide(Layer.succeed(HttpClient.TracerDisabledWhen, () => true)),
+  ),
+)
 
 const withCors = (response: Response) => {
   const headers = new Headers(response.headers)
@@ -36,18 +45,14 @@ const withCors = (response: Response) => {
   })
 }
 
-const readJsonBody = async (request: Request) => {
-  if (request.method !== 'POST') {
-    return undefined
-  }
-  try {
-    return await request.clone().json()
-  } catch {
-    return undefined
-  }
-}
+const readJsonBody = (request: Request) =>
+  request.method === 'POST'
+    ? Effect.tryPromise(() => request.clone().json()).pipe(
+        Effect.orElseSucceed(() => undefined),
+      )
+    : Effect.succeed(undefined)
 
-const handle = async (request: Request): Promise<Response> => {
+const handle = Effect.fn('handle')(function* (request: Request) {
   const url = new URL(request.url)
 
   const metadataMatch = url.pathname.match(PROTECTED_RESOURCE_PATH)
@@ -77,23 +82,33 @@ const handle = async (request: Request): Promise<Response> => {
   if (!token) {
     return unauthorized(resourceMetadataUrl)
   }
-  if (!(await isTokenValid(apiUrl, token))) {
+  const auth = yield* Auth
+  if (!(yield* auth.isTokenValid(apiUrl, token))) {
     return unauthorized(resourceMetadataUrl, 'invalid_token')
   }
 
   const readOnly = url.searchParams.get('readonly') === 'true'
-  const body = await readJsonBody(request)
+  const body = yield* readJsonBody(request)
   const toolMode = toolModeFor(url, detectClient(request, body))
-  return createMcpHandler(() =>
-    createServer({ apiUrl, token, readOnly }, toolMode),
-  ).fetch(request, { parsedBody: body })
-}
+  const context = yield* Effect.context<Sandbox | HttpClient.HttpClient>()
+  return yield* Effect.promise(() =>
+    createMcpHandler(() =>
+      Effect.runPromiseWith(context)(
+        createServer({ apiUrl, token, readOnly }, toolMode),
+      ),
+    ).fetch(request, { parsedBody: body }),
+  )
+})
 
 export default {
-  async fetch(request) {
+  fetch(request: Request) {
     if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: CORS_HEADERS })
+      return Promise.resolve(
+        new Response(null, { status: 204, headers: CORS_HEADERS }),
+      )
     }
-    return withCors(await handle(request))
+    return runtime.runPromise(handle(request).pipe(Effect.map(withCors)), {
+      signal: request.signal,
+    })
   },
 } satisfies ExportedHandler<Env>

@@ -1,9 +1,9 @@
 import type { McpServer } from '@modelcontextprotocol/server'
 import { exports } from 'cloudflare:workers'
-import { z } from 'zod'
+import { Effect, Schema } from 'effect'
 import type { PolarApiOutboundProps } from '../outbound'
-import { toolError, toolResult } from '../results'
-import { runInSandbox } from '../sandbox'
+import { makeToolRunner, ToolError } from '../results'
+import { Sandbox } from '../sandbox'
 
 const EXECUTE_LIMITS = { cpuMs: 10_000, subRequests: 50 }
 
@@ -63,41 +63,44 @@ async () => {
   return items.map(({ id, name, prices }) => ({ id, name, prices: prices.map((price) => price.amount_type) }))
 }`
 
-export const registerExecuteTool = (
+export const registerExecuteTool = Effect.fn('registerExecuteTool')(function* (
   server: McpServer,
   props: PolarApiOutboundProps,
-) => {
+) {
+  const runTool = yield* makeToolRunner
+  const sandbox = yield* Sandbox
   server.registerTool(
     'execute',
     {
       title: 'Call the Polar API',
       description: description(props.readOnly),
-      inputSchema: z.object({
-        code: z
-          .string()
-          .describe(
+      inputSchema: Schema.Struct({
+        code: Schema.String.annotate({
+          description:
             'JavaScript async arrow function that calls the API with `polar.request`',
-          ),
-      }),
+        }),
+      }).pipe(Schema.toStandardSchemaV1, Schema.toStandardJSONSchemaV1),
       annotations: {
         readOnlyHint: props.readOnly,
         destructiveHint: !props.readOnly,
         openWorldHint: true,
       },
     },
-    async ({ code }) => {
-      try {
-        return toolResult(
-          await runInSandbox({
+    ({ code }, context) =>
+      runTool(
+        Effect.gen(function* () {
+          const globalOutbound = yield* Effect.try({
+            try: () => exports.PolarApiOutbound({ props }),
+            catch: ToolError.fromCause,
+          })
+          return yield* sandbox.run({
             code,
             prelude: polarClient(props.apiUrl),
-            globalOutbound: exports.PolarApiOutbound({ props }),
+            globalOutbound,
             limits: EXECUTE_LIMITS,
-          }),
-        )
-      } catch (error) {
-        return toolError(error)
-      }
-    },
+          })
+        }),
+        context.mcpReq.signal,
+      ),
   )
-}
+})

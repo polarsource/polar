@@ -302,7 +302,7 @@ class ConfigResult(Schema):
 
 class ConfigApplyResult(Schema):
     changes: list[ConfigResult] = Field(
-        description="What was applied, in order: meters, benefits, then products."
+        description="What was applied, in the order it was applied."
     )
 
 
@@ -322,7 +322,9 @@ class ConfigChange(ConfigResult):
 
 
 class ConfigPlan(Schema):
-    changes: list[ConfigChange]
+    changes: list[ConfigChange] = Field(
+        description="What applying the config would do, in the order it would apply."
+    )
     issues: list[ConfigIssue]
 
 

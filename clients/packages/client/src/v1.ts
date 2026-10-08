@@ -15846,7 +15846,7 @@ export interface components {
     ConfigApplyResult: {
       /**
        * Changes
-       * @description What was applied, in order: meters, benefits, then products.
+       * @description What was applied, in the order it was applied.
        */
       changes: components['schemas']['ConfigResult'][]
     }
@@ -16156,7 +16156,10 @@ export interface components {
     }
     /** ConfigPlan */
     ConfigPlan: {
-      /** Changes */
+      /**
+       * Changes
+       * @description What applying the config would do, in the order it would apply.
+       */
       changes: components['schemas']['ConfigChange'][]
       /** Issues */
       issues: components['schemas']['ConfigIssue'][]

@@ -40,6 +40,7 @@
     "@effect/platform-bun": "4.0.1",
     "@napi-rs/keyring": "2.1.0",
     "@polar-sh/cli-commands": "file:../../../sdk/cli-commands",
+    "@polar-sh/polar": "workspace:*",
     "@polar-sh/sdk": "1.0.2",
     "effect": "catalog:",
     "jsonc-parser": "^3.3.1",

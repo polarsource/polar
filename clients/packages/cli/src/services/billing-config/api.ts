@@ -51,14 +51,11 @@ export const errorName = (response: HttpClientResponse.HttpClientResponse) =>
     Effect.orElseSucceed(() => undefined),
   )
 
-export const entries = (
-  section: string,
-  results: ReadonlyArray<typeof EntryResult.Type>,
-) =>
+export const entries = (results: ReadonlyArray<typeof EntryResult.Type>) =>
   results.map(
     (entry): AppliedEntry => ({
-      section,
-      id: entry.external_id ?? section,
+      section: `${entry.resource}s`,
+      id: entry.external_id,
       action: entry.action,
       diff: entry.diff ?? [],
     }),

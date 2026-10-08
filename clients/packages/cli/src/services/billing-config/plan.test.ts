@@ -80,6 +80,7 @@ describe('plan', () => {
     api.routes[`POST ${planUrl}`] = Response.json({
       changes: [
         {
+          resource: 'meter',
           external_id: 'tool-calls',
           action: 'created',
           diff: [{ field: 'name', before: null, after: 'Tool calls' }],

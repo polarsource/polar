@@ -117,6 +117,7 @@ const run = async (result: ApplyResult) => {
           load: () => Effect.succeed(config),
           plan: () => Effect.die('unused'),
           apply: () => Effect.succeed(result),
+          pull: () => Effect.die('unused'),
         }),
       ),
       Effect.provideService(Auth, fakeAuth().auth),

@@ -28,13 +28,11 @@ export const apply =
         organization,
       )
       if (response.status === 200) {
-        const sections =
+        const body =
           yield* HttpClientResponse.schemaBodyJson(ApplyResponse)(response)
         return {
           status: 'applied',
-          entries: Object.entries(sections).flatMap(([section, result]) =>
-            entries(section, Array.isArray(result) ? result : [result]),
-          ),
+          entries: entries(body.changes),
         } satisfies ApplyResult
       }
       const invalid =

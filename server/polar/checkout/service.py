@@ -1818,10 +1818,15 @@ class CheckoutService:
     ) -> PriceSet:
         # Legacy prices are one per interval and picked alone by design; other prices
         # are billed together, so one can only be selected if it stands alone.
-        if not is_legacy_price(price) and any(
-            is_static_price(p) and p.price_currency == price.price_currency
+        other_static_prices = [
+            p
             for p in product_prices
             if p.id != price.id
+            and is_static_price(p)
+            and p.price_currency == price.price_currency
+        ]
+        if other_static_prices and not all(
+            is_legacy_price(p) for p in (price, *other_static_prices)
         ):
             raise PolarRequestValidationError(
                 [

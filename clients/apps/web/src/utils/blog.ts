@@ -11,6 +11,8 @@ export interface ContentPost {
   image: string | null
   type: 'blog' | 'story'
   href: string
+  /** Set `draft: true` in the frontmatter to keep a post out of listings, feeds and production builds. */
+  draft: boolean
 }
 
 function parseFrontmatter(content: string): Record<string, string> {
@@ -83,19 +85,27 @@ function readPostsFromDir(
         image: imageFile ? `/posts/${type}/${slug}/${imageFile}` : null,
         type,
         href: `${hrefPrefix}/${slug}`,
+        draft: fm.draft === 'true',
       }
     })
 }
 
-export function getAllContent(): ContentPost[] {
+/** Drafts render locally so they can be previewed, and never in production. */
+export const DRAFTS_VISIBLE = process.env.NODE_ENV !== 'production'
+
+export function getAllContent({
+  includeDrafts = false,
+}: { includeDrafts?: boolean } = {}): ContentPost[] {
   const blogPosts = readPostsFromDir(BLOG_DIR, 'blog', '/blog')
   const stories = readPostsFromDir(STORIES_DIR, 'story', '/customers')
 
-  return [...blogPosts, ...stories].sort((a, b) => {
-    if (!a.date) return 1
-    if (!b.date) return -1
-    return new Date(b.date).getTime() - new Date(a.date).getTime()
-  })
+  return [...blogPosts, ...stories]
+    .filter((post) => includeDrafts || !post.draft)
+    .sort((a, b) => {
+      if (!a.date) return 1
+      if (!b.date) return -1
+      return new Date(b.date).getTime() - new Date(a.date).getTime()
+    })
 }
 
 export function getLegalSlugs(): string[] {

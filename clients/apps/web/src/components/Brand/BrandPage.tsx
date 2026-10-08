@@ -4,7 +4,6 @@ import { ColorSection } from './ColorSection'
 import { IllustrationSection } from './IllustrationSection'
 import { LogoSection } from './LogoSection'
 import { MarketingSection } from './MarketingSection'
-import { PostersSection } from './PostersSection'
 import { TypographySection } from './TypographySection'
 import { VoiceSection } from './VoiceSection'
 
@@ -17,6 +16,5 @@ export const BrandPage = () => (
     <IllustrationSection />
     <VoiceSection />
     <MarketingSection />
-    <PostersSection />
   </Box>
 )

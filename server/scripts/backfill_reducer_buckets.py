@@ -92,7 +92,7 @@ async def backfill_bucket(
             "min": insert_statement.excluded.min,
             "max": insert_statement.excluded.max,
         },
-        where=ReducerBucket.sealed_at.is_(None),
+        where=ReducerBucket.cold_at.is_(None),
     ).returning(ReducerBucket.id)
     return len((await session.scalars(statement)).all())
 
@@ -102,7 +102,7 @@ async def backfill_bucket(
 async def backfill(start: datetime, end: datetime) -> None:
     """Backfill event-time buckets; expand START/END to full buckets (naive = UTC).
 
-    Excludes the latest five minutes. Recomputes unsealed buckets; never seals them.
+    Excludes the latest five minutes. Recomputes uncold buckets; never seals them.
     """
     start, end = bucket_range(start, end)
     configure_script_logging()

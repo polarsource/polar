@@ -124,12 +124,14 @@ class Snapshot(typing.TypedDict):
     external_customer_id: str
     cold_until: int
     cold: dict[str, int | float]
+    credited: dict[str, int | float]
     buckets: list[SnapshotBucket]
 
 
 class CustomerState(typing.TypedDict):
     cold_until: int | None
     cold: dict[str, int | float]
+    credited: dict[str, int | float]
     buckets: dict[tuple[str, int], int | float]
 
 

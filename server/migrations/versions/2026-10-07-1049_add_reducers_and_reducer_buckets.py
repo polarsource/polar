@@ -60,7 +60,7 @@ def upgrade() -> None:
         sa.Column("sum", sa.Numeric(), nullable=False),
         sa.Column("min", sa.Numeric(), nullable=True),
         sa.Column("max", sa.Numeric(), nullable=True),
-        sa.Column("sealed_at", sa.TIMESTAMP(timezone=True), nullable=True),
+        sa.Column("cold_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("generation", sa.Integer(), nullable=False),
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("modified_at", sa.TIMESTAMP(timezone=True), nullable=True),

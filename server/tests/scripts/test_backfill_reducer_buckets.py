@@ -146,10 +146,10 @@ class TestBackfillBucket:
             await backfill_bucket(session, reducer, start, end)
             await session.refresh(bucket)
             assert (bucket.count, bucket.sum, bucket.min, bucket.max) == expected_totals
-            assert bucket.sealed_at is None
+            assert bucket.cold_at is None
             assert bucket.generation == 0
 
-        bucket.sealed_at = end
+        bucket.cold_at = end
         await session.flush()
         await create_event(
             save_fixture,
@@ -160,4 +160,4 @@ class TestBackfillBucket:
         await backfill_bucket(session, reducer, start, end)
         await session.refresh(bucket)
         assert (bucket.count, bucket.sum, bucket.min, bucket.max) == expected_totals
-        assert bucket.sealed_at == end
+        assert bucket.cold_at == end

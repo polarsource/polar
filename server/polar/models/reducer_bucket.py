@@ -59,7 +59,7 @@ class ReducerBucket(RecordModel):
     sum: Mapped[Decimal] = mapped_column(Numeric, nullable=False, default=Decimal(0))
     min: Mapped[Decimal | None] = mapped_column(Numeric, nullable=True)
     max: Mapped[Decimal | None] = mapped_column(Numeric, nullable=True)
-    sealed_at: Mapped[datetime | None] = mapped_column(
+    cold_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
 

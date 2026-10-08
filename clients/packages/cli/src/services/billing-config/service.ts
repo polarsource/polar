@@ -44,12 +44,13 @@ export const make = Effect.gen(function* () {
     sandbox: yield* authenticatedClient('sandbox'),
     production: yield* authenticatedClient('production'),
   }
+  const load = loader(fs)
   return BillingConfig.of({
-    load: loader(fs),
+    load,
     plan: plan(clients),
     apply: apply(clients),
     pull: pull(clients),
-    save: saver(fs),
+    save: saver(fs, load),
   })
 })
 

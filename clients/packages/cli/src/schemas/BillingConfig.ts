@@ -105,7 +105,7 @@ export const SkippedMeter = Schema.Struct({
 export type SkippedMeter = typeof SkippedMeter.Type
 
 export const PulledConfig = Schema.Struct({
-  meters: Schema.Array(Schema.Unknown),
+  meters: Schema.Array(Schema.Record(Schema.String, Schema.Unknown)),
 })
 export type PulledConfig = typeof PulledConfig.Type
 

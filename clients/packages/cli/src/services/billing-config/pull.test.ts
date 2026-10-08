@@ -7,6 +7,7 @@ import { Effect, FileSystem } from 'effect'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import type { PulledConfig } from '@/schemas/BillingConfig'
 import { Auth } from '@/services/auth'
+import { loader } from '@/services/billing-config/load'
 import { pull, saver } from '@/services/billing-config/pull'
 import { authenticatedClient } from '@/services/client'
 import { fakeHttp } from '@/utils/test-utils/http'
@@ -94,7 +95,8 @@ describe('save', () => {
   const save = (file: string | undefined, force = false) =>
     Effect.runPromise(
       Effect.gen(function* () {
-        return yield* saver(yield* FileSystem.FileSystem)(file, config, force)
+        const fs = yield* FileSystem.FileSystem
+        return yield* saver(fs, loader(fs))(file, config, force)
       }).pipe(Effect.provide(BunServices.layer)),
     )
 
@@ -106,8 +108,11 @@ describe('save', () => {
     expect(await readFile('polar.config.json', 'utf8')).toBe(json)
   })
 
-  test('writes to the existing default config file', async () => {
-    await writeFile('polar.config.ts', `export default ${json}`)
+  test('treats an existing config with the same content as up to date', async () => {
+    await writeFile(
+      'polar.config.ts',
+      "export default { meters: [{ name: 'Tool calls', external_id: 'tool-calls' }] }\n",
+    )
 
     expect(await save(undefined)).toEqual({
       file: 'polar.config.ts',

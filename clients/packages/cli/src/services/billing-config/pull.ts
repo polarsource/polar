@@ -4,6 +4,7 @@ import { HttpClientRequest, HttpClientResponse } from 'effect/http'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import {
   BillingConfigError,
+  type LoadedConfig,
   type PulledConfig,
   PullResponse,
   type SaveStatus,
@@ -49,8 +50,20 @@ const render = (file: string, config: PulledConfig) =>
     })
   })
 
+const canonical = (value: unknown): string =>
+  JSON.stringify(value, (_key, item: unknown) =>
+    item !== null && typeof item === 'object' && !Array.isArray(item)
+      ? Object.fromEntries(
+          Object.entries(item).toSorted(([a], [b]) => a.localeCompare(b)),
+        )
+      : item,
+  )
+
 export const saver =
-  (fs: FileSystem.FileSystem) =>
+  (
+    fs: FileSystem.FileSystem,
+    load: (file: string) => Effect.Effect<LoadedConfig, BillingConfigError>,
+  ) =>
   (
     file: string | undefined,
     config: PulledConfig,
@@ -71,10 +84,13 @@ export const saver =
       target ??= DEFAULT_TARGET
       const contents = yield* render(target, config)
       if (yield* exists(target)) {
-        const current = yield* fs
-          .readFileString(target)
-          .pipe(Effect.orElseSucceed(() => undefined))
-        if (current === contents) return { file: target, status: 'unchanged' }
+        const current = yield* load(target).pipe(
+          Effect.map((loaded) => canonical(loaded.input)),
+          Effect.orElseSucceed(() => undefined),
+        )
+        if (current === canonical(config)) {
+          return { file: target, status: 'unchanged' }
+        }
         if (!force) {
           return yield* new BillingConfigError({
             message: `${target} already exists`,

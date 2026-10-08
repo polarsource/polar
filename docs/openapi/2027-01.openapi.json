@@ -22098,7 +22098,7 @@
           "public"
         ],
         "summary": "Create Customer Session",
-        "description": "Create a customer session.\n\nThis creates a member session: for the member given by `member_id` or\n`external_member_id`, or for the owner member otherwise. Team customers\nmust name a member.\n\n**Scopes**: `customer_sessions:write`",
+        "description": "Create a customer session.\n\nFor organizations with `member_model_enabled`, this will automatically\ncreate a member session for the owner member of the customer.\n\n**Scopes**: `customer_sessions:write`",
         "operationId": "customer-sessions:create",
         "requestBody": {
           "content": {
@@ -51231,7 +51231,7 @@
               }
             ],
             "title": "Customer Id",
-            "description": "The ID of the billing customer (purchaser)."
+            "description": "The customer ID. When member_model_enabled is true, this is the billing customer (purchaser). When false, this is the seat member customer."
           },
           "member_id": {
             "anyOf": [
@@ -51267,7 +51267,7 @@
               }
             ],
             "title": "Email",
-            "description": "Email of the seat member"
+            "description": "Email of the seat member (set when member_model_enabled is true)"
           },
           "customer_email": {
             "anyOf": [
@@ -51607,7 +51607,7 @@
               }
             ],
             "title": "Member Id",
-            "description": "ID of the member to create a session for. When not set, individual customers fall back to their owner member; team customers must set one."
+            "description": "ID of the member to create a session for. When not provided and the organization has `member_model_enabled`, the owner member of the customer will be used for individual customers."
           },
           "external_member_id": {
             "anyOf": [
@@ -51665,7 +51665,7 @@
               }
             ],
             "title": "Member Id",
-            "description": "ID of the member to create a session for. When not set, individual customers fall back to their owner member; team customers must set one."
+            "description": "ID of the member to create a session for. When not provided and the organization has `member_model_enabled`, the owner member of the customer will be used for individual customers."
           },
           "external_member_id": {
             "anyOf": [

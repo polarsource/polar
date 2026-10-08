@@ -5691,9 +5691,8 @@ export interface paths {
      * Create Customer Session
      * @description Create a customer session.
      *
-     *     This creates a member session: for the member given by `member_id` or
-     *     `external_member_id`, or for the owner member otherwise. Team customers
-     *     must name a member.
+     *     For organizations with `member_model_enabled`, this will automatically
+     *     create a member session for the owner member of the customer.
      *
      *     **Scopes**: `customer_sessions:write`
      */
@@ -19586,7 +19585,7 @@ export interface components {
       status: components['schemas']['SeatStatus']
       /**
        * Customer Id
-       * @description The ID of the billing customer (purchaser).
+       * @description The customer ID. When member_model_enabled is true, this is the billing customer (purchaser). When false, this is the seat member customer.
        */
       customer_id: string | null
       /**
@@ -19598,7 +19597,7 @@ export interface components {
       member: components['schemas']['Member'] | null
       /**
        * Email
-       * @description Email of the seat member
+       * @description Email of the seat member (set when member_model_enabled is true)
        */
       email: string | null
       /**
@@ -19824,7 +19823,7 @@ export interface components {
     CustomerSessionCustomerExternalIDCreate: {
       /**
        * Member Id
-       * @description ID of the member to create a session for. When not set, individual customers fall back to their owner member; team customers must set one.
+       * @description ID of the member to create a session for. When not provided and the organization has `member_model_enabled`, the owner member of the customer will be used for individual customers.
        */
       member_id?: string | null
       /**
@@ -19851,7 +19850,7 @@ export interface components {
     CustomerSessionCustomerIDCreate: {
       /**
        * Member Id
-       * @description ID of the member to create a session for. When not set, individual customers fall back to their owner member; team customers must set one.
+       * @description ID of the member to create a session for. When not provided and the organization has `member_model_enabled`, the owner member of the customer will be used for individual customers.
        */
       member_id?: string | null
       /**

@@ -130,12 +130,15 @@ class CustomerSeat(TimestampedSchema):
     )
     status: SeatStatus = Field(description="Status of the seat")
     customer_id: UUID | None = Field(
-        description=("The ID of the billing customer (purchaser)."),
+        description=(
+            "The customer ID. When member_model_enabled is true, this is the billing "
+            "customer (purchaser). When false, this is the seat member customer."
+        ),
     )
     member_id: UUID | None = Field(description="The member ID of the seat occupant")
     member: Member | None = Field(description="The member associated with this seat")
     email: str | None = Field(
-        description="Email of the seat member",
+        description="Email of the seat member (set when member_model_enabled is true)",
     )
     customer_email: str | None = Field(description="The assigned customer email")
     invitation_token_expires_at: datetime | None = Field(

@@ -32,10 +32,10 @@ class CustomerOrganizationFeatureSettings(Schema):
         bool,
         Version(up_to=V2026_10),
         Field(
-            description="Every organization uses the member model.",
-            deprecated=True,
+            default=False,
+            description="Whether the member model is enabled for this organization.",
         ),
-    ] = True
+    ] = False
     checkout_localization_enabled: bool = Field(
         default=False,
         description="Whether localization is enabled for this organization.",

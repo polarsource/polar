@@ -180,11 +180,8 @@ class OrganizationFeatureSettings(Schema):
     member_model_enabled: Annotated[
         bool,
         Version(up_to=V2026_10),
-        Field(
-            description="Every organization uses the Member model.",
-            deprecated=True,
-        ),
-    ] = True
+        Field(False, description="If this organization has the Member model enabled"),
+    ] = False
     checkout_localization_enabled: bool = Field(
         False,
         description="If this organization has checkout localization enabled",
@@ -269,11 +266,8 @@ class OrganizationFeatureSettingsUpdate(Schema):
     member_model_enabled: Annotated[
         bool,
         Version(up_to=V2026_10),
-        Field(
-            description="Every organization uses the Member model. Ignored.",
-            deprecated=True,
-        ),
-    ] = True
+        Field(False, description="If this organization has the Member model enabled"),
+    ] = False
     checkout_localization_enabled: bool = Field(
         False,
         description="If this organization has checkout localization enabled",

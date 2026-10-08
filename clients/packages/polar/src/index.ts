@@ -9,7 +9,6 @@ export type {
 } from './sdk'
 
 export type { BenefitAccess, EventMetadata, MeterBalance } from './client/actor'
-export type { RuntimeSDKConfig } from './schema/runtime'
 
 export { RuntimeSDK } from './runtime'
 export type { RuntimeConnection } from './runtime'

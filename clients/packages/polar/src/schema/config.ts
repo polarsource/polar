@@ -1,7 +1,5 @@
 import { Schema } from 'effect'
-import { RuntimeSDK, type RuntimeConnection } from '../runtime'
-import type { PolarOptions } from '../sdk'
-import type { RuntimeBenefitConfig } from './runtime'
+import { runtimeConfig, type RuntimeBenefitConfig } from './runtime'
 import { BenefitConfig, flag, credits } from './benefit'
 import type { BenefitDefinition, BenefitHelpers } from './benefit'
 import { meter, MeterConfig } from './meter'
@@ -94,9 +92,7 @@ export interface Config<
   Benefits extends BenefitEntries = BenefitEntries,
 > {
   readonly toJSON: () => PolarConfig
-  readonly connect: (
-    options: PolarOptions,
-  ) => RuntimeConnection<ConnectedConfig<Meters, Benefits>>
+  readonly [runtimeConfig]: () => ConnectedConfig<Meters, Benefits>
 }
 
 const byExternalId = <Resource extends { readonly external_id: string }>(
@@ -165,19 +161,15 @@ export const defineConfig = <
 
   return {
     toJSON: () => structuredClone(config),
-    connect: (options) =>
-      RuntimeSDK(
-        {
-          meters: byExternalId('meter', config.meters) as ConnectedConfig<
-            Meters,
-            Benefits
-          >['meters'],
-          benefits: byExternalId(
-            'benefit',
-            config.benefits ?? [],
-          ) as ConnectedConfig<Meters, Benefits>['benefits'],
-        },
-        options,
-      ),
+    [runtimeConfig]: () => ({
+      meters: byExternalId('meter', config.meters) as ConnectedConfig<
+        Meters,
+        Benefits
+      >['meters'],
+      benefits: byExternalId(
+        'benefit',
+        config.benefits ?? [],
+      ) as ConnectedConfig<Meters, Benefits>['benefits'],
+    }),
   }
 }

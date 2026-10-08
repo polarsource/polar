@@ -19,3 +19,9 @@ export type RuntimeSDKConfig = {
   readonly benefits?: Readonly<Record<string, RuntimeBenefitConfig>>
   readonly meters?: Readonly<Record<string, RuntimeMeterConfig>>
 }
+
+export const runtimeConfig = Symbol('polar.runtimeConfig')
+
+export type DefinedConfig<Config extends RuntimeSDKConfig> = {
+  readonly [runtimeConfig]: () => Config
+}

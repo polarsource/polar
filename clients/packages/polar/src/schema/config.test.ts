@@ -1,4 +1,5 @@
 import { expect, expectTypeOf, test } from 'vitest'
+import { RuntimeSDK } from '../runtime'
 import { defineConfig } from './config'
 import { gte } from './meter'
 
@@ -15,7 +16,7 @@ test('config serializes to JSON without exposing mutable internal data', () => {
   expect(config.toJSON().meters).toHaveLength(1)
 })
 
-test('connect rejects duplicate IDs without changing JSON serialization', () => {
+test('RuntimeSDK rejects duplicate IDs without changing JSON serialization', () => {
   const config = defineConfig({
     meters: ({ meter }) => [
       ['calls', meter({ displayName: 'First' }).count()],
@@ -23,7 +24,7 @@ test('connect rejects duplicate IDs without changing JSON serialization', () => 
     ],
   })
   expect(config.toJSON().meters).toHaveLength(2)
-  expect(() => config.connect({ accessToken: 'test' })).toThrow(
+  expect(() => RuntimeSDK(config, { accessToken: 'test' })).toThrow(
     'duplicate meter external IDs',
   )
 })
@@ -146,18 +147,18 @@ test('benefit descriptions must be between 3 and 42 characters', () => {
   ).toThrow()
 })
 
-test('connect exposes configured benefits by external ID', () => {
+test('RuntimeSDK exposes configured benefits by external ID', () => {
   const config = defineConfig({
     meters: ({ meter }) => ({ tool_call: meter().count() }),
     benefits: ({ flag }) => ({ custom_servers: flag() }),
   })
-  const { actor } = config.connect({ accessToken: 'test' })
+  const { actor } = RuntimeSDK(config, { accessToken: 'test' })
   expectTypeOf(actor({ customerId: 'customer-id' }).access)
     .parameter(0)
     .toEqualTypeOf<'custom_servers'>()
 })
 
-test('connect rejects duplicate benefit external IDs', () => {
+test('RuntimeSDK rejects duplicate benefit external IDs', () => {
   const config = defineConfig({
     meters: () => ({}),
     benefits: ({ flag }) => [
@@ -165,7 +166,7 @@ test('connect rejects duplicate benefit external IDs', () => {
       ['flag', flag({ displayName: 'Second' })],
     ],
   })
-  expect(() => config.connect({ accessToken: 'test' })).toThrow(
+  expect(() => RuntimeSDK(config, { accessToken: 'test' })).toThrow(
     'duplicate benefit external IDs',
   )
 })

@@ -2,7 +2,6 @@ import typing
 
 import anyio
 import httpx2
-from httpx2.websockets import WebSocketDisconnect, WebSocketNetworkError
 from pydantic import TypeAdapter, ValidationError
 
 from outpost.env import Environment
@@ -48,7 +47,7 @@ async def listen(client: httpx2.AsyncClient, configuration: Configuration) -> No
                     message = await websocket.receive_json()
                     if message["type"] == "configuration":
                         configuration.update(message["payload"]["meters"])
-        except* WebSocketDisconnect, WebSocketNetworkError, httpx2.TransportError:
-            log.warning("Polar connection lost, reconnecting")
+        except* Exception:
+            log.exception("Polar connection lost, reconnecting")
             # ponytail: fixed delay, exponential backoff if Polar struggles on reconnect storms
             await anyio.sleep(1)

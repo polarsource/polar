@@ -1,3 +1,5 @@
+import typing
+
 import anyio
 import pytest
 from httpx2 import AsyncClient
@@ -25,16 +27,30 @@ def test_configuration_skips_unsupported_meters() -> None:
     assert configuration.ready.is_set()
 
 
+async def close(websocket: WebSocket) -> None:
+    await websocket.accept()
+    await websocket.close()
+
+
+async def send_malformed_message(websocket: WebSocket) -> None:
+    await websocket.accept()
+    await websocket.receive_json()
+    await websocket.send_json({})
+
+
 @pytest.mark.anyio
-async def test_listen_reconnects(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("first_connection", [close, send_malformed_message])
+async def test_listen_reconnects(
+    monkeypatch: pytest.MonkeyPatch,
+    first_connection: typing.Callable[[WebSocket], typing.Awaitable[None]],
+) -> None:
     connections = 0
 
     async def flaky_polar(websocket: WebSocket) -> None:
         nonlocal connections
         connections += 1
         if connections == 1:
-            await websocket.accept()
-            await websocket.close()
+            await first_connection(websocket)
             return
         await polar_websocket(websocket)
 

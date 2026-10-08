@@ -200,7 +200,7 @@ class ConfigProduct(MetadataInputMixin, Schema):
     )
 
     @model_validator(mode="after")
-    def validate_recurring_interval_count(self) -> Self:
+    def validate_recurring(self) -> Self:
         if self.recurring_interval is None:
             if self.recurring_interval_count is not None:
                 raise ValueError(

@@ -58,12 +58,12 @@ export default async function RootLayout({
         ) : (
           <>
             <link
-              href="/favicon.png"
+              href="/favicon-v2.png"
               rel="icon"
               media="(prefers-color-scheme: dark)"
             />
             <link
-              href="/favicon-dark.png"
+              href="/favicon-v2-dark.png"
               rel="icon"
               media="(prefers-color-scheme: light)"
             />

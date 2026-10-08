@@ -529,6 +529,10 @@ mapping, you can receive `customer.updated`, each followed by
   SEPA Direct Debit, ACH, and other non-card methods are never used, so they
   never set a default or trigger this event.
 
+These events reflect customer data, not a switch. Do not grant access or
+record Polar as the billing system from them; `subscription.migrated` is the
+only cutover signal.
+
 At migration cutover, for each subscription, expect:
 
 - `subscription.updated` when the imported subscription activates

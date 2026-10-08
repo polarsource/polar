@@ -30,7 +30,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestReleaseSchedulerLock:
     @pytest.mark.parametrize("stale", [False, True])
     async def test_releases_lock(
@@ -53,7 +53,7 @@ class TestReleaseSchedulerLock:
         assert subscription.scheduler_locked_at is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionProductPriceRepository:
     async def test_get_by_customers_and_meter_direct_subscription(
         self,
@@ -343,7 +343,7 @@ async def _create_sent_reminder_log(
     return email_log
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetSubscriptionsNeedingRenewalReminder:
     async def _yearly_subscription(
         self,
@@ -438,7 +438,7 @@ class TestGetSubscriptionsNeedingRenewalReminder:
         assert [s.id for s in result] == [subscription.id]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetSubscriptionsNeedingTrialConversionReminder:
     async def _trialing_subscription(
         self,

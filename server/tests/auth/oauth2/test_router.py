@@ -78,7 +78,7 @@ def google_account() -> OAuth2Account:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestLoginCallback:
     async def test_new_user_without_sso(
         self,

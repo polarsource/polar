@@ -1,5 +1,4 @@
 import pytest
-import pytest_asyncio
 
 from polar.kit.db.postgres import AsyncSession
 from polar.models import OAuth2Client, User
@@ -11,7 +10,7 @@ def save_fixture(session: AsyncSession) -> SaveFixture:
     return save_fixture_factory(session)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2Client:
     oauth2_client = OAuth2Client(client_id="polar_ci_123", user=user)
     await oauth2_client.set_client_secret("polar_cs_123")

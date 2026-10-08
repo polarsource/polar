@@ -15,7 +15,7 @@ def _event(event_id: str) -> TinybirdEvent:
     return cast(TinybirdEvent, {"id": event_id})
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestIngest:
     async def test_chunks_large_batches(self, mocker: MockerFixture) -> None:
         ingest_mock = mocker.patch(

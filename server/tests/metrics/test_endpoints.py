@@ -11,7 +11,7 @@ from polar.redis import Redis
 from tests.fixtures.auth import AuthSubjectFixture
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetMetrics:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/metrics/")
@@ -126,7 +126,7 @@ class TestGetMetrics:
         assert len(json["periods"]) == 12
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMetricsFiltering:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.metrics_read})
@@ -245,7 +245,7 @@ class TestMetricsFiltering:
         assert json["metrics"]["gross_margin"] is not None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetMetricsCache:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.metrics_read})
@@ -327,7 +327,7 @@ class TestGetMetricsCache:
         assert response.status_code == 200
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetMetricsLimits:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/metrics/limits")

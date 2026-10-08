@@ -218,7 +218,7 @@ def _create_schema(organization: Organization) -> MerchantMigrationCreate:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate:
     @pytest.mark.auth
     async def test_validates_key_stores_it_and_creates(
@@ -713,7 +713,7 @@ class TestCreate:
         assert migration.source_credentials["livemode"] is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRunPrecheck:
     @pytest.mark.auth
     async def test_extracts_with_stored_key_and_advances_step(
@@ -843,7 +843,7 @@ class TestRunPrecheck:
             await service.run_precheck(session, auth_subject, migration.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestStartPrecheck:
     @pytest.mark.auth
     async def test_enqueues_and_sets_pending(
@@ -921,7 +921,7 @@ class TestStartPrecheck:
         enqueue.assert_called_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestExecutePrecheck:
     @pytest.mark.auth
     async def test_fetches_page_before_locking_the_migration(
@@ -1243,7 +1243,7 @@ def _catalog() -> list[CanonicalRecord]:
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListRecords:
     @pytest.mark.auth
     async def test_classifies_and_paginates(
@@ -1583,7 +1583,7 @@ async def _import_catalog(
     raise AssertionError("catalog import did not finish")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestImportCatalog:
     @pytest.mark.auth
     @pytest.mark.parametrize(
@@ -3617,7 +3617,7 @@ class TestImportCatalog:
         assert await _discount_product_names(session, organization) == {"Pro month"}
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSummarizeRecords:
     @pytest.mark.auth
     async def test_summary_counts_match_the_listing_after_import(
@@ -3806,7 +3806,7 @@ async def _imported_subscription(
     return record
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestImportPaymentMethodMappings:
     async def test_imports_and_assigns_the_exact_payment_method(
         self,
@@ -4016,7 +4016,7 @@ class TestImportPaymentMethodMappings:
         assert staged_half.payment_method.source_id == "pm_half"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRunCardVerification:
     @pytest.mark.auth
     async def test_links_card_to_pending_subscription_customer(
@@ -4365,7 +4365,7 @@ def _fake_cutover(
     return runner
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAnnotatePanStep:
     async def test_persists_note(
         self,
@@ -4393,7 +4393,7 @@ class TestAnnotatePanStep:
         assert step.note == "Waiting for verification"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFinishCardChecks:
     async def test_moves_the_migration_onto_the_switch(
         self,
@@ -4419,7 +4419,7 @@ class TestFinishCardChecks:
         assert migration.step == MerchantMigrationStep.activate_subscriptions
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestStartCutover:
     @pytest.mark.auth
     async def test_confirms_step_stores_selection_and_enqueues(
@@ -4548,7 +4548,7 @@ class TestStartCutover:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestStartPanTransfer:
     async def _prepared(
         self,
@@ -4697,7 +4697,7 @@ class TestStartPanTransfer:
         assert migration.step == MerchantMigrationStep.copy_cards
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestStreamCustomerIdsToCopy:
     @pytest.mark.auth
     async def test_lists_taken_over_customers_whose_card_is_still_missing(
@@ -4793,7 +4793,7 @@ class TestStreamCustomerIdsToCopy:
         assert [source_id async for source_id in source_ids] == ["cus_sub_missing"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRunCutover:
     async def test_moves_one_then_reenqueues(
         self,
@@ -5199,7 +5199,7 @@ class TestRunCutover:
         assert migration.operation.stalled is False
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetCutoverReport:
     @pytest.mark.auth
     async def test_counts_the_imported_subscriptions(
@@ -5316,7 +5316,7 @@ class TestGetCutoverReport:
         assert migration.operation.status == MerchantMigrationOperationStatus.running
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListRecordsCutover:
     @pytest.mark.auth
     async def test_carries_cutover_fields_and_coverage(

@@ -101,7 +101,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate:
     @pytest.mark.auth
     @pytest.mark.parametrize(
@@ -331,7 +331,7 @@ class TestCreate:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateReviewSubmission:
     @pytest.mark.auth
     async def test_update_details_does_not_submit_for_review(
@@ -533,7 +533,7 @@ class TestUpdateReviewSubmission:
         assert result.details["switching"] is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_get_next_invoice_number_organization(
     session: AsyncSession,
     organization: Organization,
@@ -556,7 +556,7 @@ async def test_get_next_invoice_number_organization(
     assert customer.invoice_next_number == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_get_next_invoice_number_customer(
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -602,7 +602,7 @@ async def test_get_next_invoice_number_customer(
     assert customer.invoice_next_number == 3
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_get_next_invoice_number_multiple_customers(
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -667,7 +667,7 @@ async def test_get_next_invoice_number_multiple_customers(
     assert customer2.invoice_next_number == 2
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateWebsite:
     @pytest.mark.auth
     async def test_change_enqueues_payout_account_website_sync(
@@ -715,7 +715,7 @@ class TestUpdateWebsite:
         assert sync_calls == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCheckReviewThreshold:
     async def test_already_under_review_still_updates_total_balance(
         self,
@@ -1008,7 +1008,7 @@ class TestCheckReviewThreshold:
         enqueue_job_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestConfirmOrganizationReviewed:
     async def test_initial_review(
         self,
@@ -1157,7 +1157,7 @@ class TestConfirmOrganizationReviewed:
         assert result.next_review_threshold == 200_000
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestHandleOngoingReviewVerdict:
     async def test_auto_approve_on_approve_verdict(
         self,
@@ -1283,7 +1283,7 @@ class TestHandleOngoingReviewVerdict:
         enqueue_job_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDenyOrganization:
     async def test_deny_organization(
         self,
@@ -1353,7 +1353,7 @@ class TestDenyOrganization:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBlockOrganization:
     async def test_block_organization(
         self,
@@ -1403,7 +1403,7 @@ class TestBlockOrganization:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestResetOnboardingForReview:
     @pytest.mark.parametrize(
         "status",
@@ -1491,7 +1491,7 @@ class TestResetOnboardingForReview:
         assert organization.status == status
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMaybeActivate:
     @pytest.mark.parametrize(
         "status",
@@ -1699,7 +1699,7 @@ class TestMaybeActivate:
         assert organization.status == OrganizationStatus.CREATED
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetActivationReadiness:
     async def test_reports_missing_gates(
         self,
@@ -1762,7 +1762,7 @@ class TestGetActivationReadiness:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBackofficeSubmitAndMaybeActivate:
     async def test_rejects_non_created(
         self,
@@ -1854,7 +1854,7 @@ class TestBackofficeSubmitAndMaybeActivate:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBackofficeApprove:
     async def test_rejects_non_denied_or_blocked(
         self,
@@ -1918,7 +1918,7 @@ class TestBackofficeApprove:
         assert organization.next_review_threshold == 15000
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSetOrganizationUnderReview:
     async def test_set_organization_under_review(
         self,
@@ -1962,7 +1962,7 @@ class TestSetOrganizationUnderReview:
         assert result.status == OrganizationStatus.REVIEW
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestHandleAccountRiskSignal:
     def _merchant(
         self,
@@ -2169,7 +2169,7 @@ class TestGetPaymentStatus:
         assert payment_status.onboarding_resubmission_requested_at is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetAIReview:
     """Test AI review retrieval in OrganizationService."""
 
@@ -2273,7 +2273,7 @@ def _sub(
     raise AssertionError(f"sub_check {key} missing from {step}")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetReviewState:
     """Test the merchant self-review checklist."""
 
@@ -3328,7 +3328,7 @@ class TestGetReviewState:
         assert state.appeal.reviewed_at == appeal_reviewed
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubmitAppeal:
     async def test_submit_appeal_success(
         self,
@@ -3448,7 +3448,7 @@ class TestSubmitAppeal:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestApproveAppeal:
     async def test_approve_appeal_activates_when_all_gates_pass(
         self,
@@ -3577,7 +3577,7 @@ class TestApproveAppeal:
             await organization_service.approve_appeal(session, organization)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDenyAppeal:
     async def test_deny_appeal_success(
         self,
@@ -3656,7 +3656,7 @@ class TestDenyAppeal:
             await organization_service.deny_appeal(session, organization)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCheckCanDelete:
     async def test_can_delete_no_activity(
         self,
@@ -4025,7 +4025,7 @@ class TestCheckCanDelete:
         assert result.blocked_reasons == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRequestDeletion:
     @pytest.mark.auth
     async def test_immediate_deletion_no_activity(
@@ -4136,7 +4136,7 @@ class TestRequestDeletion:
         enqueue_job_mock.assert_called_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSoftDeleteOrganization:
     async def test_enqueues_polar_self_customer_deletion(
         self,
@@ -4332,7 +4332,7 @@ class TestSoftDeleteOrganization:
         assert result.slug_history == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateFeatureSettings:
     async def test_non_updatable_flag_ignored(
         self,
@@ -4399,7 +4399,7 @@ class TestUpdateFeatureSettings:
         assert result.feature_settings["checkout_localization_enabled"] is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestResetProrationBehavior:
     async def test_cant_set_without_feature_flag(
         self,
@@ -4460,7 +4460,7 @@ class TestResetProrationBehavior:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSetOrganizationOffboarding:
     async def test_from_review(
         self,
@@ -4544,7 +4544,7 @@ class TestSetOrganizationOffboarding:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSetOrganizationOffboarded:
     async def test_from_offboarding(
         self,
@@ -4592,7 +4592,7 @@ class TestSetOrganizationOffboarded:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSnoozeOrganization:
     async def test_from_review(
         self,
@@ -4708,7 +4708,7 @@ class TestSnoozeOrganization:
         assert "snoozed (#1)" in result.internal_notes
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUnsnoozeOrganization:
     async def test_from_snoozed(
         self,
@@ -4742,7 +4742,7 @@ class TestUnsnoozeOrganization:
             await organization_service.unsnooze_organization(session, organization)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUnsnoozeExpiredOrganizations:
     async def test_expired_time_based_transitions(
         self,
@@ -4825,7 +4825,7 @@ class TestUnsnoozeExpiredOrganizations:
         enqueue_job_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOffboardExpiredOrganizations:
     async def _make_offboarding(
         self,
@@ -4910,7 +4910,7 @@ class TestOffboardExpiredOrganizations:
         assert organization.status == OrganizationStatus.OFFBOARDING
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCompleteExpiredOffboarding:
     async def _make_offboarding(
         self,
@@ -5114,7 +5114,7 @@ class TestCompleteExpiredOffboarding:
         assert organization.status != OrganizationStatus.OFFBOARDED
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSetPayoutAccount:
     @pytest.mark.auth
     async def test_set_payout_account_on_organization(
@@ -5310,7 +5310,7 @@ class TestLegacyOrganizationStatus:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestStatusTransitions:
     """Tests for the organization status transition rules enforced in
     Organization.set_status()."""
@@ -5569,7 +5569,7 @@ class TestStatusTransitions:
         assert organization.status == OrganizationStatus.CREATED
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCapabilityOverrides:
     """Capability overrides flip enforcement gates without changing status."""
 
@@ -5615,7 +5615,7 @@ class TestCapabilityOverrides:
         assert organization.can_access_dashboard is False
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSetStatusCapabilities:
     @pytest.mark.parametrize("status", list(OrganizationStatus))
     async def test_set_status_writes_capabilities(
@@ -5646,7 +5646,7 @@ class TestSetStatusCapabilities:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSetCapability:
     async def test_flips_value(
         self,
@@ -5735,7 +5735,7 @@ class TestSetCapability:
         assert organization.capabilities["checkout_payments"] is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestChangeOwnerRoleSwap:
     """
     `change_owner` swaps `UserOrganization.role`: the previous `owner` is
@@ -5830,7 +5830,7 @@ class TestChangeOwnerRoleSwap:
         assert new.role == OrganizationRole.owner
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAddUser:
     @pytest.mark.parametrize(
         ("organization_role", "expected_member_role"),
@@ -5867,7 +5867,7 @@ class TestAddUser:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCancelExpiredOrganizationsSubscriptions:
     async def test_enqueues_for_expired_org(
         self,
@@ -5921,7 +5921,7 @@ class TestCancelExpiredOrganizationsSubscriptions:
         enqueue_job_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateSSOEnforcement:
     @pytest.mark.auth
     async def test_enabling_revokes_tokens(

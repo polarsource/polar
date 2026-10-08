@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
-import pytest_asyncio
+import pytest
 
 from polar.event.system import SystemEvent
 from polar.integrations.tinybird.client import TinybirdClient
@@ -165,7 +165,7 @@ class TinybirdTestHelper:
         await self.ingest_events(events)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def metrics_events(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -179,7 +179,7 @@ async def metrics_events(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def metrics_backend(
     tinybird_client: TinybirdClient,
     organization: Organization,
@@ -194,7 +194,7 @@ async def metrics_backend(
     return "tinybird"
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def metrics_backend_helper(
     tinybird_client: TinybirdClient,
     save_fixture: SaveFixture,

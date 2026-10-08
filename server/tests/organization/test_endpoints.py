@@ -47,7 +47,7 @@ from tests.fixtures.random_objects import (
 # 4 August 2026 onwards. Tests that assert the unenforced behaviour pin it.
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListOrganizations:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/organizations/")
@@ -82,7 +82,7 @@ class TestListOrganizations:
         assert json["items"][0]["id"] == str(organization.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListRoles:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -124,7 +124,7 @@ class TestListRoles:
             assert len(entry["permissions"]) > 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetOrganization:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -168,7 +168,7 @@ class TestGetOrganization:
         assert json["id"] == str(organization.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEnablePreviewAccess:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -238,7 +238,7 @@ class TestEnablePreviewAccess:
         assert feature_settings["issue_funding_enabled"] is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateOrganization:
     @pytest.mark.auth
     async def test_not_existing(self, client: AsyncClient) -> None:
@@ -619,7 +619,7 @@ class TestUpdateOrganization:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateDisputeSettings:
     async def _enable(
         self,
@@ -770,7 +770,7 @@ class TestUpdateDisputeSettings:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestInviteOrganization:
     @pytest.mark.auth
     async def test_not_existing(self, client: AsyncClient) -> None:
@@ -867,7 +867,7 @@ class TestInviteOrganization:
         assert len(members_after) == 2
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSetMemberRole:
     @pytest.mark.auth
     @pytest.mark.keep_session_state
@@ -999,7 +999,7 @@ class TestSetMemberRole:
         assert response.status_code == 403
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.auth
 async def test_list_members(
     session: AsyncSession,
@@ -1016,7 +1016,7 @@ async def test_list_members(
     assert len(json["items"]) == 2
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.auth
 async def test_list_members_not_member(
     session: AsyncSession,
@@ -1030,7 +1030,7 @@ async def test_list_members_not_member(
     assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetEmbedStatus:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -1057,7 +1057,7 @@ class TestGetEmbedStatus:
         assert json["embed_hosts"] == ["example.com"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetPaymentStatus:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -1141,7 +1141,7 @@ class TestGetPaymentStatus:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSetPayoutAccount:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -1256,7 +1256,7 @@ class TestSetPayoutAccount:
         assert response.status_code == 422
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteOrganization:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -1456,7 +1456,7 @@ class TestDeleteOrganization:
         assert json["detail"] == "You don't have permission to manage the organization"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetReview:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -1523,7 +1523,7 @@ class TestGetReview:
             assert all("not_started" in node["reasons"] for node in targets)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCheckSlugAvailability:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
@@ -1564,7 +1564,7 @@ class TestCheckSlugAvailability:
         assert response.json() == {"available": available}
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetReviewStatus:
     @pytest.mark.auth
     async def test_appeal_case_id_present_when_case_exists(
@@ -1602,7 +1602,7 @@ class TestGetReviewStatus:
         assert response.json()["appeal_case_id"] is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateSSOEnforced:
     async def _create_connection(
         self, save_fixture: SaveFixture, organization: Organization

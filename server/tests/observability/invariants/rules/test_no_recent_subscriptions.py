@@ -1,5 +1,4 @@
 import pytest
-import pytest_asyncio
 
 from polar.models import Customer, Product
 from polar.models.subscription import SubscriptionStatus
@@ -12,12 +11,12 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_subscription
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def invariant(session: AsyncSession) -> NoRecentSubscriptionsInvariant:
     return NoRecentSubscriptionsInvariant(session)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_failure_no_subscriptions(
     invariant: NoRecentSubscriptionsInvariant,
 ) -> None:
@@ -26,7 +25,7 @@ async def test_failure_no_subscriptions(
     assert exc_info.value.context["last_subscription_at"] is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_success_recent_subscription(
     invariant: NoRecentSubscriptionsInvariant,
     save_fixture: SaveFixture,

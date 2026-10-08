@@ -13,7 +13,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFindOrCreateAddOnProduct:
     async def test_creates_an_archived_product_with_the_plan_benefits(
         self,

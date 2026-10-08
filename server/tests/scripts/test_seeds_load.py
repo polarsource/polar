@@ -69,7 +69,7 @@ def test_new_org_rejects_explicit_non_all_phase(phase: str) -> None:
     assert str(error) == "--new-org cannot be combined with --phase"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSeedsLoad:
     async def test_single_organization_seed_compatibility(
         self,

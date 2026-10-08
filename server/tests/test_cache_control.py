@@ -2,7 +2,7 @@ import pytest
 from httpx import AsyncClient
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCacheControlMiddleware:
     async def test_success_response(self, client: AsyncClient) -> None:
         response = await client.get("/healthz")

@@ -15,7 +15,7 @@ def repository(session: AsyncSession) -> EventRepository:
     return EventRepository.from_session(session)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCustomerComparatorEq:
     async def test_customer_id(
         self,
@@ -74,7 +74,7 @@ class TestCustomerComparatorEq:
         assert result == event
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCustomerComparatorIs:
     async def test_customer_id(
         self,
@@ -151,7 +151,7 @@ class TestCustomerComparatorIs:
         assert result_is_not is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCustomerRelationship:
     async def test_conflicting_external_id(
         self,
@@ -186,7 +186,7 @@ class TestCustomerRelationship:
         assert loaded_event.customer is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEventLabel:
     async def test_label_with_property_selector(
         self,

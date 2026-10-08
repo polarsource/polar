@@ -6,7 +6,6 @@ from uuid import UUID
 from zoneinfo import ZoneInfo
 
 import pytest
-import pytest_asyncio
 from alembic_utils.pg_trigger import PGTrigger
 from alembic_utils.replaceable_entity import registry as entities_registry
 from sqlalchemy.schema import CreateSequence
@@ -2323,7 +2322,7 @@ def _metrics_auth_subject(
     return AuthSubject(unauthorized_user, {Scope.metrics_read}, None)
 
 
-@pytest_asyncio.fixture(scope="module", loop_scope="module")
+@pytest.fixture(scope="module")
 async def metrics_module_database_url(worker_id: str) -> AsyncIterator[str]:
     # The harness commits shared seed data once for speed, so it can't use the
     # worker database that regular tests rely on transaction rollbacks to isolate.
@@ -2362,7 +2361,7 @@ async def metrics_module_database_url(worker_id: str) -> AsyncIterator[str]:
         drop_database(sync_database_url)
 
 
-@pytest_asyncio.fixture(scope="module", loop_scope="module")
+@pytest.fixture(scope="module")
 async def metrics_harness(
     metrics_module_database_url: str,
     worker_id: str,
@@ -2656,7 +2655,7 @@ async def metrics_harness(
         await engine.dispose()
 
 
-@pytest_asyncio.fixture(loop_scope="module")
+@pytest.fixture
 async def metrics_session(
     metrics_harness: MetricsHarness,
 ) -> AsyncIterator[AsyncSession]:
@@ -2664,7 +2663,7 @@ async def metrics_session(
         yield session
 
 
-@pytest_asyncio.fixture(scope="module", loop_scope="module")
+@pytest.fixture(scope="module")
 async def checkout_metrics_harness(
     metrics_module_database_url: str,
     worker_id: str,
@@ -2727,7 +2726,7 @@ async def checkout_metrics_harness(
         await engine.dispose()
 
 
-@pytest_asyncio.fixture(loop_scope="module")
+@pytest.fixture
 async def checkout_metrics_session(
     checkout_metrics_harness: CheckoutMetricsHarness,
 ) -> AsyncIterator[AsyncSession]:
@@ -2736,7 +2735,7 @@ async def checkout_metrics_session(
 
 
 @pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
-@pytest.mark.asyncio(loop_scope="module")
+@pytest.mark.anyio
 class TestGetMetrics:
     @pytest.mark.parametrize(
         ("label", "expected_count"),
@@ -4814,7 +4813,7 @@ class TestGetMetrics:
 
 
 @pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
-@pytest.mark.asyncio(loop_scope="module")
+@pytest.mark.anyio
 class TestMetricsFiltering:
     """Tests for the metrics parameter filtering functionality."""
 
@@ -5429,7 +5428,7 @@ class TestMetricsFiltering:
         assert metrics.totals.checkouts_conversion is not None
 
 
-@pytest.mark.asyncio(loop_scope="module")
+@pytest.mark.anyio
 class TestCheckoutMetrics:
     """Tests for checkout metrics using opened_at tracking.
 

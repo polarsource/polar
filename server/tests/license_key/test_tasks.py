@@ -73,7 +73,7 @@ def revoke_benefit_mock(mocker: MockerFixture) -> AsyncMock:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSyncBenefitGrant:
     async def test_not_existing_license_key(self, session: AsyncSession) -> None:
         session.expunge_all()

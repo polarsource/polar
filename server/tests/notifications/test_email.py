@@ -40,7 +40,7 @@ async def check_diff(notification: NotificationPayloadBase) -> None:
     assert content == expected
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_MaintainerNewPaidSubscriptionNotification() -> None:
     n = MaintainerNewPaidSubscriptionNotificationPayload(
         subscriber_name="John Doe",
@@ -55,7 +55,7 @@ async def test_MaintainerNewPaidSubscriptionNotification() -> None:
     await check_diff(n)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_MaintainerNewPaidSubscriptionNotification_every_6_months() -> None:
     n = MaintainerNewPaidSubscriptionNotificationPayload(
         subscriber_name="John Doe",
@@ -71,7 +71,7 @@ async def test_MaintainerNewPaidSubscriptionNotification_every_6_months() -> Non
     await check_diff(n)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_MaintainerNewProductSaleNotification() -> None:
     n = MaintainerNewProductSaleNotificationPayload(
         customer_email="birk@polar.sh",
@@ -92,7 +92,7 @@ async def test_MaintainerNewProductSaleNotification() -> None:
     await check_diff(n)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_MaintainerAccountCreditsGrantedNotification() -> None:
     n = MaintainerAccountCreditsGrantedNotificationPayload(
         organization_name="Test Org",
@@ -102,7 +102,7 @@ async def test_MaintainerAccountCreditsGrantedNotification() -> None:
     await check_diff(n)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_MaintainerNewTrialNotification() -> None:
     n = MaintainerNewTrialNotificationPayload(
         subscriber_name="John Doe",
@@ -117,7 +117,7 @@ async def test_MaintainerNewTrialNotification() -> None:
     await check_diff(n)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_MaintainerSubscriptionCancellationNotification() -> None:
     n = MaintainerSubscriptionCancellationNotificationPayload(
         subscriber_name="John Doe",
@@ -135,7 +135,7 @@ async def test_MaintainerSubscriptionCancellationNotification() -> None:
     await check_diff(n)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_MaintainerSubscriptionCancellationNotification_immediately() -> None:
     n = MaintainerSubscriptionCancellationNotificationPayload(
         subscriber_name="John Doe",
@@ -153,7 +153,7 @@ async def test_MaintainerSubscriptionCancellationNotification_immediately() -> N
     await check_diff(n)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_MaintainerFileFlaggedMaliciousNotification() -> None:
     n = MaintainerFileFlaggedMaliciousNotificationPayload(
         file_name="whitepaper.pdf",
@@ -164,7 +164,7 @@ async def test_MaintainerFileFlaggedMaliciousNotification() -> None:
     await check_diff(n)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.parametrize(
     "payload",
     [
@@ -229,7 +229,7 @@ async def test_injection_payloads(payload: NotificationPayloadBase) -> None:
     assert "{{ 123456 * 9 }}" in body
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_MaintainerNewProductSaleNotification_backwards_compatibility() -> None:
     old_notification_data = {
         "product_name": "Old Product",

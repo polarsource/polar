@@ -38,7 +38,7 @@ async def _reload(session: AsyncSession, slack_app: SlackApp) -> SlackApp:
     return loaded
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBackfillSlackAppEncryptedSecrets:
     async def test_encrypts_legacy_rows(
         self,

@@ -46,7 +46,7 @@ from tests.fixtures.random_objects import (
 from tests.fixtures.stripe import build_stripe_charge, build_stripe_payment_intent
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestHandleFailure:
     """Integration tests for the failed payment. If it's an order, the subscription
     will be marked as past due, benefits will be revoked, and the order will have its next
@@ -312,7 +312,7 @@ class TestResolveTrigger:
         assert _resolve_trigger(pi) is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestHandleFailureTrigger:
     """Test that handle_failure persists the resolved trigger on the payment."""
 

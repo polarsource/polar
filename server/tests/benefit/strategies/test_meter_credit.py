@@ -30,7 +30,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCycleMeterCredit:
     async def test_cycle_considers_rollover_from_other_benefit(
         self,
@@ -87,7 +87,7 @@ class TestCycleMeterCredit:
         assert customer_meter.balance == 150
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMeterCreditBenefitIntegration:
     """
     Integration tests for meter credit benefits.
@@ -304,7 +304,7 @@ class TestMeterCreditBenefitIntegration:
         assert customer_meter.balance == 920
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestValidateProperties:
     @pytest.mark.auth
     async def test_valid(

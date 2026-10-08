@@ -3,7 +3,6 @@ from urllib.parse import parse_qs, urlparse
 
 import jwt
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 from sqlalchemy import select
@@ -36,7 +35,7 @@ from tests.fixtures.database import SaveFixture
 from ..conftest import create_oauth2_authorization_code, create_oauth2_token
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2Client:
     oauth2_client = OAuth2Client(client_id="polar_ci_123", user=user)
     await oauth2_client.set_client_secret("polar_cs_123")
@@ -56,7 +55,7 @@ async def oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2Client:
     return oauth2_client
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def public_oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2Client:
     oauth2_client = OAuth2Client(client_id="polar_ci_123", user=user)
     await oauth2_client.set_client_secret("polar_cs_123")
@@ -76,7 +75,7 @@ async def public_oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2C
     return oauth2_client
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def first_party_oauth2_client(
     save_fixture: SaveFixture, user: User
 ) -> OAuth2Client:
@@ -98,7 +97,7 @@ async def first_party_oauth2_client(
     return oauth2_client
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def web_grant_oauth2_client(
     save_fixture: SaveFixture, user: User
 ) -> OAuth2Client:
@@ -137,7 +136,7 @@ async def create_oauth2_grant(
     return oauth2_grant
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOAuth2Register:
     @pytest.mark.parametrize(
         "redirect_uri",
@@ -268,7 +267,7 @@ class TestOAuth2Register:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOAuth2ConfigureGet:
     async def test_unauthenticated(
         self, client: AsyncClient, oauth2_client: OAuth2Client
@@ -353,7 +352,7 @@ class TestOAuth2ConfigureGet:
         assert "registration_access_token" in json
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOAuth2ConfigurePut:
     async def test_token_valid(
         self, client: AsyncClient, oauth2_client: OAuth2Client
@@ -398,7 +397,7 @@ class TestOAuth2ConfigurePut:
             assert value is not None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOAuth2ConfigureDelete:
     async def test_token_valid(
         self, client: AsyncClient, oauth2_client: OAuth2Client
@@ -460,7 +459,7 @@ class TestOAuth2ConfigureDelete:
         assert other_token.refresh_token_revoked_at == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOAuth2Authorize:
     async def test_unauthenticated(
         self, client: AsyncClient, oauth2_client: OAuth2Client
@@ -797,7 +796,7 @@ class TestOAuth2Authorize:
         assert isinstance(json["organizations"], list)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOAuth2Consent:
     async def test_unauthenticated(self, client: AsyncClient) -> None:
         response = await client.post("/v1/oauth2/consent")
@@ -1244,7 +1243,7 @@ class TestOAuth2Consent:
         assert authorization_code.organization_scopes == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOAuth2Token:
     async def test_authorization_code_sub_user(
         self,

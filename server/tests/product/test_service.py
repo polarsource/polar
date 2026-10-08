@@ -4,7 +4,6 @@ from typing import Any
 from unittest.mock import AsyncMock, call
 
 import pytest
-import pytest_asyncio
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
@@ -80,7 +79,7 @@ def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
     return mocker.patch("polar.product.service.enqueue_job")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     @pytest.mark.auth
     async def test_user(
@@ -287,7 +286,7 @@ class TestList:
         assert results[1].id == products[1].id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGet:
     @pytest.mark.auth
     async def test_user(
@@ -347,7 +346,7 @@ class TestGet:
         assert accessible_product.id == product.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate:
     @pytest.mark.auth
     async def test_user_not_existing_organization(
@@ -1347,7 +1346,7 @@ def _unit_price_create(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateUnitBasedPrice:
     @pytest.mark.auth
     async def test_valid(
@@ -1510,11 +1509,11 @@ class TestCreateUnitBasedPrice:
         assert len([p for p in product.prices if is_unit_price(p)]) == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateMeterCycling:
     """The separate meter cycle is gated behind ``meter_cycling_enabled``."""
 
-    @pytest_asyncio.fixture
+    @pytest.fixture
     async def meter_cycling_enabled(
         self, session: AsyncSession, organization: Organization
     ) -> None:
@@ -1589,7 +1588,7 @@ class TestCreateMeterCycling:
         assert product.meter_interval_count == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateFixedSeatComposition:
     """Validation for composing a fixed price with a seat-based price."""
 
@@ -1799,7 +1798,7 @@ class TestCreateFixedSeatComposition:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdate:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -2553,7 +2552,7 @@ class TestUpdate:
         assert e.value.errors()[0]["loc"] == ("body", "external_id")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateBenefits:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -2958,7 +2957,7 @@ class TestUpdateBenefits:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDelete:
     @pytest.mark.auth
     async def test_not_deletable_with_order(
@@ -3098,7 +3097,7 @@ class TestDelete:
         return reloaded_product
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestProductProperties:
     async def test_has_seat_based_price(
         self,

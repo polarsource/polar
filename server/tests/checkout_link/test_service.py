@@ -1,7 +1,6 @@
 import uuid
 
 import pytest
-import pytest_asyncio
 from pydantic import HttpUrl
 
 from polar.auth.models import AuthSubject
@@ -28,7 +27,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_seat_based(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -46,7 +45,7 @@ async def product_seat_based(
     return product
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_seat_based_2_to_20(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -68,7 +67,7 @@ async def product_seat_based_2_to_20(
     return product
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_unit_based_minimum_2(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -79,7 +78,7 @@ async def product_unit_based_minimum_2(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def checkout_link(save_fixture: SaveFixture, product: Product) -> CheckoutLink:
     return await create_checkout_link(
         save_fixture,
@@ -89,7 +88,7 @@ async def checkout_link(save_fixture: SaveFixture, product: Product) -> Checkout
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     @pytest.mark.auth
     async def test_product_filter(
@@ -111,7 +110,7 @@ class TestList:
         assert checkout_link in results
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate:
     @pytest.mark.auth
     async def test_not_existing_product(
@@ -258,7 +257,7 @@ class TestCreate:
         assert checkout_link.discount == discount_fixed_once
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateSeats:
     @pytest.mark.auth
     async def test_valid(
@@ -358,7 +357,7 @@ class TestCreateSeats:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateUnits:
     @pytest.mark.auth
     async def test_valid(
@@ -458,7 +457,7 @@ class TestCreateUnits:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdate:
     @pytest.mark.auth
     async def test_metadata(
@@ -761,7 +760,7 @@ class TestUpdate:
         assert updated.units is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDelete:
     @pytest.mark.auth
     async def test_valid(

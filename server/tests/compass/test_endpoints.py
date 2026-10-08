@@ -36,7 +36,7 @@ async def _create_thread(
     return thread
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAssistantChat:
     @pytest.fixture(autouse=True)
     def stub_sessionmakers(self, app: FastAPI) -> Iterator[None]:
@@ -111,7 +111,7 @@ class TestAssistantChat:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListThreads:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -161,7 +161,7 @@ class TestListThreads:
         assert response.status_code == 401
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetThread:
     @pytest.mark.auth
     async def test_not_found_for_someone_elses_thread(
@@ -198,7 +198,7 @@ class TestGetThread:
         assert json["title"] == thread.title
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListThreadMessages:
     @pytest.mark.auth
     async def test_not_found_for_someone_elses_thread(
@@ -277,7 +277,7 @@ class TestListThreadMessages:
         assert json["pagination"]["total_count"] == 5
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateThread:
     @pytest.mark.auth
     async def test_rename(
@@ -333,7 +333,7 @@ class TestUpdateThread:
         assert response.status_code == 403
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteThread:
     @pytest.mark.auth
     async def test_deleted_thread_disappears(

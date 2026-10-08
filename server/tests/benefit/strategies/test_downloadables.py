@@ -33,7 +33,7 @@ from tests.fixtures.file import TestFile, uploaded_fixture
 from tests.fixtures.random_objects import create_benefit, create_member
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDownloadblesBenefit:
     @pytest.mark.auth
     async def test_grant_one(
@@ -525,7 +525,7 @@ class TestDownloadblesBenefit:
         assert by_file[uploaded_logo_png.id].status == DownloadableStatus.revoked
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMemberLevelDownloadables:
     async def _create_benefit_and_members(
         self,
@@ -656,7 +656,7 @@ class TestMemberLevelDownloadables:
         assert member_b_downloadables[0].status == DownloadableStatus.granted
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestValidateProperties:
     @pytest.mark.auth
     async def test_valid(

@@ -43,7 +43,7 @@ async def _get_license_key(session: AsyncSession, grant: BenefitGrant) -> Licens
     return license_key
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGrantExpiration:
     async def test_subscription_grant_never_sets_expiration(
         self,
@@ -134,7 +134,7 @@ class TestGrantExpiration:
         assert license_key.expires_at is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRevokeRegrant:
     async def test_reuses_and_unrevokes_key(
         self,

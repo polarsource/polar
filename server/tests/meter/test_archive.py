@@ -3,7 +3,6 @@ from decimal import Decimal
 from unittest.mock import MagicMock
 
 import pytest
-import pytest_asyncio
 from pytest_mock.plugin import MockerFixture
 
 from polar.auth.models import AuthSubject
@@ -30,7 +29,7 @@ def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.patch("polar.meter.service.enqueue_job")
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_metered_unit(
     save_fixture: SaveFixture, meter: Meter, organization: Organization
 ) -> Product:
@@ -42,7 +41,7 @@ async def product_metered_unit(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def metered_subscription(
     save_fixture: SaveFixture, customer: Customer, product_metered_unit: Product
 ) -> Subscription:
@@ -51,7 +50,7 @@ async def metered_subscription(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMeterArchive:
     async def test_archive_success(
         self,

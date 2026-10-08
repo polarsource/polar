@@ -15,7 +15,7 @@ from tests.fixtures.database import SaveFixture
 from tests.transaction.conftest import create_transaction
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSearchTransactions:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/transactions/search")
@@ -39,7 +39,7 @@ class TestSearchTransactions:
         assert json["pagination"]["total_count"] == len(readable_user_transactions)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetSummary:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(
@@ -95,7 +95,7 @@ class TestGetSummary:
         assert "payout" in json
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestExportTransactions:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(

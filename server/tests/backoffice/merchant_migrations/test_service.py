@@ -13,7 +13,7 @@ from polar.backoffice.merchant_migrations.service import (
 from polar.redis import Redis
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUsdRates:
     async def test_valid(self, mocker: MockerFixture, redis: Redis) -> None:
         fetch = mocker.patch(

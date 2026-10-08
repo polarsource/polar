@@ -69,7 +69,7 @@ async def create_file(
     return file
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGuardDutyScanResult:
     async def test_flags_file(
         self,

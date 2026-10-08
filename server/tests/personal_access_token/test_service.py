@@ -23,7 +23,7 @@ def enqueue_email_mock(mocker: MockerFixture) -> MagicMock:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRevokeLeaked:
     async def test_false_positive(
         self, session: AsyncSession, enqueue_email_mock: MagicMock

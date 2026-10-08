@@ -30,7 +30,7 @@ from tests.fixtures.random_objects import (
 from tests.fixtures.stripe import build_stripe_payment_method
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestResolveFromStripeIntent:
     @pytest.mark.parametrize("method_type", ["ideal", "bancontact", "sofort"])
     @pytest.mark.parametrize(
@@ -148,7 +148,7 @@ class TestResolveFromStripeIntent:
             await payment_method_service.resolve_from_stripe_intent(charge)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpsertFromStripe:
     async def test_create_new_payment_method(
         self,
@@ -228,7 +228,7 @@ class TestUpsertFromStripe:
         assert updated_payment_method.customer == customer
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDelete:
     @pytest.fixture(autouse=True)
     def stripe_service_mock(self, mocker: MockerFixture) -> MagicMock:
@@ -586,7 +586,7 @@ async def create_expiring_card(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSendExpiringReminderEmail:
     async def test_enqueues_email_naming_the_product(
         self,

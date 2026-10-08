@@ -16,7 +16,7 @@ from tests.fixtures.database import SaveFixture
 from tests.transaction.conftest import create_transaction
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBlockedOrganizationTransactionAccess:
     @pytest.mark.auth
     async def test_blocked_org_account_transactions_hidden(

@@ -52,7 +52,7 @@ async def _create_verification(
     return record, token
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRequestEmailUpdate:
     async def test_rejects_team_customer(
         self,
@@ -136,7 +136,7 @@ class TestRequestEmailUpdate:
         assert record.token_hash == expected_hash
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCheckToken:
     async def test_valid_token(
         self,
@@ -178,7 +178,7 @@ class TestCheckToken:
         assert await service.check_token(session, token) is False
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestVerify:
     async def test_invalid_token_raises(
         self,

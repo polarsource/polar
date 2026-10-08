@@ -313,7 +313,7 @@ class TestQueryBindsValuesInsteadOfInlining:
 
 
 @pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTinybirdEventsQuery:
     async def test_get_event_type_stats(self, tinybird_client: TinybirdClient) -> None:
         org_id = uuid.uuid4()
@@ -577,7 +577,7 @@ class TestTinybirdEventsQuery:
 
 
 @pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSearchBehaviorAndInjectionSafety:
     async def _ingest(self, tinybird_client: TinybirdClient, org_id: uuid.UUID) -> None:
         events = [
@@ -661,7 +661,7 @@ class TestSearchBehaviorAndInjectionSafety:
 
 
 @pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCountUserEventsByOrganization:
     async def test_groups_counts_and_filters(
         self, tinybird_client: TinybirdClient
@@ -772,7 +772,7 @@ async def _get_source_stats(
 
 
 @pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTinybirdDelete:
     async def test_delete_by_id(self, tinybird_client: TinybirdClient) -> None:
         org_id = uuid.uuid4()
@@ -851,7 +851,7 @@ class TestTinybirdDelete:
         assert stats_after["batch.keep"] == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRequestWithRetry:
     async def test_retries_on_timeout(self) -> None:
         client = TinybirdClient(
@@ -956,7 +956,7 @@ class TestRequestWithRetry:
         assert call_count == MAX_RETRIES + 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTinybirdRequestError:
     async def test_endpoint_400_raises_request_error_with_body(self) -> None:
         error_response = {

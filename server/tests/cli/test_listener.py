@@ -12,7 +12,7 @@ from polar.cli.listener import (
 from polar.redis import Redis
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMarkActive:
     async def test_sets_key(self, redis: Redis) -> None:
         org_id = uuid.uuid4()
@@ -42,7 +42,7 @@ class TestMarkActive:
         assert ttl > 5
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMarkInactive:
     async def test_deletes_key(self, redis: Redis) -> None:
         org_id = uuid.uuid4()
@@ -58,7 +58,7 @@ class TestMarkInactive:
         await mark_inactive(redis, org_id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestHasActiveListener:
     async def test_returns_true_when_active(self, redis: Redis) -> None:
         org_id = uuid.uuid4()

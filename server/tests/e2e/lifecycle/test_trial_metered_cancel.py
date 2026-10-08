@@ -31,7 +31,6 @@ from decimal import Decimal
 
 import freezegun
 import pytest
-import pytest_asyncio
 import stripe as stripe_lib
 from httpx import AsyncClient
 from sqlalchemy import select
@@ -76,7 +75,7 @@ _TRIAL_METERED_AUTH = pytest.mark.auth(
 )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def trial_metered_product(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -165,7 +164,7 @@ async def _complete_trial_checkout(
     return str(subscription.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTrialMeteredCancel:
     @_TRIAL_METERED_AUTH
     async def test_canceling_metered_trial_does_not_charge_customer(

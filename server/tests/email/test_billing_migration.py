@@ -1,5 +1,4 @@
 import pytest
-import pytest_asyncio
 
 from polar.email.billing_migration import previous_billing_provider_for_notice
 from polar.email.schemas import EmailTemplate
@@ -16,7 +15,7 @@ from tests.merchant_migration._helpers import (
 )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def moved_subscription(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -37,7 +36,7 @@ async def moved_subscription(
     return subscription
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPreviousBillingProviderForNotice:
     async def test_not_imported(
         self,

@@ -51,7 +51,7 @@ auth_subject_fixture = pytest.mark.auth(
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUsageCycle:
     @auth_subject_fixture
     async def test_monthly_meter_cycle_settles_overage(

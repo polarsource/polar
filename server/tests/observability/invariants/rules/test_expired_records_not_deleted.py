@@ -240,7 +240,7 @@ async def create_deletable_records(
     await save_fixture(checkout)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCheck:
     @pytest.mark.parametrize(
         "deletable_for", [-timedelta(hours=1), timedelta(minutes=5)]

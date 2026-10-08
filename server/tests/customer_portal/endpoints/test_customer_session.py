@@ -21,7 +21,7 @@ def mock_send_email(mocker: MockerFixture) -> MagicMock:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRequest:
     async def test_invalid_organization_returns_202(
         self,
@@ -39,7 +39,7 @@ class TestRequest:
         assert response.status_code == 202
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRequestLegacyOrg:
     """Tests for orgs with member_model_enabled=false (legacy customer lookup)."""
 
@@ -102,7 +102,7 @@ class TestRequestLegacyOrg:
         assert response.status_code == 202
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRequestMemberEnabledOrg:
     """Tests for orgs with member_model_enabled=true (member-based lookup)."""
 

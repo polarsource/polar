@@ -58,7 +58,7 @@ def _all_scopes_present(mocker: MockerFixture, client: Any) -> None:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestVerifyScopes:
     async def test_all_scopes_present(self, mocker: MockerFixture) -> None:
         adapter, client = _adapter(mocker)
@@ -158,7 +158,7 @@ class TestVerifyScopes:
             await adapter.verify_scopes()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetAccountId:
     async def test_returns_account_id(self, mocker: MockerFixture) -> None:
         adapter, client = _adapter(mocker)
@@ -207,7 +207,7 @@ class TestGetAccountId:
         assert await adapter.get_account_id() == "acct_123"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetSourceAccount:
     async def test_platform_with_connected_accounts_is_flagged(
         self, mocker: MockerFixture
@@ -483,7 +483,7 @@ async def _extracted_products(adapter: StripeAdapter) -> list[CanonicalProduct]:
             return products
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestExtractProducts:
     async def test_single_currency_price_keeps_the_source_id(
         self, mocker: MockerFixture
@@ -882,7 +882,7 @@ class TestMapTaxId:
         assert mapped.tax_id_dropped is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestExtractPages:
     async def test_customer_page_resumes_and_advances_to_subscriptions(
         self, mocker: MockerFixture
@@ -1131,7 +1131,7 @@ def _stripe_promotion_code(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestExtractCoupons:
     async def test_coupon_page_maps_remaining_and_advances(
         self, mocker: MockerFixture
@@ -1381,7 +1381,7 @@ class TestExtractCoupons:
         assert exc.value.status_code == 400
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetSubscription:
     async def test_reads_the_current_state(self, mocker: MockerFixture) -> None:
         adapter, client = _adapter(mocker)
@@ -1890,7 +1890,7 @@ class TestGetSubscription:
         assert subscription.cancel_at_period_end_known is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestStopSourceSubscription:
     async def test_cancels_with_a_traceable_comment(
         self, mocker: MockerFixture
@@ -2063,7 +2063,7 @@ class TestMapCustomer:
         assert mapped.tax_exempt is expected
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDiscountAttachments:
     async def test_item_discount_on_one_item_folds_into_the_subscription(
         self, mocker: MockerFixture
@@ -2461,7 +2461,7 @@ class TestDiscountAttachments:
         assert record.discount_source_ids == ["coupon_now"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAddOn:
     async def test_second_item_maps_as_add_on(self, mocker: MockerFixture) -> None:
         record = await _extracted_subscription(

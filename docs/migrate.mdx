@@ -72,8 +72,24 @@ your database while subscriptions still renew there.
 migration.
 
 Create a restricted API key in Stripe and add it to your migration in Polar.
-The Polar dashboard asks for the minimum permissions needed to read and migrate
-your billing data, then validates the account before continuing.
+The key needs these permissions, named as in Stripe's restricted key form:
+
+| Stripe group | Permission      | Access |
+| ------------ | --------------- | ------ |
+| Core         | Customers       | Read   |
+| Core         | Products        | Read   |
+| Core         | Payment Methods | Read   |
+| Billing      | Prices          | Read   |
+| Billing      | Coupons         | Read   |
+| Billing      | Promotion Codes | Read   |
+| Billing      | Subscriptions   | Write  |
+| Billing      | Invoices        | Read   |
+| Connect      | Accounts        | Read   |
+
+Subscriptions also covers subscription schedules; Stripe has no separate
+permission for them. Accounts is listed under Connect even if you do not use
+Connect. Polar checks every permission before continuing and names any that
+are missing.
 
 Nothing has moved yet. Stripe still owns every existing subscription.
 
@@ -226,13 +242,21 @@ for payments it processes.
     - Products without a supported recurring price in your organization's
       default currency, or with ambiguous prices
     - Past-due, unpaid, or paused subscriptions
-    - Payment methods that cannot be copied
+    - Subscriptions sold through Stripe Managed Payments. These are not moved
+      yet and keep renewing on Stripe.
 
     A subscription that is not ready stays on Stripe. Resolve the issue and retry
     it later, or keep it renewing on Stripe.
 
     Polar also rechecks subscriptions during the switch. Subscriptions renewing
-    within 24 hours or already scheduled to end remain on Stripe at that point.
+    within 24 hours or set to end on a date other than their period end remain
+    on Stripe at that point.
+
+    Only cards are copied. A subscription paying with Link, SEPA Direct Debit,
+    or a US bank account (ACH) still moves, but Polar does not use that payment
+    method. It renews with another copied card for the same customer if there is
+    one. Otherwise its first Polar renewal fails and the customer is asked to add
+    a card.
 
   </Accordion>
 
@@ -336,6 +360,8 @@ Migrations** for assessment, card transfer, and cutover.
 - Polar must enable Migrations for the organization.
 - Stripe Connect platform accounts and Stripe accounts in India cannot use
   the automated flow. Direct those merchants to Polar support.
+- Subscriptions sold through Stripe Managed Payments are not moved yet and
+  stay on Stripe.
 - Switching is irreversible. Subscriptions renewing within about 24 hours
   stay on Stripe to avoid a billing conflict.
 - Real card copies require live Stripe accounts. Sandbox verifies application
@@ -496,7 +522,8 @@ mapping, expect only:
 - `customer.updated` when the import fills in billing details or the Stripe
   customer ID on a customer you already had in Polar
 - `customer.updated` when Polar sets a copied card as a customer's default
-  payment method
+  payment method. Copied Link, SEPA Direct Debit, and ACH payment methods are
+  not used, so they never trigger this event.
 
 At migration cutover, for each subscription, expect:
 

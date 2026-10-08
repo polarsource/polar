@@ -90,6 +90,23 @@ class TestWriteUpdates:
         await redis.write_updates({("customer", "count", 300, "count"): 1})
         assert 0 < await redis.redis.ttl("outpost:buckets:customer") <= BUCKET_TTL
 
+    async def test_refreshes_snapshot(
+        self, anyio_backend: str, redis: RedisStorage
+    ) -> None:
+        await redis.apply_snapshot(
+            {
+                "external_customer_id": "customer",
+                "sealed_until": 300,
+                "sealed": {"reducer": 1},
+                "buckets": [],
+            }
+        )
+        await redis.redis.expire("outpost:snapshot:customer", 10)
+
+        await redis.write_updates({("customer", "reducer", 300, "count"): 1})
+
+        assert await redis.redis.ttl("outpost:snapshot:customer") > 10
+
     async def test_empty(self, anyio_backend: str, redis: RedisStorage) -> None:
         await redis.write_updates({})
         assert await redis.redis.dbsize() == 0

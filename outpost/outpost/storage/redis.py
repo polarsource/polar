@@ -39,6 +39,9 @@ for i = 1, #KEYS, 2 do
             end
         end
         redis.call('EXPIRE', key, ttl)
+        if sealed_until then
+            redis.call('EXPIRE', snapshot_key, ttl)
+        end
     end
 end
 return 0

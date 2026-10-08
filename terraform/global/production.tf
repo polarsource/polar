@@ -703,6 +703,18 @@ resource "tfe_variable" "vercel_attio_startup_list_id_production" {
   }
 }
 
+resource "tfe_variable" "vercel_attio_design_partner_list_id_production" {
+  key             = "attio_design_partner_list_id"
+  category        = "terraform"
+  description     = "Attio design partner list ID for the Vercel production frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 resource "tfe_variable" "vercel_mcp_oauth2_client_id_production" {
   key             = "mcp_oauth2_client_id"
   category        = "terraform"

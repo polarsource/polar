@@ -1,99 +1,85 @@
 ---
-title: Building the next evolution of Polar
+title: The next evolution of Polar
 slug: building-the-next-evolution-of-polar
 description: Our mission to build the best substrate for metering, entitlements and billing
-created_at: 2026-10-05T12:00:00.000000+00:00
-draft: true
+created_at: 2026-10-08T12:00:00.000000+00:00
 ---
 
 <BlogHero
-  title="Building the next evolution of Polar"
+  title="The next evolution of Polar"
   description="Our mission to build the best substrate for metering, entitlements and billing"
-  publishDate="2026-10-05"
+  publishDate="2026-10-08"
 />
 
 ![Polar](/posts/blog/building-the-next-evolution-of-polar/cover.jpg)
 
 <InnerWrapper>
 
-Billing was built for a world where a customer was a person, a product was a seat and a price was set once a year. AI products are not sold that way.
+Billing was built for software with high and predictable margins. Gross and net revenue were almost the same. A customer was a person, a product was a seat, and prices rarely changed.
 
-### Billing is changing
+That's no longer true.
 
-#### Every request costs
+#### Every request comes with a cost
 
-Inference puts a real cost behind every action, and margin moves per customer, per model and per invocation. Most billing systems don't see that cost until the month is over.
+Frontier inference is leveraged behind more and more features being shipped. Margins therefore move per customer, per model and per request. Yet all billing platforms only help you track revenue when you need to be obsessing over unit economics from day one.
 
 #### Teams are not all humans
 
-One customer can spawn any number of agents, and each needs its own spending, credits and guardrails.
+Whether you sell to agents or spawn them for your customers, they operate at an order of magnitude faster than people, each needing their own metering, credits and guardrails. Latency to check any of them is now a substantial economical risk given their speed.
 
 #### Billing is now in the hot path
 
-Entitlement and credit checks run before every usage event, so any latency in a check is latency your users feel.
+Billing used to be integrated last and at the edge of codebases. Send customers to checkout and listen for webhooks to flip a boolean. Now usage, metering, credits and entitlements are checked across the entire codebase and make up most of the customer state. Latency and reliability has never been more important. So much so that many teams are bringing it in-house.
 
-We think metering, entitlements and billing are really one problem. So we're building one substrate for all three, and it's the next evolution of Polar.
+It's time for billing to be reimagined. So you can iterate on pricing with the same velocity and confidence as code, and leverage agents in the loop here too.
 
-### Where it started
+### Day 1
 
-These ideas started at our team offsite in Berlin, where we asked ourselves what we would build if we designed billing from scratch today, for products consumed by the token.
+Our team met up in Berlin late August. We called it Day 1 and explored what the future of billing should look like in a world where products are consumed by the token.
 
 ![The Polar team in discussion around a table at our offsite in Berlin](/posts/blog/building-the-next-evolution-of-polar/team-berlin.jpg)
 
-We went through the assumptions billing systems are built on, and kept finding that metering, entitlements and billing were hard to treat as separate problems.
+#### Zero Latency Metering
 
-### From prototype to validation in San Francisco
+Uptime will always be crucial in billing, but it now needs to be fault-tolerant and local-first by design. Why?
 
-We wanted to test the idea with the teams who would actually use it. So we built a working prototype and took it to San Francisco, where we pitched it to the startups, scaleups and enterprises that feel the limits of today's billing the most.
+1. Usage events yield costs, revenue and meters so they cannot be lost.
+2. Entitlement and credit checks are gatekeeping features so any latency is felt by users and their agents.
+
+We're building a local-first architecture to address these concerns and to offer zero network latency metering. You'll be able to leverage this for non-billable meters too, i.e product metrics, to track and visualize customer usage as well.
+
+#### Business Guardrails
+
+Costs are a first-class citizen in our event ingestion already, offering real-time unit economics per customer and even features through spans. Paired with zero latency metering, this will enable powerful new primitives in our SDK. We call them Signals.
+
+Want to downgrade a customer to a cheaper model once they reach a certain threshold of credits? Or rate-limit them in case margin drops below an acceptable minimum? Easy. Just register the credit or margin condition of interest and it will trigger once those conditions are met and at runtime. IFTTT for business concerns.
+
+#### Pricing as Code
+
+Billing has always been configured in a point and click dashboard and now backed by an API, MCP & CLI. We're taking it one step further.
+
+Pricing, plans, meters and entitlements all defined as code at the core that agents can reason about, tweak and optimize. Configuration living in your codebase next to the product they describe. Our SDK then offers type safety for business definitions too, e.g events, meters, plans.
+
+Changes are staged to a new version. You can branch out anytime. Seeing a beautiful diff of changes across meters, entitlements, prices and plans. Right next to a simulation of those changes applied to historical data and custom assumptions. You're now one click or CLI command away from deploying a new experiment with confidence.
+
+_Of course, merchants can still choose to manage their configuration through the dashboard as before if they prefer, and still get the benefits above. Just not additional type safety and version control directly as code._
+
+#### Identities
+
+Customers are not all humans these days. You might only sell to agents, spawn them on customers' behalf or not at all. All depending on entitlements, meters and credits.
+
+We're calling them identities whether they're human or machines. Identities can be nested, share entitlements, and delegate and propagate meters and credits between them within the nested hierarchy you design. Ensuring our SDK can offer the same powerful primitives, abstractions and guardrails regardless of which identity is the actor at runtime.
+
+### Design Partners
+
+In September, we built a working prototype and took it to San Francisco. Showing it to startups, scale-ups and enterprises that feel the limits of today's billing the most. The response was better than we had hoped for.
 
 ![Three members of the Polar team in San Francisco, with the bay and Alcatraz behind them](/posts/blog/building-the-next-evolution-of-polar/san-francisco.jpg)
 
-The response was better than we had hoped for. We came home with a lot of support and feedback, and much of it is already shaping what we build next.
+We're fully locked-in and will ship this vision with high velocity across iterations. Sharing learnings, demos and more as we build with our community.
 
-Here is what we're building. We're confident in some of it, and we expect other parts to change once more customers are running on it.
+We'd love to work with more startups that are feeling the pain of billing today. So if you're struggling with meters or iterating on pricing with velocity, we'd love to work with you.
 
-### Zero latency metering
-
-#### Everything is an event
-
-Usage, payments, credit grants, entitlements and inference costs are all recorded as events. Together they form one history of each customer, so every number can be traced back to the events behind it.
-
-#### Checks that answer instantly
-
-Balances and entitlements live right where your product runs, so a check adds no noticeable latency, even when an agent makes thousands of them.
-
-#### One source of truth
-
-Usage, credit balances and business metrics are all computed from the same events, so they can't drift apart.
-
-### Pricing confidence and velocity
-
-#### Unit economics built in
-
-Cost is recorded next to revenue, so you see what each customer, request and feature earns you as it happens.
-
-#### Business guardrails
-
-Rules that protect your margins apply before the cost is incurred. If a customer drops below the margin you want, move them to a cheaper model. If credit use spikes, slow it down.
-
-#### Branches and simulations
-
-Test new pricing against your real usage history before you ship it. You see what every customer would have paid and what you would have earned, so you know the effect of a pricing change before you make it.
-
-### Billing as code
-
-#### Your business, defined as code
-
-Pricing, meters and entitlements live in your codebase, next to the product they describe. They're reviewed in pull requests and deployed like everything else, whether the change comes from you or one of your agents.
-
-#### Typed end to end
-
-Every event and meter you define becomes a type. Your agents and your editor both know your pricing, and a malformed event is caught before it ships instead of showing up on a customer's invoice.
-
-### What comes next
-
-We want billing to be a function of events. Usage goes in and revenue comes out, and you know what every customer has used, is entitled to and costs to serve as it happens.
-
-We're early, and we'll keep writing about what we learn and ship along the way. If you're building an AI product and billing is already holding you back, we'd love to hear from you.
+<DesignPartnerSignup />
 
 </InnerWrapper>

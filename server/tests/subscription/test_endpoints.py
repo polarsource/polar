@@ -3,7 +3,6 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
@@ -43,7 +42,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def subscription_organization_second(
     save_fixture: SaveFixture,
     product_organization_second: Product,
@@ -56,7 +55,7 @@ async def subscription_organization_second(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListSubscriptions:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -309,7 +308,7 @@ class TestListSubscriptions:
         assert json["pagination"]["total_count"] == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateSubscription:
     async def test_anonymous(
         self,
@@ -428,7 +427,7 @@ class TestCreateSubscription:
         assert json["metadata"] == metadata
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionProductUpdate:
     async def test_anonymous(
         self, client: AsyncClient, session: AsyncSession, subscription: Subscription
@@ -753,7 +752,7 @@ class TestSubscriptionProductUpdate:
         assert pending_update["discount_unset"] is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionUpdateMetadata:
     @pytest.mark.auth
     async def test_valid(
@@ -806,7 +805,7 @@ class TestSubscriptionUpdateMetadata:
         assert updated_subscription["metadata"] == {"reference_id": "ABC"}
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionUpdateMixedFields:
     @pytest.mark.auth
     async def test_mixed_seats_and_discount_returns_422(
@@ -838,7 +837,7 @@ class TestSubscriptionUpdateMixedFields:
         assert response.status_code == 422
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionUpdateCancel:
     async def test_anonymous(
         self,
@@ -962,7 +961,7 @@ class TestSubscriptionUpdateCancel:
         assert updated_subscription["status"] == SubscriptionStatus.past_due
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionUpdateUncancel:
     async def test_anonymous(
         self,
@@ -1093,7 +1092,7 @@ class TestSubscriptionUpdateUncancel:
         }
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionUpdateRevoke:
     async def test_anonymous(
         self,
@@ -1184,7 +1183,7 @@ class TestSubscriptionUpdateRevoke:
         assert updated_subscription["customer_cancellation_comment"] == comment
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionRevoke:
     async def test_anonymous(
         self,
@@ -1245,7 +1244,7 @@ class TestSubscriptionRevoke:
         assert updated_subscription["status"] == SubscriptionStatus.canceled
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionUpdateSeats:
     async def test_anonymous(
         self, client: AsyncClient, subscription: Subscription
@@ -1465,7 +1464,7 @@ class TestSubscriptionUpdateSeats:
         assert updated["amount"] == 10000
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionUpdateTrial:
     @pytest.mark.auth
     async def test_end_trial_payment_failure_returns_402(
@@ -1552,7 +1551,7 @@ class TestSubscriptionUpdateTrial:
         assert datetime.fromisoformat(updated["trial_end"]) == new_trial_end
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionUpdateBillingPeriod:
     async def test_anonymous(
         self,
@@ -1707,7 +1706,7 @@ EXPORT_DEFAULT_HEADER = (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestExportSubscriptions:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/subscriptions/export")
@@ -2002,7 +2001,7 @@ class TestExportSubscriptions:
         assert response.status_code == 422
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetSubscription:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/subscriptions/{uuid.uuid4()}")
@@ -2051,7 +2050,7 @@ class TestGetSubscription:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetChargePreview:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/subscriptions/{uuid.uuid4()}/charge-preview")
@@ -2122,7 +2121,7 @@ class TestGetChargePreview:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetCancelPreview:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/subscriptions/{uuid.uuid4()}/cancel-preview")
@@ -2224,7 +2223,7 @@ class TestGetCancelPreview:
         assert json["outstanding_amount"] is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionUpdatePause:
     async def test_anonymous(
         self,
@@ -2328,7 +2327,7 @@ class TestSubscriptionUpdatePause:
         assert response.status_code == 409
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionUpdateResume:
     @pytest.mark.auth
     async def test_valid(

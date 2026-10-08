@@ -22,7 +22,7 @@ def stripe_service_mock(mocker: MockerFixture) -> StripeService:
     return mock
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestStripeConnectRefresh:
     async def test_missing_return_path(self, client: AsyncClient) -> None:
         response = await client.get("/v1/integrations/stripe/refresh")
@@ -152,7 +152,7 @@ class TestStripeConnectRefresh:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestWebhookAccountRisk:
     async def test_disabled_when_secret_unset(self, client: AsyncClient) -> None:
         # STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET defaults to "" in tests; the endpoint
@@ -175,7 +175,7 @@ def _request_without_signature() -> Request:
     return Request({"type": "http", "headers": []}, receive)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestWebhookEventGetter:
     async def test_empty_secret_returns_404(self) -> None:
         with pytest.raises(HTTPException) as exc_info:

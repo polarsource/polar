@@ -44,7 +44,7 @@ async def _add_member(
     await save_fixture(user_organization)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSendChargebackPreventionNotice:
     async def test_missing_refund_is_noop(
         self, enqueue_email_template_mock: MagicMock

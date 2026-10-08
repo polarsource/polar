@@ -28,7 +28,7 @@ def _task_spans(capfire: CaptureLogfire) -> list[ReadableSpan]:
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRunTask:
     @pytest.mark.parametrize(
         "exception",
@@ -177,7 +177,7 @@ class TestRunTask:
         assert seen == [datetime.datetime.fromtimestamp(1234567890, tz=datetime.UTC)]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRunTaskAgeLimit:
     async def test_stale_message_skipped(self, mocker: MockerFixture) -> None:
         task = mocker.AsyncMock()
@@ -229,7 +229,7 @@ class TestRunTaskAgeLimit:
         task.assert_called_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRunTaskDebounce:
     DEBOUNCE_KEY = "debounce:dummy:key"
 

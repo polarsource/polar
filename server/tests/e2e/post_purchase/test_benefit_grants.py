@@ -10,7 +10,6 @@ import uuid
 from typing import Any
 
 import pytest
-import pytest_asyncio
 from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy import select
@@ -53,7 +52,7 @@ async def _get_grants(session: AsyncSession, order_id: str) -> list[BenefitGrant
 # ---------------------------------------------------------------------------
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_with_custom_benefit(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -74,7 +73,7 @@ async def product_with_custom_benefit(
     return await set_product_benefits(save_fixture, product=product, benefits=[benefit])
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_with_license_key(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -100,7 +99,7 @@ async def product_with_license_key(
     return await set_product_benefits(save_fixture, product=product, benefits=[benefit])
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_with_meter_credit(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -127,7 +126,7 @@ async def product_with_meter_credit(
     return await set_product_benefits(save_fixture, product=product, benefits=[benefit])
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_with_feature_flag(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -148,7 +147,7 @@ async def product_with_feature_flag(
     return await set_product_benefits(save_fixture, product=product, benefits=[benefit])
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_with_downloadable(
     save_fixture: SaveFixture, organization: Organization, uploaded_logo_png: File
 ) -> Product:
@@ -176,7 +175,7 @@ async def product_with_downloadable(
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBenefitGrants:
     @E2E_AUTH
     async def test_custom_benefit_granted(

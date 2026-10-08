@@ -99,7 +99,7 @@ class TestToolsForScopes:
         assert tools_for_scopes(set()) == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestToolScopeGuards:
     async def test_get_metrics_denies_without_scope(self) -> None:
         deps = _deps(scopes=set())
@@ -190,7 +190,7 @@ def _live_deps(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetMetricsExplicitWindow:
     @pytest.mark.auth
     async def test_single_day_window(
@@ -214,7 +214,7 @@ class TestGetMetricsExplicitWindow:
         assert len(block.points) == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListChurnedSubscriptions:
     @pytest.mark.auth
     async def test_reasons_and_window(
@@ -341,7 +341,7 @@ class TestListChurnedSubscriptions:
         assert block.total_count == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetPayoutSummary:
     @pytest.mark.auth
     async def test_returns_a_payout_answer(
@@ -361,7 +361,7 @@ class TestGetPayoutSummary:
         assert deps.blocks == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListCheckoutsWindow:
     @pytest.mark.auth
     async def test_explicit_window(
@@ -387,7 +387,7 @@ class TestListCheckoutsWindow:
         assert len(deps.blocks) == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTopCustomersByRevenueWindow:
     @pytest.mark.auth
     async def test_single_day_window(
@@ -427,7 +427,7 @@ class TestTopCustomersByRevenueWindow:
         assert len(deps.blocks) == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListSubscriptionsLive:
     @pytest.mark.auth
     async def test_ended_filter(
@@ -605,7 +605,7 @@ class _FinishedAgent:
         return _FinishedRun()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestStreamAssistantRun:
     async def test_completed_turn_is_persisted_before_the_client_can_drop(
         self,

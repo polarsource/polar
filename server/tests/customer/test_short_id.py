@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from polar.models.customer import short_id_to_base26
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_generate_customer_short_id_function(session: AsyncSession) -> None:
     """Test that the PostgreSQL generate_customer_short_id() function works correctly."""
 
@@ -33,7 +33,7 @@ async def test_generate_customer_short_id_function(session: AsyncSession) -> Non
     assert short_id3 > short_id2
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_customer_short_id_to_base26(session: AsyncSession) -> None:
     """Test that short_id converts to base-26 correctly."""
 

@@ -4,7 +4,6 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
@@ -96,14 +95,14 @@ def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
     return mock.calculate
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def checkout_open(
     save_fixture: SaveFixture, product_one_time: Product
 ) -> Checkout:
     return await create_checkout(save_fixture, products=[product_one_time])
 
 
-@pytest_asyncio.fixture(autouse=True)
+@pytest.fixture(autouse=True)
 async def webhook_endpoint(
     save_fixture: SaveFixture, organization: Organization
 ) -> WebhookEndpoint:
@@ -135,7 +134,7 @@ async def create_blocked_product(
     return product
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     @pytest.mark.auth
     async def test_valid(
@@ -172,7 +171,7 @@ class TestList:
         assert len(json["items"]) == len(checkouts)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGet:
     async def test_anonymous(
         self, api_prefix: str, client: AsyncClient, checkout_open: Checkout
@@ -237,7 +236,7 @@ class TestGet:
         assert "product_price" in json
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateCheckout:
     async def test_anonymous(
         self, api_prefix: str, client: AsyncClient, product: Product
@@ -605,7 +604,7 @@ class TestCreateCheckout:
         assert ad_hoc_price["tiers"] == tiers
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateCheckout:
     async def test_anonymous(
         self, api_prefix: str, client: AsyncClient, checkout_open: Checkout
@@ -758,7 +757,7 @@ class TestUpdateCheckout:
         assert json["discount"]["id"] == str(discount.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestClientGet:
     async def test_not_existing(self, api_prefix: str, client: AsyncClient) -> None:
         response = await client.get(f"{api_prefix}/client/123")
@@ -850,7 +849,7 @@ class TestClientGet:
         assert str(private_benefit.id) not in benefit_ids
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestClientUpdate:
     async def test_not_existing(self, api_prefix: str, client: AsyncClient) -> None:
         response = await client.patch(
@@ -935,7 +934,7 @@ class TestClientUpdate:
         assert json["discount"]["code"] == "TESTDISCOUNT50"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestClientConfirm:
     async def test_not_existing(self, api_prefix: str, client: AsyncClient) -> None:
         response = await client.post(
@@ -1052,7 +1051,7 @@ class TestClientConfirm:
         assert json["discount"]["code"] == "TESTDISCOUNT50"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestClientCancelPayment:
     async def test_not_existing(self, api_prefix: str, client: AsyncClient) -> None:
         response = await client.post(f"{api_prefix}/client/123/cancel-payment")
@@ -1091,7 +1090,7 @@ class TestClientCancelPayment:
         assert "intent_client_secret" not in json["payment_processor_metadata"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestClientOpened:
     async def test_not_existing(self, api_prefix: str, client: AsyncClient) -> None:
         response = await client.post(f"{api_prefix}/client/123/opened", json={})
@@ -1179,7 +1178,7 @@ class TestClientOpened:
         assert updated_checkout.analytics_metadata.get("distinct_id") == "original-id"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestClientEmbedPolicy:
     async def test_not_existing(self, api_prefix: str, client: AsyncClient) -> None:
         response = await client.get(f"{api_prefix}/client/123/embed-policy")

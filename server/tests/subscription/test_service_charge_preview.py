@@ -75,7 +75,7 @@ def set_tax(tax_mock: MagicMock, amount: int) -> None:
     tax_mock.calculate = AsyncMock(side_effect=calculate)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCalculateChargePreview:
     async def test_fixed_price_only(
         self,
@@ -408,7 +408,7 @@ class TestCalculateChargePreview:
         assert preview.net_amount == 7500
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCalculateChargePreviewTaxMatchesOrder:
     """Any non-zero amount is taxed — negated for a credit — and an unset tax
     behavior falls back to the organization's default, as `order.amounts` does.
@@ -490,7 +490,7 @@ class TestCalculateChargePreviewTaxMatchesOrder:
         tax_mock.calculate.assert_called_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCalculateChargePreviewPersistsNothing:
     async def test_pending_update_is_previewed_but_not_persisted(
         self,

@@ -10,7 +10,6 @@ from uuid import UUID
 
 import boto3
 import pytest
-import pytest_asyncio
 from botocore.config import Config
 from httpx import AsyncClient, Response
 from minio import Minio
@@ -306,7 +305,7 @@ def non_ascii_file_name() -> TestFile:
     return TestFile("étonnante-🦄.png")
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def uploaded_logo_png(session: AsyncSession, organization: Organization) -> File:
     img = TestFile("logo.png")
     return await uploaded_fixture(session, organization, img)
@@ -317,7 +316,7 @@ def logo_jpg() -> TestFile:
     return TestFile("logo.jpg")
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def uploaded_logo_jpg(session: AsyncSession, organization: Organization) -> File:
     img = TestFile("logo.jpg")
     return await uploaded_fixture(session, organization, img)

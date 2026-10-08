@@ -9,7 +9,7 @@ from polar.kit.versioning import APIVersion
 from polar.version import V2027_01, VERSIONS
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.parametrize("version", VERSIONS)
 async def test_openapi(version: APIVersion, client: AsyncClient) -> None:
     response = await client.get(f"{version}/openapi.json")
@@ -23,7 +23,7 @@ async def test_openapi(version: APIVersion, client: AsyncClient) -> None:
     assert "subscription.migrated" in schema["webhooks"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.parametrize(
     "version", [pytest.param(v, id=str(v)) for v in VERSIONS if v != V2027_01]
 )

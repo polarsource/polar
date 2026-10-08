@@ -85,6 +85,49 @@ async def list(
 
 
 @router.get(
+    "/",
+    name="list",
+    summary="List Meters",
+    response_model=ListResource[MeterSchema],
+    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
+)
+@version(starting_from=V2027_01)
+async def list_v2027_01(
+    auth_subject: auth.MeterRead,
+    pagination: PaginationParamsQuery,
+    sorting: sorting.ListSorting,
+    metadata: MetadataQuery,
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    ),
+    external_id: MultipleQueryFilter[str] | None = Query(
+        None, title="ExternalID Filter", description="Filter by meter external ID."
+    ),
+    query: str | None = Query(None, description="Filter by name."),
+    is_archived: bool | None = Query(None, description="Filter on archived meters."),
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> ListResource[MeterSchema]:
+    """List meters."""
+    results, count = await meter_service.list(
+        session,
+        auth_subject,
+        organization_id=organization_id,
+        external_id=external_id,
+        metadata=metadata,
+        query=query,
+        is_archived=is_archived,
+        pagination=pagination,
+        sorting=sorting,
+    )
+
+    return ListResource.from_paginated_results(
+        [MeterSchema.model_validate(result) for result in results],
+        count,
+        pagination,
+    )
+
+
+@router.get(
     "/external/{external_id}",
     summary="Get Meter by External ID",
     openapi_extra=cli_preview(("id", "ID"), ("name", "Name"), ("unit", "Unit")),

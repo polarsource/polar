@@ -12,7 +12,7 @@ from polar.kit.encryption import (
 CONTEXT = {"table": "slack_apps", "column": "bot_token"}
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_encrypt_decrypt_roundtrip() -> None:
     secret = await EncryptedString.encrypt("xoxb-1234", context=CONTEXT)
     assert secret.encrypted_value.startswith("v1.")
@@ -20,7 +20,7 @@ async def test_encrypt_decrypt_roundtrip() -> None:
     assert await secret.decrypt() == "xoxb-1234"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_encrypt_sync_roundtrips_through_async_decrypt() -> None:
     secret = EncryptedString.encrypt_sync("xoxb-1234", context=CONTEXT)
     assert secret.encrypted_value.startswith("v1.")
@@ -28,20 +28,20 @@ async def test_encrypt_sync_roundtrips_through_async_decrypt() -> None:
     assert await secret.decrypt() == "xoxb-1234"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_decrypt_sync_roundtrips_through_async_encrypt() -> None:
     secret = await EncryptedString.encrypt("xoxb-1234", context=CONTEXT)
     assert secret.decrypt_sync() == "xoxb-1234"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_each_encryption_uses_a_fresh_data_key() -> None:
     first = await EncryptedString.encrypt("same", context=CONTEXT)
     second = await EncryptedString.encrypt("same", context=CONTEXT)
     assert first.encrypted_value != second.encrypted_value
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_context_binds_ciphertext_to_its_row() -> None:
     encrypted = await EncryptedString.encrypt(
         "xoxb-1234", context={**CONTEXT, "id": "row-1"}
@@ -70,7 +70,7 @@ def test_decrypt_sync_binds_ciphertext_to_its_row() -> None:
         loaded.decrypt_sync(id="row-2")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_tampered_ciphertext_fails_closed() -> None:
     secret = await EncryptedString.encrypt("xoxb-1234", context=CONTEXT)
     version, wrapped, nonce, ciphertext = secret.encrypted_value.split(".")
@@ -81,7 +81,7 @@ async def test_tampered_ciphertext_fails_closed() -> None:
         await tampered.decrypt()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_unsupported_version_raises() -> None:
     secret = await EncryptedString.encrypt("xoxb-1234", context=CONTEXT)
     _, rest = secret.encrypted_value.split(".", 1)
@@ -104,7 +104,7 @@ def test_context_is_copied_not_aliased() -> None:
     assert secret.context == {"table": "t", "column": "c"}
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_local_key_provider_rejects_wrong_context() -> None:
     provider = LocalKeyProvider("local-key")
     _, wrapped = await provider.generate_data_key(CONTEXT)

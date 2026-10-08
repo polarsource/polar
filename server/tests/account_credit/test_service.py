@@ -15,7 +15,7 @@ from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGrant:
     async def test_grant_without_organization(
         self,
@@ -109,7 +109,7 @@ class TestGrant:
         assert account.credit_balance == initial_balance + 3000
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRevoke:
     async def test_revoke_credit(
         self,
@@ -143,7 +143,7 @@ class TestRevoke:
         assert account.credit_balance == initial_balance - 5000
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetActive:
     async def test_get_active_credits(
         self,

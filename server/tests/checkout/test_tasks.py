@@ -37,7 +37,7 @@ async def _create_checkout(
     return checkout
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAnonymizeExpired:
     async def test_scrubs_checkouts_past_retention(
         self,

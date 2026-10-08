@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import Select, and_, case, func, select
-from sqlalchemy.orm import contains_eager, joinedload, selectinload
+from sqlalchemy.orm import contains_eager, joinedload, selectinload, undefer
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.currency import PresentmentCurrency
@@ -52,6 +52,25 @@ class ProductRepository(
             .options(*options)
         )
         return await self.get_one_or_none(statement)
+
+    async def get_all_by_external_ids(
+        self,
+        organization_id: UUID,
+        external_ids: Sequence[str],
+        *,
+        for_update: bool = False,
+    ) -> Sequence[Product]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Product.organization_id == organization_id,
+                Product.external_id.in_(external_ids),
+            )
+            .options(undefer(Product.external_id), *self.get_eager_options())
+        )
+        if for_update:
+            statement = statement.with_for_update(of=Product, key_share=True)
+        return await self.get_all(statement)
 
     async def lock_metadata_reference(self, key: str, value: str) -> None:
         """Serialize writers finding or creating a product by this metadata."""

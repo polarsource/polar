@@ -3,7 +3,6 @@ from typing import Any
 
 import httpx
 import pytest
-import pytest_asyncio
 from fastapi import FastAPI
 from httpx_ws.transport import ASGIWebSocketTransport
 from sqlalchemy.ext.asyncio import async_sessionmaker
@@ -43,7 +42,7 @@ class IsolatedSessionTestClient(httpx.AsyncClient):
         return await super().request(*args, **kwargs)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def app(
     auth_subject: AuthSubject[Subject], session: AsyncSession, redis: Redis
 ) -> AsyncGenerator[FastAPI]:
@@ -59,7 +58,7 @@ async def app(
     polar_app.dependency_overrides.pop(get_db_session)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def client(
     app: FastAPI,
     session: AsyncSession,
@@ -74,6 +73,8 @@ async def client(
     sessionmaker = async_sessionmaker(bind=session.bind, expire_on_commit=False)
 
     async def app_with_state(scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "websocket":
+            scope.setdefault("extensions", {})["websocket.http.response"] = {}
         scope.setdefault("state", {}).update(
             auth_subject=auth_subject, async_sessionmaker=sessionmaker
         )
@@ -84,7 +85,7 @@ async def client(
         auto_expunge=auto_expunge,
         transport=(
             ASGIWebSocketTransport(app=app_with_state)
-            if request.node.get_closest_marker("anyio") is not None
+            if request.node.get_closest_marker("websocket") is not None
             else httpx.ASGITransport(app=app_with_state)
         ),
         base_url="http://test",
@@ -98,7 +99,7 @@ def api_version(request: pytest.FixtureRequest) -> APIVersion | None:
     return getattr(request, "param", None)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def anyio_backend() -> str:
     return "asyncio"
 

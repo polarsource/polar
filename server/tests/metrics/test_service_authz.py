@@ -7,7 +7,7 @@ from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestResolveTinybirdFiltersAuthz:
     @pytest.mark.auth
     async def test_user_passing_foreign_org_is_filtered_out(

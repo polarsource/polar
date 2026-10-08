@@ -291,7 +291,7 @@ class TestSignWebhook:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_webhook_send(
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -321,7 +321,7 @@ async def test_webhook_send(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_webhook_send_subscription_migrated(
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -362,7 +362,7 @@ async def test_webhook_send_subscription_migrated(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_webhook_send_not_subscribed_to_event(
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -387,7 +387,7 @@ async def test_webhook_send_not_subscribed_to_event(
     enqueue_job_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.parametrize(
     ("response", "expected"),
     [
@@ -441,7 +441,7 @@ async def test_webhook_delivery_success(
     assert delivery.response == expected
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_webhook_delivery_500(
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -495,7 +495,7 @@ async def test_webhook_delivery_500(
         assert delivery.succeeded is False
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_webhook_delivery_http_error(
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -546,7 +546,7 @@ async def test_webhook_delivery_http_error(
         assert delivery.succeeded is False
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_webhook_standard_webhooks_compatible(
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -582,7 +582,7 @@ async def test_webhook_standard_webhooks_compatible(
     assert w.verify(request.content, cast(dict[str, str], request.headers)) is not None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_webhook_legacy_signature_when_secret_generated_before_cutoff(
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -618,7 +618,7 @@ async def test_webhook_legacy_signature_when_secret_generated_before_cutoff(
     assert w.verify(request.content, cast(dict[str, str], request.headers)) is not None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_webhook_spec_signature_when_secret_generated_at_cutoff(
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -655,7 +655,7 @@ async def test_webhook_spec_signature_when_secret_generated_at_cutoff(
     assert w.verify(request.content, cast(dict[str, str], request.headers)) is not None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSlackSubscriptionPayload:
     async def test_canceled_includes_customer_and_reason(
         self, organization: Organization, subscription: Subscription
@@ -763,7 +763,7 @@ class TestSlackSubscriptionPayload:
         assert "previous_product_name" not in payload.get_raw_payload()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDiscordSubscriptionPayload:
     async def test_canceled_includes_customer_and_reason(
         self, organization: Organization, subscription: Subscription

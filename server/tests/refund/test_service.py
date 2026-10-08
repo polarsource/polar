@@ -203,7 +203,7 @@ class StripeRefund:
         return updated, response
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate(StripeRefund):
     async def test_missing_payment_transaction(
         self,
@@ -638,7 +638,7 @@ class TestCreate(StripeRefund):
         assert refund.revoke_benefits is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateFromDispute:
     async def test_valid(
         self,
@@ -770,7 +770,7 @@ class TestCreateFromDispute:
         assert refund_transaction_service_mock.create.call_count == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdatedWebhooks(StripeRefund):
     async def test_valid(
         self,
@@ -864,7 +864,7 @@ class TestUpdatedWebhooks(StripeRefund):
         refund_transaction_service_mock.revert.assert_awaited_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOrderUpdatedWebhook(StripeRefund):
     """Test that order.updated webhook is sent when refunds are processed."""
 
@@ -978,7 +978,7 @@ class TestOrderUpdatedWebhook(StripeRefund):
         assert_order_updated_webhook_called(send_webhook_mock)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOrganizationRefundsBlocked:
     async def test_create_refund_blocked_by_organization(
         self,
@@ -1082,7 +1082,7 @@ def _notice_calls(enqueue_job_mock: MagicMock) -> list[Any]:
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestChargebackPreventionNotice:
     async def test_enqueues_on_create_from_dispute(
         self,

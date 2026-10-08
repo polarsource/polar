@@ -296,7 +296,7 @@ scenario, with descriptive names.
 
 ```python
 # tests/{module}/test_service.py
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate:
     @pytest.mark.auth
     async def test_valid(
@@ -325,7 +325,7 @@ fixture param only when the body still needs it (e.g. `user.id`).
 
 ```python
 # tests/{module}/test_endpoints.py
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListResources:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/resources/")

@@ -26,7 +26,7 @@ def generate_signature(payload: str, key: ec.EllipticCurvePrivateKey) -> str:
     return base64.b64encode(signature).decode()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestVerifySignature:
     async def test_invalid_signature(self, mocker: MockerFixture) -> None:
         mocker.patch.object(
@@ -63,7 +63,7 @@ class TestVerifySignature:
         assert result is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestValidatePayload:
     @pytest.mark.parametrize(
         "payload",

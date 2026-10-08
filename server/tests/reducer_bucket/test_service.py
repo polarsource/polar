@@ -86,7 +86,7 @@ class TestGetReducerBucketKey:
         assert "jane@example.com" not in key
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRollup:
     async def test_keeps_current_and_previous_bucket(
         self,
@@ -126,7 +126,7 @@ class TestRollup:
         assert await redis.exists(outdated) == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRollupActive:
     @pytest.mark.parametrize(
         ("aggregation", "read", "expected"),

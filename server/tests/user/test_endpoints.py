@@ -12,7 +12,7 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.auth
 async def test_get_users_me_authed(user: User, client: AsyncClient) -> None:
     response = await client.get("/v1/users/me")
@@ -25,7 +25,7 @@ async def test_get_users_me_authed(user: User, client: AsyncClient) -> None:
     assert json["organizations"] == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.auth
 async def test_get_users_me_embeds_organizations_with_role(
     client: AsyncClient,
@@ -49,7 +49,7 @@ async def test_get_users_me_embeds_organizations_with_role(
     assert OrganizationPermission.organization_manage in permissions
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.auth
 async def test_get_users_me_embeds_member_permissions_without_admin_scopes(
     client: AsyncClient,
@@ -68,7 +68,7 @@ async def test_get_users_me_embeds_member_permissions_without_admin_scopes(
     assert OrganizationPermission.organization_manage not in permissions
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.auth
 async def test_get_users_me_embeds_finance_permissions(
     client: AsyncClient,
@@ -94,7 +94,7 @@ async def test_get_users_me_embeds_finance_permissions(
     }
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.auth
 async def test_get_users_me_excludes_blocked_organizations(
     client: AsyncClient,
@@ -114,7 +114,7 @@ async def test_get_users_me_excludes_blocked_organizations(
     assert response.json()["organizations"] == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.auth
 async def test_get_users_me_excludes_sso_enforced_org_for_global_session(
     client: AsyncClient,
@@ -145,7 +145,7 @@ async def test_get_users_me_excludes_sso_enforced_org_for_global_session(
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.auth
 async def test_get_users_me_includes_sso_enforced_org_for_sso_session(
     client: AsyncClient,
@@ -177,14 +177,14 @@ async def test_get_users_me_includes_sso_enforced_org_for_sso_session(
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_get_users_me_no_auth(client: AsyncClient) -> None:
     response = await client.get("/v1/users/me")
 
     assert response.status_code == 401
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteUser:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.delete("/v1/users/me")
@@ -260,7 +260,7 @@ class TestDeleteUser:
         assert json["deleted"] is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestImpersonationGate:
     """Sessions with ``READ_ONLY_SCOPES`` (i.e. backoffice impersonation)
     can read user-personal endpoints but cannot mutate them."""
@@ -283,7 +283,7 @@ class TestImpersonationGate:
         assert response.status_code == 403
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetMyNotificationSettings:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -333,7 +333,7 @@ class TestGetMyNotificationSettings:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateMyNotificationSettings:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization

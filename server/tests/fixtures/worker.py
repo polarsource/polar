@@ -4,7 +4,6 @@ from typing import Any
 import dramatiq
 import httpx
 import pytest
-import pytest_asyncio
 from dramatiq.middleware.current_message import CurrentMessage
 from pytest_mock import MockerFixture
 
@@ -18,11 +17,14 @@ from polar.worker._sqlalchemy import SQLAlchemyMiddleware
 
 
 @pytest.fixture(autouse=True)
-def set_job_queue_manager_context() -> None:
-    _job_queue_manager.set(JobQueueManager())
+def set_job_queue_manager_context() -> Iterator[JobQueueManager]:
+    manager = JobQueueManager()
+    token = _job_queue_manager.set(manager)
+    yield manager
+    _job_queue_manager.reset(token)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def httpx_client() -> AsyncIterator[httpx.AsyncClient]:
     client = httpx.AsyncClient()
     yield client
@@ -50,6 +52,18 @@ def current_message() -> Iterator[dramatiq.Message[Any]]:
         kwargs={},
         options={"retries": 0, "max_retries": settings.WORKER_MAX_RETRIES},
     )
-    CurrentMessage._MESSAGE.set(message)
+    token = CurrentMessage._MESSAGE.set(message)
     yield message
-    CurrentMessage._MESSAGE.set(None)
+    CurrentMessage._MESSAGE.reset(token)
+
+
+@pytest.fixture(autouse=True)
+async def worker_context(
+    set_job_queue_manager_context: JobQueueManager | None,
+    current_message: dramatiq.Message[Any] | None,
+) -> AsyncIterator[None]:
+    manager_token = _job_queue_manager.set(set_job_queue_manager_context)
+    message_token = CurrentMessage._MESSAGE.set(current_message)
+    yield
+    CurrentMessage._MESSAGE.reset(message_token)
+    _job_queue_manager.reset(manager_token)

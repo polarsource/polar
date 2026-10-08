@@ -48,7 +48,7 @@ async def _resolve(
     return list(await repository.resolve_pending_parents(event_ids))
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestResolvePendingParents:
     async def test_render_nulls_uses_single_insert(
         self, save_fixture: SaveFixture, session: AsyncSession, account: Account

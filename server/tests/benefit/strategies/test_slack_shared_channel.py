@@ -139,7 +139,7 @@ def _strategy(
     return strategy
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSlackSharedChannelGrant:
     async def test_grant_happy_path(
         self,
@@ -1752,7 +1752,7 @@ class TestSlackSharedChannelGrant:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSlackSharedChannelRevoke:
     async def test_revoke_archives_when_enabled(
         self,
@@ -2149,7 +2149,7 @@ class TestSlackSharedChannelRevoke:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSlackSharedChannelValidate:
     @pytest.mark.auth
     async def test_validate_properties_accepts_installed_integration(

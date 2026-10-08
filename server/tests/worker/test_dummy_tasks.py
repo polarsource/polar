@@ -10,7 +10,7 @@ from polar.redis import Redis
 from polar.worker import RedisMiddleware
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_dummy_task_uses_database_and_redis(
     redis: Redis, mocker: MockerFixture
 ) -> None:

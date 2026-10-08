@@ -3,7 +3,6 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
@@ -17,14 +16,14 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_order, create_product_unit_based
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def orders(
     save_fixture: SaveFixture, product: Product, customer: Customer
 ) -> list[Order]:
     return [await create_order(save_fixture, product=product, customer=customer)]
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def order_organization_second(
     save_fixture: SaveFixture,
     product_organization_second: Product,
@@ -37,7 +36,7 @@ async def order_organization_second(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListOrders:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/orders/")
@@ -208,7 +207,7 @@ class TestListOrders:
         assert str(order_organization_second.id) not in returned_ids
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetOrder:
     async def test_anonymous(self, client: AsyncClient, orders: list[Order]) -> None:
         response = await client.get(f"/v1/orders/{orders[0].id}")
@@ -309,7 +308,7 @@ class TestGetOrder:
         ] == next_attempt.isoformat().replace("+00:00", "Z")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestExportOrders:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/orders/export")
@@ -586,7 +585,7 @@ class TestExportOrders:
         assert response.status_code == 422
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateOrder:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.patch(f"/v1/orders/{uuid.uuid4()}")
@@ -608,7 +607,7 @@ class TestUpdateOrder:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGenerateOrderInvoice:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(f"/v1/orders/{uuid.uuid4()}/invoice")
@@ -629,7 +628,7 @@ class TestGenerateOrderInvoice:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetOrderInvoice:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/orders/{uuid.uuid4()}/invoice")
@@ -650,7 +649,7 @@ class TestGetOrderInvoice:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetOrderReceipt:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/orders/{uuid.uuid4()}/receipt")
@@ -728,7 +727,7 @@ class TestGetOrderReceipt:
         assert response.json() == {"url": "https://example.com/signed-url"}
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def off_session_organization(
     save_fixture: SaveFixture, organization: Organization
 ) -> Organization:
@@ -740,7 +739,7 @@ async def off_session_organization(
     return organization
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateOrder:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post("/v1/orders/", json={})
@@ -885,7 +884,7 @@ class TestCreateOrder:
         assert response.status_code == 422
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFinalizeOrderEndpoint:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(f"/v1/orders/{uuid.uuid4()}/finalize", json={})

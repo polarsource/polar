@@ -32,7 +32,7 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     return mock
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetOrder:
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_excludes_non_public_benefits(
@@ -69,7 +69,7 @@ class TestGetOrder:
         assert str(private_benefit.id) not in benefit_ids
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetPaymentStatus:
     async def test_anonymous(
         self,
@@ -183,7 +183,7 @@ class TestGetPaymentStatus:
         assert json["error"] == "Your card was declined."
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestConfirmRetryPayment:
     async def test_anonymous(
         self,
@@ -482,7 +482,7 @@ class TestConfirmRetryPayment:
         assert response.status_code >= 409
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetOrderReceipt:
     async def test_anonymous(
         self,

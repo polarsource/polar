@@ -25,7 +25,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetSucceededPaymentsStats:
     async def test_uses_transaction_amount_in_usd(
         self,
@@ -92,7 +92,7 @@ class TestGetSucceededPaymentsStats:
         assert total_amount == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetRiskScores:
     async def test_includes_succeeded_and_failed(
         self,
@@ -145,7 +145,7 @@ class TestGetRiskScores:
         assert risk_scores == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetRefundStats:
     async def test_uses_transaction_amount_in_usd(
         self,
@@ -303,7 +303,7 @@ class TestGetRefundStats:
         assert refund_amount == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetDisputeStats:
     async def test_uses_transaction_amount_in_usd(
         self,

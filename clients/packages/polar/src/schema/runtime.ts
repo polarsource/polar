@@ -3,9 +3,7 @@ import type { MeterAggregation, MeterFilter } from './meter'
 
 export type EventConfig = EventSchema | Record<string, never>
 
-export type RuntimeBenefitConfig = {
-  readonly id?: string
-}
+export type RuntimeBenefitConfig = object
 
 export type RuntimeFilter = MeterFilter
 

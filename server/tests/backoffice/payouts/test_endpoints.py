@@ -3,7 +3,6 @@ from collections.abc import AsyncGenerator
 
 import httpx
 import pytest
-import pytest_asyncio
 from pytest_mock import MockerFixture
 
 from polar.backoffice import app as backoffice_app
@@ -18,7 +17,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_payout, create_payout_account
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def backoffice_client(
     session: AsyncSession, user: User
 ) -> AsyncGenerator[httpx.AsyncClient]:
@@ -38,7 +37,7 @@ async def backoffice_client(
         backoffice_app.dependency_overrides.pop(get_admin, None)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     async def test_status_filter_keeps_selected_status(
         self, backoffice_client: httpx.AsyncClient
@@ -54,7 +53,7 @@ class TestList:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMarkPaid:
     async def test_button_and_confirmation(
         self,
@@ -142,7 +141,7 @@ class TestMarkPaid:
         assert "Mark as Paid" not in response.text
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGet:
     async def test_manual_pending_shows_mark_as_paid_not_retry(
         self,
@@ -195,7 +194,7 @@ class TestGet:
         assert "Mark as Paid" not in response.text
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRetry:
     async def test_get_manual_payout_returns_400(
         self,

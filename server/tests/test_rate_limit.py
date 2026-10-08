@@ -1,8 +1,7 @@
 import re
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import Sequence
 
 import pytest
-import pytest_asyncio
 from fakeredis import FakeAsyncRedis
 from ratelimit import Rule
 
@@ -22,9 +21,9 @@ from polar.rate_limit import (
 from polar.redis import Redis
 
 
-@pytest_asyncio.fixture
-async def redis() -> AsyncIterator[Redis]:
-    yield FakeAsyncRedis(decode_responses=True)
+@pytest.fixture
+async def redis() -> Redis:
+    return FakeAsyncRedis(decode_responses=True)
 
 
 def _http_scope(
@@ -96,7 +95,7 @@ class TestSessionCookie:
         assert _session_cookie(scope) is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestIdentityCacheRoundTrip:
     async def test_write_then_read_via_authenticate(self, redis: Redis) -> None:
         token = "polar_pat_round_trip"
@@ -128,7 +127,7 @@ class TestIdentityCacheRoundTrip:
         assert await redis.exists(_identity_cache_key(token)) == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAuthenticate:
     async def test_cache_miss_uses_token_hash_pending_auth(self, redis: Redis) -> None:
         identity = await _authenticate(

@@ -16,7 +16,7 @@ from tests.fixtures.random_objects import create_payment, create_payment_transac
 from tests.transaction.conftest import create_transaction
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCheck:
     @pytest.mark.parametrize("count", [0, 1, 10, 15])
     async def test_missing_transactions(

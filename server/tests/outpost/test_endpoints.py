@@ -3,7 +3,6 @@ from decimal import Decimal
 import httpx
 import httpx_ws
 import pytest
-import pytest_asyncio
 
 from polar.models import Customer, CustomerMeter, Meter
 from polar.outpost.stream import publish
@@ -11,12 +10,12 @@ from polar.redis import Redis
 from tests.fixtures import AuthSubjectFixture, SaveFixture
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def customer_meter(
-    save_fixture: SaveFixture, customer: Customer, meter: Meter
+    save_fixture: SaveFixture, customer_external_id: Customer, meter: Meter
 ) -> CustomerMeter:
     customer_meter = CustomerMeter(
-        customer=customer,
+        customer=customer_external_id,
         meter=meter,
         consumed_units=Decimal(90),
         credited_units=100,
@@ -28,11 +27,13 @@ async def customer_meter(
 
 
 @pytest.mark.anyio
+@pytest.mark.websocket
 class TestOutpost:
     async def test_anonymous(self, client: httpx.AsyncClient, meter: Meter) -> None:
-        with pytest.raises(httpx_ws.WebSocketDisconnect):
+        with pytest.raises(httpx_ws.WebSocketUpgradeError) as exc:
             async with httpx_ws.aconnect_ws("/v1/outpost/", client=client):
                 pass
+        assert exc.value.response.status_code == 401
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_request_configuration(
@@ -46,15 +47,23 @@ class TestOutpost:
             assert response["payload"]["meters"][0]["id"] == str(meter.id)
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.parametrize("customer_key", ["customer_id", "external_customer_id"])
     async def test_request_customer_meter(
-        self, client: httpx.AsyncClient, customer_meter: CustomerMeter
+        self,
+        client: httpx.AsyncClient,
+        customer_meter: CustomerMeter,
+        customer_key: str,
     ) -> None:
+        customer_value = {
+            "customer_id": str(customer_meter.customer_id),
+            "external_customer_id": customer_meter.customer.external_id,
+        }[customer_key]
         async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
             await websocket.send_json(
                 {
                     "type": "customer_meter",
                     "payload": {
-                        "customer_id": str(customer_meter.customer_id),
+                        customer_key: customer_value,
                         "meter_id": str(customer_meter.meter_id),
                     },
                 }
@@ -63,6 +72,10 @@ class TestOutpost:
 
             assert response["type"] == "customer_meter"
             assert response["payload"]["customer_id"] == str(customer_meter.customer_id)
+            assert (
+                response["payload"]["external_customer_id"]
+                == customer_meter.customer.external_id
+            )
             assert response["payload"]["meter_id"] == str(customer_meter.meter_id)
             assert response["payload"]["consumed_units"] == 90.0
             assert response["payload"]["credited_units"] == 100
@@ -86,6 +99,10 @@ class TestOutpost:
 
             assert response["type"] == "customer_meter"
             assert response["payload"]["customer_id"] == str(customer_meter.customer_id)
+            assert (
+                response["payload"]["external_customer_id"]
+                == customer_meter.customer.external_id
+            )
             assert response["payload"]["meter_id"] == str(customer_meter.meter_id)
             assert response["payload"]["consumed_units"] == 90.0
             assert response["payload"]["credited_units"] == 100

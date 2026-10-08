@@ -67,6 +67,10 @@ class CustomerMeter(RecordModel):
             return None
         return self.last_balanced_event.ingest_sequence
 
+    @property
+    def external_customer_id(self) -> str | None:
+        return self.customer.external_id
+
     organization: AssociationProxy["Organization"] = association_proxy(
         "customer", "organization"
     )

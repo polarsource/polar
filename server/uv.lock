@@ -1012,18 +1012,19 @@ lua = [
 
 [[package]]
 name = "fastapi"
-version = "0.141.1"
+version = "0.142.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-doc" },
+    { name = "opentelemetry-api" },
     { name = "pydantic" },
     { name = "starlette" },
     { name = "typing-extensions" },
     { name = "typing-inspection" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8a/02/91e3416a8fdd715abb903a952a6bec7cdd8d14eed55d415fc8595524c319/fastapi-0.141.1.tar.gz", hash = "sha256:e8822fc40db1e1858054d7a949a888695bc9bdce70139178e33bd2871a453ca1", size = 425799, upload-time = "2026-07-29T17:18:05.568Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a3/d4/96b417c2ec88df6be2fe90010e6e23c5323eeb2160c6cb0108f99707c130/fastapi-0.142.1.tar.gz", hash = "sha256:761663e3e6939da45f997a6f68362abc0fa9d8606e76d504f15f806d2281581d", size = 466491, upload-time = "2026-09-29T22:36:22.34Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/cb/03/10388a42375ee7e4ac9b94eb2c5c569c8b5795e377e701c9ac3ad63de890/fastapi-0.141.1-py3-none-any.whl", hash = "sha256:bfb91aa2d334c61cb35ba9a116fc123b3d3df31640b801cf57a7a78ec3f603b3", size = 131954, upload-time = "2026-07-29T17:18:04.364Z" },
+    { url = "https://files.pythonhosted.org/packages/4d/17/bb503d4b3bea614eae48ffecafe192b097082e8afcf3f2dbde3d78438cc4/fastapi-0.142.1-py3-none-any.whl", hash = "sha256:7eea2b5b1632ed43de2c090b3a43b7d92267189dfbbd55a967307ed763b6c57a", size = 144481, upload-time = "2026-09-29T22:36:19.603Z" },
 ]
 
 [[package]]
@@ -2781,7 +2782,6 @@ dev = [
     { name = "openapi-kit" },
     { name = "pydantic-evals" },
     { name = "pytest" },
-    { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "pytest-mock" },
     { name = "pytest-recording" },
@@ -2816,7 +2816,7 @@ requires-dist = [
     { name = "dramatiq", extras = ["redis", "watch"], git = "https://github.com/frankie567/dramatiq?rev=memory-leak-asyncio-ter" },
     { name = "email-validator", specifier = ">=2.1.0.post1" },
     { name = "exponent-server-sdk", specifier = ">=2.1.0" },
-    { name = "fastapi", specifier = "==0.141.1" },
+    { name = "fastapi", specifier = "==0.142.1" },
     { name = "firecrawl-py", specifier = ">=4.31.0" },
     { name = "fpdf2", specifier = ">=2.8.3" },
     { name = "genai-prices", specifier = ">=0.0.67" },
@@ -2884,7 +2884,6 @@ dev = [
     { name = "openapi-kit", specifier = ">=0.3.1" },
     { name = "pydantic-evals", specifier = ">=1.103.0" },
     { name = "pytest", specifier = "<10" },
-    { name = "pytest-asyncio", specifier = ">=1.4.0" },
     { name = "pytest-cov", specifier = ">=5.0.0" },
     { name = "pytest-mock", specifier = ">=3.10.0" },
     { name = "pytest-recording", specifier = ">=0.13.1" },
@@ -3290,18 +3289,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/e4/47/b9efed96c114afcfa3c9d3fe98a76a1d14c74a9e266d397cf6eb64be5e01/pytest-9.1.1.tar.gz", hash = "sha256:1088fbde8f2b49d95a549a195707afa7a76a3ce9bcadc26b6d71f0ffda5fe313", size = 1636369, upload-time = "2026-06-19T10:58:32.857Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/24/25/1de2678b631f5a49215c6c96fff41ba892b0a34df68d6d80292b1b48aa7f/pytest-9.1.1-py3-none-any.whl", hash = "sha256:37a86b45efb9a47a61a36449063e8e18d0cab3161329fc099eb21783169c4f0c", size = 386536, upload-time = "2026-06-19T10:58:31.347Z" },
-]
-
-[[package]]
-name = "pytest-asyncio"
-version = "1.4.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pytest" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/43/7c/d36d04db312ecf4298932ef77e6e4a9e8ad017906e24e34f0b0c361a2473/pytest_asyncio-1.4.0.tar.gz", hash = "sha256:c6c0d2259945122819f171a32ecea2c349ead889ee28176caaf492143424be42", size = 58514, upload-time = "2026-05-26T09:56:04.083Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/03/e2/08a497ef684b88559c9cc5f4ad53a37e7b99e727094a86d6ea32536d5d3c/pytest_asyncio-1.4.0-py3-none-any.whl", hash = "sha256:933ca923a23075a87fb7070c0ec272a6848489824d887c85c812670932835aa1", size = 16930, upload-time = "2026-05-26T09:56:02.576Z" },
 ]
 
 [[package]]

@@ -107,7 +107,7 @@ async def _mock_session_maker(
     yield session
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRunReviewAgentSubmission:
     """SUBMISSION re-run overwrites the existing canonical OrganizationReview
     row (grandfathered or otherwise) and clears any prior appeal state."""
@@ -520,7 +520,7 @@ class TestRunReviewAgentSubmission:
         assert organization.status == OrganizationStatus.DENIED
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRunReviewAgentMissingOrganization:
     """A deleted/missing organization must be skipped gracefully, not raise —
     the org can disappear between enqueue and (debounced) execution."""
@@ -549,7 +549,7 @@ class TestRunReviewAgentMissingOrganization:
         run_review_mock.assert_not_awaited()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestReviewAppeal:
     async def test_approve_activates_org(
         self,
@@ -689,7 +689,7 @@ class TestReviewAppeal:
         run_mock.assert_not_awaited()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRunReviewAgentProductChanged:
     """PRODUCT_CHANGED re-reviews an active org with enough revenue when it
     creates or edits a product. A bad verdict pulls it back into REVIEW for a

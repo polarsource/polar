@@ -37,7 +37,7 @@ def chat_post_message(mocker: MockerFixture, session: AsyncSession) -> AsyncMock
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestNotifyCreated:
     @pytest.mark.parametrize(
         "failure", [SlackClientError("down"), asyncio.CancelledError()]
@@ -107,7 +107,7 @@ class TestNotifyCreated:
         chat_post_message.assert_not_awaited()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestNotifyWaitingForOps:
     async def test_posts_for_the_current_ops_step(
         self,

@@ -22,7 +22,7 @@ def sample_address() -> Address:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestStripeCalculateTax:
     async def test_rate_limit_swallowed_in_sandbox(
         self, sample_address: Address

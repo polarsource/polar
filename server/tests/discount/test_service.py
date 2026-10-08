@@ -54,7 +54,7 @@ def webhook_service_send_mock(mocker: MockerFixture) -> AsyncMock:
     return mocker.patch("polar.discount.service.webhook_service.send")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate:
     @pytest.mark.auth
     async def test_long_name(
@@ -194,7 +194,7 @@ class TestCreate:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdate:
     @pytest.mark.auth
     async def test_duration_change(
@@ -685,7 +685,7 @@ class TestUpdate:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDelete:
     @pytest.mark.auth
     async def test_webhook(
@@ -715,7 +715,7 @@ class TestDelete:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestIsRedeemableDiscount:
     async def test_not_started(
         self,
@@ -814,7 +814,7 @@ class TestIsRedeemableDiscount:
         ) is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCodeCaseInsensitivity:
     async def test_code_case_insensitive(
         self,
@@ -869,7 +869,7 @@ class TestCodeCaseInsensitivity:
         assert checkout_product.discount_id == discount.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestIsRepetitionExpired:
     async def test_once_first_cycle(
         self,
@@ -937,7 +937,7 @@ class TestIsRepetitionExpired:
         assert discount.is_repetition_expired(now, after_duration) is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCheckPerCustomerLimitReached:
     async def test_no_limit_set(
         self,
@@ -1475,7 +1475,7 @@ class TestCheckPerCustomerLimitReached:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRedeemDiscount:
     @pytest.fixture
     def contended_lock(self, mocker: MockerFixture) -> None:

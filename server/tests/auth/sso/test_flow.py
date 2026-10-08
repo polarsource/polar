@@ -6,7 +6,6 @@ from urllib.parse import parse_qs, urlsplit
 import httpx
 import jwt
 import pytest
-import pytest_asyncio
 import respx
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -44,7 +43,7 @@ def idp_key() -> rsa.RSAPrivateKey:
     return rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def sso_client(
     app: FastAPI, session: AsyncSession
 ) -> AsyncIterator[httpx.AsyncClient]:
@@ -219,7 +218,7 @@ async def _get_membership(
     return result.scalars().unique().one_or_none()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSSOAuthorize:
     async def test_authorization_parameters_are_appended(
         self,
@@ -248,7 +247,7 @@ class TestSSOAuthorize:
         assert query["client_id"] == [CLIENT_ID]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSSOLoginFlow:
     async def test_login_mints_session_scoped_to_organization(
         self,
@@ -429,7 +428,7 @@ class TestSSOLoginFlow:
 NEWCOMER_EMAIL = "newcomer@example.test"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSSOJITProvisioning:
     async def test_provisions_unknown_email(
         self,

@@ -1,7 +1,6 @@
 import uuid
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.auth.scope import Scope
@@ -12,14 +11,14 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_checkout, create_order, create_payment
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def payment_organization_second(
     save_fixture: SaveFixture, organization_second: Organization
 ) -> Payment:
     return await create_payment(save_fixture, organization_second)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListPayments:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/payments/")
@@ -90,7 +89,7 @@ class TestListPayments:
         assert json["items"][0]["id"] == str(failed_checkout_payment.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetPayment:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/payments/{uuid.uuid4()}")

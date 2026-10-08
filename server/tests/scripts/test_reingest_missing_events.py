@@ -62,7 +62,7 @@ def tb_row(
     }
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFindMissing:
     async def test_excludes_events_already_in_postgres(
         self,
@@ -89,7 +89,7 @@ class TestFindMissing:
         assert await find_missing(session, []) == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestReingest:
     async def test_inserts_with_fresh_ingested_at_and_original_timestamp(
         self,
@@ -276,7 +276,7 @@ class TestReingest:
 
 @pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
 @pytest.mark.xdist_group(name="tinybird")
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFetchTinybirdRows:
     async def test_round_trip(
         self,

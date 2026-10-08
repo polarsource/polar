@@ -22,7 +22,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPreviewChange:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(

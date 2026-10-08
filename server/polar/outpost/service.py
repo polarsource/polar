@@ -1,5 +1,3 @@
-import uuid
-
 import structlog
 from anyio.streams.memory import MemoryObjectSendStream
 from pydantic import ValidationError
@@ -12,6 +10,8 @@ from polar.meter.repository import MeterRepository
 from polar.models import CustomerMeter, Organization
 
 from .schemas import (
+    CustomerMeterIncomingMessageCustomerPayload,
+    CustomerMeterIncomingMessagePayload,
     CustomerMeterOutgoingMessage,
     CustomerMeterOutgoingMessagePayload,
     IncomingMessageAdapter,
@@ -48,11 +48,7 @@ class OutpostService:
                 )
             case IncomingMessageType.customer_meter:
                 return await self._send_customer_meter(
-                    session,
-                    organization,
-                    incoming.payload.customer_id,
-                    incoming.payload.meter_id,
-                    send_stream,
+                    session, organization, incoming.payload, send_stream
                 )
 
     async def handle_event(
@@ -68,8 +64,9 @@ class OutpostService:
                 return await self._send_customer_meter(
                     session,
                     organization,
-                    event["customer_id"],
-                    event["meter_id"],
+                    CustomerMeterIncomingMessageCustomerPayload(
+                        customer_id=event["customer_id"], meter_id=event["meter_id"]
+                    ),
                     send_stream,
                 )
 
@@ -90,25 +87,32 @@ class OutpostService:
         self,
         session: AsyncReadSession,
         organization: Organization,
-        customer_id: uuid.UUID,
-        meter_id: uuid.UUID,
+        payload: CustomerMeterIncomingMessagePayload,
         send_stream: MemoryObjectSendStream[OutgoingMessage],
     ) -> None:
         customer_meter_repository = CustomerMeterRepository.from_session(session)
-        customer_meter = (
-            await customer_meter_repository.get_by_organization_customer_and_meter(
-                organization.id,
-                customer_id,
-                meter_id,
-                options=(joinedload(CustomerMeter.last_balanced_event),),
+        options = (joinedload(CustomerMeter.last_balanced_event),)
+        if isinstance(payload, CustomerMeterIncomingMessageCustomerPayload):
+            customer_meter = (
+                await customer_meter_repository.get_by_organization_customer_and_meter(
+                    organization.id,
+                    payload.customer_id,
+                    payload.meter_id,
+                    options=options,
+                )
             )
-        )
+        else:
+            customer_meter = await customer_meter_repository.get_by_organization_external_customer_and_meter(
+                organization.id,
+                payload.external_customer_id,
+                payload.meter_id,
+                options=options,
+            )
         if customer_meter is None:
             log.warning(
                 "Customer meter not found",
                 organization_id=organization.id,
-                customer_id=customer_id,
-                meter_id=meter_id,
+                **payload.model_dump(),
             )
             return
 

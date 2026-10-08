@@ -4,7 +4,6 @@ from typing import Any
 from uuid import uuid4
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.integrations.tinybird.client import TinybirdClient
@@ -17,7 +16,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_event
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def event_organization_second(
     save_fixture: SaveFixture,
     organization_second: Organization,
@@ -25,7 +24,7 @@ async def event_organization_second(
     return await create_event(save_fixture, organization=organization_second)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListEvents:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/events/")
@@ -365,7 +364,7 @@ class TestListEvents:
         assert items[2]["id"] == str(child2.id)  # 1 hour ago
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestIngest:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post("/v1/events/ingest", json={"events": []})
@@ -497,7 +496,7 @@ SQLI_PAYLOADS = [
 ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAggregateFieldsValidation:
     """Malicious aggregate_fields values must be rejected with 422 before
     reaching any SQL execution path."""
@@ -557,7 +556,7 @@ class TestAggregateFieldsValidation:
         assert response.status_code == 422
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetStatisticsByProperty:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/events/statistics/by-property")
@@ -565,7 +564,7 @@ class TestGetStatisticsByProperty:
         assert response.status_code == 401
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetStatisticsByCustomer:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/events/statistics/by-customer")
@@ -573,7 +572,7 @@ class TestGetStatisticsByCustomer:
         assert response.status_code == 401
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetStatisticsByVariance:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/events/statistics/by-variance")
@@ -581,7 +580,7 @@ class TestGetStatisticsByVariance:
         assert response.status_code == 401
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListStatisticsTimeseries:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/events/statistics/timeseries")
@@ -610,7 +609,7 @@ class TestListStatisticsTimeseries:
         assert "too big" not in msg.lower()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListEventNames:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/events/names")
@@ -618,7 +617,7 @@ class TestListEventNames:
         assert response.status_code == 401
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetEvent:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/events/{uuid4()}")

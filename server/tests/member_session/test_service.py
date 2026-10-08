@@ -13,7 +13,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateMemberSession:
     async def test_creates_session_with_token(
         self,
@@ -69,7 +69,7 @@ class TestCreateMemberSession:
         assert member_session_obj.return_url == str(return_url)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetByToken:
     async def test_returns_session_for_valid_token(
         self,
@@ -244,7 +244,7 @@ class TestGetByToken:
         assert retrieved_session.member.customer.organization.id == organization.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteExpired:
     async def test_deletes_expired_sessions(
         self,

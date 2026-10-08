@@ -1,4 +1,4 @@
-import pytest_asyncio
+import pytest
 
 from polar.models import (
     Organization,
@@ -12,7 +12,7 @@ from polar.version import CURRENT_API_VERSION
 from tests.fixtures.database import SaveFixture
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def webhook_endpoint_user(
     save_fixture: SaveFixture, user: User
 ) -> WebhookEndpoint:
@@ -26,7 +26,7 @@ async def webhook_endpoint_user(
     return endpoint
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def webhook_event_user(
     save_fixture: SaveFixture,
     webhook_endpoint_user: WebhookEndpoint,
@@ -43,7 +43,7 @@ async def webhook_event_user(
     return event
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def webhook_endpoint_organization(
     save_fixture: SaveFixture, organization: Organization
 ) -> WebhookEndpoint:
@@ -57,7 +57,7 @@ async def webhook_endpoint_organization(
     return endpoint
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def webhook_event_organization(
     save_fixture: SaveFixture,
     webhook_endpoint_organization: WebhookEndpoint,
@@ -74,7 +74,7 @@ async def webhook_event_organization(
     return event
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def webhook_delivery(
     save_fixture: SaveFixture,
     webhook_endpoint_organization: WebhookEndpoint,

@@ -2,7 +2,10 @@ import type { StandardSchemaV1 } from '@standard-schema/spec'
 import { Data, Predicate } from 'effect'
 import { getCustomerMeter } from '../internal/api/customer-meters'
 import { ingestEvent } from '../internal/api/events'
-import { findBenefitGrant, getBenefitId } from '../internal/api/benefits'
+import {
+  assertBenefitDeployed,
+  findBenefitGrant,
+} from '../internal/api/benefits'
 import { assertMeterDeployed } from '../internal/api/meters'
 import { matchesMeter } from '../internal/meter'
 import type {
@@ -120,7 +123,7 @@ export const createActor = <Config extends RuntimeSDKConfig>(
   // last modified before this timestamp doesn't reflect that event yet.
   const latestIngestedAt = new Map<string, Date>()
   const deployedMeters = new Set<string>()
-  const benefitIds = new Map<string, string>()
+  const deployedBenefits = new Set<string>()
   const cacheKey = (identifier: ActorIdentifier, externalMeterId: string) =>
     identifier.customerId !== undefined
       ? `customer:${identifier.customerId}:${externalMeterId}`
@@ -131,19 +134,22 @@ export const createActor = <Config extends RuntimeSDKConfig>(
   // Also, for events, we allow external_customer_id
   return (identifier) => ({
     async access(name) {
-      const benefit = config.benefits?.[name]
-      if (benefit === undefined) {
+      if (config.benefits?.[name] === undefined) {
         throw new Error(`Unknown benefit: ${name}`)
       }
 
-      const benefitId =
-        benefit.id ?? benefitIds.get(name) ?? (await getBenefitId(sdk, name))
-      benefitIds.set(name, benefitId)
       const grant = await findBenefitGrant(
         sdk,
         toMemberIdentifier(identifier),
-        benefitId,
+        name,
       )
+      // A missing grant means no access, unless the benefit itself isn't
+      // deployed, which we check once per benefit.
+      if (grant === undefined && !deployedBenefits.has(name)) {
+        await assertBenefitDeployed(sdk, name)
+      }
+      deployedBenefits.add(name)
+
       return grant === undefined
         ? { granted: false }
         : { granted: true, metadata: grant.benefit.metadata }

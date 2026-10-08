@@ -10,7 +10,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_benefit
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBenefitPublic:
     async def test_meter_credit_properties(
         self, save_fixture: SaveFixture, organization: Organization, meter: Meter
@@ -58,7 +58,7 @@ class TestBenefitPublic:
         assert not hasattr(benefit_schema, "properties")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBenefitPublicList:
     async def test_excludes_non_public_benefits(
         self,

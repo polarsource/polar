@@ -28,7 +28,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestArchiveProduct:
     async def test_soft_delete_if_all_archived(
         self,
@@ -93,7 +93,7 @@ async def _attempt_archive_product(
         await session.commit()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestArchiveProductConcurrency:
     async def test_concurrent_archive_of_every_product_soft_deletes_the_link(
         self, worker_id: str

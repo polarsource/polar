@@ -62,7 +62,7 @@ def _mock_render(mocker: MockerFixture):  # type: ignore[no-untyped-def]
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAllocate:
     async def test_no_op_when_no_succeeded_payment(
         self,
@@ -129,7 +129,7 @@ class TestAllocate:
         assert customer.receipt_next_number == 2
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDoRender:
     async def test_renders_and_uploads(
         self,
@@ -288,7 +288,7 @@ class TestDoRender:
         assert receipt_arg.customer_name == "Buyer"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGenerateOrderReceipt:
     async def test_no_op_when_no_receipt_number(
         self,
@@ -392,7 +392,7 @@ class TestGenerateOrderReceipt:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetPdfUrlOrStatus:
     async def test_enqueues_render_when_path_missing(
         self,

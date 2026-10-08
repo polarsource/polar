@@ -28,7 +28,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
     async def test_other_customer(
@@ -259,7 +259,7 @@ class TestList:
         assert len(grants) == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetById:
     @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
     async def test_other_customer(
@@ -407,7 +407,7 @@ class TestGetById:
         assert result is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListMember:
     """Tests for member-specific benefit grant filtering."""
 
@@ -492,7 +492,7 @@ class TestListMember:
         assert len(grants) == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetByIdMember:
     """Tests for member-specific benefit grant access by ID."""
 
@@ -596,7 +596,7 @@ class TestGetByIdMember:
         assert result is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdate:
     async def test_slack_shared_channel_updates_invited_email(
         self,

@@ -35,7 +35,7 @@ class _DecimalContextInvariant(Invariant):
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_skips_invariant_outside_its_environments(
     session: AsyncSession, mocker: MockerFixture
 ) -> None:
@@ -47,7 +47,7 @@ async def test_skips_invariant_outside_its_environments(
     check_spy.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_runs_invariant_within_its_environments(
     session: AsyncSession, mocker: MockerFixture
 ) -> None:
@@ -62,7 +62,7 @@ async def test_runs_invariant_within_its_environments(
     check_spy.assert_called_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_runs_invariant_with_no_environment_restriction(
     session: AsyncSession, mocker: MockerFixture
 ) -> None:
@@ -77,7 +77,7 @@ async def test_runs_invariant_with_no_environment_restriction(
     check_spy.assert_called_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_notifies_when_context_is_not_natively_serializable(
     session: AsyncSession, mocker: MockerFixture
 ) -> None:

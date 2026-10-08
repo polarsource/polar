@@ -14,7 +14,7 @@ from polar.models import User
 from polar.postgres import AsyncSession
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSyncUser:
     async def test_disabled(
         self,

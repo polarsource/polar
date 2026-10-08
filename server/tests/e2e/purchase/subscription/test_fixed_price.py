@@ -14,7 +14,7 @@ from tests.e2e.infra import DrainFn, EmailCapture, StripeSimulator
 from tests.e2e.purchase.conftest import BUYER_EMAIL, complete_purchase
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionFixedPrice:
     @E2E_AUTH
     async def test_full_flow(

@@ -30,7 +30,7 @@ async def _get_event_metadata(
     return result.scalar_one()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCustomerResolveFirstUserEventAt:
     async def test_applies_the_earliest_event(
         self,
@@ -148,7 +148,7 @@ class TestCustomerResolveFirstUserEventAt:
         assert customer.first_user_event_at == timestamp
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCustomerEvent:
     async def test_deleted_reports_released_external_id(
         self,

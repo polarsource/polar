@@ -2,7 +2,6 @@ import uuid
 from typing import Any
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.auth.scope import Scope
@@ -29,7 +28,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def benefit_second_organization(
     save_fixture: SaveFixture,
     organization_second: Organization,
@@ -37,7 +36,7 @@ async def benefit_second_organization(
     return await create_benefit(save_fixture, organization=organization_second)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListBenefits:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/benefits/")
@@ -85,7 +84,7 @@ class TestListBenefits:
         assert json["pagination"]["total_count"] == 3
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListBenefitsFilters:
     @pytest.mark.auth(
         AuthSubjectFixture(scopes={Scope.benefits_read}),
@@ -225,8 +224,39 @@ class TestListBenefitsFilters:
         assert json["pagination"]["total_count"] == 1
         assert json["items"][0]["id"] == str(benefits[1].id)
 
+    @pytest.mark.auth
+    @pytest.mark.api_version(V2027_01)
+    async def test_external_id_filter(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        deleted_benefit = await create_benefit(
+            save_fixture, organization=organization, external_id="pro"
+        )
+        deleted_benefit.set_deleted_at()
+        await save_fixture(deleted_benefit)
+        benefit = await create_benefit(
+            save_fixture, organization=organization, external_id="pro"
+        )
+        await create_benefit(
+            save_fixture, organization=organization, external_id="team"
+        )
+        await create_benefit(save_fixture, organization=organization)
 
-@pytest.mark.asyncio
+        response = await client.get(
+            "/v1/benefits/", params={"external_id": ["pro", "missing"]}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        assert json["items"][0]["id"] == str(benefit.id)
+
+
+@pytest.mark.anyio
 class TestGetBenefit:
     async def test_anonymous(
         self, client: AsyncClient, benefit_organization: Benefit
@@ -268,7 +298,7 @@ class TestGetBenefit:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListBenefitFiles:
     async def test_anonymous(
         self, client: AsyncClient, benefit_organization: Benefit
@@ -419,7 +449,7 @@ class TestListBenefitFiles:
         assert len(paginated_json["items"]) == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateBenefit:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
@@ -536,7 +566,7 @@ class TestCreateBenefit:
         assert response.json()["external_id"] == "ext_1337"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateBenefit:
     async def test_anonymous(
         self,
@@ -708,7 +738,7 @@ class TestUpdateBenefit:
         assert json["visibility"] == Visibility.private
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteBenefit:
     async def test_anonymous(
         self,
@@ -748,7 +778,7 @@ class TestDeleteBenefit:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestViewGrants:
     async def test_anonymous(
         self,

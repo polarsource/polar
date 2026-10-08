@@ -90,7 +90,7 @@ def _make_typed_report(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSaveAgentReview:
     async def test_stores_version_and_review_type(
         self,
@@ -170,7 +170,7 @@ class TestSaveAgentReview:
         assert parsed.report.verdict == ReviewVerdict.APPROVE
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetLatestAgentReview:
     async def test_returns_latest_by_reviewed_at(
         self,
@@ -204,7 +204,7 @@ class TestGetLatestAgentReview:
         assert parsed.review_type == "threshold"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetLatestHumanFeedback:
     async def test_returns_latest_human_decision(
         self,
@@ -270,7 +270,7 @@ class TestGetLatestHumanFeedback:
         assert await repo.get_latest_human_feedback(agent_review.id) is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRecordHumanDecision:
     async def test_derives_context_from_agent_review(
         self,
@@ -457,7 +457,7 @@ class TestRecordHumanDecision:
         assert decision.violated_aup_section is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSaveReviewDecision:
     async def test_agent_decision(
         self,
@@ -566,7 +566,7 @@ class TestSaveReviewDecision:
         assert decision.violated_aup_section.value == "osint"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetCurrentDecision:
     async def test_returns_decision_when_exists(
         self,
@@ -614,7 +614,7 @@ class TestGetCurrentDecision:
         assert current is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeactivateCurrentDecisions:
     async def test_deactivates_existing_current(
         self,
@@ -681,7 +681,7 @@ class TestDeactivateCurrentDecisions:
         assert current.id == second.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRecordAgentDecision:
     async def test_creates_decision_with_correct_fields(
         self,
@@ -760,7 +760,7 @@ class TestRecordAgentDecision:
         assert second.is_current is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetRiskScorePercentiles:
     async def test_no_payments(
         self,
@@ -874,7 +874,7 @@ class TestGetRiskScorePercentiles:
         assert p90 == 10
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetRefundStats:
     async def test_multiple_refunds_on_same_order_counts_as_one(
         self,
@@ -989,7 +989,7 @@ class TestGetRefundStats:
         assert refund_amount == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetCheckoutSuccessUrls:
     async def test_returns_distinct_success_urls(
         self,
@@ -1095,7 +1095,7 @@ class TestGetCheckoutSuccessUrls:
         assert urls == ["https://recent.com/thanks"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetCheckoutReturnUrls:
     async def test_returns_distinct_return_urls(
         self,
@@ -1155,7 +1155,7 @@ class TestGetCheckoutReturnUrls:
         assert urls == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetCheckoutLinksWithBenefits:
     async def test_returns_checkout_links(
         self,
@@ -1205,7 +1205,7 @@ class TestGetCheckoutLinksWithBenefits:
         assert links == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetAdhocPriceCount:
     async def test_zero_when_no_prices(
         self,

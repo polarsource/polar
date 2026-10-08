@@ -7,7 +7,6 @@ from unittest.mock import ANY, AsyncMock, MagicMock, call
 
 import freezegun
 import pytest
-import pytest_asyncio
 import stripe as stripe_lib
 from freezegun import freeze_time
 from pytest_mock import MockerFixture
@@ -271,7 +270,7 @@ def frozen_time() -> Generator[datetime]:
         yield frozen_time
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate:
     @pytest.mark.auth
     async def test_product_does_not_exist(
@@ -951,7 +950,7 @@ class TestCreate:
         enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateOrUpdateFromCheckout:
     async def test_not_recurring_product(
         self,
@@ -1524,7 +1523,7 @@ class TestCreateOrUpdateFromCheckout:
         assert subscription.currency == "eur"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestApplyUpdate:
     async def test_snapshots_meter_interval_on_product_change(
         self,
@@ -1602,7 +1601,7 @@ class TestApplyUpdate:
         assert updated.current_meter_period_end is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCycle:
     async def test_renewals_disabled_releases_scheduler_lock(
         self,
@@ -2936,7 +2935,7 @@ class TestCycle:
         assert len(order_calls) == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCycleMeters:
     async def test_advances_clock_resets_and_regrants_without_overage(
         self,
@@ -3271,7 +3270,7 @@ class TestCycleMeters:
         assert grant_calls == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCheckMeterCycleLag:
     async def test_raises_on_multi_period_lag(
         self,
@@ -3349,7 +3348,7 @@ class TestCheckMeterCycleLag:
         subscription_service.check_meter_cycle_lag(subscription)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRevoke:
     async def test_already_canceled(
         self,
@@ -3437,7 +3436,7 @@ class TestRevoke:
         subscription_hooks.revoked.assert_called_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCancel:
     async def test_repeat_cancel_raises(
         self,
@@ -3592,7 +3591,7 @@ class TestCancel:
         assert len(void_calls) == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUncancel:
     async def test_not_canceled(
         self,
@@ -3719,7 +3718,7 @@ class TestUncancel:
         assert updated_subscription.canceled_at is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestReinstate:
     @freeze_time("2024-03-15 12:00:00")
     async def test_valid(
@@ -3886,7 +3885,7 @@ class TestReinstate:
                 await subscription_service.reinstate(session, ctx, subscription)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPause:
     async def test_not_active(
         self,
@@ -4096,7 +4095,7 @@ class TestPause:
         assert updated.product == product
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCancelScheduledPause:
     async def test_not_scheduled(
         self,
@@ -4146,7 +4145,7 @@ class TestCancelScheduledPause:
         assert_hooks_called_once(subscription_hooks, {"updated"})
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestResume:
     async def test_not_paused(
         self,
@@ -4343,7 +4342,7 @@ class TestResume:
         assert cycle_entries[0].start_timestamp == frozen_time
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestActivateImported:
     async def test_takes_over_the_cycle_without_charging(
         self,
@@ -4599,7 +4598,7 @@ async def create_event_billing_entry(
 UpdateMetersFixture: TypeAlias = tuple[Meter, Product, MeteredPrice, Subscription]
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def update_meters_fixtures(
     mocker: MockerFixture,
     session: AsyncSession,
@@ -4630,7 +4629,7 @@ async def update_meters_fixtures(
     return meter, product, price, subscription
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestResetMeter:
     async def test_without_rollover(
         self,
@@ -4702,7 +4701,7 @@ class TestResetMeter:
         }
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateMeters:
     async def test_no_entries(
         self,
@@ -4782,7 +4781,7 @@ class TestUpdateMeters:
         assert updated_subscription_meter.amount == 6000
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEnqueueBenefitsGrants:
     @pytest.mark.parametrize(
         "status", [SubscriptionStatus.incomplete, SubscriptionStatus.incomplete_expired]
@@ -4964,7 +4963,7 @@ class TestEnqueueBenefitsGrants:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateProductBenefitsGrants:
     async def test_valid(
         self,
@@ -5003,7 +5002,7 @@ class TestUpdateProductBenefitsGrants:
         assert actual_ids == expected_ids
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     @pytest.mark.auth
     async def test_user_not_organization_member(
@@ -5134,7 +5133,7 @@ class TestList:
         assert subscription_2 in results
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdate:
     async def test_product_update_prorate(
         self,
@@ -5699,7 +5698,7 @@ class TestUpdate:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateProduct:
     @pytest.mark.parametrize(
         ("proration_behavior", "expects_previous_product"),
@@ -7230,7 +7229,7 @@ class TestUpdateProduct:
         assert subscription.product_id == product.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateDiscount:
     async def test_not_existing_discount(
         self,
@@ -7403,7 +7402,7 @@ class TestUpdateDiscount:
                 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateTrial:
     async def test_trialing_subscription_ending_now_with_renewals_disabled(
         self,
@@ -7783,7 +7782,7 @@ class TestUpdateTrial:
         assert updated_subscription.current_period_start == new_trial_end
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_send_past_due_email(
     mocker: MockerFixture,
     save_fixture: SaveFixture,
@@ -7802,7 +7801,7 @@ async def test_send_past_due_email(
     await subscription_service.send_past_due_email(session, subscription)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_send_renewal_reminder_email_formats_long_date(
     mocker: MockerFixture,
     save_fixture: SaveFixture,
@@ -7831,7 +7830,7 @@ async def test_send_renewal_reminder_email_formats_long_date(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_send_renewal_reminder_email_mentions_stripe_migration(
     enqueue_email_mock: MagicMock,
     save_fixture: SaveFixture,
@@ -7860,7 +7859,7 @@ async def test_send_renewal_reminder_email_mentions_stripe_migration(
     assert email.props.previous_billing_provider == "Stripe"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_send_trial_conversion_reminder_email_formats_long_date(
     mocker: MockerFixture,
     save_fixture: SaveFixture,
@@ -7891,7 +7890,7 @@ async def test_send_trial_conversion_reminder_email_formats_long_date(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMarkPastDue:
     """Test subscription service dunning functionality"""
 
@@ -7972,7 +7971,7 @@ class TestMarkPastDue:
         enqueue_job_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMarkActive:
     async def test_recovers_meter_cycle_from_past_due(
         self,
@@ -8055,7 +8054,7 @@ class TestMarkActive:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdatePaymentMethodFromRetry:
     async def test_existing_method(
         self,
@@ -8131,7 +8130,7 @@ class TestUpdatePaymentMethodFromRetry:
         assert updated_subscription.payment_method == new_payment_method
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdatePaymentMethodFromNewDefault:
     async def test_single_payable_subscription(
         self,
@@ -8190,7 +8189,7 @@ class TestUpdatePaymentMethodFromNewDefault:
         assert second_subscription.payment_method_id == second_payment_method.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateSeats:
     async def test_seat_increase_same_tier(
         self,
@@ -10175,7 +10174,7 @@ class TestUpdateSeats:
         assert len(proration_entries) == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEnqueueBenefitsGrantsGracePeriod:
     async def test_grace_period_not_expired(
         self,
@@ -10304,7 +10303,7 @@ class TestEnqueueBenefitsGrantsGracePeriod:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateBillingPeriod:
     async def test_basic(
         self,
@@ -10406,7 +10405,7 @@ class TestUpdateBillingPeriod:
                 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCancelCustomer:
     async def test_basic(
         self,
@@ -10496,7 +10495,7 @@ class TestCancelCustomer:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCancelForOrganization:
     async def test_cancels_billable_without_email(
         self,
@@ -10737,7 +10736,7 @@ class TestCancelForOrganization:
         assert has_more is False
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestClearPendingUpdate:
     async def test_clear_pending_product_update(
         self,
@@ -10851,7 +10850,7 @@ class TestClearPendingUpdate:
         assert updated_subscription.pending_update is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFixedSeatComposition:
     """A product composing a fixed price with a seat-based price bills F + S(n)."""
 
@@ -10937,7 +10936,7 @@ class TestFixedSeatComposition:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestNewSubscriptionNotification:
     async def test_trialing_sends_new_trial(
         self,
@@ -11008,7 +11007,7 @@ def _cancellation_payloads(
     return payloads
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCancellationNotification:
     async def test_cancel_at_period_end(
         self,

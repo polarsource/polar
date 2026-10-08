@@ -49,9 +49,6 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
     ...(grantStatus !== 'any' ? { isGranted: grantStatus === 'granted' } : {}),
   })
 
-  const memberColumnEnabled =
-    !!organization.feature_settings?.member_model_enabled
-
   const setGrantStatus = (status: BenefitGrantStatusFilter) => {
     setFilters({ grant_status: status })
     resetPage()
@@ -87,15 +84,13 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
       },
     ]
 
-    if (memberColumnEnabled) {
-      cols.push({
-        accessorKey: 'member',
-        header: 'Member',
-        cell: ({ row: { original: grant } }) => (
-          <BenefitGrantMemberBadge member={grant.member} />
-        ),
-      })
-    }
+    cols.push({
+      accessorKey: 'member',
+      header: 'Member',
+      cell: ({ row: { original: grant } }) => (
+        <BenefitGrantMemberBadge member={grant.member} />
+      ),
+    })
 
     cols.push(
       {
@@ -161,7 +156,7 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
     )
 
     return cols
-  }, [benefit.type, memberColumnEnabled, organization.slug])
+  }, [benefit.type, organization.slug])
 
   return (
     <OrderSection

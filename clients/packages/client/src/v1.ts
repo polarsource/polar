@@ -19142,12 +19142,6 @@ export interface components {
      */
     CustomerOrganizationFeatureSettings: {
       /**
-       * Member Model Enabled
-       * @description Whether the member model is enabled for this organization.
-       * @default false
-       */
-      member_model_enabled: boolean
-      /**
        * Checkout Localization Enabled
        * @description Whether localization is enabled for this organization.
        * @default false
@@ -29861,12 +29855,6 @@ export interface components {
        */
       wallets_enabled: boolean
       /**
-       * Member Model Enabled
-       * @description If this organization has the Member model enabled
-       * @default false
-       */
-      member_model_enabled: boolean
-      /**
        * Checkout Localization Enabled
        * @description If this organization has checkout localization enabled
        * @default false
@@ -29952,12 +29940,6 @@ export interface components {
      *     provided and keep their current value.
      */
     OrganizationFeatureSettingsUpdate: {
-      /**
-       * Member Model Enabled
-       * @description If this organization has the Member model enabled
-       * @default false
-       */
-      member_model_enabled: boolean
       /**
        * Checkout Localization Enabled
        * @description If this organization has checkout localization enabled

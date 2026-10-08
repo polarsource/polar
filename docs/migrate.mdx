@@ -364,7 +364,8 @@ Migrations** for assessment, card transfer, and cutover.
 - Subscriptions sold through Stripe Managed Payments are not moved yet and
   stay on Stripe.
 - Switching is irreversible. Subscriptions renewing within about 24 hours
-  stay on Stripe to avoid a billing conflict.
+  stay on Stripe to avoid a billing conflict. Subscriptions set to cancel at
+  the end of their period do not renew, so they move.
 - Real card copies require live Stripe accounts. Sandbox verifies application
   behavior but cannot copy real cards.
 - The Stripe key mode must match Polar: live for production, test for sandbox.

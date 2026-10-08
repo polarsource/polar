@@ -1,4 +1,4 @@
-import type { schemas } from './types'
+import type { schemas } from '../types'
 
 const ZERO_DECIMAL_CURRENCIES = new Set<string>([
   'bif',

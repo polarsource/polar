@@ -1,6 +1,6 @@
 import { Button, Footer, Text, WrapperPolar } from '../components/foundation'
 import SaleSummary from '../components/SaleSummary'
-import { formatShortDate } from '../formatters'
+import { formatShortDate } from '../utils/formatters'
 import type { schemas } from '../types'
 
 export function NotificationNewSale({

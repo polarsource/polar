@@ -6,7 +6,7 @@ import {
   Text,
   WrapperPolar,
 } from '../components/foundation'
-import { formatDate } from '../formatters'
+import { formatDate } from '../utils/formatters'
 import type { schemas } from '../types'
 
 export function ChargebackPreventionRefund({

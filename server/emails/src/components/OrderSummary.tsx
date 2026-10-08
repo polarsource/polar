@@ -1,6 +1,6 @@
 /* oxlint-disable email-ds/no-raw-text-elements */
 import { Column, Heading, Hr, Row, Section } from 'react-email'
-import { formatCurrency, formatDate } from '../formatters'
+import { formatCurrency, formatDate } from '../utils/formatters'
 import type { schemas } from '../types'
 
 interface OrderSummaryProps {

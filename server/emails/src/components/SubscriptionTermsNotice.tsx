@@ -1,6 +1,6 @@
 import { Link } from 'react-email'
 import { Divider, Text } from './foundation'
-import { formatCurrency, formatDate, formatInterval } from '../formatters'
+import { formatCurrency, formatDate, formatInterval } from '../utils/formatters'
 import type { schemas } from '../types'
 
 interface SubscriptionTermsNoticeProps {

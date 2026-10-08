@@ -6,7 +6,7 @@ import {
   Text,
   WrapperOrganization,
 } from '../components/foundation'
-import { formatDate } from '../formatters'
+import { formatDate } from '../utils/formatters'
 import { organization, product } from '../preview'
 import type { schemas } from '../types'
 

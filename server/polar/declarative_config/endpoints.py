@@ -1,16 +1,63 @@
-from fastapi import Depends
+from fastapi import Depends, Query
 
 from polar.exceptions import NotPermitted, Unauthorized
 from polar.meter.auth import MeterRead, MeterWrite
 from polar.openapi import APITag
-from polar.postgres import AsyncSession, get_db_session
+from polar.organization.schemas import OrganizationID
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.routing import APIRouter
 
-from .schemas import Config, ConfigApplyResult, ConfigPlan
+from .schemas import Config, ConfigApplyResult, ConfigExport, ConfigPlan
 from .service import ConfigAsCodeNotEnabled, ConfigInvalid, ConfigMeterConflict
 from .service import declarative_config as declarative_config_service
 
 router = APIRouter(prefix="/config", tags=["config", APITag.private])
+
+
+@router.get(
+    "/",
+    response_model=ConfigExport,
+    summary="Export Config",
+    responses={
+        200: {"description": "Current config."},
+        401: {"description": "Not authenticated.", "model": Unauthorized.schema()},
+        403: {
+            "description": (
+                "Not allowed to read this organization's products, "
+                "or config as code isn't enabled for it."
+            ),
+            "model": NotPermitted.schema() | ConfigAsCodeNotEnabled.schema(),
+        },
+    },
+)
+async def export(
+    auth_subject: MeterRead,
+    organization_id: OrganizationID | None = Query(
+        None,
+        description=(
+            "The ID of the organization to export. "
+            "**Required unless you use an organization token.**"
+        ),
+    ),
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> ConfigExport:
+    """
+    Export the organization's current config as a declarative config document.
+
+    `config` has the shape plan and apply accept, without `organization_id`:
+    planning it for the same organization without edits reports no changes.
+    Meters without an `external_id`, archived meters, meters that wouldn't pass
+    config validation, and meters beyond the config limit are listed in
+    `skipped`.
+    """
+    return await declarative_config_service.export(
+        session, auth_subject, organization_id
+    )
 
 
 @router.post(

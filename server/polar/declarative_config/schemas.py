@@ -1,10 +1,14 @@
 from enum import StrEnum
 from typing import Any
 
-from pydantic import ConfigDict, Field
+from pydantic import UUID4, ConfigDict, Field
 
+from polar.kit.metadata import MetadataOutputMixin
 from polar.kit.schemas import Schema
-from polar.meter.schemas import MeterCreateBase
+from polar.meter.aggregation import Aggregation
+from polar.meter.filter import Filter
+from polar.meter.schemas import NAME_DESCRIPTION, MeterCreateBase
+from polar.meter.unit import MeterUnit
 from polar.organization.schemas import OrganizationID
 
 MAXIMUM_METERS = 100
@@ -74,6 +78,10 @@ class ConfigAction(StrEnum):
     unchanged = "unchanged"
 
 
+class ConfigResource(StrEnum):
+    meter = "meter"
+
+
 class ConfigMeterResult(Schema):
     external_id: str = Field(description="The meter's `external_id`.")
     action: ConfigAction = Field(description="What applying the config does.")
@@ -101,3 +109,48 @@ class ConfigMeterChange(ConfigMeterResult):
 class ConfigPlan(Schema):
     changes: list[ConfigMeterChange]
     issues: list[ConfigIssue]
+
+
+class ConfigExportMeter(Schema, MetadataOutputMixin):
+    external_id: str = Field(description="Your identifier for the meter.")
+    name: str = Field(description=NAME_DESCRIPTION)
+    unit: MeterUnit = Field(description="The unit of the meter.")
+    custom_label: str | None = Field(description="The label for the custom unit.")
+    custom_multiplier: int | None = Field(
+        description="The multiplier to convert from base unit to display scale."
+    )
+    filter: Filter = Field(
+        description="The filter applied on events to calculate the meter."
+    )
+    aggregation: Aggregation = Field(
+        description="The aggregation applied on the filtered events."
+    )
+
+
+class ConfigExportDocument(Schema):
+    meters: list[ConfigExportMeter]
+
+
+class ConfigSkippedReason(StrEnum):
+    missing_external_id = "missing_external_id"
+    archived = "archived"
+    invalid = "invalid"
+    over_limit = "over_limit"
+
+
+class ConfigSkippedMeter(Schema):
+    resource: ConfigResource = Field(description="The type of resource.")
+    id: UUID4 = Field(description="The meter ID.")
+    name: str = Field(description="The meter name.")
+    reason: ConfigSkippedReason = Field(
+        description="Why the meter isn't in the exported config."
+    )
+
+
+class ConfigExport(Schema):
+    config: ConfigExportDocument = Field(
+        description="The current config, in the same shape plan and apply accept."
+    )
+    skipped: list[ConfigSkippedMeter] = Field(
+        description="Meters left out of the exported config."
+    )

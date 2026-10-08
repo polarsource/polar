@@ -1,7 +1,9 @@
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import Literal
+from uuid import UUID
 
-from pydantic import BaseModel, Field, create_model
+from pydantic import BaseModel, Field, ValidationError, create_model
 from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject
@@ -11,22 +13,35 @@ from polar.exceptions import PolarError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
 from polar.models import Organization, User
-from polar.organization.resolver import get_payload_organization
-from polar.postgres import AsyncSession
+from polar.organization.resolver import OrganizationIDModel, get_payload_organization
+from polar.postgres import AsyncReadSession, AsyncSession
 
 from . import validation
 from .schemas import (
+    MAXIMUM_METERS,
     Config,
     ConfigApplyResult,
+    ConfigExport,
+    ConfigExportDocument,
+    ConfigExportMeter,
     ConfigIssue,
     ConfigIssueSeverity,
+    ConfigMeter,
     ConfigMeterChange,
     ConfigMeterResult,
     ConfigPlan,
+    ConfigResource,
+    ConfigSkippedMeter,
+    ConfigSkippedReason,
 )
 from .validation import MeterChange
 
 _METER_EXTERNAL_ID_INDEX = "ix_meters_organization_id_external_id"
+
+
+@dataclass
+class _OrganizationTarget:
+    organization_id: UUID | None
 
 
 class ConfigAsCodeNotEnabled(PolarError):
@@ -107,14 +122,69 @@ class DeclarativeConfigService:
             issues=issues,
         )
 
+    async def export(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization_id: UUID | None,
+    ) -> ConfigExport:
+        organization = await self._get_organization(
+            session,
+            auth_subject,
+            _OrganizationTarget(organization_id),
+            OrganizationPermission.products_read,
+        )
+        repository = MeterRepository.from_session(session)
+        meters: list[ConfigExportMeter] = []
+        skipped: list[ConfigSkippedMeter] = []
+        statement = repository.get_organization_statement(organization.id)
+        async for meter in repository.stream(statement):
+            reason: ConfigSkippedReason | None = None
+            if meter.external_id is None:
+                reason = ConfigSkippedReason.missing_external_id
+            elif meter.archived_at is not None:
+                reason = ConfigSkippedReason.archived
+            elif len(meters) >= MAXIMUM_METERS:
+                reason = ConfigSkippedReason.over_limit
+            else:
+                try:
+                    meter_config = ConfigMeter(
+                        external_id=meter.external_id,
+                        name=meter.name,
+                        unit=meter.unit,
+                        custom_label=meter.custom_label,
+                        custom_multiplier=meter.custom_multiplier,
+                        filter=meter.filter,
+                        aggregation=meter.aggregation,
+                        metadata=meter.user_metadata,
+                    )
+                except ValidationError:
+                    reason = ConfigSkippedReason.invalid
+                else:
+                    meters.append(
+                        ConfigExportMeter.model_validate(
+                            meter_config, from_attributes=True
+                        )
+                    )
+            if reason is not None:
+                skipped.append(
+                    ConfigSkippedMeter(
+                        resource=ConfigResource.meter,
+                        id=meter.id,
+                        name=meter.name,
+                        reason=reason,
+                    )
+                )
+        return ConfigExport(config=ConfigExportDocument(meters=meters), skipped=skipped)
+
     async def _get_organization(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
-        config: Config,
+        target: OrganizationIDModel,
         permission: OrganizationPermission,
     ) -> Organization:
-        organization = await get_payload_organization(session, auth_subject, config)
+        organization = await get_payload_organization(session, auth_subject, target)
         await assert_organization_permission(
             session, auth_subject, organization.id, permission
         )

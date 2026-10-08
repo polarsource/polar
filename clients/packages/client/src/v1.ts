@@ -6035,6 +6035,34 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/config/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Export Config
+     * @description Export the organization's current config as a declarative config document.
+     *
+     *     `config` has the shape plan and apply accept, without `organization_id`:
+     *     planning it for the same organization without edits reports no changes.
+     *     Meters without an `external_id`, archived meters, meters that wouldn't pass
+     *     config validation, and meters beyond the config limit are listed in
+     *     `skipped`.
+     *
+     *     **Scopes**: `meters:read` `meters:write`
+     */
+    get: operations['config:export']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/config/apply': {
     parameters: {
       query?: never
@@ -15997,6 +16025,57 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** ConfigExport */
+    ConfigExport: {
+      /** @description The current config, in the same shape plan and apply accept. */
+      config: components['schemas']['ConfigExportDocument']
+      /**
+       * Skipped
+       * @description Meters left out of the exported config.
+       */
+      skipped: components['schemas']['ConfigSkippedMeter'][]
+    }
+    /** ConfigExportDocument */
+    ConfigExportDocument: {
+      /** Meters */
+      meters: components['schemas']['ConfigExportMeter'][]
+    }
+    /** ConfigExportMeter */
+    ConfigExportMeter: {
+      metadata: components['schemas']['MetadataOutputType']
+      /**
+       * External Id
+       * @description Your identifier for the meter.
+       */
+      external_id: string
+      /**
+       * Name
+       * @description The name of the meter. Will be shown on customer's invoices and usage.
+       */
+      name: string
+      /** @description The unit of the meter. */
+      unit: components['schemas']['MeterUnit']
+      /**
+       * Custom Label
+       * @description The label for the custom unit.
+       */
+      custom_label: string | null
+      /**
+       * Custom Multiplier
+       * @description The multiplier to convert from base unit to display scale.
+       */
+      custom_multiplier: number | null
+      /** @description The filter applied on events to calculate the meter. */
+      filter: components['schemas']['Filter']
+      /**
+       * Aggregation
+       * @description The aggregation applied on the filtered events.
+       */
+      aggregation:
+        | components['schemas']['CountAggregation']
+        | components['schemas']['PropertyAggregation']
+        | components['schemas']['UniqueAggregation']
+    }
     /** ConfigFieldChange */
     ConfigFieldChange: {
       /**
@@ -16156,6 +16235,38 @@ export interface components {
       /** Issues */
       issues: components['schemas']['ConfigIssue'][]
     }
+    /**
+     * ConfigResource
+     * @enum {string}
+     */
+    ConfigResource: 'meter'
+    /** ConfigSkippedMeter */
+    ConfigSkippedMeter: {
+      /** @description The type of resource. */
+      resource: components['schemas']['ConfigResource']
+      /**
+       * Id
+       * Format: uuid4
+       * @description The meter ID.
+       */
+      id: string
+      /**
+       * Name
+       * @description The meter name.
+       */
+      name: string
+      /** @description Why the meter isn't in the exported config. */
+      reason: components['schemas']['ConfigSkippedReason']
+    }
+    /**
+     * ConfigSkippedReason
+     * @enum {string}
+     */
+    ConfigSkippedReason:
+      | 'missing_external_id'
+      | 'archived'
+      | 'invalid'
+      | 'over_limit'
     /** CostMetadata */
     'CostMetadata-Input': {
       /**
@@ -61990,6 +62101,58 @@ export interface operations {
       }
     }
   }
+  'config:export': {
+    parameters: {
+      query?: {
+        /** @description The ID of the organization to export. **Required unless you use an organization token.** */
+        organization_id?: string | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Current config. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConfigExport']
+        }
+      }
+      /** @description Not authenticated. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Unauthorized']
+        }
+      }
+      /** @description Not allowed to read this organization's products, or config as code isn't enabled for it. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['NotPermitted']
+            | components['schemas']['ConfigAsCodeNotEnabled']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'config:apply': {
     parameters: {
       query?: never
@@ -70749,6 +70912,12 @@ export const configIssueSeverityValues: ReadonlyArray<
 export const configIssueTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueType']
 > = ['duplicate_external_id', 'meter_locked', 'unknown_event']
+export const configResourceValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigResource']
+> = ['meter']
+export const configSkippedReasonValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigSkippedReason']
+> = ['missing_external_id', 'archived', 'invalid', 'over_limit']
 export const countAggregationFuncValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CountAggregation']['func']
 > = ['count']

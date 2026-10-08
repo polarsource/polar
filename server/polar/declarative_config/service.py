@@ -96,7 +96,7 @@ class DeclarativeConfigService:
             raise ConfigInvalid(errors)
 
         meters = await self._apply_meters(session, organization, changes.meters)
-        return ConfigApplyResult(meters=meters, benefits=[], products=[])
+        return ConfigApplyResult(changes=meters)
 
     async def plan(
         self,
@@ -222,7 +222,9 @@ class DeclarativeConfigService:
                 await repository.update(change.existing, update_dict=change.update_dict)
             results.append(
                 ConfigResult(
-                    external_id=change.config.external_id, action=change.action
+                    resource=ConfigResource.meter,
+                    external_id=change.config.external_id,
+                    action=change.action,
                 )
             )
         return results

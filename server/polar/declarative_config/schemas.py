@@ -295,14 +295,15 @@ class ConfigResource(StrEnum):
 
 
 class ConfigResult(Schema):
+    resource: ConfigResource = Field(description="The type of resource.")
     external_id: str = Field(description="The resource's `external_id`.")
     action: ConfigAction = Field(description="What applying the config does.")
 
 
 class ConfigApplyResult(Schema):
-    meters: list[ConfigResult]
-    benefits: list[ConfigResult]
-    products: list[ConfigResult]
+    changes: list[ConfigResult] = Field(
+        description="What was applied, in order: meters, benefits, then products."
+    )
 
 
 class ConfigFieldChange(Schema):
@@ -312,7 +313,6 @@ class ConfigFieldChange(Schema):
 
 
 class ConfigChange(ConfigResult):
-    resource: ConfigResource = Field(description="The type of resource.")
     diff: list[ConfigFieldChange] = Field(
         description=(
             "Fields that applying the config changes. "

@@ -70,9 +70,13 @@ class TestApply:
 
         assert response.status_code == 200
         assert response.json() == {
-            "meters": [{"external_id": "sdk-tool-calls", "action": "created"}],
-            "benefits": [],
-            "products": [],
+            "changes": [
+                {
+                    "resource": "meter",
+                    "external_id": "sdk-tool-calls",
+                    "action": "created",
+                }
+            ],
         }
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))

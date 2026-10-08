@@ -15844,12 +15844,11 @@ export interface components {
     ConfigAction: 'created' | 'updated' | 'unchanged'
     /** ConfigApplyResult */
     ConfigApplyResult: {
-      /** Meters */
-      meters: components['schemas']['ConfigResult'][]
-      /** Benefits */
-      benefits: components['schemas']['ConfigResult'][]
-      /** Products */
-      products: components['schemas']['ConfigResult'][]
+      /**
+       * Changes
+       * @description What was applied, in order: meters, benefits, then products.
+       */
+      changes: components['schemas']['ConfigResult'][]
     }
     /** ConfigAsCodeNotEnabled */
     ConfigAsCodeNotEnabled: {
@@ -15957,6 +15956,8 @@ export interface components {
     }
     /** ConfigChange */
     ConfigChange: {
+      /** @description The type of resource. */
+      resource: components['schemas']['ConfigResource']
       /**
        * External Id
        * @description The resource's `external_id`.
@@ -15964,8 +15965,6 @@ export interface components {
       external_id: string
       /** @description What applying the config does. */
       action: components['schemas']['ConfigAction']
-      /** @description The type of resource. */
-      resource: components['schemas']['ConfigResource']
       /**
        * Diff
        * @description Fields that applying the config changes. On create, fields left empty are omitted.
@@ -16279,6 +16278,8 @@ export interface components {
     ConfigResource: 'meter' | 'benefit' | 'product'
     /** ConfigResult */
     ConfigResult: {
+      /** @description The type of resource. */
+      resource: components['schemas']['ConfigResource']
       /**
        * External Id
        * @description The resource's `external_id`.

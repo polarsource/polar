@@ -113,7 +113,7 @@ class TestApply:
             session, auth_subject, Config.model_validate({"meters": [TOOL_CALLS_METER]})
         )
 
-        assert result.meters[0].action == ConfigAction.created
+        assert result.changes[0].action == ConfigAction.created
         [meter] = await MeterRepository.from_session(session).get_all_by_external_ids(
             organization.id, ["sdk-tool-calls"]
         )
@@ -140,7 +140,7 @@ class TestApply:
             session, auth_subject, Config.model_validate({"meters": [FIXTURE_METER]})
         )
 
-        assert result.meters[0].action == ConfigAction.unchanged
+        assert result.changes[0].action == ConfigAction.unchanged
         enqueue_job_mock.assert_not_called()
 
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -159,7 +159,7 @@ class TestApply:
             session, auth_subject, Config.model_validate({"meters": [TOOL_CALLS_METER]})
         )
 
-        assert result.meters[0].action == ConfigAction.updated
+        assert result.changes[0].action == ConfigAction.updated
         assert meter.name == "SDK - Tool Calls"
         assert meter.unit == MeterUnit.custom
         assert meter.custom_label == "call"
@@ -183,7 +183,7 @@ class TestApply:
             session, auth_subject, Config.model_validate({"meters": [TOOL_CALLS_METER]})
         )
 
-        assert result.meters[0].action == ConfigAction.created
+        assert result.changes[0].action == ConfigAction.created
         assert other_meter.name == "My Meter"
 
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -243,7 +243,7 @@ class TestApply:
             Config.model_validate({"meters": [{**FIXTURE_METER, "name": "Renamed"}]}),
         )
 
-        assert result.meters[0].action == ConfigAction.updated
+        assert result.changes[0].action == ConfigAction.updated
         assert meter.name == "Renamed"
 
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -265,7 +265,7 @@ class TestApply:
             session, auth_subject, Config.model_validate({"meters": [FIXTURE_METER]})
         )
 
-        assert result.meters[0].action == ConfigAction.unchanged
+        assert result.changes[0].action == ConfigAction.unchanged
         assert meter.user_metadata == {"team": "sdk"}
 
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -291,7 +291,7 @@ class TestApply:
             ),
         )
 
-        assert result.meters[0].action == ConfigAction.updated
+        assert result.changes[0].action == ConfigAction.updated
         assert meter.user_metadata == {"team": "billing"}
 
     @pytest.mark.usefixtures("config_as_code_enabled")

@@ -1,6 +1,9 @@
 import { getCustomerMeter } from '../internal/api/customer-meters'
 import { ingestEvent } from '../internal/api/events'
-import { findBenefitGrant } from '../internal/api/benefits'
+import {
+  assertBenefitDeployed,
+  findBenefitGrant,
+} from '../internal/api/benefits'
 import { assertMeterDeployed } from '../internal/api/meters'
 import { matchesMeter } from '../internal/meter'
 import type {
@@ -79,6 +82,7 @@ export const createActor = <Config extends RuntimeSDKConfig>(
   // last modified before this timestamp doesn't reflect that event yet.
   const latestIngestedAt = new Map<string, Date>()
   const deployedMeters = new Set<string>()
+  const deployedBenefits = new Set<string>()
   const cacheKey = (identifier: ActorIdentifier, externalMeterId: string) =>
     identifier.customerId !== undefined
       ? `customer:${identifier.customerId}:${externalMeterId}`
@@ -98,6 +102,13 @@ export const createActor = <Config extends RuntimeSDKConfig>(
         toMemberIdentifier(identifier),
         name,
       )
+      // A missing grant means no access, unless the benefit itself isn't
+      // deployed, which we check once per benefit.
+      if (grant === undefined && !deployedBenefits.has(name)) {
+        await assertBenefitDeployed(sdk, name)
+      }
+      deployedBenefits.add(name)
+
       return grant === undefined
         ? { granted: false }
         : { granted: true, metadata: grant.benefit.metadata }

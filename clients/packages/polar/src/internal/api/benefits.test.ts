@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from 'vitest'
-import { findBenefitGrant } from './benefits'
+import { assertBenefitDeployed, findBenefitGrant } from './benefits'
 import { createPolar } from '../../sdk'
 
 afterEach(() => vi.restoreAllMocks())
@@ -42,4 +42,26 @@ test('returns undefined when the customer has no grant', async () => {
   await expect(
     findBenefitGrant(sdk, { customer_id: 'customer-1' }, 'custom_servers'),
   ).resolves.toBeUndefined()
+})
+
+test.each([
+  [[{ id: 'benefit-id', external_id: 'custom_servers' }], undefined],
+  [[{ id: 'benefit-id', external_id: 'other' }], 'not deployed'],
+  [
+    [
+      { id: 'benefit-1', external_id: 'custom_servers' },
+      { id: 'benefit-2', external_id: 'custom_servers' },
+    ],
+    'ambiguous',
+  ],
+])('checks benefit %j is deployed', async (items, message) => {
+  vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    Response.json({ items, pagination: { total_count: 1, max_page: 1 } }),
+  )
+  const check = assertBenefitDeployed(sdk, 'custom_servers')
+  if (message === undefined) {
+    await expect(check).resolves.toBeUndefined()
+  } else {
+    await expect(check).rejects.toThrow(message)
+  }
 })

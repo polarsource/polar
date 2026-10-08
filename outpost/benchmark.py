@@ -66,11 +66,11 @@ async def benchmark(args: argparse.Namespace) -> tuple[list[float], float, float
         async def ingest(record: bool) -> None:
             start = perf_counter()
             response = await client.post(
-                f"{args.url.rstrip('/')}/ingest",
+                f"{args.url.rstrip('/')}/v1/events/ingest",
                 content=body,
                 headers={"Content-Type": "application/json"},
             )
-            if response.status_code != 202:
+            if response.status_code != 200:
                 message = f"Ingest returned {response.status_code}: {response.text}"
                 raise RuntimeError(message)
             if record:
@@ -104,7 +104,7 @@ def report(
         message = f"Expected {args.requests} requests, got {len(samples)}"
         raise RuntimeError(message)
     elapsed = max(end for _, _, end in results) - min(start for _, start, _ in results)
-    print("HTTP /ingest; count meter matching tool_call events")
+    print("HTTP /v1/events/ingest; count meter matching tool_call events")
     print(
         f"{args.requests:,} requests × {args.batch_size:,} events; "
         f"concurrency={args.concurrency}; processes={len(results)}; "

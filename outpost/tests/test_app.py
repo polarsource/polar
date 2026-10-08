@@ -5,16 +5,16 @@ import pytest
 @pytest.mark.anyio
 class TestIngest:
     async def test_no_body(self, client: httpx2.AsyncClient) -> None:
-        response = await client.post("/ingest")
+        response = await client.post("/v1/events/ingest")
         assert response.status_code == 422
 
     async def test_invalid_body(self, client: httpx2.AsyncClient) -> None:
-        response = await client.post("/ingest", json={"foo": "bar"})
+        response = await client.post("/v1/events/ingest", json={"foo": "bar"})
         assert response.status_code == 422
 
     async def test_valid_body(self, client: httpx2.AsyncClient) -> None:
         response = await client.post(
-            "/ingest",
+            "/v1/events/ingest",
             json={
                 "events": [
                     {
@@ -26,4 +26,5 @@ class TestIngest:
                 ]
             },
         )
-        assert response.status_code == 202
+        assert response.status_code == 200
+        assert response.json() == {"inserted": 1, "duplicates": 0}

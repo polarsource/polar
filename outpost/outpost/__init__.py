@@ -6,7 +6,7 @@ import anyio
 from pydantic import ValidationError
 from starlette.applications import Starlette
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
 
 from outpost.env import Environment, get_environment
@@ -37,7 +37,7 @@ async def ingest(request: Request) -> Response:
         reduce(state["configuration"].meters, payload.events)
     )
 
-    return Response(status_code=202)
+    return JSONResponse({"inserted": len(payload.events), "duplicates": 0})
 
 
 @contextlib.asynccontextmanager
@@ -66,6 +66,6 @@ app = Starlette(
     debug=True,
     lifespan=lifespan,
     routes=[
-        Route("/ingest", ingest, methods=["POST"]),
+        Route("/v1/events/ingest", ingest, methods=["POST"]),
     ],
 )

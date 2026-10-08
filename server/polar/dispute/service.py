@@ -498,7 +498,11 @@ class DisputeService:
             )
             assert product is not None
             customer_repository = CustomerRepository.from_session(session)
-            customer = await customer_repository.get_by_id(dispute.order.customer_id)
+            # The customer may have been deleted since the purchase,
+            # but we still need to revoke their benefits.
+            customer = await customer_repository.get_by_id(
+                dispute.order.customer_id, include_deleted=True
+            )
             assert customer is not None
             await benefit_grant_service.enqueue_benefits_grants(
                 session,

@@ -9,7 +9,6 @@ export type RuntimeBenefitConfig = {
 export type RuntimeFilter = MeterFilter
 
 export type RuntimeMeterConfig = {
-  readonly id?: string
   readonly filter: RuntimeFilter
   readonly aggregation: MeterAggregation
 }

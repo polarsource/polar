@@ -4,12 +4,17 @@ import type { CustomerIdentifier } from './utils'
 export const getCustomerMeter = async (
   sdk: Polar,
   identifier: CustomerIdentifier,
-  meterId: string,
+  externalMeterId: string,
 ): Promise<models.CustomerMeter | undefined> => {
-  const response = await sdk.customerMeters.list({
+  const { items } = await sdk.customerMeters.list({
     ...identifier,
-    meter_id: meterId,
+    external_meter_id: externalMeterId,
+    limit: 2,
   })
-
-  return response.items[0]
+  if (items.length > 1) {
+    throw new Error(
+      `Meter external ID ${JSON.stringify(externalMeterId)} is ambiguous. Use an organization-scoped token.`,
+    )
+  }
+  return items[0]
 }

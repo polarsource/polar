@@ -1,15 +1,26 @@
 import uuid
+from decimal import Decimal
 
 import pytest
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
+from polar.auth.scope import Scope
+from polar.enums import SubscriptionRecurringInterval
 from polar.kit.utils import utc_now
 from polar.meter.unit import MeterUnit
 from polar.models import Organization, UserOrganization
+from polar.models.benefit import BenefitType
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import METER_TEST_EVENT, create_event, create_meter
+from tests.fixtures.random_objects import (
+    METER_TEST_EVENT,
+    create_benefit,
+    create_event,
+    create_meter,
+    create_product,
+    set_product_benefits,
+)
 
 METER = {
     "external_id": "sdk-tool-calls",
@@ -419,7 +430,7 @@ class TestExport:
 
         assert response.status_code == 200
         json = response.json()
-        assert json["config"] == {"meters": []}
+        assert json["config"] == {"meters": [], "benefits": [], "products": []}
         assert json["skipped"] == [
             {
                 "resource": "meter",
@@ -451,7 +462,7 @@ class TestExport:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        mocker.patch("polar.declarative_config.service.MAXIMUM_METERS", 1)
+        mocker.patch("polar.declarative_config.schemas.MAXIMUM_METERS", 1)
         await create_meter(
             save_fixture,
             organization=organization,
@@ -497,3 +508,224 @@ class TestExport:
         assert response.status_code == 200
         [meter] = response.json()["config"]["meters"]
         assert meter["external_id"] == "my-meter"
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_benefits_and_products_round_trip_through_plan(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="api-calls",
+        )
+        credits = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            description="API credits",
+            properties={"meter_id": str(meter.id), "units": 1000, "rollover": True},
+            external_id="api-credits",
+        )
+        beta = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.feature_flag,
+            description="Beta access",
+            properties={},
+            external_id="beta",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            name="Pro",
+            prices=[(2000, "usd"), (meter, Decimal("0.5"), 5000, "usd")],
+            external_id="pro",
+        )
+        await set_product_benefits(
+            save_fixture, product=product, benefits=[beta, credits]
+        )
+
+        response = await client.get(
+            "/v1/config/", params={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["skipped"] == []
+        assert json["config"]["benefits"] == [
+            {
+                "external_id": "api-credits",
+                "type": "meter_credit",
+                "description": "API credits",
+                "properties": {"meter": "api-calls", "units": 1000, "rollover": True},
+                "metadata": {},
+            },
+            {
+                "external_id": "beta",
+                "type": "feature_flag",
+                "description": "Beta access",
+                "metadata": {},
+            },
+        ]
+        [exported_product] = json["config"]["products"]
+        fixed_price, metered_price = exported_product["prices"]
+        assert {
+            key: value for key, value in exported_product.items() if key != "prices"
+        } == {
+            "external_id": "pro",
+            "name": "Pro",
+            "description": "Description",
+            "visibility": "public",
+            "recurring_interval": "month",
+            "recurring_interval_count": 1,
+            "benefits": ["beta", "api-credits"],
+            "metadata": {},
+        }
+        assert fixed_price == {
+            "amount_type": "fixed",
+            "price_currency": "usd",
+            "tax_behavior": None,
+            "price_amount": 2000,
+        }
+        assert Decimal(metered_price["unit_amount"]) == Decimal("0.5")
+        assert {
+            key: value for key, value in metered_price.items() if key != "unit_amount"
+        } == {
+            "amount_type": "metered_unit",
+            "price_currency": "usd",
+            "tax_behavior": None,
+            "meter": "api-calls",
+            "cap_amount": 5000,
+        }
+
+        plan_response = await client.post(
+            "/v1/config/plan",
+            json={**json["config"], "organization_id": str(organization.id)},
+        )
+
+        assert plan_response.status_code == 200
+        plan = plan_response.json()
+        assert [
+            (change["resource"], change["action"]) for change in plan["changes"]
+        ] == [
+            ("meter", "unchanged"),
+            ("benefit", "unchanged"),
+            ("benefit", "unchanged"),
+            ("product", "unchanged"),
+        ]
+        assert all(issue["severity"] != "error" for issue in plan["issues"])
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_skipped_benefits_and_products(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture, organization=organization, id=uuid.uuid4()
+        )
+        without_external_id = await create_benefit(
+            save_fixture, organization=organization, description="No external ID"
+        )
+        custom = await create_benefit(
+            save_fixture,
+            organization=organization,
+            description="Custom",
+            external_id="custom",
+        )
+        unknown_meter = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            description="Credits",
+            properties={"meter_id": str(meter.id), "units": 10, "rollover": False},
+            external_id="credits",
+        )
+        archived = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Archived",
+            is_archived=True,
+            external_id="archived",
+        )
+        custom_price = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Pay what you want",
+            prices=[(50, None, None, "usd")],
+            external_id="pwyw",
+        )
+        unknown_benefit = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="With custom benefit",
+            external_id="with-custom-benefit",
+        )
+        await set_product_benefits(
+            save_fixture, product=unknown_benefit, benefits=[custom]
+        )
+
+        response = await client.get(
+            "/v1/config/", params={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["config"] == {"meters": [], "benefits": [], "products": []}
+        assert [
+            (skipped["resource"], skipped["id"], skipped["reason"])
+            for skipped in json["skipped"]
+        ] == [
+            ("meter", str(meter.id), "missing_external_id"),
+            ("benefit", str(without_external_id.id), "missing_external_id"),
+            ("benefit", str(custom.id), "not_supported"),
+            ("benefit", str(unknown_meter.id), "unknown_reference"),
+            ("product", str(archived.id), "archived"),
+            ("product", str(custom_price.id), "not_supported"),
+            ("product", str(unknown_benefit.id), "unknown_reference"),
+        ]
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.meters_read})
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_sections_require_scopes(
+        self, save_fixture: SaveFixture, client: AsyncClient, organization: Organization
+    ) -> None:
+        await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.feature_flag,
+            properties={},
+            external_id="beta",
+        )
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="pack",
+        )
+
+        response = await client.get("/v1/config/")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["config"] == {"meters": [], "benefits": [], "products": []}
+        assert json["skipped"] == []
+
+        plan_response = await client.post("/v1/config/plan", json=json["config"])
+
+        assert plan_response.status_code == 200

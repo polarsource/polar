@@ -479,14 +479,12 @@ class TestApply:
                 Config.model_validate({"benefits": [BETA_BENEFIT]}),
             )
 
-    @pytest.mark.parametrize("benefits", [[BETA_BENEFIT], []])
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.meters_write})
     )
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_benefits_require_benefits_scope(
         self,
-        benefits: list[dict[str, Any]],
         session: AsyncSession,
         redis: Redis,
         auth_subject: AuthSubject[Organization],
@@ -496,7 +494,7 @@ class TestApply:
                 session,
                 redis,
                 auth_subject,
-                Config.model_validate({"benefits": benefits}),
+                Config.model_validate({"benefits": [BETA_BENEFIT]}),
             )
 
     @pytest.mark.usefixtures("config_as_code_enabled")

@@ -9,7 +9,7 @@ from polar.benefit.strategies.base.schemas import (
     BENEFIT_DESCRIPTION_MAX_LENGTH,
     BENEFIT_DESCRIPTION_MIN_LENGTH,
 )
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import SubscriptionRecurringInterval, TaxBehaviorOption
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import Int32, Schema, SetSchemaReference
 from polar.kit.visibility import Visibility
@@ -327,23 +327,101 @@ class ConfigExportMeter(Schema, MetadataOutputMixin):
     )
 
 
+class ConfigExportBenefitBase(Schema, MetadataOutputMixin):
+    external_id: str = Field(description="Your identifier for the benefit.")
+    description: str = Field(description="The description of the benefit.")
+
+
+class ConfigExportBenefitFeatureFlag(ConfigExportBenefitBase):
+    type: Literal[BenefitType.feature_flag]
+
+
+class ConfigExportBenefitMeterCreditProperties(Schema):
+    meter: str = Field(description="The `external_id` of the credited meter.")
+    units: int = Field(description="Number of units credited on the meter each cycle.")
+    rollover: bool = Field(
+        description="Whether unused units carry over to the next cycle."
+    )
+
+
+class ConfigExportBenefitMeterCredit(ConfigExportBenefitBase):
+    type: Literal[BenefitType.meter_credit]
+    properties: ConfigExportBenefitMeterCreditProperties
+
+
+ConfigExportBenefit = Annotated[
+    ConfigExportBenefitFeatureFlag | ConfigExportBenefitMeterCredit,
+    Discriminator("type"),
+    SetSchemaReference("ConfigExportBenefit"),
+]
+
+
+class ConfigExportProductPriceBase(Schema):
+    price_currency: str = Field(description="The currency of the price.")
+    tax_behavior: TaxBehaviorOption | None = Field(
+        description="The tax behavior of the price."
+    )
+
+
+class ConfigExportProductPriceFixed(ConfigExportProductPriceBase):
+    amount_type: Literal[ProductPriceAmountType.fixed]
+    price_amount: int = Field(description="The price in cents.")
+
+
+class ConfigExportProductPriceMeteredUnit(ConfigExportProductPriceBase):
+    amount_type: Literal[ProductPriceAmountType.metered_unit]
+    meter: str = Field(description="The `external_id` of the billed meter.")
+    unit_amount: Decimal = Field(description="The price per unit in cents.")
+    cap_amount: int | None = Field(description="Optional maximum charge in cents.")
+
+
+ConfigExportProductPrice = Annotated[
+    ConfigExportProductPriceFixed | ConfigExportProductPriceMeteredUnit,
+    Discriminator("amount_type"),
+    SetSchemaReference("ConfigExportProductPrice"),
+]
+
+
+class ConfigExportProduct(Schema, MetadataOutputMixin):
+    external_id: str = Field(description="Your identifier for the product.")
+    name: str = Field(description="The name of the product.")
+    description: str | None = Field(description="The description of the product.")
+    visibility: ProductVisibility = Field(description="The visibility of the product.")
+    recurring_interval: SubscriptionRecurringInterval | None = Field(
+        description="The recurring interval of the product, empty if one-time."
+    )
+    recurring_interval_count: int | None = Field(
+        description="Billing cycle length in intervals, empty if one-time."
+    )
+    prices: list[ConfigExportProductPrice] = Field(
+        description="The prices of the product."
+    )
+    benefits: list[str] = Field(
+        description="The `external_id` of each benefit granted by the product."
+    )
+
+
 class ConfigExportDocument(Schema):
     meters: list[ConfigExportMeter]
+    benefits: list[ConfigExportBenefit]
+    products: list[ConfigExportProduct]
 
 
 class ConfigSkippedReason(StrEnum):
     missing_external_id = "missing_external_id"
     archived = "archived"
     invalid = "invalid"
+    not_supported = "not_supported"
     over_limit = "over_limit"
+    unknown_reference = "unknown_reference"
 
 
-class ConfigSkippedMeter(Schema):
+class ConfigSkippedResource(Schema):
     resource: ConfigResource = Field(description="The type of resource.")
-    id: UUID4 = Field(description="The meter ID.")
-    name: str = Field(description="The meter name.")
+    id: UUID4 = Field(description="The resource ID.")
+    name: str = Field(description="The resource name, or description for benefits.")
     reason: ConfigSkippedReason = Field(
-        description="Why the meter isn't in the exported config."
+        description="Why the resource isn't in the exported config."
     )
 
 
@@ -351,6 +429,6 @@ class ConfigExport(Schema):
     config: ConfigExportDocument = Field(
         description="The current config, in the same shape plan and apply accept."
     )
-    skipped: list[ConfigSkippedMeter] = Field(
-        description="Meters left out of the exported config."
+    skipped: list[ConfigSkippedResource] = Field(
+        description="Resources left out of the exported config."
     )

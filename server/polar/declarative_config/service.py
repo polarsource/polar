@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field, ValidationError, create_model
+from pydantic import BaseModel, Field, create_model
 from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject, is_organization
@@ -23,23 +23,21 @@ from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
 from polar.redis import Redis
 
-from . import benefits, products, validation
+from . import benefits, export, products, validation
 from .schemas import (
-    MAXIMUM_METERS,
     Config,
     ConfigApplyResult,
     ConfigChange,
     ConfigExport,
+    ConfigExportBenefit,
     ConfigExportDocument,
-    ConfigExportMeter,
+    ConfigExportProduct,
     ConfigIssue,
     ConfigIssueSeverity,
-    ConfigMeter,
     ConfigPlan,
     ConfigResource,
     ConfigResult,
-    ConfigSkippedMeter,
-    ConfigSkippedReason,
+    ConfigSkippedResource,
 )
 from .validation import BenefitChange, MeterChange, ProductChange, ResourceChange
 
@@ -54,15 +52,27 @@ _SECTION_SCOPES = {
 }
 
 
+def _section_scopes(section: str, *, write: bool) -> set[Scope]:
+    read_scope, write_scope = _SECTION_SCOPES[section]
+    return {write_scope} if write else {read_scope, write_scope}
+
+
+def _has_section_scope(
+    auth_subject: AuthSubject[User | Organization], section: str, *, write: bool
+) -> bool:
+    return bool(auth_subject.scopes & _section_scopes(section, write=write))
+
+
 def _assert_section_scopes(
     auth_subject: AuthSubject[User | Organization], config: Config, *, write: bool
 ) -> None:
-    for section, (read_scope, write_scope) in _SECTION_SCOPES.items():
-        if section not in config.model_fields_set:
-            continue
-        required = {write_scope} if write else {read_scope, write_scope}
-        if not auth_subject.scopes & required:
-            raise InsufficientScopeError({str(scope) for scope in required})
+    for section in _SECTION_SCOPES:
+        if getattr(config, section) and not _has_section_scope(
+            auth_subject, section, write=write
+        ):
+            raise InsufficientScopeError(
+                {str(scope) for scope in _section_scopes(section, write=write)}
+            )
 
 
 def _constraint_name(error: IntegrityError) -> str | None:
@@ -194,48 +204,27 @@ class DeclarativeConfigService:
             _OrganizationTarget(organization_id),
             OrganizationPermission.products_read,
         )
-        repository = MeterRepository.from_session(session)
-        meters: list[ConfigExportMeter] = []
-        skipped: list[ConfigSkippedMeter] = []
-        statement = repository.get_organization_statement(organization.id)
-        async for meter in repository.stream(statement):
-            reason: ConfigSkippedReason | None = None
-            if meter.external_id is None:
-                reason = ConfigSkippedReason.missing_external_id
-            elif meter.archived_at is not None:
-                reason = ConfigSkippedReason.archived
-            elif len(meters) >= MAXIMUM_METERS:
-                reason = ConfigSkippedReason.over_limit
-            else:
-                try:
-                    meter_config = ConfigMeter(
-                        external_id=meter.external_id,
-                        name=meter.name,
-                        unit=meter.unit,
-                        custom_label=meter.custom_label,
-                        custom_multiplier=meter.custom_multiplier,
-                        filter=meter.filter,
-                        aggregation=meter.aggregation,
-                        metadata=meter.user_metadata,
-                    )
-                except ValidationError:
-                    reason = ConfigSkippedReason.invalid
-                else:
-                    meters.append(
-                        ConfigExportMeter.model_validate(
-                            meter_config, from_attributes=True
-                        )
-                    )
-            if reason is not None:
-                skipped.append(
-                    ConfigSkippedMeter(
-                        resource=ConfigResource.meter,
-                        id=meter.id,
-                        name=meter.name,
-                        reason=reason,
-                    )
-                )
-        return ConfigExport(config=ConfigExportDocument(meters=meters), skipped=skipped)
+        skipped: list[ConfigSkippedResource] = []
+        meters, meter_external_ids = await export.export_meters(
+            session, organization, skipped
+        )
+        benefits: list[ConfigExportBenefit] = []
+        benefit_external_ids: export.ExternalIDs = {}
+        if _has_section_scope(auth_subject, "benefits", write=False):
+            benefits, benefit_external_ids = await export.export_benefits(
+                session, organization, meter_external_ids, skipped
+            )
+        products: list[ConfigExportProduct] = []
+        if _has_section_scope(auth_subject, "products", write=False):
+            products = await export.export_products(
+                session, organization, meter_external_ids, benefit_external_ids, skipped
+            )
+        return ConfigExport(
+            config=ConfigExportDocument(
+                meters=meters, benefits=benefits, products=products
+            ),
+            skipped=skipped,
+        )
 
     def _plan_changes(
         self, resource: ConfigResource, changes: Sequence[ResourceChange[Any, Any]]

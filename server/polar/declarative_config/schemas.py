@@ -78,6 +78,10 @@ class ConfigAction(StrEnum):
     unchanged = "unchanged"
 
 
+class ConfigResource(StrEnum):
+    meter = "meter"
+
+
 class ConfigMeterResult(Schema):
     external_id: str = Field(description="The meter's `external_id`.")
     action: ConfigAction = Field(description="What applying the config does.")
@@ -135,6 +139,7 @@ class ConfigSkippedReason(StrEnum):
 
 
 class ConfigSkippedMeter(Schema):
+    resource: ConfigResource = Field(description="The type of resource.")
     id: UUID4 = Field(description="The meter ID.")
     name: str = Field(description="The meter name.")
     reason: ConfigSkippedReason = Field(

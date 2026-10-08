@@ -16058,8 +16058,15 @@ export interface components {
       /** Issues */
       issues: components['schemas']['ConfigIssue'][]
     }
+    /**
+     * ConfigResource
+     * @enum {string}
+     */
+    ConfigResource: 'meter'
     /** ConfigSkippedMeter */
     ConfigSkippedMeter: {
+      /** @description The type of resource. */
+      resource: components['schemas']['ConfigResource']
       /**
        * Id
        * Format: uuid4
@@ -70665,6 +70672,9 @@ export const configIssueSeverityValues: ReadonlyArray<
 export const configIssueTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueType']
 > = ['duplicate_external_id', 'meter_locked', 'unknown_event']
+export const configResourceValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigResource']
+> = ['meter']
 export const configSkippedReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigSkippedReason']
 > = ['missing_external_id', 'archived', 'invalid', 'over_limit']

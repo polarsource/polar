@@ -30,6 +30,7 @@ from .schemas import (
     ConfigMeterChange,
     ConfigMeterResult,
     ConfigPlan,
+    ConfigResource,
     ConfigSkippedMeter,
     ConfigSkippedReason,
 )
@@ -167,7 +168,12 @@ class DeclarativeConfigService:
                     )
             if reason is not None:
                 skipped.append(
-                    ConfigSkippedMeter(id=meter.id, name=meter.name, reason=reason)
+                    ConfigSkippedMeter(
+                        resource=ConfigResource.meter,
+                        id=meter.id,
+                        name=meter.name,
+                        reason=reason,
+                    )
                 )
         return ConfigExport(config=ConfigExportDocument(meters=meters), skipped=skipped)
 

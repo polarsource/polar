@@ -158,7 +158,7 @@ const cases: [string, PolarConfig][] = [
           calls: meter('Calls').count(),
         }),
         benefits: ({ flag }) => ({ custom_servers: flag('Custom servers') }),
-        products: ({ product, free, fixed, seats, units, meter }) => {
+        products: ({ product, free, fixed, seats, units, tier, meter }) => {
           return {
             hobby: product('Hobby')
               .prices(
@@ -167,19 +167,16 @@ const cases: [string, PolarConfig][] = [
                   .flat()
                   .amount(api.perThousand(api.lira(1.5)), api.eur(0.02)),
                 meter('tokens').graduated(
-                  api
-                    .tier()
+                  tier()
                     .max(1_000_000)
                     .amount(
                       api.per(1_000_000_000, api.lira(0.75)),
                       api.per(10, api.eur(0.01)),
                     ),
-                  api
-                    .tier()
-                    .amount(
-                      api.per(1_000_000_000_000, api.lira(0.01)),
-                      api.perMillion(api.eur(0.03)),
-                    ),
+                  tier().amount(
+                    api.per(1_000_000_000_000, api.lira(0.01)),
+                    api.perMillion(api.eur(0.03)),
+                  ),
                 ),
               )
               .recurring('monthly'),
@@ -193,18 +190,17 @@ const cases: [string, PolarConfig][] = [
               .prices(
                 seats()
                   .graduated(
-                    api.tier().max(5).amount(api.usd(20), api.eur(18)),
-                    api.tier().amount(api.usd(15), api.eur(14)),
+                    tier().max(5).amount(api.usd(20), api.eur(18)),
+                    tier().amount(api.usd(15), api.eur(14)),
                   )
                   .min(3)
                   .max(50),
                 meter('tokens')
                   .volume(
-                    api
-                      .tier()
+                    tier()
                       .max(1_000_000)
                       .amount(api.perMillion(api.usd(0.03)), api.eur(0.01)),
-                    api.tier().amount(api.usd(0), api.eur(0)),
+                    tier().amount(api.usd(0), api.eur(0)),
                   )
                   .cap(api.usd(500)),
               )
@@ -214,14 +210,14 @@ const cases: [string, PolarConfig][] = [
             starter: product('Starter')
               .prices(
                 units().graduated(
-                  api.tier().included(10),
-                  api.tier().max(20).free(),
-                  api.tier().max(50).amount(api.usd(0.05)),
-                  api.tier().free(),
+                  tier().included(10),
+                  tier().max(20).free(),
+                  tier().max(50).amount(api.usd(0.05)),
+                  tier().free(),
                 ),
                 meter('tokens').volume(
-                  api.tier().max(5).amount(api.usd(0)),
-                  api.tier().amount(api.usd(0)),
+                  tier().max(5).amount(api.usd(0)),
+                  tier().amount(api.usd(0)),
                 ),
               )
               .recurring('monthly'),
@@ -331,14 +327,14 @@ test('renders free tiers with free() and included()', async () => {
       api
         .defineConfig({
           meters: () => ({}),
-          products: ({ product, seats }) => ({
+          products: ({ product, seats, tier }) => ({
             team: product('Team')
               .prices(
                 seats().graduated(
-                  api.tier().included(3),
-                  api.tier().max(10).amount(api.usd(1)),
-                  api.tier().max(20).free(),
-                  api.tier().amount(api.usd(0.5)),
+                  tier().included(3),
+                  tier().max(10).amount(api.usd(1)),
+                  tier().max(20).free(),
+                  tier().amount(api.usd(0.5)),
                 ),
               )
               .recurring('monthly'),
@@ -357,12 +353,12 @@ test('renders free volume tiers without included()', async () => {
       api
         .defineConfig({
           meters: () => ({}),
-          products: ({ product, seats }) => ({
+          products: ({ product, seats, tier }) => ({
             team: product('Team')
               .prices(
                 seats().volume(
-                  api.tier().max(3).free(),
-                  api.tier().amount(api.usd(100)),
+                  tier().max(3).free(),
+                  tier().amount(api.usd(100)),
                 ),
               )
               .recurring('monthly'),

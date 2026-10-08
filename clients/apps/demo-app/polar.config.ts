@@ -1,4 +1,4 @@
-import { defineConfig, eq, eur, perThousand, tier, usd } from '@polar-sh/polar'
+import { defineConfig, eq, eur, perThousand, usd } from '@polar-sh/polar'
 
 export default defineConfig({
   // events: {
@@ -14,7 +14,7 @@ export default defineConfig({
     custom_servers: flag('Custom servers'),
     tool_calls: credits('Included tool calls').meter('tool_call').units(1000),
   }),
-  products: ({ product, seats, meter }) => ({
+  products: ({ product, seats, tier, meter }) => ({
     pro: product('Pro')
       .prices(
         seats()

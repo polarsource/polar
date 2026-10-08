@@ -3,7 +3,6 @@ import { RuntimeSDK } from '../runtime'
 import { defineConfig } from './config'
 import { gte } from './meter'
 import { eur, perThousand, usd } from './money'
-import { tier } from './price'
 
 test('config serializes to JSON without exposing mutable internal data', () => {
   const config = defineConfig({
@@ -177,7 +176,7 @@ test('products serialize prices per currency and link meters and benefits', () =
   const config = defineConfig({
     meters: ({ meter }) => ({ tool_call: meter().count() }),
     benefits: ({ flag }) => ({ custom_servers: flag() }),
-    products: ({ product, seats, meter }) => ({
+    products: ({ product, seats, tier, meter }) => ({
       pro: product('Pro')
         .prices(
           seats().flat().amount(usd(10), eur(9)),

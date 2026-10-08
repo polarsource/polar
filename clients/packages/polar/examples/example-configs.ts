@@ -9,7 +9,6 @@ import {
   per,
   perMillion,
   perThousand,
-  tier,
   usd,
 } from '@polar-sh/polar'
 
@@ -73,7 +72,7 @@ export const pricingConfig = defineConfig({
     tool_call: meter().where(eq('name', 'tool_call')).count(),
     tokens: meter().where(eq('name', 'llm.completion')).sum('tokens'),
   }),
-  products: ({ product, free, fixed, seats, units, meter }) => ({
+  products: ({ product, free, fixed, seats, units, tier, meter }) => ({
     hobby: product('Hobby')
       .prices(
         free(),

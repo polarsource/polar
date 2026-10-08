@@ -4,7 +4,7 @@ import { BenefitConfig, flag, credits } from './benefit'
 import type { BenefitDefinition, BenefitHelpers } from './benefit'
 import { meter, MeterConfig } from './meter'
 import type { MeterDefinition } from './meter'
-import { fixed, free, metered, seats, units } from './price'
+import { fixed, free, metered, seats, tier, units } from './price'
 import { product, ProductConfig, productPrices } from './product'
 import type { ProductDefinition, ProductHelpers } from './product'
 
@@ -162,6 +162,7 @@ export const defineConfig = <
     fixed,
     seats,
     units,
+    tier,
     meter: metered,
   })
   const config = Schema.decodeUnknownSync(PolarConfig, {

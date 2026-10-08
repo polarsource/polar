@@ -173,9 +173,10 @@ const renderAmounts = (
 const renderTiers = (
   type: Tiers['type'],
   group: readonly [PriceConfig, ...PriceConfig[]],
+  helpers: Set<string>,
   imports: Set<string>,
 ): string[] => {
-  imports.add('tier')
+  helpers.add('tier')
   const rates = tiersOf(group[0]).map((_, index) =>
     group.map((price) => tiersOf(price)[index]?.unit_amount),
   )
@@ -262,7 +263,10 @@ const renderPrice = (
               `.amount(${renderAmounts(group, (price) => tiersOf(price)[0]?.unit_amount, imports)})`,
               ...(bound === undefined ? [] : [`.max(${literal(bound)})`]),
             ]
-          : [`${helper}()`, ...renderTiers(first.tiers.type, group, imports)]
+          : [
+              `${helper}()`,
+              ...renderTiers(first.tiers.type, group, helpers, imports),
+            ]
       if (first.minimum_units !== undefined) {
         lines.push(`.min(${literal(first.minimum_units)})`)
       }
@@ -283,7 +287,7 @@ const renderPrice = (
                 imports,
               )})`,
             ]
-          : renderTiers(first.tiers.type, group, imports)),
+          : renderTiers(first.tiers.type, group, helpers, imports)),
         ...renderCap(group, imports),
       ].join('\n')
     }

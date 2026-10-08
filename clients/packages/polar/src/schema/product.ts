@@ -9,6 +9,7 @@ import {
   priceCurrencies,
   sameCurrencies,
   seats,
+  tier,
   units,
 } from './price'
 import type { PriceDefinition } from './price'
@@ -265,5 +266,6 @@ export type ProductHelpers<Meter extends string, Benefit extends string> = {
   readonly fixed: typeof fixed
   readonly seats: typeof seats
   readonly units: typeof units
+  readonly tier: typeof tier
   readonly meter: (meter: Meter) => ReturnType<typeof metered<Meter>>
 }

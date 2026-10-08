@@ -3,9 +3,12 @@ from typing import Any
 
 from pydantic import UUID4, ConfigDict, Field
 
-from polar.kit.metadata import MetadataField
+from polar.kit.metadata import MetadataOutputType
 from polar.kit.schemas import Schema
-from polar.meter.schemas import MeterCreateBase
+from polar.meter.aggregation import Aggregation
+from polar.meter.filter import Filter
+from polar.meter.schemas import NAME_DESCRIPTION, MeterCreateBase
+from polar.meter.unit import MeterUnit
 from polar.organization.schemas import OrganizationID
 
 MAXIMUM_METERS = 100
@@ -104,8 +107,23 @@ class ConfigPlan(Schema):
     issues: list[ConfigIssue]
 
 
-class ConfigExportMeter(ConfigMeter):
-    metadata: MetadataField = Field(default_factory=dict)
+class ConfigExportMeter(Schema):
+    external_id: str = Field(description="Your identifier for the meter.")
+    name: str = Field(description=NAME_DESCRIPTION)
+    unit: MeterUnit = Field(description="The unit of the meter.")
+    custom_label: str | None = Field(description="The label for the custom unit.")
+    custom_multiplier: int | None = Field(
+        description="The multiplier to convert from base unit to display scale."
+    )
+    filter: Filter = Field(
+        description="The filter applied on events to calculate the meter."
+    )
+    aggregation: Aggregation = Field(
+        description="The aggregation applied on the filtered events."
+    )
+    metadata: MetadataOutputType = Field(
+        description="Key-value object storing additional information."
+    )
 
 
 class ConfigExportDocument(Schema):

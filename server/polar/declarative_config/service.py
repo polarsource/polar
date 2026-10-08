@@ -14,7 +14,7 @@ from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
 from polar.models import Organization, User
 from polar.organization.resolver import OrganizationIDModel, get_payload_organization
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 
 from . import validation
 from .schemas import (
@@ -25,6 +25,7 @@ from .schemas import (
     ConfigExportMeter,
     ConfigIssue,
     ConfigIssueSeverity,
+    ConfigMeter,
     ConfigMeterChange,
     ConfigMeterResult,
     ConfigPlan,
@@ -121,7 +122,7 @@ class DeclarativeConfigService:
 
     async def export(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         organization_id: UUID | None,
     ) -> ConfigExport:
@@ -142,20 +143,24 @@ class DeclarativeConfigService:
                 reason = ConfigSkippedReason.archived
             else:
                 try:
-                    meters.append(
-                        ConfigExportMeter(
-                            external_id=meter.external_id,
-                            name=meter.name,
-                            unit=meter.unit,
-                            custom_label=meter.custom_label,
-                            custom_multiplier=meter.custom_multiplier,
-                            filter=meter.filter,
-                            aggregation=meter.aggregation,
-                            metadata=meter.user_metadata,
-                        )
+                    meter_config = ConfigMeter(
+                        external_id=meter.external_id,
+                        name=meter.name,
+                        unit=meter.unit,
+                        custom_label=meter.custom_label,
+                        custom_multiplier=meter.custom_multiplier,
+                        filter=meter.filter,
+                        aggregation=meter.aggregation,
+                        metadata=meter.user_metadata,
                     )
                 except ValidationError:
                     reason = ConfigSkippedReason.invalid
+                else:
+                    meters.append(
+                        ConfigExportMeter.model_validate(
+                            meter_config, from_attributes=True
+                        )
+                    )
             if reason is not None:
                 skipped.append(
                     ConfigSkippedMeter(id=meter.id, name=meter.name, reason=reason)
@@ -164,7 +169,7 @@ class DeclarativeConfigService:
 
     async def _get_organization(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         target: OrganizationIDModel,
         permission: OrganizationPermission,

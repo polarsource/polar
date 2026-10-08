@@ -4,7 +4,12 @@ from polar.exceptions import NotPermitted, Unauthorized
 from polar.meter.auth import MeterRead, MeterWrite
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.routing import APIRouter
 
 from .schemas import Config, ConfigApplyResult, ConfigExport, ConfigPlan
@@ -39,7 +44,7 @@ async def export(
             "**Required unless you use an organization token.**"
         ),
     ),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ConfigExport:
     """
     Export the organization's current config as a declarative config document.

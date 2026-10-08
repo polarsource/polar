@@ -6024,9 +6024,11 @@ export interface paths {
      * Export Config
      * @description Export the organization's current config as a declarative config document.
      *
-     *     `config` can be passed to plan or apply as is: planning it without edits
-     *     reports no changes. Meters without an `external_id`, archived meters, and
-     *     meters that wouldn't pass config validation are listed in `skipped`.
+     *     `config` has the shape plan and apply accept, without `organization_id`:
+     *     planning it for the same organization without edits reports no changes.
+     *     Meters without an `external_id`, archived meters, meters that wouldn't pass
+     *     config validation, and meters beyond the config limit are listed in
+     *     `skipped`.
      *
      *     **Scopes**: `meters:read` `meters:write`
      */
@@ -16305,7 +16307,11 @@ export interface components {
      * ConfigSkippedReason
      * @enum {string}
      */
-    ConfigSkippedReason: 'missing_external_id' | 'archived' | 'invalid'
+    ConfigSkippedReason:
+      | 'missing_external_id'
+      | 'archived'
+      | 'invalid'
+      | 'over_limit'
     /** CostMetadata */
     'CostMetadata-Input': {
       /**
@@ -70911,7 +70917,7 @@ export const configResourceValues: ReadonlyArray<
 > = ['meter', 'benefit', 'product']
 export const configSkippedReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigSkippedReason']
-> = ['missing_external_id', 'archived', 'invalid']
+> = ['missing_external_id', 'archived', 'invalid', 'over_limit']
 export const countAggregationFuncValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CountAggregation']['func']
 > = ['count']

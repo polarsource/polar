@@ -53,8 +53,8 @@ class MeterRepository(
             statement = statement.with_for_update()
         return await self.get_all(statement)
 
-    async def get_all_by_organization(self, organization_id: UUID) -> Sequence[Meter]:
-        statement = (
+    def get_organization_statement(self, organization_id: UUID) -> Select[tuple[Meter]]:
+        return (
             self.get_base_statement()
             .where(
                 Meter.organization_id == organization_id,
@@ -63,4 +63,3 @@ class MeterRepository(
             .order_by(Meter.created_at, Meter.id)
             .options(undefer(Meter.external_id))
         )
-        return await self.get_all(statement)

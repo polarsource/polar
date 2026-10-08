@@ -18,6 +18,7 @@ from polar.postgres import AsyncReadSession, AsyncSession
 
 from . import validation
 from .schemas import (
+    MAXIMUM_METERS,
     Config,
     ConfigApplyResult,
     ConfigChange,
@@ -133,12 +134,15 @@ class DeclarativeConfigService:
         repository = MeterRepository.from_session(session)
         meters: list[ConfigExportMeter] = []
         skipped: list[ConfigSkippedMeter] = []
-        for meter in await repository.get_all_by_organization(organization.id):
+        statement = repository.get_organization_statement(organization.id)
+        async for meter in repository.stream(statement):
             reason: ConfigSkippedReason | None = None
             if meter.external_id is None:
                 reason = ConfigSkippedReason.missing_external_id
             elif meter.archived_at is not None:
                 reason = ConfigSkippedReason.archived
+            elif len(meters) >= MAXIMUM_METERS:
+                reason = ConfigSkippedReason.over_limit
             else:
                 try:
                     meter_config = ConfigMeter(

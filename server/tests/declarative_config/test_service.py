@@ -24,7 +24,7 @@ from polar.declarative_config.service import (
 from polar.declarative_config.service import (
     declarative_config as declarative_config_service,
 )
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import MeterInterval, SubscriptionRecurringInterval
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.trial import TrialInterval
 from polar.meter.repository import MeterRepository
@@ -602,6 +602,48 @@ class TestApply:
         ).get_all_by_external_ids(organization.id, ["team"])
         assert cleared.trial_interval is None
         assert cleared.trial_interval_count is None
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_create_product_meter_interval(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "meter_cycling_enabled": True,
+        }
+        await save_fixture(organization)
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "products": [
+                        {
+                            "external_id": "annual",
+                            "name": "Annual",
+                            "recurring_interval": "year",
+                            "meter_interval": "month",
+                            "prices": [{"amount_type": "fixed", "price_amount": 1000}],
+                        }
+                    ]
+                }
+            ),
+        )
+
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["annual"])
+        assert (product.meter_interval, product.meter_interval_count) == (
+            MeterInterval.month,
+            1,
+        )
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")

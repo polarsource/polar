@@ -116,7 +116,7 @@ const INITIAL: FormState = {
 
 type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error'
 
-export const StartupProgramForm = () => {
+export const DesignPartnerForm = () => {
   const [form, setForm] = useState<FormState>(INITIAL)
   const [status, setStatus] = useState<SubmitStatus>('idle')
 
@@ -139,7 +139,7 @@ export const StartupProgramForm = () => {
         e.preventDefault()
         setStatus('submitting')
         try {
-          const res = await fetch('/api/startup-program', {
+          const res = await fetch('/api/design-partner', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(form),
@@ -148,7 +148,7 @@ export const StartupProgramForm = () => {
           setStatus('success')
           setForm(INITIAL)
         } catch (err) {
-          console.error('Startup program submission failed:', err)
+          console.error('Design partner submission failed:', err)
           setStatus('error')
         }
       }}
@@ -372,7 +372,7 @@ export const StartupProgramForm = () => {
         disabled={status === 'submitting' || status === 'success'}
         className="my-8"
       >
-        {status === 'success' ? 'Application Sent' : 'Apply Now'}
+        {status === 'success' ? 'Application Sent' : 'Become a design partner'}
       </Button>
       {status === 'error' && (
         <Text variant="caption" color="danger">

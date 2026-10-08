@@ -47,7 +47,7 @@ const buildEntryValues = (
 
   // Select attributes — option titles must match the choices configured on
   // the Attio list (mirrors FUNDING_OPTIONS / PARTNER_OPTIONS / TEAM_SIZE_OPTIONS
-  // / BILLING_PLATFORM_OPTIONS in StartupProgramForm.tsx).
+  // / BILLING_PLATFORM_OPTIONS in DesignPartnerForm.tsx).
   if (data.funding) values.funding_raised = selectValue(data.funding)
   if (data.partner) values.partner = selectValue(data.partner)
   if (data.teamSize) values.team_size = selectValue(data.teamSize)
@@ -94,19 +94,21 @@ export async function POST(req: Request) {
   const data = parsed.data
 
   if (!process.env.ATTIO_API_KEY) {
-    console.error('[startup-program] ATTIO_API_KEY is not configured.')
-    Sentry.captureMessage('startup-program: ATTIO_API_KEY missing', 'error')
+    console.error('[design-partner] ATTIO_API_KEY is not configured.')
+    Sentry.captureMessage('design-partner: ATTIO_API_KEY missing', 'error')
     return NextResponse.json(
       { error: 'Submission service is not configured' },
       { status: 500 },
     )
   }
 
-  const listId = process.env.ATTIO_STARTUP_LIST_ID
+  const listId = process.env.ATTIO_DESIGN_PARTNER_LIST_ID
   if (!listId) {
-    console.error('[startup-program] ATTIO_STARTUP_LIST_ID is not configured.')
+    console.error(
+      '[design-partner] ATTIO_DESIGN_PARTNER_LIST_ID is not configured.',
+    )
     Sentry.captureMessage(
-      'startup-program: ATTIO_STARTUP_LIST_ID missing',
+      'design-partner: ATTIO_DESIGN_PARTNER_LIST_ID missing',
       'error',
     )
     return NextResponse.json(
@@ -121,7 +123,7 @@ export async function POST(req: Request) {
       website: data.website,
     })
     console.log(
-      '[startup-program] upserted Company:',
+      '[design-partner] upserted Company:',
       company.id.record_id,
       'name:',
       data.startupName,
@@ -135,7 +137,7 @@ export async function POST(req: Request) {
       linkedinUrl: data.linkedin,
       companyRecordId: company.id.record_id,
     })
-    console.log('[startup-program] upserted Person:', person.id.record_id)
+    console.log('[design-partner] upserted Person:', person.id.record_id)
 
     const entry = await addToList({
       listId,
@@ -144,13 +146,13 @@ export async function POST(req: Request) {
       entryValues: buildEntryValues(data, person.id.record_id),
     })
     console.log(
-      '[startup-program] added list entry:',
+      '[design-partner] added list entry:',
       entry.id.record_id ?? entry.id,
     )
 
     return NextResponse.json({ ok: true, forwarded: true })
   } catch (error) {
-    console.error('[startup-program] Attio forward failed:', error)
+    console.error('[design-partner] Attio forward failed:', error)
     Sentry.captureException(error)
     return NextResponse.json(
       { error: 'Failed to submit application' },

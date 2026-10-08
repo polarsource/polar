@@ -1,14 +1,14 @@
-import LogoIcon from "@/components/Brand/logos/LogoIcon";
-import { StartupProgramForm } from "@/components/Landing/startup-program/StartupProgramForm";
-import { Text } from "@polar-sh/orbit";
-import { Box } from "@polar-sh/orbit/Box";
+import LogoIcon from '@/components/Brand/logos/LogoIcon'
+import { DesignPartnerForm } from '@/components/Landing/design-partner/DesignPartnerForm'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 
-export const StartupProgramSignup = () => (
+export const DesignPartnerSignup = () => (
   <Box flexDirection="column" rowGap="l">
     <Box
       flexDirection="column"
       rowGap="3xl"
-      padding={{ base: "xl", md: "3xl" }}
+      padding={{ base: 'xl', md: '3xl' }}
       backgroundColor="background-secondary"
     >
       <Box color="text-tertiary">
@@ -25,6 +25,6 @@ export const StartupProgramSignup = () => (
         </Text>
       </Box>
     </Box>
-    <StartupProgramForm program="design-partner" />
+    <DesignPartnerForm />
   </Box>
-);
+)

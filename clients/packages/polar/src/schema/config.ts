@@ -2,7 +2,7 @@ import { Schema } from 'effect'
 import { RuntimeSDK, type RuntimeConnection } from '../runtime'
 import type { PolarOptions } from '../sdk'
 import type { RuntimeBenefitConfig } from './runtime'
-import { BenefitConfig, featureFlag, meterCredit } from './benefit'
+import { BenefitConfig, flag, credits } from './benefit'
 import type { BenefitDefinition, BenefitHelpers } from './benefit'
 import { meter, MeterConfig } from './meter'
 import type { MeterDefinition } from './meter'
@@ -126,7 +126,7 @@ export const defineConfig = <
 }): Config<Meters, Benefits> => {
   const entries = toEntries(input.meters({ meter }))
   const meterIds = new Set(entries.map(([external_id]) => external_id))
-  const benefits = input.benefits?.({ featureFlag, meterCredit })
+  const benefits = input.benefits?.({ flag, credits })
   const config = Schema.decodeUnknownSync(PolarConfig, {
     errors: 'all',
     onExcessProperty: 'error',

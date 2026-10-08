@@ -65,10 +65,10 @@ test('defineConfig rejects invalid builder values', () => {
 test('benefits serialize with meter credits linked by meter key', () => {
   const config = defineConfig({
     meters: ({ meter }) => ({ tool_call: meter().count() }),
-    benefits: ({ featureFlag, meterCredit }) => ({
-      custom_servers: featureFlag({ displayName: 'Custom servers' }),
-      tool_calls: meterCredit().meter('tool_call').units(100),
-      rollover_calls: meterCredit({ displayName: 'Rollover tool calls' })
+    benefits: ({ flag, credits }) => ({
+      custom_servers: flag({ displayName: 'Custom servers' }),
+      tool_calls: credits().meter('tool_call').units(100),
+      rollover_calls: credits({ displayName: 'Rollover tool calls' })
         .meter('tool_call')
         .units(50)
         .rollover(),
@@ -108,9 +108,9 @@ test('meter credits only accept declared meter keys', () => {
   expect(() =>
     defineConfig({
       meters: ({ meter }) => ({ tool_call: meter().count() }),
-      benefits: ({ meterCredit }) => ({
+      benefits: ({ credits }) => ({
         // @ts-expect-error unknown meter key
-        credits: meterCredit().meter('unknown').units(1),
+        credits: credits().meter('unknown').units(1),
       }),
     }),
   ).toThrow('references unknown meter "unknown"')
@@ -121,8 +121,8 @@ test('meter credits require positive integer units', () => {
     expect(() =>
       defineConfig({
         meters: ({ meter }) => ({ tool_call: meter().count() }),
-        benefits: ({ meterCredit }) => ({
-          credits: meterCredit().meter('tool_call').units(units),
+        benefits: ({ credits }) => ({
+          credits: credits().meter('tool_call').units(units),
         }),
       }),
     ).toThrow()
@@ -133,14 +133,14 @@ test('benefit descriptions must be between 3 and 42 characters', () => {
   expect(() =>
     defineConfig({
       meters: () => ({}),
-      benefits: ({ featureFlag }) => ({ ab: featureFlag() }),
+      benefits: ({ flag }) => ({ ab: flag() }),
     }),
   ).toThrow('Provide a displayName for benefit "ab"')
   expect(() =>
     defineConfig({
       meters: () => ({}),
-      benefits: ({ featureFlag }) => ({
-        flag: featureFlag({ displayName: 'x'.repeat(43) }),
+      benefits: ({ flag }) => ({
+        flag: flag({ displayName: 'x'.repeat(43) }),
       }),
     }),
   ).toThrow()
@@ -149,7 +149,7 @@ test('benefit descriptions must be between 3 and 42 characters', () => {
 test('connect exposes configured benefits by external ID', () => {
   const config = defineConfig({
     meters: ({ meter }) => ({ tool_call: meter().count() }),
-    benefits: ({ featureFlag }) => ({ custom_servers: featureFlag() }),
+    benefits: ({ flag }) => ({ custom_servers: flag() }),
   })
   const { actor } = config.connect({ accessToken: 'test' })
   expectTypeOf(actor({ customerId: 'customer-id' }).access)
@@ -160,9 +160,9 @@ test('connect exposes configured benefits by external ID', () => {
 test('connect rejects duplicate benefit external IDs', () => {
   const config = defineConfig({
     meters: () => ({}),
-    benefits: ({ featureFlag }) => [
-      ['flag', featureFlag({ displayName: 'First' })],
-      ['flag', featureFlag({ displayName: 'Second' })],
+    benefits: ({ flag }) => [
+      ['flag', flag({ displayName: 'First' })],
+      ['flag', flag({ displayName: 'Second' })],
     ],
   })
   expect(() => config.connect({ accessToken: 'test' })).toThrow(

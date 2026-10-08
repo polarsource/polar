@@ -10,9 +10,9 @@ export default defineConfig({
       .unit('custom', 'tool call')
       .count(),
   }),
-  benefits: ({ featureFlag, meterCredit }) => ({
-    custom_servers: featureFlag({ displayName: 'Custom servers' }),
-    tool_calls: meterCredit({ displayName: 'Included tool calls' })
+  benefits: ({ flag, credits }) => ({
+    custom_servers: flag({ displayName: 'Custom servers' }),
+    tool_calls: credits({ displayName: 'Included tool calls' })
       .meter('tool_call')
       .units(1000),
   }),

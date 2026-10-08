@@ -48,7 +48,7 @@ export type BenefitDefinition<Meter extends string = string> =
       }
     }
 
-export const featureFlag = (
+export const flag = (
   options: BenefitOptions = {},
 ): BenefitDefinition<never> => ({
   name: options.displayName,
@@ -56,7 +56,7 @@ export const featureFlag = (
   properties: {},
 })
 
-class MeterCreditDefinition<Meter extends string> {
+class CreditsDefinition<Meter extends string> {
   readonly type = 'meter_credit'
 
   constructor(
@@ -68,22 +68,22 @@ class MeterCreditDefinition<Meter extends string> {
     },
   ) {}
 
-  rollover(): MeterCreditDefinition<Meter> {
-    return new MeterCreditDefinition(this.name, {
+  rollover(): CreditsDefinition<Meter> {
+    return new CreditsDefinition(this.name, {
       ...this.properties,
       rollover: true,
     })
   }
 }
 
-class MeterCreditBuilder<Meter extends string> {
+class CreditsBuilder<Meter extends string> {
   constructor(
     private readonly name: string | undefined,
     private readonly meterExternalId: Meter,
   ) {}
 
-  units(units: number): MeterCreditDefinition<Meter> {
-    return new MeterCreditDefinition(this.name, {
+  units(units: number): CreditsDefinition<Meter> {
+    return new CreditsDefinition(this.name, {
       meter_external_id: this.meterExternalId,
       units,
       rollover: false,
@@ -91,14 +91,14 @@ class MeterCreditBuilder<Meter extends string> {
   }
 }
 
-export const meterCredit = (options: BenefitOptions = {}) => ({
+export const credits = (options: BenefitOptions = {}) => ({
   meter: <const Meter extends string>(meter: Meter) =>
-    new MeterCreditBuilder(options.displayName, meter),
+    new CreditsBuilder(options.displayName, meter),
 })
 
 export type BenefitHelpers<Meter extends string> = {
-  readonly featureFlag: typeof featureFlag
-  readonly meterCredit: (options?: BenefitOptions) => {
-    readonly meter: (meter: Meter) => MeterCreditBuilder<Meter>
+  readonly flag: typeof flag
+  readonly credits: (options?: BenefitOptions) => {
+    readonly meter: (meter: Meter) => CreditsBuilder<Meter>
   }
 }

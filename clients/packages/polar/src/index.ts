@@ -33,7 +33,7 @@ export type {
   MeterDefinition,
   MeterFilter,
 } from './schema/meter'
-export { featureFlag, meterCredit } from './schema/benefit'
+export { flag, credits } from './schema/benefit'
 export type { BenefitConfig, BenefitDefinition } from './schema/benefit'
 export { defineConfig } from './schema/config'
 export type { Config, PolarConfig } from './schema/config'

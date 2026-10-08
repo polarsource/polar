@@ -59,13 +59,13 @@ const renderBenefit = (
 ): string => {
   const options = `{ displayName: ${literal(benefit.description)} }`
   if (benefit.type === 'feature_flag') {
-    helpers.add('featureFlag')
-    return `featureFlag(${options})`
+    helpers.add('flag')
+    return `flag(${options})`
   }
-  helpers.add('meterCredit')
+  helpers.add('credits')
   const { meter_external_id, units, rollover } = benefit.properties
   return [
-    `meterCredit(${options})`,
+    `credits(${options})`,
     `.meter(${literal(meter_external_id)})`,
     `.units(${literal(units)})`,
     ...(rollover ? ['.rollover()'] : []),

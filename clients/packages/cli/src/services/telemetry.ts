@@ -219,29 +219,41 @@ export class Telemetry extends Context.Service<
 
 const stateFile = join(homedir(), '.polar', 'telemetry.json')
 
+const readInstallId = (fs: FileSystem.FileSystem) =>
+  fs.readFileString(stateFile).pipe(
+    Effect.flatMap((raw) =>
+      Effect.try(() => JSON.parse(raw) as { installId?: unknown }),
+    ),
+    Effect.map((stored) => field(stored, 'installId')),
+    Effect.orElseSucceed(() => undefined),
+  )
+
+const createInstallId = (fs: FileSystem.FileSystem, flag: 'wx' | 'w') =>
+  Effect.gen(function* () {
+    const id = randomUUID()
+    yield* fs.makeDirectory(dirname(stateFile), { recursive: true })
+    yield* fs.writeFileString(
+      stateFile,
+      `${JSON.stringify({ installId: id }, null, 2)}\n`,
+      { flag },
+    )
+    return id
+  })
+
 const installId = (fs: FileSystem.FileSystem) =>
   Effect.gen(function* () {
-    const stored = yield* fs.readFileString(stateFile).pipe(
-      Effect.flatMap((raw) =>
-        Effect.try(() => JSON.parse(raw) as { installId?: unknown }),
-      ),
-      Effect.orElseSucceed(() => ({}) as { installId?: unknown }),
-    )
-    const existing = field(stored, 'installId')
+    const existing = yield* readInstallId(fs)
     if (typeof existing === 'string') return { id: existing, firstRun: false }
-    const id = randomUUID()
-    yield* fs
-      .makeDirectory(dirname(stateFile), { recursive: true })
-      .pipe(
-        Effect.andThen(
-          fs.writeFileString(
-            stateFile,
-            `${JSON.stringify({ installId: id }, null, 2)}\n`,
-          ),
-        ),
-        Effect.ignore,
-      )
-    return { id, firstRun: true }
+    const created = yield* createInstallId(fs, 'wx').pipe(
+      Effect.orElseSucceed(() => undefined),
+    )
+    if (created !== undefined) return { id: created, firstRun: true }
+    const raced = yield* readInstallId(fs)
+    if (typeof raced === 'string') return { id: raced, firstRun: false }
+    const replaced = yield* createInstallId(fs, 'w').pipe(
+      Effect.orElseSucceed(() => randomUUID()),
+    )
+    return { id: replaced, firstRun: true }
   })
 
 export const layer = Layer.effect(

@@ -14,7 +14,7 @@ the generated package under `sdk/` without moving or breaking that workspace.
 - `src/customers/create.ts`: generated body flags, including customer-type variants.
 - `src/index.ts`: generated command tree and exports.
 - `src/runtime.ts`: Effect service contract provided by the consuming CLI.
-- `clients/packages/cli/src/commands/api-runtime.ts` (repository root): CLI implementation.
+- `clients/packages/cli/src/api-runtime.ts` (repository root): CLI implementation.
 
 ```ts
 import { commands } from '@polar-sh/cli-commands'

@@ -20,14 +20,14 @@ export const validateConfig = Schema.decodeUnknownEffect(PolarConfig, {
 const validateMeterNaming = Schema.decodeUnknownSync(
   Schema.Struct({
     external_id: Schema.String,
-    displayName: Schema.optional(Schema.String),
+    name: Schema.optional(Schema.String),
   }).check(
-    Schema.makeFilter(({ external_id, displayName }) =>
-      displayName !== undefined || external_id.length >= 3
+    Schema.makeFilter(({ external_id, name }) =>
+      name !== undefined || external_id.length >= 3
         ? undefined
         : {
-            path: ['displayName'],
-            issue: `Provide a displayName for meter "${external_id}" because its key is shorter than 3 characters.`,
+            path: ['name'],
+            issue: `Provide a name for meter "${external_id}" because its key is shorter than 3 characters.`,
           },
     ),
   ),
@@ -36,15 +36,15 @@ const validateMeterNaming = Schema.decodeUnknownSync(
 const validateBenefitNaming = Schema.decodeUnknownSync(
   Schema.Struct({
     external_id: Schema.String,
-    displayName: Schema.optional(Schema.String),
+    name: Schema.optional(Schema.String),
   }).check(
-    Schema.makeFilter(({ external_id, displayName }) =>
-      displayName !== undefined ||
+    Schema.makeFilter(({ external_id, name }) =>
+      name !== undefined ||
       (external_id.length >= 3 && external_id.length <= 42)
         ? undefined
         : {
-            path: ['displayName'],
-            issue: `Provide a displayName for benefit "${external_id}" because its key is not between 3 and 42 characters.`,
+            path: ['name'],
+            issue: `Provide a name for benefit "${external_id}" because its key is not between 3 and 42 characters.`,
           },
     ),
   ),
@@ -128,19 +128,16 @@ export const defineConfig = <
     onExcessProperty: 'error',
   })({
     meters: entries.map(([external_id, definition]) => {
-      const { displayName } = validateMeterNaming({
+      const { name } = validateMeterNaming({
         external_id,
-        displayName: definition.name,
+        name: definition.name,
       })
-      return { ...definition, external_id, name: displayName ?? external_id }
+      return { ...definition, external_id, name: name ?? external_id }
     }),
     ...(benefits !== undefined && {
       benefits: toEntries<BenefitDefinition>(benefits).map(
         ([external_id, { name, ...definition }]) => {
-          const { displayName } = validateBenefitNaming({
-            external_id,
-            displayName: name,
-          })
+          validateBenefitNaming({ external_id, name })
           if (
             definition.type === 'meter_credit' &&
             !meterIds.has(definition.properties.meter_external_id)
@@ -152,7 +149,7 @@ export const defineConfig = <
           return {
             ...definition,
             external_id,
-            description: displayName ?? external_id,
+            description: name ?? external_id,
           }
         },
       ),

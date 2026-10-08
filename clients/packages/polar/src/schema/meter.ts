@@ -174,6 +174,4 @@ class MeterBuilder {
 
 export type MeterDefinition = ReturnType<MeterBuilder['count']>
 
-export const meter = (
-  config: { readonly displayName?: string } = {},
-): MeterBuilder => new MeterBuilder(config.displayName)
+export const meter = (name?: string): MeterBuilder => new MeterBuilder(name)

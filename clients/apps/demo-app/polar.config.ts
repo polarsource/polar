@@ -11,9 +11,7 @@ export default defineConfig({
       .count(),
   }),
   benefits: ({ flag, credits }) => ({
-    custom_servers: flag({ displayName: 'Custom servers' }),
-    tool_calls: credits({ displayName: 'Included tool calls' })
-      .meter('tool_call')
-      .units(1000),
+    custom_servers: flag('Custom servers'),
+    tool_calls: credits('Included tool calls').meter('tool_call').units(1000),
   }),
 })

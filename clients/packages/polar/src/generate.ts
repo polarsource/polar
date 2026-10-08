@@ -24,7 +24,7 @@ const renderCondition = (
 }
 
 const renderMeter = (meter: MeterConfig, imports: Set<string>): string => {
-  const lines = [`meter({ displayName: ${literal(meter.name)} })`]
+  const lines = [`meter(${literal(meter.name)})`]
   const filter = meter.filter
   if (filter.conjunction === 'or' || filter.clauses.length > 0) {
     const [only] = filter.clauses
@@ -57,15 +57,15 @@ const renderBenefit = (
   benefit: BenefitConfig,
   helpers: Set<string>,
 ): string => {
-  const options = `{ displayName: ${literal(benefit.description)} }`
+  const name = literal(benefit.description)
   if (benefit.type === 'feature_flag') {
     helpers.add('flag')
-    return `flag(${options})`
+    return `flag(${name})`
   }
   helpers.add('credits')
   const { meter_external_id, units, rollover } = benefit.properties
   return [
-    `credits(${options})`,
+    `credits(${name})`,
     `.meter(${literal(meter_external_id)})`,
     `.units(${literal(units)})`,
     ...(rollover ? ['.rollover()'] : []),

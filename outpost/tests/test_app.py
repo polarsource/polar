@@ -58,3 +58,11 @@ async def test_metrics(client: httpx2.AsyncClient) -> None:
     for sample in samples:
         assert REGISTRY.get_sample_value(sample) == before[sample] + 1
         assert sample in response.text
+
+
+@pytest.mark.anyio
+async def test_dashboard(client: httpx2.AsyncClient) -> None:
+    response = await client.get("/dashboard")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")

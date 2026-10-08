@@ -1,5 +1,6 @@
 import collections.abc
 import contextlib
+import pathlib
 import typing
 
 import anyio
@@ -8,7 +9,7 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import ValidationError
 from starlette.applications import Starlette
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import FileResponse, Response
 from starlette.routing import Route
 
 from outpost.env import Environment, get_environment
@@ -50,6 +51,10 @@ async def metrics(_: Request) -> Response:
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
+async def dashboard(_: Request) -> Response:
+    return FileResponse(pathlib.Path(__file__).parent / "dashboard.html")
+
+
 @contextlib.asynccontextmanager
 async def lifespan(_: Starlette) -> collections.abc.AsyncGenerator[LifespanState]:
     env = get_environment()
@@ -80,5 +85,6 @@ app = Starlette(
         Route("/ingest", ingest, methods=["POST"]),
         # ponytail: per-process registry, multiprocess mode if metrics must cover --workers > 1
         Route("/metrics", metrics),
+        Route("/dashboard", dashboard),
     ],
 )

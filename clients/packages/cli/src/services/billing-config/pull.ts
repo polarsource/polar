@@ -1,4 +1,5 @@
 import { extname } from 'node:path'
+import { isDeepStrictEqual } from 'node:util'
 import { Effect, type FileSystem } from 'effect'
 import { HttpClientRequest, HttpClientResponse } from 'effect/http'
 import type { ActiveOrganization } from '@/schemas/Auth'
@@ -50,15 +51,6 @@ const render = (file: string, config: PulledConfig) =>
     })
   })
 
-const canonical = (value: unknown): string =>
-  JSON.stringify(value, (_key, item: unknown) =>
-    item !== null && typeof item === 'object' && !Array.isArray(item)
-      ? Object.fromEntries(
-          Object.entries(item).toSorted(([a], [b]) => a.localeCompare(b)),
-        )
-      : item,
-  )
-
 export const saver =
   (
     fs: FileSystem.FileSystem,
@@ -85,10 +77,10 @@ export const saver =
       const contents = yield* render(target, config)
       if (yield* exists(target)) {
         const current = yield* load(target).pipe(
-          Effect.map((loaded) => canonical(loaded.input)),
+          Effect.map((loaded) => loaded.input),
           Effect.orElseSucceed(() => undefined),
         )
-        if (current === canonical(config)) {
+        if (isDeepStrictEqual(current, config)) {
           return { file: target, status: 'unchanged' }
         }
         if (!force) {

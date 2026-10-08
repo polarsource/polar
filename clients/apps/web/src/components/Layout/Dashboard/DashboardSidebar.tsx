@@ -114,11 +114,13 @@ export const DashboardSidebar = ({
           isTopBannerVisible && 'md:pt-10',
         )}
       >
-        <div className='ml-0.5'>
-        <PolarLogotype
-          size={28}
-          href={organization ? `/dashboard/${organization.slug}` : '/dashboard'}
-        />
+        <div className="ml-1">
+          <PolarLogotype
+            size={24}
+            href={
+              organization ? `/dashboard/${organization.slug}` : '/dashboard'
+            }
+          />
         </div>
         <motion.div
           className="flex flex-row items-center gap-2"

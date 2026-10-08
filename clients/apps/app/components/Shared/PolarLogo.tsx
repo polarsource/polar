@@ -7,7 +7,7 @@ const ARC =
 
 const LogoIcon = ({ size = 24 }: { size?: number }) => {
   return (
-    <Svg width={size} height={size} viewBox="-59 -59 428 428" fill="none">
+    <Svg width={size} height={size} viewBox="-34 -34 378 378" fill="none">
       <Path d={RAYS} fill="#fff" />
       <Path d={ARC} fill="#fff" />
     </Svg>

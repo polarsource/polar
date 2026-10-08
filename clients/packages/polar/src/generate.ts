@@ -340,9 +340,7 @@ const renderProduct =
         : []),
       ...(product.benefits.length === 0
         ? []
-        : [
-            `.grants([${product.benefits.map(literal).join(', ')}])`,
-          ]),
+        : [`.grants([${product.benefits.map(literal).join(', ')}])`]),
     ].join('\n')
   }
 

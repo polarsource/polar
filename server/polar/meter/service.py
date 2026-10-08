@@ -92,6 +92,7 @@ class MeterService:
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
+        external_id: Sequence[str] | None = None,
         metadata: MetadataQuery | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
@@ -108,6 +109,11 @@ class MeterService:
 
         if organization_id is not None:
             statement = statement.where(Meter.organization_id.in_(organization_id))
+
+        if external_id is not None:
+            statement = statement.where(
+                Meter.external_id.in_(external_id), Meter.deleted_at.is_(None)
+            )
 
         if query is not None:
             statement = statement.where(Meter.name.ilike(f"%{query}%"))

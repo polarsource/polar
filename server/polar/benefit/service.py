@@ -42,6 +42,7 @@ class BenefitService:
         organization_id: Sequence[uuid.UUID] | None = None,
         id_in: Sequence[uuid.UUID] | None = None,
         id_not_in: Sequence[uuid.UUID] | None = None,
+        external_id: Sequence[str] | None = None,
         visibility: Sequence[Visibility] | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
@@ -67,6 +68,9 @@ class BenefitService:
 
         if id_not_in is not None:
             statement = statement.where(Benefit.id.notin_(id_not_in))
+
+        if external_id is not None:
+            statement = statement.where(Benefit.external_id.in_(external_id))
 
         if query is not None:
             statement = statement.where(Benefit.description.ilike(f"%{query}%"))

@@ -6,6 +6,7 @@ from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
+from polar.kit.versioning import version
 from polar.models import Benefit
 from polar.models.benefit import BenefitType
 from polar.openapi import APITag, cli_preview
@@ -18,6 +19,7 @@ from polar.postgres import (
 )
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
+from polar.version import V2027_01
 
 from . import auth, sorting
 from .grant.service import benefit_grant as benefit_grant_service
@@ -81,6 +83,61 @@ async def list(
         organization_id=organization_id,
         id_in=id,
         id_not_in=exclude_id,
+        metadata=metadata,
+        query=query,
+        pagination=pagination,
+        sorting=sorting,
+    )
+
+    return ListResource.from_paginated_results(
+        [benefit_schema_map[result.type].model_validate(result) for result in results],
+        count,
+        pagination,
+    )
+
+
+@router.get(
+    "/",
+    name="list",
+    summary="List Benefits",
+    response_model=ListResource[BenefitSchema],
+    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
+)
+@version(starting_from=V2027_01)
+async def list_v2027_01(
+    auth_subject: auth.BenefitsRead,
+    pagination: PaginationParamsQuery,
+    sorting: sorting.ListSorting,
+    metadata: MetadataQuery,
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    ),
+    type: MultipleQueryFilter[BenefitType] | None = Query(
+        None, title="BenefitType Filter", description="Filter by benefit type."
+    ),
+    id: MultipleQueryFilter[BenefitID] | None = Query(
+        None, title="Filter IDs", description="Filter by benefit IDs."
+    ),
+    external_id: MultipleQueryFilter[str] | None = Query(
+        None, title="ExternalID Filter", description="Filter by benefit external ID."
+    ),
+    exclude_id: MultipleQueryFilter[BenefitID] | None = Query(
+        None, title="Exclude IDs", description="Exclude benefits with these IDs."
+    ),
+    session: AsyncSession = Depends(get_db_session),
+    query: str | None = Query(
+        None, title="Query", description="Filter by description."
+    ),
+) -> ListResource[BenefitSchema]:
+    """List benefits."""
+    results, count = await benefit_service.list(
+        session,
+        auth_subject,
+        type=type,
+        organization_id=organization_id,
+        id_in=id,
+        id_not_in=exclude_id,
+        external_id=external_id,
         metadata=metadata,
         query=query,
         pagination=pagination,

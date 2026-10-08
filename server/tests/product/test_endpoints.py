@@ -85,6 +85,78 @@ class TestListProducts:
         for benefit in item["benefits"]:
             assert "properties" in benefit
 
+    @pytest.mark.auth
+    @pytest.mark.api_version(V2027_01)
+    async def test_filter_by_external_id(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        deleted_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="pro",
+        )
+        deleted_product.set_deleted_at()
+        await save_fixture(deleted_product)
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="pro",
+        )
+        archived_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="legacy",
+            is_archived=True,
+        )
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="team",
+        )
+
+        response = await client.get(
+            "/v1/products/", params={"external_id": ["pro", "legacy", "missing"]}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert {item["id"] for item in json["items"]} == {
+            str(product.id),
+            str(archived_product.id),
+        }
+
+    @pytest.mark.auth
+    @pytest.mark.api_version(V2026_10)
+    async def test_external_id_filter_ignored_before_2027_01(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="pro",
+        )
+        await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+
+        response = await client.get("/v1/products/", params={"external_id": "pro"})
+
+        assert response.status_code == 200
+        assert response.json()["pagination"]["total_count"] == 2
+
 
 @pytest.mark.asyncio
 class TestGetProduct:

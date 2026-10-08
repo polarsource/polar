@@ -4,6 +4,7 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 
+from polar.kit.utils import utc_now
 from polar.meter.repository import MeterRepository
 from polar.models import Meter, Organization, User, UserOrganization
 from polar.postgres import AsyncSession
@@ -43,6 +44,55 @@ class TestListMeters:
         assert response.status_code == 200
         json = response.json()
         assert json["pagination"]["total_count"] == 0
+
+    @pytest.mark.auth
+    @pytest.mark.api_version(V2027_01)
+    async def test_filter_by_external_id(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        deleted_meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="tokens",
+        )
+        deleted_meter.set_deleted_at()
+        await save_fixture(deleted_meter)
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="tokens",
+        )
+        archived_meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="legacy",
+        )
+        archived_meter.archived_at = utc_now()
+        await save_fixture(archived_meter)
+        await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="requests",
+        )
+
+        response = await client.get(
+            "/v1/meters/", params={"external_id": ["tokens", "legacy", "missing"]}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert {item["id"] for item in json["items"]} == {
+            str(meter.id),
+            str(archived_meter.id),
+        }
 
 
 @pytest.mark.asyncio

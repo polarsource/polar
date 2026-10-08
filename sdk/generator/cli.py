@@ -7,7 +7,11 @@ import openapi_pydantic as op
 
 from generator.docs_openapi import DOCS_OPENAPI_PATH, generate_docs_openapi
 from generator.ir import generate_ir
-from generator.release import regenerate_openapi, release_sdk
+from generator.release import (
+    regenerate_openapi,
+    release_prerelease_sdk,
+    release_sdk,
+)
 from python.emitter import PythonEmitter
 
 parser = argparse.ArgumentParser(description="SDK Generator")
@@ -77,6 +81,16 @@ parser_release.add_argument(
 parser_release.add_argument(
     "--skip-commit", action="store_true", help="Skip git commit"
 )
+parser_release.add_argument(
+    "--prerelease",
+    type=str,
+    default=None,
+    metavar="TAG",
+    help=(
+        "Release the TypeScript SDK as VERSION-TAG.N under the TAG npm dist-tag "
+        "(e.g. next), without touching the Python SDK, docs or changelog"
+    ),
+)
 
 args = parser.parse_args()
 
@@ -140,6 +154,14 @@ elif args.command == "docs-openapi":
             print(f"Error: Spec path {spec_path} is not a file.", file=sys.stderr)
             sys.exit(1)
     generate_docs_openapi(args.spec_paths, args.output, args.version)
+
+elif args.command == "release" and args.prerelease is not None:
+    release_prerelease_sdk(
+        version=args.version,
+        tag=args.prerelease,
+        skip_openapi=args.skip_openapi,
+        skip_commit=args.skip_commit,
+    )
 
 elif args.command == "release":
     release_sdk(

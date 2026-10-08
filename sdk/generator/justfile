@@ -34,3 +34,6 @@ docs-openapi:
 
 release version:
   uv run -m cli release {{version}}
+
+release-pre version tag:
+  uv run -m cli release {{version}} --prerelease {{tag}}

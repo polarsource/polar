@@ -1,8 +1,9 @@
 from enum import StrEnum
 from typing import Any
 
-from pydantic import ConfigDict, Field
+from pydantic import UUID4, ConfigDict, Field
 
+from polar.kit.metadata import MetadataField
 from polar.kit.schemas import Schema
 from polar.meter.schemas import MeterCreateBase
 from polar.organization.schemas import OrganizationID
@@ -101,3 +102,34 @@ class ConfigMeterChange(ConfigMeterResult):
 class ConfigPlan(Schema):
     changes: list[ConfigMeterChange]
     issues: list[ConfigIssue]
+
+
+class ConfigExportMeter(ConfigMeter):
+    metadata: MetadataField = Field(default_factory=dict)
+
+
+class ConfigExportDocument(Schema):
+    meters: list[ConfigExportMeter]
+
+
+class ConfigSkippedReason(StrEnum):
+    missing_external_id = "missing_external_id"
+    archived = "archived"
+    invalid = "invalid"
+
+
+class ConfigSkippedMeter(Schema):
+    id: UUID4 = Field(description="The meter ID.")
+    name: str = Field(description="The meter name.")
+    reason: ConfigSkippedReason = Field(
+        description="Why the meter isn't in the exported config."
+    )
+
+
+class ConfigExport(Schema):
+    config: ConfigExportDocument = Field(
+        description="The current config, in the same shape plan and apply accept."
+    )
+    skipped: list[ConfigSkippedMeter] = Field(
+        description="Meters left out of the exported config."
+    )

@@ -1,7 +1,11 @@
+import uuid
+
 import pytest
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
+from polar.kit.utils import utc_now
+from polar.meter.unit import MeterUnit
 from polar.models import Organization, UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -237,3 +241,152 @@ class TestPlan:
             "before": None,
             "after": "SDK - Tool Calls",
         } in created["diff"]
+
+
+@pytest.mark.asyncio
+class TestExport:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/config/")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_not_enabled(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(
+            "/v1/config/", params={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "ConfigAsCodeNotEnabled"
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_round_trips_through_plan(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="my-meter",
+        )
+        meter.user_metadata = {"team": "billing", "weight": 1.5}
+        meter.unit = MeterUnit.custom
+        meter.custom_label = "call"
+        meter.custom_multiplier = 1000
+        await save_fixture(meter)
+        await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            name="Other Meter",
+            external_id="other-meter",
+        )
+
+        response = await client.get(
+            "/v1/config/", params={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["skipped"] == []
+        first, second = json["config"]["meters"]
+        assert first == {
+            "external_id": "my-meter",
+            "name": "My Meter",
+            "unit": "custom",
+            "custom_label": "call",
+            "custom_multiplier": 1000,
+            "filter": {
+                "conjunction": "and",
+                "clauses": [
+                    {"property": "name", "operator": "eq", "value": METER_TEST_EVENT}
+                ],
+            },
+            "aggregation": {"func": "count"},
+            "metadata": {"team": "billing", "weight": 1.5},
+        }
+        assert second["external_id"] == "other-meter"
+
+        plan_response = await client.post(
+            "/v1/config/plan",
+            json={**json["config"], "organization_id": str(organization.id)},
+        )
+
+        assert plan_response.status_code == 200
+        plan = plan_response.json()
+        assert [change["action"] for change in plan["changes"]] == [
+            "unchanged",
+            "unchanged",
+        ]
+        assert all(issue["severity"] != "error" for issue in plan["issues"])
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_skipped_meters(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        without_external_id = await create_meter(
+            save_fixture, organization=organization, id=uuid.uuid4()
+        )
+        archived = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="archived-meter",
+        )
+        archived.archived_at = utc_now()
+        await save_fixture(archived)
+        invalid = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="invalid-meter",
+        )
+        invalid.unit = MeterUnit.custom
+        await save_fixture(invalid)
+
+        response = await client.get(
+            "/v1/config/", params={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["config"] == {"meters": []}
+        assert json["skipped"] == [
+            {
+                "id": str(without_external_id.id),
+                "name": "My Meter",
+                "reason": "missing_external_id",
+            },
+            {"id": str(archived.id), "name": "My Meter", "reason": "archived"},
+            {"id": str(invalid.id), "name": "My Meter", "reason": "invalid"},
+        ]
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_organization_token(
+        self, save_fixture: SaveFixture, client: AsyncClient, organization: Organization
+    ) -> None:
+        await create_meter(
+            save_fixture, organization=organization, external_id="my-meter"
+        )
+
+        response = await client.get("/v1/config/")
+
+        assert response.status_code == 200
+        [meter] = response.json()["config"]["meters"]
+        assert meter["external_id"] == "my-meter"

@@ -50,7 +50,7 @@ test('CORS, metadata, unknown routes and bearer challenges remain unchanged', as
   expect(fetchMock).not.toHaveBeenCalled()
 })
 
-test('OAuth validates per environment, caches for 60 seconds, and does not cache 401s', async () => {
+test('OAuth validates per environment, caches for 60 seconds, and does not cache 401s or upstream failures', async () => {
   let now = 1_000_000
   vi.spyOn(Date, 'now').mockImplementation(() => now)
   const headers = { Authorization: 'Bearer polar_at_cache_test' }
@@ -71,9 +71,10 @@ test('OAuth validates per environment, caches for 60 seconds, and does not cache
   }
   expect(fetchMock).toHaveBeenCalledTimes(4)
   fetchMock.mockResolvedValue(new Response(null, { status: 503 }))
-  await request('/mcp/polar-mcp', { headers })
-  await request('/mcp/polar-mcp', { headers })
-  expect(fetchMock).toHaveBeenCalledTimes(5)
+  for (let i = 0; i < 2; i++) {
+    expect((await request('/mcp/polar-mcp', { headers })).status).not.toBe(401)
+  }
+  expect(fetchMock).toHaveBeenCalledTimes(6)
 })
 
 test('code mode is the default; client hints and explicit overrides select operation mode', async () => {
@@ -145,7 +146,7 @@ test('search and execute preserve sandbox isolation, outbound credentials, and l
   expect(missing.result?.isError ?? !!missing.error).toBe(true)
 })
 
-test('sandbox failures become tool errors and successful results are truncated', async () => {
+test('sandbox failures become tool errors and long errors and results are truncated', async () => {
   evaluate.mockRejectedValueOnce(new Error('sandbox failed'))
   expect(
     (
@@ -158,6 +159,15 @@ test('sandbox failures become tool errors and successful results are truncated',
     content: [{ type: 'text', text: 'Error: sandbox failed' }],
     isError: true,
   })
+  evaluate.mockResolvedValueOnce({ error: 'x'.repeat(24_001) })
+  expect(
+    (
+      await rpc('tools/call', {
+        name: 'search',
+        arguments: { code: 'async () => 1' },
+      })
+    ).result.content[0].text,
+  ).toContain('--- TRUNCATED ---')
   evaluate.mockResolvedValueOnce({ result: 'x'.repeat(24_001) })
   const result = (
     await rpc('tools/call', {

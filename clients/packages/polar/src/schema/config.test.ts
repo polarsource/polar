@@ -180,13 +180,13 @@ test('products serialize prices per currency and link meters and benefits', () =
     products: ({ product, seats, meter }) => ({
       pro: product('Pro')
         .prices(
-          seats().flat().amount(usd(1000), eur(900)),
+          seats().flat().amount(usd(10), eur(9)),
           meter('tool_call')
             .graduated(
               tier().max(1000).amount(usd(0), eur(0)),
-              tier().amount(perThousand(usd(100)), perThousand(eur(90))),
+              tier().amount(perThousand(usd(1)), perThousand(eur(0.9))),
             )
-            .cap(usd(5000), eur(4500)),
+            .cap(usd(50), eur(45)),
         )
         .recurring('monthly')
         .trial(14, 'days')
@@ -245,7 +245,7 @@ test('products only reference declared meters and benefits', () => {
       products: ({ product, meter }) => ({
         pro: product()
           // @ts-expect-error unknown meter key
-          .prices(meter('unknown').flat().amount(usd(1)))
+          .prices(meter('unknown').flat().amount(usd(0.01)))
           .recurring('monthly'),
       }),
     }),
@@ -276,13 +276,14 @@ test('product names must be between 3 and 64 characters', () => {
   ).toThrow('Provide a name for product "ab"')
 })
 
-test('defineConfig rejects fractional price amounts', () => {
+test('defineConfig rejects amounts with more decimals than the currency', () => {
+  const amount = (value: number) => value
   expect(() =>
     defineConfig({
       meters: () => ({}),
       products: ({ product, fixed }) => ({
         pro: product()
-          .prices(fixed().amount(usd(9.99)))
+          .prices(fixed().amount(usd(amount(9.999))))
           .once(),
       }),
     }),

@@ -35,8 +35,18 @@ export type {
 export { flag, credits } from './schema/benefit'
 export type { BenefitConfig, BenefitDefinition } from './schema/benefit'
 export {
+  aud,
+  brl,
+  cad,
+  chf,
   currency,
   eur,
+  gbp,
+  ils,
+  inr,
+  jpy,
+  krw,
+  lira,
   per,
   perMillion,
   perThousand,

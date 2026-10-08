@@ -1,5 +1,9 @@
 import { createActor, type Actor } from './client/actor'
-import type { RuntimeSDKConfig } from './schema/runtime'
+import {
+  runtimeConfig,
+  type DefinedConfig,
+  type RuntimeSDKConfig,
+} from './schema/runtime'
 import { createPolar, type Polar, type PolarOptions } from './sdk'
 
 export type RuntimeConnection<Config extends RuntimeSDKConfig> = {
@@ -7,10 +11,10 @@ export type RuntimeConnection<Config extends RuntimeSDKConfig> = {
   readonly actor: Actor<Config>
 }
 
-export function RuntimeSDK<const Config extends RuntimeSDKConfig>(
-  config: Config,
+export function RuntimeSDK<Config extends RuntimeSDKConfig>(
+  config: DefinedConfig<Config>,
   sdkOptions: PolarOptions,
 ): RuntimeConnection<Config> {
   const sdk = createPolar(sdkOptions)
-  return { sdk, actor: createActor(config, sdk) }
+  return { sdk, actor: createActor(config[runtimeConfig](), sdk) }
 }

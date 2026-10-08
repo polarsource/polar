@@ -1,4 +1,5 @@
-import { expect, test } from 'vitest'
+import { expect, expectTypeOf, test } from 'vitest'
+import { RuntimeSDK } from '../runtime'
 import { defineConfig } from './config'
 import { gte } from './meter'
 
@@ -15,7 +16,7 @@ test('config serializes to JSON without exposing mutable internal data', () => {
   expect(config.toJSON().meters).toHaveLength(1)
 })
 
-test('connect rejects duplicate IDs without changing JSON serialization', () => {
+test('RuntimeSDK rejects duplicate IDs without changing JSON serialization', () => {
   const config = defineConfig({
     meters: ({ meter }) => [
       ['calls', meter({ displayName: 'First' }).count()],
@@ -23,7 +24,7 @@ test('connect rejects duplicate IDs without changing JSON serialization', () => 
     ],
   })
   expect(config.toJSON().meters).toHaveLength(2)
-  expect(() => config.connect({ accessToken: 'test' })).toThrow(
+  expect(() => RuntimeSDK(config, { accessToken: 'test' })).toThrow(
     'duplicate meter external IDs',
   )
 })
@@ -60,4 +61,112 @@ test('defineConfig rejects invalid builder values', () => {
       }),
     }),
   ).toThrow()
+})
+
+test('benefits serialize with meter credits linked by meter key', () => {
+  const config = defineConfig({
+    meters: ({ meter }) => ({ tool_call: meter().count() }),
+    benefits: ({ flag, credits }) => ({
+      custom_servers: flag({ displayName: 'Custom servers' }),
+      tool_calls: credits().meter('tool_call').units(100),
+      rollover_calls: credits({ displayName: 'Rollover tool calls' })
+        .meter('tool_call')
+        .units(50)
+        .rollover(),
+    }),
+  })
+  expect(config.toJSON().benefits).toEqual([
+    {
+      external_id: 'custom_servers',
+      type: 'feature_flag',
+      description: 'Custom servers',
+      properties: {},
+    },
+    {
+      external_id: 'tool_calls',
+      type: 'meter_credit',
+      description: 'tool_calls',
+      properties: {
+        meter_external_id: 'tool_call',
+        units: 100,
+        rollover: false,
+      },
+    },
+    {
+      external_id: 'rollover_calls',
+      type: 'meter_credit',
+      description: 'Rollover tool calls',
+      properties: {
+        meter_external_id: 'tool_call',
+        units: 50,
+        rollover: true,
+      },
+    },
+  ])
+})
+
+test('meter credits only accept declared meter keys', () => {
+  expect(() =>
+    defineConfig({
+      meters: ({ meter }) => ({ tool_call: meter().count() }),
+      benefits: ({ credits }) => ({
+        // @ts-expect-error unknown meter key
+        credits: credits().meter('unknown').units(1),
+      }),
+    }),
+  ).toThrow('references unknown meter "unknown"')
+})
+
+test('meter credits require positive integer units', () => {
+  for (const units of [0, -1, 1.5]) {
+    expect(() =>
+      defineConfig({
+        meters: ({ meter }) => ({ tool_call: meter().count() }),
+        benefits: ({ credits }) => ({
+          credits: credits().meter('tool_call').units(units),
+        }),
+      }),
+    ).toThrow()
+  }
+})
+
+test('benefit descriptions must be between 3 and 42 characters', () => {
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      benefits: ({ flag }) => ({ ab: flag() }),
+    }),
+  ).toThrow('Provide a displayName for benefit "ab"')
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      benefits: ({ flag }) => ({
+        flag: flag({ displayName: 'x'.repeat(43) }),
+      }),
+    }),
+  ).toThrow()
+})
+
+test('RuntimeSDK exposes configured benefits by external ID', () => {
+  const config = defineConfig({
+    meters: ({ meter }) => ({ tool_call: meter().count() }),
+    benefits: ({ flag }) => ({ custom_servers: flag() }),
+  })
+  const { actor } = RuntimeSDK(config, { accessToken: 'test' })
+  expectTypeOf(actor({ customerId: 'customer-id' }).access)
+    .parameter(0)
+    .toEqualTypeOf<'custom_servers'>()
+})
+
+test('RuntimeSDK rejects duplicate benefit external IDs', () => {
+  const config = defineConfig({
+    meters: () => ({}),
+    benefits: ({ flag }) => [
+      ['flag', flag({ displayName: 'First' })],
+      ['flag', flag({ displayName: 'Second' })],
+    ],
+  })
+  expect(() => RuntimeSDK(config, { accessToken: 'test' })).toThrow(
+    'duplicate benefit external IDs',
+  )
 })

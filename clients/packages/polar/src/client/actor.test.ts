@@ -75,6 +75,29 @@ describe('actor benefits', () => {
     })
   })
 
+  it('resolves the benefit ID by external ID once when none is configured', async () => {
+    const iterList = vi.fn(async function* () {
+      yield { id: 'other-id', external_id: 'other' }
+      yield { id: 'benefit-id', external_id: 'custom_meters' }
+    })
+    const iterGrants = vi.fn(async function* () {
+      yield { benefit_id: 'benefit-id', benefit: { metadata: {} } }
+    })
+    const sdk = { benefits: { iterList, iterGrants } } as unknown as Polar
+    const actor = createActor(
+      { benefits: { custom_meters: {} } },
+      sdk,
+    )({ customerId: 'customer-id' })
+
+    await actor.access('custom_meters')
+    await actor.access('custom_meters')
+    expect(iterList).toHaveBeenCalledOnce()
+    expect(iterGrants).toHaveBeenCalledWith('benefit-id', {
+      customer_id: 'customer-id',
+      is_granted: true,
+    })
+  })
+
   it('returns not granted when no matching grant exists', async () => {
     const iterGrants = vi.fn(async function* () {})
     const sdk = { benefits: { iterGrants } } as unknown as Polar

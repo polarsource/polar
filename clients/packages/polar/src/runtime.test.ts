@@ -57,7 +57,10 @@ test('defined configs connect lazily, resolve deployed IDs, and track metadata e
     }),
   })
   const json = config.toJSON()
-  const client = config.connect({ accessToken: 'test', environment: 'sandbox' })
+  const client = RuntimeSDK(config, {
+    accessToken: 'test',
+    environment: 'sandbox',
+  })
   const customer = client.actor({
     externalCustomerId: 'customer-1',
     externalMemberId: 'member-1',
@@ -76,46 +79,4 @@ test('defined configs connect lazily, resolve deployed IDs, and track metadata e
   expect((await customer.balance('tokens')).pristine).toBe(true)
   expect(meterRequests).toBe(2)
   expect(config.toJSON()).toEqual(json)
-})
-
-test('legacy RuntimeSDK configs retain typed events, nested filters, and explicit IDs', async () => {
-  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
-    const url = new URL(String(input))
-    if (url.pathname.endsWith('/events/ingest'))
-      return Response.json({ inserted: 1 })
-    expect(url.pathname).toContain('/customer-meters/')
-    expect(url.searchParams.get('meter_id')).toBe('legacy-id')
-    return Response.json({ items: [] })
-  })
-  const client = RuntimeSDK(
-    {
-      events: { tool_call: {} },
-      meters: {
-        calls: {
-          id: 'legacy-id',
-          filter: {
-            conjunction: 'and',
-            clauses: [
-              {
-                conjunction: 'or',
-                clauses: [
-                  { property: 'name', operator: 'eq', value: 'tool_call' },
-                ],
-              },
-            ],
-          },
-          aggregation: { func: 'count' },
-        },
-      },
-    },
-    { accessToken: 'test' },
-  )
-  const customer = client.actor({ customerId: 'customer-1' })
-  expectTypeOf<
-    Parameters<typeof customer.track>[0]
-  >().toEqualTypeOf<'tool_call'>()
-  expectTypeOf(customer.track).returns.toEqualTypeOf<Promise<void>>()
-  expect((await customer.balance('calls')).pristine).toBe(true)
-  await customer.track('tool_call')
-  expect((await customer.balance('calls')).pristine).toBe(false)
 })

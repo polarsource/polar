@@ -7,9 +7,12 @@ from redis.asyncio import Redis
 from outpost.env import Environment
 from outpost.reducer import Updates
 
+BUCKET_TTL = 86400
+
 WRITE_UPDATES_SCRIPT = """
+local ttl = ARGV[1]
 for i, key in ipairs(KEYS) do
-    local offset = (i - 1) * 3
+    local offset = 1 + (i - 1) * 3
     local field, func, raw_value = ARGV[offset + 1], ARGV[offset + 2], ARGV[offset + 3]
     if func == 'count' or func == 'sum' then
         redis.call('HINCRBY', key, field, raw_value)
@@ -28,6 +31,7 @@ for i, key in ipairs(KEYS) do
             redis.call('HSET', key, field, raw_value)
         end
     end
+    redis.call('EXPIRE', key, ttl)
 end
 return 0
 """
@@ -52,8 +56,8 @@ class RedisStorage:
         if not updates:
             return
         keys: list[str] = []
-        args: list[str | int | float] = []
-        for (customer_id, meter_id, func), value in updates.items():
-            keys.append(f"outpost:meters:{customer_id}")
-            args.extend((meter_id, func, value))
+        args: list[str | int | float] = [BUCKET_TTL]
+        for (customer_id, reducer_id, bucket_start, func), value in updates.items():
+            keys.append(f"outpost:buckets:{customer_id}")
+            args.extend((f"{reducer_id}:{bucket_start}", func, value))
         await self.write_updates_script(keys=keys, args=args)

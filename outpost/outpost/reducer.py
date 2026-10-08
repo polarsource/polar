@@ -1,4 +1,5 @@
 import collections.abc
+import datetime
 import math
 import operator
 import typing
@@ -88,15 +89,28 @@ def get_matcher(clause: Filter | FilterClause) -> EventMatcher:
     return matcher
 
 
-type Updates = dict[tuple[str, str, str], int | float]
+BUCKET_SIZE = 300
+
+
+def get_bucket_start(timestamp: datetime.datetime) -> int:
+    epoch = int(timestamp.timestamp())
+    return epoch - epoch % BUCKET_SIZE
+
+
+type Updates = dict[tuple[str, str, int, str], int | float]
 
 
 def reduce(
     reducers: collections.abc.Sequence[tuple[Reducer, EventMatcher]],
     events: collections.abc.Sequence[EventCreate],
+    *,
+    oldest_bucket_start: int,
 ) -> Updates:
     updates: Updates = {}
     for event in events:
+        bucket_start = get_bucket_start(event.timestamp)
+        if bucket_start < oldest_bucket_start:
+            continue
         for reducer, matcher in reducers:
             if not matcher(event):
                 continue
@@ -118,7 +132,7 @@ def reduce(
                     message = "Sum requires integer values for HINCRBY"
                     raise ValueError(message)
 
-            update_key = (event.external_customer_id, reducer["id"], func)
+            update_key = (event.external_customer_id, reducer["id"], bucket_start, func)
             previous = updates.get(update_key)
             match func:
                 case "count" | "sum":

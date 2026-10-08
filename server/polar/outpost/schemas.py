@@ -23,9 +23,26 @@ class ConfigurationIncomingMessage(IncomingMessageBase):
     type: typing.Literal[IncomingMessageType.configuration]
 
 
-class CustomerMeterIncomingMessagePayload(MessageBase):
-    customer_id: UUID4
+class CustomerMeterIncomingMessagePayloadBase(MessageBase):
     meter_id: UUID4
+
+
+class CustomerMeterIncomingMessageCustomerPayload(
+    CustomerMeterIncomingMessagePayloadBase
+):
+    customer_id: UUID4
+
+
+class CustomerMeterIncomingMessageExternalCustomerPayload(
+    CustomerMeterIncomingMessagePayloadBase
+):
+    external_customer_id: str
+
+
+type CustomerMeterIncomingMessagePayload = (
+    CustomerMeterIncomingMessageCustomerPayload
+    | CustomerMeterIncomingMessageExternalCustomerPayload
+)
 
 
 class CustomerMeterIncomingMessage(IncomingMessageBase):
@@ -63,6 +80,7 @@ class ConfigurationOutgoingMessage(OutgoingMessageBase):
 
 class CustomerMeterOutgoingMessagePayload(MessageBase):
     customer_id: UUID4
+    external_customer_id: str | None
     meter_id: UUID4
     consumed_units: float
     credited_units: int

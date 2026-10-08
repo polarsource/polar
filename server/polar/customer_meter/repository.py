@@ -74,7 +74,27 @@ class CustomerMeterRepository(
                 CustomerMeter.customer_id == customer_id,
                 CustomerMeter.meter_id == meter_id,
             )
-            .options(*options)
+            .options(contains_eager(CustomerMeter.customer), *options)
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_by_organization_external_customer_and_meter(
+        self,
+        organization_id: UUID,
+        external_customer_id: str,
+        meter_id: UUID,
+        *,
+        options: Options = (),
+    ) -> CustomerMeter | None:
+        statement = (
+            self.get_base_statement()
+            .join(CustomerMeter.customer)
+            .where(
+                Customer.organization_id == organization_id,
+                Customer.external_id == external_customer_id,
+                CustomerMeter.meter_id == meter_id,
+            )
+            .options(contains_eager(CustomerMeter.customer), *options)
         )
         return await self.get_one_or_none(statement)
 

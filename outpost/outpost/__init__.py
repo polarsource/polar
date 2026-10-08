@@ -4,6 +4,7 @@ import typing
 
 import anyio
 import httpx2
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import ValidationError
 from starlette.applications import Starlette
 from starlette.requests import Request
@@ -12,6 +13,7 @@ from starlette.routing import Route
 
 from outpost.env import Environment, get_environment
 from outpost.event import EventsIngest
+from outpost.metrics import EVENTS_INGESTED, INGEST_SECONDS, REDUCE_SECONDS
 from outpost.polar import Configuration, create_client, listen
 from outpost.reducer import reduce
 from outpost.storage import Storage, create_storage
@@ -29,17 +31,23 @@ def get_state(request: Request) -> LifespanState:
 
 
 async def ingest(request: Request) -> Response:
-    try:
-        payload = EventsIngest.model_validate_json(await request.body())
-    except ValidationError:
-        return Response(status_code=422)
+    with INGEST_SECONDS.time():
+        try:
+            payload = EventsIngest.model_validate_json(await request.body())
+        except ValidationError:
+            return Response(status_code=422)
 
-    state = get_state(request)
-    await state["storage"].write_updates(
-        reduce(state["configuration"].meters, payload.events)
-    )
+        state = get_state(request)
+        with REDUCE_SECONDS.time():
+            updates = reduce(state["configuration"].meters, payload.events)
+        await state["storage"].write_updates(updates)
+        EVENTS_INGESTED.inc(len(payload.events))
 
-    return Response(status_code=202)
+        return Response(status_code=202)
+
+
+async def metrics(_: Request) -> Response:
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @contextlib.asynccontextmanager
@@ -70,5 +78,7 @@ app = Starlette(
     lifespan=lifespan,
     routes=[
         Route("/ingest", ingest, methods=["POST"]),
+        # ponytail: per-process registry, multiprocess mode if metrics must cover --workers > 1
+        Route("/metrics", metrics),
     ],
 )

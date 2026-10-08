@@ -11,6 +11,7 @@ from polar.kit.metadata import get_metadata_clause
 from polar.kit.repository import (
     Options,
     RepositoryBase,
+    RepositoryExternalIDMixin,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
     RepositorySortingMixin,
@@ -30,6 +31,7 @@ from .sorting import ProductSortProperty
 
 
 class ProductRepository(
+    RepositoryExternalIDMixin[Product],
     RepositorySortingMixin[Product, ProductSortProperty],
     RepositorySoftDeletionIDMixin[Product, UUID],
     RepositorySoftDeletionMixin[Product],

@@ -151,6 +151,24 @@ class BenefitService:
                 ]
             )
 
+        repository = BenefitRepository.from_session(session)
+        if (
+            create_schema.external_id is not None
+            and await repository.get_by_external_id_and_organization(
+                create_schema.external_id, organization.id
+            )
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "external_id"),
+                        "msg": "A benefit with this external ID already exists.",
+                        "input": create_schema.external_id,
+                    }
+                ]
+            )
+
         try:
             is_tax_applicable = getattr(create_schema, "is_tax_applicable")
         except AttributeError:
@@ -230,6 +248,39 @@ class BenefitService:
                     }
                 ]
             )
+
+        if (
+            "external_id" in benefit_update.model_fields_set
+            and benefit_update.external_id != benefit.external_id
+        ):
+            repository = BenefitRepository.from_session(session)
+            if benefit.external_id is not None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "external_id"),
+                            "msg": "Benefit external ID cannot be updated.",
+                            "input": benefit_update.external_id,
+                        }
+                    ]
+                )
+            if (
+                benefit_update.external_id is not None
+                and await repository.get_by_external_id_and_organization(
+                    benefit_update.external_id, benefit.organization_id
+                )
+            ):
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "external_id"),
+                            "msg": "A benefit with this external ID already exists.",
+                            "input": benefit_update.external_id,
+                        }
+                    ]
+                )
 
         update_dict = benefit_update.model_dump(
             by_alias=True, exclude_unset=True, exclude={"type", "properties"}

@@ -2547,11 +2547,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.benefits.create(\n    type='custom',\n    description='string',\n    properties={},\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.benefits.create(\n    external_id='ext_1337',\n    type='custom',\n    description='string',\n    properties={},\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.benefits.create(\n  {\n    \"type\": \"custom\",\n    \"description\": \"string\",\n    \"properties\": {}\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.benefits.create(\n  {\n    \"external_id\": \"ext_1337\",\n    \"type\": \"custom\",\n    \"description\": \"string\",\n    \"properties\": {}\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -2784,11 +2784,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.benefits.update(\n    '00000000-0000-4000-8000-000000000000',\n    type='custom',\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.benefits.update(\n    '00000000-0000-4000-8000-000000000000',\n    external_id='ext_1337',\n    type='custom',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.benefits.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"type\": \"custom\"\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.benefits.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"external_id\": \"ext_1337\",\n    \"type\": \"custom\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
       },
@@ -4877,11 +4877,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.products.create(\n    name='string',\n    prices=[{'amount_type': 'fixed', 'price_amount': 0}],\n    recurring_interval='day',\n    recurring_interval_count=1,\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.products.create(\n    external_id='ext_1337',\n    name='string',\n    prices=[{'amount_type': 'fixed', 'price_amount': 0}],\n    recurring_interval='day',\n    recurring_interval_count=1,\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.products.create(\n  {\n    \"name\": \"string\",\n    \"prices\": [\n      {\n        \"amount_type\": \"fixed\",\n        \"price_amount\": 0\n      }\n    ],\n    \"recurring_interval\": \"day\",\n    \"recurring_interval_count\": 1\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.products.create(\n  {\n    \"external_id\": \"ext_1337\",\n    \"name\": \"string\",\n    \"prices\": [\n      {\n        \"amount_type\": \"fixed\",\n        \"price_amount\": 0\n      }\n    ],\n    \"recurring_interval\": \"day\",\n    \"recurring_interval_count\": 1\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -5096,11 +5096,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.products.update(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.products.update(\n    '00000000-0000-4000-8000-000000000000',\n    external_id='ext_1337',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.products.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {},\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.products.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"external_id\": \"ext_1337\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
       },
@@ -30309,6 +30309,21 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
           },
@@ -30336,6 +30351,7 @@
           "deletable",
           "is_deleted",
           "organization_id",
+          "external_id",
           "metadata",
           "visibility",
           "properties",
@@ -30346,6 +30362,21 @@
       },
       "BenefitCustomCreate": {
         "properties": {
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -30679,6 +30710,21 @@
       },
       "BenefitCustomUpdate": {
         "properties": {
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -30961,6 +31007,21 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
           },
@@ -30988,6 +31049,7 @@
           "deletable",
           "is_deleted",
           "organization_id",
+          "external_id",
           "metadata",
           "visibility",
           "properties",
@@ -30998,6 +31060,21 @@
       },
       "BenefitDiscordCreate": {
         "properties": {
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -31315,6 +31392,21 @@
       },
       "BenefitDiscordUpdate": {
         "properties": {
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -31614,6 +31706,21 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
           },
@@ -31641,6 +31748,7 @@
           "deletable",
           "is_deleted",
           "organization_id",
+          "external_id",
           "metadata",
           "visibility",
           "properties",
@@ -31650,6 +31758,21 @@
       },
       "BenefitDownloadablesCreate": {
         "properties": {
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -31972,6 +32095,21 @@
       },
       "BenefitDownloadablesUpdate": {
         "properties": {
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -32100,6 +32238,21 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
           },
@@ -32127,6 +32280,7 @@
           "deletable",
           "is_deleted",
           "organization_id",
+          "external_id",
           "metadata",
           "visibility",
           "properties",
@@ -32137,6 +32291,21 @@
       },
       "BenefitFeatureFlagCreate": {
         "properties": {
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -32404,6 +32573,21 @@
       },
       "BenefitFeatureFlagUpdate": {
         "properties": {
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -32543,6 +32727,21 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
           },
@@ -32570,6 +32769,7 @@
           "deletable",
           "is_deleted",
           "organization_id",
+          "external_id",
           "metadata",
           "visibility",
           "properties",
@@ -32580,6 +32780,21 @@
       },
       "BenefitGitHubRepositoryCreate": {
         "properties": {
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -32935,6 +33150,21 @@
       },
       "BenefitGitHubRepositoryUpdate": {
         "properties": {
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -35186,6 +35416,21 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
           },
@@ -35213,6 +35458,7 @@
           "deletable",
           "is_deleted",
           "organization_id",
+          "external_id",
           "metadata",
           "visibility",
           "properties",
@@ -35222,6 +35468,21 @@
       },
       "BenefitLicenseKeysCreate": {
         "properties": {
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -35629,6 +35890,21 @@
       },
       "BenefitLicenseKeysUpdate": {
         "properties": {
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -35768,6 +36044,21 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
           },
@@ -35795,6 +36086,7 @@
           "deletable",
           "is_deleted",
           "organization_id",
+          "external_id",
           "metadata",
           "visibility",
           "properties",
@@ -35805,6 +36097,21 @@
       },
       "BenefitMeterCreditCreate": {
         "properties": {
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -36157,6 +36464,21 @@
       },
       "BenefitMeterCreditUpdate": {
         "properties": {
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -36480,6 +36802,21 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
           },
@@ -36507,6 +36844,7 @@
           "deletable",
           "is_deleted",
           "organization_id",
+          "external_id",
           "metadata",
           "visibility",
           "properties",
@@ -36516,6 +36854,21 @@
       },
       "BenefitSlackSharedChannelCreate": {
         "properties": {
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -36876,6 +37229,21 @@
       },
       "BenefitSlackSharedChannelUpdate": {
         "properties": {
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -72184,6 +72552,21 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the product."
           },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
           },
@@ -72250,6 +72633,7 @@
           "is_recurring",
           "is_archived",
           "organization_id",
+          "external_id",
           "metadata",
           "is_deletable",
           "prices",
@@ -72300,6 +72684,21 @@
       },
       "ProductCreateOneTime": {
         "properties": {
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -72452,6 +72851,21 @@
       },
       "ProductCreateRecurring": {
         "properties": {
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -74076,6 +74490,21 @@
       },
       "ProductUpdate": {
         "properties": {
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [

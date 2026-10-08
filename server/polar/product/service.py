@@ -210,6 +210,23 @@ class ProductService:
             OrganizationPermission.products_manage,
         )
 
+        if (
+            create_schema.external_id is not None
+            and await repository.get_by_external_id_and_organization(
+                create_schema.external_id, organization.id
+            )
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "external_id"),
+                        "msg": "A product with this external ID already exists.",
+                        "input": create_schema.external_id,
+                    }
+                ]
+            )
+
         errors: list[ValidationError] = []
         prices, _, _, prices_errors = await self.get_validated_prices(
             session,
@@ -321,6 +338,35 @@ class ProductService:
         )
 
         errors: list[ValidationError] = []
+
+        if (
+            "external_id" in update_schema.model_fields_set
+            and update_schema.external_id != product.external_id
+        ):
+            repository = ProductRepository.from_session(session)
+            if product.external_id is not None:
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "external_id"),
+                        "msg": "Product external ID cannot be updated.",
+                        "input": update_schema.external_id,
+                    }
+                )
+            elif (
+                update_schema.external_id is not None
+                and await repository.get_by_external_id_and_organization(
+                    update_schema.external_id, product.organization_id
+                )
+            ):
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "external_id"),
+                        "msg": "A product with this external ID already exists.",
+                        "input": update_schema.external_id,
+                    }
+                )
 
         # Validate prices
         existing_prices = set(product.prices)

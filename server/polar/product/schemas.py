@@ -39,6 +39,7 @@ from polar.kit.currency import (
     get_minimum_currency_amount,
 )
 from polar.kit.db.models import Model
+from polar.kit.external_id import ExternalIDInputMixin, ExternalIDOutputMixin
 from polar.kit.metadata import (
     MetadataInputMixin,
     MetadataOutputMixin,
@@ -611,7 +612,7 @@ PRODUCT_CREATE_PRICES_DESCRIPTION = (
 )
 
 
-class ProductCreateBase(MetadataInputMixin, Schema):
+class ProductCreateBase(MetadataInputMixin, ExternalIDInputMixin, Schema):
     name: ProductName
     description: ProductDescription = None
     visibility: ProductVisibility = Field(
@@ -741,7 +742,9 @@ PRODUCT_UPDATE_PRICES_DESCRIPTION = (
 )
 
 
-class ProductUpdate(TrialConfigurationInputMixin, MetadataInputMixin, Schema):
+class ProductUpdate(
+    TrialConfigurationInputMixin, MetadataInputMixin, ExternalIDInputMixin, Schema
+):
     """
     Schema to update a product.
     """
@@ -1144,7 +1147,7 @@ ProductMediaList = Annotated[
 ]
 
 
-class Product(MetadataOutputMixin, ProductBase):
+class Product(MetadataOutputMixin, ExternalIDOutputMixin, ProductBase):
     """
     A product.
     """

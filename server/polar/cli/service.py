@@ -128,7 +128,7 @@ async def trigger_event(
     redis: Redis, organization: Organization, request: TriggerRequest
 ) -> TriggerResponse:
     fixtures = TriggerFixtures(organization, seed=request.seed)
-    payload = json.loads(fixtures.build(request.event).get_raw_payload())
+    payload = json.loads(fixtures.build(request.event).model_dump_json())
     apply_overrides(payload, request.overrides)
 
     try:

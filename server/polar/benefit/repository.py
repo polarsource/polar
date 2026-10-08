@@ -8,6 +8,7 @@ from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
     Options,
     RepositoryBase,
+    RepositoryExternalIDMixin,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
     RepositorySortingMixin,
@@ -21,6 +22,7 @@ from .sorting import BenefitSortProperty
 
 
 class BenefitRepository(
+    RepositoryExternalIDMixin[Benefit],
     RepositorySortingMixin[Benefit, BenefitSortProperty],
     RepositorySoftDeletionIDMixin[Benefit, UUID],
     RepositorySoftDeletionMixin[Benefit],

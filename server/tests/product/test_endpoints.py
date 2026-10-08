@@ -593,6 +593,33 @@ class TestCreateProduct:
         assert response.status_code == 422
         assert response.json()["detail"][0]["loc"][-1] == "seat_tiers"
 
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_external_id_2027_01(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/products/",
+            json={
+                "name": "Product",
+                "organization_id": str(organization.id),
+                "external_id": "ext_1337",
+                "prices": [
+                    {
+                        "amount_type": "fixed",
+                        "price_amount": 1000,
+                        "price_currency": "usd",
+                    }
+                ],
+            },
+        )
+
+        assert response.status_code == 201
+        assert response.json()["external_id"] == "ext_1337"
+
 
 @pytest.mark.asyncio
 class TestUpdateProduct:

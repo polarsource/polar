@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import UUID4, Field, computed_field, field_validator
 from pydantic.json_schema import SkipJsonSchema
 
+from polar.kit.external_id import ExternalIDInputMixin, ExternalIDOutputMixin
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.kit.visibility import Visibility
@@ -17,7 +18,7 @@ BENEFIT_DESCRIPTION_MAX_LENGTH = 42
 class BenefitProperties(Schema): ...
 
 
-class BenefitCreateBase(MetadataInputMixin, Schema):
+class BenefitCreateBase(MetadataInputMixin, ExternalIDInputMixin, Schema):
     type: BenefitType
     description: str = Field(
         ...,
@@ -41,7 +42,7 @@ class BenefitCreateBase(MetadataInputMixin, Schema):
     )
 
 
-class BenefitUpdateBase(MetadataInputMixin, Schema):
+class BenefitUpdateBase(MetadataInputMixin, ExternalIDInputMixin, Schema):
     description: str | None = Field(
         None,
         min_length=BENEFIT_DESCRIPTION_MIN_LENGTH,
@@ -74,7 +75,7 @@ class BenefitPublicBase(TimestampedSchema, IDSchema):
     )
 
 
-class BenefitBase(MetadataOutputMixin, BenefitPublicBase):
+class BenefitBase(MetadataOutputMixin, ExternalIDOutputMixin, BenefitPublicBase):
     visibility: BenefitVisibility = Field(
         description="The visibility of the benefit in the customer portal."
     )

@@ -41,6 +41,7 @@
   },
   "dependencies": {
     "@polar-sh/sdk": "1.0.3-alpha.1",
+    "@standard-schema/spec": "^1.1.0",
     "effect": "^4.0.1"
   },
   "devDependencies": {
@@ -49,6 +50,7 @@
     "@typescript/native": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "zod": "catalog:"
   }
 }

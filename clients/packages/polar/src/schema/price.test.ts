@@ -17,7 +17,7 @@ test('prices only accept priced tiers', () => {
   // @ts-expect-error a tier without an amount
   seats().graduated(tier().max(5))
   // @ts-expect-error a tier without an amount
-  units().volume(tier().max(5).amount(usd(100)), tier())
+  units().volume(tier().max(5).amount(usd(1)), tier())
   // @ts-expect-error a tier without an amount
   metered('calls').graduated(tier())
   // @ts-expect-error at least one tier
@@ -28,30 +28,30 @@ test('prices only accept priced tiers', () => {
 
 test('sub-cent amounts are only accepted on metered prices', () => {
   // @ts-expect-error sub-cent fixed price
-  fixed().amount(perThousand(usd(100)))
+  fixed().amount(perThousand(usd(1)))
   // @ts-expect-error sub-cent fixed price
-  fixed().amount(per(1_000_000_000, usd(100)))
+  fixed().amount(per(1_000_000_000, usd(1)))
   const flatSeats = seats().flat()
   // @ts-expect-error sub-cent seat price
-  flatSeats.amount(perMillion(usd(100)))
+  flatSeats.amount(perMillion(usd(1)))
   // @ts-expect-error sub-cent unit tier
-  units().graduated(tier().amount(perThousand(usd(100))))
+  units().graduated(tier().amount(perThousand(usd(1))))
   const usage = metered('calls')
     .flat()
-    .amount(perThousand(usd(1)))
+    .amount(perThousand(usd(0.01)))
   // @ts-expect-error sub-cent cap
-  usage.cap(perThousand(usd(1)))
+  usage.cap(perThousand(usd(0.01)))
   // @ts-expect-error scales don't nest
-  perThousand(perThousand(usd(1)))
+  perThousand(perThousand(usd(0.01)))
 
   metered('calls')
     .flat()
-    .amount(perThousand(usd(100)), eur(1))
+    .amount(perThousand(usd(1)), eur(0.01))
   metered('calls').volume(
     tier()
       .max(1000)
-      .amount(perMillion(usd(100))),
-    tier().amount(usd(1)),
+      .amount(perMillion(usd(1))),
+    tier().amount(usd(0.01)),
   )
 })
 
@@ -63,7 +63,7 @@ test('free expands to a zero fixed price in each currency', () => {
 })
 
 test('fixed prices expand to one price per currency', () => {
-  const price = fixed().amount(usd(100), eur(90))
+  const price = fixed().amount(usd(1), eur(0.9))
   expect(priceCurrencies(price, 'Price')).toEqual(['usd', 'eur'])
   expect(priceConfigs(price, ['usd', 'eur'], 'Price')).toEqual([
     { amount_type: 'fixed', price_currency: 'usd', price_amount: 100 },
@@ -72,7 +72,7 @@ test('fixed prices expand to one price per currency', () => {
 })
 
 test('flat seats are a single volume tier bounded by max', () => {
-  const price = seats().flat().min(3).amount(usd(100)).max(1000)
+  const price = seats().flat().min(3).amount(usd(1)).max(1000)
   expect(priceConfigs(price, ['usd'], 'Price')).toEqual([
     {
       amount_type: 'seat_based',
@@ -85,9 +85,9 @@ test('flat seats are a single volume tier bounded by max', () => {
 
 test('tiered units keep their tiering and bound the last tier by max', () => {
   const tiers = [
-    tier().max(5).amount(usd(100), eur(100)),
-    tier().max(10).amount(usd(90), eur(90)),
-    tier().amount(usd(80), eur(80)),
+    tier().max(5).amount(usd(1), eur(1)),
+    tier().max(10).amount(usd(0.9), eur(0.9)),
+    tier().amount(usd(0.8), eur(0.8)),
   ] as const
   for (const type of ['graduated', 'volume'] as const) {
     const builder = units()
@@ -116,8 +116,8 @@ test('tier bounds must increase and only the last tier may be unbounded', () => 
   expect(() =>
     priceConfigs(
       seats().graduated(
-        tier().max(10).amount(usd(100)),
-        tier().max(5).amount(usd(90)),
+        tier().max(10).amount(usd(1)),
+        tier().max(5).amount(usd(0.9)),
       ),
       ['usd'],
       'Price',
@@ -125,7 +125,7 @@ test('tier bounds must increase and only the last tier may be unbounded', () => 
   ).toThrow('increasing tier bounds')
   expect(() =>
     priceConfigs(
-      seats().graduated(tier().amount(usd(100)), tier().amount(usd(90))),
+      seats().graduated(tier().amount(usd(1)), tier().amount(usd(0.9))),
       ['usd'],
       'Price',
     ),
@@ -133,7 +133,7 @@ test('tier bounds must increase and only the last tier may be unbounded', () => 
   expect(() =>
     priceConfigs(
       seats()
-        .volume(tier().max(5).amount(usd(100)), tier().amount(usd(90)))
+        .volume(tier().max(5).amount(usd(1)), tier().amount(usd(0.9)))
         .max(3),
       ['usd'],
       'Price',
@@ -142,7 +142,7 @@ test('tier bounds must increase and only the last tier may be unbounded', () => 
   expect(() =>
     priceConfigs(
       seats()
-        .volume(tier().max(5).amount(usd(100)))
+        .volume(tier().max(5).amount(usd(1)))
         .max(10),
       ['usd'],
       'Price',
@@ -153,8 +153,8 @@ test('tier bounds must increase and only the last tier may be unbounded', () => 
 test('flat metered prices become a metered unit price with a sub-cent rate', () => {
   const price = metered('tool_call')
     .flat()
-    .amount(perThousand(usd(100)), perThousand(eur(90)))
-    .cap(usd(10000))
+    .amount(perThousand(usd(1)), perThousand(eur(0.9)))
+    .cap(usd(100))
   expect(priceConfigs(price, ['usd', 'eur'], 'Price')).toEqual([
     {
       amount_type: 'metered_unit',
@@ -177,10 +177,10 @@ test('tiered metered prices must leave their last tier unbounded', () => {
     .graduated(
       tier()
         .max(5)
-        .amount(perThousand(usd(100))),
-      tier().amount(perThousand(usd(80))),
+        .amount(perThousand(usd(1))),
+      tier().amount(perThousand(usd(0.8))),
     )
-    .cap(usd(100))
+    .cap(usd(1))
   expect(priceConfigs(price, ['usd'], 'Price')).toEqual([
     {
       amount_type: 'metered_tiers',
@@ -195,7 +195,7 @@ test('tiered metered prices must leave their last tier unbounded', () => {
   ])
   expect(() =>
     priceConfigs(
-      metered('tool_call').volume(tier().max(5).amount(usd(1))),
+      metered('tool_call').volume(tier().max(5).amount(usd(0.01))),
       ['usd'],
       'Price',
     ),
@@ -206,20 +206,20 @@ test('every tier and cap must use the same currencies', () => {
   expect(() =>
     priceCurrencies(
       seats().volume(
-        tier().max(5).amount(usd(100), eur(100)),
-        tier().amount(usd(80)),
+        tier().max(5).amount(usd(1), eur(1)),
+        tier().amount(usd(0.8)),
       ),
       'Price',
     ),
   ).toThrow('Price tier 2 must have amounts in the same currencies')
   expect(() =>
     priceCurrencies(
-      metered('calls').flat().amount(usd(1)).cap(eur(100)),
+      metered('calls').flat().amount(usd(0.01)).cap(eur(1)),
       'Price',
     ),
   ).toThrow('has a cap in eur')
   expect(() =>
-    priceCurrencies(fixed().amount(usd(1), usd(2)), 'Price'),
+    priceCurrencies(fixed().amount(usd(0.01), usd(0.02)), 'Price'),
   ).toThrow('same currency more than once')
 })
 
@@ -227,7 +227,7 @@ const decode = Schema.decodeUnknownSync(PriceConfig)
 
 test('the minimum quantity cannot exceed the maximum', () => {
   const [tooFew] = priceConfigs(
-    seats().flat().min(10).amount(usd(100)).max(5),
+    seats().flat().min(10).amount(usd(1)).max(5),
     ['usd'],
     'Price',
   )
@@ -236,14 +236,14 @@ test('the minimum quantity cannot exceed the maximum', () => {
   )
   const [bounded] = priceConfigs(
     units()
-      .volume(tier().max(5).amount(usd(100)))
+      .volume(tier().max(5).amount(usd(1)))
       .min(6),
     ['usd'],
     'Price',
   )
   expect(() => decode(bounded)).toThrow('exceeds the maximum of 5')
   const [unbounded] = priceConfigs(
-    units().flat().min(10).amount(usd(100)),
+    units().flat().min(10).amount(usd(1)),
     ['usd'],
     'Price',
   )
@@ -260,7 +260,7 @@ test('flat metered prices need a rate above zero', () => {
   const [freeTier] = priceConfigs(
     metered('calls').graduated(
       tier().max(100).amount(usd(0)),
-      tier().amount(perMillion(usd(1))),
+      tier().amount(perMillion(usd(0.01))),
     ),
     ['usd'],
     'Price',
@@ -292,7 +292,7 @@ test('volume prices have no included units', () => {
 test('free and included tiers charge 0 in each currency the price uses', () => {
   const price = seats().graduated(
     tier().included(3),
-    tier().max(10).amount(usd(100), eur(90)),
+    tier().max(10).amount(usd(1), eur(0.9)),
     tier().free(),
   )
   expect(priceCurrencies(price, 'Price')).toEqual(['usd', 'eur'])
@@ -317,11 +317,11 @@ test('free and included tiers charge 0 in each currency the price uses', () => {
   )
   metered('calls').graduated(
     tier().included(1000),
-    tier().amount(perMillion(usd(5))),
+    tier().amount(perMillion(usd(0.05))),
   )
   expect(() =>
     // @ts-expect-error a tier is either free or priced
-    tier().free().amount(usd(1)),
+    tier().free().amount(usd(0.01)),
   ).toThrow()
 })
 
@@ -340,7 +340,7 @@ test('a price whose tiers are all free takes the product currencies', () => {
   ])
   expect(() =>
     priceCurrencies(
-      metered('calls').graduated(tier().free()).cap(usd(100)),
+      metered('calls').graduated(tier().free()).cap(usd(1)),
       'Price',
     ),
   ).toThrow('has a cap, but every tier is free')

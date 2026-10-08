@@ -159,27 +159,26 @@ const cases: [string, PolarConfig][] = [
         }),
         benefits: ({ flag }) => ({ custom_servers: flag('Custom servers') }),
         products: ({ product, free, fixed, seats, units, meter }) => {
-          const lira = api.currency('try')
           return {
             hobby: product('Hobby')
               .prices(
                 free(),
                 meter('calls')
                   .flat()
-                  .amount(api.perThousand(lira(150)), api.eur(2)),
+                  .amount(api.perThousand(api.lira(1.5)), api.eur(0.02)),
                 meter('tokens').graduated(
                   api
                     .tier()
                     .max(1_000_000)
                     .amount(
-                      api.per(1_000_000_000, lira(75)),
-                      api.per(10, api.eur(1)),
+                      api.per(1_000_000_000, api.lira(0.75)),
+                      api.per(10, api.eur(0.01)),
                     ),
                   api
                     .tier()
                     .amount(
-                      api.per(1_000_000_000_000, lira(1)),
-                      api.perMillion(api.eur(3)),
+                      api.per(1_000_000_000_000, api.lira(0.01)),
+                      api.perMillion(api.eur(0.03)),
                     ),
                 ),
               )
@@ -188,14 +187,14 @@ const cases: [string, PolarConfig][] = [
               .prices(fixed().amount(api.eur(0)))
               .once(),
             lifetime: product('Lifetime')
-              .prices(fixed().amount(api.usd(9900), api.eur(9500)))
+              .prices(fixed().amount(api.usd(99), api.eur(95)))
               .once(),
             team: product('Team')
               .prices(
                 seats()
                   .graduated(
-                    api.tier().max(5).amount(api.usd(2000), api.eur(1800)),
-                    api.tier().amount(api.usd(1500), api.eur(1400)),
+                    api.tier().max(5).amount(api.usd(20), api.eur(18)),
+                    api.tier().amount(api.usd(15), api.eur(14)),
                   )
                   .min(3)
                   .max(50),
@@ -204,10 +203,10 @@ const cases: [string, PolarConfig][] = [
                     api
                       .tier()
                       .max(1_000_000)
-                      .amount(api.perMillion(api.usd(3)), api.eur(1)),
+                      .amount(api.perMillion(api.usd(0.03)), api.eur(0.01)),
                     api.tier().amount(api.usd(0), api.eur(0)),
                   )
-                  .cap(api.usd(50000)),
+                  .cap(api.usd(500)),
               )
               .recurring(3, 'months')
               .trial(1, 'month')
@@ -217,7 +216,7 @@ const cases: [string, PolarConfig][] = [
                 units().graduated(
                   api.tier().included(10),
                   api.tier().max(20).free(),
-                  api.tier().max(50).amount(api.usd(5)),
+                  api.tier().max(50).amount(api.usd(0.05)),
                   api.tier().free(),
                 ),
                 meter('tokens').volume(
@@ -228,7 +227,7 @@ const cases: [string, PolarConfig][] = [
               .recurring('monthly'),
             devices: product('Devices')
               .prices(
-                units().flat().min(2).amount(api.currency('gbp')(500)).max(10),
+                units().flat().min(2).amount(api.currency('nok')(50)).max(10),
               )
               .recurring('yearly')
               .trial(14, 'days'),
@@ -337,9 +336,9 @@ test('renders free tiers with free() and included()', async () => {
               .prices(
                 seats().graduated(
                   api.tier().included(3),
-                  api.tier().max(10).amount(api.usd(100)),
+                  api.tier().max(10).amount(api.usd(1)),
                   api.tier().max(20).free(),
-                  api.tier().amount(api.usd(50)),
+                  api.tier().amount(api.usd(0.5)),
                 ),
               )
               .recurring('monthly'),
@@ -399,7 +398,7 @@ test('generates rates padded with trailing zeros', async () => {
       ],
     }),
   )
-  expect(source).toContain('.amount(usd(10000))')
+  expect(source).toContain('.amount(usd(100))')
 })
 
 test('rejects rates with more digits than whole amounts can hold', async () => {
@@ -468,6 +467,6 @@ test('groups interleaved currencies into one builder call per price', async () =
       ],
     }),
   )
-  expect(source).toContain('fixed().amount(usd(100), eur(90))')
-  expect(source).toContain('.amount(usd(10), eur(9))')
+  expect(source).toContain('fixed().amount(usd(1), eur(0.9))')
+  expect(source).toContain('.amount(usd(0.1), eur(0.09))')
 })

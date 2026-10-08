@@ -36,7 +36,7 @@ test('free prices follow the currencies of the other prices', () => {
       free(),
       metered('calls')
         .flat()
-        .amount(perThousand(eur(5))),
+        .amount(perThousand(eur(0.05))),
     )
     .recurring('monthly')
   expect(productPrices('pro', definition)).toEqual([
@@ -55,10 +55,7 @@ test('free prices follow the currencies of the other prices', () => {
 
 test('all prices in a product share the same currencies', () => {
   const definition = product()
-    .prices(
-      fixed().amount(usd(1000), eur(900)),
-      seats().flat().amount(usd(100)),
-    )
+    .prices(fixed().amount(usd(10), eur(9)), seats().flat().amount(usd(1)))
     .recurring('monthly')
   expect(() => productPrices('pro', definition)).toThrow(
     'Price 2 of product "pro" must have amounts in the same currencies as the product\'s other prices (usd, eur).',
@@ -67,7 +64,7 @@ test('all prices in a product share the same currencies', () => {
 
 test('one-time products cannot have metered prices', () => {
   const definition = product()
-    .prices(metered('calls').flat().amount(usd(1)))
+    .prices(metered('calls').flat().amount(usd(0.01)))
     .once()
   expect(() => productPrices('pack', definition)).toThrow(
     "can't have metered prices",
@@ -94,46 +91,37 @@ const decodeProduct = (
 test('products allow one fixed price with seats or units plus a price per meter', () => {
   expect(() =>
     decodeProduct(
-      fixed().amount(usd(1000), eur(900)),
-      seats().flat().amount(usd(100), eur(90)),
-      metered('calls').flat().amount(usd(1), eur(1)),
-      metered('tokens').graduated(tier().amount(usd(1), eur(1))),
+      fixed().amount(usd(10), eur(9)),
+      seats().flat().amount(usd(1), eur(0.9)),
+      metered('calls').flat().amount(usd(0.01), eur(0.01)),
+      metered('tokens').graduated(tier().amount(usd(0.01), eur(0.01))),
     ),
   ).not.toThrow()
   expect(() =>
-    decodeProduct(free(), units().flat().amount(usd(100))),
+    decodeProduct(free(), units().flat().amount(usd(1))),
   ).not.toThrow()
 })
 
 test('products reject price combinations the API does not support', () => {
   expect(() =>
-    decodeProduct(fixed().amount(usd(1000)), fixed().amount(usd(2000))),
+    decodeProduct(fixed().amount(usd(10)), fixed().amount(usd(20))),
   ).toThrow('Only one fixed or free price is allowed.')
-  expect(() => decodeProduct(free(), fixed().amount(usd(1000)))).toThrow(
+  expect(() => decodeProduct(free(), fixed().amount(usd(10)))).toThrow(
     'Only one fixed or free price is allowed.',
   )
   expect(() =>
-    decodeProduct(
-      seats().flat().amount(usd(100)),
-      seats().flat().amount(usd(200)),
-    ),
+    decodeProduct(seats().flat().amount(usd(1)), seats().flat().amount(usd(2))),
   ).toThrow('Only one seat-based price is allowed.')
   expect(() =>
-    decodeProduct(
-      units().flat().amount(usd(100)),
-      units().flat().amount(usd(200)),
-    ),
+    decodeProduct(units().flat().amount(usd(1)), units().flat().amount(usd(2))),
   ).toThrow('Only one unit-based price is allowed.')
   expect(() =>
-    decodeProduct(
-      seats().flat().amount(usd(100)),
-      units().flat().amount(usd(200)),
-    ),
+    decodeProduct(seats().flat().amount(usd(1)), units().flat().amount(usd(2))),
   ).toThrow('A seat-based price cannot be combined with a unit-based price.')
   expect(() =>
     decodeProduct(
-      metered('calls').flat().amount(usd(1)),
-      metered('calls').volume(tier().amount(usd(2))),
+      metered('calls').flat().amount(usd(0.01)),
+      metered('calls').volume(tier().amount(usd(0.02))),
     ),
   ).toThrow('Meter "calls" is used by more than one price.')
 })

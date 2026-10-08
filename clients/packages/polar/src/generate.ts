@@ -2,7 +2,7 @@ import { Effect } from 'effect'
 import { validateConfig } from './schema/config'
 import type { BenefitConfig } from './schema/benefit'
 import type { MeterConfig, MeterFilter } from './schema/meter'
-import { scaleRate } from './schema/money'
+import { majorAmount, scaleRate } from './schema/money'
 import type { Currency, Scale } from './schema/money'
 import type { PriceConfig } from './schema/price'
 import type { ProductConfig } from './schema/product'
@@ -81,15 +81,31 @@ const scaleHelpers: Partial<Record<Scale, string>> = {
   1_000_000: 'perMillion',
 }
 
+// The currencies `@polar-sh/polar` exports a helper for.
+const shorthands: Partial<Record<Currency, string>> = {
+  usd: 'usd',
+  eur: 'eur',
+  try: 'lira',
+  gbp: 'gbp',
+  ils: 'ils',
+  inr: 'inr',
+  aud: 'aud',
+  cad: 'cad',
+  jpy: 'jpy',
+  chf: 'chf',
+  krw: 'krw',
+  brl: 'brl',
+}
+
 const renderMoney = (
   currency: Currency,
   rate: string,
   imports: Set<string>,
 ): string => {
   const { amount, per } = scaleRate(rate)
-  const named = currency === 'usd' || currency === 'eur'
-  imports.add(named ? currency : 'currency')
-  const money = `${named ? currency : `currency(${literal(currency)})`}(${amount})`
+  const shorthand = shorthands[currency]
+  imports.add(shorthand ?? 'currency')
+  const money = `${shorthand ?? `currency(${literal(currency)})`}(${majorAmount(currency, amount)})`
   if (per === 1) return money
   const helper = scaleHelpers[per]
   imports.add(helper ?? 'per')

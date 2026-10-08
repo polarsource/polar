@@ -20,6 +20,7 @@ from polar.license_key.service import license_key as license_key_service
 from polar.models import (
     Customer,
     LicenseKey,
+    LicenseKeyActivation,
     Organization,
     Product,
     User,
@@ -797,6 +798,51 @@ class TestGetLicenseKey:
         )
 
         assert response.status_code == 404
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_returns_activation_conditions(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        _, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                activations=BenefitLicenseKeyActivationCreateProperties(
+                    limit=2, enable_customer_admin=False
+                ),
+            ),
+        )
+        lk = await LicenseKeyRepository.from_session(session).get_by_id(
+            UUID(granted["license_key_id"])
+        )
+        assert lk is not None
+        await save_fixture(
+            LicenseKeyActivation(
+                license_key=lk,
+                label="Device",
+                conditions={"machine_id": "abc"},
+                meta={},
+            )
+        )
+
+        response = await client.get(f"/v1/license-keys/{lk.id}")
+
+        assert response.status_code == 200
+        [activation] = response.json()["activations"]
+        assert activation["conditions"] == {"machine_id": "abc"}
 
 
 @pytest.mark.asyncio

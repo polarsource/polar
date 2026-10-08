@@ -24409,6 +24409,40 @@ export interface components {
       modified_at: string | null
       license_key: components['schemas']['LicenseKeyRead']
     }
+    /** LicenseKeyActivationWithConditions */
+    LicenseKeyActivationWithConditions: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /**
+       * License Key Id
+       * Format: uuid4
+       */
+      license_key_id: string
+      /** Label */
+      label: string
+      /** Meta */
+      meta: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Created At
+       * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /** Modified At */
+      modified_at: string | null
+      /**
+       * Conditions
+       * @description Conditions stored when the activation was created.
+       */
+      conditions: {
+        [key: string]: string | number | boolean
+      }
+    }
     /** LicenseKeyCustomer */
     LicenseKeyCustomer: {
       /**
@@ -24725,6 +24759,70 @@ export interface components {
       conditions?: {
         [key: string]: string | number | boolean
       }
+    }
+    /** LicenseKeyWithActivationConditions */
+    LicenseKeyWithActivationConditions: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Organization Id
+       * Format: uuid4
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+      customer: components['schemas']['LicenseKeyCustomer']
+      /**
+       * Member Id
+       * @description The ID of the seat member holding this key, if any.
+       */
+      member_id: string | null
+      /** @description The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly. */
+      member: components['schemas']['LicenseKeyMember'] | null
+      /**
+       * Benefit Id
+       * Format: uuid4
+       * @description The benefit ID.
+       */
+      benefit_id: string
+      /** Key */
+      key: string
+      /** Display Key */
+      display_key: string
+      status: components['schemas']['LicenseKeyStatus']
+      /** Limit Activations */
+      limit_activations: number | null
+      /** Usage */
+      usage: number
+      /** Limit Usage */
+      limit_usage: number | null
+      /** Validations */
+      validations: number
+      /** Last Validated At */
+      last_validated_at: string | null
+      /** Expires At */
+      expires_at: string | null
+      /** Activations */
+      activations: components['schemas']['LicenseKeyActivationWithConditions'][]
     }
     /** LicenseKeyWithActivations */
     LicenseKeyWithActivations: {
@@ -51896,7 +51994,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['LicenseKeyWithActivations']
+          'application/json': components['schemas']['LicenseKeyWithActivationConditions']
         }
       }
       /** @description Not authorized to manage license key. */

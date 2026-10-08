@@ -160,16 +160,29 @@ const renderTiers = (
   imports: Set<string>,
 ): string[] => {
   imports.add('tier')
+  const rates = tiersOf(group[0]).map((_, index) =>
+    group.map((price) => tiersOf(price)[index]?.unit_amount),
+  )
+  const isFreeTier = (index: number) =>
+    rates[index]?.every((rate) => Number(rate) === 0) ?? false
+  // A price whose tiers are all free would take the product's currencies,
+  // so only use `.free()` when another tier sets the price's currencies.
+  const useFree = rates.some((_, index) => !isFreeTier(index))
   return [
     `.${type}(`,
-    ...tiersOf(group[0]).map(
-      ({ bound }, index) =>
-        `  tier()${bound === undefined ? '' : `.max(${literal(bound)})`}.amount(${renderAmounts(
+    ...tiersOf(group[0]).map(({ bound }, index) => {
+      const max = bound === undefined ? '' : `.max(${literal(bound)})`
+      if (!useFree || !isFreeTier(index)) {
+        return `  tier()${max}.amount(${renderAmounts(
           group,
           (price) => tiersOf(price)[index]?.unit_amount,
           imports,
-        )}),`,
-    ),
+        )}),`
+      }
+      return index === 0 && bound !== undefined
+        ? `  tier().included(${literal(bound)}),`
+        : `  tier()${max}.free(),`
+    }),
     ')',
   ]
 }

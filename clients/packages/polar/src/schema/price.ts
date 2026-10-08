@@ -72,9 +72,10 @@ export type PriceConfig = typeof PriceConfig.Type
 
 type Amounts<Rate extends Money> = readonly [Rate, ...Rate[]]
 
+/** A tier without amounts is free: 0 in each currency the price uses. */
 export interface Tier<Rate extends Money = Money> {
   readonly bound: number | undefined
-  readonly amounts: Amounts<Rate>
+  readonly amounts: ReadonlyArray<Rate>
 }
 
 type Tiers<Rate extends Money> = readonly [Tier<Rate>, ...Tier<Rate>[]]
@@ -82,7 +83,7 @@ type Tiers<Rate extends Money> = readonly [Tier<Rate>, ...Tier<Rate>[]]
 class PricedTier<Rate extends Money> implements Tier<Rate> {
   constructor(
     readonly bound: number | undefined,
-    readonly amounts: Amounts<Rate>,
+    readonly amounts: ReadonlyArray<Rate>,
   ) {}
 
   max(bound: number): PricedTier<Rate> {
@@ -101,6 +102,16 @@ class TierBuilder {
     ...amounts: Rates
   ): PricedTier<Rates[number]> {
     return new PricedTier(this.bound, amounts)
+  }
+
+  /** Charges 0 in each currency the price's other tiers use. */
+  free(): PricedTier<never> {
+    return new PricedTier(this.bound, [])
+  }
+
+  /** The first `units` units are free: shorthand for `.max(units).free()`. */
+  included(units: number): PricedTier<never> {
+    return new PricedTier(units, [])
   }
 }
 
@@ -311,7 +322,8 @@ const boundedTiers = <Rate extends Money>(
 
 /**
  * Returns the currencies a price is set in, after checking that every tier
- * and cap uses those same currencies. A free price has none of its own.
+ * and cap uses those same currencies. A free price, or one whose tiers are
+ * all free, has none of its own.
  */
 export const priceCurrencies = (
   price: PriceDefinition,
@@ -324,21 +336,29 @@ export const priceCurrencies = (
       return currenciesOf(price.amounts, where)
     case 'quantity':
     case 'metered': {
-      const [first, ...rest] = price.tiers
-      const currencies = currenciesOf(first.amounts, `${where} tier 1`)
-      rest.forEach((tier, index) => {
-        const tierWhere = `${where} tier ${index + 2}`
-        if (
-          !sameCurrencies(currenciesOf(tier.amounts, tierWhere), currencies)
-        ) {
+      let currencies: ReadonlyArray<Currency> | undefined
+      price.tiers.forEach((tier, index) => {
+        if (tier.amounts.length === 0) return
+        const tierWhere = `${where} tier ${index + 1}`
+        const own = currenciesOf(tier.amounts, tierWhere)
+        if (currencies === undefined) {
+          currencies = own
+        } else if (!sameCurrencies(own, currencies)) {
           throw new Error(
-            `${tierWhere} must have amounts in the same currencies as tier 1 (${currencies.join(', ')}).`,
+            `${tierWhere} must have amounts in the same currencies as the price's other tiers (${currencies.join(', ')}).`,
           )
         }
       })
+      if (currencies === undefined) {
+        if (price.kind === 'metered' && price.caps.length > 0) {
+          throw new Error(`${where} has a cap, but every tier is free.`)
+        }
+        return undefined
+      }
       if (price.kind === 'metered') {
+        const priced = currencies
         const unknown = currenciesOf(price.caps, `${where} cap`).filter(
-          (code) => !currencies.includes(code),
+          (code) => !priced.includes(code),
         )
         if (unknown.length > 0) {
           throw new Error(
@@ -359,7 +379,8 @@ const tiersConfig = (
   type,
   tiers: tiers.map(({ bound, amounts }) => ({
     ...(bound !== undefined && { bound }),
-    unit_amount: unitAmount(amountIn(amounts, currency)),
+    unit_amount:
+      amounts.length === 0 ? '0' : unitAmount(amountIn(amounts, currency)),
   })),
 })
 

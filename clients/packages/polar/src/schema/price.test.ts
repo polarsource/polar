@@ -267,3 +267,60 @@ test('flat metered prices need a rate above zero', () => {
   )
   expect(decode(freeTier)).toEqual(freeTier)
 })
+
+test('free and included tiers charge 0 in each currency the price uses', () => {
+  const price = seats().graduated(
+    tier().included(3),
+    tier().max(10).amount(usd(100), eur(90)),
+    tier().free(),
+  )
+  expect(priceCurrencies(price, 'Price')).toEqual(['usd', 'eur'])
+  expect(priceConfigs(price, ['usd', 'eur'], 'Price')).toEqual(
+    (
+      [
+        ['usd', '100'],
+        ['eur', '90'],
+      ] as const
+    ).map(([currency, amount]) => ({
+      amount_type: 'seat_based',
+      price_currency: currency,
+      tiers: {
+        type: 'graduated',
+        tiers: [
+          { bound: 3, unit_amount: '0' },
+          { bound: 10, unit_amount: amount },
+          { unit_amount: '0' },
+        ],
+      },
+    })),
+  )
+  metered('calls').graduated(
+    tier().included(1000),
+    tier().amount(perMillion(usd(5))),
+  )
+  expect(() =>
+    // @ts-expect-error a tier is either free or priced
+    tier().free().amount(usd(1)),
+  ).toThrow()
+})
+
+test('a price whose tiers are all free takes the product currencies', () => {
+  const price = units().volume(tier().max(5).free(), tier().free())
+  expect(priceCurrencies(price, 'Price')).toBeUndefined()
+  expect(priceConfigs(price, ['eur'], 'Price')).toEqual([
+    {
+      amount_type: 'unit_based',
+      price_currency: 'eur',
+      tiers: {
+        type: 'volume',
+        tiers: [{ bound: 5, unit_amount: '0' }, { unit_amount: '0' }],
+      },
+    },
+  ])
+  expect(() =>
+    priceCurrencies(
+      metered('calls').graduated(tier().free()).cap(usd(100)),
+      'Price',
+    ),
+  ).toThrow('has a cap, but every tier is free')
+})

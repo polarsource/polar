@@ -212,6 +212,20 @@ const cases: [string, PolarConfig][] = [
               .recurring(3, 'months')
               .trial(1, 'month')
               .grants(['custom_servers']),
+            starter: product('Starter')
+              .prices(
+                units().graduated(
+                  api.tier().included(10),
+                  api.tier().max(20).free(),
+                  api.tier().max(50).amount(api.usd(5)),
+                  api.tier().free(),
+                ),
+                meter('tokens').volume(
+                  api.tier().max(5).amount(api.usd(0)),
+                  api.tier().amount(api.usd(0)),
+                ),
+              )
+              .recurring('monthly'),
             devices: product('Devices')
               .prices(
                 units().flat().min(2).amount(api.currency('gbp')(500)).max(10),
@@ -310,6 +324,32 @@ test('generated modules typecheck against the public API', async () => {
       ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'),
     )
   expect(diagnostics).toEqual([])
+})
+
+test('renders free tiers with free() and included()', async () => {
+  const source = await Effect.runPromise(
+    generateConfig(
+      api
+        .defineConfig({
+          meters: () => ({}),
+          products: ({ product, seats }) => ({
+            team: product('Team')
+              .prices(
+                seats().graduated(
+                  api.tier().included(3),
+                  api.tier().max(10).amount(api.usd(100)),
+                  api.tier().max(20).free(),
+                  api.tier().amount(api.usd(50)),
+                ),
+              )
+              .recurring('monthly'),
+          }),
+        })
+        .toJSON(),
+    ),
+  )
+  expect(source).toContain('tier().included(3),')
+  expect(source).toContain('tier().max(20).free(),')
 })
 
 test('generates rates padded with trailing zeros', async () => {

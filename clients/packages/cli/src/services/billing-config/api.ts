@@ -18,7 +18,7 @@ import type { ApiClient } from '@/services/client'
 export type Clients = Record<PolarEnvironment, ApiClient>
 
 // Sections the config API doesn't accept yet
-const UNSUPPORTED_SECTIONS = new Set(['benefits'])
+const UNSUPPORTED_SECTIONS = new Set(['benefits', 'products'])
 
 const stripUnsupported = (input: unknown): unknown =>
   typeof input === 'object' && input !== null && !Array.isArray(input)

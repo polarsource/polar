@@ -4,10 +4,14 @@ import { BenefitConfig, flag, credits } from './benefit'
 import type { BenefitDefinition, BenefitHelpers } from './benefit'
 import { meter, MeterConfig } from './meter'
 import type { MeterDefinition } from './meter'
+import { fixed, free, metered, seats, units } from './price'
+import { product, ProductConfig, productPrices } from './product'
+import type { ProductDefinition, ProductHelpers } from './product'
 
 export const PolarConfig = Schema.Struct({
   meters: Schema.Array(MeterConfig),
   benefits: Schema.optionalKey(Schema.Array(BenefitConfig)),
+  products: Schema.optionalKey(Schema.Array(ProductConfig)),
 })
 
 export type PolarConfig = typeof PolarConfig.Type
@@ -17,38 +21,48 @@ export const validateConfig = Schema.decodeUnknownEffect(PolarConfig, {
   onExcessProperty: 'error',
 })
 
-const validateMeterNaming = Schema.decodeUnknownSync(
-  Schema.Struct({
-    external_id: Schema.String,
-    name: Schema.optional(Schema.String),
-  }).check(
-    Schema.makeFilter(({ external_id, name }) =>
-      name !== undefined || external_id.length >= 3
-        ? undefined
-        : {
-            path: ['name'],
-            issue: `Provide a name for meter "${external_id}" because its key is shorter than 3 characters.`,
-          },
+const validateNaming = (
+  kind: 'meter' | 'benefit' | 'product',
+  minimum: number,
+  maximum?: number,
+) =>
+  Schema.decodeUnknownSync(
+    Schema.Struct({
+      external_id: Schema.String,
+      name: Schema.optional(Schema.String),
+    }).check(
+      Schema.makeFilter(({ external_id, name }) =>
+        name !== undefined ||
+        (external_id.length >= minimum &&
+          (maximum === undefined || external_id.length <= maximum))
+          ? undefined
+          : {
+              path: ['name'],
+              issue: `Provide a name for ${kind} "${external_id}" because its key is ${
+                maximum === undefined
+                  ? `shorter than ${minimum}`
+                  : `not between ${minimum} and ${maximum}`
+              } characters.`,
+            },
+      ),
     ),
-  ),
-)
+  )
 
-const validateBenefitNaming = Schema.decodeUnknownSync(
-  Schema.Struct({
-    external_id: Schema.String,
-    name: Schema.optional(Schema.String),
-  }).check(
-    Schema.makeFilter(({ external_id, name }) =>
-      name !== undefined ||
-      (external_id.length >= 3 && external_id.length <= 42)
-        ? undefined
-        : {
-            path: ['name'],
-            issue: `Provide a name for benefit "${external_id}" because its key is not between 3 and 42 characters.`,
-          },
-    ),
-  ),
-)
+const validateMeterNaming = validateNaming('meter', 3)
+const validateBenefitNaming = validateNaming('benefit', 3, 42)
+const validateProductNaming = validateNaming('product', 3, 64)
+
+const assertKnown = (
+  owner: string,
+  kind: 'meter' | 'benefit',
+  ids: ReadonlySet<string>,
+  references: ReadonlyArray<string>,
+) => {
+  const unknown = references.find((reference) => !ids.has(reference))
+  if (unknown !== undefined) {
+    throw new Error(`${owner} references unknown ${kind} "${unknown}".`)
+  }
+}
 
 const toEntries = <Definition>(
   definitions:
@@ -76,6 +90,15 @@ type BenefitKey<Benefits extends BenefitEntries> =
   Benefits extends ReadonlyArray<readonly [infer Key, BenefitDefinition]>
     ? Key & string
     : keyof Benefits & string
+
+type ProductEntries<
+  Meter extends string = string,
+  Benefit extends string = string,
+> =
+  | Readonly<Record<string, ProductDefinition<Meter, Benefit>>>
+  | ReadonlyArray<
+      readonly [externalId: string, product: ProductDefinition<Meter, Benefit>]
+    >
 
 type ConnectedConfig<
   Meters extends MeterEntries,
@@ -116,13 +139,31 @@ const byExternalId = <Resource extends { readonly external_id: string }>(
 export const defineConfig = <
   const Meters extends MeterEntries,
   const Benefits extends BenefitEntries<MeterKey<Meters>> = never,
+  const Products extends ProductEntries<
+    MeterKey<Meters>,
+    BenefitKey<Benefits>
+  > = never,
 >(input: {
   readonly meters: (helpers: { readonly meter: typeof meter }) => Meters
   readonly benefits?: (helpers: BenefitHelpers<MeterKey<Meters>>) => Benefits
+  readonly products?: (
+    helpers: ProductHelpers<MeterKey<Meters>, BenefitKey<Benefits>>,
+  ) => Products
 }): Config<Meters, Benefits> => {
   const entries = toEntries(input.meters({ meter }))
   const meterIds = new Set(entries.map(([external_id]) => external_id))
   const benefits = input.benefits?.({ flag, credits })
+  const benefitEntries =
+    benefits === undefined ? [] : toEntries<BenefitDefinition>(benefits)
+  const benefitIds = new Set(benefitEntries.map(([external_id]) => external_id))
+  const products = input.products?.({
+    product,
+    free,
+    fixed,
+    seats,
+    units,
+    meter: metered,
+  })
   const config = Schema.decodeUnknownSync(PolarConfig, {
     errors: 'all',
     onExcessProperty: 'error',
@@ -135,21 +176,44 @@ export const defineConfig = <
       return { ...definition, external_id, name: name ?? external_id }
     }),
     ...(benefits !== undefined && {
-      benefits: toEntries<BenefitDefinition>(benefits).map(
-        ([external_id, { name, ...definition }]) => {
-          validateBenefitNaming({ external_id, name })
-          if (
-            definition.type === 'meter_credit' &&
-            !meterIds.has(definition.properties.meter_external_id)
-          ) {
-            throw new Error(
-              `Benefit "${external_id}" references unknown meter "${definition.properties.meter_external_id}".`,
-            )
-          }
-          return {
-            ...definition,
+      benefits: benefitEntries.map(([external_id, { name, ...definition }]) => {
+        validateBenefitNaming({ external_id, name })
+        if (definition.type === 'meter_credit') {
+          assertKnown(`Benefit "${external_id}"`, 'meter', meterIds, [
+            definition.properties.meter_external_id,
+          ])
+        }
+        return {
+          ...definition,
+          external_id,
+          description: name ?? external_id,
+        }
+      }),
+    }),
+    ...(products !== undefined && {
+      products: toEntries<ProductDefinition>(products).map(
+        ([external_id, definition]) => {
+          const { name } = validateProductNaming({
             external_id,
-            description: name ?? external_id,
+            name: definition.name,
+          })
+          const owner = `Product "${external_id}"`
+          assertKnown(
+            owner,
+            'meter',
+            meterIds,
+            definition.priceList.flatMap((price) =>
+              price.kind === 'metered' ? [price.meter] : [],
+            ),
+          )
+          assertKnown(owner, 'benefit', benefitIds, definition.benefits)
+          return {
+            external_id,
+            name: name ?? external_id,
+            ...definition.billing,
+            ...definition.trialPeriod,
+            prices: productPrices(external_id, definition),
+            benefit_external_ids: definition.benefits,
           }
         },
       ),

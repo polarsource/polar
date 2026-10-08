@@ -2,6 +2,10 @@ import { Effect } from 'effect'
 import { validateConfig } from './schema/config'
 import type { BenefitConfig } from './schema/benefit'
 import type { MeterConfig, MeterFilter } from './schema/meter'
+import { scaleRate } from './schema/money'
+import type { Currency, Scale } from './schema/money'
+import type { PriceConfig } from './schema/price'
+import type { ProductConfig } from './schema/product'
 
 const literal = (value: string | number | boolean): string =>
   Object.is(value, -0) ? '-0' : JSON.stringify(value)
@@ -72,6 +76,243 @@ const renderBenefit = (
   ].join('\n')
 }
 
+const scaleHelpers: Partial<Record<Scale, string>> = {
+  1_000: 'perThousand',
+  1_000_000: 'perMillion',
+}
+
+const renderMoney = (
+  currency: Currency,
+  rate: string,
+  imports: Set<string>,
+): string => {
+  const { amount, per } = scaleRate(rate)
+  const named = currency === 'usd' || currency === 'eur'
+  imports.add(named ? currency : 'currency')
+  const money = `${named ? currency : `currency(${literal(currency)})`}(${amount})`
+  if (per === 1) return money
+  const helper = scaleHelpers[per]
+  imports.add(helper ?? 'per')
+  return helper === undefined
+    ? `per(${per.toLocaleString('en-US').replaceAll(',', '_')}, ${money})`
+    : `${helper}(${money})`
+}
+
+type PriceOf<Type extends PriceConfig['amount_type']> = Extract<
+  PriceConfig,
+  { readonly amount_type: Type }
+>
+
+type Tiers = PriceOf<'metered_tiers'>['tiers']
+
+const tiersOf = (price: PriceConfig): Tiers['tiers'] =>
+  'tiers' in price ? price.tiers.tiers : []
+
+// Everything about a price except its currency and amounts, so one builder
+// call can describe the price in every currency.
+const structureOf = (price: PriceConfig): string =>
+  JSON.stringify([
+    price.amount_type,
+    'meter_external_id' in price ? price.meter_external_id : null,
+    'tiers' in price ? price.tiers.type : null,
+    tiersOf(price).map(({ bound }) => bound ?? null),
+    'minimum_units' in price ? (price.minimum_units ?? null) : null,
+  ])
+
+const groupPrices = (
+  prices: ReadonlyArray<PriceConfig>,
+): ReadonlyArray<readonly [PriceConfig, ...PriceConfig[]]> => {
+  const groups: [PriceConfig, ...PriceConfig[]][] = []
+  for (const price of prices) {
+    const group = groups.find(
+      ([first, ...rest]) =>
+        structureOf(first) === structureOf(price) &&
+        ![first, ...rest].some(
+          ({ price_currency }) => price_currency === price.price_currency,
+        ),
+    )
+    if (group === undefined) {
+      groups.push([price])
+    } else {
+      group.push(price)
+    }
+  }
+  return groups
+}
+
+const renderAmounts = (
+  group: ReadonlyArray<PriceConfig>,
+  amountOf: (price: PriceConfig) => string | undefined,
+  imports: Set<string>,
+): string =>
+  group
+    .flatMap((price) => {
+      const amount = amountOf(price)
+      return amount === undefined
+        ? []
+        : [renderMoney(price.price_currency, amount, imports)]
+    })
+    .join(', ')
+
+const renderTiers = (
+  type: Tiers['type'],
+  group: readonly [PriceConfig, ...PriceConfig[]],
+  imports: Set<string>,
+): string[] => {
+  imports.add('tier')
+  return [
+    `.${type}(`,
+    ...tiersOf(group[0]).map(
+      ({ bound }, index) =>
+        `  tier()${bound === undefined ? '' : `.max(${literal(bound)})`}.amount(${renderAmounts(
+          group,
+          (price) => tiersOf(price)[index]?.unit_amount,
+          imports,
+        )}),`,
+    ),
+    ')',
+  ]
+}
+
+const renderCap = (
+  group: ReadonlyArray<PriceConfig>,
+  imports: Set<string>,
+): string[] => {
+  const caps = renderAmounts(
+    group,
+    (price) =>
+      'cap_amount' in price && price.cap_amount !== undefined
+        ? String(price.cap_amount)
+        : undefined,
+    imports,
+  )
+  return caps === '' ? [] : [`.cap(${caps})`]
+}
+
+const isFree = (group: ReadonlyArray<PriceConfig>): boolean =>
+  group.every(
+    (price) => price.amount_type === 'fixed' && price.price_amount === 0,
+  )
+
+const renderPrice = (
+  group: readonly [PriceConfig, ...PriceConfig[]],
+  productCurrencies: ReadonlyArray<Currency>,
+  helpers: Set<string>,
+  imports: Set<string>,
+): string => {
+  const [first] = group
+  switch (first.amount_type) {
+    case 'fixed': {
+      const currencies = group.map(({ price_currency }) => price_currency)
+      if (
+        isFree(group) &&
+        currencies.length === productCurrencies.length &&
+        currencies.every((code, index) => code === productCurrencies[index])
+      ) {
+        helpers.add('free')
+        return 'free()'
+      }
+      helpers.add('fixed')
+      return `fixed().amount(${renderAmounts(
+        group,
+        (price) =>
+          'price_amount' in price ? String(price.price_amount) : undefined,
+        imports,
+      )})`
+    }
+    case 'seat_based':
+    case 'unit_based': {
+      const helper = first.amount_type === 'seat_based' ? 'seats' : 'units'
+      helpers.add(helper)
+      const bound = first.tiers.tiers[0]?.bound
+      const lines =
+        first.tiers.type === 'volume' && first.tiers.tiers.length === 1
+          ? [
+              `${helper}()`,
+              '.flat()',
+              `.amount(${renderAmounts(group, (price) => tiersOf(price)[0]?.unit_amount, imports)})`,
+              ...(bound === undefined ? [] : [`.max(${literal(bound)})`]),
+            ]
+          : [`${helper}()`, ...renderTiers(first.tiers.type, group, imports)]
+      if (first.minimum_units !== undefined) {
+        lines.push(`.min(${literal(first.minimum_units)})`)
+      }
+      return lines.join('\n')
+    }
+    case 'metered_unit':
+    case 'metered_tiers': {
+      helpers.add('meter')
+      return [
+        `meter(${literal(first.meter_external_id)})`,
+        ...(first.amount_type === 'metered_unit'
+          ? [
+              '.flat()',
+              `.amount(${renderAmounts(
+                group,
+                (price) =>
+                  'unit_amount' in price ? price.unit_amount : undefined,
+                imports,
+              )})`,
+            ]
+          : renderTiers(first.tiers.type, group, imports)),
+        ...renderCap(group, imports),
+      ].join('\n')
+    }
+  }
+}
+
+const cadences = {
+  day: 'daily',
+  week: 'weekly',
+  month: 'monthly',
+  year: 'yearly',
+} as const
+
+const renderProduct =
+  (imports: Set<string>) =>
+  (product: ProductConfig, helpers: Set<string>): string => {
+    helpers.add('product')
+    const groups = groupPrices(product.prices)
+    const productCurrencies = groups
+      .find((group) => !isFree(group))
+      ?.map(({ price_currency }) => price_currency) ?? ['usd']
+    const prices = groups.map(
+      (group) =>
+        `  ${renderPrice(group, productCurrencies, helpers, imports).replaceAll('\n', '\n    ')},`,
+    )
+    const {
+      recurring_interval: interval,
+      recurring_interval_count: count,
+      trial_interval: trialInterval,
+      trial_interval_count: trialCount,
+    } = product
+    const plural = (unit: string, amount: number) =>
+      literal(amount === 1 ? unit : `${unit}s`)
+    return [
+      `product(${literal(product.name)})`,
+      '.prices(',
+      ...prices,
+      ')',
+      interval === null
+        ? '.once()'
+        : count === null || count === 1
+          ? `.recurring(${literal(cadences[interval])})`
+          : `.recurring(${literal(count)}, ${plural(interval, count)})`,
+      ...(interval !== null &&
+      trialInterval !== undefined &&
+      trialCount !== undefined
+        ? [
+            `.trial(${literal(trialCount)}, ${plural(trialInterval, trialCount)})`,
+          ]
+        : []),
+      ...(product.benefit_external_ids.length === 0
+        ? []
+        : [
+            `.grants([${product.benefit_external_ids.map(literal).join(', ')}])`,
+          ]),
+    ].join('\n')
+  }
+
 const renderEntries = <Resource extends { readonly external_id: string }>(
   property: string,
   resources: ReadonlyArray<Resource>,
@@ -111,6 +352,10 @@ export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
     config.benefits === undefined
       ? []
       : renderEntries('benefits', config.benefits, renderBenefit)
+  const products =
+    config.products === undefined
+      ? []
+      : renderEntries('products', config.products, renderProduct(imports))
 
   return [
     `import { ${[...imports].join(', ')} } from '@polar-sh/polar'`,
@@ -118,6 +363,7 @@ export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
     'export default defineConfig({',
     ...meters,
     ...benefits,
+    ...products,
     '})',
     '',
   ].join('\n')

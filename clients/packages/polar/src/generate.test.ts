@@ -150,6 +150,80 @@ const cases: [string, PolarConfig][] = [
     },
   ],
   [
+    'products with every price type',
+    api
+      .defineConfig({
+        meters: ({ meter }) => ({
+          tokens: meter('Tokens').count(),
+          calls: meter('Calls').count(),
+        }),
+        benefits: ({ flag }) => ({ custom_servers: flag('Custom servers') }),
+        products: ({ product, free, fixed, seats, units, meter }) => {
+          const lira = api.currency('try')
+          return {
+            hobby: product('Hobby')
+              .prices(
+                free(),
+                meter('calls')
+                  .flat()
+                  .amount(api.perThousand(lira(150)), api.eur(2)),
+                meter('tokens').graduated(
+                  api
+                    .tier()
+                    .max(1_000_000)
+                    .amount(
+                      api.per(1_000_000_000, lira(75)),
+                      api.per(10, api.eur(1)),
+                    ),
+                  api
+                    .tier()
+                    .amount(
+                      api.per(1_000_000_000_000, lira(1)),
+                      api.perMillion(api.eur(3)),
+                    ),
+                ),
+              )
+              .recurring('monthly'),
+            free_eur: product('Free EUR')
+              .prices(fixed().amount(api.eur(0)))
+              .once(),
+            lifetime: product('Lifetime')
+              .prices(fixed().amount(api.usd(9900), api.eur(9500)))
+              .once(),
+            team: product('Team')
+              .prices(
+                seats()
+                  .graduated(
+                    api.tier().max(5).amount(api.usd(2000), api.eur(1800)),
+                    api.tier().amount(api.usd(1500), api.eur(1400)),
+                  )
+                  .min(3)
+                  .max(50),
+                meter('tokens')
+                  .volume(
+                    api
+                      .tier()
+                      .max(1_000_000)
+                      .amount(api.perMillion(api.usd(3)), api.eur(1)),
+                    api.tier().amount(api.usd(0), api.eur(0)),
+                  )
+                  .cap(api.usd(50000)),
+              )
+              .recurring(3, 'months')
+              .trial(1, 'month')
+              .grants(['custom_servers']),
+            devices: product('Devices')
+              .prices(
+                units().flat().min(2).amount(api.currency('gbp')(500)).max(10),
+              )
+              .recurring('yearly')
+              .trial(14, 'days'),
+          }
+        },
+      })
+      .toJSON(),
+  ],
+  [
     'special IDs and strings',
     {
       meters: ['__proto__', 'constructor', '"\\\n` ${notCode}'].map(
@@ -238,6 +312,59 @@ test('generated modules typecheck against the public API', async () => {
   expect(diagnostics).toEqual([])
 })
 
+test('generates rates padded with trailing zeros', async () => {
+  const source = await Effect.runPromise(
+    generateConfig({
+      meters: [meter],
+      products: [
+        {
+          external_id: 'pro',
+          name: 'Pro',
+          recurring_interval: 'month',
+          recurring_interval_count: 1,
+          prices: [
+            {
+              amount_type: 'metered_unit',
+              price_currency: 'usd',
+              meter_external_id: 'tokens',
+              unit_amount: '10000.000000000000',
+            },
+          ],
+          benefit_external_ids: [],
+        },
+      ],
+    }),
+  )
+  expect(source).toContain('.amount(usd(10000))')
+})
+
+test('rejects rates with more digits than whole amounts can hold', async () => {
+  await expect(
+    Effect.runPromise(
+      generateConfig({
+        meters: [meter],
+        products: [
+          {
+            external_id: 'pro',
+            name: 'Pro',
+            recurring_interval: 'month',
+            recurring_interval_count: 1,
+            prices: [
+              {
+                amount_type: 'metered_unit',
+                price_currency: 'usd',
+                meter_external_id: 'tokens',
+                unit_amount: '123456.000000000001',
+              },
+            ],
+            benefit_external_ids: [],
+          },
+        ],
+      }),
+    ),
+  ).rejects.toThrow('too many digits')
+})
+
 test('rejects invalid input before generating code', async () => {
   await expect(
     Effect.runPromise(
@@ -246,4 +373,37 @@ test('rejects invalid input before generating code', async () => {
       }),
     ),
   ).rejects.toThrow()
+})
+
+test('groups interleaved currencies into one builder call per price', async () => {
+  const source = await Effect.runPromise(
+    generateConfig({
+      meters: [],
+      products: [
+        {
+          external_id: 'pro',
+          name: 'Pro',
+          recurring_interval: 'month',
+          recurring_interval_count: 1,
+          prices: [
+            { amount_type: 'fixed', price_currency: 'usd', price_amount: 100 },
+            {
+              amount_type: 'seat_based',
+              price_currency: 'usd',
+              tiers: { type: 'volume', tiers: [{ unit_amount: '10' }] },
+            },
+            { amount_type: 'fixed', price_currency: 'eur', price_amount: 90 },
+            {
+              amount_type: 'seat_based',
+              price_currency: 'eur',
+              tiers: { type: 'volume', tiers: [{ unit_amount: '9' }] },
+            },
+          ],
+          benefit_external_ids: [],
+        },
+      ],
+    }),
+  )
+  expect(source).toContain('fixed().amount(usd(100), eur(90))')
+  expect(source).toContain('.amount(usd(10), eur(9))')
 })

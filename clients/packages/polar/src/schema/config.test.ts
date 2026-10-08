@@ -2,6 +2,8 @@ import { expect, expectTypeOf, test } from 'vitest'
 import { RuntimeSDK } from '../runtime'
 import { defineConfig } from './config'
 import { gte } from './meter'
+import { eur, perThousand, usd } from './money'
+import { tier } from './price'
 
 test('config serializes to JSON without exposing mutable internal data', () => {
   const config = defineConfig({
@@ -169,4 +171,120 @@ test('RuntimeSDK rejects duplicate benefit external IDs', () => {
   expect(() => RuntimeSDK(config, { accessToken: 'test' })).toThrow(
     'duplicate benefit external IDs',
   )
+})
+
+test('products serialize prices per currency and link meters and benefits', () => {
+  const config = defineConfig({
+    meters: ({ meter }) => ({ tool_call: meter().count() }),
+    benefits: ({ flag }) => ({ custom_servers: flag() }),
+    products: ({ product, seats, meter }) => ({
+      pro: product('Pro')
+        .prices(
+          seats().flat().amount(usd(1000), eur(900)),
+          meter('tool_call')
+            .graduated(
+              tier().max(1000).amount(usd(0), eur(0)),
+              tier().amount(perThousand(usd(100)), perThousand(eur(90))),
+            )
+            .cap(usd(5000), eur(4500)),
+        )
+        .recurring('monthly')
+        .trial(14, 'days')
+        .grants(['custom_servers']),
+    }),
+  })
+  expect(config.toJSON().products).toEqual([
+    {
+      external_id: 'pro',
+      name: 'Pro',
+      recurring_interval: 'month',
+      recurring_interval_count: 1,
+      trial_interval: 'day',
+      trial_interval_count: 14,
+      prices: [
+        {
+          amount_type: 'seat_based',
+          price_currency: 'usd',
+          tiers: { type: 'volume', tiers: [{ unit_amount: '1000' }] },
+        },
+        {
+          amount_type: 'seat_based',
+          price_currency: 'eur',
+          tiers: { type: 'volume', tiers: [{ unit_amount: '900' }] },
+        },
+        {
+          amount_type: 'metered_tiers',
+          price_currency: 'usd',
+          meter_external_id: 'tool_call',
+          tiers: {
+            type: 'graduated',
+            tiers: [{ bound: 1000, unit_amount: '0' }, { unit_amount: '0.1' }],
+          },
+          cap_amount: 5000,
+        },
+        {
+          amount_type: 'metered_tiers',
+          price_currency: 'eur',
+          meter_external_id: 'tool_call',
+          tiers: {
+            type: 'graduated',
+            tiers: [{ bound: 1000, unit_amount: '0' }, { unit_amount: '0.09' }],
+          },
+          cap_amount: 4500,
+        },
+      ],
+      benefit_external_ids: ['custom_servers'],
+    },
+  ])
+})
+
+test('products only reference declared meters and benefits', () => {
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      products: ({ product, meter }) => ({
+        pro: product()
+          // @ts-expect-error unknown meter key
+          .prices(meter('unknown').flat().amount(usd(1)))
+          .recurring('monthly'),
+      }),
+    }),
+  ).toThrow('Product "pro" references unknown meter "unknown"')
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      benefits: ({ flag }) => ({ custom_servers: flag() }),
+      products: ({ product, free }) => ({
+        pro: product()
+          .prices(free())
+          .recurring('monthly')
+          // @ts-expect-error unknown benefit key
+          .grants(['unknown']),
+      }),
+    }),
+  ).toThrow('Product "pro" references unknown benefit "unknown"')
+})
+
+test('product names must be between 3 and 64 characters', () => {
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      products: ({ product, free }) => ({
+        ab: product().prices(free()).once(),
+      }),
+    }),
+  ).toThrow('Provide a name for product "ab"')
+})
+
+test('defineConfig rejects fractional price amounts', () => {
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      products: ({ product, fixed }) => ({
+        pro: product()
+          .prices(fixed().amount(usd(9.99)))
+          .once(),
+      }),
+    }),
+  ).toThrow()
 })

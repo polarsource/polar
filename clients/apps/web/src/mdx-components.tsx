@@ -1,17 +1,18 @@
-import { BlogHero } from '@/components/Blog/BlogHero'
-import { StaticImage } from '@/components/Image/StaticImage'
-import ProseWrapper from '@/components/MDX/ProseWrapper'
-import { Table } from '@polar-sh/orbit/ui/table'
-import type { MDXComponents } from 'mdx/types'
-import { twMerge } from 'tailwind-merge'
+import { BlogHero } from "@/components/Blog/BlogHero";
+import { StaticImage } from "@/components/Image/StaticImage";
+import { StartupProgramSignup } from "@/components/Blog/StartupProgramSignup";
+import ProseWrapper from "@/components/MDX/ProseWrapper";
+import { Table } from "@polar-sh/orbit/ui/table";
+import type { MDXComponents } from "mdx/types";
+import { twMerge } from "tailwind-merge";
 
 interface ImportedImageSrc {
-  src: string
-  height: number
-  width: number
-  blurDataURL: string
-  blurWidth: number
-  blurHeight: number
+  src: string;
+  height: number;
+  width: number;
+  blurDataURL: string;
+  blurWidth: number;
+  blurHeight: number;
 }
 
 export function useMDXComponents(components: MDXComponents): MDXComponents {
@@ -23,59 +24,66 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
         <ProseWrapper className="flex w-full flex-col items-center md:max-w-7xl!">
           {props.children}
         </ProseWrapper>
-      )
+      );
     },
     InnerHeaderWrapper(props) {
       return (
         <div
           className={twMerge(
-            'prose-headings:font-medium prose-h1:leading-tight prose-headings:text-balance pt-6 text-center md:max-w-3xl md:pt-0 md:pb-6',
+            "prose-headings:font-medium prose-h1:leading-tight prose-headings:text-balance pt-6 text-center md:max-w-3xl md:pt-0 md:pb-6",
             props.className,
           )}
         >
           {props.children}
         </div>
-      )
+      );
     },
     InnerWrapper(props) {
       return (
         <div
           className={twMerge(
-            'flex w-full flex-col md:max-w-2xl',
+            "flex w-full flex-col md:max-w-2xl",
             props.className,
           )}
         >
           {props.children}
         </div>
-      )
+      );
+    },
+    StartupProgramSignup() {
+      return (
+        <div className="not-prose mt-16">
+          <StartupProgramSignup />
+        </div>
+      );
     },
     table: (props) => <Table {...props} />,
     img: (props) => {
       /* If the `src` is a string, it's an absolute path we render as an `img` */
-      if (typeof props.src === 'string') {
+      if (typeof props.src === "string") {
         console.warn(
           ` 🌄 Absolute image path detected, this is not recommended for performance reasons: ${props.src}\n Tip: place the image file beside the MDX file and use a relative import.`,
-        )
+        );
         // oxlint-disable-next-line @next/next/no-img-element
-        return <img {...props} />
+        return <img {...props} />;
       }
       /* Otherwise, the `rehype-mdx-import-media` was able to `import` it locally: optimize with next/image */
 
       // Handle dark/light mode images
-      let className = props.className || ''
-      const src = props.src as unknown as ImportedImageSrc
-      const modePattern = /(light|dark)\.[a-z0-9]{8}\.[a-z]+/
-      const modeMatch = src.src.match(modePattern)
+      let className = props.className || "";
+      const src = props.src as unknown as ImportedImageSrc;
+      const modePattern = /(light|dark)\.[a-z0-9]{8}\.[a-z]+/;
+      const modeMatch = src.src.match(modePattern);
 
       if (modeMatch) {
-        const mode = modeMatch[1]
-        if (mode === 'light') {
-          className = `${className} dark:hidden`
+        const mode = modeMatch[1];
+        if (mode === "light") {
+          className = `${className} dark:hidden`;
         } else {
-          className = `${className} hidden dark:block`
+          className = `${className} hidden dark:block`;
         }
       }
-      return <StaticImage {...props} className={className} />
+      return <StaticImage {...props} className={className} />;
     },
-  }
+  };
 }

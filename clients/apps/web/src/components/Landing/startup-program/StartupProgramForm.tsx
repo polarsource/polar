@@ -1,64 +1,64 @@
-'use client'
+"use client";
 
-import { Text } from '@polar-sh/orbit'
-import { Box } from '@polar-sh/orbit/Box'
-import { Button } from '@polar-sh/orbit'
-import { Input } from '@polar-sh/orbit'
+import { Text } from "@polar-sh/orbit";
+import { Box } from "@polar-sh/orbit/Box";
+import { Button } from "@polar-sh/orbit";
+import { Input } from "@polar-sh/orbit";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/orbit'
-import { TextArea } from '@polar-sh/orbit'
-import { useState } from 'react'
+} from "@polar-sh/orbit";
+import { TextArea } from "@polar-sh/orbit";
+import { useState } from "react";
 
 const FUNDING_OPTIONS = [
-  'Bootstrapped',
-  'Pre-seed',
-  '$1M to $5M',
-  '$5M to $15M',
-  '$15M+',
-]
+  "Bootstrapped",
+  "Pre-seed",
+  "$1M to $5M",
+  "$5M to $15M",
+  "$15M+",
+];
 
-const TEAM_SIZE_OPTIONS = ['1', '2 to 5', '6 to 15', '16 to 50', '50+']
+const TEAM_SIZE_OPTIONS = ["1", "2 to 5", "6 to 15", "16 to 50", "50+"];
 
 const BILLING_PLATFORM_OPTIONS = [
-  'None',
-  'Polar',
-  'Stripe',
-  'Paddle',
-  'Lemon Squeezy',
-  'Other',
-]
+  "None",
+  "Polar",
+  "Stripe",
+  "Paddle",
+  "Lemon Squeezy",
+  "Other",
+];
 
 const PARTNER_OPTIONS = [
-  'Accel',
-  'Andreessen Horowitz',
-  'Atomico',
-  'Balderton',
-  'Benchmark',
-  'Bessemer Venture Partners',
-  'Creandum',
-  'First Round Capital',
-  'Founders Fund',
-  'General Catalyst',
-  'Greylock',
-  'Index Ventures',
-  'Kleiner Perkins',
-  'Lightspeed Venture Partners',
-  'NEA',
-  'Sequoia Capital',
-  'Tiger Global',
-  'Y Combinator',
-  'Other',
-]
+  "Accel",
+  "Andreessen Horowitz",
+  "Atomico",
+  "Balderton",
+  "Benchmark",
+  "Bessemer Venture Partners",
+  "Creandum",
+  "First Round Capital",
+  "Founders Fund",
+  "General Catalyst",
+  "Greylock",
+  "Index Ventures",
+  "Kleiner Perkins",
+  "Lightspeed Venture Partners",
+  "NEA",
+  "Sequoia Capital",
+  "Tiger Global",
+  "Y Combinator",
+  "Other",
+];
 
 interface FieldProps {
-  label: string
-  htmlFor: string
-  children: React.ReactNode
+  label: string;
+  htmlFor: string;
+  children: React.ReactNode;
 }
 
 const Field = ({ label, htmlFor, children }: FieldProps) => (
@@ -68,62 +68,73 @@ const Field = ({ label, htmlFor, children }: FieldProps) => (
     </Text>
     {children}
   </Box>
-)
+);
 
 interface FormState {
-  startupName: string
-  industry: string
-  website: string
-  foundedAt: string
-  funding: string
-  partner: string
-  partnerOther: string
-  paymentVolume: string
-  currentBillingPlatform: string
-  currentBillingPlatformOther: string
-  polarOrgSlug: string
-  teamSize: string
-  location: string
-  pitch: string
-  firstName: string
-  lastName: string
-  role: string
-  email: string
-  linkedin: string
+  startupName: string;
+  industry: string;
+  website: string;
+  foundedAt: string;
+  funding: string;
+  partner: string;
+  partnerOther: string;
+  paymentVolume: string;
+  currentBillingPlatform: string;
+  currentBillingPlatformOther: string;
+  polarOrgSlug: string;
+  teamSize: string;
+  location: string;
+  pitch: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  email: string;
+  linkedin: string;
 }
 
 const INITIAL: FormState = {
-  startupName: '',
-  industry: '',
-  website: '',
-  foundedAt: '',
-  funding: '',
-  partner: '',
-  partnerOther: '',
-  paymentVolume: '',
-  currentBillingPlatform: 'Polar',
-  currentBillingPlatformOther: '',
-  polarOrgSlug: '',
-  teamSize: '',
-  location: '',
-  pitch: '',
-  firstName: '',
-  lastName: '',
-  role: '',
-  email: '',
-  linkedin: '',
-}
+  startupName: "",
+  industry: "",
+  website: "",
+  foundedAt: "",
+  funding: "",
+  partner: "",
+  partnerOther: "",
+  paymentVolume: "",
+  currentBillingPlatform: "Polar",
+  currentBillingPlatformOther: "",
+  polarOrgSlug: "",
+  teamSize: "",
+  location: "",
+  pitch: "",
+  firstName: "",
+  lastName: "",
+  role: "",
+  email: "",
+  linkedin: "",
+};
 
-type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error'
+type SubmitStatus = "idle" | "submitting" | "success" | "error";
 
-export const StartupProgramForm = () => {
-  const [form, setForm] = useState<FormState>(INITIAL)
-  const [status, setStatus] = useState<SubmitStatus>('idle')
+export type StartupProgramKind = "startup" | "design-partner";
+
+const SUBMIT_LABEL: Record<StartupProgramKind, string> = {
+  startup: "Apply Now",
+  "design-partner": "Become a design partner",
+};
+
+export const StartupProgramForm = ({
+  program = "startup",
+}: {
+  program?: StartupProgramKind;
+}) => {
+  const [form, setForm] = useState<FormState>(INITIAL);
+  const [status, setStatus] = useState<SubmitStatus>("idle");
 
   const set =
     <K extends keyof FormState>(key: K) =>
     (value: FormState[K]) =>
-      setForm((s) => ({ ...s, [key]: value }))
+      setForm((s) => ({ ...s, [key]: value }));
 
   return (
     <Box
@@ -131,25 +142,25 @@ export const StartupProgramForm = () => {
       flexDirection="column"
       rowGap="l"
       padding={{
-        base: 'xl',
-        md: '3xl',
+        base: "xl",
+        md: "3xl",
       }}
       backgroundColor="background-secondary"
       onSubmit={async (e) => {
-        e.preventDefault()
-        setStatus('submitting')
+        e.preventDefault();
+        setStatus("submitting");
         try {
-          const res = await fetch('/api/startup-program', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(form),
-          })
-          if (!res.ok) throw new Error(`Request failed: ${res.status}`)
-          setStatus('success')
-          setForm(INITIAL)
+          const res = await fetch("/api/startup-program", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...form, program }),
+          });
+          if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+          setStatus("success");
+          setForm(INITIAL);
         } catch (err) {
-          console.error('Startup program submission failed:', err)
-          setStatus('error')
+          console.error("Startup program submission failed:", err);
+          setStatus("error");
         }
       }}
     >
@@ -157,7 +168,7 @@ export const StartupProgramForm = () => {
         <Input
           id="startupName"
           value={form.startupName}
-          onChange={(e) => set('startupName')(e.target.value)}
+          onChange={(e) => set("startupName")(e.target.value)}
           placeholder="Acme, Inc"
           required
         />
@@ -167,7 +178,7 @@ export const StartupProgramForm = () => {
         <Input
           id="industry"
           value={form.industry}
-          onChange={(e) => set('industry')(e.target.value)}
+          onChange={(e) => set("industry")(e.target.value)}
           placeholder="e.g. SaaS, Fintech, Healthcare"
         />
       </Field>
@@ -177,7 +188,7 @@ export const StartupProgramForm = () => {
           id="website"
           type="url"
           value={form.website}
-          onChange={(e) => set('website')(e.target.value)}
+          onChange={(e) => set("website")(e.target.value)}
           placeholder="https://yourcompany.com"
         />
       </Field>
@@ -186,12 +197,12 @@ export const StartupProgramForm = () => {
         <Input
           id="foundedAt"
           value={form.foundedAt}
-          onChange={(e) => set('foundedAt')(e.target.value)}
+          onChange={(e) => set("foundedAt")(e.target.value)}
         />
       </Field>
 
       <Field label="Total Funding Raised" htmlFor="funding">
-        <Select value={form.funding} onValueChange={set('funding')}>
+        <Select value={form.funding} onValueChange={set("funding")}>
           <SelectTrigger id="funding">
             <SelectValue placeholder="Select..." />
           </SelectTrigger>
@@ -206,7 +217,7 @@ export const StartupProgramForm = () => {
       </Field>
 
       <Field label="Partner / Investor" htmlFor="partner">
-        <Select value={form.partner} onValueChange={set('partner')}>
+        <Select value={form.partner} onValueChange={set("partner")}>
           <SelectTrigger id="partner">
             <SelectValue placeholder="Select..." />
           </SelectTrigger>
@@ -218,10 +229,10 @@ export const StartupProgramForm = () => {
             ))}
           </SelectContent>
         </Select>
-        {form.partner === 'Other' && (
+        {form.partner === "Other" && (
           <Input
             value={form.partnerOther}
-            onChange={(e) => set('partnerOther')(e.target.value)}
+            onChange={(e) => set("partnerOther")(e.target.value)}
             placeholder="Which partner?"
           />
         )}
@@ -231,7 +242,7 @@ export const StartupProgramForm = () => {
         <Input
           id="paymentVolume"
           value={form.paymentVolume}
-          onChange={(e) => set('paymentVolume')(e.target.value)}
+          onChange={(e) => set("paymentVolume")(e.target.value)}
           placeholder="e.g. $0, $10K/mo, $100K/mo"
         />
       </Field>
@@ -239,7 +250,7 @@ export const StartupProgramForm = () => {
       <Field label="Current Billing Platform" htmlFor="currentBillingPlatform">
         <Select
           value={form.currentBillingPlatform}
-          onValueChange={set('currentBillingPlatform')}
+          onValueChange={set("currentBillingPlatform")}
         >
           <SelectTrigger id="currentBillingPlatform">
             <SelectValue placeholder="Select..." />
@@ -252,28 +263,28 @@ export const StartupProgramForm = () => {
             ))}
           </SelectContent>
         </Select>
-        {form.currentBillingPlatform === 'Other' && (
+        {form.currentBillingPlatform === "Other" && (
           <Input
             value={form.currentBillingPlatformOther}
-            onChange={(e) => set('currentBillingPlatformOther')(e.target.value)}
+            onChange={(e) => set("currentBillingPlatformOther")(e.target.value)}
             placeholder="Which platform?"
           />
         )}
       </Field>
 
-      {form.currentBillingPlatform === 'Polar' && (
+      {form.currentBillingPlatform === "Polar" && (
         <Field label="Polar Organization Slug" htmlFor="polarOrgSlug">
           <Input
             id="polarOrgSlug"
             value={form.polarOrgSlug}
-            onChange={(e) => set('polarOrgSlug')(e.target.value)}
+            onChange={(e) => set("polarOrgSlug")(e.target.value)}
             placeholder="acme-inc"
           />
         </Field>
       )}
 
       <Field label="Team Size" htmlFor="teamSize">
-        <Select value={form.teamSize} onValueChange={set('teamSize')}>
+        <Select value={form.teamSize} onValueChange={set("teamSize")}>
           <SelectTrigger id="teamSize">
             <SelectValue placeholder="Select..." />
           </SelectTrigger>
@@ -291,7 +302,7 @@ export const StartupProgramForm = () => {
         <Input
           id="location"
           value={form.location}
-          onChange={(e) => set('location')(e.target.value)}
+          onChange={(e) => set("location")(e.target.value)}
           placeholder="e.g. San Francisco, CA"
         />
       </Field>
@@ -305,21 +316,21 @@ export const StartupProgramForm = () => {
           rows={4}
           maxLength={800}
           value={form.pitch}
-          onChange={(e) => set('pitch')(e.target.value)}
+          onChange={(e) => set("pitch")(e.target.value)}
           placeholder="Tell us about your startup in a few sentences..."
         />
       </Field>
 
       <Box
         display="grid"
-        gridTemplateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }}
+        gridTemplateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }}
         gap="l"
       >
         <Field label="First Name" htmlFor="firstName">
           <Input
             id="firstName"
             value={form.firstName}
-            onChange={(e) => set('firstName')(e.target.value)}
+            onChange={(e) => set("firstName")(e.target.value)}
             placeholder="Jane"
             required
           />
@@ -328,7 +339,7 @@ export const StartupProgramForm = () => {
           <Input
             id="lastName"
             value={form.lastName}
-            onChange={(e) => set('lastName')(e.target.value)}
+            onChange={(e) => set("lastName")(e.target.value)}
             placeholder="Doe"
             required
           />
@@ -337,7 +348,7 @@ export const StartupProgramForm = () => {
           <Input
             id="role"
             value={form.role}
-            onChange={(e) => set('role')(e.target.value)}
+            onChange={(e) => set("role")(e.target.value)}
             placeholder="e.g. CEO"
           />
         </Field>
@@ -348,7 +359,7 @@ export const StartupProgramForm = () => {
           id="email"
           type="email"
           value={form.email}
-          onChange={(e) => set('email')(e.target.value)}
+          onChange={(e) => set("email")(e.target.value)}
           placeholder="you@company.com"
           required
         />
@@ -359,7 +370,7 @@ export const StartupProgramForm = () => {
           id="linkedin"
           type="url"
           value={form.linkedin}
-          onChange={(e) => set('linkedin')(e.target.value)}
+          onChange={(e) => set("linkedin")(e.target.value)}
           placeholder="https://linkedin.com/in/janedoe"
         />
       </Field>
@@ -368,17 +379,17 @@ export const StartupProgramForm = () => {
         type="submit"
         size="lg"
         fullWidth
-        loading={status === 'submitting'}
-        disabled={status === 'submitting' || status === 'success'}
+        loading={status === "submitting"}
+        disabled={status === "submitting" || status === "success"}
         className="my-8"
       >
-        {status === 'success' ? 'Application Sent' : 'Apply Now'}
+        {status === "success" ? "Application Sent" : SUBMIT_LABEL[program]}
       </Button>
-      {status === 'error' && (
+      {status === "error" && (
         <Text variant="caption" color="danger">
           Something went wrong. Please try again or email us directly.
         </Text>
       )}
     </Box>
-  )
-}
+  );
+};

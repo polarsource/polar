@@ -71,6 +71,12 @@ polar_app = Starlette(routes=[WebSocketRoute("/v1/outpost/", polar_websocket)])
 
 
 @pytest.fixture(autouse=True)
+def polar_snapshot_requests() -> collections.abc.Iterator[None]:
+    yield
+    POLAR_SNAPSHOT_REQUESTS.clear()
+
+
+@pytest.fixture(autouse=True)
 def polar_token(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("POLAR_TOKEN", "polar_oat_test")
 

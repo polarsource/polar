@@ -4,6 +4,7 @@ server/tests/reducer_bucket/test_service.py
   s_d3ae8d5cd7c768::t_e162a880b616bf 2,89,91,94-95,99-100,104-105,109-110,118-119,142
 server/tests/event/test_service.py
   s_d3ae8d5cd7c768::t_90846b559fd75c 4,942
+  s_d3ae8d5cd7c768::t_847f6b6629ef7d 897-898,1035
 ---
 {
   "schema_version": "authorship/3.0.0",

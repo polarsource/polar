@@ -29,6 +29,6 @@ REDUCE_SECONDS = Histogram(
 DECIDE_SECONDS = Histogram(
     "outpost_decide_seconds",
     "Time to answer a customer meter balance read.",
-    buckets=LATENCY_BUCKETS,
+    buckets=(*LATENCY_BUCKETS, 2.5, 5.0),
 )
 EVENTS_INGESTED = Counter("outpost_events_ingested_total", "Events ingested.")

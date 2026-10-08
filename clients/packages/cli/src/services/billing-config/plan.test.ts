@@ -85,6 +85,12 @@ describe('plan', () => {
           action: 'created',
           diff: [{ field: 'name', before: null, after: 'Tool calls' }],
         },
+        {
+          resource: 'benefit',
+          external_id: 'support',
+          action: 'unchanged',
+          diff: [],
+        },
       ],
       issues: [
         {
@@ -106,6 +112,7 @@ describe('plan', () => {
         action: 'created',
         diff: [{ field: 'name', before: null, after: 'Tool calls' }],
       },
+      { section: 'benefits', id: 'support', action: 'unchanged', diff: [] },
     ])
     expect(result.issues).toEqual([
       {
@@ -169,8 +176,12 @@ describe('plan', () => {
       { status: 403 },
     )
 
-    const error = await failure(run(await write(source)))
+    const error = await failure(
+      run(await write(JSON.stringify({ meters: [], benefits: [] }))),
+    )
 
-    expect(error.hint).toContain('meters:read')
+    expect(error.hint).toBe(
+      'The token needs the meters:read, benefits:read scopes.',
+    )
   })
 })

@@ -39,8 +39,10 @@ export const FieldChange = Schema.Struct({
 })
 export type FieldChange = typeof FieldChange.Type
 
+export const ConfigResource = Schema.Literals(['meter', 'benefit', 'product'])
+
 export const EntryResult = Schema.Struct({
-  resource: Schema.String,
+  resource: ConfigResource,
   external_id: Schema.String,
   action: EntryAction,
   diff: Schema.optional(Schema.Array(FieldChange)),

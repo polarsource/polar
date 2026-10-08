@@ -1,11 +1,9 @@
 """Fixtures and helpers for lifecycle E2E tests."""
 
-import pytest
-import uuid
-
 import uuid
 from collections.abc import Sequence
 
+import pytest
 from sqlalchemy import select
 
 from polar.enums import SubscriptionRecurringInterval

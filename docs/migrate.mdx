@@ -248,9 +248,10 @@ for payments it processes.
     A subscription that is not ready stays on Stripe. Resolve the issue and retry
     it later, or keep it renewing on Stripe.
 
-    Polar also rechecks subscriptions during the switch. Subscriptions renewing
-    within 24 hours or set to end on a date other than their period end remain
-    on Stripe at that point.
+    Polar also rechecks subscriptions during the switch. Subscriptions due to
+    renew within 24 hours, or set to end on a date other than their period end,
+    remain on Stripe at that point. A subscription set to cancel at the end of
+    its period does not renew, so it moves even if that end is within 24 hours.
 
     Only cards are used. A subscription paying with another method, such as
     Link, SEPA Direct Debit, or a US bank account (ACH), still moves, but Polar
@@ -517,7 +518,7 @@ safe logging, and an API reconciliation fallback.
 Migration never looks like a new sale. Importing the catalog creates products,
 discounts, and customers without `product.created`, discount,
 `customer.created`, or `member.created` webhooks. During import and card
-mapping, expect only `customer.updated`, each followed by
+mapping, you can receive `customer.updated`, each followed by
 `customer.state_changed`:
 
 - when the import fills in billing details or the Stripe customer ID on a

@@ -1,33 +1,36 @@
 import type { models, Polar } from '../../sdk'
-import { findIdByExternalId } from './utils'
 import type { MemberIdentifier } from './utils'
 
 export const findBenefitGrant = async (
   sdk: Polar,
   identifier: MemberIdentifier,
-  benefitId: string,
+  externalBenefitId: string,
 ): Promise<models.BenefitGrant | undefined> => {
-  const customerId =
-    'customer_id' in identifier
-      ? identifier.customer_id
-      : (await sdk.customers.getExternal(identifier.external_customer_id)).id
-
-  for await (const grant of sdk.benefits.iterGrants(benefitId, {
-    customer_id: customerId,
+  const { items } = await sdk.benefitGrants.list({
+    ...identifier,
+    external_benefit_id: externalBenefitId,
     is_granted: true,
-  })) {
-    if (
-      identifier.member_id !== undefined
-        ? grant.member_id === identifier.member_id
-        : identifier.external_member_id !== undefined
-          ? grant.member?.external_id === identifier.external_member_id
-          : true
-    ) {
-      return grant
-    }
-  }
-  return undefined
+    limit: 1,
+  })
+  return items[0]
 }
 
-export const getBenefitId = (sdk: Polar, externalId: string): Promise<string> =>
-  findIdByExternalId('Benefit', sdk.benefits.iterList({}), externalId)
+export const assertBenefitDeployed = async (
+  sdk: Polar,
+  externalId: string,
+): Promise<void> => {
+  let matches = 0
+  for await (const benefit of sdk.benefits.iterList({})) {
+    if (benefit.external_id === externalId) matches += 1
+  }
+  if (matches > 1) {
+    throw new Error(
+      `Benefit external ID ${JSON.stringify(externalId)} is ambiguous. Use an organization-scoped token.`,
+    )
+  }
+  if (matches === 0) {
+    throw new Error(
+      `Benefit ${JSON.stringify(externalId)} is not deployed in this environment.`,
+    )
+  }
+}

@@ -1068,6 +1068,53 @@ class TestPlan:
         ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_not_supported_yet(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "benefits": [
+                        {**BETA_BENEFIT, "visibility": "private"},
+                        {
+                            "external_id": "support",
+                            "type": "custom",
+                            "description": "Priority support",
+                        },
+                    ],
+                    "products": [
+                        {
+                            "external_id": "team",
+                            "name": "Team",
+                            "recurring_interval": "month",
+                            "trial_interval": "day",
+                            "trial_interval_count": 14,
+                            "custom_fields": [{"slug": "company"}],
+                            "prices": [
+                                {"amount_type": "fixed", "price_amount": 1000},
+                                {"amount_type": "custom", "minimum_amount": 500},
+                            ],
+                        }
+                    ],
+                }
+            ),
+        )
+
+        assert [
+            issue.loc
+            for issue in plan.issues
+            if issue.type == ConfigIssueType.not_supported
+        ] == [
+            ["body", "benefits", 0, "visibility"],
+            ["body", "benefits", 1, "type"],
+            ["body", "products", 0, "trial_interval"],
+            ["body", "products", 0, "custom_fields"],
+            ["body", "products", 0, "prices", 1, "amount_type"],
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_duplicate_external_ids_per_resource(
         self, session: AsyncSession, auth_subject: AuthSubject[Organization]
     ) -> None:

@@ -6,6 +6,7 @@ from polar.benefit.repository import BenefitRepository
 from polar.benefit.strategies.meter_credit.properties import (
     BenefitMeterCreditProperties,
 )
+from polar.kit.visibility import Visibility
 from polar.meter.repository import MeterRepository
 from polar.models import Benefit, Organization, Product, ProductPriceMeteredUnit
 from polar.models.benefit import BenefitType
@@ -89,8 +90,11 @@ def _benefit_document(
         "external_id": benefit.external_id,
         "type": benefit.type,
         "description": benefit.description,
+        "visibility": benefit.visibility,
         "metadata": benefit.user_metadata,
     }
+    if benefit.visibility != Visibility.public:
+        return ConfigSkippedReason.not_supported
     if benefit.type == BenefitType.feature_flag:
         return document
     if benefit.type != BenefitType.meter_credit:
@@ -147,7 +151,12 @@ def _product_document(
     meter_external_ids: ExternalIDs,
     benefit_external_ids: ExternalIDs,
 ) -> dict[str, Any] | ConfigSkippedReason:
-    if product.is_legacy_recurring_price:
+    if (
+        product.is_legacy_recurring_price
+        or product.trial_interval is not None
+        or product.meter_interval is not None
+        or product.attached_custom_fields
+    ):
         return ConfigSkippedReason.not_supported
     prices: list[dict[str, Any]] = []
     for price in product.prices:
@@ -172,8 +181,13 @@ def _product_document(
         "visibility": product.visibility,
         "recurring_interval": product.recurring_interval,
         "recurring_interval_count": product.recurring_interval_count,
+        "trial_interval": None,
+        "trial_interval_count": None,
+        "meter_interval": None,
+        "meter_interval_count": None,
         "prices": prices,
         "benefits": benefits,
+        "custom_fields": [],
         "metadata": product.user_metadata,
     }
 

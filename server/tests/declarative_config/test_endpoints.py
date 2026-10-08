@@ -1,5 +1,6 @@
 import uuid
 from decimal import Decimal
+from typing import Any
 
 import pytest
 from httpx import AsyncClient
@@ -7,7 +8,9 @@ from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
 from polar.enums import SubscriptionRecurringInterval
+from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
+from polar.kit.visibility import Visibility
 from polar.meter.unit import MeterUnit
 from polar.models import Organization, UserOrganization
 from polar.models.benefit import BenefitType
@@ -123,8 +126,25 @@ class TestApply:
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_one_time_product_metered_price(
+    @pytest.mark.parametrize(
+        "fields",
+        [
+            {
+                "prices": [
+                    {
+                        "amount_type": "metered_unit",
+                        "meter": "sdk-tool-calls",
+                        "unit_amount": "0.5",
+                    }
+                ]
+            },
+            {"trial_interval": "day", "trial_interval_count": 7},
+            {"meter_interval": "month"},
+        ],
+    )
+    async def test_one_time_product_recurring_fields(
         self,
+        fields: dict[str, Any],
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
@@ -137,13 +157,8 @@ class TestApply:
                     {
                         "external_id": "pack",
                         "name": "Pack",
-                        "prices": [
-                            {
-                                "amount_type": "metered_unit",
-                                "meter": "sdk-tool-calls",
-                                "unit_amount": "0.5",
-                            }
-                        ],
+                        "prices": [{"amount_type": "fixed", "price_amount": 1000}],
+                        **fields,
                     }
                 ],
                 "organization_id": str(organization.id),
@@ -564,6 +579,7 @@ class TestExport:
                 "external_id": "api-credits",
                 "type": "meter_credit",
                 "description": "API credits",
+                "visibility": "public",
                 "properties": {"meter": "api-calls", "units": 1000, "rollover": True},
                 "metadata": {},
             },
@@ -571,6 +587,7 @@ class TestExport:
                 "external_id": "beta",
                 "type": "feature_flag",
                 "description": "Beta access",
+                "visibility": "public",
                 "metadata": {},
             },
         ]
@@ -585,7 +602,12 @@ class TestExport:
             "visibility": "public",
             "recurring_interval": "month",
             "recurring_interval_count": 1,
+            "trial_interval": None,
+            "trial_interval_count": None,
+            "meter_interval": None,
+            "meter_interval_count": None,
             "benefits": ["beta", "api-credits"],
+            "custom_fields": [],
             "metadata": {},
         }
         assert fixed_price == {
@@ -651,6 +673,15 @@ class TestExport:
             properties={"meter_id": str(meter.id), "units": 10, "rollover": False},
             external_id="credits",
         )
+        private = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.feature_flag,
+            properties={},
+            external_id="private",
+        )
+        private.visibility = Visibility.private
+        await save_fixture(private)
         archived = await create_product(
             save_fixture,
             organization=organization,
@@ -677,6 +708,14 @@ class TestExport:
         await set_product_benefits(
             save_fixture, product=unknown_benefit, benefits=[custom]
         )
+        with_trial = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            trial_interval=TrialInterval.day,
+            trial_interval_count=7,
+            external_id="with-trial",
+        )
 
         response = await client.get(
             "/v1/config/", params={"organization_id": str(organization.id)}
@@ -693,9 +732,11 @@ class TestExport:
             ("benefit", str(without_external_id.id), "missing_external_id"),
             ("benefit", str(custom.id), "not_supported"),
             ("benefit", str(unknown_meter.id), "unknown_reference"),
+            ("benefit", str(private.id), "not_supported"),
             ("product", str(archived.id), "archived"),
             ("product", str(custom_price.id), "not_supported"),
             ("product", str(unknown_benefit.id), "unknown_reference"),
+            ("product", str(with_trial.id), "not_supported"),
         ]
 
     @pytest.mark.auth(

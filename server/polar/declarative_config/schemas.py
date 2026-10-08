@@ -9,25 +9,40 @@ from polar.benefit.strategies.base.schemas import (
     BENEFIT_DESCRIPTION_MAX_LENGTH,
     BENEFIT_DESCRIPTION_MIN_LENGTH,
 )
-from polar.enums import SubscriptionRecurringInterval, TaxBehaviorOption
+from polar.benefit.strategies.custom.schemas import BenefitCustomCreateProperties
+from polar.benefit.strategies.custom.schemas import (
+    BenefitCustomProperties as BenefitCustomOutputProperties,
+)
+from polar.benefit.strategies.license_keys.schemas import (
+    BenefitLicenseKeysCreateProperties,
+    BenefitLicenseKeysProperties,
+)
+from polar.enums import MeterInterval, SubscriptionRecurringInterval, TaxBehaviorOption
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import Int32, Schema, SetSchemaReference
+from polar.kit.trial import TrialConfigurationInputMixin, TrialInterval
 from polar.kit.visibility import Visibility
 from polar.meter.aggregation import Aggregation
 from polar.meter.filter import Filter
 from polar.meter.schemas import NAME_DESCRIPTION, MeterCreateBase
 from polar.meter.unit import MeterUnit
-from polar.models.benefit import BenefitType
+from polar.models.benefit import BenefitType, BenefitVisibility
 from polar.models.product import ProductVisibility
 from polar.models.product_price import ProductPriceAmountType
 from polar.organization.schemas import OrganizationID
+from polar.product.meter_interval import meter_interval_divides_billing_interval
 from polar.product.schemas import (
     PriceAmount,
     ProductDescription,
     ProductName,
     ProductPriceCreateBase,
+    ProductPriceCustomCreate,
     ProductPriceFixedCreate,
+    ProductPriceSeatBasedCreate,
+    ProductPriceUnitBasedCreate,
+    UnitLabel,
 )
+from polar.product.tiers import Tiers, TiersInput
 
 MAXIMUM_METERS = 100
 MAXIMUM_BENEFITS = 100
@@ -81,10 +96,35 @@ class ConfigBenefitBase(MetadataInputMixin, Schema):
             "Will be displayed on products having this benefit."
         ),
     )
+    visibility: BenefitVisibility = Field(
+        default=Visibility.public, description="The visibility of the benefit."
+    )
 
 
 class ConfigBenefitFeatureFlag(ConfigBenefitBase):
     type: Literal[BenefitType.feature_flag]
+
+
+class ConfigBenefitCustomProperties(BenefitCustomCreateProperties):
+    model_config = ConfigDict(extra="forbid")
+
+
+class ConfigBenefitCustom(ConfigBenefitBase):
+    type: Literal[BenefitType.custom]
+    properties: ConfigBenefitCustomProperties = Field(
+        default_factory=ConfigBenefitCustomProperties
+    )
+
+
+class ConfigBenefitLicenseKeysProperties(BenefitLicenseKeysCreateProperties):
+    model_config = ConfigDict(extra="forbid")
+
+
+class ConfigBenefitLicenseKeys(ConfigBenefitBase):
+    type: Literal[BenefitType.license_keys]
+    properties: ConfigBenefitLicenseKeysProperties = Field(
+        default_factory=ConfigBenefitLicenseKeysProperties
+    )
 
 
 class ConfigBenefitMeterCreditProperties(Schema):
@@ -106,7 +146,10 @@ class ConfigBenefitMeterCredit(ConfigBenefitBase):
 
 
 ConfigBenefit = Annotated[
-    ConfigBenefitFeatureFlag | ConfigBenefitMeterCredit,
+    ConfigBenefitCustom
+    | ConfigBenefitFeatureFlag
+    | ConfigBenefitLicenseKeys
+    | ConfigBenefitMeterCredit,
     Discriminator("type"),
     SetSchemaReference("ConfigBenefit"),
 ]
@@ -143,14 +186,68 @@ class ConfigProductPriceMeteredUnit(ProductPriceCreateBase):
     )
 
 
+class ConfigProductPriceCustom(ProductPriceCustomCreate):
+    model_config = ConfigDict(extra="forbid")
+
+    minimum_amount: int = Field(
+        default=50,
+        ge=0,
+        description=(
+            "The minimum amount the customer can pay, in cents. "
+            "Set to `0` to accept free purchases."
+        ),
+    )
+    maximum_amount: PriceAmount | None = Field(
+        default=None, description="The maximum amount the customer can pay, in cents."
+    )
+    preset_amount: PriceAmount | None = Field(
+        default=None, ge=0, description="The initial amount shown, in cents."
+    )
+
+
+class ConfigProductPriceSeatBased(ProductPriceSeatBasedCreate):
+    model_config = ConfigDict(extra="forbid")
+
+
+class ConfigProductPriceUnitBased(ProductPriceUnitBasedCreate):
+    model_config = ConfigDict(extra="forbid")
+
+
+class ConfigProductPriceMeteredTiers(ProductPriceCreateBase):
+    model_config = ConfigDict(extra="forbid")
+
+    amount_type: Literal[ProductPriceAmountType.metered_tiers]
+    meter: MeterReference
+    tiers: TiersInput = Field(description="Tiered pricing based on consumed units.")
+    cap_amount: Int32 | None = Field(
+        default=None, ge=0, description="Optional maximum charge in cents."
+    )
+
+
 ConfigProductPrice = Annotated[
-    ConfigProductPriceFixed | ConfigProductPriceMeteredUnit,
+    ConfigProductPriceFixed
+    | ConfigProductPriceCustom
+    | ConfigProductPriceSeatBased
+    | ConfigProductPriceUnitBased
+    | ConfigProductPriceMeteredUnit
+    | ConfigProductPriceMeteredTiers,
     Discriminator("amount_type"),
     SetSchemaReference("ConfigProductPrice"),
 ]
 
 
-class ConfigProduct(MetadataInputMixin, Schema):
+class ConfigCustomField(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    slug: str = Field(
+        min_length=1, description="The `slug` of an existing custom field."
+    )
+    required: bool = Field(
+        default=False, description="Whether the customer must fill it in."
+    )
+
+
+class ConfigProduct(TrialConfigurationInputMixin, MetadataInputMixin, Schema):
     model_config = ConfigDict(extra="forbid")
 
     external_id: str = Field(
@@ -176,12 +273,29 @@ class ConfigProduct(MetadataInputMixin, Schema):
         le=999,
         description="Billing cycle length in intervals. Defaults to 1.",
     )
+    meter_interval: MeterInterval | None = Field(
+        default=None,
+        description=(
+            "Optional meter cycle, independent of the billing interval. "
+            "It must evenly divide the billing interval, and can't be changed."
+        ),
+    )
+    meter_interval_count: int | None = Field(
+        default=None,
+        ge=1,
+        le=999,
+        description="Meter cycle length in intervals. Defaults to 1.",
+    )
     prices: list[ConfigProductPrice] = Field(
         min_length=1, description="The prices of the product."
     )
     benefits: list[BenefitReference] = Field(
         default_factory=list,
         description="The benefits granted by the product.",
+    )
+    custom_fields: list[ConfigCustomField] = Field(
+        default_factory=list,
+        description="Custom fields asked at checkout, in order.",
     )
 
     @model_validator(mode="after")
@@ -191,15 +305,37 @@ class ConfigProduct(MetadataInputMixin, Schema):
                 raise ValueError(
                     "One-time products can't have a recurring interval count."
                 )
+            if self.trial_interval is not None:
+                raise ValueError("One-time products can't have a trial.")
+            if self.meter_interval is not None:
+                raise ValueError("One-time products can't have a meter interval.")
             if any(
-                isinstance(price, ConfigProductPriceMeteredUnit)
+                isinstance(
+                    price,
+                    ConfigProductPriceMeteredUnit | ConfigProductPriceMeteredTiers,
+                )
                 for price in self.prices
             ):
                 raise ValueError(
                     "Metered pricing is not supported on one-time products."
                 )
-        elif self.recurring_interval_count is None:
+            return self
+        if self.recurring_interval_count is None:
             self.recurring_interval_count = 1
+        if self.meter_interval is None:
+            self.meter_interval_count = None
+            return self
+        if self.meter_interval_count is None:
+            self.meter_interval_count = 1
+        if not meter_interval_divides_billing_interval(
+            self.meter_interval,
+            self.meter_interval_count,
+            self.recurring_interval,
+            self.recurring_interval_count,
+        ):
+            raise ValueError(
+                "The meter interval must evenly divide the billing interval."
+            )
         return self
 
 
@@ -279,6 +415,7 @@ class ConfigResource(StrEnum):
     meter = "meter"
     benefit = "benefit"
     product = "product"
+    custom_field = "custom_field"
 
 
 class ConfigResult(Schema):
@@ -330,10 +467,21 @@ class ConfigExportMeter(Schema, MetadataOutputMixin):
 class ConfigExportBenefitBase(Schema, MetadataOutputMixin):
     external_id: str = Field(description="Your identifier for the benefit.")
     description: str = Field(description="The description of the benefit.")
+    visibility: BenefitVisibility = Field(description="The visibility of the benefit.")
 
 
 class ConfigExportBenefitFeatureFlag(ConfigExportBenefitBase):
     type: Literal[BenefitType.feature_flag]
+
+
+class ConfigExportBenefitCustom(ConfigExportBenefitBase):
+    type: Literal[BenefitType.custom]
+    properties: BenefitCustomOutputProperties
+
+
+class ConfigExportBenefitLicenseKeys(ConfigExportBenefitBase):
+    type: Literal[BenefitType.license_keys]
+    properties: BenefitLicenseKeysProperties
 
 
 class ConfigExportBenefitMeterCreditProperties(Schema):
@@ -350,7 +498,10 @@ class ConfigExportBenefitMeterCredit(ConfigExportBenefitBase):
 
 
 ConfigExportBenefit = Annotated[
-    ConfigExportBenefitFeatureFlag | ConfigExportBenefitMeterCredit,
+    ConfigExportBenefitCustom
+    | ConfigExportBenefitFeatureFlag
+    | ConfigExportBenefitLicenseKeys
+    | ConfigExportBenefitMeterCredit,
     Discriminator("type"),
     SetSchemaReference("ConfigExportBenefit"),
 ]
@@ -375,11 +526,50 @@ class ConfigExportProductPriceMeteredUnit(ConfigExportProductPriceBase):
     cap_amount: int | None = Field(description="Optional maximum charge in cents.")
 
 
+class ConfigExportProductPriceCustom(ConfigExportProductPriceBase):
+    amount_type: Literal[ProductPriceAmountType.custom]
+    minimum_amount: int = Field(description="The minimum amount the customer can pay.")
+    maximum_amount: int | None = Field(
+        description="The maximum amount the customer can pay."
+    )
+    preset_amount: int | None = Field(description="The initial amount shown.")
+
+
+class ConfigExportProductPriceSeatBased(ConfigExportProductPriceBase):
+    amount_type: Literal[ProductPriceAmountType.seat_based]
+    tiers: Tiers = Field(description="Tiered pricing based on seat quantity.")
+    minimum_units: int | None = Field(description="The minimum number of seats.")
+
+
+class ConfigExportProductPriceUnitBased(ConfigExportProductPriceBase):
+    amount_type: Literal[ProductPriceAmountType.unit_based]
+    tiers: Tiers = Field(description="Tiered pricing based on unit quantity.")
+    minimum_units: int | None = Field(description="The minimum number of units.")
+    unit_label: UnitLabel | None = Field(description="Per-locale unit nouns.")
+
+
+class ConfigExportProductPriceMeteredTiers(ConfigExportProductPriceBase):
+    amount_type: Literal[ProductPriceAmountType.metered_tiers]
+    meter: str = Field(description="The `external_id` of the billed meter.")
+    tiers: Tiers = Field(description="Tiered pricing based on consumed units.")
+    cap_amount: int | None = Field(description="Optional maximum charge in cents.")
+
+
 ConfigExportProductPrice = Annotated[
-    ConfigExportProductPriceFixed | ConfigExportProductPriceMeteredUnit,
+    ConfigExportProductPriceFixed
+    | ConfigExportProductPriceCustom
+    | ConfigExportProductPriceSeatBased
+    | ConfigExportProductPriceUnitBased
+    | ConfigExportProductPriceMeteredUnit
+    | ConfigExportProductPriceMeteredTiers,
     Discriminator("amount_type"),
     SetSchemaReference("ConfigExportProductPrice"),
 ]
+
+
+class ConfigExportCustomField(Schema):
+    slug: str = Field(description="The `slug` of the custom field.")
+    required: bool = Field(description="Whether the customer must fill it in.")
 
 
 class ConfigExportProduct(Schema, MetadataOutputMixin):
@@ -393,11 +583,26 @@ class ConfigExportProduct(Schema, MetadataOutputMixin):
     recurring_interval_count: int | None = Field(
         description="Billing cycle length in intervals, empty if one-time."
     )
+    trial_interval: TrialInterval | None = Field(
+        description="The interval unit of the trial, empty without a trial."
+    )
+    trial_interval_count: int | None = Field(
+        description="The number of trial interval units, empty without a trial."
+    )
+    meter_interval: MeterInterval | None = Field(
+        description="The meter cycle, empty when it follows the billing interval."
+    )
+    meter_interval_count: int | None = Field(
+        description="Meter cycle length in intervals, empty without a meter cycle."
+    )
     prices: list[ConfigExportProductPrice] = Field(
         description="The prices of the product."
     )
     benefits: list[str] = Field(
         description="The `external_id` of each benefit granted by the product."
+    )
+    custom_fields: list[ConfigExportCustomField] = Field(
+        description="Custom fields asked at checkout, in order."
     )
 
 

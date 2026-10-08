@@ -10,6 +10,7 @@ from polar.benefit.strategies.meter_credit.properties import (
 )
 from polar.event.system import SystemEvent
 from polar.event_type.repository import EventTypeRepository
+from polar.kit.visibility import Visibility
 from polar.meter.filter import Filter, FilterOperator
 from polar.meter.repository import MeterRepository
 from polar.meter.schemas import MeterCreateBase
@@ -31,6 +32,8 @@ from .schemas import (
     Config,
     ConfigAction,
     ConfigBenefit,
+    ConfigBenefitCustom,
+    ConfigBenefitLicenseKeys,
     ConfigBenefitMeterCredit,
     ConfigFieldChange,
     ConfigIssue,
@@ -38,7 +41,11 @@ from .schemas import (
     ConfigIssueType,
     ConfigMeter,
     ConfigProduct,
+    ConfigProductPriceCustom,
+    ConfigProductPriceMeteredTiers,
     ConfigProductPriceMeteredUnit,
+    ConfigProductPriceSeatBased,
+    ConfigProductPriceUnitBased,
     ConfigResource,
 )
 
@@ -190,6 +197,50 @@ def unknown_references(config: Config) -> list[ConfigIssue]:
                     _unknown_reference(ConfigResource.benefit, benefit_external_id, loc)
                 )
             listed.add(benefit_external_id)
+    return issues
+
+
+_NOT_SUPPORTED_BENEFITS = (ConfigBenefitCustom, ConfigBenefitLicenseKeys)
+_NOT_SUPPORTED_PRICES = (
+    ConfigProductPriceCustom,
+    ConfigProductPriceSeatBased,
+    ConfigProductPriceUnitBased,
+    ConfigProductPriceMeteredTiers,
+)
+_NOT_SUPPORTED_PRODUCT_FIELDS = ("trial_interval", "meter_interval", "custom_fields")
+
+
+def _not_supported(loc: Loc, input: Any) -> ConfigIssue:
+    return ConfigIssue(
+        severity=ConfigIssueSeverity.error,
+        type=ConfigIssueType.not_supported,
+        loc=loc,
+        msg="Config can't apply this yet.",
+        input=input,
+    )
+
+
+def not_supported_yet(config: Config) -> list[ConfigIssue]:
+    issues: list[ConfigIssue] = []
+    for index, benefit in enumerate(config.benefits):
+        loc = _loc(ConfigResource.benefit, index)
+        if isinstance(benefit, _NOT_SUPPORTED_BENEFITS):
+            issues.append(_not_supported([*loc, "type"], benefit.type))
+        elif benefit.visibility != Visibility.public:
+            issues.append(_not_supported([*loc, "visibility"], benefit.visibility))
+    for index, product in enumerate(config.products):
+        loc = _loc(ConfigResource.product, index)
+        for name in _NOT_SUPPORTED_PRODUCT_FIELDS:
+            if getattr(product, name):
+                issues.append(_not_supported([*loc, name], None))
+        for price_index, price in enumerate(product.prices):
+            if isinstance(price, _NOT_SUPPORTED_PRICES):
+                issues.append(
+                    _not_supported(
+                        [*loc, "prices", price_index, "amount_type"],
+                        price.amount_type,
+                    )
+                )
     return issues
 
 
@@ -595,6 +646,7 @@ async def check(
         *unique_external_ids(ConfigResource.benefit, benefits),
         *unique_external_ids(ConfigResource.product, products),
         *unknown_references(config),
+        *not_supported_yet(config),
         *locked_meter_fields(meters),
         *await unknown_events(session, organization, meters),
         *benefit_type_changes(benefits),

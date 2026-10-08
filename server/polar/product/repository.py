@@ -151,6 +151,7 @@ class ProductRepository(
             self.get_base_statement()
             .where(Product.organization_id == organization_id)
             .order_by(Product.created_at, Product.id)
+            .options(selectinload(Product.attached_custom_fields))
         )
 
     async def get_by_id_and_checkout(

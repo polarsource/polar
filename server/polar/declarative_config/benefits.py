@@ -12,7 +12,7 @@ from polar.benefit.strategies.meter_credit.schemas import (
     BenefitMeterCreditUpdate,
 )
 
-from .schemas import ConfigBenefit, ConfigBenefitMeterCredit
+from .schemas import ConfigBenefit, ConfigBenefitFeatureFlag, ConfigBenefitMeterCredit
 from .validation import BenefitChange
 
 
@@ -34,6 +34,8 @@ def benefit_create(
                 rollover=properties.rollover,
             ),
         )
+    if not isinstance(benefit_config, ConfigBenefitFeatureFlag):
+        raise NotImplementedError(benefit_config.type)
     return BenefitFeatureFlagCreate(
         type=benefit_config.type,
         description=benefit_config.description,
@@ -60,4 +62,6 @@ def benefit_update(
                 rollover=config.properties.rollover,
             )
         return BenefitMeterCreditUpdate(type=config.type, **update)
+    if not isinstance(config, ConfigBenefitFeatureFlag):
+        raise NotImplementedError(config.type)
     return BenefitFeatureFlagUpdate(type=config.type, **update)

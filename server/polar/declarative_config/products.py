@@ -15,7 +15,12 @@ from polar.product.schemas import (
     ProductUpdate,
 )
 
-from .schemas import ConfigProduct, ConfigProductPrice, ConfigProductPriceMeteredUnit
+from .schemas import (
+    ConfigProduct,
+    ConfigProductPrice,
+    ConfigProductPriceFixed,
+    ConfigProductPriceMeteredUnit,
+)
 from .validation import PriceKey, ProductChange, price_config, price_key
 
 _PRICE_INPUT_FIELDS = {
@@ -60,6 +65,8 @@ def price_create(
             **price.model_dump(exclude={"meter"}),
             meter_id=meter_ids[price.meter],
         )
+    if not isinstance(price, ConfigProductPriceFixed):
+        raise NotImplementedError(price.amount_type)
     return ProductPriceFixedCreate(**price.model_dump())
 
 

@@ -16047,7 +16047,9 @@ export interface components {
       detail: string
     }
     ConfigBenefit:
+      | components['schemas']['ConfigBenefitCustom']
       | components['schemas']['ConfigBenefitFeatureFlag']
+      | components['schemas']['ConfigBenefitLicenseKeys']
       | components['schemas']['ConfigBenefitMeterCredit']
     /** ConfigBenefitConflict */
     ConfigBenefitConflict: {
@@ -16059,6 +16061,52 @@ export interface components {
       error: 'ConfigBenefitConflict'
       /** Detail */
       detail: string
+    }
+    /** ConfigBenefitCustom */
+    ConfigBenefitCustom: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * External Id
+       * @description Your identifier for the benefit, used to match it.
+       */
+      external_id: string
+      /**
+       * Description
+       * @description The description of the benefit. Will be displayed on products having this benefit.
+       */
+      description: string
+      /**
+       * @description The visibility of the benefit.
+       * @default public
+       */
+      visibility: components['schemas']['BenefitVisibility']
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'custom'
+      properties?: components['schemas']['ConfigBenefitCustomProperties']
+    }
+    /** ConfigBenefitCustomProperties */
+    ConfigBenefitCustomProperties: {
+      /** Note */
+      note?: (string | null) | null
     }
     /** ConfigBenefitFeatureFlag */
     ConfigBenefitFeatureFlag: {
@@ -16090,10 +16138,69 @@ export interface components {
        */
       description: string
       /**
+       * @description The visibility of the benefit.
+       * @default public
+       */
+      visibility: components['schemas']['BenefitVisibility']
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
       type: 'feature_flag'
+    }
+    /** ConfigBenefitLicenseKeys */
+    ConfigBenefitLicenseKeys: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * External Id
+       * @description Your identifier for the benefit, used to match it.
+       */
+      external_id: string
+      /**
+       * Description
+       * @description The description of the benefit. Will be displayed on products having this benefit.
+       */
+      description: string
+      /**
+       * @description The visibility of the benefit.
+       * @default public
+       */
+      visibility: components['schemas']['BenefitVisibility']
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'license_keys'
+      properties?: components['schemas']['ConfigBenefitLicenseKeysProperties']
+    }
+    /** ConfigBenefitLicenseKeysProperties */
+    ConfigBenefitLicenseKeysProperties: {
+      /** Prefix */
+      prefix?: string | null
+      expires?:
+        | components['schemas']['BenefitLicenseKeyExpirationProperties']
+        | null
+      activations?:
+        | components['schemas']['BenefitLicenseKeyActivationCreateProperties']
+        | null
+      /** Limit Usage */
+      limit_usage?: number | null
     }
     /** ConfigBenefitMeterCredit */
     ConfigBenefitMeterCredit: {
@@ -16124,6 +16231,11 @@ export interface components {
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
       description: string
+      /**
+       * @description The visibility of the benefit.
+       * @default public
+       */
+      visibility: components['schemas']['BenefitVisibility']
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -16167,6 +16279,20 @@ export interface components {
        */
       diff: components['schemas']['ConfigFieldChange'][]
     }
+    /** ConfigCustomField */
+    ConfigCustomField: {
+      /**
+       * Slug
+       * @description The `slug` of an existing custom field.
+       */
+      slug: string
+      /**
+       * Required
+       * @description Whether the customer must fill it in.
+       * @default false
+       */
+      required: boolean
+    }
     /** ConfigExport */
     ConfigExport: {
       /** @description The current config, in the same shape plan and apply accept. */
@@ -16178,8 +16304,32 @@ export interface components {
       skipped: components['schemas']['ConfigSkippedResource'][]
     }
     ConfigExportBenefit:
+      | components['schemas']['ConfigExportBenefitCustom']
       | components['schemas']['ConfigExportBenefitFeatureFlag']
+      | components['schemas']['ConfigExportBenefitLicenseKeys']
       | components['schemas']['ConfigExportBenefitMeterCredit']
+    /** ConfigExportBenefitCustom */
+    ConfigExportBenefitCustom: {
+      metadata: components['schemas']['MetadataOutputType']
+      /**
+       * External Id
+       * @description Your identifier for the benefit.
+       */
+      external_id: string
+      /**
+       * Description
+       * @description The description of the benefit.
+       */
+      description: string
+      /** @description The visibility of the benefit. */
+      visibility: components['schemas']['BenefitVisibility']
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'custom'
+      properties: components['schemas']['BenefitCustomProperties']
+    }
     /** ConfigExportBenefitFeatureFlag */
     ConfigExportBenefitFeatureFlag: {
       metadata: components['schemas']['MetadataOutputType']
@@ -16193,11 +16343,35 @@ export interface components {
        * @description The description of the benefit.
        */
       description: string
+      /** @description The visibility of the benefit. */
+      visibility: components['schemas']['BenefitVisibility']
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
       type: 'feature_flag'
+    }
+    /** ConfigExportBenefitLicenseKeys */
+    ConfigExportBenefitLicenseKeys: {
+      metadata: components['schemas']['MetadataOutputType']
+      /**
+       * External Id
+       * @description Your identifier for the benefit.
+       */
+      external_id: string
+      /**
+       * Description
+       * @description The description of the benefit.
+       */
+      description: string
+      /** @description The visibility of the benefit. */
+      visibility: components['schemas']['BenefitVisibility']
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'license_keys'
+      properties: components['schemas']['BenefitLicenseKeysProperties']
     }
     /** ConfigExportBenefitMeterCredit */
     ConfigExportBenefitMeterCredit: {
@@ -16212,6 +16386,8 @@ export interface components {
        * @description The description of the benefit.
        */
       description: string
+      /** @description The visibility of the benefit. */
+      visibility: components['schemas']['BenefitVisibility']
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -16236,6 +16412,19 @@ export interface components {
        * @description Whether unused units carry over to the next cycle.
        */
       rollover: boolean
+    }
+    /** ConfigExportCustomField */
+    ConfigExportCustomField: {
+      /**
+       * Slug
+       * @description The `slug` of the custom field.
+       */
+      slug: string
+      /**
+       * Required
+       * @description Whether the customer must fill it in.
+       */
+      required: boolean
     }
     /** ConfigExportDocument */
     ConfigExportDocument: {
@@ -16309,6 +16498,20 @@ export interface components {
        * @description Billing cycle length in intervals, empty if one-time.
        */
       recurring_interval_count: number | null
+      /** @description The interval unit of the trial, empty without a trial. */
+      trial_interval: components['schemas']['TrialInterval'] | null
+      /**
+       * Trial Interval Count
+       * @description The number of trial interval units, empty without a trial.
+       */
+      trial_interval_count: number | null
+      /** @description The meter cycle, empty when it follows the billing interval. */
+      meter_interval: components['schemas']['RecurringInterval'] | null
+      /**
+       * Meter Interval Count
+       * @description Meter cycle length in intervals, empty without a meter cycle.
+       */
+      meter_interval_count: number | null
       /**
        * Prices
        * @description The prices of the product.
@@ -16319,10 +16522,49 @@ export interface components {
        * @description The `external_id` of each benefit granted by the product.
        */
       benefits: string[]
+      /**
+       * Custom Fields
+       * @description Custom fields asked at checkout, in order.
+       */
+      custom_fields: components['schemas']['ConfigExportCustomField'][]
     }
     ConfigExportProductPrice:
       | components['schemas']['ConfigExportProductPriceFixed']
+      | components['schemas']['ConfigExportProductPriceCustom']
+      | components['schemas']['ConfigExportProductPriceSeatBased']
+      | components['schemas']['ConfigExportProductPriceUnitBased']
       | components['schemas']['ConfigExportProductPriceMeteredUnit']
+      | components['schemas']['ConfigExportProductPriceMeteredTiers']
+    /** ConfigExportProductPriceCustom */
+    ConfigExportProductPriceCustom: {
+      /**
+       * Price Currency
+       * @description The currency of the price.
+       */
+      price_currency: string
+      /** @description The tax behavior of the price. */
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'custom'
+      /**
+       * Minimum Amount
+       * @description The minimum amount the customer can pay.
+       */
+      minimum_amount: number
+      /**
+       * Maximum Amount
+       * @description The maximum amount the customer can pay.
+       */
+      maximum_amount: number | null
+      /**
+       * Preset Amount
+       * @description The initial amount shown.
+       */
+      preset_amount: number | null
+    }
     /** ConfigExportProductPriceFixed */
     ConfigExportProductPriceFixed: {
       /**
@@ -16342,6 +16584,33 @@ export interface components {
        * @description The price in cents.
        */
       price_amount: number
+    }
+    /** ConfigExportProductPriceMeteredTiers */
+    ConfigExportProductPriceMeteredTiers: {
+      /**
+       * Price Currency
+       * @description The currency of the price.
+       */
+      price_currency: string
+      /** @description The tax behavior of the price. */
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'metered_tiers'
+      /**
+       * Meter
+       * @description The `external_id` of the billed meter.
+       */
+      meter: string
+      /** @description Tiered pricing based on consumed units. */
+      tiers: components['schemas']['Tiers']
+      /**
+       * Cap Amount
+       * @description Optional maximum charge in cents.
+       */
+      cap_amount: number | null
     }
     /** ConfigExportProductPriceMeteredUnit */
     ConfigExportProductPriceMeteredUnit: {
@@ -16372,6 +16641,59 @@ export interface components {
        * @description Optional maximum charge in cents.
        */
       cap_amount: number | null
+    }
+    /** ConfigExportProductPriceSeatBased */
+    ConfigExportProductPriceSeatBased: {
+      /**
+       * Price Currency
+       * @description The currency of the price.
+       */
+      price_currency: string
+      /** @description The tax behavior of the price. */
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'seat_based'
+      /** @description Tiered pricing based on seat quantity. */
+      tiers: components['schemas']['Tiers']
+      /**
+       * Minimum Units
+       * @description The minimum number of seats.
+       */
+      minimum_units: number | null
+    }
+    /** ConfigExportProductPriceUnitBased */
+    ConfigExportProductPriceUnitBased: {
+      /**
+       * Price Currency
+       * @description The currency of the price.
+       */
+      price_currency: string
+      /** @description The tax behavior of the price. */
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'unit_based'
+      /** @description Tiered pricing based on unit quantity. */
+      tiers: components['schemas']['Tiers']
+      /**
+       * Minimum Units
+       * @description The minimum number of units.
+       */
+      minimum_units: number | null
+      /**
+       * Unit Label
+       * @description Per-locale unit nouns.
+       */
+      unit_label: {
+        [key: string]: {
+          [key: string]: string
+        }
+      } | null
     }
     /** ConfigFieldChange */
     ConfigFieldChange: {
@@ -16533,6 +16855,13 @@ export interface components {
       metadata?: {
         [key: string]: string | number | boolean
       }
+      /** @description The interval unit for the trial period. */
+      trial_interval?: components['schemas']['TrialInterval'] | null
+      /**
+       * Trial Interval Count
+       * @description The number of interval units for the trial period.
+       */
+      trial_interval_count?: number | null
       /**
        * External Id
        * @description Your identifier for the product, used to match it.
@@ -16560,6 +16889,13 @@ export interface components {
        * @description Billing cycle length in intervals. Defaults to 1.
        */
       recurring_interval_count?: number | null
+      /** @description Optional meter cycle, independent of the billing interval. It must evenly divide the billing interval, and can't be changed. */
+      meter_interval?: components['schemas']['RecurringInterval'] | null
+      /**
+       * Meter Interval Count
+       * @description Meter cycle length in intervals. Defaults to 1.
+       */
+      meter_interval_count?: number | null
       /**
        * Prices
        * @description The prices of the product.
@@ -16570,6 +16906,11 @@ export interface components {
        * @description The benefits granted by the product.
        */
       benefits?: string[]
+      /**
+       * Custom Fields
+       * @description Custom fields asked at checkout, in order.
+       */
+      custom_fields?: components['schemas']['ConfigCustomField'][]
     }
     /** ConfigProductConflict */
     ConfigProductConflict: {
@@ -16584,7 +16925,42 @@ export interface components {
     }
     ConfigProductPrice:
       | components['schemas']['ConfigProductPriceFixed']
+      | components['schemas']['ConfigProductPriceCustom']
+      | components['schemas']['ConfigProductPriceSeatBased']
+      | components['schemas']['ConfigProductPriceUnitBased']
       | components['schemas']['ConfigProductPriceMeteredUnit']
+      | components['schemas']['ConfigProductPriceMeteredTiers']
+    /** ConfigProductPriceCustom */
+    ConfigProductPriceCustom: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'custom'
+      /**
+       * @description The currency in which the customer will be charged.
+       * @default usd
+       */
+      price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
+      /**
+       * Minimum Amount
+       * @description The minimum amount the customer can pay, in cents. Set to `0` to accept free purchases.
+       * @default 50
+       */
+      minimum_amount: number
+      /**
+       * Maximum Amount
+       * @description The maximum amount the customer can pay, in cents.
+       */
+      maximum_amount?: number | null
+      /**
+       * Preset Amount
+       * @description The initial amount shown, in cents.
+       */
+      preset_amount?: number | null
+    }
     /** ConfigProductPriceFixed */
     ConfigProductPriceFixed: {
       /**
@@ -16604,6 +16980,33 @@ export interface components {
        * @description The price in cents. Set to `0` for a free price. Must be at least the currency's minimum amount.
        */
       price_amount: number
+    }
+    /** ConfigProductPriceMeteredTiers */
+    ConfigProductPriceMeteredTiers: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'metered_tiers'
+      /**
+       * @description The currency in which the customer will be charged.
+       * @default usd
+       */
+      price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
+      /**
+       * Meter
+       * @description The `external_id` of a meter declared in the same config.
+       */
+      meter: string
+      /** @description Tiered pricing based on consumed units. */
+      tiers: components['schemas']['TiersInput']
+      /**
+       * Cap Amount
+       * @description Optional maximum charge in cents.
+       */
+      cap_amount?: number | null
     }
     /** ConfigProductPriceMeteredUnit */
     ConfigProductPriceMeteredUnit: {
@@ -16635,11 +17038,64 @@ export interface components {
        */
       cap_amount?: number | null
     }
+    /** ConfigProductPriceSeatBased */
+    ConfigProductPriceSeatBased: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'seat_based'
+      /**
+       * @description The currency in which the customer will be charged.
+       * @default usd
+       */
+      price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
+      /** @description Tiered pricing based on the purchased seat quantity. */
+      tiers: components['schemas']['TiersInput']
+      /**
+       * Minimum Units
+       * @description The minimum purchasable seat quantity (inclusive). Defaults to 1 when not set.
+       */
+      minimum_units?: number | null
+    }
+    /** ConfigProductPriceUnitBased */
+    ConfigProductPriceUnitBased: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'unit_based'
+      /**
+       * @description The currency in which the customer will be charged.
+       * @default usd
+       */
+      price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
+      /** @description Tiered pricing based on the purchased unit quantity. */
+      tiers: components['schemas']['TiersInput']
+      /**
+       * Minimum Units
+       * @description The minimum purchasable quantity (inclusive). Defaults to 1 when not set.
+       */
+      minimum_units?: number | null
+      /**
+       * Unit Label
+       * @description Per-locale unit nouns shown at checkout and on invoices. `{"en": {"=1": "device", "other": "devices"}}`. Defaults to "unit"/"units" when unset.
+       */
+      unit_label?: {
+        [key: string]: {
+          [key: string]: string
+        }
+      } | null
+    }
     /**
      * ConfigResource
      * @enum {string}
      */
-    ConfigResource: 'meter' | 'benefit' | 'product'
+    ConfigResource: 'meter' | 'benefit' | 'product' | 'custom_field'
     /** ConfigResult */
     ConfigResult: {
       /** @description The type of resource. */
@@ -71328,24 +71784,48 @@ export const confidenceLevelValues: ReadonlyArray<
 export const configActionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigAction']
 > = ['created', 'updated', 'unchanged']
+export const configBenefitCustomTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigBenefitCustom']['type']
+> = ['custom']
 export const configBenefitFeatureFlagTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigBenefitFeatureFlag']['type']
 > = ['feature_flag']
+export const configBenefitLicenseKeysTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigBenefitLicenseKeys']['type']
+> = ['license_keys']
 export const configBenefitMeterCreditTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigBenefitMeterCredit']['type']
 > = ['meter_credit']
+export const configExportBenefitCustomTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigExportBenefitCustom']['type']
+> = ['custom']
 export const configExportBenefitFeatureFlagTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigExportBenefitFeatureFlag']['type']
 > = ['feature_flag']
+export const configExportBenefitLicenseKeysTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigExportBenefitLicenseKeys']['type']
+> = ['license_keys']
 export const configExportBenefitMeterCreditTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigExportBenefitMeterCredit']['type']
 > = ['meter_credit']
+export const configExportProductPriceCustomAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigExportProductPriceCustom']['amount_type']
+> = ['custom']
 export const configExportProductPriceFixedAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigExportProductPriceFixed']['amount_type']
 > = ['fixed']
+export const configExportProductPriceMeteredTiersAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigExportProductPriceMeteredTiers']['amount_type']
+> = ['metered_tiers']
 export const configExportProductPriceMeteredUnitAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigExportProductPriceMeteredUnit']['amount_type']
 > = ['metered_unit']
+export const configExportProductPriceSeatBasedAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigExportProductPriceSeatBased']['amount_type']
+> = ['seat_based']
+export const configExportProductPriceUnitBasedAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigExportProductPriceUnitBased']['amount_type']
+> = ['unit_based']
 export const configIssueSeverityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueSeverity']
 > = ['error', 'warning']
@@ -71360,15 +71840,27 @@ export const configIssueTypeValues: ReadonlyArray<
   'unknown_event',
   'unknown_reference',
 ]
+export const configProductPriceCustomAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceCustom']['amount_type']
+> = ['custom']
 export const configProductPriceFixedAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceFixed']['amount_type']
 > = ['fixed']
+export const configProductPriceMeteredTiersAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredTiers']['amount_type']
+> = ['metered_tiers']
 export const configProductPriceMeteredUnitAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredUnit']['amount_type']
 > = ['metered_unit']
+export const configProductPriceSeatBasedAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceSeatBased']['amount_type']
+> = ['seat_based']
+export const configProductPriceUnitBasedAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceUnitBased']['amount_type']
+> = ['unit_based']
 export const configResourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigResource']
-> = ['meter', 'benefit', 'product']
+> = ['meter', 'benefit', 'product', 'custom_field']
 export const configSkippedReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigSkippedReason']
 > = [

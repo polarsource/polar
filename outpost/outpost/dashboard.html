@@ -96,10 +96,12 @@ th { color: var(--text-secondary); font-weight: 500; }
     <div class="card tile"><div class="label">Ingest requests</div><div class="value" id="tile-requests">–</div></div>
     <div class="card tile"><div class="label">Ingest p95</div><div class="value" id="tile-ingest">–</div></div>
     <div class="card tile"><div class="label">Reduce p95</div><div class="value" id="tile-reduce">–</div></div>
+    <div class="card tile"><div class="label">Decide p95</div><div class="value" id="tile-decide">–</div></div>
   </section>
   <section class="charts">
     <div class="card"><h2>Ingest latency (ms)</h2><div class="legend" data-quantiles></div><div class="chart" id="chart-ingest"></div></div>
     <div class="card"><h2>Reduce latency (ms)</h2><div class="legend" data-quantiles></div><div class="chart" id="chart-reduce"></div></div>
+    <div class="card"><h2>Decide latency (ms)</h2><div class="legend" data-quantiles></div><div class="chart" id="chart-decide"></div></div>
     <div class="card"><h2>Events per second</h2><div class="chart" id="chart-events"></div></div>
   </section>
   <details class="card">
@@ -166,7 +168,7 @@ function compute(current, previous) {
   const point = { at: current.at };
   point.events = (current.values.outpost_events_ingested_total - previous.values.outpost_events_ingested_total) / seconds;
   point.requests = (current.values.outpost_ingest_seconds_count - previous.values.outpost_ingest_seconds_count) / seconds;
-  for (const metric of ["ingest", "reduce"]) {
+  for (const metric of ["ingest", "reduce", "decide"]) {
     const name = `outpost_${metric}_seconds`;
     for (const { key, q } of QUANTILES) {
       const value = quantile(q, current.buckets[name], previous.buckets[name]);
@@ -253,13 +255,15 @@ function render() {
   document.getElementById("tile-requests").innerHTML = `${format(point.requests, 1)}<span class="unit">/s</span>`;
   document.getElementById("tile-ingest").innerHTML = `${format(point.ingest_p95, 2)}<span class="unit">ms</span>`;
   document.getElementById("tile-reduce").innerHTML = `${format(point.reduce_p95, 3)}<span class="unit">ms</span>`;
+  document.getElementById("tile-decide").innerHTML = `${format(point.decide_p95, 2)}<span class="unit">ms</span>`;
   const quantileSeries = (metric) => QUANTILES.map(({ key, color }) => ({ key: `${metric}_${key}`, label: key, color }));
   renderChart(document.getElementById("chart-ingest"), quantileSeries("ingest"), "ms");
   renderChart(document.getElementById("chart-reduce"), quantileSeries("reduce"), "ms");
+  renderChart(document.getElementById("chart-decide"), quantileSeries("decide"), "ms");
   renderChart(document.getElementById("chart-events"), [{ key: "events", label: "events", color: "var(--series-1)" }], "/s");
   document.getElementById("table").innerHTML =
-    "<tr><th>Time</th><th>Events/s</th><th>Requests/s</th><th>Ingest p50</th><th>p95</th><th>p99</th><th>Reduce p50</th><th>p95</th><th>p99</th></tr>" +
-    history.slice(-10).reverse().map((p) => `<tr><td>${time(p.at)}</td><td>${format(p.events, 0)}</td><td>${format(p.requests)}</td><td>${format(p.ingest_p50, 2)}</td><td>${format(p.ingest_p95, 2)}</td><td>${format(p.ingest_p99, 2)}</td><td>${format(p.reduce_p50, 3)}</td><td>${format(p.reduce_p95, 3)}</td><td>${format(p.reduce_p99, 3)}</td></tr>`).join("");
+    "<tr><th>Time</th><th>Events/s</th><th>Requests/s</th><th>Ingest p50</th><th>p95</th><th>p99</th><th>Reduce p50</th><th>p95</th><th>p99</th><th>Decide p50</th><th>p95</th><th>p99</th></tr>" +
+    history.slice(-10).reverse().map((p) => `<tr><td>${time(p.at)}</td><td>${format(p.events, 0)}</td><td>${format(p.requests)}</td><td>${format(p.ingest_p50, 2)}</td><td>${format(p.ingest_p95, 2)}</td><td>${format(p.ingest_p99, 2)}</td><td>${format(p.reduce_p50, 3)}</td><td>${format(p.reduce_p95, 3)}</td><td>${format(p.reduce_p99, 3)}</td><td>${format(p.decide_p50, 2)}</td><td>${format(p.decide_p95, 2)}</td><td>${format(p.decide_p99, 2)}</td></tr>`).join("");
 }
 
 async function poll() {

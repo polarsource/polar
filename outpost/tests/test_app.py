@@ -145,6 +145,7 @@ async def test_metrics(client: httpx2.AsyncClient) -> None:
     samples = (
         "outpost_ingest_seconds_count",
         "outpost_reduce_seconds_count",
+        "outpost_decide_seconds_count",
         "outpost_events_ingested_total",
     )
     before = {sample: REGISTRY.get_sample_value(sample) or 0 for sample in samples}
@@ -161,9 +162,14 @@ async def test_metrics(client: httpx2.AsyncClient) -> None:
             ]
         },
     )
+    decide_response = await client.get(
+        "/v1/customer-meters/",
+        params={"external_customer_id": "customer_123", "meter_id": "unknown"},
+    )
     response = await client.get("/metrics")
 
     assert ingest_response.status_code == 200
+    assert decide_response.status_code == 200
     assert response.status_code == 200
     for sample in samples:
         assert REGISTRY.get_sample_value(sample) == before[sample] + 1

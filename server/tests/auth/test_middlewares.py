@@ -4,7 +4,8 @@ from datetime import timedelta
 from uuid import UUID
 
 import pytest
-from sqlalchemy import inspect
+from pytest_mock import MockerFixture
+from sqlalchemy import inspect, select
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from starlette.requests import Request
 from starlette.types import Message, Receive, Scope, Send
@@ -22,6 +23,7 @@ from polar.auth.models import (
 from polar.auth.service import auth as auth_service
 from polar.config import settings
 from polar.kit.crypto import get_token_hash
+from polar.kit.hash_secrets import HashSecrets
 from polar.kit.utils import utc_now
 from polar.models import (
     OAuth2Client,
@@ -556,7 +558,13 @@ class TestAuthSubjectMiddlewareWebSocket:
         redis: Redis,
         user: User,
         organization_second: Organization,
+        mocker: MockerFixture,
     ) -> None:
+        secrets = {"k1": "retired", "k2": "current"}
+        hash_secrets = mocker.patch(
+            "polar.kit.crypto.get_hash_secrets",
+            return_value=HashSecrets(secrets, "k1", "legacy"),
+        )
         access_token = f"{TOKEN_PREFIX}test"
         personal_access_token = PersonalAccessToken(
             comment="test",
@@ -566,6 +574,8 @@ class TestAuthSubjectMiddlewareWebSocket:
             scope="",
         )
         await save_fixture(personal_access_token)
+        original_hash = personal_access_token.token
+        hash_secrets.return_value = HashSecrets(secrets, "k2", "legacy")
         headers: list[tuple[bytes, bytes]] = []
         if credentials != "anonymous":
             token = "invalid" if credentials == "invalid" else access_token
@@ -608,7 +618,9 @@ class TestAuthSubjectMiddlewareWebSocket:
                 "extensions": {"websocket.http.response": {}},
                 "state": {
                     "async_sessionmaker": async_sessionmaker(
-                        bind=session.bind, expire_on_commit=False
+                        bind=session.bind,
+                        expire_on_commit=False,
+                        join_transaction_mode="create_savepoint",
                     ),
                     "redis": redis,
                 },
@@ -617,6 +629,14 @@ class TestAuthSubjectMiddlewareWebSocket:
             send,
         )
 
+        stored_hash = await session.scalar(
+            select(PersonalAccessToken.token).where(
+                PersonalAccessToken.id == personal_access_token.id
+            )
+        )
+        assert stored_hash == (
+            get_token_hash(access_token) if credentials == "valid" else original_hash
+        )
         assert app_called == (status_code is None)
         if status_code is None:
             assert messages == []

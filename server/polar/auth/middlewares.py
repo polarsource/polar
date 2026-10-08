@@ -266,6 +266,7 @@ class AuthSubjectMiddleware:
                             dramatiq.get_broker(), connection.state.redis
                         )
                     )
+                    await stack.enter_async_context(session.begin())
                 else:
                     session = connection.state.async_session
                 auth_subject = await get_auth_subject(connection, session)

@@ -46,9 +46,8 @@ so `keepachangelog` preserves the SDK tag namespace when updating them.
 When the release commit reaches `main`, CI publishes both SDKs and uses
 `keepachangelog show` on the tagged changelog for the GitHub release body.
 
-To ship TypeScript changes without moving npm's `latest` tag, run
-`just release-pre X.Y.Z next`. It regenerates only the TypeScript SDK as
-`X.Y.Z-next.N`, numbering after the existing `sdk/X.Y.Z-next.*` tags on `origin`, and
-leaves the Python SDK, docs and changelog untouched. CI publishes it to npm under the `next`
-dist-tag, and skips PyPI, the GitHub release and the adapter/CLI update PR. Users install it
-with `@polar-sh/sdk@next`; the next `just release X.Y.Z` ships everything as usual.
+To publish a prerelease, run `just release-pre X.Y.Z alpha.1` (labels: `alpha`, `beta`,
+`rc`). Both SDKs are generated as `X.Y.Z-alpha.1` (`X.Y.Za1` for Python). npm publishes it under
+the `next` dist-tag, so users opt in with `@polar-sh/sdk@next`. Prereleases leave
+`[Unreleased]` in the changelog untouched and skip the GitHub release and the adapter/CLI update
+PR. Use `just release-dry` or `just release-pre-dry` to preview the steps.

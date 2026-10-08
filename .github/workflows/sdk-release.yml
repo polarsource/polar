@@ -15,7 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.extract.outputs.version }}
-      prerelease_tag: ${{ steps.extract.outputs.prerelease_tag }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -37,9 +36,6 @@ jobs:
           version=$(git log --oneline -1 | grep -oP 'sdk\[release\]: \K\S+')
           echo "Extracted version: $version"
           echo "version=$version" >> $GITHUB_OUTPUT
-          if [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+-([a-z][a-z0-9]*)\.[0-9]+$ ]]; then
-            echo "prerelease_tag=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
-          fi
 
   tag:
     needs: detect-release
@@ -62,7 +58,7 @@ jobs:
 
   publish-python:
     needs: [detect-release, tag]
-    if: needs.detect-release.outputs.version != '' && needs.detect-release.outputs.prerelease_tag == ''
+    if: needs.detect-release.outputs.version != ''
     runs-on: ubuntu-latest
     environment: sdk-release
     steps:
@@ -114,15 +110,27 @@ jobs:
         working-directory: sdk/typescript
         run: pnpm run build
 
+      - name: Select npm dist-tag
+        id: npm_tag
+        working-directory: sdk/typescript
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+- ]]; then
+            tag=next
+          else
+            tag=latest
+          fi
+
+          echo "Publishing @polar-sh/sdk@$version with dist-tag '$tag'"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
       - name: Publish to npm (Trusted Publishing)
         working-directory: sdk/typescript
-        env:
-          NPM_TAG: ${{ needs.detect-release.outputs.prerelease_tag || 'latest' }}
-        run: npm publish --tag "$NPM_TAG"
+        run: npm publish --tag "${{ steps.npm_tag.outputs.tag }}"
 
   update-sdk-dependents:
     needs: [detect-release, publish-typescript]
-    if: needs.detect-release.outputs.version != '' && needs.detect-release.outputs.prerelease_tag == ''
+    if: needs.detect-release.outputs.version != '' && !contains(needs.detect-release.outputs.version, '-')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -208,7 +216,7 @@ jobs:
 
   create-github-release:
     needs: [detect-release, publish-python, publish-typescript]
-    if: needs.detect-release.outputs.version != '' && needs.detect-release.outputs.prerelease_tag == ''
+    if: needs.detect-release.outputs.version != '' && !contains(needs.detect-release.outputs.version, '-')
     runs-on: ubuntu-latest
     permissions:
       contents: write

@@ -563,9 +563,8 @@ class TestExport:
             description="Priority support",
             properties={"note": "Email us"},
             external_id="support",
+            visibility=Visibility.private,
         )
-        support.visibility = Visibility.private
-        await save_fixture(support)
         await create_benefit(
             save_fixture,
             organization=organization,

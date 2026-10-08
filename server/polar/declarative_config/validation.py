@@ -31,7 +31,9 @@ from .schemas import (
     Config,
     ConfigAction,
     ConfigBenefit,
+    ConfigBenefitCustomProperties,
     ConfigBenefitFeatureFlag,
+    ConfigBenefitLicenseKeysProperties,
     ConfigBenefitMeterCredit,
     ConfigFieldChange,
     ConfigIssue,
@@ -406,9 +408,9 @@ def _create_update_dict(config: ConfigBenefit | ConfigProduct) -> dict[str, Any]
     return update_dict
 
 
-_BENEFIT_PROPERTIES = {
-    BenefitType.custom: ("note",),
-    BenefitType.license_keys: ("prefix", "expires", "activations", "limit_usage"),
+BENEFIT_PROPERTIES = {
+    BenefitType.custom: tuple(ConfigBenefitCustomProperties.model_fields),
+    BenefitType.license_keys: tuple(ConfigBenefitLicenseKeysProperties.model_fields),
 }
 
 
@@ -425,11 +427,11 @@ def benefit_properties(
         }
     return {
         name: benefit.properties.get(name)
-        for name in _BENEFIT_PROPERTIES.get(benefit.type, ())
+        for name in BENEFIT_PROPERTIES.get(benefit.type, ())
     }
 
 
-def _config_benefit_properties(benefit_config: ConfigBenefit) -> dict[str, Any]:
+def config_benefit_properties(benefit_config: ConfigBenefit) -> dict[str, Any]:
     if isinstance(benefit_config, ConfigBenefitFeatureFlag):
         return {}
     return benefit_config.properties.model_dump()
@@ -443,7 +445,7 @@ def _get_benefit_update_dict(
         update_dict["description"] = benefit_config.description
     if benefit.visibility != benefit_config.visibility:
         update_dict["visibility"] = benefit_config.visibility
-    config_properties = _config_benefit_properties(benefit_config)
+    config_properties = config_benefit_properties(benefit_config)
     if properties != config_properties:
         update_dict["properties"] = config_properties
     if (

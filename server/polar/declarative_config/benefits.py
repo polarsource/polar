@@ -5,8 +5,8 @@ from pydantic import Discriminator, TypeAdapter
 
 from polar.benefit.schemas import BenefitCreate, BenefitUpdate
 
-from .schemas import ConfigBenefit, ConfigBenefitFeatureFlag, ConfigBenefitMeterCredit
-from .validation import BenefitChange
+from .schemas import ConfigBenefit, ConfigBenefitMeterCredit
+from .validation import BenefitChange, config_benefit_properties
 
 _benefit_create_adapter: TypeAdapter[BenefitCreate] = TypeAdapter(BenefitCreate)
 _benefit_update_adapter: TypeAdapter[BenefitUpdate] = TypeAdapter(
@@ -17,9 +17,7 @@ _benefit_update_adapter: TypeAdapter[BenefitUpdate] = TypeAdapter(
 def _properties(
     benefit_config: ConfigBenefit, meter_ids: dict[str, UUID]
 ) -> dict[str, Any]:
-    if isinstance(benefit_config, ConfigBenefitFeatureFlag):
-        return {}
-    properties = benefit_config.properties.model_dump()
+    properties = config_benefit_properties(benefit_config)
     if isinstance(benefit_config, ConfigBenefitMeterCredit):
         properties["meter_id"] = meter_ids[properties.pop("meter")]
     return properties

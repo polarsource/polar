@@ -1210,12 +1210,14 @@ async def create_benefit(
     deletable: bool = True,
     properties: dict[str, Any] | None = None,
     external_id: str | None = None,
+    visibility: Visibility = Visibility.public,
 ) -> Benefit:
     if properties is None:
         properties = {"note": None}
     benefit = Benefit(
         type=type,
         description=description,
+        visibility=visibility,
         is_tax_applicable=is_tax_applicable,
         organization=organization,
         selectable=selectable,

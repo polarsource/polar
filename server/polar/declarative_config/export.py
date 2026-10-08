@@ -24,7 +24,7 @@ from .schemas import (
     ConfigSkippedReason,
     ConfigSkippedResource,
 )
-from .validation import benefit_properties, price_config
+from .validation import BENEFIT_PROPERTIES, benefit_properties, price_config
 
 _benefit_adapter: TypeAdapter[ConfigBenefit] = TypeAdapter(ConfigBenefit)
 _export_benefit_adapter: TypeAdapter[ConfigExportBenefit] = TypeAdapter(
@@ -82,13 +82,6 @@ async def export_meters(
     return meters, external_ids
 
 
-_BENEFIT_TYPES_WITH_PROPERTIES = {
-    BenefitType.custom,
-    BenefitType.license_keys,
-    BenefitType.meter_credit,
-}
-
-
 def _benefit_document(
     benefit: Benefit, meter_external_ids: ExternalIDs
 ) -> dict[str, Any] | ConfigSkippedReason:
@@ -101,7 +94,7 @@ def _benefit_document(
     }
     if benefit.type == BenefitType.feature_flag:
         return document
-    if benefit.type not in _BENEFIT_TYPES_WITH_PROPERTIES:
+    if benefit.type not in {*BENEFIT_PROPERTIES, BenefitType.meter_credit}:
         return ConfigSkippedReason.not_supported
     if benefit.type == BenefitType.meter_credit:
         properties = cast(BenefitMeterCreditProperties, benefit.properties)

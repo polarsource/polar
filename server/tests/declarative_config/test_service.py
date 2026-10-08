@@ -38,6 +38,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.benefit import BenefitType
+from polar.models.custom_field import CustomFieldType
 from polar.models.product_price import ProductPriceAmountType
 from polar.models.user_organization import OrganizationRole
 from polar.oauth2.exceptions import InsufficientScopeError
@@ -49,6 +50,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
     create_benefit,
+    create_custom_field,
     create_event,
     create_meter,
     create_product,
@@ -813,6 +815,59 @@ class TestApply:
         ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_product_custom_fields(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        for slug in ("company", "vat-number"):
+            await create_custom_field(
+                save_fixture,
+                type=CustomFieldType.text,
+                slug=slug,
+                organization=organization,
+            )
+
+        async def apply(*custom_fields: dict[str, Any]) -> ConfigAction:
+            result = await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate(
+                    {
+                        "products": [
+                            {
+                                "external_id": "team",
+                                "name": "Team",
+                                "custom_fields": list(custom_fields),
+                                "prices": [
+                                    {"amount_type": "fixed", "price_amount": 1000}
+                                ],
+                            }
+                        ]
+                    }
+                ),
+            )
+            return result.changes[0].action
+
+        company = {"slug": "company", "required": True}
+        assert await apply(company) == ConfigAction.created
+        assert await apply(company) == ConfigAction.unchanged
+        assert await apply({"slug": "vat-number"}, company) == ConfigAction.updated
+
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["team"])
+        await session.refresh(product, {"attached_custom_fields"})
+        assert [
+            (attached.custom_field.slug, attached.required)
+            for attached in product.attached_custom_fields
+        ] == [("vat-number", False), ("company", True)]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_create_product_meter_interval(
         self,
         save_fixture: SaveFixture,
@@ -1382,9 +1437,20 @@ class TestPlan:
         ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_not_supported_yet(
-        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    async def test_custom_field_references(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
     ) -> None:
+        await create_custom_field(
+            save_fixture,
+            type=CustomFieldType.text,
+            slug="company",
+            organization=organization,
+        )
+
         plan = await declarative_config_service.plan(
             session,
             auth_subject,
@@ -1394,10 +1460,11 @@ class TestPlan:
                         {
                             "external_id": "team",
                             "name": "Team",
-                            "recurring_interval": "month",
-                            "trial_interval": "day",
-                            "trial_interval_count": 14,
-                            "custom_fields": [{"slug": "company"}],
+                            "custom_fields": [
+                                {"slug": "company"},
+                                {"slug": "vat-number"},
+                                {"slug": "company"},
+                            ],
                             "prices": [{"amount_type": "fixed", "price_amount": 1000}],
                         }
                     ],
@@ -1405,11 +1472,16 @@ class TestPlan:
             ),
         )
 
-        assert [
-            issue.loc
-            for issue in plan.issues
-            if issue.type == ConfigIssueType.not_supported
-        ] == [["body", "products", 0, "custom_fields"]]
+        assert [(issue.type, issue.loc) for issue in plan.issues] == [
+            (
+                ConfigIssueType.unknown_reference,
+                ["body", "products", 0, "custom_fields", 1, "slug"],
+            ),
+            (
+                ConfigIssueType.duplicate_external_id,
+                ["body", "products", 0, "custom_fields", 2, "slug"],
+            ),
+        ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_metered_tiers_unknown_meter(

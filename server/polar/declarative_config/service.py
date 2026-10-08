@@ -165,6 +165,7 @@ class DeclarativeConfigService:
             changes.products,
             meter_ids,
             benefit_ids,
+            changes.custom_field_ids,
         )
         return ConfigApplyResult(
             changes=[*meter_results, *benefit_results, *product_results]
@@ -350,6 +351,7 @@ class DeclarativeConfigService:
         changes: Sequence[ProductChange],
         meter_ids: dict[str, UUID],
         benefit_ids: dict[str, UUID],
+        custom_field_ids: dict[str, UUID],
     ) -> list[ConfigResult]:
         repository = ProductRepository.from_session(session)
         external_ids = {
@@ -373,6 +375,7 @@ class DeclarativeConfigService:
                                     if is_organization(auth_subject)
                                     else organization.id,
                                     meter_ids,
+                                    custom_field_ids,
                                 ),
                                 auth_subject,
                             )
@@ -388,7 +391,7 @@ class DeclarativeConfigService:
                         session,
                         product,
                         products.product_update(
-                            change, product, meter_ids, external_ids
+                            change, product, meter_ids, external_ids, custom_field_ids
                         ),
                         auth_subject,
                     )

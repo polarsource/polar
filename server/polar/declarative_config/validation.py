@@ -3,11 +3,13 @@ from dataclasses import dataclass
 from dataclasses import field as dataclass_field
 from decimal import Decimal
 from typing import Any, cast
+from uuid import UUID
 
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.strategies.meter_credit.properties import (
     BenefitMeterCreditProperties,
 )
+from polar.custom_field.repository import CustomFieldRepository
 from polar.event.system import SystemEvent
 from polar.event_type.repository import EventTypeRepository
 from polar.meter.filter import Filter, FilterOperator
@@ -102,6 +104,7 @@ class ConfigChanges:
     meters: list[MeterChange]
     benefits: list[BenefitChange]
     products: list[ProductChange]
+    custom_field_ids: dict[str, UUID]
 
 
 def _loc(resource: ConfigResource, index: int, *path: str | int) -> Loc:
@@ -204,27 +207,65 @@ def unknown_references(config: Config) -> list[ConfigIssue]:
     return issues
 
 
-_NOT_SUPPORTED_PRODUCT_FIELDS = ("custom_fields",)
+async def get_custom_field_ids(
+    session: AsyncSession, organization: Organization, config: Config
+) -> dict[str, UUID]:
+    slugs = {
+        custom_field.slug
+        for product in config.products
+        for custom_field in product.custom_fields
+    }
+    if not slugs:
+        return {}
+    repository = CustomFieldRepository.from_session(session)
+    return {
+        custom_field.slug: custom_field.id
+        for custom_field in await repository.get_all_by_organization_and_slugs(
+            organization.id, sorted(slugs)
+        )
+    }
 
 
-def _not_supported(loc: Loc, input: Any) -> ConfigIssue:
-    return ConfigIssue(
-        severity=ConfigIssueSeverity.error,
-        type=ConfigIssueType.not_supported,
-        loc=loc,
-        msg="Config can't apply this yet.",
-        input=input,
-    )
-
-
-def not_supported_yet(config: Config) -> list[ConfigIssue]:
+def unknown_custom_fields(
+    config: Config, custom_field_ids: dict[str, UUID]
+) -> list[ConfigIssue]:
     issues: list[ConfigIssue] = []
     for index, product in enumerate(config.products):
-        loc = _loc(ConfigResource.product, index)
-        for name in _NOT_SUPPORTED_PRODUCT_FIELDS:
-            if getattr(product, name):
-                issues.append(_not_supported([*loc, name], None))
+        listed: set[str] = set()
+        for field_index, custom_field in enumerate(product.custom_fields):
+            slug = custom_field.slug
+            loc = _loc(
+                ConfigResource.product, index, "custom_fields", field_index, "slug"
+            )
+            if slug in listed:
+                issues.append(
+                    ConfigIssue(
+                        severity=ConfigIssueSeverity.error,
+                        type=ConfigIssueType.duplicate_external_id,
+                        loc=loc,
+                        msg="This custom field is already listed on the product.",
+                        input=slug,
+                    )
+                )
+            elif slug not in custom_field_ids:
+                issues.append(
+                    ConfigIssue(
+                        severity=ConfigIssueSeverity.error,
+                        type=ConfigIssueType.unknown_reference,
+                        loc=loc,
+                        msg="No custom field in this organization has this slug.",
+                        input=slug,
+                    )
+                )
+            listed.add(slug)
     return issues
+
+
+def product_custom_fields(product: Product) -> list[dict[str, Any]]:
+    return [
+        {"slug": attached.custom_field.slug, "required": attached.required}
+        for attached in product.attached_custom_fields
+    ]
 
 
 def unsupported_prices(changes: Sequence[ProductChange]) -> list[ConfigIssue]:
@@ -595,6 +636,11 @@ def _get_product_update_dict(
         update_dict["prices"] = config_prices
     if benefits != product_config.benefits:
         update_dict["benefits"] = product_config.benefits
+    config_custom_fields = [
+        custom_field.model_dump() for custom_field in product_config.custom_fields
+    ]
+    if product_custom_fields(product) != config_custom_fields:
+        update_dict["custom_fields"] = config_custom_fields
     if (
         "metadata" in product_config.model_fields_set
         and product.user_metadata != product_config.metadata
@@ -631,6 +677,11 @@ async def diff_products(
             create_dict["prices"] = [
                 price.model_dump() for price in product_config.prices
             ]
+            if product_config.custom_fields:
+                create_dict["custom_fields"] = [
+                    custom_field.model_dump()
+                    for custom_field in product_config.custom_fields
+                ]
             changes.append(ProductChange(index, product_config, None, create_dict))
             continue
         prices = [price_config(price, meter_external_ids) for price in product.prices]
@@ -649,6 +700,7 @@ async def diff_products(
                 {
                     "prices": [price for price in prices if price is not None],
                     "benefits": product_benefits,
+                    "custom_fields": product_custom_fields(product),
                 },
             )
         )
@@ -681,16 +733,17 @@ async def check(
     products = await diff_products(
         session, organization, config.products, meters, benefits, for_update=for_update
     )
+    custom_field_ids = await get_custom_field_ids(session, organization, config)
     issues = [
         *unique_external_ids(ConfigResource.meter, meters),
         *unique_external_ids(ConfigResource.benefit, benefits),
         *unique_external_ids(ConfigResource.product, products),
         *unknown_references(config),
-        *not_supported_yet(config),
+        *unknown_custom_fields(config, custom_field_ids),
         *locked_meter_fields(meters),
         *await unknown_events(session, organization, meters),
         *benefit_type_changes(benefits),
         *unsupported_prices(products),
         *changed_intervals(products),
     ]
-    return ConfigChanges(meters, benefits, products), issues
+    return ConfigChanges(meters, benefits, products, custom_field_ids), issues

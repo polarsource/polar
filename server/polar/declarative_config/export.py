@@ -29,6 +29,7 @@ from .validation import (
     BENEFIT_PROPERTIES,
     benefit_properties,
     price_config,
+    product_custom_fields,
 )
 
 _benefit_adapter: TypeAdapter[ConfigBenefit] = TypeAdapter(ConfigBenefit)
@@ -154,8 +155,13 @@ def _product_document(
     meter_external_ids: ExternalIDs,
     benefit_external_ids: ExternalIDs,
 ) -> dict[str, Any] | ConfigSkippedReason:
-    if product.is_legacy_recurring_price or product.attached_custom_fields:
+    if product.is_legacy_recurring_price:
         return ConfigSkippedReason.not_supported
+    if any(
+        attached.custom_field.deleted_at is not None
+        for attached in product.attached_custom_fields
+    ):
+        return ConfigSkippedReason.unknown_reference
     prices: list[dict[str, Any]] = []
     for price in product.prices:
         config = price_config(price, meter_external_ids)
@@ -186,7 +192,7 @@ def _product_document(
         "meter_interval_count": product.meter_interval_count,
         "prices": prices,
         "benefits": benefits,
-        "custom_fields": [],
+        "custom_fields": product_custom_fields(product),
         "metadata": product.user_metadata,
     }
 

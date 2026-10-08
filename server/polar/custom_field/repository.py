@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from uuid import UUID
 
 from polar.kit.repository import (
@@ -23,3 +24,12 @@ class CustomFieldRepository(
             CustomField.slug == slug,
         )
         return await self.get_one_or_none(statement)
+
+    async def get_all_by_organization_and_slugs(
+        self, organization_id: UUID, slugs: Sequence[str]
+    ) -> Sequence[CustomField]:
+        statement = self.get_base_statement().where(
+            CustomField.organization_id == organization_id,
+            CustomField.slug.in_(slugs),
+        )
+        return await self.get_all(statement)

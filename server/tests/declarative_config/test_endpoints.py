@@ -14,12 +14,14 @@ from polar.kit.visibility import Visibility
 from polar.meter.unit import MeterUnit
 from polar.models import Organization, UserOrganization
 from polar.models.benefit import BenefitType
+from polar.models.custom_field import CustomFieldType
 from polar.product.tiers import Tier, Tiers, TierType
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
     create_benefit,
+    create_custom_field,
     create_event,
     create_meter,
     create_product,
@@ -603,12 +605,19 @@ class TestExport:
             prices=[(500, 5000, 1000, "usd")],
             external_id="pwyw",
         )
+        company = await create_custom_field(
+            save_fixture,
+            type=CustomFieldType.text,
+            slug="company",
+            organization=organization,
+        )
         await create_product(
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
             name="Team",
             prices=[("seat", 1000, "usd")],
+            attached_custom_fields=[(company, True)],
             external_id="team",
         )
         usage = await create_product(
@@ -695,6 +704,7 @@ class TestExport:
                 "preset_amount": 1000,
             }
         ]
+        assert team["custom_fields"] == [{"slug": "company", "required": True}]
         [seat_price] = team["prices"]
         assert (seat_price["amount_type"], seat_price["minimum_units"]) == (
             "seat_based",

@@ -1,6 +1,7 @@
 from typing import Any
 from uuid import UUID
 
+from polar.custom_field.schemas import AttachedCustomFieldCreate
 from polar.exceptions import PolarRequestValidationError
 from polar.exceptions import ValidationError as RequestValidationError
 from polar.models import Product, ProductPrice
@@ -89,14 +90,28 @@ def price_create(
             return ProductPriceFixedCreate(**price.model_dump())
 
 
+def _attached_custom_fields(
+    config: ConfigProduct, custom_field_ids: dict[str, UUID]
+) -> list[AttachedCustomFieldCreate]:
+    return [
+        AttachedCustomFieldCreate(
+            custom_field_id=custom_field_ids[custom_field.slug],
+            required=custom_field.required,
+        )
+        for custom_field in config.custom_fields
+    ]
+
+
 def product_create(
     config: ConfigProduct,
     organization_id: UUID | None,
     meter_ids: dict[str, UUID],
+    custom_field_ids: dict[str, UUID],
 ) -> ProductCreateRecurring | ProductCreateOneTime:
-    fields = config.model_dump(
-        include={"name", "description", "visibility", "metadata"}
-    )
+    fields = {
+        **config.model_dump(include={"name", "description", "visibility", "metadata"}),
+        "attached_custom_fields": _attached_custom_fields(config, custom_field_ids),
+    }
     prices: list[ProductPriceCreate] = [
         price_create(price, meter_ids) for price in config.prices
     ]
@@ -129,12 +144,17 @@ def product_update(
     product: Product,
     meter_ids: dict[str, UUID],
     external_ids: dict[str, str],
+    custom_field_ids: dict[str, UUID],
 ) -> ProductUpdate:
     update: dict[str, Any] = {
         "metadata" if name == "user_metadata" else name: value
         for name, value in change.update_dict.items()
-        if name not in {"prices", "benefits"}
+        if name not in {"prices", "benefits", "custom_fields"}
     }
+    if "custom_fields" in change.update_dict:
+        update["attached_custom_fields"] = _attached_custom_fields(
+            change.config, custom_field_ids
+        )
     if update.keys() & _TRIAL_FIELDS:
         update.update(change.config.model_dump(include=_TRIAL_FIELDS))
     if "prices" in change.update_dict:

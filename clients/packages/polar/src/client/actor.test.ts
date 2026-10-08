@@ -191,6 +191,9 @@ describe('actor events', () => {
     await expect(actor.track('nope' as 'legacy')).rejects.toThrow(
       'Unknown event: nope',
     )
+    await expect(actor.track('toString' as 'legacy')).rejects.toThrow(
+      'Unknown event: toString',
+    )
     expect(ingest).not.toHaveBeenCalled()
   })
 })

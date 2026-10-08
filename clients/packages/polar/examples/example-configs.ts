@@ -94,6 +94,7 @@ export const llmUsageConfig = defineConfig({
       model: z.string(),
       inputTokens: z.int(),
     }),
+    'webhook.delivered': z.object({}),
   },
   meters: ({ meter, events }) => ({
     inputTokens: meter('Input Tokens')
@@ -110,7 +111,7 @@ export const llmUsageConfig = defineConfig({
       )
       .unit('token')
       .sum('inputTokens'),
-    webhooks: meter('Webhooks').where(eq('name', 'webhook.delivered')).count(),
+    webhooks: meter('Webhooks').on(events['webhook.delivered']).count(),
   }),
 })
 

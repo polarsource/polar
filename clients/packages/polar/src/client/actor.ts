@@ -193,13 +193,15 @@ export const createActor = <Config extends RuntimeSDKConfig>(
 
     async track(name, ...[input]) {
       const event = config.events?.[name]
-      if (config.events !== undefined && event === undefined) {
+      if (config.events !== undefined && !Object.hasOwn(config.events, name)) {
         throw new Error(`Unknown event: ${name}`)
       }
 
       let metadata: EventMetadata | undefined = input
       if (event !== undefined && isEventSchema(event)) {
-        const result = await event['~standard'].validate(input ?? {})
+        const result = await event['~standard'].validate(
+          input === undefined ? {} : input,
+        )
         if (result.issues !== undefined) {
           throw new EventValidationError({ event: name, issues: result.issues })
         }

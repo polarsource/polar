@@ -27,7 +27,7 @@ type InvalidProperty<Metadata> = {
       ? Metadata[Key] extends EventMetadata[Key]
         ? never
         : Key
-      : NonNullable<Metadata[Key]> extends Scalar
+      : Exclude<Metadata[Key], undefined> extends Scalar
         ? never
         : Key
 }[keyof Metadata] &

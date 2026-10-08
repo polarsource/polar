@@ -190,6 +190,11 @@ test('events must have flat metadata without reserved properties', () => {
     meters: () => ({}),
   })
   defineConfig({
+    // @ts-expect-error metadata values cannot be null
+    events: { nullable: z.object({ note: z.string().nullable() }) },
+    meters: () => ({}),
+  })
+  defineConfig({
     // @ts-expect-error name is a reserved property
     events: { reserved: z.object({ name: z.string() }) },
     meters: () => ({}),

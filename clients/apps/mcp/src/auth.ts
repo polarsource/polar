@@ -29,11 +29,13 @@ export class Auth extends Context.Service<
             .get(`${apiUrl}/v1/oauth2/userinfo`, {
               headers: { Authorization: `Bearer ${token}` },
             })
-            .pipe(Effect.map((response) => response.status !== 401)),
+            .pipe(Effect.map((response) => response.status)),
         {
           capacity: MAX_CACHED_TOKENS,
           timeToLive: (exit) =>
-            Exit.isSuccess(exit) && exit.value ? VALIDATION_TTL : 0,
+            Exit.isSuccess(exit) && exit.value >= 200 && exit.value < 300
+              ? VALIDATION_TTL
+              : 0,
         },
       )
 
@@ -44,7 +46,7 @@ export class Auth extends Context.Service<
         if (!token.startsWith(OAUTH_ACCESS_TOKEN_PREFIX)) {
           return true
         }
-        return yield* Cache.get(validations, { apiUrl, token })
+        return (yield* Cache.get(validations, { apiUrl, token })) !== 401
       })
 
       return Auth.of({ isTokenValid })

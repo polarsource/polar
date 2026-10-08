@@ -11,10 +11,20 @@ const polarClient = (apiUrl: string) => `
 const polar = {
   async request({ method = 'GET', path, query, body }) {
     const url = new URL(path, ${JSON.stringify(apiUrl)})
-    for (const [key, value] of Object.entries(query ?? {})) {
-      if (value === undefined || value === null) continue
+    const append = (name, value) => {
       for (const item of Array.isArray(value) ? value : [value]) {
-        url.searchParams.append(key, String(item))
+        if (item !== undefined && item !== null) {
+          url.searchParams.append(name, String(item))
+        }
+      }
+    }
+    for (const [name, value] of Object.entries(query ?? {})) {
+      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+        for (const [key, item] of Object.entries(value)) {
+          append(name + '[' + key + ']', item)
+        }
+      } else {
+        append(name, value)
       }
     }
     const response = await fetch(url, {
@@ -47,10 +57,12 @@ declare const polar: {
   request<T = unknown>(options: {
     method?: 'GET' | 'POST' | 'PATCH' | 'DELETE' // defaults to GET
     path: string // a spec path with its parameters filled in, e.g. \`/v1/products/\${productId}\`
-    query?: Record<string, string | number | boolean | Array<string | number | boolean> | undefined>
+    query?: Record<string, QueryValue | Array<QueryValue> | Record<string, QueryValue | Array<QueryValue>> | undefined> // objects are sent as name[key]=value, e.g. metadata
     body?: unknown // sent as JSON
   }): Promise<T> // throws on non-2xx responses with the status and error body
 }
+
+type QueryValue = string | number | boolean
 
 - List operations are paginated with the \`page\` and \`limit\` query parameters and return { items, pagination: { total_count, max_page } }.
 - Most operations accept an \`organization_id\`. If you don't know it, list the organizations you can access with GET /v1/organizations/.

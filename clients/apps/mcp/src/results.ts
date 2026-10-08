@@ -27,7 +27,7 @@ const toolError = (error: ToolError) => ({
   content: [
     {
       type: 'text' as const,
-      text: `Error: ${error.message}`,
+      text: truncate(`Error: ${error.message}`),
     },
   ],
   isError: true,

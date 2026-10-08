@@ -11,6 +11,7 @@ allowBuilds:
   '@tailwindcss/oxide': true
   core-js-pure: true
   esbuild: true
+  workerd: true
   sharp: true
   unrs-resolver: true
   openapi-typescript: true

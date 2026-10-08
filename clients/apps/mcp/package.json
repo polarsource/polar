@@ -1,0 +1,29 @@
+{
+  "name": "mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "node scripts/generate-spec.ts",
+    "dev": "pnpm generate && cf dev",
+    "build": "pnpm generate && cf build",
+    "typecheck": "pnpm generate && cf workers types && tsc",
+    "test": "pnpm generate && vitest run"
+  },
+  "engines": {
+    "node": "=24"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.3.1",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "2.0.0-beta.sha-52b0dc0e9",
+    "@types/node": "catalog:",
+    "@typescript/native": "catalog:",
+    "cf": "1.0.0-beta.12",
+    "typescript": "catalog:",
+    "vite": "^8.3.3",
+    "vitest": "catalog:"
+  }
+}

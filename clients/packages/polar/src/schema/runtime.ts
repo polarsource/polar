@@ -1,6 +1,7 @@
+import type { EventSchema } from './event'
 import type { MeterAggregation, MeterFilter } from './meter'
 
-export type EventConfig = Record<string, never>
+export type EventConfig = EventSchema | Record<string, never>
 
 export type BenefitConfig = {
   id: string

@@ -1,6 +1,13 @@
 import { Schema } from 'effect'
 import { RuntimeSDK, type RuntimeConnection } from '../runtime'
 import type { PolarOptions } from '../sdk'
+import {
+  createEventReferences,
+  type EventDefinitions,
+  type EventReferences,
+  type EventSchemas,
+  type ValidEvents,
+} from './event'
 import { meter, MeterConfig } from './meter'
 import type { MeterDefinition } from './meter'
 
@@ -40,21 +47,44 @@ type MeterKey<Meters extends MeterEntries> =
     ? Key & string
     : keyof Meters & string
 
-type ConnectedConfig<Meters extends MeterEntries> = {
-  readonly meters: Readonly<Record<MeterKey<Meters>, MeterConfig>>
-}
+type DeclaredEvents<Events extends EventDefinitions | undefined> =
+  Events extends EventDefinitions ? Events : Record<never, never>
 
-export interface Config<Meters extends MeterEntries = MeterEntries> {
+type ConnectedConfig<
+  Meters extends MeterEntries,
+  Events extends EventDefinitions | undefined,
+> = {
+  readonly meters: Readonly<Record<MeterKey<Meters>, MeterConfig>>
+} & (Events extends EventDefinitions
+  ? { readonly events: Extract<Events, EventSchemas> }
+  : unknown)
+
+export interface Config<
+  Meters extends MeterEntries = MeterEntries,
+  Events extends EventDefinitions | undefined = undefined,
+> {
   readonly toJSON: () => PolarConfig
   readonly connect: (
     options: PolarOptions,
-  ) => RuntimeConnection<ConnectedConfig<Meters>>
+  ) => RuntimeConnection<ConnectedConfig<Meters, Events>>
 }
 
-export const defineConfig = <const Meters extends MeterEntries>(input: {
-  readonly meters: (helpers: { readonly meter: typeof meter }) => Meters
-}): Config<Meters> => {
-  const definitions = input.meters({ meter })
+export const defineConfig = <
+  const Meters extends MeterEntries,
+  Events extends EventDefinitions | undefined = undefined,
+>(input: {
+  readonly events?: Events &
+    (Events extends EventDefinitions ? ValidEvents<Events> : unknown)
+  readonly meters: (helpers: {
+    readonly meter: typeof meter<DeclaredEvents<Events>>
+    readonly events: EventReferences<DeclaredEvents<Events>>
+  }) => Meters
+}): Config<Meters, Events> => {
+  const events = input.events as Events
+  const definitions = input.meters({
+    meter: meter<DeclaredEvents<Events>>,
+    events: createEventReferences((events ?? {}) as DeclaredEvents<Events>),
+  })
   const entries = Array.isArray(definitions)
     ? definitions
     : Object.entries(definitions)
@@ -85,8 +115,11 @@ export const defineConfig = <const Meters extends MeterEntries>(input: {
           'Cannot connect a config with duplicate meter external IDs.',
         )
       }
+      const typedMeters = meters as ConnectedConfig<Meters, Events>['meters']
       return RuntimeSDK(
-        { meters: meters as ConnectedConfig<Meters>['meters'] },
+        (events === undefined
+          ? { meters: typedMeters }
+          : { events, meters: typedMeters }) as ConnectedConfig<Meters, Events>,
         options,
       )
     },

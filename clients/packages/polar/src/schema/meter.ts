@@ -1,4 +1,14 @@
 import { Schema } from 'effect'
+import {
+  eventKey,
+  isEventReference,
+  propertyKey,
+  type EventDefinitions,
+  type EventReference,
+  type PropertyOf,
+  type PropertyReference,
+  type SharedEventOutput,
+} from './event'
 
 export const MeterFilterClause = Schema.Struct({
   property: Schema.String,
@@ -67,47 +77,121 @@ export const MeterConfig = Schema.Union([
 
 export type MeterConfig = typeof MeterConfig.Type
 
+type ScalarValue = MeterFilterClause['value']
+
+const scopeKey: unique symbol = Symbol.for('~@polar-sh/polar/ConditionScope')
+
+type Scoped<Names extends string> = { readonly [scopeKey]?: Names }
+
+export type Condition<Names extends string = never> = (
+  | MeterFilterClause
+  | MeterFilter
+) &
+  Scoped<Names>
+
+type ConditionInput<Names extends string> =
+  | Condition<Names>
+  | EventReference<Names>
+
+interface EqualityComparison {
+  (property: string, value: ScalarValue): Condition
+  <Name extends string, Value extends ScalarValue>(
+    property: PropertyReference<Name, Value>,
+    value: NoInfer<Value>,
+  ): Condition<Name>
+}
+
+interface TypedComparison<Type extends ScalarValue> {
+  (property: string, value: ScalarValue): Condition
+  <Name extends string>(
+    property: PropertyReference<Name, Type>,
+    value: Type,
+  ): Condition<Name>
+}
+
 const comparison =
   (operator: MeterFilterClause['operator']) =>
-  (property: string, value: MeterFilterClause['value']): MeterFilterClause => ({
-    property,
-    operator,
-    value,
-  })
+  (
+    property: string | PropertyReference<string, ScalarValue>,
+    value: ScalarValue,
+  ): Condition<string> =>
+    typeof property === 'string'
+      ? { property, operator, value }
+      : {
+          property: property[propertyKey],
+          operator,
+          value,
+          [scopeKey]: property[eventKey],
+        }
 
-export const eq = comparison('eq')
-export const ne = comparison('ne')
-export const gt = comparison('gt')
-export const gte = comparison('gte')
-export const lt = comparison('lt')
-export const lte = comparison('lte')
-export const like = comparison('like')
-export const notLike = comparison('not_like')
+export const eq = comparison('eq') as EqualityComparison
+export const ne = comparison('ne') as EqualityComparison
+export const gt = comparison('gt') as TypedComparison<number>
+export const gte = comparison('gte') as TypedComparison<number>
+export const lt = comparison('lt') as TypedComparison<number>
+export const lte = comparison('lte') as TypedComparison<number>
+export const like = comparison('like') as TypedComparison<string>
+export const notLike = comparison('not_like') as TypedComparison<string>
 
-type Condition = MeterFilter['clauses'][number]
+const toCondition = (input: ConditionInput<string>): Condition<string> =>
+  isEventReference(input) ? eq('name', input[eventKey]) : input
 
 const group =
   (conjunction: MeterFilter['conjunction']) =>
-  (...clauses: readonly Condition[]): MeterFilter => ({ conjunction, clauses })
+  <Names extends string = never>(
+    ...clauses: readonly ConditionInput<Names>[]
+  ): MeterFilter & Scoped<Names> => ({
+    conjunction,
+    clauses: clauses.map(toCondition),
+  })
 
 export const and = group('and')
 export const or = group('or')
+
+// A meter over a single event already requires that event's name, so
+// conditions scoped to it don't need to repeat it.
+const expand = (
+  condition: Condition<string>,
+  events: readonly string[],
+): MeterFilterClause | MeterFilter => {
+  if ('conjunction' in condition) {
+    return {
+      conjunction: condition.conjunction,
+      clauses: condition.clauses.map((clause) => expand(clause, events)),
+    }
+  }
+  const clause = {
+    property: condition.property,
+    operator: condition.operator,
+    value: condition.value,
+  }
+  const event = condition[scopeKey]
+  return event === undefined || (events.length === 1 && events[0] === event)
+    ? clause
+    : and(eq('name', event), clause)
+}
 
 type Unit =
   | { readonly unit: 'scalar' | 'token' }
   | { readonly unit: 'custom'; readonly custom_label: string }
 
-class MeterBuilder {
+type Property<Metadata, Type> = unknown extends Metadata
+  ? string
+  : PropertyOf<Metadata, Type>
+
+export class MeterBuilder<Names extends string = string, Metadata = unknown> {
   constructor(
-    private readonly name: string | undefined = undefined,
+    protected readonly name: string | undefined = undefined,
     private readonly meterFilter: MeterFilter = {
       conjunction: 'and',
       clauses: [],
     },
-    private readonly meterUnit: Unit = { unit: 'scalar' },
+    protected readonly meterUnit: Unit = { unit: 'scalar' },
+    private readonly events: readonly string[] = [],
   ) {}
 
-  where(condition: Condition): MeterBuilder {
+  where(input: ConditionInput<Names>): MeterBuilder<Names, Metadata> {
+    const condition = expand(toCondition(input), this.events)
     const filter = 'conjunction' in condition ? condition : and(condition)
     const combined: MeterFilter =
       this.meterFilter.clauses.length === 0
@@ -125,40 +209,41 @@ class MeterBuilder {
       this.name,
       structuredClone(combined),
       this.meterUnit,
+      this.events,
     )
   }
 
   unit(
     ...args: [unit: 'scalar' | 'token'] | [unit: 'custom', label: string]
-  ): MeterBuilder {
+  ): MeterBuilder<Names, Metadata> {
     const unit: Unit =
       args[0] === 'custom'
         ? { unit: 'custom', custom_label: args[1] }
         : { unit: args[0] }
-    return new MeterBuilder(this.name, this.meterFilter, unit)
+    return new MeterBuilder(this.name, this.meterFilter, unit, this.events)
   }
 
   count() {
     return this.aggregate({ func: 'count' })
   }
 
-  sum(property: string) {
+  sum(property: Property<Metadata, number>) {
     return this.aggregate({ func: 'sum', property })
   }
 
-  max(property: string) {
+  max(property: Property<Metadata, number>) {
     return this.aggregate({ func: 'max', property })
   }
 
-  min(property: string) {
+  min(property: Property<Metadata, number>) {
     return this.aggregate({ func: 'min', property })
   }
 
-  avg(property: string) {
+  avg(property: Property<Metadata, number>) {
     return this.aggregate({ func: 'avg', property })
   }
 
-  unique(property: string) {
+  unique(property: Property<Metadata, ScalarValue>) {
     return this.aggregate({ func: 'unique', property })
   }
 
@@ -174,6 +259,33 @@ class MeterBuilder {
 
 export type MeterDefinition = ReturnType<MeterBuilder['count']>
 
-export const meter = (
-  config: { readonly displayName?: string } = {},
-): MeterBuilder => new MeterBuilder(config.displayName)
+export type MeterOptions = { readonly displayName?: string }
+
+export class UnboundMeter<
+  Events extends EventDefinitions,
+> extends MeterBuilder {
+  on<const Name extends keyof Events & string>(
+    events:
+      | EventReference<Name>
+      | readonly [EventReference<Name>, ...EventReference<Name>[]],
+  ): MeterBuilder<Name, SharedEventOutput<Events, Name>> {
+    const references: readonly unknown[] = Array.isArray(events)
+      ? events
+      : [events]
+    if (references.length === 0 || !references.every(isEventReference)) {
+      throw new Error('on() takes one or more events from the `events` helper.')
+    }
+    const names = references.map((reference) => reference[eventKey] as Name)
+    const clauses = names.map((name) => eq('name', name))
+    return new MeterBuilder(
+      this.name,
+      clauses.length === 1 ? and(...clauses) : or(...clauses),
+      this.meterUnit,
+      names,
+    )
+  }
+}
+
+export const meter = <Events extends EventDefinitions = Record<never, never>>(
+  config: MeterOptions = {},
+): UnboundMeter<Events> => new UnboundMeter(config.displayName)

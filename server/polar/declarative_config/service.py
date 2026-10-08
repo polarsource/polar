@@ -364,11 +364,11 @@ class DeclarativeConfigService:
         for change in changes:
             config = change.config
             product = change.existing
-            unmanaged_benefit_ids = [
-                product_benefit.benefit_id
-                for product_benefit in (product.product_benefits if product else [])
-                if product_benefit.benefit_id not in managed_benefit_ids
-            ]
+            product_benefit_ids = products.product_benefit_ids(
+                [benefit_ids[benefit] for benefit in config.benefits],
+                product,
+                managed_benefit_ids,
+            )
             try:
                 if product is None:
                     try:
@@ -407,10 +407,7 @@ class DeclarativeConfigService:
                     await product_service.update_benefits(
                         session,
                         product,
-                        [
-                            *(benefit_ids[benefit] for benefit in config.benefits),
-                            *unmanaged_benefit_ids,
-                        ],
+                        product_benefit_ids,
                         auth_subject,
                     )
             except PolarRequestValidationError as e:

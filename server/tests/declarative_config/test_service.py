@@ -885,8 +885,11 @@ class TestApply:
             properties={},
             external_id="beta",
         )
-        unmanaged = await create_benefit(
-            save_fixture, organization=organization, description="Unmanaged"
+        first = await create_benefit(
+            save_fixture, organization=organization, description="First"
+        )
+        last = await create_benefit(
+            save_fixture, organization=organization, description="Last"
         )
         product = await create_product(
             save_fixture,
@@ -896,17 +899,25 @@ class TestApply:
             external_id="pack",
         )
         await set_product_benefits(
-            save_fixture, product=product, benefits=[beta, unmanaged]
+            save_fixture, product=product, benefits=[first, beta, last]
         )
         config = Config.model_validate(
             {
-                "benefits": [BETA_BENEFIT],
+                "benefits": [
+                    BETA_BENEFIT,
+                    {
+                        "type": "feature_flag",
+                        "external_id": "alpha",
+                        "description": "Alpha access",
+                    },
+                ],
                 "products": [
                     {
                         "external_id": "pack",
                         "name": "Pack",
                         "description": "Description",
                         "prices": [{"amount_type": "fixed", "price_amount": 1000}],
+                        "benefits": ["alpha"],
                     }
                 ],
             }
@@ -915,14 +926,15 @@ class TestApply:
         plan = await declarative_config_service.plan(session, auth_subject, config)
         await declarative_config_service.apply(session, redis, auth_subject, config)
 
-        assert [change.field for change in plan.changes[1].diff] == ["benefits"]
+        assert [change.field for change in plan.changes[2].diff] == ["benefits"]
         assert [(issue.severity, issue.loc) for issue in plan.issues] == [
             (ConfigIssueSeverity.warning, ["body", "products", 0, "benefits"])
         ]
         await session.refresh(product, {"product_benefits"})
         assert [
-            product_benefit.benefit_id for product_benefit in product.product_benefits
-        ] == [unmanaged.id]
+            product_benefit.benefit.description
+            for product_benefit in product.product_benefits
+        ] == ["First", "Alpha access", "Last"]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_create_product_meter_interval(

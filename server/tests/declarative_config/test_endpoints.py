@@ -15,6 +15,9 @@ from polar.meter.unit import MeterUnit
 from polar.models import Organization, UserOrganization
 from polar.models.benefit import BenefitType
 from polar.models.custom_field import CustomFieldType
+from polar.models.product_price import ProductPriceAmountType
+from polar.postgres import AsyncSession
+from polar.product.repository import ProductRepository
 from polar.product.tiers import Tier, Tiers, TierType
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -772,6 +775,7 @@ class TestExport:
     async def test_skipped_and_partial_products(
         self,
         save_fixture: SaveFixture,
+        session: AsyncSession,
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
@@ -870,6 +874,23 @@ class TestExport:
         assert [(issue["severity"], issue["loc"]) for issue in plan["issues"]] == [
             ("warning", ["body", "products", 0, "prices"]),
             ("warning", ["body", "products", 0, "benefits"]),
+        ]
+
+        exported_partial["prices"][0]["price_amount"] = 2000
+        edited = {**json["config"], "organization_id": str(organization.id)}
+        edit_plan = (await client.post("/v1/config/plan", json=edited)).json()
+        apply_response = await client.post("/v1/config/apply", json=edited)
+
+        assert ("error", ["body", "products", 0, "prices"]) in [
+            (issue["severity"], issue["loc"]) for issue in edit_plan["issues"]
+        ]
+        assert apply_response.status_code == 409
+        [stored] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["partial"])
+        assert [price.amount_type for price in stored.prices] == [
+            ProductPriceAmountType.fixed,
+            ProductPriceAmountType.seat_based,
         ]
 
     @pytest.mark.auth(

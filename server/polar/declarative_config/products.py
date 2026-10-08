@@ -90,6 +90,22 @@ def price_create(
             return ProductPriceFixedCreate(**price.model_dump())
 
 
+def product_benefit_ids(
+    configured_ids: list[UUID], product: Product | None, managed_ids: set[UUID]
+) -> list[UUID]:
+    if product is None:
+        return configured_ids
+    configured = iter(configured_ids)
+    ordered: list[UUID] = []
+    for product_benefit in product.product_benefits:
+        if product_benefit.benefit_id not in managed_ids:
+            ordered.append(product_benefit.benefit_id)
+        elif (benefit_id := next(configured, None)) is not None:
+            ordered.append(benefit_id)
+    ordered.extend(configured)
+    return ordered
+
+
 def _attached_custom_fields(
     config: ConfigProduct, custom_field_ids: dict[str, UUID]
 ) -> list[AttachedCustomFieldCreate]:

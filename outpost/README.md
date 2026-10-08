@@ -2,6 +2,14 @@
 
 ## Development
 
+Outpost reads its meters from Polar over a WebSocket. It needs an organization token with
+`events:write`:
+
+```sh
+export POLAR_TOKEN=polar_oat_...
+export POLAR_API_URL=http://127.0.0.1:8000  # default: https://api.polar.sh
+```
+
 Start Outpost with in-memory storage (default, one worker):
 
 ```sh

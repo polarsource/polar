@@ -13,5 +13,11 @@
     "verbatimModuleSyntax": true,
     "skipLibCheck": true
   },
-  "include": ["src", "cloudflare.config.ts", ".cloudflare/types"]
+  "include": [
+    "src",
+    "test",
+    "vitest.config.ts",
+    "cloudflare.config.ts",
+    ".cloudflare/types"
+  ]
 }

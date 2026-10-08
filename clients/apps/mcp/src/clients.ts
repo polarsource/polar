@@ -1,4 +1,5 @@
 import { CLIENT_INFO_META_KEY } from '@modelcontextprotocol/server'
+import { Option, Schema } from 'effect'
 
 export type ToolMode = 'codemode' | 'operations'
 
@@ -19,11 +20,21 @@ const OPERATION_TOOL_CLIENTS = new Set([
   'Cursor',
 ])
 
+const decodeClientMessage = Schema.decodeUnknownOption(
+  Schema.Struct({
+    params: Schema.Struct({
+      _meta: Schema.Struct({
+        [CLIENT_INFO_META_KEY]: Schema.Struct({ name: Schema.String }),
+      }),
+    }),
+  }),
+)
+
 const clientInfoFromBody = (body: unknown): ClientInfo | undefined => {
   for (const message of Array.isArray(body) ? body : [body]) {
-    const clientInfo = message?.params?._meta?.[CLIENT_INFO_META_KEY]
-    if (typeof clientInfo?.name === 'string') {
-      return clientInfo
+    const decoded = decodeClientMessage(message)
+    if (Option.isSome(decoded)) {
+      return decoded.value.params._meta[CLIENT_INFO_META_KEY]
     }
   }
   return undefined

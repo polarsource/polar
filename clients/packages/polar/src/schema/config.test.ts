@@ -89,7 +89,7 @@ test('meters reference declared events and serialize without them', () => {
         .where(eq(events.tool_call.tool, 'search'))
         .count(),
       llm_tokens: meter('LLM tokens')
-        .on([events['llm.completion'], events['llm.embedding']])
+        .on(events['llm.completion'], events['llm.embedding'])
         .sum('inputTokens'),
       requests: meter('Requests').where(eq('name', 'api.request')).count(),
     }),
@@ -146,7 +146,7 @@ test('meter only accepts declared events and properties they share', () => {
           .parameter(0)
           .toEqualTypeOf<'inputTokens' | 'dimensions'>()
         expectTypeOf(
-          meter().on([events['llm.completion'], events['llm.embedding']]).sum,
+          meter().on(events['llm.completion'], events['llm.embedding']).sum,
         )
           .parameter(0)
           .toEqualTypeOf<'inputTokens'>()
@@ -156,7 +156,7 @@ test('meter only accepts declared events and properties they share', () => {
           // @ts-expect-error event names are not references
           name: meter().on('tool_call').count(),
           // @ts-expect-error a meter needs at least one event
-          empty: meter().on([]).count(),
+          empty: meter().on().count(),
         }
       },
     })
@@ -164,23 +164,26 @@ test('meter only accepts declared events and properties they share', () => {
 })
 
 test('meter rejects undeclared events and plain names at runtime', () => {
-  const define = (target: (events: object) => unknown) => () =>
+  const define = (target: (events: object) => unknown[]) => () =>
     defineConfig({
       events,
       meters: ({ meter, events }) => ({
         calls: meter()
-          .on(target(events) as never)
+          .on(...(target(events) as [never]))
           .count(),
       }),
     })
-  expect(define((events) => Reflect.get(events, 'nope'))).toThrow(
+  expect(define((events) => [Reflect.get(events, 'nope')])).toThrow(
     'Unknown event "nope"',
   )
-  expect(define((events) => Reflect.get(events, 'toString'))).toThrow(
+  expect(define((events) => [Reflect.get(events, 'toString')])).toThrow(
     'Unknown event "toString"',
   )
   expect(define(() => [])).toThrow('takes one or more events')
   expect(define(() => ['tool_call'])).toThrow('takes one or more events')
+  expect(define((events) => [[Reflect.get(events, 'tool_call')]])).toThrow(
+    'takes one or more events',
+  )
 })
 
 test('events must have flat metadata without reserved properties', () => {

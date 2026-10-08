@@ -116,7 +116,7 @@ test('single-event meters serialize like hand-written filters', () => {
 
 test('multi-event meters keep conditions scoped to the event they reference', () => {
   const definition = meter<typeof definitions>()
-    .on([events.tool_call, events.tool_retry])
+    .on(events.tool_call, events.tool_retry)
     .where(or(eq(events.tool_call.cached, false), events.tool_retry))
     .count()
   expect(definition.filter).toEqual({

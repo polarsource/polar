@@ -263,13 +263,9 @@ export class UnboundMeter<
   Events extends EventDefinitions,
 > extends MeterBuilder {
   on<const Name extends keyof Events & string>(
-    events:
-      | EventReference<Name>
-      | readonly [EventReference<Name>, ...EventReference<Name>[]],
+    ...events: [EventReference<Name>, ...EventReference<Name>[]]
   ): MeterBuilder<Name, SharedEventOutput<Events, Name>> {
-    const references: readonly unknown[] = Array.isArray(events)
-      ? events
-      : [events]
+    const references: readonly unknown[] = events
     if (references.length === 0 || !references.every(isEventReference)) {
       throw new Error('on() takes one or more events from the `events` helper.')
     }

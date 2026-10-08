@@ -11,7 +11,7 @@ export const requestCountConfig = defineConfig({
     }),
   },
   meters: ({ meter, events }) => ({
-    requests: meter().on([events['api.request']]).count(),
+    requests: meter().on(events['api.request']).count(),
   }),
 })
 
@@ -98,11 +98,11 @@ export const llmUsageConfig = defineConfig({
   },
   meters: ({ meter, events }) => ({
     inputTokens: meter('Input Tokens')
-      .on([events['llm.completion'], events['llm.embedding']])
+      .on(events['llm.completion'], events['llm.embedding'])
       .unit('token')
       .sum('inputTokens'),
     streamedInputTokens: meter('Streamed Input Tokens')
-      .on([events['llm.completion'], events['llm.embedding']])
+      .on(events['llm.completion'], events['llm.embedding'])
       .where(
         or(
           eq(events['llm.completion'].streamed, true),

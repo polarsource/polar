@@ -459,14 +459,14 @@ class TestApply:
         auth_subject: AuthSubject[Organization],
         organization: Organization,
     ) -> None:
-        support = {
+        support: dict[str, Any] = {
             "external_id": "support",
             "type": "custom",
             "description": "Priority support",
             "visibility": "private",
             "properties": {"note": "Email us"},
         }
-        license = {
+        license: dict[str, Any] = {
             "external_id": "license",
             "type": "license_keys",
             "description": "License key",
@@ -501,10 +501,12 @@ class TestApply:
                 session
             ).get_all_by_external_ids(organization.id, ["support", "license"])
         }
+        support_properties: dict[str, Any] = dict(benefits["support"].properties)
+        license_properties: dict[str, Any] = dict(benefits["license"].properties)
         assert benefits["support"].visibility == Visibility.public
-        assert benefits["support"].properties["note"] == "Email us"
-        assert benefits["license"].properties["prefix"] == "PRO"
-        assert benefits["license"].properties["limit_usage"] == 5
+        assert support_properties["note"] == "Email us"
+        assert license_properties["prefix"] == "PRO"
+        assert license_properties["limit_usage"] == 5
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_concurrent_benefit_create(

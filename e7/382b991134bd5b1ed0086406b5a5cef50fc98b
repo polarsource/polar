@@ -1,0 +1,42 @@
+clients/apps/mcp/src/server.ts
+  s_8113b980a37313::t_34616f5cb82cca 2,5,8-11,14-19
+clients/apps/mcp/src/results.ts
+  s_8113b980a37313::t_4db1b54795b184 1-2,4-20
+  s_8113b980a37313::t_6f8f1089bf902f 3
+clients/apps/mcp/src/sandbox.ts
+  s_8113b980a37313::t_4db1b54795b184 54
+clients/apps/mcp/src/index.ts
+  s_8113b980a37313::t_34616f5cb82cca 7,39-49,85-86,88-89
+clients/apps/mcp/scripts/generate-spec.ts
+  s_8113b980a37313::t_0c1c58c020036e 10-11,18,22-42,44,48,50,59-76,100-107,110-118,120-124,127-128,131-147,149-152,154-157,159-166,170-177,179-196,198-214,216-222,224
+clients/apps/mcp/src/clients.ts
+  s_8113b980a37313::t_78fdd77ec26b4c 9,11-12,15-18,20,35-36,47-52,54-56
+  s_8113b980a37313::t_4832cfb876deca 13-14,19
+  s_8113b980a37313::t_5185ed87d822b2 1-8,10,21-34,37-46,53,57
+clients/apps/mcp/src/tools/execute.ts
+  s_8113b980a37313::t_4db1b54795b184 5-6
+clients/apps/mcp/src/tools/search.ts
+  s_8113b980a37313::t_4db1b54795b184 3-4
+clients/apps/mcp/src/tools/operations.ts
+  s_8113b980a37313::t_036194c590fba5 34-39,50
+  s_8113b980a37313::t_e50324adbff834 7-11,33,40-42,51,58-66,69-71,73,78-80,83-106
+  s_8113b980a37313::t_bfe408e04caa08 22-32,67-68,72,74-77,81-82
+  s_8113b980a37313::t_ad942add13b29a 1-6,12-21
+  s_8113b980a37313::t_7adffcc7c9b95c 43-49,52-57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "e7382b991134bd5b1ed0086406b5a5cef50fc98b",
+  "prompts": {},
+  "sessions": {
+    "s_8113b980a37313": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41aad960-5555-470b-b8d3-68fd0a8ea3d2",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

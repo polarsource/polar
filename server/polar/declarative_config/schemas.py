@@ -222,6 +222,7 @@ class Config(Schema):
     model_config = ConfigDict(extra="forbid")
 
     meters: list[ConfigMeter] = Field(
+        default_factory=list,
         max_length=MAXIMUM_METERS,
         description=(
             "Meters to create or update, matched by `external_id`. "

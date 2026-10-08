@@ -117,7 +117,6 @@ class TestApply:
         response = await client.post(
             "/v1/config/apply",
             json={
-                "meters": [],
                 "benefits": [
                     {
                         "type": "github_repository",
@@ -230,6 +229,21 @@ class TestApply:
 
 @pytest.mark.asyncio
 class TestPlan:
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_empty_config(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/config/plan", json={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"changes": [], "issues": []}
+
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_locked_meter_reports_issues(

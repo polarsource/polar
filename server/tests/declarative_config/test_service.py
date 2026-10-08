@@ -329,7 +329,6 @@ class TestApply:
                 auth_subject,
                 Config.model_validate(
                     {
-                        "meters": [],
                         "benefits": [BETA_BENEFIT],
                         "products": [
                             {
@@ -417,7 +416,6 @@ class TestPlan:
             auth_subject,
             Config.model_validate(
                 {
-                    "meters": [],
                     "benefits": [BETA_BENEFIT, BETA_BENEFIT],
                     "products": [
                         {

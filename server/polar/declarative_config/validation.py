@@ -535,7 +535,7 @@ def price_config(
             "preset_amount": price.preset_amount,
         }
     if isinstance(price, ProductPriceSeatUnit):
-        if price.maximum_units is not None:
+        if price.tiers is None or price.maximum_units is not None:
             return None
         return {
             **config,

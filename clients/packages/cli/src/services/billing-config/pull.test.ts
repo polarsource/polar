@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { BunServices } from '@effect/platform-bun'
-import { Effect, FileSystem, Layer } from 'effect'
+import { Effect, FileSystem } from 'effect'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import type { PulledConfig } from '@/schemas/BillingConfig'
 import { Auth } from '@/services/auth'
@@ -95,7 +95,7 @@ describe('save', () => {
     Effect.runPromise(
       Effect.gen(function* () {
         return yield* saver(yield* FileSystem.FileSystem)(file, config, force)
-      }).pipe(Effect.provide(Layer.mergeAll(BunServices.layer))),
+      }).pipe(Effect.provide(BunServices.layer)),
     )
 
   test('writes polar.config.json when there is no config file', async () => {

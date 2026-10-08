@@ -49,6 +49,7 @@ from polar.models import (
     LegacyRecurringProductPriceFixed,
     Member,
     Meter,
+    MeterReducer,
     Order,
     OrderItem,
     Organization,
@@ -68,6 +69,7 @@ from polar.models import (
     ProductPriceMeteredUnit,
     ProductPriceSeatUnit,
     ProductPriceUnit,
+    Reducer,
     Refund,
     Subscription,
     SubscriptionProductPrice,
@@ -2318,6 +2320,26 @@ async def create_meter(
 @pytest_asyncio.fixture
 async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
     return await create_meter(save_fixture, organization=organization)
+
+
+async def create_reducer(
+    save_fixture: SaveFixture,
+    *,
+    organization: Organization,
+    meters: Sequence[Meter],
+) -> Reducer:
+    """Create a reducer with the filter and aggregation of the first meter,
+    used by all the given meters."""
+    meter = meters[0]
+    reducer = Reducer(
+        organization=organization,
+        filter=meter.filter,
+        aggregation=meter.aggregation,
+    )
+    await save_fixture(reducer)
+    for m in meters:
+        await save_fixture(MeterReducer(meter=m, reducer=reducer))
+    return reducer
 
 
 async def create_notification_recipient(

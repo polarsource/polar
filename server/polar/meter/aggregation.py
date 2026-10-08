@@ -109,6 +109,16 @@ class PropertyAggregation(BaseModel):
         value = get_nested_metadata_value(event.user_metadata, self.property)
         return isinstance(value, int | float) and not isinstance(value, bool)
 
+    def get_value(self, event: Event) -> float | None:
+        if self.property == "timestamp":
+            return int(event.timestamp.timestamp())
+        if self.property in ("name", "source"):
+            return None
+        value = get_nested_metadata_value(event.user_metadata, self.property)
+        if isinstance(value, int | float) and not isinstance(value, bool):
+            return value
+        return None
+
 
 class UniqueAggregation(BaseModel):
     func: Literal[AggregationFunction.unique] = AggregationFunction.unique

@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import Select
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, undefer
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
@@ -56,6 +56,25 @@ class BenefitRepository(
             Benefit.properties["slack_integration_id"].as_string()
             == str(slack_integration_id),
         )
+        return await self.get_all(statement)
+
+    async def get_all_by_external_ids(
+        self,
+        organization_id: UUID,
+        external_ids: Sequence[str],
+        *,
+        for_update: bool = False,
+    ) -> Sequence[Benefit]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Benefit.organization_id == organization_id,
+                Benefit.external_id.in_(external_ids),
+            )
+            .options(undefer(Benefit.external_id), *self.get_eager_options())
+        )
+        if for_update:
+            statement = statement.with_for_update(of=Benefit, key_share=True)
         return await self.get_all(statement)
 
     async def list_by_organization_and_type(

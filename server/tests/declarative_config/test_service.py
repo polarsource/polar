@@ -1,7 +1,11 @@
+from typing import Any
+
 import pytest
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
+from polar.auth.scope import Scope
+from polar.benefit.repository import BenefitRepository
 from polar.declarative_config.schemas import (
     Config,
     ConfigAction,
@@ -10,6 +14,7 @@ from polar.declarative_config.schemas import (
 )
 from polar.declarative_config.service import (
     ConfigAsCodeNotEnabled,
+    ConfigBenefitConflict,
     ConfigInvalid,
     ConfigMeterConflict,
 )
@@ -19,12 +24,15 @@ from polar.declarative_config.service import (
 from polar.meter.repository import MeterRepository
 from polar.meter.unit import MeterUnit
 from polar.models import Organization
+from polar.models.benefit import BenefitType
+from polar.oauth2.exceptions import InsufficientScopeError
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
+    create_benefit,
     create_event,
     create_meter,
 )
@@ -352,7 +360,138 @@ class TestApply:
             )
 
     @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_products_and_benefits_not_supported(
+    async def test_create_benefits(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.meter.service.enqueue_job")
+
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "meters": [TOOL_CALLS_METER],
+                    "benefits": [CREDITS_BENEFIT, BETA_BENEFIT],
+                }
+            ),
+        )
+
+        assert [(change.resource, change.action) for change in result.changes] == [
+            (ConfigResource.meter, ConfigAction.created),
+            (ConfigResource.benefit, ConfigAction.created),
+            (ConfigResource.benefit, ConfigAction.created),
+        ]
+        [meter] = await MeterRepository.from_session(session).get_all_by_external_ids(
+            organization.id, ["sdk-tool-calls"]
+        )
+        benefits = {
+            benefit.external_id: benefit
+            for benefit in await BenefitRepository.from_session(
+                session
+            ).get_all_by_external_ids(organization.id, ["tool-call-credits", "beta"])
+        }
+        assert dict(benefits["tool-call-credits"].properties) == {
+            "meter_id": str(meter.id),
+            "units": 1000,
+            "rollover": False,
+        }
+        assert benefits["beta"].type == BenefitType.feature_flag
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_update_benefit(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.meter.service.enqueue_job")
+        meter = await create_meter(
+            save_fixture, organization=organization, external_id="sdk-tool-calls"
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            description="1,000 tool calls",
+            properties={"meter_id": str(meter.id), "units": 10, "rollover": False},
+            external_id="tool-call-credits",
+        )
+        config = Config.model_validate(
+            {"meters": [TOOL_CALLS_METER], "benefits": [CREDITS_BENEFIT]}
+        )
+
+        result = await declarative_config_service.apply(
+            session, redis, auth_subject, config
+        )
+        rerun = await declarative_config_service.apply(
+            session, redis, auth_subject, config
+        )
+
+        assert result.changes[1].action == ConfigAction.updated
+        assert dict(benefit.properties)["units"] == 1000
+        assert rerun.changes[1].action == ConfigAction.unchanged
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_concurrent_benefit_create(
+        self,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.feature_flag,
+            properties={},
+            external_id="beta",
+        )
+        mocker.patch(
+            "polar.declarative_config.validation.BenefitRepository.get_all_by_external_ids",
+            return_value=[],
+        )
+
+        with pytest.raises(ConfigBenefitConflict):
+            await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate({"benefits": [BETA_BENEFIT]}),
+            )
+
+    @pytest.mark.parametrize("benefits", [[BETA_BENEFIT], []])
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.meters_write})
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_benefits_require_benefits_scope(
+        self,
+        benefits: list[dict[str, Any]],
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        with pytest.raises(InsufficientScopeError):
+            await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate({"benefits": benefits}),
+            )
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_products_not_supported(
         self,
         session: AsyncSession,
         redis: Redis,
@@ -379,7 +518,6 @@ class TestApply:
             )
 
         assert [(error.type, error.loc) for error in exc_info.value.errors] == [
-            (ConfigIssueType.not_supported, ["body", "benefits", 0]),
             (ConfigIssueType.not_supported, ["body", "products", 0]),
         ]
 
@@ -387,8 +525,116 @@ class TestApply:
 @pytest.mark.anyio
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 class TestPlan:
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.meters_read})
+    )
     @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_products_and_benefits_not_supported(
+    async def test_benefits_require_benefits_scope(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        with pytest.raises(InsufficientScopeError):
+            await declarative_config_service.plan(
+                session,
+                auth_subject,
+                Config.model_validate({"benefits": [BETA_BENEFIT]}),
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(
+            subject="organization", scopes={Scope.meters_read, Scope.benefits_read}
+        )
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_benefits_read_scope(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate({"benefits": [BETA_BENEFIT]})
+        )
+
+        [change] = plan.changes
+        assert (change.resource, change.action) == (
+            ConfigResource.benefit,
+            ConfigAction.created,
+        )
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_benefit_diff(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture, organization=organization, external_id="sdk-tool-calls"
+        )
+        await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            description="1,000 tool calls",
+            properties={"meter_id": str(meter.id), "units": 10, "rollover": False},
+            external_id="tool-call-credits",
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {"meters": [TOOL_CALLS_METER], "benefits": [CREDITS_BENEFIT]}
+            ),
+        )
+
+        [benefit_change] = [
+            change
+            for change in plan.changes
+            if change.resource == ConfigResource.benefit
+        ]
+        assert benefit_change.action == ConfigAction.updated
+        assert [
+            (change.field, change.before, change.after)
+            for change in benefit_change.diff
+        ] == [
+            (
+                "properties",
+                {"meter": "sdk-tool-calls", "units": 10, "rollover": False},
+                {"meter": "sdk-tool-calls", "units": 1000, "rollover": False},
+            )
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_benefit_type_changed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.feature_flag,
+            properties={},
+            external_id="beta",
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {"benefits": [{**CREDITS_BENEFIT, "external_id": "beta"}]}
+            ),
+        )
+
+        assert [
+            issue.loc
+            for issue in plan.issues
+            if issue.type == ConfigIssueType.type_changed
+        ] == [["body", "benefits", 0, "type"]]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_products_not_supported(
         self, session: AsyncSession, auth_subject: AuthSubject[Organization]
     ) -> None:
         plan = await declarative_config_service.plan(
@@ -419,4 +665,53 @@ class TestPlan:
             issue.loc
             for issue in plan.issues
             if issue.type == ConfigIssueType.not_supported
-        ] == [["body", "benefits", 0], ["body", "benefits", 1], ["body", "products", 0]]
+        ] == [["body", "products", 0]]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_unknown_references(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {"meters": [], "benefits": [CREDITS_BENEFIT], "products": [PRO_PRODUCT]}
+            ),
+        )
+
+        assert [
+            (issue.loc, issue.input)
+            for issue in plan.issues
+            if issue.type == ConfigIssueType.unknown_reference
+        ] == [
+            (["body", "benefits", 0, "properties", "meter"], "sdk-tool-calls"),
+            (["body", "products", 0, "prices", 1, "meter"], "sdk-tool-calls"),
+            (["body", "products", 0, "benefits", 1], "beta"),
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_duplicate_external_ids_per_resource(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "benefits": [BETA_BENEFIT, BETA_BENEFIT],
+                    "products": [
+                        {
+                            "external_id": "beta",
+                            "name": "Beta",
+                            "prices": [{"amount_type": "fixed", "price_amount": 0}],
+                        }
+                    ],
+                }
+            ),
+        )
+
+        assert [
+            issue.loc
+            for issue in plan.issues
+            if issue.type == ConfigIssueType.duplicate_external_id
+        ] == [["body", "benefits", 1, "external_id"]]

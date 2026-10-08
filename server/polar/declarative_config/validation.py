@@ -1,7 +1,12 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any
+from dataclasses import field as dataclass_field
+from typing import Any, cast
 
+from polar.benefit.repository import BenefitRepository
+from polar.benefit.strategies.meter_credit.properties import (
+    BenefitMeterCreditProperties,
+)
 from polar.event.system import SystemEvent
 from polar.event_type.repository import EventTypeRepository
 from polar.meter.filter import Filter, FilterOperator
@@ -9,18 +14,21 @@ from polar.meter.repository import MeterRepository
 from polar.meter.schemas import MeterCreateBase
 from polar.meter.service import METER_LOCKED_FIELD_MESSAGE, METER_LOCKED_FIELDS
 from polar.models import Benefit, Meter, Organization, Product
+from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
 
 from .schemas import (
     Config,
     ConfigAction,
     ConfigBenefit,
+    ConfigBenefitMeterCredit,
     ConfigFieldChange,
     ConfigIssue,
     ConfigIssueSeverity,
     ConfigIssueType,
     ConfigMeter,
     ConfigProduct,
+    ConfigProductPriceMeteredUnit,
     ConfigResource,
 )
 
@@ -37,6 +45,7 @@ class ResourceChange[ConfigT, ModelT]:
     config: ConfigT
     existing: ModelT | None
     update_dict: dict[str, Any]
+    before: dict[str, Any] = dataclass_field(default_factory=dict)
 
     @property
     def action(self) -> ConfigAction:
@@ -50,12 +59,19 @@ class ResourceChange[ConfigT, ModelT]:
     def diff(self) -> list[ConfigFieldChange]:
         return [
             ConfigFieldChange(
-                field="metadata" if field == "user_metadata" else field,
-                before=None if self.existing is None else getattr(self.existing, field),
+                field="metadata" if name == "user_metadata" else name,
+                before=self._before(name),
                 after=after,
             )
-            for field, after in self.update_dict.items()
+            for name, after in self.update_dict.items()
         ]
+
+    def _before(self, name: str) -> Any:
+        if self.existing is None:
+            return None
+        if name in self.before:
+            return self.before[name]
+        return getattr(self.existing, name)
 
 
 MeterChange = ResourceChange[ConfigMeter, Meter]
@@ -96,6 +112,65 @@ def unique_external_ids(
                 )
             )
         seen.add(external_id)
+    return issues
+
+
+def _unknown_reference(
+    resource: ConfigResource, external_id: str, loc: Loc
+) -> ConfigIssue:
+    return ConfigIssue(
+        severity=ConfigIssueSeverity.error,
+        type=ConfigIssueType.unknown_reference,
+        loc=loc,
+        msg=f"No {resource} in this config has this external_id.",
+        input=external_id,
+    )
+
+
+def unknown_references(config: Config) -> list[ConfigIssue]:
+    meters = {meter.external_id for meter in config.meters}
+    benefits = {benefit.external_id for benefit in config.benefits}
+    issues: list[ConfigIssue] = []
+    for index, benefit in enumerate(config.benefits):
+        if (
+            isinstance(benefit, ConfigBenefitMeterCredit)
+            and benefit.properties.meter not in meters
+        ):
+            issues.append(
+                _unknown_reference(
+                    ConfigResource.meter,
+                    benefit.properties.meter,
+                    _loc(ConfigResource.benefit, index, "properties", "meter"),
+                )
+            )
+    for index, product in enumerate(config.products):
+        for price_index, price in enumerate(product.prices):
+            if (
+                isinstance(price, ConfigProductPriceMeteredUnit)
+                and price.meter not in meters
+            ):
+                issues.append(
+                    _unknown_reference(
+                        ConfigResource.meter,
+                        price.meter,
+                        _loc(
+                            ConfigResource.product,
+                            index,
+                            "prices",
+                            price_index,
+                            "meter",
+                        ),
+                    )
+                )
+        for benefit_index, benefit_external_id in enumerate(product.benefits):
+            if benefit_external_id not in benefits:
+                issues.append(
+                    _unknown_reference(
+                        ConfigResource.benefit,
+                        benefit_external_id,
+                        _loc(ConfigResource.product, index, "benefits", benefit_index),
+                    )
+                )
     return issues
 
 
@@ -223,10 +298,98 @@ def _create_update_dict(config: ConfigBenefit | ConfigProduct) -> dict[str, Any]
     return update_dict
 
 
-def diff_benefits(benefit_configs: Sequence[ConfigBenefit]) -> list[BenefitChange]:
+def _benefit_properties(
+    benefit: Benefit, meter_external_ids: dict[str, str]
+) -> dict[str, Any]:
+    if benefit.type != BenefitType.meter_credit:
+        return {}
+    properties = cast(BenefitMeterCreditProperties, benefit.properties)
+    meter_id = str(properties["meter_id"])
+    return {
+        "meter": meter_external_ids.get(meter_id, meter_id),
+        "units": properties["units"],
+        "rollover": properties["rollover"],
+    }
+
+
+def _config_benefit_properties(benefit_config: ConfigBenefit) -> dict[str, Any]:
+    if isinstance(benefit_config, ConfigBenefitMeterCredit):
+        return benefit_config.properties.model_dump()
+    return {}
+
+
+def _get_benefit_update_dict(
+    benefit: Benefit, benefit_config: ConfigBenefit, properties: dict[str, Any]
+) -> dict[str, Any]:
+    update_dict: dict[str, Any] = {}
+    if benefit.description != benefit_config.description:
+        update_dict["description"] = benefit_config.description
+    config_properties = _config_benefit_properties(benefit_config)
+    if properties != config_properties:
+        update_dict["properties"] = config_properties
+    if (
+        "metadata" in benefit_config.model_fields_set
+        and benefit.user_metadata != benefit_config.metadata
+    ):
+        update_dict["user_metadata"] = benefit_config.metadata
+    return update_dict
+
+
+async def diff_benefits(
+    session: AsyncSession,
+    organization: Organization,
+    benefit_configs: Sequence[ConfigBenefit],
+    meters: Sequence[MeterChange],
+    *,
+    for_update: bool,
+) -> list[BenefitChange]:
+    repository = BenefitRepository.from_session(session)
+    existing_benefits = {
+        benefit.external_id: benefit
+        for benefit in await repository.get_all_by_external_ids(
+            organization.id,
+            [config.external_id for config in benefit_configs],
+            for_update=for_update,
+        )
+    }
+    meter_external_ids = {
+        str(change.existing.id): change.config.external_id
+        for change in meters
+        if change.existing is not None
+    }
+    changes: list[BenefitChange] = []
+    for index, benefit_config in enumerate(benefit_configs):
+        benefit = existing_benefits.get(benefit_config.external_id)
+        if benefit is None:
+            create_dict = _create_update_dict(benefit_config)
+            if "properties" in create_dict:
+                create_dict["properties"] = create_dict["properties"].model_dump()
+            changes.append(BenefitChange(index, benefit_config, None, create_dict))
+            continue
+        properties = _benefit_properties(benefit, meter_external_ids)
+        changes.append(
+            BenefitChange(
+                index,
+                benefit_config,
+                benefit,
+                _get_benefit_update_dict(benefit, benefit_config, properties),
+                {"properties": properties},
+            )
+        )
+    return changes
+
+
+def benefit_type_changes(changes: Sequence[BenefitChange]) -> list[ConfigIssue]:
     return [
-        BenefitChange(index, benefit_config, None, _create_update_dict(benefit_config))
-        for index, benefit_config in enumerate(benefit_configs)
+        ConfigIssue(
+            severity=ConfigIssueSeverity.error,
+            type=ConfigIssueType.type_changed,
+            loc=_loc(ConfigResource.benefit, change.index, "type"),
+            msg="The type of an existing benefit can't be changed.",
+            input=change.config.type,
+        )
+        for change in changes
+        if change.existing is not None and change.existing.type != change.config.type
     ]
 
 
@@ -247,13 +410,18 @@ async def check(
     meters = await diff_meters(
         session, organization, config.meters, for_update=for_update
     )
-    benefits = diff_benefits(config.benefits)
+    benefits = await diff_benefits(
+        session, organization, config.benefits, meters, for_update=for_update
+    )
     products = diff_products(config.products)
     issues = [
         *unique_external_ids(ConfigResource.meter, meters),
+        *unique_external_ids(ConfigResource.benefit, benefits),
+        *unique_external_ids(ConfigResource.product, products),
+        *unknown_references(config),
         *locked_meter_fields(meters),
         *await unknown_events(session, organization, meters),
-        *not_supported(ConfigResource.benefit, benefits),
+        *benefit_type_changes(benefits),
         *not_supported(ConfigResource.product, products),
     ]
     return ConfigChanges(meters, benefits, products), issues

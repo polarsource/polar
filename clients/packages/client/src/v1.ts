@@ -62117,6 +62117,8 @@ export interface operations {
         external_customer_id?: string | string[] | null
         /** @description Filter by meter ID. */
         meter_id?: string | string[] | null
+        /** @description Filter by meter external ID. */
+        external_meter_id?: string | string[] | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */

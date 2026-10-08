@@ -6,7 +6,6 @@ from polar.benefit.repository import BenefitRepository
 from polar.benefit.strategies.meter_credit.properties import (
     BenefitMeterCreditProperties,
 )
-from polar.kit.visibility import Visibility
 from polar.meter.repository import MeterRepository
 from polar.models import Benefit, Organization, Product, ProductPriceMeteredUnit
 from polar.models.benefit import BenefitType
@@ -83,6 +82,13 @@ async def export_meters(
     return meters, external_ids
 
 
+_BENEFIT_TYPES_WITH_PROPERTIES = {
+    BenefitType.custom,
+    BenefitType.license_keys,
+    BenefitType.meter_credit,
+}
+
+
 def _benefit_document(
     benefit: Benefit, meter_external_ids: ExternalIDs
 ) -> dict[str, Any] | ConfigSkippedReason:
@@ -93,15 +99,14 @@ def _benefit_document(
         "visibility": benefit.visibility,
         "metadata": benefit.user_metadata,
     }
-    if benefit.visibility != Visibility.public:
-        return ConfigSkippedReason.not_supported
     if benefit.type == BenefitType.feature_flag:
         return document
-    if benefit.type != BenefitType.meter_credit:
+    if benefit.type not in _BENEFIT_TYPES_WITH_PROPERTIES:
         return ConfigSkippedReason.not_supported
-    properties = cast(BenefitMeterCreditProperties, benefit.properties)
-    if str(properties["meter_id"]) not in meter_external_ids:
-        return ConfigSkippedReason.unknown_reference
+    if benefit.type == BenefitType.meter_credit:
+        properties = cast(BenefitMeterCreditProperties, benefit.properties)
+        if str(properties["meter_id"]) not in meter_external_ids:
+            return ConfigSkippedReason.unknown_reference
     document["properties"] = benefit_properties(benefit, meter_external_ids)
     return document
 

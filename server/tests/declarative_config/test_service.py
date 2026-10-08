@@ -27,6 +27,7 @@ from polar.declarative_config.service import (
 from polar.enums import MeterInterval, SubscriptionRecurringInterval
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.trial import TrialInterval
+from polar.kit.visibility import Visibility
 from polar.meter.repository import MeterRepository
 from polar.meter.unit import MeterUnit
 from polar.models import Organization, User, UserOrganization
@@ -449,6 +450,61 @@ class TestApply:
         assert result.changes[1].action == ConfigAction.updated
         assert dict(benefit.properties)["units"] == 1000
         assert rerun.changes[1].action == ConfigAction.unchanged
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_custom_and_license_keys_benefits(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        support = {
+            "external_id": "support",
+            "type": "custom",
+            "description": "Priority support",
+            "visibility": "private",
+            "properties": {"note": "Email us"},
+        }
+        license = {
+            "external_id": "license",
+            "type": "license_keys",
+            "description": "License key",
+            "properties": {
+                "prefix": "PRO",
+                "activations": {"limit": 3, "enable_customer_admin": True},
+            },
+        }
+
+        async def apply(*benefits: dict[str, Any]) -> list[ConfigAction]:
+            result = await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate({"benefits": list(benefits)}),
+            )
+            return [change.action for change in result.changes]
+
+        assert await apply(support, license) == [ConfigAction.created] * 2
+        assert await apply(support, license) == [ConfigAction.unchanged] * 2
+        assert (
+            await apply(
+                {**support, "visibility": "public"},
+                {**license, "properties": {**license["properties"], "limit_usage": 5}},
+            )
+            == [ConfigAction.updated] * 2
+        )
+
+        benefits = {
+            benefit.external_id: benefit
+            for benefit in await BenefitRepository.from_session(
+                session
+            ).get_all_by_external_ids(organization.id, ["support", "license"])
+        }
+        assert benefits["support"].visibility == Visibility.public
+        assert benefits["support"].properties["note"] == "Email us"
+        assert benefits["license"].properties["prefix"] == "PRO"
+        assert benefits["license"].properties["limit_usage"] == 5
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_concurrent_benefit_create(
@@ -1171,14 +1227,6 @@ class TestPlan:
             auth_subject,
             Config.model_validate(
                 {
-                    "benefits": [
-                        {**BETA_BENEFIT, "visibility": "private"},
-                        {
-                            "external_id": "support",
-                            "type": "custom",
-                            "description": "Priority support",
-                        },
-                    ],
                     "products": [
                         {
                             "external_id": "team",
@@ -1202,8 +1250,6 @@ class TestPlan:
             for issue in plan.issues
             if issue.type == ConfigIssueType.not_supported
         ] == [
-            ["body", "benefits", 0, "visibility"],
-            ["body", "benefits", 1, "type"],
             ["body", "products", 0, "custom_fields"],
             ["body", "products", 0, "prices", 1, "amount_type"],
         ]

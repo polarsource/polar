@@ -10,7 +10,6 @@ from polar.benefit.strategies.meter_credit.properties import (
 )
 from polar.event.system import SystemEvent
 from polar.event_type.repository import EventTypeRepository
-from polar.kit.visibility import Visibility
 from polar.meter.filter import Filter, FilterOperator
 from polar.meter.repository import MeterRepository
 from polar.meter.schemas import MeterCreateBase
@@ -32,8 +31,7 @@ from .schemas import (
     Config,
     ConfigAction,
     ConfigBenefit,
-    ConfigBenefitCustom,
-    ConfigBenefitLicenseKeys,
+    ConfigBenefitFeatureFlag,
     ConfigBenefitMeterCredit,
     ConfigFieldChange,
     ConfigIssue,
@@ -200,7 +198,6 @@ def unknown_references(config: Config) -> list[ConfigIssue]:
     return issues
 
 
-_NOT_SUPPORTED_BENEFITS = (ConfigBenefitCustom, ConfigBenefitLicenseKeys)
 _NOT_SUPPORTED_PRICES = (
     ConfigProductPriceCustom,
     ConfigProductPriceSeatBased,
@@ -222,12 +219,6 @@ def _not_supported(loc: Loc, input: Any) -> ConfigIssue:
 
 def not_supported_yet(config: Config) -> list[ConfigIssue]:
     issues: list[ConfigIssue] = []
-    for index, benefit in enumerate(config.benefits):
-        loc = _loc(ConfigResource.benefit, index)
-        if isinstance(benefit, _NOT_SUPPORTED_BENEFITS):
-            issues.append(_not_supported([*loc, "type"], benefit.type))
-        elif benefit.visibility != Visibility.public:
-            issues.append(_not_supported([*loc, "visibility"], benefit.visibility))
     for index, product in enumerate(config.products):
         loc = _loc(ConfigResource.product, index)
         for name in _NOT_SUPPORTED_PRODUCT_FIELDS:
@@ -415,24 +406,33 @@ def _create_update_dict(config: ConfigBenefit | ConfigProduct) -> dict[str, Any]
     return update_dict
 
 
+_BENEFIT_PROPERTIES = {
+    BenefitType.custom: ("note",),
+    BenefitType.license_keys: ("prefix", "expires", "activations", "limit_usage"),
+}
+
+
 def benefit_properties(
     benefit: Benefit, meter_external_ids: dict[str, str]
 ) -> dict[str, Any]:
-    if benefit.type != BenefitType.meter_credit:
-        return {}
-    properties = cast(BenefitMeterCreditProperties, benefit.properties)
-    meter_id = str(properties["meter_id"])
+    if benefit.type == BenefitType.meter_credit:
+        properties = cast(BenefitMeterCreditProperties, benefit.properties)
+        meter_id = str(properties["meter_id"])
+        return {
+            "meter": meter_external_ids.get(meter_id, meter_id),
+            "units": properties["units"],
+            "rollover": properties["rollover"],
+        }
     return {
-        "meter": meter_external_ids.get(meter_id, meter_id),
-        "units": properties["units"],
-        "rollover": properties["rollover"],
+        name: benefit.properties.get(name)
+        for name in _BENEFIT_PROPERTIES.get(benefit.type, ())
     }
 
 
 def _config_benefit_properties(benefit_config: ConfigBenefit) -> dict[str, Any]:
-    if isinstance(benefit_config, ConfigBenefitMeterCredit):
-        return benefit_config.properties.model_dump()
-    return {}
+    if isinstance(benefit_config, ConfigBenefitFeatureFlag):
+        return {}
+    return benefit_config.properties.model_dump()
 
 
 def _get_benefit_update_dict(
@@ -441,6 +441,8 @@ def _get_benefit_update_dict(
     update_dict: dict[str, Any] = {}
     if benefit.description != benefit_config.description:
         update_dict["description"] = benefit_config.description
+    if benefit.visibility != benefit_config.visibility:
+        update_dict["visibility"] = benefit_config.visibility
     config_properties = _config_benefit_properties(benefit_config)
     if properties != config_properties:
         update_dict["properties"] = config_properties

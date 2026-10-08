@@ -1,67 +1,55 @@
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID
 
-from polar.benefit.strategies.feature_flag.schemas import (
-    BenefitFeatureFlagCreate,
-    BenefitFeatureFlagCreateProperties,
-    BenefitFeatureFlagUpdate,
-)
-from polar.benefit.strategies.meter_credit.schemas import (
-    BenefitMeterCreditCreate,
-    BenefitMeterCreditCreateProperties,
-    BenefitMeterCreditUpdate,
-)
+from pydantic import Discriminator, TypeAdapter
+
+from polar.benefit.schemas import BenefitCreate, BenefitUpdate
 
 from .schemas import ConfigBenefit, ConfigBenefitFeatureFlag, ConfigBenefitMeterCredit
 from .validation import BenefitChange
+
+_benefit_create_adapter: TypeAdapter[BenefitCreate] = TypeAdapter(BenefitCreate)
+_benefit_update_adapter: TypeAdapter[BenefitUpdate] = TypeAdapter(
+    Annotated[BenefitUpdate, Discriminator("type")]
+)
+
+
+def _properties(
+    benefit_config: ConfigBenefit, meter_ids: dict[str, UUID]
+) -> dict[str, Any]:
+    if isinstance(benefit_config, ConfigBenefitFeatureFlag):
+        return {}
+    properties = benefit_config.properties.model_dump()
+    if isinstance(benefit_config, ConfigBenefitMeterCredit):
+        properties["meter_id"] = meter_ids[properties.pop("meter")]
+    return properties
 
 
 def benefit_create(
     benefit_config: ConfigBenefit,
     organization_id: UUID | None,
     meter_ids: dict[str, UUID],
-) -> BenefitFeatureFlagCreate | BenefitMeterCreditCreate:
-    if isinstance(benefit_config, ConfigBenefitMeterCredit):
-        properties = benefit_config.properties
-        return BenefitMeterCreditCreate(
-            type=benefit_config.type,
-            description=benefit_config.description,
-            metadata=benefit_config.metadata,
-            organization_id=organization_id,
-            properties=BenefitMeterCreditCreateProperties(
-                meter_id=meter_ids[properties.meter],
-                units=properties.units,
-                rollover=properties.rollover,
-            ),
-        )
-    if not isinstance(benefit_config, ConfigBenefitFeatureFlag):
-        raise NotImplementedError(benefit_config.type)
-    return BenefitFeatureFlagCreate(
-        type=benefit_config.type,
-        description=benefit_config.description,
-        metadata=benefit_config.metadata,
-        organization_id=organization_id,
-        properties=BenefitFeatureFlagCreateProperties(),
+) -> BenefitCreate:
+    return _benefit_create_adapter.validate_python(
+        {
+            "type": benefit_config.type,
+            "description": benefit_config.description,
+            "visibility": benefit_config.visibility,
+            "metadata": benefit_config.metadata,
+            "organization_id": organization_id,
+            "properties": _properties(benefit_config, meter_ids),
+        }
     )
 
 
-def benefit_update(
-    change: BenefitChange, meter_ids: dict[str, UUID]
-) -> BenefitFeatureFlagUpdate | BenefitMeterCreditUpdate:
+def benefit_update(change: BenefitChange, meter_ids: dict[str, UUID]) -> BenefitUpdate:
     update: dict[str, Any] = {
         "metadata" if name == "user_metadata" else name: value
         for name, value in change.update_dict.items()
         if name != "properties"
     }
-    config = change.config
-    if isinstance(config, ConfigBenefitMeterCredit):
-        if "properties" in change.update_dict:
-            update["properties"] = BenefitMeterCreditCreateProperties(
-                meter_id=meter_ids[config.properties.meter],
-                units=config.properties.units,
-                rollover=config.properties.rollover,
-            )
-        return BenefitMeterCreditUpdate(type=config.type, **update)
-    if not isinstance(config, ConfigBenefitFeatureFlag):
-        raise NotImplementedError(config.type)
-    return BenefitFeatureFlagUpdate(type=config.type, **update)
+    if "properties" in change.update_dict:
+        update["properties"] = _properties(change.config, meter_ids)
+    return _benefit_update_adapter.validate_python(
+        {"type": change.config.type, **update}
+    )

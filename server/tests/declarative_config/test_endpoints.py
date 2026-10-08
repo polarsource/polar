@@ -556,6 +556,29 @@ class TestExport:
             properties={},
             external_id="beta",
         )
+        support = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.custom,
+            description="Priority support",
+            properties={"note": "Email us"},
+            external_id="support",
+        )
+        support.visibility = Visibility.private
+        await save_fixture(support)
+        await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.license_keys,
+            description="License key",
+            properties={
+                "prefix": "PRO",
+                "expires": {"ttl": 1, "timeframe": "year"},
+                "activations": {"limit": 3, "enable_customer_admin": True},
+                "limit_usage": None,
+            },
+            external_id="license",
+        )
         product = await create_product(
             save_fixture,
             organization=organization,
@@ -568,7 +591,7 @@ class TestExport:
             external_id="pro",
         )
         await set_product_benefits(
-            save_fixture, product=product, benefits=[beta, credits]
+            save_fixture, product=product, benefits=[beta, credits, support]
         )
 
         response = await client.get(
@@ -594,6 +617,27 @@ class TestExport:
                 "visibility": "public",
                 "metadata": {},
             },
+            {
+                "external_id": "support",
+                "type": "custom",
+                "description": "Priority support",
+                "visibility": "private",
+                "properties": {"note": "Email us"},
+                "metadata": {},
+            },
+            {
+                "external_id": "license",
+                "type": "license_keys",
+                "description": "License key",
+                "visibility": "public",
+                "properties": {
+                    "prefix": "PRO",
+                    "expires": {"ttl": 1, "timeframe": "year"},
+                    "activations": {"limit": 3, "enable_customer_admin": True},
+                    "limit_usage": None,
+                },
+                "metadata": {},
+            },
         ]
         [exported_product] = json["config"]["products"]
         fixed_price, metered_price = exported_product["prices"]
@@ -610,7 +654,7 @@ class TestExport:
             "trial_interval_count": 7,
             "meter_interval": "month",
             "meter_interval_count": 1,
-            "benefits": ["beta", "api-credits"],
+            "benefits": ["beta", "api-credits", "support"],
             "custom_fields": [],
             "metadata": {},
         }
@@ -644,6 +688,8 @@ class TestExport:
             ("meter", "unchanged"),
             ("benefit", "unchanged"),
             ("benefit", "unchanged"),
+            ("benefit", "unchanged"),
+            ("benefit", "unchanged"),
             ("product", "unchanged"),
         ]
         assert all(issue["severity"] != "error" for issue in plan["issues"])
@@ -663,11 +709,13 @@ class TestExport:
         without_external_id = await create_benefit(
             save_fixture, organization=organization, description="No external ID"
         )
-        custom = await create_benefit(
+        downloadables = await create_benefit(
             save_fixture,
             organization=organization,
-            description="Custom",
-            external_id="custom",
+            type=BenefitType.downloadables,
+            description="Downloads",
+            properties={"archived": {}, "files": []},
+            external_id="downloads",
         )
         unknown_meter = await create_benefit(
             save_fixture,
@@ -677,15 +725,6 @@ class TestExport:
             properties={"meter_id": str(meter.id), "units": 10, "rollover": False},
             external_id="credits",
         )
-        private = await create_benefit(
-            save_fixture,
-            organization=organization,
-            type=BenefitType.feature_flag,
-            properties={},
-            external_id="private",
-        )
-        private.visibility = Visibility.private
-        await save_fixture(private)
         archived = await create_product(
             save_fixture,
             organization=organization,
@@ -710,7 +749,7 @@ class TestExport:
             external_id="with-custom-benefit",
         )
         await set_product_benefits(
-            save_fixture, product=unknown_benefit, benefits=[custom]
+            save_fixture, product=unknown_benefit, benefits=[downloadables]
         )
 
         response = await client.get(
@@ -726,9 +765,8 @@ class TestExport:
         ] == [
             ("meter", str(meter.id), "missing_external_id"),
             ("benefit", str(without_external_id.id), "missing_external_id"),
-            ("benefit", str(custom.id), "not_supported"),
+            ("benefit", str(downloadables.id), "not_supported"),
             ("benefit", str(unknown_meter.id), "unknown_reference"),
-            ("benefit", str(private.id), "not_supported"),
             ("product", str(archived.id), "archived"),
             ("product", str(custom_price.id), "not_supported"),
             ("product", str(unknown_benefit.id), "unknown_reference"),

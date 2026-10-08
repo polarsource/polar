@@ -19,8 +19,8 @@ test('config serializes to JSON without exposing mutable internal data', () => {
 test('RuntimeSDK rejects duplicate IDs without changing JSON serialization', () => {
   const config = defineConfig({
     meters: ({ meter }) => [
-      ['calls', meter({ displayName: 'First' }).count()],
-      ['calls', meter({ displayName: 'Second' }).count()],
+      ['calls', meter('First').count()],
+      ['calls', meter('Second').count()],
     ],
   })
   expect(config.toJSON().meters).toHaveLength(2)
@@ -33,7 +33,7 @@ test('defineConfig rejects empty external IDs even with a valid display name', (
   expect(() =>
     defineConfig({
       meters: ({ meter }) => ({
-        '': meter({ displayName: 'Requests' }).count(),
+        '': meter('Requests').count(),
       }),
     }),
   ).toThrow()
@@ -42,10 +42,10 @@ test('defineConfig rejects empty external IDs even with a valid display name', (
 test('short meter keys require an explicit display name', () => {
   expect(() =>
     defineConfig({ meters: ({ meter }) => ({ x: meter().count() }) }),
-  ).toThrow('Provide a displayName for meter "x"')
+  ).toThrow('Provide a name for meter "x"')
 
   const config = defineConfig({
-    meters: ({ meter }) => ({ x: meter({ displayName: 'Requests' }).count() }),
+    meters: ({ meter }) => ({ x: meter('Requests').count() }),
   })
   expect(config.toJSON().meters[0]).toMatchObject({
     external_id: 'x',
@@ -67,9 +67,9 @@ test('benefits serialize with meter credits linked by meter key', () => {
   const config = defineConfig({
     meters: ({ meter }) => ({ tool_call: meter().count() }),
     benefits: ({ flag, credits }) => ({
-      custom_servers: flag({ displayName: 'Custom servers' }),
+      custom_servers: flag('Custom servers'),
       tool_calls: credits().meter('tool_call').units(100),
-      rollover_calls: credits({ displayName: 'Rollover tool calls' })
+      rollover_calls: credits('Rollover tool calls')
         .meter('tool_call')
         .units(50)
         .rollover(),
@@ -136,12 +136,12 @@ test('benefit descriptions must be between 3 and 42 characters', () => {
       meters: () => ({}),
       benefits: ({ flag }) => ({ ab: flag() }),
     }),
-  ).toThrow('Provide a displayName for benefit "ab"')
+  ).toThrow('Provide a name for benefit "ab"')
   expect(() =>
     defineConfig({
       meters: () => ({}),
       benefits: ({ flag }) => ({
-        flag: flag({ displayName: 'x'.repeat(43) }),
+        flag: flag('x'.repeat(43)),
       }),
     }),
   ).toThrow()
@@ -162,8 +162,8 @@ test('RuntimeSDK rejects duplicate benefit external IDs', () => {
   const config = defineConfig({
     meters: () => ({}),
     benefits: ({ flag }) => [
-      ['flag', flag({ displayName: 'First' })],
-      ['flag', flag({ displayName: 'Second' })],
+      ['flag', flag('First')],
+      ['flag', flag('Second')],
     ],
   })
   expect(() => RuntimeSDK(config, { accessToken: 'test' })).toThrow(

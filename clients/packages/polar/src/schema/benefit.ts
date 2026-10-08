@@ -30,8 +30,6 @@ export const BenefitConfig = Schema.Union([
 
 export type BenefitConfig = typeof BenefitConfig.Type
 
-type BenefitOptions = { readonly displayName?: string }
-
 export type BenefitDefinition<Meter extends string = string> =
   | {
       readonly name: string | undefined
@@ -48,10 +46,8 @@ export type BenefitDefinition<Meter extends string = string> =
       }
     }
 
-export const flag = (
-  options: BenefitOptions = {},
-): BenefitDefinition<never> => ({
-  name: options.displayName,
+export const flag = (name?: string): BenefitDefinition<never> => ({
+  name,
   type: 'feature_flag',
   properties: {},
 })
@@ -91,14 +87,14 @@ class CreditsBuilder<Meter extends string> {
   }
 }
 
-export const credits = (options: BenefitOptions = {}) => ({
+export const credits = (name?: string) => ({
   meter: <const Meter extends string>(meter: Meter) =>
-    new CreditsBuilder(options.displayName, meter),
+    new CreditsBuilder(name, meter),
 })
 
 export type BenefitHelpers<Meter extends string> = {
   readonly flag: typeof flag
-  readonly credits: (options?: BenefitOptions) => {
+  readonly credits: (name?: string) => {
     readonly meter: (meter: Meter) => CreditsBuilder<Meter>
   }
 }

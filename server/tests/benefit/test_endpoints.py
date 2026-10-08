@@ -225,6 +225,37 @@ class TestListBenefitsFilters:
         assert json["pagination"]["total_count"] == 1
         assert json["items"][0]["id"] == str(benefits[1].id)
 
+    @pytest.mark.auth
+    @pytest.mark.api_version(V2027_01)
+    async def test_external_id_filter(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        deleted_benefit = await create_benefit(
+            save_fixture, organization=organization, external_id="pro"
+        )
+        deleted_benefit.set_deleted_at()
+        await save_fixture(deleted_benefit)
+        benefit = await create_benefit(
+            save_fixture, organization=organization, external_id="pro"
+        )
+        await create_benefit(
+            save_fixture, organization=organization, external_id="team"
+        )
+        await create_benefit(save_fixture, organization=organization)
+
+        response = await client.get(
+            "/v1/benefits/", params={"external_id": ["pro", "missing"]}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        assert json["items"][0]["id"] == str(benefit.id)
+
 
 @pytest.mark.asyncio
 class TestGetBenefit:

@@ -219,7 +219,7 @@ The current mapping is deterministic:
 
 On organization creation, the adapter creates or reuses a team customer and supplies the creator as its explicit owner. The team customer has no email by default, avoiding collisions when one user owns several organizations. `experimental_organizationSync.getTeamCustomerCreateParams` may add metadata, locale, address, tax, or other supported team-customer fields, but cannot override `type`, `externalId`, `name`, or owner identity. Organization name changes update the team customer.
 
-This requires Polar's member model to be enabled. The Polar organization access token needs `customers:read`, `customers:write`, `members:read`, and `members:write` scopes. Automatic seat management additionally requires `products:read`, `subscriptions:read`, `subscriptions:write`, `customer_seats:read`, and `customer_seats:write`.
+The Polar organization access token needs `customers:read`, `customers:write`, `members:read`, and `members:write` scopes. Automatic seat management additionally requires `products:read`, `subscriptions:read`, `subscriptions:write`, `customer_seats:read`, and `customer_seats:write`.
 
 Better Auth users map to Polar member `externalId` values using `user.id` within each team customer. Direct additions and accepted invitations are mirrored, and profile, role, removal, self-leave, and user-deletion paths are synchronized. Better Auth remains the roster source of truth.
 

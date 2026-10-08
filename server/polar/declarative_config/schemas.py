@@ -17,6 +17,7 @@ from polar.benefit.strategies.license_keys.schemas import (
     BenefitLicenseKeysCreateProperties,
     BenefitLicenseKeysProperties,
 )
+from polar.custom_field.schemas import Slug
 from polar.enums import MeterInterval, SubscriptionRecurringInterval, TaxBehaviorOption
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import Int32, Schema, SetSchemaReference
@@ -194,11 +195,16 @@ class ConfigProductPriceCustom(ProductPriceCustomCreate):
         ge=0,
         description=(
             "The minimum amount the customer can pay, in cents. "
-            "Set to `0` to accept free purchases."
+            "Set to `0` to accept free purchases. Must respect the currency's "
+            "minimum price amount, like any product price."
         ),
     )
     maximum_amount: PriceAmount | None = Field(
-        default=None, description="The maximum amount the customer can pay, in cents."
+        default=None,
+        description=(
+            "The maximum amount the customer can pay, in cents, up to the "
+            "currency's maximum price amount."
+        ),
     )
     preset_amount: PriceAmount | None = Field(
         default=None, ge=0, description="The initial amount shown, in cents."
@@ -223,6 +229,12 @@ class ConfigProductPriceMeteredTiers(ProductPriceCreateBase):
         default=None, ge=0, description="Optional maximum charge in cents."
     )
 
+    @model_validator(mode="after")
+    def validate_last_tier_unbounded(self) -> Self:
+        if self.tiers.last_bound is not None:
+            raise ValueError("The last tier must be unbounded, as usage has no limit.")
+        return self
+
 
 ConfigProductPrice = Annotated[
     ConfigProductPriceFixed
@@ -239,9 +251,7 @@ ConfigProductPrice = Annotated[
 class ConfigCustomField(Schema):
     model_config = ConfigDict(extra="forbid")
 
-    slug: str = Field(
-        min_length=1, description="The `slug` of an existing custom field."
-    )
+    slug: Annotated[Slug, Field(description="The `slug` of an existing custom field.")]
     required: bool = Field(
         default=False, description="Whether the customer must fill it in."
     )
@@ -300,6 +310,8 @@ class ConfigProduct(TrialConfigurationInputMixin, MetadataInputMixin, Schema):
 
     @model_validator(mode="after")
     def validate_recurring(self) -> Self:
+        if self.meter_interval is None and self.meter_interval_count is not None:
+            raise ValueError("A meter interval count needs a meter interval.")
         if self.recurring_interval is None:
             if self.recurring_interval_count is not None:
                 raise ValueError(
@@ -323,7 +335,6 @@ class ConfigProduct(TrialConfigurationInputMixin, MetadataInputMixin, Schema):
         if self.recurring_interval_count is None:
             self.recurring_interval_count = 1
         if self.meter_interval is None:
-            self.meter_interval_count = None
             return self
         if self.meter_interval_count is None:
             self.meter_interval_count = 1
@@ -415,7 +426,6 @@ class ConfigResource(StrEnum):
     meter = "meter"
     benefit = "benefit"
     product = "product"
-    custom_field = "custom_field"
 
 
 class ConfigResult(Schema):

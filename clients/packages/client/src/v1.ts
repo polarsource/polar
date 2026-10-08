@@ -16946,13 +16946,13 @@ export interface components {
       tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
       /**
        * Minimum Amount
-       * @description The minimum amount the customer can pay, in cents. Set to `0` to accept free purchases.
+       * @description The minimum amount the customer can pay, in cents. Set to `0` to accept free purchases. Must respect the currency's minimum price amount, like any product price.
        * @default 50
        */
       minimum_amount: number
       /**
        * Maximum Amount
-       * @description The maximum amount the customer can pay, in cents.
+       * @description The maximum amount the customer can pay, in cents, up to the currency's maximum price amount.
        */
       maximum_amount?: number | null
       /**
@@ -17095,7 +17095,7 @@ export interface components {
      * ConfigResource
      * @enum {string}
      */
-    ConfigResource: 'meter' | 'benefit' | 'product' | 'custom_field'
+    ConfigResource: 'meter' | 'benefit' | 'product'
     /** ConfigResult */
     ConfigResult: {
       /** @description The type of resource. */
@@ -71860,7 +71860,7 @@ export const configProductPriceUnitBasedAmount_typeValues: ReadonlyArray<
 > = ['unit_based']
 export const configResourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigResource']
-> = ['meter', 'benefit', 'product', 'custom_field']
+> = ['meter', 'benefit', 'product']
 export const configSkippedReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigSkippedReason']
 > = [

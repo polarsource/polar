@@ -140,6 +140,7 @@ class TestApply:
             },
             {"trial_interval": "day", "trial_interval_count": 7},
             {"meter_interval": "month"},
+            {"meter_interval_count": 2},
         ],
     )
     async def test_one_time_product_recurring_fields(

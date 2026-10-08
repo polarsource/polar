@@ -1,16 +1,96 @@
 from collections.abc import Sequence
+from datetime import datetime
+from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import Select, delete, select
+from sqlalchemy import (
+    ColumnElement,
+    Numeric,
+    Select,
+    cast,
+    delete,
+    func,
+    literal,
+    or_,
+    select,
+)
 from sqlalchemy.orm import joinedload
 
+from polar.kit.metadata import get_nested_metadata_attr
 from polar.kit.repository import RepositoryBase
 from polar.kit.repository.base import Options
-from polar.models import Meter, MeterReducer, Reducer
+from polar.meter.aggregation import PropertyAggregation
+from polar.models import Customer, Event, Meter, MeterReducer, Reducer, ReducerBucket
+from polar.models.event import EventSource
+
+from .aggregation import Aggregate
 
 
 class ReducerRepository(RepositoryBase[Reducer]):
     model = Reducer
+
+    async def get_unsealed_aggregate(
+        self,
+        reducer: Reducer,
+        customer: Customer,
+        *,
+        end: datetime,
+        exclude_bucket: datetime | None,
+    ) -> Aggregate:
+        identity = ReducerBucket.customer_id == customer.id
+        if customer.external_id is not None:
+            identity = or_(
+                identity, ReducerBucket.external_customer_id == customer.external_id
+            )
+        statement = select(
+            func.coalesce(func.sum(ReducerBucket.count), 0),
+            func.coalesce(func.sum(ReducerBucket.sum), 0),
+            func.min(ReducerBucket.min),
+            func.max(ReducerBucket.max),
+        ).where(
+            ReducerBucket.organization_id == reducer.organization_id,
+            ReducerBucket.reducer_id == reducer.id,
+            identity,
+            ReducerBucket.sealed_at.is_(None),
+            ReducerBucket.deleted_at.is_(None),
+            ReducerBucket.bucket_start < end,
+        )
+        if exclude_bucket is not None:
+            statement = statement.where(ReducerBucket.bucket_start != exclude_bucket)
+        count, total, minimum, maximum = (await self.session.execute(statement)).one()
+        return Aggregate(int(count), total, minimum, maximum)
+
+    async def get_edge_aggregate(
+        self,
+        reducer: Reducer,
+        customer: Customer,
+        *,
+        start: datetime,
+        end: datetime,
+    ) -> Aggregate:
+        value: ColumnElement[Decimal | None] = literal(None, type_=Numeric)
+        if isinstance(reducer.aggregation, PropertyAggregation):
+            prop = reducer.aggregation.property
+            if prop in Event._filterable_fields:
+                _, attr = Event._filterable_fields[prop]
+                value = cast(attr, Numeric)
+            else:
+                value = cast(get_nested_metadata_attr(Event, prop).astext, Numeric)
+        statement = select(
+            func.count(),
+            func.coalesce(func.sum(value), 0),
+            func.min(value),
+            func.max(value),
+        ).where(
+            Event.organization_id == reducer.organization_id,
+            Event.customer == customer,
+            Event.source == EventSource.user,
+            Event.timestamp >= start,
+            Event.timestamp < end,
+            reducer.filter.get_sql_clause(Event),
+            reducer.aggregation.get_sql_clause(Event),
+        )
+        return Aggregate(*(await self.session.execute(statement)).one())
 
     async def get_meter_for_update(self, meter_id: UUID) -> Meter:
         statement = (

@@ -29,6 +29,7 @@ from polar.models import Customer, CustomerMeter, Event, Meter
 from polar.models.event import EventSource
 from polar.outpost.stream import enqueue as enqueue_outpost_event
 from polar.postgres import AsyncSession
+from polar.reducer.service import reducer as reducer_service
 from polar.worker import enqueue_job
 
 from .repository import CustomerMeterRepository
@@ -379,6 +380,32 @@ class CustomerMeterService:
         *,
         cutoff: datetime | None = None,
     ) -> float:
+        reset = await EventRepository.from_session(session).get_latest_meter_reset(
+            customer, meter.id, cutoff=cutoff
+        )
+        quantity = await self._aggregate_usage(
+            session, customer, meter, reset, cutoff=cutoff
+        )
+        await reducer_service.compare_quantity(
+            session,
+            meter_id=meter.id,
+            customer_id=customer.id,
+            start=reset.timestamp if reset is not None else None,
+            end=cutoff or utc_now(),
+            expected=quantity,
+            consumer="customer_meter",
+        )
+        return quantity
+
+    async def _aggregate_usage(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        meter_reset_event: Event | None,
+        *,
+        cutoff: datetime | None = None,
+    ) -> float:
         """
         Get the aggregated usage quantity for a customer's meter.
 
@@ -389,10 +416,6 @@ class CustomerMeterService:
         the raw values from the union.
         """
         event_repository = EventRepository.from_session(session)
-        meter_reset_event = await event_repository.get_latest_meter_reset(
-            customer, meter.id, cutoff=cutoff
-        )
-
         agg_column = func.coalesce(meter.aggregation.get_sql_column(Event), 0)
 
         by_customer_id = self._build_events_statement(

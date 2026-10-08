@@ -3,6 +3,7 @@ import dataclasses
 import uuid
 from collections.abc import AsyncGenerator, AsyncIterable, Sequence
 from datetime import datetime
+from decimal import Decimal
 from typing import cast
 
 import structlog
@@ -26,6 +27,7 @@ from polar.product.guard import (
     is_unit_price,
 )
 from polar.product.repository import ProductPriceRepository, ProductRepository
+from polar.reducer.service import reducer as reducer_service
 
 from .repository import BillingEntryRepository
 
@@ -222,6 +224,11 @@ class BillingEntryService:
         # (even if there are billing entries with multiple prices) because these aggregations
         # must be computed across ALL events, not per-price
         processed_meters: set[uuid.UUID] = set()
+        quantities = {
+            spp.product_price.meter_id: Decimal(0)
+            for spp in subscription.subscription_product_prices
+            if is_metered_price(spp.product_price)
+        }
 
         async for (
             product_price_id,
@@ -298,7 +305,20 @@ class BillingEntryService:
                 )
                 selector = PendingByPrice(product_price_id)
 
+            quantities[meter_id] += Decimal(str(metered_line_item.consumed_units))
             yield metered_line_item, selector
+
+        for meter_id, quantity in quantities.items():
+            await reducer_service.compare_quantity(
+                session,
+                meter_id=meter_id,
+                customer_id=subscription.customer_id,
+                start=subscription.current_meter_period_start
+                or subscription.current_period_start,
+                end=cutoff,
+                expected=quantity,
+                consumer="subscription_billing",
+            )
 
     async def _get_static_price_line_item(
         self,

@@ -16287,6 +16287,8 @@ export interface components {
     }
     /** ConfigSkippedMeter */
     ConfigSkippedMeter: {
+      /** @description The type of resource. */
+      resource: components['schemas']['ConfigResource']
       /**
        * Id
        * Format: uuid4

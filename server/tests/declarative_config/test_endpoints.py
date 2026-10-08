@@ -422,12 +422,23 @@ class TestExport:
         assert json["config"] == {"meters": []}
         assert json["skipped"] == [
             {
+                "resource": "meter",
                 "id": str(without_external_id.id),
                 "name": "My Meter",
                 "reason": "missing_external_id",
             },
-            {"id": str(archived.id), "name": "My Meter", "reason": "archived"},
-            {"id": str(invalid.id), "name": "My Meter", "reason": "invalid"},
+            {
+                "resource": "meter",
+                "id": str(archived.id),
+                "name": "My Meter",
+                "reason": "archived",
+            },
+            {
+                "resource": "meter",
+                "id": str(invalid.id),
+                "name": "My Meter",
+                "reason": "invalid",
+            },
         ]
 
     @pytest.mark.auth
@@ -464,7 +475,12 @@ class TestExport:
             "first-meter"
         ]
         assert json["skipped"] == [
-            {"id": str(second.id), "name": "My Meter", "reason": "over_limit"}
+            {
+                "resource": "meter",
+                "id": str(second.id),
+                "name": "My Meter",
+                "reason": "over_limit",
+            }
         ]
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))

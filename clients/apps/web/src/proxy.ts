@@ -42,8 +42,7 @@ const SANDBOX_ALLOWED_PATHS: (string | RegExp)[] = [
   '/feedback',
   '/to',
   '/too-many-requests',
-  /^\/favicon[\w-]*\.\w+$/, // /favicon-v2.png, /favicon-v2-dark.png, etc.
-  /^\/apple-touch-icon-v2\.png$/,
+  /^\/favicon[\w-]*\.\w+$/, // /favicon.png, /favicon-dark.png, etc.
   /^\/[^/]+\/portal(\/|$)/, // /:organization/portal
 ]
 

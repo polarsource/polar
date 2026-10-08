@@ -20,6 +20,7 @@ import { DEFAULT_FILES } from '@/services/billing-config/load'
 
 const DEFAULT_TARGET = 'polar.config.json'
 const ESM_EXTENSIONS = new Set(['.ts', '.mts', '.js', '.mjs'])
+const CJS_EXTENSIONS = new Set(['.cts', '.cjs'])
 
 export const pull = (clients: Clients) => (organization: ActiveOrganization) =>
   Effect.gen(function* () {
@@ -45,6 +46,7 @@ const render = (file: string, config: PulledConfig) =>
     const extension = extname(file)
     if (extension === '.json') return `${json}\n`
     if (ESM_EXTENSIONS.has(extension)) return `export default ${json}\n`
+    if (CJS_EXTENSIONS.has(extension)) return `module.exports = ${json}\n`
     return yield* new BillingConfigError({
       message: `Cannot write a config to ${file}`,
       hint: 'Use a .json, .ts or .js file.',

@@ -126,6 +126,15 @@ describe('save', () => {
     expect(await readFile('billing.ts', 'utf8')).toBe(`export default ${json}`)
   })
 
+  test('writes CommonJS script files that load back as the same config', async () => {
+    await save('billing.cjs')
+
+    expect(await readFile('billing.cjs', 'utf8')).toBe(
+      `module.exports = ${json}`,
+    )
+    expect((await save('billing.cjs')).status).toBe('unchanged')
+  })
+
   test('refuses to overwrite a different file without force', async () => {
     await writeFile('polar.config.json', '{ "meters": [] }\n')
 

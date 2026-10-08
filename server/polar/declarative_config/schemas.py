@@ -68,7 +68,9 @@ class ConfigBenefitBase(MetadataInputMixin, Schema):
     model_config = ConfigDict(extra="forbid")
 
     external_id: str = Field(
-        ..., min_length=1, description="Your identifier for the benefit."
+        ...,
+        min_length=1,
+        description="Your identifier for the benefit, used to match it.",
     )
     description: str = Field(
         ...,
@@ -152,7 +154,9 @@ class ConfigProduct(MetadataInputMixin, Schema):
     model_config = ConfigDict(extra="forbid")
 
     external_id: str = Field(
-        ..., min_length=1, description="Your identifier for the product."
+        ...,
+        min_length=1,
+        description="Your identifier for the product, used to match it.",
     )
     name: ProductName
     description: ProductDescription = None
@@ -167,7 +171,10 @@ class ConfigProduct(MetadataInputMixin, Schema):
         ),
     )
     recurring_interval_count: int | None = Field(
-        default=None, ge=1, le=999, description="Defaults to 1 for recurring products."
+        default=None,
+        ge=1,
+        le=999,
+        description="Billing cycle length in intervals. Defaults to 1.",
     )
     prices: list[ConfigProductPrice] = Field(
         min_length=1, description="The prices of the product."

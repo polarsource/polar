@@ -251,8 +251,6 @@ async def check(
     products = diff_products(config.products)
     issues = [
         *unique_external_ids(ConfigResource.meter, meters),
-        *unique_external_ids(ConfigResource.benefit, benefits),
-        *unique_external_ids(ConfigResource.product, products),
         *locked_meter_fields(meters),
         *await unknown_events(session, organization, meters),
         *not_supported(ConfigResource.benefit, benefits),

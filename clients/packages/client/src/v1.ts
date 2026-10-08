@@ -15899,7 +15899,7 @@ export interface components {
       }
       /**
        * External Id
-       * @description Your identifier for the benefit.
+       * @description Your identifier for the benefit, used to match it.
        */
       external_id: string
       /**
@@ -15934,7 +15934,7 @@ export interface components {
       }
       /**
        * External Id
-       * @description Your identifier for the benefit.
+       * @description Your identifier for the benefit, used to match it.
        */
       external_id: string
       /**
@@ -16198,7 +16198,7 @@ export interface components {
       }
       /**
        * External Id
-       * @description Your identifier for the product.
+       * @description Your identifier for the product, used to match it.
        */
       external_id: string
       /**
@@ -16220,7 +16220,7 @@ export interface components {
       recurring_interval?: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
-       * @description Defaults to 1 for recurring products.
+       * @description Billing cycle length in intervals. Defaults to 1.
        */
       recurring_interval_count?: number | null
       /**

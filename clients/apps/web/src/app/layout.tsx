@@ -54,18 +54,7 @@ export default async function RootLayout({
     >
       <head>
         {CONFIG.ENVIRONMENT === 'development' ? (
-          <>
-            <link
-              href="/favicon-dev.png"
-              rel="icon"
-              media="(prefers-color-scheme: dark)"
-            />
-            <link
-              href="/favicon-dev-dark.png"
-              rel="icon"
-              media="(prefers-color-scheme: light)"
-            />
-          </>
+          <link href="/favicon-dev.png" rel="icon" />
         ) : (
           <>
             <link

@@ -44,17 +44,9 @@ def base(request: Request, title_parts: Sequence[str]) -> Generator[None]:
             ):
                 pass
             with tag.link(
-                href=static_url(request, "favicon-backoffice-dark.png"),
+                href=static_url(request, "favicon-backoffice.png"),
                 rel="icon",
                 type="image/png",
-                media="(prefers-color-scheme: dark)",
-            ):
-                pass
-            with tag.link(
-                href=static_url(request, "favicon-backoffice-light.png"),
-                rel="icon",
-                type="image/png",
-                media="(prefers-color-scheme: light)",
             ):
                 pass
             with tag.link(

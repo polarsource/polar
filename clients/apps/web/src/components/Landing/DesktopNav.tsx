@@ -60,9 +60,7 @@ export const LandingPageDesktopNavigation = () => {
         justifyContent="between"
       >
         <Box alignItems="center" columnGap="2xl">
-          <Link href="/">
-            <PolarLogotype logoVariant="icon" size={36} />
-          </Link>
+          <PolarLogotype logoVariant="icon" size={28} href="/" />
           <Box as="ul" alignItems="center" columnGap="xl">
             {navMenus.map((menu) => (
               <Fragment key={menu.id}>
@@ -180,11 +178,11 @@ const NavMenuPanel = ({
         templateColumns="repeat(2, 1fr)"
         gap="l"
       >
-        <Box flexDirection="column" alignItems="start" rowGap="xl">
+        <Box flexDirection="column" alignItems="start" rowGap="l">
           <Text variant="body" color="muted">
             {menu.featured.title}
           </Text>
-          <Box flexDirection="column" alignItems="start" rowGap="l">
+          <Box flexDirection="column" alignItems="start" rowGap="m">
             {menu.featured.items.map((item) => (
               <PanelLink
                 key={item.href + item.label}
@@ -201,12 +199,12 @@ const NavMenuPanel = ({
               key={section.title}
               flexDirection="column"
               alignItems="start"
-              rowGap="xl"
+              rowGap="l"
             >
               <Text variant="body" color="muted">
                 {section.title}
               </Text>
-              <Box as="ul" flexDirection="column" alignItems="start" rowGap="m">
+              <Box as="ul" flexDirection="column" alignItems="start" rowGap="s">
                 {section.items.map((item) => (
                   <Box as="li" key={item.href + item.label}>
                     <PanelLink item={item} onNavigate={onNavigate} />

@@ -4,6 +4,7 @@ import { TextRings } from '@/components/Landing/graphics/TextRings'
 import { Button, Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
+import { HeroMark } from './HeroMark'
 import { HowWeWork } from './HowWeWork'
 import { investors } from './investors'
 import { OpenRoles } from './OpenRoles'
@@ -32,22 +33,25 @@ export default function CompanyPage() {
         >
           <Box
             flexDirection="column"
-            justifyContent="end"
+            justifyContent={{ base: 'end', lg: 'between' }}
             alignItems="start"
             rowGap="2xl"
           >
-            <Box display="block" maxWidth="32rem">
-              <Text variant="heading-s" as="h1" wrap="pretty">
-                A small, senior team working remotely across the world.
-              </Text>
-              <Text variant="heading-s" as="p" color="muted" wrap="pretty">
-                Building the finance layer for the next generation of AI
-                products.
-              </Text>
+            <HeroMark />
+            <Box flexDirection="column" alignItems="start" rowGap="2xl">
+              <Box display="block" maxWidth="32rem">
+                <Text variant="heading-s" as="h1" wrap="pretty">
+                  A small, senior team working remotely across the world.
+                </Text>
+                <Text variant="heading-s" as="p" color="muted" wrap="pretty">
+                  Building the finance layer for the next generation of AI
+                  products.
+                </Text>
+              </Box>
+              <a href="#open-roles">
+                <Button size="lg">Join us</Button>
+              </a>
             </Box>
-            <a href="#open-roles">
-              <Button size="lg">Join us</Button>
-            </a>
           </Box>
           <TeamCarouselWrapper />
         </Grid>
@@ -152,14 +156,14 @@ export default function CompanyPage() {
         <Grid
           templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }}
           columnGap="l"
-          rowGap="xl"
+          rowGap="l"
         >
           {investors.map((investor) => (
             <Box key={investor.name} flexDirection="column">
-              <Text variant="heading-xxs" as="span">
+              <Text variant="body" as="span">
                 {investor.name}
               </Text>
-              <Text variant="heading-xxs" as="span" color="muted">
+              <Text variant="body" as="span" color="muted">
                 {investor.company}
               </Text>
             </Box>

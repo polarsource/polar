@@ -32,6 +32,7 @@ vi.mock('./Logos', () => ({
   FastAPICloud: () => <div data-testid="logo-fastapicloud" />,
   Confidence: () => <div data-testid="logo-confidence" />,
   StillaAIWordmark: () => <div data-testid="logo-stilla-ai" />,
+  MiddayWordmark: () => <div data-testid="logo-midday" />,
 }))
 
 import { LogoGrid } from './LogoGrid'
@@ -41,6 +42,7 @@ const EXPECTED_LINKS: Record<string, string> = {
   'logo-fastapicloud': 'https://fastapicloud.com',
   'logo-confidence': 'https://confidence.spotify.com',
   'logo-stilla-ai': 'https://stilla.ai',
+  'logo-midday': 'https://midday.ai',
 }
 
 describe('LogoGrid', () => {
@@ -74,13 +76,5 @@ describe('LogoGrid', () => {
     render(<LogoGrid />)
     const stillaLink = screen.getByTestId('logo-stilla-ai').closest('a')
     expect(stillaLink?.getAttribute('href')).toBe('https://stilla.ai')
-  })
-
-  it('does not link any logo to midday.ai', () => {
-    render(<LogoGrid />)
-    const hrefs = screen
-      .getAllByRole('link')
-      .map((link) => link.getAttribute('href'))
-    expect(hrefs).not.toContain('https://midday.ai')
   })
 })

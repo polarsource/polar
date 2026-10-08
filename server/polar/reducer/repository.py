@@ -5,6 +5,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import joinedload
 
 from polar.kit.repository import RepositoryBase
+from polar.kit.repository.base import Options
 from polar.models import Meter, MeterReducer, Reducer
 
 
@@ -64,7 +65,7 @@ class ReducerRepository(RepositoryBase[Reducer]):
         return len((await self.session.scalars(statement)).all())
 
     async def get_all_active_by_organization(
-        self, organization_id: UUID
+        self, organization_id: UUID, *, options: Options = ()
     ) -> Sequence[Reducer]:
         """Reducers of the organization used by at least one active meter."""
         active_reducer_ids = (
@@ -72,8 +73,12 @@ class ReducerRepository(RepositoryBase[Reducer]):
             .join(MeterReducer.meter)
             .where(Meter.archived_at.is_(None), Meter.deleted_at.is_(None))
         )
-        statement = self.get_base_statement().where(
-            Reducer.organization_id == organization_id,
-            Reducer.id.in_(active_reducer_ids),
+        statement = (
+            self.get_base_statement()
+            .where(
+                Reducer.organization_id == organization_id,
+                Reducer.id.in_(active_reducer_ids),
+            )
+            .options(*options)
         )
         return await self.get_all(statement)

@@ -1,13 +1,14 @@
 import structlog
 from anyio.streams.memory import MemoryObjectSendStream
 from pydantic import ValidationError
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.kit.db.postgres import AsyncReadSession
 from polar.logging import Logger
 from polar.meter.repository import MeterRepository
-from polar.models import CustomerMeter, Organization
+from polar.models import CustomerMeter, Organization, Reducer
+from polar.reducer.repository import ReducerRepository
 
 from .schemas import (
     CustomerMeterIncomingMessageCustomerPayload,
@@ -78,8 +79,15 @@ class OutpostService:
     ) -> None:
         meter_repository = MeterRepository.from_session(session)
         meters = await meter_repository.get_all_active_by_organization(organization.id)
+        reducer_repository = ReducerRepository.from_session(session)
+        reducers = await reducer_repository.get_all_active_by_organization(
+            organization.id, options=(selectinload(Reducer.meter_reducers),)
+        )
         message = OutgoingMessageAdapter.validate_python(
-            {"type": OutgoingMessageType.configuration, "payload": {"meters": meters}}
+            {
+                "type": OutgoingMessageType.configuration,
+                "payload": {"meters": meters, "reducers": reducers},
+            }
         )
         await send_stream.send(message)
 

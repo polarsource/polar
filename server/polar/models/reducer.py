@@ -34,3 +34,7 @@ class Reducer(RecordModel):
     meter_reducers: Mapped[list["MeterReducer"]] = relationship(
         lazy="raise", back_populates="reducer", passive_deletes="all"
     )
+
+    @property
+    def meter_ids(self) -> list[UUID]:
+        return [meter_reducer.meter_id for meter_reducer in self.meter_reducers]

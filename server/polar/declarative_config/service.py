@@ -1,7 +1,9 @@
 from collections.abc import Sequence
-from typing import Literal
+from dataclasses import dataclass
+from typing import Any, Literal
+from uuid import UUID
 
-from pydantic import BaseModel, Field, create_model
+from pydantic import BaseModel, Field, ValidationError, create_model
 from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject
@@ -11,22 +13,36 @@ from polar.exceptions import PolarError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
 from polar.models import Organization, User
-from polar.organization.resolver import get_payload_organization
-from polar.postgres import AsyncSession
+from polar.organization.resolver import OrganizationIDModel, get_payload_organization
+from polar.postgres import AsyncReadSession, AsyncSession
+from polar.redis import Redis
 
 from . import validation
 from .schemas import (
+    MAXIMUM_METERS,
     Config,
     ConfigApplyResult,
+    ConfigChange,
+    ConfigExport,
+    ConfigExportDocument,
+    ConfigExportMeter,
     ConfigIssue,
     ConfigIssueSeverity,
-    ConfigMeterChange,
-    ConfigMeterResult,
+    ConfigMeter,
     ConfigPlan,
+    ConfigResource,
+    ConfigResult,
+    ConfigSkippedMeter,
+    ConfigSkippedReason,
 )
-from .validation import MeterChange
+from .validation import MeterChange, ResourceChange
 
 _METER_EXTERNAL_ID_INDEX = "ix_meters_organization_id_external_id"
+
+
+@dataclass
+class _OrganizationTarget:
+    organization_id: UUID | None
 
 
 class ConfigAsCodeNotEnabled(PolarError):
@@ -38,6 +54,20 @@ class ConfigMeterConflict(PolarError):
     def __init__(self) -> None:
         super().__init__(
             "A meter in this config was created by a concurrent request. Retry.", 409
+        )
+
+
+class ConfigBenefitConflict(PolarError):
+    def __init__(self) -> None:
+        super().__init__(
+            "A benefit in this config was created by a concurrent request. Retry.", 409
+        )
+
+
+class ConfigProductConflict(PolarError):
+    def __init__(self) -> None:
+        super().__init__(
+            "A product in this config was created by a concurrent request. Retry.", 409
         )
 
 
@@ -65,6 +95,7 @@ class DeclarativeConfigService:
     async def apply(
         self,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[User | Organization],
         config: Config,
     ) -> ConfigApplyResult:
@@ -80,8 +111,8 @@ class DeclarativeConfigService:
         if errors:
             raise ConfigInvalid(errors)
 
-        meters = await self._apply_meters(session, organization, changes)
-        return ConfigApplyResult(meters=meters)
+        meters = await self._apply_meters(session, organization, changes.meters)
+        return ConfigApplyResult(changes=meters)
 
     async def plan(
         self,
@@ -97,24 +128,89 @@ class DeclarativeConfigService:
         )
         return ConfigPlan(
             changes=[
-                ConfigMeterChange(
-                    external_id=change.config.external_id,
-                    action=change.action,
-                    diff=change.diff,
-                )
-                for change in changes
+                *self._plan_changes(ConfigResource.meter, changes.meters),
+                *self._plan_changes(ConfigResource.benefit, changes.benefits),
+                *self._plan_changes(ConfigResource.product, changes.products),
             ],
             issues=issues,
         )
 
+    async def export(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization_id: UUID | None,
+    ) -> ConfigExport:
+        organization = await self._get_organization(
+            session,
+            auth_subject,
+            _OrganizationTarget(organization_id),
+            OrganizationPermission.products_read,
+        )
+        repository = MeterRepository.from_session(session)
+        meters: list[ConfigExportMeter] = []
+        skipped: list[ConfigSkippedMeter] = []
+        statement = repository.get_organization_statement(organization.id)
+        async for meter in repository.stream(statement):
+            reason: ConfigSkippedReason | None = None
+            if meter.external_id is None:
+                reason = ConfigSkippedReason.missing_external_id
+            elif meter.archived_at is not None:
+                reason = ConfigSkippedReason.archived
+            elif len(meters) >= MAXIMUM_METERS:
+                reason = ConfigSkippedReason.over_limit
+            else:
+                try:
+                    meter_config = ConfigMeter(
+                        external_id=meter.external_id,
+                        name=meter.name,
+                        unit=meter.unit,
+                        custom_label=meter.custom_label,
+                        custom_multiplier=meter.custom_multiplier,
+                        filter=meter.filter,
+                        aggregation=meter.aggregation,
+                        metadata=meter.user_metadata,
+                    )
+                except ValidationError:
+                    reason = ConfigSkippedReason.invalid
+                else:
+                    meters.append(
+                        ConfigExportMeter.model_validate(
+                            meter_config, from_attributes=True
+                        )
+                    )
+            if reason is not None:
+                skipped.append(
+                    ConfigSkippedMeter(
+                        resource=ConfigResource.meter,
+                        id=meter.id,
+                        name=meter.name,
+                        reason=reason,
+                    )
+                )
+        return ConfigExport(config=ConfigExportDocument(meters=meters), skipped=skipped)
+
+    def _plan_changes(
+        self, resource: ConfigResource, changes: Sequence[ResourceChange[Any, Any]]
+    ) -> list[ConfigChange]:
+        return [
+            ConfigChange(
+                resource=resource,
+                external_id=change.config.external_id,
+                action=change.action,
+                diff=change.diff,
+            )
+            for change in changes
+        ]
+
     async def _get_organization(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
-        config: Config,
+        target: OrganizationIDModel,
         permission: OrganizationPermission,
     ) -> Organization:
-        organization = await get_payload_organization(session, auth_subject, config)
+        organization = await get_payload_organization(session, auth_subject, target)
         await assert_organization_permission(
             session, auth_subject, organization.id, permission
         )
@@ -127,11 +223,11 @@ class DeclarativeConfigService:
         session: AsyncSession,
         organization: Organization,
         changes: Sequence[MeterChange],
-    ) -> list[ConfigMeterResult]:
+    ) -> list[ConfigResult]:
         repository = MeterRepository.from_session(session)
-        results: list[ConfigMeterResult] = []
+        results: list[ConfigResult] = []
         for change in changes:
-            if change.meter is None:
+            if change.existing is None:
                 try:
                     async with session.begin_nested():
                         await meter_service.create_for_organization(
@@ -144,10 +240,12 @@ class DeclarativeConfigService:
                         raise
                     raise ConfigMeterConflict() from e
             elif change.update_dict:
-                await repository.update(change.meter, update_dict=change.update_dict)
+                await repository.update(change.existing, update_dict=change.update_dict)
             results.append(
-                ConfigMeterResult(
-                    external_id=change.config.external_id, action=change.action
+                ConfigResult(
+                    resource=ConfigResource.meter,
+                    external_id=change.config.external_id,
+                    action=change.action,
                 )
             )
         return results

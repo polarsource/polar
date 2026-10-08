@@ -5,6 +5,7 @@ import { Command, Flag } from 'effect/cli'
 import { ApiRuntime, ApiCommandError } from '../runtime'
 import {
   confirm,
+  fields,
   data,
   mergeInput,
   missingFlags,
@@ -18,6 +19,7 @@ export const command = Command.make(
   'create',
   {
     confirm,
+    fields,
     data,
     input: {
       metadata: jsonFlag('metadata').pipe(
@@ -91,6 +93,7 @@ export const command = Command.make(
         method: 'POST',
         requiresConfirmation: confirmationInput['revoke_benefits'] === true,
         confirm: config.confirm,
+        fields: config.fields,
         invoke: (client) => client.refunds.create(body),
       })
     }),

@@ -2,8 +2,8 @@ import type { StandardSchemaV1 } from '@standard-schema/spec'
 import { Data, Predicate } from 'effect'
 import { getCustomerMeter } from '../internal/api/customer-meters'
 import { ingestEvent } from '../internal/api/events'
-import { findBenefitGrant } from '../internal/api/benefits'
-import { getMeterId } from '../internal/api/meters'
+import { findBenefitGrant, getBenefitId } from '../internal/api/benefits'
+import { assertMeterDeployed } from '../internal/api/meters'
 import { matchesMeter } from '../internal/meter'
 import type {
   CustomerIdentifier,
@@ -119,11 +119,12 @@ export const createActor = <Config extends RuntimeSDKConfig>(
   // and meter. The server processes events asynchronously, so a customer meter
   // last modified before this timestamp doesn't reflect that event yet.
   const latestIngestedAt = new Map<string, Date>()
-  const meterIds = new Map<string, string>()
-  const cacheKey = (identifier: ActorIdentifier, meterId: string) =>
+  const deployedMeters = new Set<string>()
+  const benefitIds = new Map<string, string>()
+  const cacheKey = (identifier: ActorIdentifier, externalMeterId: string) =>
     identifier.customerId !== undefined
-      ? `customer:${identifier.customerId}:${meterId}`
-      : `external_customer:${identifier.externalCustomerId}:${meterId}`
+      ? `customer:${identifier.customerId}:${externalMeterId}`
+      : `external_customer:${identifier.externalCustomerId}:${externalMeterId}`
 
   // Should we validate if an actor exists before we allow this?
   // Or do we `upsert` the actor if it needs to be persisted
@@ -135,10 +136,13 @@ export const createActor = <Config extends RuntimeSDKConfig>(
         throw new Error(`Unknown benefit: ${name}`)
       }
 
+      const benefitId =
+        benefit.id ?? benefitIds.get(name) ?? (await getBenefitId(sdk, name))
+      benefitIds.set(name, benefitId)
       const grant = await findBenefitGrant(
         sdk,
         toMemberIdentifier(identifier),
-        benefit.id,
+        benefitId,
       )
       return grant === undefined
         ? { granted: false }
@@ -146,23 +150,26 @@ export const createActor = <Config extends RuntimeSDKConfig>(
     },
 
     async balance(name) {
-      const meter = config.meters?.[name]
-      if (meter === undefined) {
+      if (config.meters?.[name] === undefined) {
         throw new Error(`Unknown meter: ${name}`)
       }
 
-      // To investigate: a customer meter only gets created in 2 cases:
+      // A customer meter only gets created in 2 cases:
       //
       // #1 - a benefit has granted meter credits for that meter -> customer meter gets created upon benefit grant
       // #2 - an event has been ingested that matches the meter's filter definition -> customer meter gets created
-      const meterId =
-        meter.id ?? meterIds.get(name) ?? (await getMeterId(sdk, name))
-      meterIds.set(name, meterId)
+      //
+      // So a missing customer meter means a zero balance, unless the meter
+      // itself isn't deployed, which we check once per meter.
       const customerMeter = await getCustomerMeter(
         sdk,
         toCustomerIdentifier(identifier),
-        meterId,
+        name,
       )
+      if (customerMeter === undefined && !deployedMeters.has(name)) {
+        await assertMeterDeployed(sdk, name)
+      }
+      deployedMeters.add(name)
 
       const key = cacheKey(identifier, name)
       const ingestedAt = latestIngestedAt.get(key)

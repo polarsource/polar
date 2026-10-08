@@ -11,7 +11,6 @@ export type {
 export { EventValidationError } from './client/actor'
 export type { BenefitAccess, MeterBalance } from './client/actor'
 export type { EventMetadata } from './schema/event'
-export type { RuntimeSDKConfig } from './schema/runtime'
 
 export { RuntimeSDK } from './runtime'
 export type { RuntimeConnection } from './runtime'
@@ -35,6 +34,8 @@ export type {
   MeterDefinition,
   MeterFilter,
 } from './schema/meter'
+export { flag, credits } from './schema/benefit'
+export type { BenefitConfig, BenefitDefinition } from './schema/benefit'
 export { defineConfig } from './schema/config'
 export type { Config, PolarConfig } from './schema/config'
 export { generateConfig } from './generate'

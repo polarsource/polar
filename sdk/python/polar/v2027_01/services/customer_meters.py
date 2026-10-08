@@ -30,6 +30,7 @@ class CustomerMetersSync(SyncServiceBase):
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
         meter_id: str | builtins.list[str] | None = None,
+        external_meter_id: str | builtins.list[str] | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomerMeterSortProperty] | None = ["-modified_at"],
@@ -46,6 +47,7 @@ class CustomerMetersSync(SyncServiceBase):
             customer_id: Filter by customer ID.
             external_customer_id: Filter by external customer ID.
             meter_id: Filter by meter ID.
+            external_meter_id: Filter by meter external ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
@@ -68,6 +70,7 @@ class CustomerMetersSync(SyncServiceBase):
                 "customer_id": customer_id,
                 "external_customer_id": external_customer_id,
                 "meter_id": meter_id,
+                "external_meter_id": external_meter_id,
                 "page": page,
                 "limit": limit,
                 "sorting": sorting,
@@ -88,6 +91,7 @@ class CustomerMetersSync(SyncServiceBase):
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
         meter_id: str | builtins.list[str] | None = None,
+        external_meter_id: str | builtins.list[str] | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomerMeterSortProperty] | None = ["-modified_at"],
@@ -104,6 +108,7 @@ class CustomerMetersSync(SyncServiceBase):
             customer_id: Filter by customer ID.
             external_customer_id: Filter by external customer ID.
             meter_id: Filter by meter ID.
+            external_meter_id: Filter by meter external ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
@@ -126,6 +131,7 @@ class CustomerMetersSync(SyncServiceBase):
                 customer_id=customer_id,
                 external_customer_id=external_customer_id,
                 meter_id=meter_id,
+                external_meter_id=external_meter_id,
                 page=page,
                 limit=limit,
                 sorting=sorting,
@@ -188,6 +194,7 @@ class CustomerMetersAsync(AsyncServiceBase):
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
         meter_id: str | builtins.list[str] | None = None,
+        external_meter_id: str | builtins.list[str] | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomerMeterSortProperty] | None = ["-modified_at"],
@@ -204,6 +211,7 @@ class CustomerMetersAsync(AsyncServiceBase):
             customer_id: Filter by customer ID.
             external_customer_id: Filter by external customer ID.
             meter_id: Filter by meter ID.
+            external_meter_id: Filter by meter external ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
@@ -226,6 +234,7 @@ class CustomerMetersAsync(AsyncServiceBase):
                 "customer_id": customer_id,
                 "external_customer_id": external_customer_id,
                 "meter_id": meter_id,
+                "external_meter_id": external_meter_id,
                 "page": page,
                 "limit": limit,
                 "sorting": sorting,
@@ -246,6 +255,7 @@ class CustomerMetersAsync(AsyncServiceBase):
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
         meter_id: str | builtins.list[str] | None = None,
+        external_meter_id: str | builtins.list[str] | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomerMeterSortProperty] | None = ["-modified_at"],
@@ -262,6 +272,7 @@ class CustomerMetersAsync(AsyncServiceBase):
             customer_id: Filter by customer ID.
             external_customer_id: Filter by external customer ID.
             meter_id: Filter by meter ID.
+            external_meter_id: Filter by meter external ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
@@ -284,6 +295,7 @@ class CustomerMetersAsync(AsyncServiceBase):
                 customer_id=customer_id,
                 external_customer_id=external_customer_id,
                 meter_id=meter_id,
+                external_meter_id=external_meter_id,
                 page=page,
                 limit=limit,
                 sorting=sorting,

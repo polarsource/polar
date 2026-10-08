@@ -259,8 +259,6 @@ export class MeterBuilder<Names extends string = string, Metadata = unknown> {
 
 export type MeterDefinition = ReturnType<MeterBuilder['count']>
 
-export type MeterOptions = { readonly displayName?: string }
-
 export class UnboundMeter<
   Events extends EventDefinitions,
 > extends MeterBuilder {
@@ -287,5 +285,5 @@ export class UnboundMeter<
 }
 
 export const meter = <Events extends EventDefinitions = Record<never, never>>(
-  config: MeterOptions = {},
-): UnboundMeter<Events> => new UnboundMeter(config.displayName)
+  name?: string,
+): UnboundMeter<Events> => new UnboundMeter(name)

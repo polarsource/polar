@@ -4,9 +4,7 @@ import { createEventReferences } from './event'
 import { and, eq, gt, gte, like, lt, meter, ne, notLike, or } from './meter'
 
 test('meter builders can be reused without sharing mutable data', () => {
-  const base = meter({ displayName: 'Tokens' }).where(
-    eq('name', 'llm.completion'),
-  )
+  const base = meter('Tokens').where(eq('name', 'llm.completion'))
   const filtered = base.where(gte('tokens', 1000))
   const count = base.count()
   const sum = filtered.unit('custom', 'token').sum('tokens')
@@ -26,7 +24,7 @@ test('where composes groups while preserving the event, previous conditions, and
     and(eq('model', 'claude'), eq('region', 'eu')),
     and(eq('model', 'gpt'), eq('region', 'us')),
   )
-  const builder = meter({ displayName: 'Tokens' })
+  const builder = meter('Tokens')
     .where(eq('name', 'llm.completion'))
     .where(and(eq('status', 'ok'), models))
   Reflect.set(models.clauses, 'length', 0)

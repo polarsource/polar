@@ -166,27 +166,26 @@ export const CustomerPortalSettings = ({
           </Well>
         )}
 
-      {customer.type === 'team' &&
-        organization.organization_features?.member_model_enabled && (
-          <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
-            <WellHeader className="flex-row items-start justify-between">
-              <div className="flex flex-col gap-y-2">
-                <h3 className="text-xl">Billing Managers</h3>
-                <p className="dark:text-polar-500 text-gray-500">
-                  Billing Managers can manage billing details, payment methods,
-                  and subscriptions.
-                </p>
-              </div>
-            </WellHeader>
-            <Separator className="dark:bg-polar-700" />
-            <WellContent>
-              <CustomerPortalTeamSection
-                api={api}
-                organizationSlug={organization.slug}
-              />
-            </WellContent>
-          </Well>
-        )}
+      {customer.type === 'team' && (
+        <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
+          <WellHeader className="flex-row items-start justify-between">
+            <div className="flex flex-col gap-y-2">
+              <h3 className="text-xl">Billing Managers</h3>
+              <p className="dark:text-polar-500 text-gray-500">
+                Billing Managers can manage billing details, payment methods,
+                and subscriptions.
+              </p>
+            </div>
+          </WellHeader>
+          <Separator className="dark:bg-polar-700" />
+          <WellContent>
+            <CustomerPortalTeamSection
+              api={api}
+              organizationSlug={organization.slug}
+            />
+          </WellContent>
+        </Well>
+      )}
 
       <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
         <WellHeader className="flex-row items-start justify-between">

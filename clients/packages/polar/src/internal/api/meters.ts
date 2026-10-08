@@ -1,24 +1,21 @@
-import type { Polar } from '../../sdk'
+import { errors, type Polar } from '../../sdk'
 
-export const getMeterId = async (
+export const assertMeterDeployed = async (
   sdk: Polar,
   externalId: string,
-): Promise<string> => {
-  let id: string | undefined
-  for await (const meter of sdk.meters.iterList({ is_archived: false })) {
-    if ('external_id' in meter && meter.external_id === externalId) {
-      if (id !== undefined) {
-        throw new Error(
-          `Meter external ID ${JSON.stringify(externalId)} is ambiguous. Use an organization-scoped token.`,
-        )
-      }
-      id = meter.id
+): Promise<void> => {
+  try {
+    const meter = await sdk.meters.getExternal(externalId)
+    if (meter.archived_at == null) return
+  } catch (error) {
+    if (error instanceof errors.AmbiguousExternalMeterID) {
+      throw new Error(
+        `Meter external ID ${JSON.stringify(externalId)} is ambiguous. Use an organization-scoped token.`,
+      )
     }
+    if (!(error instanceof errors.ResourceNotFound)) throw error
   }
-  if (id === undefined) {
-    throw new Error(
-      `Meter ${JSON.stringify(externalId)} is not deployed in this environment.`,
-    )
-  }
-  return id
+  throw new Error(
+    `Meter ${JSON.stringify(externalId)} is not deployed in this environment.`,
+  )
 }

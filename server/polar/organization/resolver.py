@@ -7,7 +7,7 @@ from polar.authz.service import get_accessible_org_ids
 from polar.exceptions import PolarRequestValidationError
 from polar.models import Organization, User
 from polar.organization.repository import OrganizationRepository
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession
 
 
 class _OrganizationIDModelNone(Protocol):
@@ -22,7 +22,7 @@ OrganizationIDModel = _OrganizationIDModelNone | _OrganizationIDModel
 
 
 async def get_payload_organization(
-    session: AsyncSession,
+    session: AsyncReadSession,
     auth_subject: AuthSubject[User | Organization],
     model: OrganizationIDModel,
 ) -> Organization:

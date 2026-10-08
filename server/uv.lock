@@ -11,8 +11,8 @@ exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for 
 exclude-newer-span = "P1W"
 
 [options.exclude-newer-package]
-polar-sdk = false
 reauth = false
+polar-sdk = false
 
 [[package]]
 name = "adaptix"
@@ -1562,6 +1562,21 @@ wheels = [
 ]
 
 [[package]]
+name = "httpx-ws"
+version = "0.9.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "httpcore" },
+    { name = "httpx" },
+    { name = "wsproto" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/cd/cd/ca91a07ae446451f7476bf3fcc909e98cb942ff032ebfda0e3fe449aca7b/httpx_ws-0.9.0.tar.gz", hash = "sha256:797373326f70eec1ae96f6e43ae9f12002fd7d73aee139a4985eaab964338a08", size = 107105, upload-time = "2026-03-28T14:11:10.781Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/98/f8/a6bc80313a9e93c888fa10534dfce2ad76ff86911b6f485777ce6de6a073/httpx_ws-0.9.0-py3-none-any.whl", hash = "sha256:71640d2fb1bf9a225775015b33cd755cfd4c5f7e21c885192fe3adc4c387b248", size = 15759, upload-time = "2026-03-28T14:11:11.887Z" },
+]
+
+[[package]]
 name = "httpx2"
 version = "2.13.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2759,6 +2774,7 @@ dev = [
     { name = "fakeredis", extra = ["lua"] },
     { name = "freezegun" },
     { name = "gepa" },
+    { name = "httpx-ws" },
     { name = "locust" },
     { name = "minio" },
     { name = "mypy" },
@@ -2861,6 +2877,7 @@ dev = [
     { name = "fakeredis", extras = ["lua"], specifier = ">=2.36.1" },
     { name = "freezegun", specifier = ">=1.5.1" },
     { name = "gepa", specifier = ">=0.1.0" },
+    { name = "httpx-ws", specifier = ">=0.9.0" },
     { name = "locust", specifier = ">=2.44.1" },
     { name = "minio", specifier = ">=7.2.9" },
     { name = "mypy", specifier = ">=2.1.0" },

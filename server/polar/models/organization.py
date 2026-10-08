@@ -723,10 +723,6 @@ class Organization(RateLimitGroupMixin, RecordModel):
     )
 
     @property
-    def is_member_model_enabled(self) -> bool:
-        return self.feature_settings.get("member_model_enabled", False)
-
-    @property
     def is_sso_enabled(self) -> bool:
         return self.feature_settings.get("sso_enabled", False)
 

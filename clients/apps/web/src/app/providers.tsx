@@ -43,6 +43,7 @@ const FORCED_DARK_PREFIXES = [
   '/blog',
   '/resources',
   '/company',
+  '/brand',
   '/startup-program',
   '/downloads',
   '/legal',

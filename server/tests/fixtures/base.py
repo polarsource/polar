@@ -5,6 +5,7 @@ import httpx
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI
+from httpx_ws.transport import ASGIWebSocketTransport
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from starlette.types import Receive, Scope, Send
 
@@ -81,7 +82,11 @@ async def client(
     async with IsolatedSessionTestClient(
         session=session,
         auto_expunge=auto_expunge,
-        transport=httpx.ASGITransport(app=app_with_state),
+        transport=(
+            ASGIWebSocketTransport(app=app_with_state)
+            if request.node.get_closest_marker("anyio") is not None
+            else httpx.ASGITransport(app=app_with_state)
+        ),
         base_url="http://test",
         headers={VERSION_HEADER: str(api_version)} if api_version is not None else {},
     ) as client:
@@ -91,6 +96,11 @@ async def client(
 @pytest.fixture
 def api_version(request: pytest.FixtureRequest) -> APIVersion | None:
     return getattr(request, "param", None)
+
+
+@pytest.fixture(scope="session")
+def anyio_backend() -> str:
+    return "asyncio"
 
 
 @pytest.hookimpl(specname="pytest_generate_tests")

@@ -25,7 +25,7 @@ export const completionTokensConfig = defineConfig({
     }),
   },
   meters: ({ meter, events }) => ({
-    completionTokens: meter({ displayName: 'Completion Tokens' })
+    completionTokens: meter('Completion Tokens')
       .on(events['llm.completions'])
       .where(
         and(
@@ -59,22 +59,22 @@ export const apiMetricsConfig = defineConfig({
     )
 
     return {
-      requests: meter({ displayName: 'Successful Requests' })
+      requests: meter('Successful Requests')
         .on(events['api.request'])
         .where(successful)
         .unit('custom', 'request')
         .count(),
-      averageLatency: meter({ displayName: 'Average Latency' })
+      averageLatency: meter('Average Latency')
         .on(events['api.request'])
         .where(successful)
         .unit('custom', 'ms')
         .avg('durationMs'),
-      peakLatency: meter({ displayName: 'Peak Latency' })
+      peakLatency: meter('Peak Latency')
         .on(events['api.request'])
         .where(successful)
         .unit('custom', 'ms')
         .max('durationMs'),
-      activeAccounts: meter({ displayName: 'Active Accounts' })
+      activeAccounts: meter('Active Accounts')
         .on(events['api.request'])
         .where(successful)
         .unique('accountId'),
@@ -96,11 +96,11 @@ export const llmUsageConfig = defineConfig({
     }),
   },
   meters: ({ meter, events }) => ({
-    inputTokens: meter({ displayName: 'Input Tokens' })
+    inputTokens: meter('Input Tokens')
       .on([events['llm.completion'], events['llm.embedding']])
       .unit('token')
       .sum('inputTokens'),
-    streamedInputTokens: meter({ displayName: 'Streamed Input Tokens' })
+    streamedInputTokens: meter('Streamed Input Tokens')
       .on([events['llm.completion'], events['llm.embedding']])
       .where(
         or(
@@ -110,9 +110,7 @@ export const llmUsageConfig = defineConfig({
       )
       .unit('token')
       .sum('inputTokens'),
-    webhooks: meter({ displayName: 'Webhooks' })
-      .where(eq('name', 'webhook.delivered'))
-      .count(),
+    webhooks: meter('Webhooks').where(eq('name', 'webhook.delivered')).count(),
   }),
 })
 
@@ -129,11 +127,11 @@ export const storageConfig = defineConfig({
     ),
   },
   meters: ({ meter, events }) => ({
-    uploadedBytes: meter({ displayName: 'Uploaded Bytes' })
+    uploadedBytes: meter('Uploaded Bytes')
       .on(events['storage.upload'])
       .unit('custom', 'byte')
       .sum('bytes'),
-    publicVideos: meter({ displayName: 'Public Videos' })
+    publicVideos: meter('Public Videos')
       .on(events['storage.upload'])
       .where(
         and(
@@ -142,7 +140,7 @@ export const storageConfig = defineConfig({
         ),
       )
       .count(),
-    euUploads: meter({ displayName: 'EU Uploads' })
+    euUploads: meter('EU Uploads')
       .on(events['storage.upload'])
       .where(eq(events['storage.upload'].region, 'eu'))
       .count(),

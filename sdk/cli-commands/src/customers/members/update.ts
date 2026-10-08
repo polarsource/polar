@@ -3,13 +3,14 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Argument, Command, Flag } from 'effect/cli'
 import { ApiRuntime } from '../../runtime'
-import { data, mergeInput, nullableStringFlag } from '../../inputs'
+import { fields, data, mergeInput, nullableStringFlag } from '../../inputs'
 
 type Body = NonNullable<Parameters<Polar['customers']['members']['update']>[2]>
 
 export const command = Command.make(
   'update',
   {
+    fields,
     path: {
       id: Argument.String('id'),
       member_id: Argument.String('member_id'),
@@ -43,6 +44,7 @@ export const command = Command.make(
         method: 'PATCH',
         requiresConfirmation: false,
         confirm: false,
+        fields: config.fields,
         invoke: (client) =>
           client.customers.members.update(
             config.path.id,

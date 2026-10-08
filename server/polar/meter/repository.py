@@ -20,6 +20,16 @@ class MeterRepository(
 ):
     model = Meter
 
+    async def get_all_active_by_organization(
+        self, organization_id: UUID
+    ) -> Sequence[Meter]:
+        statement = self.get_base_statement().where(
+            Meter.organization_id == organization_id,
+            Meter.deleted_at.is_(None),
+            Meter.archived_at.is_(None),
+        )
+        return await self.get_all(statement)
+
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[Meter]]:
@@ -52,3 +62,14 @@ class MeterRepository(
         if for_update:
             statement = statement.with_for_update()
         return await self.get_all(statement)
+
+    def get_organization_statement(self, organization_id: UUID) -> Select[tuple[Meter]]:
+        return (
+            self.get_base_statement()
+            .where(
+                Meter.organization_id == organization_id,
+                Meter.deleted_at.is_(None),
+            )
+            .order_by(Meter.created_at, Meter.id)
+            .options(undefer(Meter.external_id))
+        )

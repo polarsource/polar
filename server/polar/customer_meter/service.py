@@ -27,6 +27,7 @@ from polar.meter.aggregation import (
 from polar.meter.repository import MeterRepository
 from polar.models import Customer, CustomerMeter, Event, Meter
 from polar.models.event import EventSource
+from polar.outpost.stream import enqueue as enqueue_outpost_event
 from polar.postgres import AsyncSession
 from polar.worker import enqueue_job
 
@@ -193,6 +194,13 @@ class CustomerMeterService:
             customer_meter.credited_units - customer_meter.consumed_units
         )
         customer_meter.last_balanced_event = last_event
+
+        enqueue_outpost_event(
+            customer.organization_id,
+            type="customer_meter",
+            customer_id=customer.id,
+            meter_id=meter.id,
+        )
 
         return await repository.update(customer_meter), True
 

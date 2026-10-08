@@ -52,6 +52,7 @@ from polar.organization.endpoints import router as organization_router
 from polar.organization_access_token.endpoints import (
     router as organization_access_token_router,
 )
+from polar.outpost.endpoints import router as outpost_router
 from polar.payment.endpoints import router as payment_router
 from polar.payout.endpoints import router as payout_router
 from polar.payout_account.endpoints import router as payout_account_router
@@ -191,3 +192,5 @@ router.include_router(polar_self_router)
 router.include_router(payout_account_router)
 # /feedbacks
 router.include_router(feedback_router)
+# /outpost
+router.include_router(outpost_router)

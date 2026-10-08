@@ -72,24 +72,8 @@ your database while subscriptions still renew there.
 migration.
 
 Create a restricted API key in Stripe and add it to your migration in Polar.
-The key needs these permissions, named as in Stripe's restricted key form:
-
-| Stripe group | Permission      | Access |
-| ------------ | --------------- | ------ |
-| Core         | Customers       | Read   |
-| Core         | Products        | Read   |
-| Core         | Payment Methods | Read   |
-| Billing      | Prices          | Read   |
-| Billing      | Coupons         | Read   |
-| Billing      | Promotion Codes | Read   |
-| Billing      | Subscriptions   | Write  |
-| Billing      | Invoices        | Read   |
-| Connect      | Accounts        | Read   |
-
-Subscriptions also covers subscription schedules; Stripe has no separate
-permission for them. Accounts is listed under Connect even if you do not use
-Connect. Polar checks every permission before continuing and names any that
-are missing.
+The Polar dashboard asks for the minimum permissions needed to read and migrate
+your billing data, then validates the account before continuing.
 
 Nothing has moved yet. Stripe still owns every existing subscription.
 

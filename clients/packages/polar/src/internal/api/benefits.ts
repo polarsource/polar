@@ -1,4 +1,5 @@
 import type { models, Polar } from '../../sdk'
+import { findIdByExternalId } from './utils'
 import type { MemberIdentifier } from './utils'
 
 export const findBenefitGrant = async (
@@ -27,3 +28,6 @@ export const findBenefitGrant = async (
   }
   return undefined
 }
+
+export const getBenefitId = (sdk: Polar, externalId: string): Promise<string> =>
+  findIdByExternalId('Benefit', sdk.benefits.iterList({}), externalId)

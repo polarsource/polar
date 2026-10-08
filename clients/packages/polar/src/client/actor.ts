@@ -1,6 +1,6 @@
 import { getCustomerMeter } from '../internal/api/customer-meters'
 import { ingestEvent } from '../internal/api/events'
-import { findBenefitGrant } from '../internal/api/benefits'
+import { findBenefitGrant, getBenefitId } from '../internal/api/benefits'
 import { getMeterId } from '../internal/api/meters'
 import { matchesMeter } from '../internal/meter'
 import type {
@@ -79,6 +79,7 @@ export const createActor = <Config extends RuntimeSDKConfig>(
   // last modified before this timestamp doesn't reflect that event yet.
   const latestIngestedAt = new Map<string, Date>()
   const meterIds = new Map<string, string>()
+  const benefitIds = new Map<string, string>()
   const cacheKey = (identifier: ActorIdentifier, meterId: string) =>
     identifier.customerId !== undefined
       ? `customer:${identifier.customerId}:${meterId}`
@@ -94,10 +95,13 @@ export const createActor = <Config extends RuntimeSDKConfig>(
         throw new Error(`Unknown benefit: ${name}`)
       }
 
+      const benefitId =
+        benefit.id ?? benefitIds.get(name) ?? (await getBenefitId(sdk, name))
+      benefitIds.set(name, benefitId)
       const grant = await findBenefitGrant(
         sdk,
         toMemberIdentifier(identifier),
-        benefit.id,
+        benefitId,
       )
       return grant === undefined
         ? { granted: false }

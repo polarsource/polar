@@ -1,5 +1,6 @@
 import { Effect } from 'effect'
 import { validateConfig } from './schema/config'
+import type { BenefitConfig } from './schema/benefit'
 import type { MeterConfig, MeterFilter } from './schema/meter'
 
 const literal = (value: string | number | boolean): string =>
@@ -52,30 +53,71 @@ const renderMeter = (meter: MeterConfig, imports: Set<string>): string => {
   return lines.join('\n')
 }
 
-export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
-  const config = yield* validateConfig(input)
-  const imports = new Set(['defineConfig'])
-  const ids = config.meters.map((meter) => meter.external_id)
+const renderBenefit = (
+  benefit: BenefitConfig,
+  helpers: Set<string>,
+): string => {
+  const options = `{ displayName: ${literal(benefit.description)} }`
+  if (benefit.type === 'feature_flag') {
+    helpers.add('featureFlag')
+    return `featureFlag(${options})`
+  }
+  helpers.add('meterCredit')
+  const { meter_external_id, units, rollover } = benefit.properties
+  return [
+    `meterCredit(${options})`,
+    `.meter(${literal(meter_external_id)})`,
+    `.units(${literal(units)})`,
+    ...(rollover ? ['.rollover()'] : []),
+  ].join('\n')
+}
+
+const renderEntries = <Resource extends { readonly external_id: string }>(
+  property: string,
+  resources: ReadonlyArray<Resource>,
+  render: (resource: Resource, helpers: Set<string>) => string,
+): string[] => {
+  const helpers = new Set<string>()
+  const ids = resources.map((resource) => resource.external_id)
   const objectKeys = Object.keys(
     Object.fromEntries(ids.map((id) => [id, null])),
   )
   const useEntries =
     objectKeys.length !== ids.length ||
     objectKeys.some((id, index) => id !== ids[index])
-  const meters = config.meters.map((meter) => {
-    const expression = renderMeter(meter, imports).replaceAll('\n', '\n      ')
+  const lines = resources.map((resource) => {
+    const expression = render(resource, helpers).replaceAll('\n', '\n      ')
     return useEntries
-      ? `    [${literal(meter.external_id)}, ${expression}],`
-      : `    ${key(meter.external_id)}: ${expression},`
+      ? `    [${literal(resource.external_id)}, ${expression}],`
+      : `    ${key(resource.external_id)}: ${expression},`
   })
+  const parameters =
+    helpers.size === 0 ? '()' : `({ ${[...helpers].join(', ')} })`
+  return [
+    `  ${property}: ${parameters} => (${useEntries ? '[' : '{'}`,
+    ...lines,
+    `  ${useEntries ? ']' : '}'}),`,
+  ]
+}
+
+export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
+  const config = yield* validateConfig(input)
+  const imports = new Set(['defineConfig'])
+  const meters = renderEntries('meters', config.meters, (meter, helpers) => {
+    helpers.add('meter')
+    return renderMeter(meter, imports)
+  })
+  const benefits =
+    config.benefits === undefined
+      ? []
+      : renderEntries('benefits', config.benefits, renderBenefit)
 
   return [
     `import { ${[...imports].join(', ')} } from '@polar-sh/polar'`,
     '',
     'export default defineConfig({',
-    `  meters: ${meters.length === 0 ? '()' : '({ meter })'} => (${useEntries ? '[' : '{'}`,
     ...meters,
-    `  ${useEntries ? ']' : '}'}),`,
+    ...benefits,
     '})',
     '',
   ].join('\n')

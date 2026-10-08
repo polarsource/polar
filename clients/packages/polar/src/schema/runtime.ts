@@ -2,8 +2,8 @@ import type { MeterAggregation, MeterFilter } from './meter'
 
 export type EventConfig = Record<string, never>
 
-export type BenefitConfig = {
-  id: string
+export type RuntimeBenefitConfig = {
+  readonly id?: string
 }
 
 export type RuntimeFilter = MeterFilter
@@ -16,6 +16,6 @@ export type RuntimeMeterConfig = {
 
 export type RuntimeSDKConfig = {
   readonly events?: Readonly<Record<string, EventConfig>>
-  readonly benefits?: Readonly<Record<string, BenefitConfig>>
+  readonly benefits?: Readonly<Record<string, RuntimeBenefitConfig>>
   readonly meters?: Readonly<Record<string, RuntimeMeterConfig>>
 }

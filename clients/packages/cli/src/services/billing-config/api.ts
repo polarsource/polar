@@ -17,6 +17,18 @@ import type { ApiClient } from '@/services/client'
 
 export type Clients = Record<PolarEnvironment, ApiClient>
 
+// Sections the config API doesn't accept yet
+const UNSUPPORTED_SECTIONS = new Set(['benefits'])
+
+const stripUnsupported = (input: unknown): unknown =>
+  typeof input === 'object' && input !== null && !Array.isArray(input)
+    ? Object.fromEntries(
+        Object.entries(input).filter(
+          ([section]) => !UNSUPPORTED_SECTIONS.has(section),
+        ),
+      )
+    : input
+
 export const post = (
   clients: Clients,
   path: string,
@@ -28,7 +40,7 @@ export const post = (
       yield* apiUrl(organization.environment, path),
     ).pipe(
       withOrganization(organization.id),
-      HttpClientRequest.bodyJson(config.input),
+      HttpClientRequest.bodyJson(stripUnsupported(config.input)),
     )
     return yield* clients[organization.environment].execute(request)
   })

@@ -15823,10 +15823,7 @@ export interface components {
        * Benefits
        * @description Benefits to create or update, matched by `external_id`. Existing benefits that aren't listed are left untouched.
        */
-      benefits?: (
-        | components['schemas']['ConfigBenefitFeatureFlag']
-        | components['schemas']['ConfigBenefitMeterCredit']
-      )[]
+      benefits?: components['schemas']['ConfigBenefit'][]
       /**
        * Products
        * @description Products to create or update, matched by `external_id`. Existing products that aren't listed are left untouched.
@@ -15863,6 +15860,9 @@ export interface components {
       /** Detail */
       detail: string
     }
+    ConfigBenefit:
+      | components['schemas']['ConfigBenefitFeatureFlag']
+      | components['schemas']['ConfigBenefitMeterCredit']
     /** ConfigBenefitFeatureFlag */
     ConfigBenefitFeatureFlag: {
       /**
@@ -16210,16 +16210,16 @@ export interface components {
        * Prices
        * @description The prices of the product.
        */
-      prices: (
-        | components['schemas']['ConfigProductPriceFixed']
-        | components['schemas']['ConfigProductPriceMeteredUnit']
-      )[]
+      prices: components['schemas']['ConfigProductPrice'][]
       /**
        * Benefits
        * @description The benefits granted by the product.
        */
       benefits?: string[]
     }
+    ConfigProductPrice:
+      | components['schemas']['ConfigProductPriceFixed']
+      | components['schemas']['ConfigProductPriceMeteredUnit']
     /** ConfigProductPriceFixed */
     ConfigProductPriceFixed: {
       /**

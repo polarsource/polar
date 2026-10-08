@@ -327,11 +327,26 @@ class TestApply:
             await declarative_config_service.apply(
                 session,
                 auth_subject,
-                Config.model_validate({"meters": [], "benefits": [BETA_BENEFIT]}),
+                Config.model_validate(
+                    {
+                        "meters": [],
+                        "benefits": [BETA_BENEFIT],
+                        "products": [
+                            {
+                                "external_id": "beta",
+                                "name": "Beta",
+                                "prices": [{"amount_type": "fixed", "price_amount": 0}],
+                                "benefits": ["beta"],
+                            }
+                        ],
+                    }
+                ),
             )
 
-        [error] = exc_info.value.errors
-        assert error.type == ConfigIssueType.not_supported
+        assert [(error.type, error.loc) for error in exc_info.value.errors] == [
+            (ConfigIssueType.not_supported, ["body", "benefits", 0]),
+            (ConfigIssueType.not_supported, ["body", "products", 0]),
+        ]
 
 
 @pytest.mark.asyncio

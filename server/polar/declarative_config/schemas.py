@@ -11,7 +11,7 @@ from polar.benefit.strategies.base.schemas import (
 )
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
-from polar.kit.schemas import Int32, Schema
+from polar.kit.schemas import Int32, Schema, SetSchemaReference
 from polar.kit.visibility import Visibility
 from polar.meter.aggregation import Aggregation
 from polar.meter.filter import Filter
@@ -110,7 +110,9 @@ class ConfigBenefitMeterCredit(ConfigBenefitBase):
 
 
 ConfigBenefit = Annotated[
-    ConfigBenefitFeatureFlag | ConfigBenefitMeterCredit, Discriminator("type")
+    ConfigBenefitFeatureFlag | ConfigBenefitMeterCredit,
+    Discriminator("type"),
+    SetSchemaReference("ConfigBenefit"),
 ]
 
 
@@ -153,6 +155,7 @@ class ConfigProductPriceMeteredUnit(ProductPriceCreateBase):
 ConfigProductPrice = Annotated[
     ConfigProductPriceFixed | ConfigProductPriceMeteredUnit,
     Discriminator("amount_type"),
+    SetSchemaReference("ConfigProductPrice"),
 ]
 
 

@@ -1,13 +1,12 @@
 import structlog
 from anyio.streams.memory import MemoryObjectSendStream
 from pydantic import ValidationError
-from sqlalchemy.orm import joinedload
 
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.kit.db.postgres import AsyncReadSession
 from polar.logging import Logger
 from polar.meter.repository import MeterRepository
-from polar.models import CustomerMeter, Organization
+from polar.models import Organization
 
 from .schemas import (
     CustomerMeterIncomingMessageCustomerPayload,
@@ -91,22 +90,15 @@ class OutpostService:
         send_stream: MemoryObjectSendStream[OutgoingMessage],
     ) -> None:
         customer_meter_repository = CustomerMeterRepository.from_session(session)
-        options = (joinedload(CustomerMeter.last_balanced_event),)
         if isinstance(payload, CustomerMeterIncomingMessageCustomerPayload):
             customer_meter = (
                 await customer_meter_repository.get_by_organization_customer_and_meter(
-                    organization.id,
-                    payload.customer_id,
-                    payload.meter_id,
-                    options=options,
+                    organization.id, payload.customer_id, payload.meter_id
                 )
             )
         else:
             customer_meter = await customer_meter_repository.get_by_organization_external_customer_and_meter(
-                organization.id,
-                payload.external_customer_id,
-                payload.meter_id,
-                options=options,
+                organization.id, payload.external_customer_id, payload.meter_id
             )
         if customer_meter is None:
             log.warning(

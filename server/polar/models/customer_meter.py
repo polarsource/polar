@@ -62,12 +62,6 @@ class CustomerMeter(RecordModel):
         return relationship("Event", lazy="raise_on_sql")
 
     @property
-    def last_balance_event_ingest_sequence(self) -> int | None:
-        if self.last_balanced_event is None:
-            return None
-        return self.last_balanced_event.ingest_sequence
-
-    @property
     def external_customer_id(self) -> str | None:
         return self.customer.external_id
 

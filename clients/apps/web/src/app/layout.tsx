@@ -57,15 +57,23 @@ export default async function RootLayout({
           <link href="/favicon-dev.png" rel="icon" />
         ) : (
           <>
+            <link href="/favicon-v2.ico" rel="icon" />
             <link
-              href="/favicon.png"
+              href="/favicon-v2.png"
               rel="icon"
+              type="image/png"
               media="(prefers-color-scheme: dark)"
             />
             <link
-              href="/favicon-dark.png"
+              href="/favicon-v2-dark.png"
               rel="icon"
+              type="image/png"
               media="(prefers-color-scheme: light)"
+            />
+            <link
+              href="/apple-touch-icon-v2.png"
+              rel="apple-touch-icon"
+              sizes="180x180"
             />
           </>
         )}

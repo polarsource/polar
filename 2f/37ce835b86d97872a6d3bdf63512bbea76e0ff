@@ -2,9 +2,11 @@ server/tests/event/test_service.py
   s_d3ae8d5cd7c768::t_ff7c8568367d72 869
 server/tests/reducer_bucket/test_service.py
   s_d3ae8d5cd7c768::t_ff7c8568367d72 3-4,7,20,39,46,89-115,117-128
+  s_d3ae8d5cd7c768::t_465c50d8d2bec4 116,181,227,231
 server/polar/reducer_bucket/service.py
   s_d3ae8d5cd7c768::t_3e9e3e90990339 54-56,60,66,69,84-88,100-105,112,158,165
   h_cc2173b7b86bcc 53
+  s_d3ae8d5cd7c768::t_465c50d8d2bec4 67,70
 ---
 {
   "schema_version": "authorship/3.0.0",

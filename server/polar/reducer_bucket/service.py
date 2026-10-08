@@ -107,12 +107,12 @@ class ReducerBucketService:
                     )
                     match reducer.aggregation.func:
                         case AggregationFunction.cnt:
-                            await pipe.zincrby(key, len(values), "count")
+                            await pipe.incrby(key, len(values))
                         case AggregationFunction.sum:
-                            await pipe.zincrby(key, sum(values), "sum")
+                            await pipe.incrbyfloat(key, sum(values))
                         case AggregationFunction.avg:
-                            await pipe.zincrby(key, len(values), "count")
-                            await pipe.zincrby(key, sum(values), "sum")
+                            await pipe.hincrby(key, "count", len(values))
+                            await pipe.hincrbyfloat(key, "sum", sum(values))
                         case AggregationFunction.min:
                             await pipe.zadd(key, {"min": min(values)}, lt=True)
                         case AggregationFunction.max:

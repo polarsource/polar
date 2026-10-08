@@ -1,7 +1,7 @@
 import uuid
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock, call
 from zoneinfo import ZoneInfo
 
@@ -894,10 +894,8 @@ class TestIngest:
                 reducer.id, get_reducer_bucket_start(timestamp), None, "test"
             )
 
-        assert await redis.zmscore(key(count_reducer), ["count"]) == [2.0]
-        assert await redis.zmscore(
-            key(sum_reducer), ["count", "sum", "min", "max"]
-        ) == [None, 7.0, None, None]
+        assert cast(bytes | None, await redis.get(key(count_reducer))) == b"2"
+        assert cast(bytes | None, await redis.get(key(sum_reducer))) == b"7"
         assert await redis.exists(key(unique_reducer)) == 0
         assert await redis.exists(key(archived_reducer)) == 0
         assert await redis.exists(key(count_reducer, late_timestamp)) == 0
@@ -941,7 +939,7 @@ class TestIngest:
         key = get_reducer_bucket_key(
             reducer.id, get_reducer_bucket_start(timestamp), None, "test"
         )
-        assert await redis.zmscore(key, ["count"]) == [2.0]
+        assert cast(bytes | None, await redis.get(key)) == b"2"
         assert len(await get_all_by_organization(session, organization.id)) == 2
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
@@ -1034,7 +1032,7 @@ class TestIngest:
             key = get_reducer_bucket_key(
                 reducer.id, get_reducer_bucket_start(timestamp), None, "test"
             )
-            assert await redis.zmscore(key, ["count"]) == [1.0]
+            assert cast(bytes | None, await redis.get(key)) == b"1"
 
     @pytest.mark.parametrize(
         "metadata",

@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from typing import Any
 
@@ -85,24 +86,28 @@ class TestGetReducerBucketKey:
 @pytest.mark.asyncio
 class TestRollupActive:
     @pytest.mark.parametrize(
-        ("aggregation", "expected"),
+        ("aggregation", "read", "expected"),
         [
-            (CountAggregation(), [6, None, None, None]),
+            (CountAggregation(), lambda redis, key: redis.get(key), b"6"),
             (
                 PropertyAggregation(func=AggregationFunction.sum, property="tokens"),
-                [None, 17, None, None],
+                lambda redis, key: redis.get(key),
+                b"17",
             ),
             (
                 PropertyAggregation(func=AggregationFunction.avg, property="tokens"),
-                [6, 17, None, None],
+                lambda redis, key: redis.hmget(key, ["count", "sum"]),
+                [b"6", b"17"],
             ),
             (
                 PropertyAggregation(func=AggregationFunction.min, property="tokens"),
-                [None, None, 1, None],
+                lambda redis, key: redis.zscore(key, "min"),
+                1.0,
             ),
             (
                 PropertyAggregation(func=AggregationFunction.max, property="tokens"),
-                [None, None, None, 5],
+                lambda redis, key: redis.zscore(key, "max"),
+                5.0,
             ),
         ],
         ids=["count", "sum", "avg", "min", "max"],
@@ -110,7 +115,8 @@ class TestRollupActive:
     async def test_accumulates_across_calls(
         self,
         aggregation: Aggregation,
-        expected: list[float | None],
+        read: Callable[[Redis, str], Awaitable[Any]],
+        expected: Any,
         save_fixture: SaveFixture,
         session: AsyncSession,
         redis: Redis,
@@ -133,8 +139,7 @@ class TestRollupActive:
             )
 
         key = get_reducer_bucket_key(reducer.id, BUCKET_START, None, "external")
-        statistics = ["count", "sum", "min", "max"]
-        assert await redis.zmscore(key, statistics) == expected
+        assert await read(redis, key) == expected
 
     async def test_ignores_unique(
         self,

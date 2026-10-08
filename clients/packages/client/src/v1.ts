@@ -47132,6 +47132,12 @@ export interface operations {
         customer_id?: string | string[] | null
         /** @description Filter by customer external ID. */
         external_customer_id?: string | string[] | null
+        /** @description Filter by benefit external ID. */
+        external_benefit_id?: string | string[] | null
+        /** @description Filter by member ID. */
+        member_id?: string | string[] | null
+        /** @description Filter by member external ID. */
+        external_member_id?: string | string[] | null
         /** @description Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned. */
         is_granted?: boolean | null
         /** @description Page number, defaults to 1. */

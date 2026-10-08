@@ -8,11 +8,13 @@ from polar.models import (
     Subscription,
     UserOrganization,
 )
+from polar.version import V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_benefit,
     create_benefit_grant,
+    create_member,
 )
 
 
@@ -81,6 +83,103 @@ class TestListBenefitGrants:
         json = response.json()
         assert len(json["items"]) == 1
         assert json["items"][0]["benefit"]["is_deleted"] is True
+
+    @pytest.mark.auth
+    @pytest.mark.api_version(V2027_01)
+    async def test_filter_by_external_benefit_id(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        customer: Customer,
+    ) -> None:
+        deleted_benefit = await create_benefit(
+            save_fixture, organization=organization, external_id="pro"
+        )
+        await create_benefit_grant(
+            save_fixture, customer, deleted_benefit, granted=True
+        )
+        deleted_benefit.set_deleted_at()
+        await save_fixture(deleted_benefit)
+        benefit = await create_benefit(
+            save_fixture, organization=organization, external_id="pro"
+        )
+        other_benefit = await create_benefit(save_fixture, organization=organization)
+        grant = await create_benefit_grant(
+            save_fixture, customer, benefit, granted=True
+        )
+        await create_benefit_grant(save_fixture, customer, other_benefit, granted=True)
+
+        response = await client.get(
+            "/v1/benefit-grants/", params={"external_benefit_id": "pro"}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        assert json["items"][0]["id"] == str(grant.id)
+
+    @pytest.mark.auth
+    @pytest.mark.api_version(V2027_01)
+    async def test_filter_by_external_member_id(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        benefit_organization: Benefit,
+        customer: Customer,
+    ) -> None:
+        deleted_member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="deleted-member@example.com",
+            external_id="member-1",
+        )
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            member=deleted_member,
+        )
+        deleted_member.set_deleted_at()
+        await save_fixture(deleted_member)
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="member-1@example.com",
+            external_id="member-1",
+        )
+        other_member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="member-2@example.com",
+            external_id="member-2",
+        )
+        grant = await create_benefit_grant(
+            save_fixture, customer, benefit_organization, granted=True, member=member
+        )
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            member=other_member,
+        )
+
+        response = await client.get(
+            "/v1/benefit-grants/", params={"external_member_id": "member-1"}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        assert json["items"][0]["id"] == str(grant.id)
 
     @pytest.mark.auth
     async def test_filter_by_inaccessible_organization_returns_empty(

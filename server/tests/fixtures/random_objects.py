@@ -1977,6 +1977,7 @@ async def create_member(
     role: MemberRole = MemberRole.member,
     email: str | None = None,
     name: str = "Test Member",
+    external_id: str | None = None,
 ) -> Member:
     """Create a member for testing purposes."""
     member = Member(
@@ -1985,6 +1986,7 @@ async def create_member(
         email=email or customer.email,
         name=name,
         role=role,
+        external_id=external_id,
     )
     await save_fixture(member)
     # Attach the customer relationship for easy access

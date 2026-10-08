@@ -98,6 +98,9 @@ class BenefitGrantService:
         is_granted: bool | None = None,
         customer_id: Sequence[UUID] | None = None,
         external_customer_id: Sequence[str] | None = None,
+        external_benefit_id: Sequence[str] | None = None,
+        member_id: Sequence[UUID] | None = None,
+        external_member_id: Sequence[str] | None = None,
         pagination: PaginationParams,
         sorting: Sequence[Sorting[BenefitGrantSortProperty]] = (
             (BenefitGrantSortProperty.created_at, True),
@@ -129,6 +132,25 @@ class BenefitGrantService:
 
         if external_customer_id is not None:
             statement = statement.where(Customer.external_id.in_(external_customer_id))
+
+        if external_benefit_id is not None:
+            # A deleted benefit's external ID can be reused before its grants are
+            # revoked, so only match the live benefit.
+            statement = statement.where(
+                Benefit.external_id.in_(external_benefit_id),
+                Benefit.deleted_at.is_(None),
+            )
+
+        if member_id is not None:
+            statement = statement.where(BenefitGrant.member_id.in_(member_id))
+
+        if external_member_id is not None:
+            statement = statement.join(
+                Member, BenefitGrant.member_id == Member.id
+            ).where(
+                Member.external_id.in_(external_member_id),
+                Member.deleted_at.is_(None),
+            )
 
         statement = repository.apply_sorting(statement, sorting)
 

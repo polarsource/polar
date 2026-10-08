@@ -22,6 +22,9 @@ export const listBenefitGrants = (client: ClientBase) => {
       organization_id?: string | string[] | null;
       customer_id?: string | string[] | null;
       external_customer_id?: string | string[] | null;
+      external_benefit_id?: string | string[] | null;
+      member_id?: string | string[] | null;
+      external_member_id?: string | string[] | null;
       is_granted?: boolean | null;
       page?: number;
       limit?: number;
@@ -34,6 +37,9 @@ export const listBenefitGrants = (client: ClientBase) => {
       organization_id: query?.organization_id,
       customer_id: query?.customer_id,
       external_customer_id: query?.external_customer_id,
+      external_benefit_id: query?.external_benefit_id,
+      member_id: query?.member_id,
+      external_member_id: query?.external_member_id,
       is_granted: query?.is_granted,
       page: query?.page ?? 1,
       limit: query?.limit ?? 10,
@@ -71,6 +77,9 @@ export const iterListBenefitGrants = (client: ClientBase) => {
       organization_id?: string | string[] | null;
       customer_id?: string | string[] | null;
       external_customer_id?: string | string[] | null;
+      external_benefit_id?: string | string[] | null;
+      member_id?: string | string[] | null;
+      external_member_id?: string | string[] | null;
       is_granted?: boolean | null;
       page?: number;
       limit?: number;

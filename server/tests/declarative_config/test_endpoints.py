@@ -135,6 +135,39 @@ class TestApply:
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_one_time_product_metered_price(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/config/apply",
+            json={
+                "meters": [METER],
+                "products": [
+                    {
+                        "external_id": "pack",
+                        "name": "Pack",
+                        "prices": [
+                            {
+                                "amount_type": "metered_unit",
+                                "meter": "sdk-tool-calls",
+                                "unit_amount": "0.5",
+                            }
+                        ],
+                    }
+                ],
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 422
+        [error] = response.json()["detail"]
+        assert error["loc"] == ["body", "products", 0]
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_duplicate_external_ids(
         self,
         client: AsyncClient,

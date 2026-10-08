@@ -206,6 +206,13 @@ class ConfigProduct(MetadataInputMixin, Schema):
                 raise ValueError(
                     "One-time products can't have a recurring interval count."
                 )
+            if any(
+                isinstance(price, ConfigProductPriceMeteredUnit)
+                for price in self.prices
+            ):
+                raise ValueError(
+                    "Metered pricing is not supported on one-time products."
+                )
         elif self.recurring_interval_count is None:
             self.recurring_interval_count = 1
         return self

@@ -5,6 +5,7 @@ import { Argument, Command, Flag } from 'effect/cli'
 import { ApiRuntime, ApiCommandError } from '../runtime'
 import {
   confirm,
+  fields,
   data,
   mergeInput,
   jsonFlag,
@@ -17,6 +18,7 @@ export const command = Command.make(
   'update',
   {
     confirm,
+    fields,
     path: {
       id: Argument.String('id'),
     },
@@ -180,6 +182,7 @@ export const command = Command.make(
           confirmationInput['pause_at_period_end'] === true ||
           confirmationInput['resume'] === true,
         confirm: config.confirm,
+        fields: config.fields,
         preview: {
           fields: [
             { key: 'id', label: 'ID' },

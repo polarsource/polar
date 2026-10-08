@@ -242,6 +242,15 @@ class CLICommandsEmitter(EmitterBase):
         if needs_confirmation:
             helpers.append("confirm")
 
+        selectable = method.response_type == "json" and not method.pending_response
+        if selectable:
+            if any(field.name == "fields" for field in fields):
+                raise ValueError(
+                    f"{method.operation_id} has an input named 'fields', "
+                    "which collides with the CLI's own --fields flag."
+                )
+            helpers.append("fields")
+
         if input_type:
             helpers.extend(["data", "mergeInput"])
 
@@ -279,6 +288,7 @@ class CLICommandsEmitter(EmitterBase):
             "needs_confirmation": needs_confirmation,
             "confirmation_expression": confirmation_expression,
             "arguments": arguments,
+            "selectable": selectable,
             "description": (method.description or method.name).split("\n")[0],
         }
 

@@ -1,9 +1,10 @@
 import { ApiCommandError, ApiRuntime } from '@polar-sh/cli-commands'
-import { Console, Effect, Layer, Result, Stdio, Terminal } from 'effect'
+import { Console, Effect, Layer, Option, Result, Stdio, Terminal } from 'effect'
 import { Prompt } from 'effect/cli'
 import { Organizations } from '@/services/organizations'
 import { Polar } from '@/services/polar'
 import { formatRecordPreview } from '@/utils/api-preview'
+import { selectFields } from '@/utils/fields'
 import { printJson } from '@/utils/json'
 import * as ui from '@/utils/ui'
 
@@ -163,9 +164,36 @@ export const layer = Layer.effect(
               ),
             )
 
-          if (result !== undefined) {
-            yield* printJson(result)
+          if (result === undefined) return
+
+          const selection = selectFields(
+            result,
+            Option.getOrElse(operation.fields ?? Option.none(), () => ''),
+          )
+          if (selection._tag === 'Selected') {
+            yield* Effect.sync(() => {
+              for (const { field, parent, available } of selection.unmatched) {
+                process.stderr.write(
+                  `${ui.warning(`Nothing in this result matches ${field}`)}\n${ui.step(`${parent} has: ${available.join(', ')}`)}\n`,
+                )
+              }
+            })
+            return yield* printJson(selection.value)
           }
+          const unknown = `Unknown ${selection.unknown.length > 1 ? 'fields' : 'field'} ${selection.unknown.join(', ')}`
+          const available = `Available: ${selection.available.join(', ')}`
+          if (operation.method === 'GET') {
+            return yield* new ApiCommandError({
+              message: unknown,
+              hint: available,
+            })
+          }
+          yield* Effect.sync(() => {
+            process.stderr.write(
+              `${ui.warning(`${unknown}, printing every field`)}\n${ui.step(available)}\n`,
+            )
+          })
+          yield* printJson(result)
         }),
     })
   }),

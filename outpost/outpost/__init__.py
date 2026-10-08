@@ -15,9 +15,20 @@ from starlette.routing import Route
 
 from outpost.env import Environment, get_environment
 from outpost.event import Actor, EventsIngest
-from outpost.metrics import EVENTS_INGESTED, INGEST_SECONDS, REDUCE_SECONDS
+from outpost.metrics import (
+    DECIDE_SECONDS,
+    EVENTS_INGESTED,
+    INGEST_SECONDS,
+    REDUCE_SECONDS,
+)
 from outpost.polar import Configuration, Snapshots, create_client, listen
-from outpost.reducer import BUCKET_SIZE, get_bucket_start, get_event_keys, reduce
+from outpost.reducer import (
+    BUCKET_SIZE,
+    get_bucket_start,
+    get_consumed,
+    get_event_keys,
+    reduce,
+)
 from outpost.storage import Storage, create_storage
 
 
@@ -64,6 +75,45 @@ async def ingest(request: Request) -> Response:
             {
                 "inserted": len(payload.events) - duplicates,
                 "duplicates": duplicates,
+            }
+        )
+
+
+SNAPSHOT_TIMEOUT = 5
+
+
+async def customer_meters(request: Request) -> Response:
+    with DECIDE_SECONDS.time():
+        external_customer_id = request.query_params.get("external_customer_id")
+        meter_id = request.query_params.get("meter_id")
+        if external_customer_id is None or meter_id is None:
+            return Response(status_code=422)
+
+        state = get_state(request)
+        reducer = state["configuration"].meters.get(meter_id)
+        if reducer is None:
+            return JSONResponse({"items": []})
+
+        warm = state["snapshots"].warm_up(external_customer_id)
+        with anyio.move_on_after(SNAPSHOT_TIMEOUT):
+            await warm.wait()
+        if not warm.is_set():
+            return Response(status_code=504)
+
+        customer = await state["storage"].read(external_customer_id)
+        consumed = get_consumed(reducer, customer)
+        credited = customer["credited"].get(meter_id, 0)
+        return JSONResponse(
+            {
+                "items": [
+                    {
+                        "external_customer_id": external_customer_id,
+                        "meter_id": meter_id,
+                        "consumed_units": consumed,
+                        "credited_units": credited,
+                        "balance": credited - consumed,
+                    }
+                ]
             }
         )
 
@@ -115,6 +165,7 @@ app = Starlette(
     lifespan=lifespan,
     routes=[
         Route("/ingest", ingest, methods=["POST"]),
+        Route("/v1/customer-meters/", customer_meters),
         Route("/actor", actor, methods=["POST"]),
         # ponytail: per-process registry, multiprocess mode if metrics must cover --workers > 1
         Route("/metrics", metrics),

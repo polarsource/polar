@@ -135,6 +135,25 @@ class CustomerState(typing.TypedDict):
     buckets: dict[tuple[str, int], int | float]
 
 
+def get_consumed(reducer: Reducer, state: CustomerState) -> int | float:
+    values = [
+        value
+        for (reducer_id, _), value in state["buckets"].items()
+        if reducer_id == reducer["id"]
+    ]
+    if reducer["id"] in state["cold"]:
+        values.append(state["cold"][reducer["id"]])
+    if not values:
+        return 0
+    match reducer["aggregation"]["func"]:
+        case "min":
+            return min(values)
+        case "max":
+            return max(values)
+        case _:
+            return sum(values)
+
+
 def reduce(
     reducers: collections.abc.Sequence[tuple[Reducer, EventMatcher]],
     events: collections.abc.Sequence[EventCreate],

@@ -13,17 +13,24 @@ from outpost.storage import Storage
 
 log = get_logger(__name__)
 
-ReducerAdapter: TypeAdapter[Reducer] = TypeAdapter(Reducer)
+
+class ConfiguredReducer(Reducer):
+    meter_ids: list[str]
+
+
+ReducerAdapter: TypeAdapter[ConfiguredReducer] = TypeAdapter(ConfiguredReducer)
 SnapshotAdapter: TypeAdapter[Snapshot] = TypeAdapter(Snapshot)
 
 
 class Configuration:
     def __init__(self) -> None:
         self.reducers: list[tuple[Reducer, EventMatcher]] = []
+        self.meters: dict[str, Reducer] = {}
         self.ready = anyio.Event()
 
     def update(self, reducers: list[dict[str, typing.Any]]) -> None:
         supported: list[tuple[Reducer, EventMatcher]] = []
+        meters: dict[str, Reducer] = {}
         for raw_reducer in reducers:
             try:
                 reducer = ReducerAdapter.validate_python(raw_reducer)
@@ -31,7 +38,9 @@ class Configuration:
                 log.warning("Unsupported reducer %s", raw_reducer.get("id"))
                 continue
             supported.append((reducer, get_matcher(reducer["filter"])))
+            meters.update(dict.fromkeys(reducer["meter_ids"], reducer))
         self.reducers = supported
+        self.meters = meters
         self.ready.set()
 
 

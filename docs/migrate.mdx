@@ -148,8 +148,8 @@ Polar subscription, as this can cause double billing.
 
 If a subscription renews within 24 hours, Polar leaves it on Stripe to avoid a
 billing conflict and give you time to react if something goes wrong. A
-subscription set to cancel at the end of its period moves too: Polar keeps that
-end and does not renew it. A subscription set to end on any other date stays on
+subscription set to cancel at the end of its period moves even if that end is
+within 24 hours: Polar keeps the end and does not renew it. A subscription set to end on any other date stays on
 Stripe.
 
 At the next renewal after a successful switch, Polar attempts to charge the
@@ -252,9 +252,9 @@ for payments it processes.
     within 24 hours or set to end on a date other than their period end remain
     on Stripe at that point.
 
-    Only cards are copied. A subscription paying with Link, SEPA Direct Debit,
-    or a US bank account (ACH) still moves, but Polar does not use that payment
-    method. It renews with another copied card for the same customer if there is
+    Only cards are used. A subscription paying with another method, such as
+    Link, SEPA Direct Debit, or a US bank account (ACH), still moves, but Polar
+    does not charge that method. It renews with another copied card for the same customer if there is
     one. Otherwise its first Polar renewal fails and the customer is asked to add
     a card.
 
@@ -517,13 +517,15 @@ safe logging, and an API reconciliation fallback.
 Migration never looks like a new sale. Importing the catalog creates products,
 discounts, and customers without `product.created`, discount,
 `customer.created`, or `member.created` webhooks. During import and card
-mapping, expect only:
+mapping, expect only `customer.updated`, each followed by
+`customer.state_changed`:
 
-- `customer.updated` when the import fills in billing details or the Stripe
-  customer ID on a customer you already had in Polar
-- `customer.updated` when Polar sets a copied card as a customer's default
-  payment method. Copied Link, SEPA Direct Debit, and ACH payment methods are
-  not used, so they never trigger this event.
+- when the import fills in billing details or the Stripe customer ID on a
+  customer you already had in Polar
+- when you edit a customer's billing address during review
+- when Polar sets a copied card as a customer's default payment method. Link,
+  SEPA Direct Debit, ACH, and other non-card methods are never used, so they
+  never set a default or trigger this event.
 
 At migration cutover, for each subscription, expect:
 
@@ -556,9 +558,9 @@ After cutover, a moved subscription renews like any other Polar subscription:
 `benefit_grant.cycled`. If the first charge fails, you get
 `subscription.past_due` instead of `order.paid` and `benefit_grant.cycled`.
 
-This list is not delivery order. Polar enqueues `subscription.updated` before
-`subscription.migrated`, but retries can reorder them, and Stripe and Polar
-events can arrive in either order. Do not treat the Stripe cancellation as
+None of these lists is in delivery order. At cutover, Polar enqueues
+`subscription.updated` before `subscription.migrated`, but retries can reorder
+them, and Stripe and Polar events can arrive in either order. Do not treat the Stripe cancellation as
 ordinary churn or revoke access while its matching migration is still being
 reconciled.
 

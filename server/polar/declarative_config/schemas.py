@@ -3,7 +3,7 @@ from typing import Any
 
 from pydantic import UUID4, ConfigDict, Field
 
-from polar.kit.metadata import MetadataOutputType
+from polar.kit.metadata import MetadataOutputMixin
 from polar.kit.schemas import Schema
 from polar.meter.aggregation import Aggregation
 from polar.meter.filter import Filter
@@ -107,7 +107,7 @@ class ConfigPlan(Schema):
     issues: list[ConfigIssue]
 
 
-class ConfigExportMeter(Schema):
+class ConfigExportMeter(Schema, MetadataOutputMixin):
     external_id: str = Field(description="Your identifier for the meter.")
     name: str = Field(description=NAME_DESCRIPTION)
     unit: MeterUnit = Field(description="The unit of the meter.")
@@ -120,9 +120,6 @@ class ConfigExportMeter(Schema):
     )
     aggregation: Aggregation = Field(
         description="The aggregation applied on the filtered events."
-    )
-    metadata: MetadataOutputType = Field(
-        description="Key-value object storing additional information."
     )
 
 

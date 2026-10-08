@@ -15863,6 +15863,7 @@ export interface components {
     }
     /** ConfigExportMeter */
     ConfigExportMeter: {
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * External Id
        * @description Your identifier for the meter.
@@ -15895,8 +15896,6 @@ export interface components {
         | components['schemas']['CountAggregation']
         | components['schemas']['PropertyAggregation']
         | components['schemas']['UniqueAggregation']
-      /** @description Key-value object storing additional information. */
-      metadata: components['schemas']['MetadataOutputType']
     }
     /** ConfigFieldChange */
     ConfigFieldChange: {

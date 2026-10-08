@@ -6,10 +6,10 @@ from pydantic import ValidationError
 from sqlalchemy.orm import joinedload
 
 from polar.customer_meter.repository import CustomerMeterRepository
+from polar.kit.db.postgres import AsyncReadSession
 from polar.logging import Logger
 from polar.meter.repository import MeterRepository
 from polar.models import CustomerMeter, Organization
-from polar.postgres import AsyncSession
 
 from .schemas import (
     CustomerMeterOutgoingMessage,
@@ -28,7 +28,7 @@ log: Logger = structlog.get_logger(__name__)
 class OutpostService:
     async def handle_incoming_message(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         organization: Organization,
         payload: str,
         send_stream: MemoryObjectSendStream[OutgoingMessage],
@@ -38,6 +38,8 @@ class OutpostService:
         except ValidationError:
             log.warning("Invalid incoming message")
             return
+
+        log.debug("Handling incoming message", type=incoming.type)
 
         match incoming.type:
             case IncomingMessageType.configuration:
@@ -55,11 +57,12 @@ class OutpostService:
 
     async def handle_event(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         organization: Organization,
         event: OutpostEvent,
         send_stream: MemoryObjectSendStream[OutgoingMessage],
     ) -> None:
+        log.debug("Handling event", type=event["type"])
         match event["type"]:
             case "customer_meter":
                 return await self._send_customer_meter(
@@ -72,7 +75,7 @@ class OutpostService:
 
     async def _send_configuration(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         organization: Organization,
         send_stream: MemoryObjectSendStream[OutgoingMessage],
     ) -> None:
@@ -85,7 +88,7 @@ class OutpostService:
 
     async def _send_customer_meter(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         organization: Organization,
         customer_id: uuid.UUID,
         meter_id: uuid.UUID,

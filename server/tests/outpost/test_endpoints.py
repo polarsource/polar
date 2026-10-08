@@ -29,6 +29,11 @@ async def customer_meter(
 
 @pytest.mark.anyio
 class TestOutpost:
+    async def test_anonymous(self, client: httpx.AsyncClient, meter: Meter) -> None:
+        with pytest.raises(httpx_ws.WebSocketDisconnect):
+            async with httpx_ws.aconnect_ws("/v1/outpost/", client=client):
+                pass
+
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_request_configuration(
         self, client: httpx.AsyncClient, meter: Meter

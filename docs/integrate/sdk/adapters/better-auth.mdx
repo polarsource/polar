@@ -289,6 +289,7 @@ The checkout plugin accepts the following configuration options:
 - **`returnUrl`** (optional): An optional relative path or absolute URL which renders a back-button in the Checkout.
 - **`authenticatedUsersOnly`** (optional): When `true`, checkouts are rejected for signed-out and anonymous users. When `false`, anonymous checkouts are allowed. Either way, a signed-in user is attached to the checkout as the customer.
 - **`theme`** (optional): A string that can be used to enforce the theme of the checkout page. Can be either `light` or `dark`.
+- **`customerIpAddress`** (optional): A function `(headers) => ip` to resolve the customer IP address yourself, or `false` to not send it. By default the IP is resolved with Better Auth's `getIP` (see `advanced.ipAddress`) and sent to Polar to show the customer's local currency.
 
 <Steps>
   <Step title="Use Checkout Plugin">

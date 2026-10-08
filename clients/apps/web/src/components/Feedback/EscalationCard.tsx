@@ -14,11 +14,14 @@ import {
 import { TextArea } from '@polar-sh/orbit'
 import { useState } from 'react'
 
+import { MAX_ESCALATION_NOTE_LENGTH } from './messages'
+
 interface EscalationCardProps {
   initialType: schemas['FeedbackType']
   onSubmit: (note: string, type: schemas['FeedbackType']) => void
   onCancel: () => void
   isSubmitting: boolean
+  hasFailed: boolean
 }
 
 const TYPE_OPTIONS: { value: schemas['FeedbackType']; label: string }[] = [
@@ -32,6 +35,7 @@ export const EscalationCard = ({
   onSubmit,
   onCancel,
   isSubmitting,
+  hasFailed,
 }: EscalationCardProps) => {
   const [type, setType] = useState<schemas['FeedbackType']>(initialType)
   const [note, setNote] = useState('')
@@ -66,8 +70,25 @@ export const EscalationCard = ({
         onChange={(event) => setNote(event.target.value)}
         placeholder="Anything else you want to add?"
         rows={4}
+        maxLength={MAX_ESCALATION_NOTE_LENGTH}
         disabled={isSubmitting}
       />
+      {hasFailed && (
+        <Box
+          display="block"
+          borderRadius="l"
+          backgroundColor="background-warning"
+          borderWidth={1}
+          borderStyle="solid"
+          borderColor="border-warning"
+          padding="l"
+          color="text-warning"
+        >
+          <p className="text-sm">
+            We could not send your message to the Polar team. Please try again.
+          </p>
+        </Box>
+      )}
       <Box alignItems="center" justifyContent="between" columnGap="s">
         <Select
           value={type}

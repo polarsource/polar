@@ -43,7 +43,7 @@ class RedisStorage:
     async def create(
         cls, env: Environment
     ) -> collections.abc.AsyncIterator[typing.Self]:
-        async with Redis.from_url(str(env.redis_dsn)) as redis:
+        async with Redis.from_url(str(env.redis_url)) as redis:
             storage = cls(redis)
             await redis.script_load(WRITE_UPDATES_SCRIPT)
             yield storage

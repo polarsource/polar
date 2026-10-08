@@ -1221,6 +1221,45 @@ class TestRun:
         subscription = await _created(session, pending_record)
         assert subscription.payment_method_id is None
 
+    async def test_sepa_subscription_with_a_card_available_falls_back_to_card(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        cutover: RunCutover,
+        imported_customer: Customer,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, "verify_cards"
+        )
+        card = await create_payment_method(
+            save_fixture, imported_customer, processor_id="pm_card_polar"
+        )
+        staged = deserialize(pending_record.type, pending_record.canonical)
+        assert isinstance(staged, CanonicalSubscription)
+        staged.payment_method = CanonicalPaymentMethod(
+            source_id="pm_sepa_original",
+            type=CanonicalPaymentMethodType.sepa_debit,
+        )
+        pending_record.canonical = serialize(staged)
+        await save_fixture(pending_record)
+        await save_fixture(migration)
+        assert imported_customer.default_payment_method_id is None
+
+        outcome = await cutover(
+            _source(
+                payment_method=CanonicalPaymentMethod(
+                    source_id="pm_sepa_original",
+                    type=CanonicalPaymentMethodType.sepa_debit,
+                )
+            )
+        )
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.payment_method_id == card.id
+
     async def test_uses_the_exact_mapped_method_already_in_polar(
         self,
         mocker: MockerFixture,

@@ -62,7 +62,7 @@ bun src/cli.ts <command>
 The CLI imports its API command tree from the private `@polar-sh/cli-commands`
 package in `sdk/cli-commands` through a local `file:` dependency. The generator
 and templates live in `sdk/generator/cli_commands`; the CLI supplies the Effect
-runtime implementation in `src/utils/api-runtime.ts`.
+runtime implementation in `src/api-runtime.ts`.
 
 Regenerate the commands after an API change with `pnpm generate`. Generation is
 explicit, and the generated files are committed. See

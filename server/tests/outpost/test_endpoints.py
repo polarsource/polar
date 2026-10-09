@@ -4,10 +4,11 @@ import httpx
 import httpx_ws
 import pytest
 
-from polar.models import Customer, CustomerMeter, Meter
+from polar.models import Customer, CustomerMeter, Meter, Organization
 from polar.outpost.stream import publish
 from polar.redis import Redis
 from tests.fixtures import AuthSubjectFixture, SaveFixture
+from tests.fixtures.random_objects import create_reducer
 
 
 @pytest.fixture
@@ -37,14 +38,28 @@ class TestOutpost:
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_request_configuration(
-        self, client: httpx.AsyncClient, meter: Meter
+        self,
+        save_fixture: SaveFixture,
+        client: httpx.AsyncClient,
+        organization: Organization,
+        meter: Meter,
     ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+
         async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
             await websocket.send_json({"type": "configuration"})
             response = await websocket.receive_json()
 
             assert response["type"] == "configuration"
-            assert response["payload"]["meters"][0]["id"] == str(meter.id)
+            [reducer_payload] = response["payload"]["reducers"]
+            assert reducer_payload["id"] == str(reducer.id)
+            assert reducer_payload["meter_ids"] == [str(meter.id)]
+            assert reducer_payload["filter"] == meter.filter.model_dump(mode="json")
+            assert reducer_payload["aggregation"] == meter.aggregation.model_dump(
+                mode="json"
+            )
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     @pytest.mark.parametrize("customer_key", ["customer_id", "external_customer_id"])

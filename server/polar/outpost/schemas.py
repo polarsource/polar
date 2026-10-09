@@ -5,7 +5,6 @@ from pydantic import UUID4, BaseModel, ConfigDict, Discriminator, TypeAdapter
 
 from polar.meter.aggregation import Aggregation
 from polar.meter.filter import Filter
-from polar.meter.schemas import Meter
 
 
 class MessageBase(BaseModel):
@@ -79,7 +78,6 @@ class ConfigurationReducer(MessageBase):
 
 
 class ConfigurationOutgoingMessagePayload(MessageBase):
-    meters: list[Meter]
     reducers: list[ConfigurationReducer]
 
 

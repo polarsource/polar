@@ -53,7 +53,6 @@ class TestOutpost:
             response = await websocket.receive_json()
 
             assert response["type"] == "configuration"
-            assert response["payload"]["meters"][0]["id"] == str(meter.id)
             [reducer_payload] = response["payload"]["reducers"]
             assert reducer_payload["id"] == str(reducer.id)
             assert reducer_payload["meter_ids"] == [str(meter.id)]

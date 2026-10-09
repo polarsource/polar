@@ -743,6 +743,9 @@ importers:
       '@polar-sh/polar':
         specifier: workspace:*
         version: link:../../packages/polar
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

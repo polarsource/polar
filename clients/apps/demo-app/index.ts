@@ -46,7 +46,12 @@ const expensiveToolCall = async () => {
     log('Balance is sufficient, doing the tool call')
 
     const ingestSpan = log.start('Ingesting tool_call')
-    await customer.track('tool_call')
+    await customer.track('tool_call', {
+      tool: 'search',
+      server: 'builtin',
+      success: true,
+      duration_ms: 420,
+    })
     ingestSpan.end()
 
     const pollingSpan = log.start('Waiting for pristine balance')

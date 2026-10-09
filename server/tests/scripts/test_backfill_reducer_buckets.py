@@ -386,7 +386,8 @@ class TestBackfillBucket:
                 (3, None, 2, Decimal(12), Decimal(5), Decimal(7)),
             ]
             assert all(
-                b.customer_id == customer.id and b.external_customer_id is None
+                b.customer_id is None
+                and b.external_customer_id == "resolved-by-billing"
                 for b in buckets
             )
 
@@ -460,6 +461,7 @@ class TestBackfillBucket:
                     else start
                 ),
                 name="already-selected-by-billing",
+                customer=customer,
                 source=EventSource.system if label == "system" else EventSource.user,
             )
             if label == "raw":

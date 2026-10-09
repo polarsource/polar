@@ -18,7 +18,7 @@ export default defineConfig({
   }),
   benefits: ({ flag, credits }) => ({
     custom_servers: flag('Custom servers'),
-    tool_calls: credits('Included tool calls').meter('tool_call').units(1000),
+    tool_call_pack: credits('Tool call pack').meter('tool_call').units(10),
   }),
   products: ({ product, fixed, meter }) => ({
     pro: product('Pro')
@@ -38,6 +38,10 @@ export default defineConfig({
       )
       .recurring('monthly')
       // .trial(14, 'days')
-      .grants(['custom_servers', 'tool_calls']),
+      .grants(['custom_servers', 'tool_call_pack']),
+    tool_call_pack: product('10 tool calls')
+      .prices(fixed().amount(usd(1), eur(0.9)))
+      .once()
+      .grants(['tool_call_pack']),
   }),
 })

@@ -412,11 +412,13 @@ async def get(
                             with tag.button(
                                 classes="btn btn-success",
                                 hx_get=str(
-                                    request.url_for("payouts:pay_out", id=payout.id)
+                                    request.url_for(
+                                        "payouts:release_held_payout", id=payout.id
+                                    )
                                 ),
                                 hx_target="#modal",
                             ):
-                                text("Pay Out")
+                                text("Release Payout")
                         if payout.is_cancelable:
                             with tag.button(
                                 classes="btn btn-error",
@@ -626,8 +628,12 @@ async def mark_paid(
                     text("Mark as Paid")
 
 
-@router.api_route("/{id}/pay-out", name="payouts:pay_out", methods=["GET", "POST"])
-async def pay_out(
+@router.api_route(
+    "/{id}/release-held-payout",
+    name="payouts:release_held_payout",
+    methods=["GET", "POST"],
+)
+async def release_held_payout(
     request: Request,
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
@@ -652,11 +658,11 @@ async def pay_out(
             pass
         return
 
-    with modal(f"Pay Out {payout.id}", open=True):
+    with modal(f"Release Payout {payout.id}", open=True):
         with tag.div(classes="flex flex-col gap-4"):
             with tag.p():
                 text(
-                    "Pay out "
+                    "Release "
                     f"{formatters.currency(payout.amount, payout.currency)} "
                     "without approving the organization."
                 )
@@ -687,10 +693,12 @@ async def pay_out(
                 with button(
                     type="button",
                     variant="primary",
-                    hx_post=str(request.url_for("payouts:pay_out", id=payout.id)),
+                    hx_post=str(
+                        request.url_for("payouts:release_held_payout", id=payout.id)
+                    ),
                     hx_target="#modal",
                 ):
-                    text("Pay Out")
+                    text("Release Payout")
 
 
 @router.api_route("/{id}/cancel", name="payouts:cancel", methods=["GET", "POST"])

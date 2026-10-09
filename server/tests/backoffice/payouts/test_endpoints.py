@@ -307,7 +307,7 @@ class TestRetry:
 
 
 @pytest.mark.anyio
-class TestPayOut:
+class TestReleaseHeldPayout:
     async def test_held_shows_button_and_confirmation(
         self,
         backoffice_client: httpx.AsyncClient,
@@ -330,10 +330,12 @@ class TestPayOut:
         response = await backoffice_client.get(f"/payouts/{payout.id}")
 
         assert response.status_code == 200
-        assert "Pay Out" in response.text
+        assert "Release Payout" in response.text
         assert "Retry Payout" not in response.text
 
-        response = await backoffice_client.get(f"/payouts/{payout.id}/pay-out")
+        response = await backoffice_client.get(
+            f"/payouts/{payout.id}/release-held-payout"
+        )
 
         assert response.status_code == 200
         assert "without approving the organization" in response.text
@@ -359,7 +361,9 @@ class TestPayOut:
             attempts=[],
         )
 
-        response = await backoffice_client.get(f"/payouts/{payout.id}/pay-out")
+        response = await backoffice_client.get(
+            f"/payouts/{payout.id}/release-held-payout"
+        )
 
         assert response.status_code == 200
         assert "marked as paid" in response.text
@@ -386,9 +390,11 @@ class TestPayOut:
         response = await backoffice_client.get(f"/payouts/{payout.id}")
 
         assert response.status_code == 200
-        assert "Pay Out" not in response.text
+        assert "Release Payout" not in response.text
 
-        response = await backoffice_client.get(f"/payouts/{payout.id}/pay-out")
+        response = await backoffice_client.get(
+            f"/payouts/{payout.id}/release-held-payout"
+        )
 
         assert response.status_code == 409
         assert "is not held" in response.text
@@ -424,7 +430,9 @@ class TestPayOut:
         )
         enqueue_job_mock = mocker.patch("polar.payout.service.enqueue_job")
 
-        response = await backoffice_client.post(f"/payouts/{held.id}/pay-out")
+        response = await backoffice_client.post(
+            f"/payouts/{held.id}/release-held-payout"
+        )
 
         assert response.status_code == 200
         assert f"/payouts/{held.id}" in response.text
@@ -458,7 +466,9 @@ class TestPayOut:
         )
         enqueue_job_mock = mocker.patch("polar.payout.service.enqueue_job")
 
-        response = await backoffice_client.post(f"/payouts/{payout.id}/pay-out")
+        response = await backoffice_client.post(
+            f"/payouts/{payout.id}/release-held-payout"
+        )
 
         assert response.status_code == 409
         enqueue_job_mock.assert_not_called()

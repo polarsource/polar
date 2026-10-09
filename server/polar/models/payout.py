@@ -37,7 +37,7 @@ class PayoutStatus(StrEnum):
 
     Set when a payout is requested by an organization under review (`REVIEW` or
     `SNOOZED`). The balance is reserved exactly as for a `pending` payout, but the
-    transfer is held back until the organization is approved or an admin pays out
+    transfer is held back until the organization is approved or an admin releases
     this payout from the backoffice. Either way it moves back to `pending`.
     """
 

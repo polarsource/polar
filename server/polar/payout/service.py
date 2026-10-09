@@ -469,7 +469,7 @@ class PayoutService:
                 )
 
             # A held payout's transfer waits until the org is approved or an
-            # admin pays out this payout on its own.
+            # admin releases this payout on its own.
             enqueue_job("payout.created", payout_id=payout.id)
             if not held:
                 enqueue_job("payout.transfer", payout_id=payout.id)
@@ -882,7 +882,7 @@ class PayoutService:
     async def release_held_payout(
         self, session: AsyncSession, payout: Payout
     ) -> Payout:
-        """Pay out one held payout without changing the organization's status.
+        """Release one held payout without changing the organization's status.
 
         Other held payouts on the account stay held.
         """

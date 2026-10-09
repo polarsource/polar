@@ -26,4 +26,4 @@ REDUCE_SECONDS = Histogram(
     "Time to reduce an ingested batch.",
     buckets=LATENCY_BUCKETS,
 )
-EVENTS_INGESTED = Counter("outpost_events_ingested", "Events ingested.")
+EVENTS_INGESTED = Counter("outpost_events_ingested_total", "Events ingested.")

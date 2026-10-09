@@ -2,7 +2,7 @@ import argparse
 
 import uvicorn
 
-from outpost.env import StorageType, get_environment
+from outpost.env import get_environment
 
 
 def main() -> None:
@@ -15,7 +15,7 @@ def main() -> None:
     if args.workers < 1:
         parser.error("--workers must be greater than zero")
     env = get_environment()
-    if env.storage == StorageType.memory and args.workers != 1:
+    if env.redis_url is None and args.workers != 1:
         parser.error("Memory storage requires exactly one worker")
     uvicorn.run(
         "outpost:app",

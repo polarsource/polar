@@ -403,14 +403,14 @@ export const receiptOrders = (client: ClientBase) => {
    *
    * @param id - The order ID.
    * @param requestOptions - Request options
-   * @returns {OrderReceipt}
+   * @returns {OrderReceipt | undefined} undefined means the receipt is still being generated.
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Order not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (id: string, requestOptions?: RequestOptions): Promise<OrderReceipt> => {
+  return async (id: string, requestOptions?: RequestOptions): Promise<OrderReceipt | undefined> => {
     const pathParams = {
       id: id,
     };
@@ -423,7 +423,7 @@ export const receiptOrders = (client: ClientBase) => {
       undefined,
     );
     const response = await client.sendRequest(request, requestOptions);
-    return client.parseResponse<OrderReceipt>(response, "json", {
+    return client.parseResponse<OrderReceipt | undefined>(response, "json", {
       404: ResourceNotFound,
       422: HTTPValidationError,
     });

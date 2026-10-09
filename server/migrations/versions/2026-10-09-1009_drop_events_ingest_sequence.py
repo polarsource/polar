@@ -21,7 +21,7 @@ depends_on: tuple[str] | None = None
 def upgrade() -> None:
     # Ensures we don't break app by applying a deadlock-inducing migration.
     # CREATE INDEX CONCURRENTLY needs its own, far larger timeout -- see ADR-0006.
-    op.execute("SET LOCAL lock_timeout = '5s'")
+    op.execute("SET LOCAL lock_timeout = '10s'")
     op.drop_column("events", "ingest_sequence")
 
 

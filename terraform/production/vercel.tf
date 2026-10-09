@@ -92,7 +92,7 @@ module "vercel" {
     { key = "NEXT_PUBLIC_PRODUCT_LINK_BASE_URL", value = "https://buy.polar.sh/", target = ["production"] },
     { key = "NEXT_PUBLIC_POSTHOG_HOST", value = "https://polar.sh/ingest" },
     { key = "NEXT_PUBLIC_SENTRY_ENABLED", value = "true" },
-    { key = "NEXT_PUBLIC_GOOGLE_ANALYTICS_ID", value = "G-MBYW1QZFHE" },
+    { key = "NEXT_PUBLIC_GOOGLE_ANALYTICS_ID", value = "G-MBYW1QZFHE", target = ["production"] },
     { key = "NEXT_PUBLIC_GITHUB_INSTALLATION_URL", value = "https://github.com/apps/polar-sh/installations/new" },
     { key = "NEXT_PUBLIC_STRIPE_KEY", value = var.stripe_publishable_key },
     { key = "MCP_OAUTH2_CLIENT_ID", value = var.mcp_oauth2_client_id, target = ["production", "preview"] },

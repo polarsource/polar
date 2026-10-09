@@ -1,6 +1,7 @@
 'use client'
 
 import { usePostHog } from '@/hooks/posthog'
+import { updateGoogleAnalyticsConsent } from '@/utils/googleAnalyticsConsent'
 import { Button } from '@polar-sh/orbit'
 import { Switch } from '@polar-sh/orbit'
 import { useState } from 'react'
@@ -23,6 +24,7 @@ export const CookiePreferencesModal = ({
     const newConsent = analyticsEnabled ? 'yes' : 'no'
     localStorage.setItem('cookie_consent', newConsent)
     setPersistence(analyticsEnabled ? 'localStorage' : 'memory')
+    updateGoogleAnalyticsConsent(analyticsEnabled)
     hide()
   }
 

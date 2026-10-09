@@ -2,6 +2,7 @@
 'use client'
 import { EU_COUNTRY_CODES } from '@/components/Privacy/countries'
 import { usePostHog } from '@/hooks/posthog'
+import { updateGoogleAnalyticsConsent } from '@/utils/googleAnalyticsConsent'
 import { useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import { InlineModal } from '@polar-sh/orbit'
@@ -65,6 +66,9 @@ export function CookieConsent({ countryCode }: { countryCode: string | null }) {
   useEffect(() => {
     if (consentGiven !== '') {
       setPersistence(consentGiven === 'yes' ? 'localStorage' : 'memory')
+    }
+    if (consentGiven === 'yes' || consentGiven === 'no') {
+      updateGoogleAnalyticsConsent(consentGiven === 'yes')
     }
   }, [consentGiven, setPersistence])
 

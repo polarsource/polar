@@ -8,6 +8,7 @@ import { ExperimentProvider } from '@/experiments/ExperimentProvider'
 import { getExperiments } from '@/experiments/server'
 import { UserContextProvider } from '@/providers/auth'
 import { CONFIG } from '@/utils/config'
+import { GOOGLE_ANALYTICS_CONSENT_DEFAULT_SCRIPT } from '@/utils/googleAnalyticsConsent'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import { schemas } from '@polar-sh/client'
 import { PHASE_PRODUCTION_BUILD } from 'next/constants'
@@ -53,6 +54,14 @@ export default async function RootLayout({
       className="antialiased"
     >
       <head>
+        {CONFIG.GOOGLE_ANALYTICS_ID && (
+          <script
+            // oxlint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{
+              __html: GOOGLE_ANALYTICS_CONSENT_DEFAULT_SCRIPT,
+            }}
+          />
+        )}
         {CONFIG.ENVIRONMENT === 'development' ? (
           <link href="/favicon-dev.png" rel="icon" />
         ) : (

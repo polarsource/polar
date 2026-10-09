@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field, ValidationError, create_model
+from pydantic import BaseModel, Field, create_model
 from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject, is_organization
@@ -24,22 +24,17 @@ from polar.product.service import product as product_service
 from polar.redis import Redis
 
 from . import benefits, products, validation
+from .export import export_config
 from .schemas import (
-    MAXIMUM_METERS,
     Config,
     ConfigApplyResult,
     ConfigChange,
     ConfigExport,
-    ConfigExportDocument,
-    ConfigExportMeter,
     ConfigIssue,
     ConfigIssueSeverity,
-    ConfigMeter,
     ConfigPlan,
     ConfigResource,
     ConfigResult,
-    ConfigSkippedMeter,
-    ConfigSkippedReason,
 )
 from .validation import BenefitChange, MeterChange, ProductChange, ResourceChange
 
@@ -61,6 +56,13 @@ def _assert_section_scopes(
         if section not in config.model_fields_set:
             continue
         required = {write_scope} if write else {read_scope, write_scope}
+        if not auth_subject.scopes & required:
+            raise InsufficientScopeError({str(scope) for scope in required})
+
+
+def _assert_export_scopes(auth_subject: AuthSubject[User | Organization]) -> None:
+    for read_scope, write_scope in _SECTION_SCOPES.values():
+        required = {read_scope, write_scope}
         if not auth_subject.scopes & required:
             raise InsufficientScopeError({str(scope) for scope in required})
 
@@ -188,54 +190,14 @@ class DeclarativeConfigService:
         auth_subject: AuthSubject[User | Organization],
         organization_id: UUID | None,
     ) -> ConfigExport:
+        _assert_export_scopes(auth_subject)
         organization = await self._get_organization(
             session,
             auth_subject,
             _OrganizationTarget(organization_id),
             OrganizationPermission.products_read,
         )
-        repository = MeterRepository.from_session(session)
-        meters: list[ConfigExportMeter] = []
-        skipped: list[ConfigSkippedMeter] = []
-        statement = repository.get_organization_statement(organization.id)
-        async for meter in repository.stream(statement):
-            reason: ConfigSkippedReason | None = None
-            if meter.external_id is None:
-                reason = ConfigSkippedReason.missing_external_id
-            elif meter.archived_at is not None:
-                reason = ConfigSkippedReason.archived
-            elif len(meters) >= MAXIMUM_METERS:
-                reason = ConfigSkippedReason.over_limit
-            else:
-                try:
-                    meter_config = ConfigMeter(
-                        external_id=meter.external_id,
-                        name=meter.name,
-                        unit=meter.unit,
-                        custom_label=meter.custom_label,
-                        custom_multiplier=meter.custom_multiplier,
-                        filter=meter.filter,
-                        aggregation=meter.aggregation,
-                        metadata=meter.user_metadata,
-                    )
-                except ValidationError:
-                    reason = ConfigSkippedReason.invalid
-                else:
-                    meters.append(
-                        ConfigExportMeter.model_validate(
-                            meter_config, from_attributes=True
-                        )
-                    )
-            if reason is not None:
-                skipped.append(
-                    ConfigSkippedMeter(
-                        resource=ConfigResource.meter,
-                        id=meter.id,
-                        name=meter.name,
-                        reason=reason,
-                    )
-                )
-        return ConfigExport(config=ConfigExportDocument(meters=meters), skipped=skipped)
+        return await export_config(session, organization)
 
     def _plan_changes(
         self, resource: ConfigResource, changes: Sequence[ResourceChange[Any, Any]]

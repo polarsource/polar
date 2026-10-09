@@ -3,20 +3,24 @@ from enum import StrEnum
 from typing import Annotated, Any, Literal, Self
 
 from annotated_types import Gt
-from pydantic import UUID4, ConfigDict, Discriminator, Field, model_validator
+from pydantic import (
+    UUID4,
+    BaseModel,
+    ConfigDict,
+    Discriminator,
+    Field,
+    model_validator,
+)
 
 from polar.benefit.strategies.base.schemas import (
     BENEFIT_DESCRIPTION_MAX_LENGTH,
     BENEFIT_DESCRIPTION_MIN_LENGTH,
 )
 from polar.enums import SubscriptionRecurringInterval
-from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
+from polar.kit.metadata import MetadataInputMixin, MetadataOutputType
 from polar.kit.schemas import Int32, Schema, SetSchemaReference
 from polar.kit.visibility import Visibility
-from polar.meter.aggregation import Aggregation
-from polar.meter.filter import Filter
-from polar.meter.schemas import NAME_DESCRIPTION, MeterCreateBase
-from polar.meter.unit import MeterUnit
+from polar.meter.schemas import MeterCreateBase
 from polar.models.benefit import BenefitType
 from polar.models.product import ProductVisibility
 from polar.models.product_price import ProductPriceAmountType
@@ -311,24 +315,42 @@ class ConfigPlan(Schema):
     issues: list[ConfigIssue]
 
 
-class ConfigExportMeter(Schema, MetadataOutputMixin):
-    external_id: str = Field(description="Your identifier for the meter.")
-    name: str = Field(description=NAME_DESCRIPTION)
-    unit: MeterUnit = Field(description="The unit of the meter.")
-    custom_label: str | None = Field(description="The label for the custom unit.")
-    custom_multiplier: int | None = Field(
-        description="The multiplier to convert from base unit to display scale."
-    )
-    filter: Filter = Field(
-        description="The filter applied on events to calculate the meter."
-    )
-    aggregation: Aggregation = Field(
-        description="The aggregation applied on the filtered events."
-    )
+# Config entries serialize `metadata` as `user_metadata` for the create schemas
+# they feed. Export entries subclass them so the shape can't drift from what
+# plan and apply accept, only serializing `metadata` under its own name.
+class _ConfigExportMetadata(BaseModel):
+    model_config = ConfigDict(json_schema_serialization_defaults_required=True)
+
+    metadata: MetadataOutputType = Field(default_factory=dict)
+
+
+class ConfigExportMeter(_ConfigExportMetadata, ConfigMeter):
+    pass
+
+
+class ConfigExportBenefitFeatureFlag(_ConfigExportMetadata, ConfigBenefitFeatureFlag):
+    pass
+
+
+class ConfigExportBenefitMeterCredit(_ConfigExportMetadata, ConfigBenefitMeterCredit):
+    pass
+
+
+ConfigExportBenefit = Annotated[
+    ConfigExportBenefitFeatureFlag | ConfigExportBenefitMeterCredit,
+    Discriminator("type"),
+    SetSchemaReference("ConfigExportBenefit"),
+]
+
+
+class ConfigExportProduct(_ConfigExportMetadata, ConfigProduct):
+    pass
 
 
 class ConfigExportDocument(Schema):
     meters: list[ConfigExportMeter]
+    benefits: list[ConfigExportBenefit]
+    products: list[ConfigExportProduct]
 
 
 class ConfigSkippedReason(StrEnum):
@@ -338,12 +360,12 @@ class ConfigSkippedReason(StrEnum):
     over_limit = "over_limit"
 
 
-class ConfigSkippedMeter(Schema):
+class ConfigSkippedResource(Schema):
     resource: ConfigResource = Field(description="The type of resource.")
-    id: UUID4 = Field(description="The meter ID.")
-    name: str = Field(description="The meter name.")
+    id: UUID4 = Field(description="The resource ID.")
+    name: str = Field(description="The resource name.")
     reason: ConfigSkippedReason = Field(
-        description="Why the meter isn't in the exported config."
+        description="Why the resource isn't in the exported config."
     )
 
 
@@ -351,6 +373,6 @@ class ConfigExport(Schema):
     config: ConfigExportDocument = Field(
         description="The current config, in the same shape plan and apply accept."
     )
-    skipped: list[ConfigSkippedMeter] = Field(
-        description="Meters left out of the exported config."
+    skipped: list[ConfigSkippedResource] = Field(
+        description="Resources left out of the exported config."
     )

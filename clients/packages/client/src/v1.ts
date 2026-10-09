@@ -6048,9 +6048,12 @@ export interface paths {
      *
      *     `config` has the shape plan and apply accept, without `organization_id`:
      *     planning it for the same organization without edits reports no changes.
-     *     Meters without an `external_id`, archived meters, meters that wouldn't pass
-     *     config validation, and meters beyond the config limit are listed in
-     *     `skipped`.
+     *     Resources without an `external_id`, archived ones, ones config can't express
+     *     (or that reference a skipped resource), and ones beyond the config limit are
+     *     listed in `skipped`.
+     *
+     *     Also requires the `benefits:read` or `benefits:write` scope, and
+     *     `products:read` or `products:write`.
      *
      *     **Scopes**: `meters:read` `meters:write`
      */
@@ -16168,50 +16171,140 @@ export interface components {
       config: components['schemas']['ConfigExportDocument']
       /**
        * Skipped
-       * @description Meters left out of the exported config.
+       * @description Resources left out of the exported config.
        */
-      skipped: components['schemas']['ConfigSkippedMeter'][]
+      skipped: components['schemas']['ConfigSkippedResource'][]
+    }
+    ConfigExportBenefit:
+      | components['schemas']['ConfigExportBenefitFeatureFlag']
+      | components['schemas']['ConfigExportBenefitMeterCredit']
+    /** ConfigExportBenefitFeatureFlag */
+    ConfigExportBenefitFeatureFlag: {
+      metadata: components['schemas']['MetadataOutputType']
+      /**
+       * External Id
+       * @description Your identifier for the benefit, used to match it.
+       */
+      external_id: string
+      /**
+       * Description
+       * @description The description of the benefit. Will be displayed on products having this benefit.
+       */
+      description: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'feature_flag'
+    }
+    /** ConfigExportBenefitMeterCredit */
+    ConfigExportBenefitMeterCredit: {
+      metadata: components['schemas']['MetadataOutputType']
+      /**
+       * External Id
+       * @description Your identifier for the benefit, used to match it.
+       */
+      external_id: string
+      /**
+       * Description
+       * @description The description of the benefit. Will be displayed on products having this benefit.
+       */
+      description: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'meter_credit'
+      properties: components['schemas']['ConfigBenefitMeterCreditProperties']
     }
     /** ConfigExportDocument */
     ConfigExportDocument: {
       /** Meters */
       meters: components['schemas']['ConfigExportMeter'][]
+      /** Benefits */
+      benefits: components['schemas']['ConfigExportBenefit'][]
+      /** Products */
+      products: components['schemas']['ConfigExportProduct'][]
     }
     /** ConfigExportMeter */
     ConfigExportMeter: {
       metadata: components['schemas']['MetadataOutputType']
       /**
-       * External Id
-       * @description Your identifier for the meter.
-       */
-      external_id: string
-      /**
        * Name
        * @description The name of the meter. Will be shown on customer's invoices and usage.
        */
       name: string
-      /** @description The unit of the meter. */
+      /**
+       * @description The unit of the meter.
+       * @default scalar
+       */
       unit: components['schemas']['MeterUnit']
       /**
        * Custom Label
-       * @description The label for the custom unit.
+       * @description The label for the custom unit, e.g. 'request'. Required when unit is 'custom'.
        */
       custom_label: string | null
       /**
        * Custom Multiplier
-       * @description The multiplier to convert from base unit to display scale.
+       * @description The multiplier to convert from the base unit to display scale, e.g. 1000 to display per 1000 units. Defaults to 1 when not provided.
        */
       custom_multiplier: number | null
-      /** @description The filter applied on events to calculate the meter. */
+      /** @description The filter to apply on events that'll be used to calculate the meter. */
       filter: components['schemas']['Filter']
       /**
        * Aggregation
-       * @description The aggregation applied on the filtered events.
+       * @description The aggregation to apply on the filtered events to calculate the meter.
        */
       aggregation:
         | components['schemas']['CountAggregation']
         | components['schemas']['PropertyAggregation']
         | components['schemas']['UniqueAggregation']
+      /**
+       * External Id
+       * @description Your identifier for the meter. Used to match the config entry with an existing meter.
+       */
+      external_id: string
+    }
+    /** ConfigExportProduct */
+    ConfigExportProduct: {
+      metadata: components['schemas']['MetadataOutputType']
+      /**
+       * External Id
+       * @description Your identifier for the product, used to match it.
+       */
+      external_id: string
+      /**
+       * Name
+       * @description The name of the product.
+       */
+      name: string
+      /**
+       * Description
+       * @description The description of the product.
+       */
+      description: string | null
+      /**
+       * @description The visibility of the product.
+       * @default public
+       */
+      visibility: components['schemas']['ProductVisibility']
+      /** @description The recurring interval of the product. Leave it empty for a one-time purchase. */
+      recurring_interval: components['schemas']['RecurringInterval'] | null
+      /**
+       * Recurring Interval Count
+       * @description Billing cycle length in intervals. Defaults to 1.
+       */
+      recurring_interval_count: number | null
+      /**
+       * Prices
+       * @description The prices of the product.
+       */
+      prices: components['schemas']['ConfigProductPrice-Output'][]
+      /**
+       * Benefits
+       * @description The benefits granted by the product.
+       */
+      benefits: string[]
     }
     /** ConfigFieldChange */
     ConfigFieldChange: {
@@ -16404,7 +16497,7 @@ export interface components {
        * Prices
        * @description The prices of the product.
        */
-      prices: components['schemas']['ConfigProductPrice'][]
+      prices: components['schemas']['ConfigProductPrice-Input'][]
       /**
        * Benefits
        * @description The benefits granted by the product.
@@ -16422,9 +16515,12 @@ export interface components {
       /** Detail */
       detail: string
     }
-    ConfigProductPrice:
+    'ConfigProductPrice-Input':
       | components['schemas']['ConfigProductPriceFixed']
-      | components['schemas']['ConfigProductPriceMeteredUnit']
+      | components['schemas']['ConfigProductPriceMeteredUnit-Input']
+    'ConfigProductPrice-Output':
+      | components['schemas']['ConfigProductPriceFixed']
+      | components['schemas']['ConfigProductPriceMeteredUnit-Output']
     /** ConfigProductPriceFixed */
     ConfigProductPriceFixed: {
       /**
@@ -16446,7 +16542,7 @@ export interface components {
       price_amount: number
     }
     /** ConfigProductPriceMeteredUnit */
-    ConfigProductPriceMeteredUnit: {
+    'ConfigProductPriceMeteredUnit-Input': {
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -16475,6 +16571,36 @@ export interface components {
        */
       cap_amount?: number | null
     }
+    /** ConfigProductPriceMeteredUnit */
+    'ConfigProductPriceMeteredUnit-Output': {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'metered_unit'
+      /**
+       * @description The currency in which the customer will be charged.
+       * @default usd
+       */
+      price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
+      /**
+       * Meter
+       * @description The `external_id` of a meter declared in the same config.
+       */
+      meter: string
+      /**
+       * Unit Amount
+       * @description The price per unit in cents. Supports up to 12 decimal places.
+       */
+      unit_amount: string
+      /**
+       * Cap Amount
+       * @description Optional maximum charge in cents.
+       */
+      cap_amount?: number | null
+    }
     /**
      * ConfigResource
      * @enum {string}
@@ -16492,24 +16618,6 @@ export interface components {
       /** @description What applying the config does. */
       action: components['schemas']['ConfigAction']
     }
-    /** ConfigSkippedMeter */
-    ConfigSkippedMeter: {
-      /** @description The type of resource. */
-      resource: components['schemas']['ConfigResource']
-      /**
-       * Id
-       * Format: uuid4
-       * @description The meter ID.
-       */
-      id: string
-      /**
-       * Name
-       * @description The meter name.
-       */
-      name: string
-      /** @description Why the meter isn't in the exported config. */
-      reason: components['schemas']['ConfigSkippedReason']
-    }
     /**
      * ConfigSkippedReason
      * @enum {string}
@@ -16519,6 +16627,24 @@ export interface components {
       | 'archived'
       | 'invalid'
       | 'over_limit'
+    /** ConfigSkippedResource */
+    ConfigSkippedResource: {
+      /** @description The type of resource. */
+      resource: components['schemas']['ConfigResource']
+      /**
+       * Id
+       * Format: uuid4
+       * @description The resource ID.
+       */
+      id: string
+      /**
+       * Name
+       * @description The resource name.
+       */
+      name: string
+      /** @description Why the resource isn't in the exported config. */
+      reason: components['schemas']['ConfigSkippedReason']
+    }
     /** CostMetadata */
     'CostMetadata-Input': {
       /**
@@ -62387,7 +62513,7 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
-      /** @description Not allowed to read this organization's products, or config as code isn't enabled for it. */
+      /** @description Not allowed to read this organization's products, missing a benefits or products scope, or config as code isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown
@@ -71170,6 +71296,12 @@ export const configBenefitFeatureFlagTypeValues: ReadonlyArray<
 export const configBenefitMeterCreditTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigBenefitMeterCredit']['type']
 > = ['meter_credit']
+export const configExportBenefitFeatureFlagTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigExportBenefitFeatureFlag']['type']
+> = ['feature_flag']
+export const configExportBenefitMeterCreditTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigExportBenefitMeterCredit']['type']
+> = ['meter_credit']
 export const configIssueSeverityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueSeverity']
 > = ['error', 'warning']
@@ -71187,8 +71319,11 @@ export const configIssueTypeValues: ReadonlyArray<
 export const configProductPriceFixedAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceFixed']['amount_type']
 > = ['fixed']
-export const configProductPriceMeteredUnitAmount_typeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredUnit']['amount_type']
+export const configProductPriceMeteredUnitInputAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredUnit-Input']['amount_type']
+> = ['metered_unit']
+export const configProductPriceMeteredUnitOutputAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredUnit-Output']['amount_type']
 > = ['metered_unit']
 export const configResourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigResource']

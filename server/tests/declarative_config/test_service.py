@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Any
+from typing import Any, get_args
 
 import pytest
 from pytest_mock import MockerFixture
@@ -10,9 +10,13 @@ from polar.benefit.repository import BenefitRepository
 from polar.declarative_config.schemas import (
     Config,
     ConfigAction,
+    ConfigBenefit,
+    ConfigExportDocument,
     ConfigIssueSeverity,
     ConfigIssueType,
+    ConfigProductPrice,
     ConfigResource,
+    ConfigSkippedReason,
 )
 from polar.declarative_config.service import (
     ConfigAsCodeNotEnabled,
@@ -44,6 +48,7 @@ from tests.fixtures.random_objects import (
     create_event,
     create_meter,
     create_product,
+    set_product_benefits,
 )
 
 TOOL_CALLS_METER = {
@@ -1080,3 +1085,188 @@ class TestPlan:
             for issue in plan.issues
             if issue.type == ConfigIssueType.duplicate_external_id
         ] == [["body", "benefits", 1, "external_id"]]
+
+
+ROUND_TRIP_CONFIG: dict[str, Any] = {
+    "meters": [{**TOOL_CALLS_METER, "metadata": {"team": "billing"}}],
+    "benefits": [
+        {
+            **CREDITS_BENEFIT,
+            "properties": {"meter": "sdk-tool-calls", "units": 1000, "rollover": True},
+        },
+        {**BETA_BENEFIT, "metadata": {"tier": 1}},
+    ],
+    "products": [
+        {
+            **PRO_PRODUCT,
+            "description": "The Pro plan",
+            "visibility": "private",
+            "recurring_interval_count": 3,
+            "prices": [
+                {"amount_type": "fixed", "price_amount": 2000},
+                {
+                    "amount_type": "metered_unit",
+                    "meter": "sdk-tool-calls",
+                    "unit_amount": "0.5",
+                    "cap_amount": 10000,
+                },
+            ],
+            "metadata": {"plan": "pro"},
+        },
+        {
+            "external_id": "lifetime",
+            "name": "Lifetime",
+            "prices": [{"amount_type": "fixed", "price_amount": 0}],
+            "benefits": ["beta"],
+        },
+    ],
+}
+
+
+def _variants(annotated: Any) -> set[type]:
+    return set(get_args(get_args(annotated)[0]))
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+class TestExport:
+    def test_exports_every_section(self) -> None:
+        sections = Config.model_fields.keys() - {"organization_id"}
+
+        assert ConfigExportDocument.model_fields.keys() == sections
+        assert ROUND_TRIP_CONFIG.keys() == sections
+
+    def test_round_trip_config_covers_every_variant(self) -> None:
+        config = Config.model_validate(ROUND_TRIP_CONFIG)
+
+        assert {type(benefit) for benefit in config.benefits} == _variants(
+            ConfigBenefit
+        )
+        assert {
+            type(price) for product in config.products for price in product.prices
+        } == _variants(ConfigProductPrice)
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_round_trips_through_apply(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        mocker.patch("polar.meter.service.enqueue_job")
+        await declarative_config_service.apply(
+            session, redis, auth_subject, Config.model_validate(ROUND_TRIP_CONFIG)
+        )
+
+        exported = await declarative_config_service.export(session, auth_subject, None)
+        document = exported.config.model_dump(mode="json")
+        plan = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate(document)
+        )
+        applied = await declarative_config_service.apply(
+            session, redis, auth_subject, Config.model_validate(document)
+        )
+
+        assert exported.skipped == []
+        assert Config.model_validate(document) == Config.model_validate(
+            ROUND_TRIP_CONFIG
+        )
+        assert [
+            issue
+            for issue in plan.issues
+            if issue.type != ConfigIssueType.unknown_event
+        ] == []
+        assert {change.action for change in plan.changes} == {ConfigAction.unchanged}
+        assert {change.action for change in applied.changes} == {ConfigAction.unchanged}
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_skips_what_config_cannot_express(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        unlisted_meter = await create_meter(save_fixture, organization=organization)
+        credits = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={
+                "meter_id": str(unlisted_meter.id),
+                "units": 10,
+                "rollover": False,
+            },
+            external_id="credits",
+        )
+        custom = await create_benefit(
+            save_fixture, organization=organization, external_id="custom"
+        )
+        seats = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+            external_id="seats",
+        )
+        archived = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            is_archived=True,
+            external_id="archived",
+        )
+
+        exported = await declarative_config_service.export(session, auth_subject, None)
+
+        assert exported.config.model_dump() == {
+            "meters": [],
+            "benefits": [],
+            "products": [],
+        }
+        assert [(skip.id, skip.reason) for skip in exported.skipped] == [
+            (unlisted_meter.id, ConfigSkippedReason.missing_external_id),
+            (credits.id, ConfigSkippedReason.invalid),
+            (custom.id, ConfigSkippedReason.invalid),
+            (seats.id, ConfigSkippedReason.invalid),
+            (archived.id, ConfigSkippedReason.archived),
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_skips_product_with_skipped_benefit(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture, organization=organization, type=BenefitType.feature_flag
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="one-time",
+        )
+        await set_product_benefits(save_fixture, product=product, benefits=[benefit])
+
+        exported = await declarative_config_service.export(session, auth_subject, None)
+
+        assert [(skip.id, skip.reason) for skip in exported.skipped] == [
+            (benefit.id, ConfigSkippedReason.missing_external_id),
+            (product.id, ConfigSkippedReason.invalid),
+        ]
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(
+            subject="organization", scopes={Scope.meters_read, Scope.benefits_read}
+        )
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_requires_products_scope(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        with pytest.raises(InsufficientScopeError):
+            await declarative_config_service.export(session, auth_subject, None)

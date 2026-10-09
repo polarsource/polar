@@ -36,6 +36,7 @@ router = APIRouter(prefix="/config", tags=["config", APITag.private])
         403: {
             "description": (
                 "Not allowed to read this organization's products, "
+                "missing a benefits or products scope, "
                 "or config as code isn't enabled for it."
             ),
             "model": NotPermitted.schema() | ConfigAsCodeNotEnabled.schema(),
@@ -58,9 +59,12 @@ async def export(
 
     `config` has the shape plan and apply accept, without `organization_id`:
     planning it for the same organization without edits reports no changes.
-    Meters without an `external_id`, archived meters, meters that wouldn't pass
-    config validation, and meters beyond the config limit are listed in
-    `skipped`.
+    Resources without an `external_id`, archived ones, ones config can't express
+    (or that reference a skipped resource), and ones beyond the config limit are
+    listed in `skipped`.
+
+    Also requires the `benefits:read` or `benefits:write` scope, and
+    `products:read` or `products:write`.
     """
     return await declarative_config_service.export(
         session, auth_subject, organization_id

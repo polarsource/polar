@@ -8,6 +8,7 @@ from typing import Any, Literal, Self, Unpack, cast, overload
 from urllib.parse import urlencode
 
 import structlog
+from sqlalchemy import inspect as sa_inspect
 from sqlalchemy import select
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
@@ -145,7 +146,7 @@ from .schemas import (
     SubscriptionUpdateUnits,
 )
 from .sorting import SubscriptionSortProperty
-from .update import generate_subscription_update
+from .update import generate_subscription_update, next_cycle_bounds
 
 log: Logger = structlog.get_logger()
 
@@ -2358,15 +2359,38 @@ class SubscriptionService:
                 subscription.trial_start = utc_now()
                 subscription.trial_end = subscription.current_period_end = trial_end
 
-        # Keep any pending update's cycle end in sync with the new period end,
-        # otherwise apply_update() will clobber current_period_end back to the
-        # stale value when cycle() next runs.
+        # An interval change owns the next cycle: cycle() applies the stored
+        # dates and does not advance the period itself. Those dates start at
+        # the new period end and last one interval of the new product. A
+        # same-interval update only mirrors the current period end; cycle()
+        # rolls forward from there.
         if subscription.pending_update is not None:
+            pending_update = subscription.pending_update
+            pending_update.subscription = subscription
+            state = sa_inspect(pending_update)
+            if "product" in state.unloaded:
+                if pending_update.product_id is not None:
+                    product_repository = ProductRepository.from_session(session)
+                    pending_update.product = await product_repository.get_by_id(
+                        pending_update.product_id
+                    )
+                else:
+                    pending_update.product = None
             subscription_update_repository = SubscriptionUpdateRepository.from_session(
                 session
             )
-            subscription.pending_update.new_cycle_end = subscription.current_period_end
-            await subscription_update_repository.update(subscription.pending_update)
+            if pending_update.is_interval_changed():
+                product = pending_update.product
+                assert product is not None
+                cycle_start = subscription.current_period_end
+                pending_update.applies_at = cycle_start
+                (
+                    pending_update.new_cycle_start,
+                    pending_update.new_cycle_end,
+                ) = next_cycle_bounds(cycle_start, product)
+            else:
+                pending_update.new_cycle_end = subscription.current_period_end
+            await subscription_update_repository.update(pending_update)
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(subscription)

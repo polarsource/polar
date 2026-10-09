@@ -21,12 +21,7 @@ from polar.redis import Redis
 from polar.reducer.repository import ReducerRepository
 from polar.worker import enqueue_job
 
-from .redis_store import (
-    BucketId,
-    add_to_buckets,
-    get_bucket_values,
-    get_reducer_bucket_key,
-)
+from . import redis_store
 from .repository import ReducerBucketRepository
 
 log: Logger = structlog.get_logger()
@@ -74,7 +69,7 @@ class ReducerBucketService:
         if active_buckets:
             # Roll up active events into buckets in Redis
             try:
-                await add_to_buckets(redis, active_buckets)
+                await redis_store.add_to_buckets(redis, active_buckets)
             except RedisError:
                 log.exception(
                     "Failed to update active reducer buckets in Redis",
@@ -170,7 +165,7 @@ class ReducerBucketService:
             "reducer_id": reducer.id,
             "aggregation": aggregation,
             "bucket_start": bucket.bucket_start.isoformat(),
-            "key": get_reducer_bucket_key(
+            "key": redis_store.get_reducer_bucket_key(
                 reducer.id,
                 bucket.bucket_start,
                 bucket.customer_id,
@@ -178,7 +173,7 @@ class ReducerBucketService:
             ),
         }
         try:
-            [redis_values] = await get_bucket_values(
+            [redis_values] = await redis_store.get_bucket_values(
                 redis,
                 reducer,
                 bucket.bucket_start,
@@ -217,9 +212,9 @@ class ReducerBucketService:
 
 def _reduce_events_to_bucket_contributions(
     reducers: Sequence[Reducer], events: Sequence[Event]
-) -> dict[BucketId, list[float]]:
+) -> dict[redis_store.BucketId, list[float]]:
     """The values each event adds to the buckets of the reducers it matches."""
-    buckets: dict[BucketId, list[float]] = defaultdict(list)
+    buckets: dict[redis_store.BucketId, list[float]] = defaultdict(list)
     for event in events:
         for reducer in reducers:
             if not reducer.filter.matches(event):

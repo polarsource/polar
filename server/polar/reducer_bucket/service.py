@@ -220,8 +220,9 @@ class ReducerBucketService:
                 "max": maximum,
             }
             previous = latest.get((customer_id, external_customer_id))
-            if previous is not None:
-                if _are_close(
+            # Sealed buckets were billed: events since go to a new generation.
+            if previous is not None and previous.sealed_at is None:
+                if not _are_close(
                     (count, total, minimum, maximum),
                     (
                         previous.count,
@@ -230,11 +231,8 @@ class ReducerBucketService:
                         _to_float(previous.max),
                     ),
                 ):
-                    continue
-                # Sealed buckets were billed: changes go to a new generation.
-                if previous.sealed_at is None:
                     await repository.update(previous, update_dict=statistics)
-                    continue
+                continue
             bucket = {
                 "organization_id": reducer.organization_id,
                 "reducer_id": reducer.id,
@@ -242,7 +240,7 @@ class ReducerBucketService:
                 "external_customer_id": external_customer_id,
                 "bucket_start": bucket_start,
                 **statistics,
-                "generation": 0 if previous is None else previous.generation + 1,
+                "generation": 1 if previous is None else previous.generation + 1,
             }
             buckets.append(bucket)
             if previous is None:

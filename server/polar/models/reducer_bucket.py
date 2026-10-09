@@ -74,5 +74,6 @@ class ReducerBucket(RecordModel):
     reducer: Mapped["Reducer"] = relationship(lazy="raise")
     customer: Mapped["Customer | None"] = relationship(lazy="raise")
 
-    # Sealing freezes this generation; billing attribution belongs to each consumer.
-    generation: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Sealing freezes this generation; events ingested after it go to the next,
+    # so a bucket's totals combine all its generations.
+    generation: Mapped[int] = mapped_column(Integer, nullable=False, default=1)

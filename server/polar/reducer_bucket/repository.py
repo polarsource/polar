@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Row, func, literal, null, select
+from sqlalchemy import Row, and_, func, literal, null, or_, select
 from sqlalchemy.dialects.postgresql import insert
 
 from polar.kit.db.locking import pg_advisory_xact_lock
@@ -28,7 +28,22 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         self, reducer: Reducer, bucket_start: datetime, bucket_end: datetime
     ) -> Sequence[Row[Any]]:
         """count, sum, min and max of the reducer's events in the range, per
-        customer identity."""
+        customer identity, ingested after its latest sealed bucket."""
+        sealed = (
+            select(
+                ReducerBucket.customer_id,
+                ReducerBucket.external_customer_id,
+                func.max(ReducerBucket.sealed_at).label("sealed_at"),
+            )
+            .where(
+                ReducerBucket.organization_id == reducer.organization_id,
+                ReducerBucket.reducer_id == reducer.id,
+                ReducerBucket.bucket_start == bucket_start,
+                ReducerBucket.sealed_at.is_not(None),
+            )
+            .group_by(ReducerBucket.customer_id, ReducerBucket.external_customer_id)
+            .subquery()
+        )
         aggregation = reducer.aggregation
         statistics: tuple[Any, Any, Any]
         if isinstance(aggregation, PropertyAggregation):
@@ -49,12 +64,25 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
                 statistics[1].label("min"),
                 statistics[2].label("max"),
             )
+            .outerjoin(
+                sealed,
+                and_(
+                    sealed.c.customer_id.is_not_distinct_from(Event.customer_id),
+                    sealed.c.external_customer_id.is_not_distinct_from(
+                        Event.external_customer_id
+                    ),
+                ),
+            )
             .where(
                 Event.organization_id == reducer.organization_id,
                 Event.timestamp >= bucket_start,
                 Event.timestamp < bucket_end,
                 reducer.filter.get_sql_clause(Event),
                 aggregation.get_sql_clause(Event),
+                or_(
+                    sealed.c.sealed_at.is_(None),
+                    Event.ingested_at > sealed.c.sealed_at,
+                ),
             )
             .group_by(Event.customer_id, Event.external_customer_id)
         )

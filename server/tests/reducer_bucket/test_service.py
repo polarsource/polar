@@ -289,11 +289,13 @@ async def create_tokens_event(
     tokens: int,
     *,
     timestamp: datetime = CLOSED,
+    ingested_at: datetime | None = None,
 ) -> None:
     await create_event(
         save_fixture,
         organization=organization,
         timestamp=timestamp,
+        ingested_at=ingested_at,
         external_customer_id="external",
         metadata={"tokens": tokens},
     )
@@ -335,7 +337,7 @@ class TestSync:
             Decimal(3),
             Decimal(4),
         )
-        assert bucket.generation == 0
+        assert bucket.generation == 1
         assert bucket.sealed_at is None
 
     async def test_updates_unbilled_buckets_in_place(
@@ -358,11 +360,11 @@ class TestSync:
         await reducer_bucket_service.sync(session, redis, organization.id, BUCKET_START)
 
         [bucket] = await get_buckets(session)
-        assert (bucket.generation, bucket.count, bucket.sum) == (0, 3, Decimal(12))
+        assert (bucket.generation, bucket.count, bucket.sum) == (1, 3, Decimal(12))
         assert bucket.modified_at == modified_at is not None
         assert bucket.sealed_at is None
 
-    async def test_new_generation_once_billed(
+    async def test_events_after_billing_go_to_next_generation(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -370,18 +372,28 @@ class TestSync:
         redis: Redis,
         organization: Organization,
     ) -> None:
-        await create_tokens_event(save_fixture, organization, 3)
+        await create_tokens_event(save_fixture, organization, 3, ingested_at=CLOSED)
         await reducer_bucket_service.sync(session, redis, organization.id, BUCKET_START)
         [billed] = await get_buckets(session)
         billed.sealed_at = BILLED_AT
         await save_fixture(billed)
 
-        await create_tokens_event(save_fixture, organization, 4)
-        await reducer_bucket_service.sync(session, redis, organization.id, BUCKET_START)
+        for tokens in (4, 5):
+            await create_tokens_event(
+                save_fixture,
+                organization,
+                tokens,
+                ingested_at=BILLED_AT + timedelta(minutes=1),
+            )
+            await reducer_bucket_service.sync(
+                session, redis, organization.id, BUCKET_START
+            )
 
         first, second = await get_buckets(session)
-        assert (first.generation, first.count, first.sealed_at) == (0, 1, BILLED_AT)
-        assert (second.generation, second.count, second.sum) == (1, 2, Decimal(7))
+        assert (first.generation, first.count, first.sum) == (1, 1, Decimal(3))
+        assert first.sealed_at == BILLED_AT
+        assert (second.generation, second.count, second.sum) == (2, 2, Decimal(9))
+        assert (second.min, second.max) == (Decimal(4), Decimal(5))
         assert second.sealed_at is None
 
     @pytest.mark.parametrize(

@@ -9,7 +9,7 @@ from polar.config import settings
 from polar.models import Model
 
 # Columns removed from the models but still in the database until dropped by hand.
-UNMAPPED_COLUMNS = {("events", "ingest_sequence")}
+UNMAPPED_COLUMNS: set[tuple[str, str]] = set()
 
 
 def include_object(object, name, type_, reflected, compare_to):

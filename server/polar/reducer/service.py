@@ -11,9 +11,10 @@ from polar.meter.aggregation import AggregationFunction, UniqueAggregation
 from polar.models import Customer, Meter, MeterReducer, Reducer
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.redis import Redis, create_redis
+from polar.reducer_bucket.redis_store import get_reducer_bucket_key
+from polar.reducer_bucket.repository import ReducerBucketRepository
 from polar.reducer_bucket.service import (
     REDUCER_BUCKET_SIZE,
-    get_reducer_bucket_key,
     get_reducer_bucket_start,
 )
 
@@ -78,27 +79,27 @@ class ReducerService:
 
     async def _get_boundary_aggregate(
         self,
-        repository: ReducerRepository,
+        bucket_repository: ReducerBucketRepository,
         reducer: Reducer,
         customer: Customer,
         *,
         start: datetime | None,
         end: datetime,
-        partial_start: datetime | None,
-        full_end: datetime,
     ) -> Aggregate:
         aggregate = Aggregate()
-        if partial_start is not None:
-            assert start is not None
+        full_end = get_reducer_bucket_start(end)
+        partial_start = None
+        if start is not None and get_reducer_bucket_start(start) != start:
+            partial_start = get_reducer_bucket_start(start)
             edge_end = min(partial_start + REDUCER_BUCKET_SIZE, end)
             aggregate.add(
-                await repository.get_edge_aggregate(
+                await bucket_repository.get_edge_aggregate(
                     reducer, customer, start=start, end=edge_end
                 )
             )
         if full_end < end and full_end != partial_start:
             aggregate.add(
-                await repository.get_edge_aggregate(
+                await bucket_repository.get_edge_aggregate(
                     reducer, customer, start=full_end, end=end
                 )
             )
@@ -120,8 +121,10 @@ class ReducerService:
         that has not been charged yet. Read raw events where the requested window
         covers only part of a bucket.
         """
-        repository = ReducerRepository.from_session(session)
-        reducer = await repository.get_by_meter_id(meter_id)
+        bucket_repository = ReducerBucketRepository.from_session(session)
+        reducer = await ReducerRepository.from_session(session).get_by_meter_id(
+            meter_id
+        )
         if reducer is None or isinstance(reducer.aggregation, UniqueAggregation):
             return None
         customer = await CustomerRepository.from_session(session).get_by_id(
@@ -137,7 +140,7 @@ class ReducerService:
         partial_start = start_bucket if start_bucket != start else None
         redis_start = get_reducer_bucket_start(utc_now()) - REDUCER_BUCKET_SIZE
         with logfire.span("reducer.read_postgres_buckets"):
-            aggregate = await repository.get_unsealed_aggregate(
+            aggregate = await bucket_repository.get_unsealed_aggregate(
                 reducer,
                 customer,
                 end=min(full_end, redis_start),
@@ -157,13 +160,11 @@ class ReducerService:
         with logfire.span("reducer.read_boundary_events"):
             aggregate.add(
                 await self._get_boundary_aggregate(
-                    repository,
+                    bucket_repository,
                     reducer,
                     customer,
                     start=start,
                     end=end,
-                    partial_start=partial_start,
-                    full_end=full_end,
                 )
             )
         return aggregate.quantity(reducer.aggregation.func)

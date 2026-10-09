@@ -109,7 +109,7 @@ class TestGetQuantity:
             for tokens in (-2, 4)
         ]
         await reducer_bucket_service.rollup_active(
-            session, reducer_redis, organization.id, active_events
+            reducer_redis, organization.id, [reducer], active_events
         )
 
         quantity = await reducer_service.get_quantity(

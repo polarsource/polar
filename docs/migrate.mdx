@@ -232,6 +232,10 @@ for payments it processes.
     A subscription that is not ready stays on Stripe. Resolve the issue and retry
     it later, or keep it renewing on Stripe.
 
+    Unsupported pricing should not block your migration. Polar can adapt to new
+    pricing models, so if some of your prices cannot be migrated,
+    [contact Polar support](/support).
+
     Polar also rechecks subscriptions during the switch. Subscriptions due to
     renew within 24 hours, or set to end on a date other than their period end,
     remain on Stripe at that point. A subscription set to cancel at the end of
@@ -347,6 +351,9 @@ Migrations** for assessment, card transfer, and cutover.
   the automated flow. Direct those merchants to Polar support.
 - Subscriptions sold through Stripe Managed Payments are not moved yet and
   stay on Stripe.
+- Unsupported pricing is not a dead end. Polar can adapt to new pricing
+  models; direct merchants with prices that cannot be migrated to Polar
+  support.
 - Switching is irreversible. Subscriptions renewing within about 24 hours
   stay on Stripe to avoid a billing conflict. Subscriptions set to cancel at
   the end of their period do not renew, so they move.

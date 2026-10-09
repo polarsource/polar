@@ -58,9 +58,8 @@ class TestGetQuantity:
         reducer = await create_reducer(
             save_fixture, organization=organization, meters=[meter]
         )
-        mocker.patch(
-            "polar.reducer.service.utc_now", return_value=BASE + timedelta(minutes=16)
-        )
+        for target in ("polar.reducer.service", "polar.reducer_bucket.service"):
+            mocker.patch(f"{target}.utc_now", return_value=BASE + timedelta(minutes=16))
         for start, generation, sealed, count, total, minimum, maximum in (
             (BASE - timedelta(days=1), 1, BASE, 100, 1000, 10, 10),
             (BASE - timedelta(days=1), 2, None, 1, 7, 7, 7),
@@ -108,8 +107,8 @@ class TestGetQuantity:
             )
             for tokens in (-2, 4)
         ]
-        await reducer_bucket_service.rollup_active(
-            redis, organization.id, [reducer], active_events
+        await reducer_bucket_service.rollup(
+            session, redis, organization.id, active_events
         )
 
         quantity = await reducer_service.get_quantity(

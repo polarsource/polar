@@ -14,10 +14,10 @@ from starlette.responses import FileResponse, JSONResponse, Response
 from starlette.routing import Route
 
 from outpost.env import Environment, get_environment
-from outpost.event import EventCreate, EventsIngest
+from outpost.event import EventsIngest
 from outpost.metrics import EVENTS_INGESTED, INGEST_SECONDS, REDUCE_SECONDS
 from outpost.polar import Configuration, create_client, listen
-from outpost.reducer import BUCKET_SIZE, get_bucket_start, reduce
+from outpost.reducer import BUCKET_SIZE, get_bucket_start, get_event_keys, reduce
 from outpost.storage import Storage, create_storage
 
 
@@ -32,25 +32,6 @@ def get_state(request: Request) -> LifespanState:
     return request.state  # type: ignore
 
 
-async def drop_duplicates(
-    storage: Storage, events: collections.abc.Sequence[EventCreate]
-) -> list[EventCreate]:
-    is_new = iter(
-        await storage.claim(
-            [
-                (
-                    event.external_customer_id,
-                    get_bucket_start(event.timestamp),
-                    event.external_id,
-                )
-                for event in events
-                if event.external_id is not None
-            ]
-        )
-    )
-    return [event for event in events if event.external_id is None or next(is_new)]
-
-
 async def ingest(request: Request) -> Response:
     with INGEST_SECONDS.time():
         try:
@@ -59,23 +40,25 @@ async def ingest(request: Request) -> Response:
             return Response(status_code=422)
 
         state = get_state(request)
-        events = await drop_duplicates(state["storage"], payload.events)
+        claimed = await state["storage"].claim(get_event_keys(payload.events))
         oldest_bucket_start = (
             get_bucket_start(datetime.datetime.now(datetime.UTC)) - BUCKET_SIZE
         )
         with REDUCE_SECONDS.time():
             updates = reduce(
                 state["configuration"].reducers,
-                events,
+                payload.events,
                 oldest_bucket_start=oldest_bucket_start,
+                claimed=claimed,
             )
         await state["storage"].write_updates(updates)
         EVENTS_INGESTED.inc(len(payload.events))
 
+        duplicates = claimed.count(False)
         return JSONResponse(
             {
-                "inserted": len(events),
-                "duplicates": len(payload.events) - len(events),
+                "inserted": len(payload.events) - duplicates,
+                "duplicates": duplicates,
             }
         )
 

@@ -94,6 +94,20 @@ class TestReduce:
             ("customer", "count", BUCKET + BUCKET_SIZE, "count"): 1,
         }
 
+    def test_skips_duplicates(self, event: EventCreate) -> None:
+        reducer: Reducer = {
+            "id": "count",
+            "filter": {"conjunction": "and", "clauses": []},
+            "aggregation": {"func": "count"},
+        }
+        tracked = event.model_copy(update={"external_id": "event_1"})
+        assert reduce(
+            [(reducer, get_matcher(reducer["filter"]))],
+            [tracked, tracked, event],
+            oldest_bucket_start=BUCKET,
+            claimed=[True, False],
+        ) == {("customer", "count", BUCKET, "count"): 2}
+
     def test_sums_decimals(self, event: EventCreate) -> None:
         reducer: Reducer = {
             "id": "sum",

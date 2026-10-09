@@ -2,7 +2,8 @@
   "name": "demo-app",
   "private": true,
   "dependencies": {
-    "@polar-sh/polar": "workspace:*"
+    "@polar-sh/polar": "workspace:*",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:"

@@ -1,14 +1,20 @@
-import { defineConfig, eq, eur, perThousand, usd } from '@polar-sh/polar'
+import { defineConfig, eur, perThousand, usd } from '@polar-sh/polar'
+import { z } from 'zod'
 
 export default defineConfig({
-  // events: {
-  //   tool_call: {},
-  // },
-  meters: ({ meter }) => ({
-    tool_call: meter()
-      .where(eq('name', 'tool_call'))
-      .unit('custom', 'tool call')
-      .count(),
+  events: {
+    tool_call: z.object({
+      tool: z.string(),
+      // Could split meter into meter per server, billed differently
+      server: z.enum(['builtin', 'custom']),
+      // Could filter the meter to only bill for successful calls
+      success: z.boolean(),
+      // Could sum to a compute-time meter to bill by duration
+      duration_ms: z.int(),
+    }),
+  },
+  meters: ({ meter, events }) => ({
+    tool_call: meter().on(events.tool_call).unit('custom', 'tool call').count(),
   }),
   benefits: ({ flag, credits }) => ({
     custom_servers: flag('Custom servers'),

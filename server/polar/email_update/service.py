@@ -31,6 +31,11 @@ class InvalidEmailUpdate(EmailUpdateError):
         )
 
 
+class EmailAlreadyInUse(EmailUpdateError):
+    def __init__(self) -> None:
+        super().__init__("Another user is already using this email.", status_code=409)
+
+
 class EmailUpdateService(ResourceServiceReader[EmailVerification]):
     async def request_email_update(
         self,
@@ -97,6 +102,15 @@ class EmailUpdateService(ResourceServiceReader[EmailVerification]):
 
         if email_update_record is None or email_update_record.user_id != user.id:
             raise InvalidEmailUpdate()
+
+        # The email may have been taken since the update was requested.
+        # Include deleted and blocked users: the unique index covers every row.
+        user_repository = UserRepository.from_session(session)
+        existing_user = await user_repository.get_by_email(
+            email_update_record.email, include_deleted=True, included_blocked=True
+        )
+        if existing_user is not None and existing_user.id != user.id:
+            raise EmailAlreadyInUse()
 
         user = email_update_record.user
         previous_email = user.email

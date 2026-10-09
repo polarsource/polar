@@ -279,10 +279,11 @@ async def user_github_oauth(
 async def create_user(
     save_fixture: SaveFixture,
     email_verified: bool = True,
+    email: str | None = None,
 ) -> User:
     user = User(
         id=uuid.uuid4(),
-        email=rstr("test") + "@example.com",
+        email=email or rstr("test") + "@example.com",
         email_verified=email_verified,
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
         oauth_accounts=[],

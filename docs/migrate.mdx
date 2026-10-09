@@ -549,11 +549,9 @@ period arrives with `cancel_at_period_end` and `ends_at` set, but without a
 `subscription.canceled` event: it was already canceled on Stripe. At its end,
 Polar sends `subscription.canceled` and `subscription.revoked` as usual.
 
-After cutover, a moved subscription renews like any other Polar subscription:
-`subscription.cycled`, `subscription.updated`, `order.created`,
-`order.updated`, `order.paid`, `customer.state_changed`, and
-`benefit_grant.cycled`. If the first charge fails, you get
-`subscription.past_due` instead of `order.paid` and `benefit_grant.cycled`.
+After cutover, a moved subscription renews like any other Polar subscription
+and sends the usual
+[renewal events](/integrate/webhooks/events#renewal-sequences).
 
 None of these lists is in delivery order. At cutover, Polar enqueues
 `subscription.updated` before `subscription.migrated`, but retries can reorder

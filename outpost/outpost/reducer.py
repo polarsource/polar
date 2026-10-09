@@ -109,6 +109,7 @@ def reduce(
     updates: Updates = {}
     for event in events:
         bucket_start = get_bucket_start(event.timestamp)
+        # Polar counts older events in its own buckets; the next snapshot carries them.
         if bucket_start < oldest_bucket_start:
             continue
         for reducer, matcher in reducers:

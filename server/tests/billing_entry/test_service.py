@@ -385,6 +385,35 @@ async def create_seat_change_billing_entry(
 
 @pytest.mark.anyio
 class TestCreateOrderItemsFromPending:
+    async def test_no_metered_entries_still_compares_usage(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        customer: Customer,
+        meter: Meter,
+        metered_subscription: Subscription,
+    ) -> None:
+        compare = mocker.patch(
+            "polar.billing_entry.service.reducer_service.compare_quantity"
+        )
+        cutoff = utc_now()
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, metered_subscription, cutoff=cutoff
+        ) as order_items:
+            assert len(order_items) == 0
+
+        compare.assert_awaited_once_with(
+            session,
+            meter_id=meter.id,
+            customer_id=customer.id,
+            start=metered_subscription.current_meter_period_start
+            or metered_subscription.current_period_start,
+            end=cutoff,
+            expected=Decimal(0),
+            consumer="subscription_billing",
+        )
+
     async def test_one_metered_price(
         self,
         save_fixture: SaveFixture,
@@ -744,9 +773,13 @@ class TestCreateOrderItemsFromPending:
             1,
         )
         execute_spy = mocker.spy(session, "execute")
+        compare = mocker.patch(
+            "polar.billing_entry.service.reducer_service.compare_quantity"
+        )
+        cutoff = utc_now()
 
         async with billing_entry_service.create_order_items_from_pending(
-            session, metered_subscription
+            session, metered_subscription, cutoff=cutoff
         ) as order_items:
             assert len(order_items) == 2
 
@@ -767,6 +800,17 @@ class TestCreateOrderItemsFromPending:
                 customer=customer,
                 order_items=list(order_items),
             )
+
+        compare.assert_awaited_once_with(
+            session,
+            meter_id=meter.id,
+            customer_id=customer.id,
+            start=metered_subscription.current_meter_period_start
+            or metered_subscription.current_period_start,
+            end=cutoff,
+            expected=Decimal(100),
+            consumer="subscription_billing",
+        )
 
         for entry in entries[:2]:
             await session.refresh(entry)

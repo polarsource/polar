@@ -1,14 +1,27 @@
 from datetime import datetime
+from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, Row, and_, func, literal, null, or_, select
+from sqlalchemy import (
+    ColumnElement,
+    Numeric,
+    Row,
+    and_,
+    cast,
+    func,
+    literal,
+    null,
+    or_,
+    select,
+)
 
 from polar.kit.db.locking import pg_advisory_xact_lock
 from polar.kit.repository import RepositoryBase
 from polar.meter.aggregation import PropertyAggregation
-from polar.models import Event, Reducer, ReducerBucket
+from polar.models import Customer, Event, Reducer, ReducerBucket
 from polar.models.event import EventSource
+from polar.reducer.aggregation import Aggregate
 
 from .redis_store import get_reducer_bucket_key
 
@@ -113,3 +126,61 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             .limit(1)
         )
         return await self.get_one_or_none(statement)
+
+    async def get_unsealed_aggregate(
+        self,
+        reducer: Reducer,
+        customer: Customer,
+        *,
+        end: datetime,
+        exclude_bucket: datetime | None,
+    ) -> Aggregate:
+        identity = ReducerBucket.customer_id == customer.id
+        if customer.external_id is not None:
+            identity = or_(
+                identity, ReducerBucket.external_customer_id == customer.external_id
+            )
+        statement = select(
+            func.coalesce(func.sum(ReducerBucket.count), 0),
+            func.coalesce(func.sum(ReducerBucket.sum), 0),
+            func.min(ReducerBucket.min),
+            func.max(ReducerBucket.max),
+        ).where(
+            ReducerBucket.organization_id == reducer.organization_id,
+            ReducerBucket.reducer_id == reducer.id,
+            identity,
+            ReducerBucket.sealed_at.is_(None),
+            ReducerBucket.deleted_at.is_(None),
+            ReducerBucket.bucket_start < end,
+        )
+        if exclude_bucket is not None:
+            statement = statement.where(ReducerBucket.bucket_start != exclude_bucket)
+        count, total, minimum, maximum = (await self.session.execute(statement)).one()
+        return Aggregate(int(count), total, minimum, maximum)
+
+    async def get_edge_aggregate(
+        self,
+        reducer: Reducer,
+        customer: Customer,
+        *,
+        start: datetime,
+        end: datetime,
+    ) -> Aggregate:
+        value: ColumnElement[Decimal | None] = literal(None, type_=Numeric)
+        if isinstance(reducer.aggregation, PropertyAggregation):
+            value = cast(reducer.aggregation.get_sql_value(Event), Numeric)
+        statement = select(
+            func.count(),
+            func.coalesce(func.sum(value), 0),
+            func.min(value),
+            func.max(value),
+        ).where(
+            Event.organization_id == reducer.organization_id,
+            Event.customer == customer,
+            Event.source == EventSource.user,
+            Event.timestamp >= start,
+            Event.timestamp < end,
+            reducer.filter.get_sql_clause(Event),
+            reducer.aggregation.get_sql_clause(Event),
+        )
+        return Aggregate(*(await self.session.execute(statement)).one())

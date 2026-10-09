@@ -3,6 +3,7 @@ import contextlib
 import typing
 
 import anyio
+import httpx2
 from pydantic import ValidationError
 from starlette.applications import Starlette
 from starlette.requests import Request
@@ -20,6 +21,7 @@ class LifespanState(typing.TypedDict):
     env: Environment
     storage: Storage
     configuration: Configuration
+    polar_client: httpx2.AsyncClient
 
 
 def get_state(request: Request) -> LifespanState:
@@ -57,6 +59,7 @@ async def lifespan(_: Starlette) -> collections.abc.AsyncGenerator[LifespanState
                 "env": env,
                 "storage": storage,
                 "configuration": configuration,
+                "polar_client": polar_client,
             }
         finally:
             tg.cancel_scope.cancel()

@@ -227,15 +227,16 @@ export const callTool = async (
 
   // One event per call, so tracking keeps the balance's pristine state accurate
   const ingestSpan = log.start(`Ingesting ${count} tool_call`)
-  await Promise.all(
-    Array.from({ length: count }, () =>
-      customer.track('tool_call', {
+  await customer.track(
+    Array.from({ length: count }, () => ({
+      name: 'tool_call' as const,
+      metadata: {
         tool: 'search',
         server,
         success: true,
         duration_ms: 420,
-      }),
-    ),
+      },
+    })),
   )
   ingestSpan.end()
 

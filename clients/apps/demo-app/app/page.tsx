@@ -13,11 +13,13 @@ export default async function Page({
   if (!externalId) {
     return (
       <form action={login} className="card">
-        <div>
-          <h1>Log in</h1>
-          <p className="muted">Any email works. No password needed.</p>
-        </div>
-        <input name="email" type="email" placeholder="you@example.com" required />
+        <input
+          name="email"
+          type="email"
+          placeholder="you@example.com"
+          aria-label="Email"
+          required
+        />
         <button type="submit" className="primary">
           Continue
         </button>

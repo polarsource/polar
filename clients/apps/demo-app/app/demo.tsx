@@ -7,9 +7,8 @@ import { call, checkUpgraded, getBalance, topUp, upgrade } from './actions'
 type Server = 'builtin' | 'custom'
 
 type Entry = {
-  id: number
+  id: string
   server: Server
-  count: number
   at: number
   pending: boolean
 }
@@ -17,10 +16,25 @@ type Entry = {
 // Tool call history per customer: { [externalCustomerId]: [{ server, at }] }
 const HISTORY_KEY = 'tool_call_history'
 
+// Older history grouped batched calls into a single item with a count
 type History = Record<
   string,
-  (Pick<Entry, 'server' | 'at'> & Partial<Pick<Entry, 'count'>>)[]
+  (Pick<Entry, 'server' | 'at'> & { count?: number })[]
 >
+
+// One entry per call, so a batch of 100 floods the timeline
+const entriesOf = (
+  server: Server,
+  at: number,
+  count: number,
+  pending: boolean,
+) =>
+  Array.from({ length: count }, (_, index) => ({
+    id: `${at}-${index}`,
+    server,
+    at,
+    pending,
+  }))
 
 const readHistory = (): History => {
   try {
@@ -38,7 +52,8 @@ const timeAgo = (at: number, now: number) => {
   const seconds = Math.round((now - at) / 1000)
   if (seconds < 10) return 'just now'
   if (seconds < 60) return relative.format(-seconds, 'second')
-  if (seconds < 3600) return relative.format(-Math.floor(seconds / 60), 'minute')
+  if (seconds < 3600)
+    return relative.format(-Math.floor(seconds / 60), 'minute')
   return relative.format(-Math.floor(seconds / 3600), 'hour')
 }
 
@@ -112,13 +127,9 @@ export function Demo({
   // Loaded after mount, as localStorage isn't available during server rendering
   useEffect(() => {
     setEntries(
-      (readHistory()[externalCustomerId] ?? []).map(({ server, at, count }) => ({
-        id: at,
-        server,
-        count: count ?? 1,
-        at,
-        pending: false,
-      })),
+      (readHistory()[externalCustomerId] ?? []).flatMap(
+        ({ server, at, count = 1 }) => entriesOf(server, at, count, false),
+      ),
     )
     setHistoryLoaded(true)
   }, [externalCustomerId])
@@ -132,7 +143,7 @@ export function Demo({
           ...readHistory(),
           [externalCustomerId]: entries
             .filter((entry) => !entry.pending)
-            .map(({ server, count, at }) => ({ server, count, at })),
+            .map(({ server, at }) => ({ server, at })),
         }),
       )
     } catch {}
@@ -175,26 +186,23 @@ export function Demo({
 
   const onClick = async (server: Server, event: React.MouseEvent) => {
     const count = countOf(event)
-    const id = Date.now()
-    setNow(id)
+    const at = Date.now()
+    setNow(at)
     setCalling(true)
-    setEntries((entries) => [
-      { id, server, count, at: id, pending: true },
-      ...entries,
-    ])
+    setEntries((entries) => [...entriesOf(server, at, count, true), ...entries])
 
     const result = await call(server, count)
     setCalling(false)
 
     if (result.paywall) {
-      setEntries((entries) => entries.filter((entry) => entry.id !== id))
+      setEntries((entries) => entries.filter((entry) => entry.at !== at))
       setModal('paywall')
       return
     }
 
     setEntries((entries) =>
       entries.map((entry) =>
-        entry.id === id ? { ...entry, pending: false } : entry,
+        entry.at === at ? { ...entry, pending: false } : entry,
       ),
     )
     setNow(Date.now())
@@ -236,17 +244,15 @@ export function Demo({
   return (
     <main className="app">
       <ul className="log">
-        {entries.length === 0 && <li className="empty muted">No tool calls yet</li>}
+        {entries.length === 0 && (
+          <li className="empty muted">No tool calls yet</li>
+        )}
         {entries.map((entry) => (
           <li key={entry.id} className="entry">
             <span className={entry.pending ? 'muted' : undefined}>
-              {entry.count === 1
-                ? entry.pending
-                  ? `Calling ${LABELS[entry.server]} tool…`
-                  : `A ${LABELS[entry.server]} tool has been called`
-                : entry.pending
-                  ? `Calling ${LABELS[entry.server]} tool ${entry.count} times…`
-                  : `A ${LABELS[entry.server]} tool has been called ${entry.count} times`}
+              {entry.pending
+                ? `Calling ${LABELS[entry.server]} tool…`
+                : `A ${LABELS[entry.server]} tool has been called`}
             </span>
             <time className="faint">{timeAgo(entry.at, now)}</time>
           </li>

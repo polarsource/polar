@@ -116,8 +116,10 @@ const expand = (change: Change): Change[] => {
   }))
 }
 
+const ONE_TIME = new Rendered('one-time')
+
 const recurrence = (interval: unknown, count: unknown) => {
-  if (interval === undefined || interval === null) return undefined
+  if (interval === undefined || interval === null) return ONE_TIME
   const times = typeof count === 'number' ? count : 1
   return new Rendered(
     times === 1
@@ -126,12 +128,25 @@ const recurrence = (interval: unknown, count: unknown) => {
   )
 }
 
-const mergeRecurrence = (diff: ReadonlyArray<Change>): Change[] => {
+const oneTimeProduct = (entry: AppliedEntry): Change[] => {
+  const row: Change = { field: 'recurrence', before: null, after: ONE_TIME }
+  const prices = entry.diff.findIndex((change) => change.field === 'prices')
+  return prices === -1
+    ? [...entry.diff, row]
+    : [...entry.diff.slice(0, prices), row, ...entry.diff.slice(prices)]
+}
+
+const mergeRecurrence = (entry: AppliedEntry): Change[] => {
+  const { diff } = entry
   const interval = diff.find((change) => change.field === 'recurring_interval')
   const count = diff.find(
     (change) => change.field === 'recurring_interval_count',
   )
-  if (interval === undefined || count === undefined) return [...diff]
+  if (interval === undefined || count === undefined) {
+    return entry.section === 'products' && entry.action === 'created'
+      ? oneTimeProduct(entry)
+      : [...diff]
+  }
   const merged: Change = {
     field: 'recurrence',
     before: recurrence(interval.before, count.before),
@@ -145,7 +160,7 @@ const mergeRecurrence = (diff: ReadonlyArray<Change>): Change[] => {
 const sanitize = (entry: AppliedEntry): AppliedEntry => ({
   ...entry,
   id: name(entry.id),
-  diff: mergeRecurrence(entry.diff)
+  diff: mergeRecurrence(entry)
     .flatMap(expand)
     .map((change) => ({ ...change, field: name(change.field) })),
 })
@@ -174,10 +189,19 @@ export const formatEntries = (
     .join('\n\n')
 }
 
-export const tally = (entries: ReadonlyArray<AppliedEntry>) =>
+export const TO_DO: Labels = {
+  created: 'to create',
+  updated: 'to update',
+  unchanged: 'unchanged',
+}
+
+export const tally = (
+  entries: ReadonlyArray<AppliedEntry>,
+  labels: Labels = DONE,
+) =>
   (['created', 'updated', 'unchanged'] as const)
     .map(
       (action) =>
-        `${entries.filter((entry) => entry.action === action).length} ${action}`,
+        `${entries.filter((entry) => entry.action === action).length} ${labels[action]}`,
     )
     .join(', ')

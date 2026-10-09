@@ -9,7 +9,12 @@ import {
 } from '@/schemas/BillingConfig'
 import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
-import { PLANNED, formatEntries } from '@/utils/billing-config/entries'
+import {
+  PLANNED,
+  TO_DO,
+  formatEntries,
+  tally,
+} from '@/utils/billing-config/entries'
 import { formatProblems, plural } from '@/utils/billing-config/problems'
 import { output } from '@/utils/command'
 import { configFile as file, org } from '@/utils/flags'
@@ -31,7 +36,11 @@ const render = (config: LoadedConfig, result: PlanResult) => [
     : []),
   ...(result.issues.length > 0
     ? [formatProblems(config, result.issues), ui.blank, summary(result.issues)]
-    : [ui.success(`${config.file} can be applied`)]),
+    : [
+        ui.success(
+          `${config.file} can be applied: ${tally(result.entries, TO_DO)}`,
+        ),
+      ]),
 ]
 
 export const plan = Command.make('plan', { file, org }).pipe(

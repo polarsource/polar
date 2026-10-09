@@ -92,7 +92,9 @@ describe('polar config plan', () => {
   test('reports a config that can be applied as is', async () => {
     const { output, failed } = await run({ entries, issues: [] })
     expect(failed).toBe(false)
-    expect(output).toContain('polar.json can be applied')
+    expect(output).toContain(
+      'polar.json can be applied: 1 to create, 0 to update, 0 unchanged',
+    )
   })
 
   test('fails on errors but still shows the changes and warnings', async () => {

@@ -156,6 +156,15 @@ describe('formatEntries', () => {
             },
           ],
         },
+        {
+          section: 'products',
+          id: 'topup',
+          action: 'created',
+          diff: [
+            { field: 'name', before: null, after: 'Top-up' },
+            { field: 'prices', before: null, after: [fixed('usd', 900)] },
+          ],
+        },
       ]),
     )
     expect(output).toBe(
@@ -174,6 +183,10 @@ describe('formatEntries', () => {
         '          - unset',
         '          + USD 0.10',
         '            capped at USD 100.00',
+        '    + topup                     created',
+        '        name                    "Top-up"',
+        '        recurrence              one-time',
+        '        prices (fixed)          USD 9.00',
       ].join('\n'),
     )
   })

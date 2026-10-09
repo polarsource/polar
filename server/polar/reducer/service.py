@@ -21,6 +21,15 @@ from polar.reducer_bucket.service import (
 from .aggregation import Aggregate
 from .repository import ReducerRepository
 
+_redis: Redis | None = None
+
+
+def _get_redis() -> Redis:
+    global _redis
+    if _redis is None:
+        _redis = create_redis("app")
+    return _redis
+
 
 class ReducerService:
     async def _get_redis_aggregate(
@@ -178,10 +187,10 @@ class ReducerService:
             legacy_quantity=str(expected),
         ) as span:
             try:
-                async with session.begin_nested(), create_redis("app") as redis:
+                async with session.begin_nested():
                     actual = await self.get_quantity(
                         session,
-                        redis,
+                        _get_redis(),
                         meter_id=meter_id,
                         customer_id=customer_id,
                         start=start,

@@ -12,7 +12,7 @@ async def redis() -> Redis:
 
 @pytest.fixture(autouse=True)
 def patch_reducer_redis(mocker: MockerFixture, redis: Redis) -> None:
-    mocker.patch("polar.reducer.service.create_redis", return_value=redis)
+    mocker.patch("polar.reducer.service._get_redis", return_value=redis)
 
 
 @pytest.fixture(autouse=True)

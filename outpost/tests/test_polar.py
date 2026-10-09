@@ -8,9 +8,10 @@ from starlette.applications import Starlette
 from starlette.routing import WebSocketRoute
 from starlette.websockets import WebSocket
 
-from outpost.polar import Configuration, listen
+from outpost.polar import Configuration, Snapshots, listen
+from outpost.storage.memory import MemoryStorage
 
-from .conftest import POLAR_REDUCERS, polar_websocket
+from .conftest import POLAR_REDUCERS, polar_app, polar_snapshot, polar_websocket
 
 
 def test_configuration_skips_unsupported_reducers() -> None:
@@ -61,6 +62,9 @@ async def test_listen_reconnects(
 
     monkeypatch.setattr(anyio, "sleep", no_sleep)
     configuration = Configuration()
+    snapshots = Snapshots()
+    storage = MemoryStorage()
+    warm = snapshots.warm_up("customer")
     app = Starlette(routes=[WebSocketRoute("/v1/outpost/", flaky_polar)])
     async with (
         AsyncClient(
@@ -68,9 +72,38 @@ async def test_listen_reconnects(
         ) as client,
         anyio.create_task_group() as tg,
     ):
-        tg.start_soon(listen, client, configuration)
+        tg.start_soon(listen, client, configuration, snapshots, storage)
         with anyio.fail_after(5):
             await configuration.ready.wait()
+            await warm.wait()
         tg.cancel_scope.cancel()
 
     assert connections == 2
+    assert (await storage.read("customer"))["cold"] == polar_snapshot("customer")[
+        "cold"
+    ]
+
+
+@pytest.mark.anyio
+async def test_listen_applies_snapshots() -> None:
+    configuration = Configuration()
+    snapshots = Snapshots()
+    storage = MemoryStorage()
+    async with (
+        AsyncClient(
+            base_url="http://polar", transport=ASGIWebSocketTransport(polar_app)
+        ) as client,
+        anyio.create_task_group() as tg,
+    ):
+        tg.start_soon(listen, client, configuration, snapshots, storage)
+        with anyio.fail_after(5):
+            await configuration.ready.wait()
+            assert snapshots.warm_up("customer") is snapshots.warm_up("customer")
+            await snapshots.warm_up("customer").wait()
+        tg.cancel_scope.cancel()
+
+    assert await storage.read("customer") == {
+        "cold_until": 300,
+        "cold": polar_snapshot("customer")["cold"],
+        "buckets": {},
+    }

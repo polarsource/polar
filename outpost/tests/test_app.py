@@ -1,8 +1,11 @@
 from datetime import UTC, datetime
 
+import anyio
 import httpx2
 import pytest
 from prometheus_client import REGISTRY
+
+from .conftest import POLAR_SNAPSHOT_REQUESTS
 
 
 @pytest.mark.anyio
@@ -45,7 +48,29 @@ class TestIngest:
         second = await client.post("/ingest", json={"events": [event, anonymous]})
 
         assert first.json() == {"inserted": 2, "duplicates": 1}
+        await wait_for_snapshot_request("customer_123")
         assert second.json() == {"inserted": 1, "duplicates": 1}
+
+
+@pytest.mark.anyio
+class TestActor:
+    async def test_invalid_body(self, client: httpx2.AsyncClient) -> None:
+        response = await client.post("/actor", json={"foo": "bar"})
+        assert response.status_code == 422
+
+    async def test_warms_up(self, client: httpx2.AsyncClient) -> None:
+        response = await client.post(
+            "/actor", json={"external_customer_id": "actor_customer"}
+        )
+
+        assert response.status_code == 202
+        await wait_for_snapshot_request("actor_customer")
+
+
+async def wait_for_snapshot_request(external_customer_id: str) -> None:
+    with anyio.fail_after(5):
+        while external_customer_id not in POLAR_SNAPSHOT_REQUESTS:
+            await anyio.sleep(0.01)
 
 
 @pytest.mark.anyio

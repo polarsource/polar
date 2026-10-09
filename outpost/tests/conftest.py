@@ -33,19 +33,47 @@ POLAR_REDUCERS: list[dict[str, typing.Any]] = [
 ]
 
 
+POLAR_SNAPSHOT_REQUESTS: list[str] = []
+
+
+def polar_snapshot(external_customer_id: str) -> dict[str, typing.Any]:
+    return {
+        "external_customer_id": external_customer_id,
+        "cold_until": 300,
+        "cold": {POLAR_REDUCERS[0]["id"]: 10},
+        "buckets": [],
+    }
+
+
 async def polar_websocket(websocket: WebSocket) -> None:
     await websocket.accept()
     async for message in websocket.iter_json():
-        if message["type"] == "configuration":
-            await websocket.send_json(
-                {
-                    "type": "configuration",
-                    "payload": {"reducers": POLAR_REDUCERS},
-                }
-            )
+        match message["type"]:
+            case "configuration":
+                await websocket.send_json(
+                    {
+                        "type": "configuration",
+                        "payload": {"reducers": POLAR_REDUCERS},
+                    }
+                )
+            case "snapshot":
+                external_customer_id = message["payload"]["external_customer_id"]
+                POLAR_SNAPSHOT_REQUESTS.append(external_customer_id)
+                await websocket.send_json(
+                    {
+                        "type": "snapshot",
+                        "payload": polar_snapshot(external_customer_id),
+                    }
+                )
 
 
 polar_app = Starlette(routes=[WebSocketRoute("/v1/outpost/", polar_websocket)])
+
+
+@pytest.fixture(autouse=True)
+def polar_snapshot_requests() -> collections.abc.Iterator[None]:
+    yield
+    POLAR_SNAPSHOT_REQUESTS.clear()
 
 
 @pytest.fixture(autouse=True)

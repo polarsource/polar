@@ -23,5 +23,9 @@ class EventCreate(BaseModel):
                 return self.metadata.get(property)
 
 
+class Actor(BaseModel):
+    external_customer_id: str
+
+
 class EventsIngest(BaseModel):
     events: list[EventCreate]

@@ -14,9 +14,9 @@ from starlette.responses import FileResponse, JSONResponse, Response
 from starlette.routing import Route
 
 from outpost.env import Environment, get_environment
-from outpost.event import EventsIngest
+from outpost.event import Actor, EventsIngest
 from outpost.metrics import EVENTS_INGESTED, INGEST_SECONDS, REDUCE_SECONDS
-from outpost.polar import Configuration, create_client, listen
+from outpost.polar import Configuration, Snapshots, create_client, listen
 from outpost.reducer import BUCKET_SIZE, get_bucket_start, get_event_keys, reduce
 from outpost.storage import Storage, create_storage
 
@@ -26,6 +26,7 @@ class LifespanState(typing.TypedDict):
     storage: Storage
     configuration: Configuration
     polar_client: httpx2.AsyncClient
+    snapshots: Snapshots
 
 
 def get_state(request: Request) -> LifespanState:
@@ -40,6 +41,10 @@ async def ingest(request: Request) -> Response:
             return Response(status_code=422)
 
         state = get_state(request)
+        for external_customer_id in {
+            event.external_customer_id for event in payload.events
+        }:
+            state["snapshots"].warm_up(external_customer_id)
         claimed = await state["storage"].claim(get_event_keys(payload.events))
         oldest_bucket_start = (
             get_bucket_start(datetime.datetime.now(datetime.UTC)) - BUCKET_SIZE
@@ -63,6 +68,15 @@ async def ingest(request: Request) -> Response:
         )
 
 
+async def actor(request: Request) -> Response:
+    try:
+        payload = Actor.model_validate_json(await request.body())
+    except ValidationError:
+        return Response(status_code=422)
+    get_state(request)["snapshots"].warm_up(payload.external_customer_id)
+    return Response(status_code=202)
+
+
 async def metrics(_: Request) -> Response:
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
@@ -75,12 +89,13 @@ async def dashboard(_: Request) -> Response:
 async def lifespan(_: Starlette) -> collections.abc.AsyncGenerator[LifespanState]:
     env = get_environment()
     configuration = Configuration()
+    snapshots = Snapshots()
     async with (
         create_storage(env) as storage,
         create_client(env) as polar_client,
         anyio.create_task_group() as tg,
     ):
-        tg.start_soon(listen, polar_client, configuration)
+        tg.start_soon(listen, polar_client, configuration, snapshots, storage)
         with anyio.fail_after(30):
             await configuration.ready.wait()
         try:
@@ -89,6 +104,7 @@ async def lifespan(_: Starlette) -> collections.abc.AsyncGenerator[LifespanState
                 "storage": storage,
                 "configuration": configuration,
                 "polar_client": polar_client,
+                "snapshots": snapshots,
             }
         finally:
             tg.cancel_scope.cancel()
@@ -99,6 +115,7 @@ app = Starlette(
     lifespan=lifespan,
     routes=[
         Route("/ingest", ingest, methods=["POST"]),
+        Route("/actor", actor, methods=["POST"]),
         # ponytail: per-process registry, multiprocess mode if metrics must cover --workers > 1
         Route("/metrics", metrics),
         Route("/dashboard", dashboard),

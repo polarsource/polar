@@ -53373,6 +53373,30 @@
           "product": {
             "$ref": "#/components/schemas/CustomerSubscriptionProduct"
           },
+          "discount": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/CheckoutDiscountFixedOnceForeverDuration"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CheckoutDiscountFixedRepeatDuration"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CheckoutDiscountPercentageOnceForeverDuration"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CheckoutDiscountPercentageRepeatDuration"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discount"
+          },
           "prices": {
             "items": {
               "oneOf": [
@@ -53440,6 +53464,7 @@
           "customer_cancellation_reason",
           "customer_cancellation_comment",
           "product",
+          "discount",
           "prices",
           "meters",
           "pending_update"

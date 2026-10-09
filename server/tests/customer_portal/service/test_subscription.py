@@ -30,6 +30,7 @@ from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.models import (
     Customer,
+    Discount,
     Organization,
     Product,
     ProductPriceFixed,
@@ -693,6 +694,39 @@ class TestUpdatePause:
             product=product_recurring_free_price,
             customer=customer,
             status=SubscriptionStatus.paused,
+        )
+
+        updated = await customer_subscription_service.update(
+            session,
+            subscription,
+            updates=CustomerSubscriptionResume(resume=True),
+        )
+
+        assert updated.status == SubscriptionStatus.active
+
+    async def test_resume_forever_free_discount_without_payment_method(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+        discount_percentage_100_forever: Discount,
+    ) -> None:
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "subscription": {
+                **organization.customer_portal_settings["subscription"],
+                "pause": True,
+            },
+        }
+        await save_fixture(organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+            discount=discount_percentage_100_forever,
         )
 
         updated = await customer_subscription_service.update(

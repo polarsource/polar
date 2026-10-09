@@ -1,12 +1,14 @@
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from typing import Any
 from uuid import UUID
 
 import typer
 from sqlalchemy import (
     TIMESTAMP,
     ColumnElement,
+    CursorResult,
     Numeric,
     String,
     Uuid,
@@ -201,51 +203,48 @@ async def backfill_bucket(
         )
         .subquery()
     )
-    statement = (
-        insert(ReducerBucket)
-        .from_select(
-            [
-                "id",
-                "organization_id",
-                "reducer_id",
-                "customer_id",
-                "external_customer_id",
-                "bucket_start",
-                "count",
-                "sum",
-                "min",
-                "max",
-                "generation",
-                "sealed_at",
-            ],
-            select(
-                func.gen_random_uuid(),
-                literal(reducer.organization_id),
-                literal(reducer.id),
-                grouped.c.customer_id,
-                grouped.c.external_customer_id,
-                literal(start),
-                grouped.c.count,
-                grouped.c.sum,
-                grouped.c.min,
-                grouped.c.max,
-                func.row_number().over(
-                    partition_by=(
-                        grouped.c.customer_id,
-                        grouped.c.external_customer_id,
-                    ),
-                    order_by=(
-                        grouped.c.sealed_at.asc().nulls_last(),
-                        grouped.c.order_id.asc().nulls_last(),
-                    ),
+    statement = insert(ReducerBucket).from_select(
+        [
+            "id",
+            "organization_id",
+            "reducer_id",
+            "customer_id",
+            "external_customer_id",
+            "bucket_start",
+            "count",
+            "sum",
+            "min",
+            "max",
+            "generation",
+            "sealed_at",
+        ],
+        select(
+            func.gen_random_uuid(),
+            literal(reducer.organization_id),
+            literal(reducer.id),
+            grouped.c.customer_id,
+            grouped.c.external_customer_id,
+            literal(start),
+            grouped.c.count,
+            grouped.c.sum,
+            grouped.c.min,
+            grouped.c.max,
+            func.row_number().over(
+                partition_by=(
+                    grouped.c.customer_id,
+                    grouped.c.external_customer_id,
                 ),
-                grouped.c.sealed_at,
+                order_by=(
+                    grouped.c.sealed_at.asc().nulls_last(),
+                    grouped.c.order_id.asc().nulls_last(),
+                ),
             ),
-        )
-        .returning(ReducerBucket.id)
+            grouped.c.sealed_at,
+        ),
     )
     await session.execute(delete_statement)
-    return len((await session.scalars(statement)).all())
+    result: CursorResult[Any] = await session.execute(statement)  # type: ignore[assignment]
+    return result.rowcount
 
 
 @cli.command()
@@ -266,7 +265,7 @@ async def backfill(
     configure_script_logging()
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
-    total = 0
+    rows_written = 0
     try:
         async with sessionmaker() as session:
             reducers = await get_reducers(
@@ -281,7 +280,7 @@ async def backfill(
             while bucket_start < end:
                 bucket_end = bucket_start + BUCKET_SIZE
                 async with sessionmaker.begin() as session:
-                    total += await backfill_bucket(
+                    rows_written += await backfill_bucket(
                         session,
                         reducer,
                         bucket_start,
@@ -289,7 +288,7 @@ async def backfill(
                         customer_id=customer_id,
                     )
                 bucket_start = bucket_end
-        typer.echo(f"Backfilled {total} reducer buckets.")
+        typer.echo(f"Wrote {rows_written} reducer bucket rows.")
     finally:
         await engine.dispose()
 

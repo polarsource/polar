@@ -1,7 +1,7 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec'
 import { Data, Predicate } from 'effect'
 import { getCustomerMeter } from '../internal/api/customer-meters'
-import { ingestEvent } from '../internal/api/events'
+import { ingestEvents } from '../internal/api/events'
 import {
   assertBenefitDeployed,
   findBenefitGrant,
@@ -59,6 +59,14 @@ type TrackArguments<
     : [metadata?: EventMetadata]
   : [metadata?: EventMetadata]
 
+export type TrackedEvent<Config extends RuntimeSDKConfig> = {
+  [Name in EventName<Config>]: TrackArguments<Config, Name> extends [
+    infer Metadata,
+  ]
+    ? { name: Name; metadata: Metadata }
+    : { name: Name; metadata?: TrackArguments<Config, Name>[0] }
+}[EventName<Config>]
+
 const formatPath = (path: StandardSchemaV1.Issue['path']) =>
   path
     ?.map((segment) => {
@@ -102,10 +110,14 @@ export type Actor<Config extends RuntimeSDKConfig> = (
     name: Name,
   ) => Promise<BenefitAccess<BenefitMetadata<Config, Name>>>
   balance: (name: MeterName<Config>) => Promise<MeterBalance>
-  track: <Name extends EventName<Config>>(
-    name: Name,
-    ...args: TrackArguments<Config, Name>
-  ) => Promise<void>
+  track: {
+    // Ingests all events in a single request
+    (events: readonly TrackedEvent<Config>[]): Promise<void>
+    <Name extends EventName<Config>>(
+      name: Name,
+      ...args: TrackArguments<Config, Name>
+    ): Promise<void>
+  }
 }
 
 const toCustomerIdentifier = (
@@ -139,6 +151,67 @@ export const createActor = <Config extends RuntimeSDKConfig>(
     identifier.customerId !== undefined
       ? `customer:${identifier.customerId}:${externalMeterId}`
       : `external_customer:${identifier.externalCustomerId}:${externalMeterId}`
+
+  const validateEvent = async (
+    name: string,
+    input: unknown,
+  ): Promise<EventMetadata | undefined> => {
+    const event = config.events?.[name]
+    if (config.events !== undefined && !Object.hasOwn(config.events, name)) {
+      throw new Error(`Unknown event: ${name}`)
+    }
+
+    if (event === undefined || !isEventSchema(event)) {
+      return input as EventMetadata | undefined
+    }
+    const result = await event['~standard'].validate(
+      input === undefined ? {} : input,
+    )
+    if (result.issues !== undefined) {
+      throw new EventValidationError({ event: name, issues: result.issues })
+    }
+    return result.value
+  }
+
+  const trackEvents = async (
+    identifier: ActorIdentifier,
+    tracked: readonly { name: string; metadata?: unknown }[],
+  ) => {
+    if (tracked.length === 0) return
+
+    // Validate every event before ingesting any of them
+    const timestamp = new Date()
+    const events = await Promise.all(
+      tracked.map(async ({ name, metadata }) => ({
+        name,
+        timestamp,
+        metadata: await validateEvent(name, metadata),
+      })),
+    )
+
+    const inserted = await ingestEvents(
+      sdk,
+      toMemberIdentifier(identifier),
+      events,
+    )
+
+    if (inserted > 0) {
+      for (const [externalId, meter] of Object.entries(config.meters ?? {})) {
+        if (
+          events.some(({ name, metadata }) =>
+            matchesMeter(meter, { name, timestamp, metadata: metadata ?? {} }),
+          )
+        ) {
+          const key = cacheKey(identifier, externalId)
+          const current = latestIngestedAt.get(key)
+
+          if (current === undefined || timestamp > current) {
+            latestIngestedAt.set(key, timestamp)
+          }
+        }
+      }
+    }
+  }
 
   // Should we validate if an actor exists before we allow this?
   // Or do we `upsert` the actor if it needs to be persisted
@@ -215,47 +288,15 @@ export const createActor = <Config extends RuntimeSDKConfig>(
       }
     },
 
-    async track(name, ...[input]) {
-      const event = config.events?.[name]
-      if (config.events !== undefined && !Object.hasOwn(config.events, name)) {
-        throw new Error(`Unknown event: ${name}`)
-      }
-
-      let metadata: EventMetadata | undefined = input
-      if (event !== undefined && isEventSchema(event)) {
-        const result = await event['~standard'].validate(
-          input === undefined ? {} : input,
-        )
-        if (result.issues !== undefined) {
-          throw new EventValidationError({ event: name, issues: result.issues })
-        }
-        metadata = result.value
-      }
-
-      const timestamp = new Date()
-
-      const inserted = await ingestEvent(
-        sdk,
-        toMemberIdentifier(identifier),
-        name,
-        timestamp,
-        metadata,
-      )
-
-      if (inserted > 0) {
-        for (const [externalId, meter] of Object.entries(config.meters ?? {})) {
-          if (
-            matchesMeter(meter, { name, timestamp, metadata: metadata ?? {} })
-          ) {
-            const key = cacheKey(identifier, externalId)
-            const current = latestIngestedAt.get(key)
-
-            if (current === undefined || timestamp > current) {
-              latestIngestedAt.set(key, timestamp)
-            }
-          }
-        }
-      }
-    },
+    track: ((
+      nameOrEvents: string | readonly TrackedEvent<Config>[],
+      metadata?: EventMetadata,
+    ) =>
+      trackEvents(
+        identifier,
+        typeof nameOrEvents === 'string'
+          ? [{ name: nameOrEvents, metadata }]
+          : nameOrEvents,
+      )) as ReturnType<Actor<Config>>['track'],
   })
 }

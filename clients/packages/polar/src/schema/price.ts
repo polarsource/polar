@@ -20,6 +20,44 @@ const TiersConfig = tiersOf(DecimalAmount)
 
 type TiersConfig = typeof TiersConfig.Type
 
+const UnitNoun = Schema.String.check(
+  Schema.isMinLength(1),
+  Schema.isMaxLength(32),
+)
+
+// For now we only support `en`, wider i18n support maybe in future
+const UnitLabelConfig = Schema.Struct({
+  en: Schema.Struct({ '=1': UnitNoun, other: UnitNoun }),
+})
+
+const quantityFields = {
+  price_currency: Currency,
+  tiers: tiersOf(WholeAmount),
+  minimum_units: Schema.optionalKey(Units),
+}
+
+const minimumWithinTiers = Schema.makeFilter(
+  ({
+    tiers,
+    minimum_units,
+  }: {
+    readonly tiers: {
+      readonly tiers: ReadonlyArray<{ readonly bound?: number }>
+    }
+    readonly minimum_units?: number
+  }) => {
+    const maximum = tiers.tiers[tiers.tiers.length - 1]?.bound
+    return minimum_units === undefined ||
+      maximum === undefined ||
+      minimum_units <= maximum
+      ? undefined
+      : {
+          path: ['minimum_units'],
+          issue: `The minimum of ${minimum_units} exceeds the maximum of ${maximum}.`,
+        }
+  },
+)
+
 const meteredFields = {
   price_currency: Currency,
   meter: Schema.String.check(Schema.isMinLength(1)),
@@ -35,23 +73,14 @@ export const PriceConfig = Schema.Union([
     price_amount: Cents,
   }),
   Schema.Struct({
-    amount_type: Schema.Literals(['seat_based', 'unit_based']),
-    price_currency: Currency,
-    tiers: tiersOf(WholeAmount),
-    minimum_units: Schema.optionalKey(Units),
-  }).check(
-    Schema.makeFilter(({ tiers, minimum_units }) => {
-      const maximum = tiers.tiers[tiers.tiers.length - 1]?.bound
-      return minimum_units === undefined ||
-        maximum === undefined ||
-        minimum_units <= maximum
-        ? undefined
-        : {
-            path: ['minimum_units'],
-            issue: `The minimum of ${minimum_units} exceeds the maximum of ${maximum}.`,
-          }
-    }),
-  ),
+    ...quantityFields,
+    amount_type: Schema.Literal('seat_based'),
+  }).check(minimumWithinTiers),
+  Schema.Struct({
+    ...quantityFields,
+    amount_type: Schema.Literal('unit_based'),
+    unit_label: Schema.optionalKey(UnitLabelConfig),
+  }).check(minimumWithinTiers),
   Schema.Struct({
     ...meteredFields,
     amount_type: Schema.Literal('metered_unit'),
@@ -149,6 +178,8 @@ type QuantityType = 'seat_based' | 'unit_based'
 
 type Bounds = { readonly minimum?: number; readonly maximum?: number }
 
+type UnitLabel = { readonly singular: string; readonly plural: string }
+
 export class FreePrice {
   readonly kind = 'free'
 }
@@ -159,28 +190,53 @@ export class FixedPrice {
   constructor(readonly amounts: Amounts<Money<1>>) {}
 }
 
-export class QuantityPrice {
+export class QuantityPrice<Type extends QuantityType = QuantityType> {
   readonly kind = 'quantity'
 
   constructor(
-    readonly type: QuantityType,
+    readonly type: Type,
     readonly structure: Structure,
     readonly tiers: Tiers<Money<1>>,
     readonly bounds: Bounds = {},
+    readonly unitLabel?: UnitLabel,
   ) {}
 
-  min(minimum: number): QuantityPrice {
-    return new QuantityPrice(this.type, this.structure, this.tiers, {
-      ...this.bounds,
-      minimum,
-    })
+  min(minimum: number): QuantityPrice<Type> {
+    return new QuantityPrice(
+      this.type,
+      this.structure,
+      this.tiers,
+      { ...this.bounds, minimum },
+      this.unitLabel,
+    )
   }
 
-  max(maximum: number): QuantityPrice {
-    return new QuantityPrice(this.type, this.structure, this.tiers, {
-      ...this.bounds,
-      maximum,
-    })
+  max(maximum: number): QuantityPrice<Type> {
+    return new QuantityPrice(
+      this.type,
+      this.structure,
+      this.tiers,
+      { ...this.bounds, maximum },
+      this.unitLabel,
+    )
+  }
+
+  /** The unit noun shown at checkout and on invoices. Defaults to "unit"/"units". */
+  label(
+    this: QuantityPrice<'unit_based'>,
+    singular: string,
+    plural: string,
+  ): QuantityPrice<'unit_based'> {
+    return new QuantityPrice(
+      this.type,
+      this.structure,
+      this.tiers,
+      this.bounds,
+      {
+        singular,
+        plural,
+      },
+    )
   }
 }
 
@@ -211,21 +267,21 @@ class FixedBuilder {
   }
 }
 
-class FlatQuantityBuilder {
+class FlatQuantityBuilder<Type extends QuantityType> {
   constructor(
-    private readonly type: QuantityType,
+    private readonly type: Type,
     private readonly bounds: Bounds = {},
   ) {}
 
-  min(minimum: number): FlatQuantityBuilder {
+  min(minimum: number): FlatQuantityBuilder<Type> {
     return new FlatQuantityBuilder(this.type, { ...this.bounds, minimum })
   }
 
-  max(maximum: number): FlatQuantityBuilder {
+  max(maximum: number): FlatQuantityBuilder<Type> {
     return new FlatQuantityBuilder(this.type, { ...this.bounds, maximum })
   }
 
-  amount(...amounts: Amounts<Money<1>>): QuantityPrice {
+  amount(...amounts: Amounts<Money<1>>): QuantityPrice<Type> {
     return new QuantityPrice(
       this.type,
       'flat',
@@ -235,18 +291,18 @@ class FlatQuantityBuilder {
   }
 }
 
-class QuantityBuilder {
-  constructor(private readonly type: QuantityType) {}
+class QuantityBuilder<Type extends QuantityType> {
+  constructor(private readonly type: Type) {}
 
-  flat(): FlatQuantityBuilder {
+  flat(): FlatQuantityBuilder<Type> {
     return new FlatQuantityBuilder(this.type)
   }
 
-  graduated(...tiers: Tiers<Money<1>>): QuantityPrice {
+  graduated(...tiers: Tiers<Money<1>>): QuantityPrice<Type> {
     return new QuantityPrice(this.type, 'graduated', tiers)
   }
 
-  volume(...tiers: VolumeTiers<Money<1>>): QuantityPrice {
+  volume(...tiers: VolumeTiers<Money<1>>): QuantityPrice<Type> {
     return new QuantityPrice(this.type, 'volume', volumeTiers(tiers))
   }
 }
@@ -280,8 +336,10 @@ class MeteredBuilder<Meter extends string> {
 /** A fixed price of 0 in each currency the product's other prices use (USD when there are none). */
 export const free = (): FreePrice => new FreePrice()
 export const fixed = (): FixedBuilder => new FixedBuilder()
-export const seats = (): QuantityBuilder => new QuantityBuilder('seat_based')
-export const units = (): QuantityBuilder => new QuantityBuilder('unit_based')
+export const seats = (): QuantityBuilder<'seat_based'> =>
+  new QuantityBuilder('seat_based')
+export const units = (): QuantityBuilder<'unit_based'> =>
+  new QuantityBuilder('unit_based')
 export const metered = <const Meter extends string>(
   meter: Meter,
 ): MeteredBuilder<Meter> => new MeteredBuilder(meter)
@@ -431,8 +489,7 @@ export const priceConfigs = (
         }
       case 'quantity': {
         const { minimum, maximum } = price.bounds
-        return {
-          amount_type: price.type,
+        const fields = {
           price_currency: currency,
           tiers: tiersConfig(
             price.structure === 'graduated' ? 'graduated' : 'volume',
@@ -441,6 +498,20 @@ export const priceConfigs = (
           ),
           ...(minimum !== undefined && { minimum_units: minimum }),
         }
+        return price.type === 'seat_based'
+          ? { ...fields, amount_type: 'seat_based' }
+          : {
+              ...fields,
+              amount_type: 'unit_based',
+              ...(price.unitLabel !== undefined && {
+                unit_label: {
+                  en: {
+                    '=1': price.unitLabel.singular,
+                    other: price.unitLabel.plural,
+                  },
+                },
+              }),
+            }
       }
       case 'metered': {
         const cap = price.caps.find((money) => money.currency === currency)

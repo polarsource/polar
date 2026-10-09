@@ -1,5 +1,8 @@
+import datetime
+
 import pytest
 
+from outpost.reducer import BUCKET_SIZE, get_bucket_start
 from outpost.storage.memory import MemoryStorage
 
 
@@ -30,7 +33,26 @@ async def test_memory_aggregations() -> None:
 @pytest.mark.anyio
 async def test_memory_claim() -> None:
     storage = MemoryStorage()
-    keys = [("customer", 300, "a"), ("customer", 300, "a"), ("customer", 600, "a")]
+    current = get_bucket_start(datetime.datetime.now(datetime.UTC))
+    keys = [
+        ("customer", current, "a"),
+        ("customer", current, "a"),
+        ("customer", current - BUCKET_SIZE, "a"),
+    ]
     assert await storage.claim(keys) == [True, False, True]
     assert await storage.claim(keys[:1]) == [False]
     assert await storage.claim([]) == []
+
+
+@pytest.mark.anyio
+async def test_memory_claim_forgets_older_buckets() -> None:
+    storage = MemoryStorage()
+    current = get_bucket_start(datetime.datetime.now(datetime.UTC))
+    keys = [
+        ("customer", current - BUCKET_SIZE, "a"),
+        ("customer", current - 2 * BUCKET_SIZE, "b"),
+    ]
+
+    await storage.claim(keys)
+
+    assert await storage.claim(keys) == [False, True]

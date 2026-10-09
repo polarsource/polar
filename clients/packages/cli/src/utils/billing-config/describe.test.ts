@@ -104,9 +104,11 @@ describe('describeValue for products and benefits', () => {
       },
     ])
     expect(groups?.map(({ label, text }) => [label, text.text])).toEqual([
-      ['fixed', 'USD 99.99, JPY 14,999'],
-      ['per tool_call', 'EUR 0.0009, JPY 1.5\ncapped at EUR 90.00, JPY 15,000'],
-      ['per image_generation', 'USD 0.125'],
+      ['USD', '$99.99'],
+      ['JPY', '¥14,999'],
+      ['EUR per tool_call', '€0.90 per 1,000\ncapped at €90'],
+      ['JPY per tool_call', '¥1.5\ncapped at ¥15,000'],
+      ['USD per image_generation', '$0.125'],
     ])
     expect(
       priceGroups([
@@ -129,9 +131,13 @@ describe('describeValue for products and benefits', () => {
           unit_amount: '0.000000000002',
         },
       ])?.map(({ text }) => text.text),
-    ).toEqual([
-      'USD 0.00000000000001, USD 0.00000000000001, USD 0.00000000000002',
-    ])
+    ).toEqual(['$0.00000000000001\n$0.00000000000001\n$0.00000000000002'])
+    expect(
+      priceGroups([
+        { amount_type: 'fixed', price_currency: 'usd', price_amount: 999 },
+        { amount_type: 'fixed', price_currency: 'usd', price_amount: 9999 },
+      ])?.map(({ label, text }) => [label, text.text]),
+    ).toEqual([['USD', '$9.99\n$99.99']])
     expect(priceGroups([{ amount_type: 'seat_based' }])).toBeUndefined()
     expect(priceGroups([])).toBeUndefined()
   })
@@ -148,16 +154,16 @@ describe('describeValue for products and benefits', () => {
           cap_amount: 500,
         },
       ]),
-    ).toBe('fixed: USD 0.00\nper tool_call: USD 0.10, capped at USD 5.00')
+    ).toBe('USD: $0\nUSD per tool_call: $0.10, capped at $5')
   })
 
   test('describes meter credit properties', () => {
     expect(
       describeValue({ meter: 'tool_call', units: 1000, rollover: false }),
-    ).toBe('1000 units of tool_call')
+    ).toBe('1,000 tool_call credits')
     expect(
       describeValue({ meter: 'tool_call', units: 50, rollover: true }),
-    ).toBe('50 units of tool_call, rolling over')
+    ).toBe('50 tool_call credits, unused credits roll over')
   })
 
   test('joins lists of references and names empty lists', () => {

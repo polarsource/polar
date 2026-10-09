@@ -81,7 +81,9 @@ describe('polar config plan', () => {
   test('shows the changes and succeeds with warnings', async () => {
     const { output, failed } = await run({ entries, issues: [warning] })
     expect(failed).toBe(false)
-    expect(output).toContain('+ tool-calls  will be created')
+    expect(output).toContain(
+      '+ tool-calls\n      events       all events\n      aggregation  count',
+    )
     expect(output).toContain(
       'Warning: No events named "tool_call" have been received yet',
     )
@@ -95,6 +97,7 @@ describe('polar config plan', () => {
     expect(output).toContain(
       'polar.json can be applied: 1 to create, 0 to update, 0 unchanged',
     )
+    expect(output).toContain('Run polar config apply to make these changes.')
   })
 
   test('fails on errors but still shows the changes and warnings', async () => {
@@ -103,7 +106,9 @@ describe('polar config plan', () => {
       issues: [locked, warning],
     })
     expect(failed).toBe(true)
-    expect(output).toContain('+ tool-calls  will be created')
+    expect(output).toContain(
+      '+ tool-calls\n      events       all events\n      aggregation  count',
+    )
     expect(output).toContain('Error: Cannot change "filter" of meters.0')
     expect(output).toContain('Warning:')
     expect(output).toContain('Found 1 error and 1 warning.')

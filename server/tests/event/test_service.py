@@ -54,9 +54,9 @@ from polar.models.user_organization import OrganizationRole
 from polar.order.service import order as order_service
 from polar.postgres import AsyncSession
 from polar.redis import Redis
+from polar.reducer_bucket.redis_store import get_reducer_bucket_key
 from polar.reducer_bucket.service import (
     REDUCER_BUCKET_SIZE,
-    get_reducer_bucket_key,
     get_reducer_bucket_start,
 )
 from polar.subscription.service import SubscriptionUpdateContext

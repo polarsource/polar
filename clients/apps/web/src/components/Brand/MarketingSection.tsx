@@ -5,10 +5,6 @@ import { Box } from '@polar-sh/orbit/Box'
 import { Chapter } from '../Landing/Chapter'
 import { brandSections } from './brand'
 import { type Board, STORY_BOARDS, SYSTEM_BOARDS } from './posters/boards'
-import { useState } from 'react'
-import { Stream } from '@cloudflare/stream-react'
-import VolumeUp from '@mui/icons-material/VolumeUp'
-import VolumeOff from '@mui/icons-material/VolumeOff'
 
 const SHEETS_PER_BOARD = 3
 
@@ -58,8 +54,6 @@ const PosterBoard = ({ board, offset }: { board: Board; offset: number }) => (
 const BOARDS = [...SYSTEM_BOARDS, ...STORY_BOARDS]
 
 export function MarketingSection() {
-  const [muted, setMuted] = useState(true)
-
   return (
     <Chapter
       id={brandSections[5].id}
@@ -79,34 +73,6 @@ export function MarketingSection() {
             />
           ))}
         </Box>
-      </Box>
-      <Box
-        display="block"
-        position="relative"
-        width="100%"
-        overflow="hidden"
-        backgroundColor="background-secondary"
-      >
-        <Stream
-          src="dd150505f55955403f2e2dd190771af7"
-          controls={false}
-          autoplay
-          muted={muted}
-          loop
-        />
-        <button
-          type="button"
-          onClick={() => setMuted((value) => !value)}
-          aria-label={muted ? 'Unmute video' : 'Mute video'}
-          aria-pressed={!muted}
-          className="absolute top-4 right-4 z-10 flex h-16 w-16 cursor-pointer items-center justify-center text-4xl text-white md:top-12 md:right-12 md:text-5xl"
-        >
-          {muted ? (
-            <VolumeOff fontSize="inherit" />
-          ) : (
-            <VolumeUp fontSize="inherit" />
-          )}
-        </button>
       </Box>
     </Chapter>
   )

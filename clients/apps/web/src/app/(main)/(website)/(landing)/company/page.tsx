@@ -1,3 +1,4 @@
+import { LogoVideo } from '@/components/Brand/logos/LogoVideo'
 import { StaticImage } from '@/components/Image/StaticImage'
 import { Chapter } from '@/components/Landing/Chapter'
 import { TextRings } from '@/components/Landing/graphics/TextRings'
@@ -84,14 +85,7 @@ export default function CompanyPage() {
               ))}
             </Box>
           </Box>
-          <StaticImage
-            src="/assets/landing/company/polar.jpg"
-            alt="Polar graphic"
-            width={1920}
-            height={1080}
-            className="object-cover"
-            sizes="100vw"
-          />
+          <LogoVideo />
         </Box>
       </Chapter>
 

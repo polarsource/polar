@@ -20,6 +20,7 @@ from reauth.factors.oauth2.state import ExpiredStateException, InvalidStateExcep
 
 from polar.config import settings
 from polar.exceptions import ResourceNotFound
+from polar.kit.email import validate_email_syntax
 from polar.models import Organization, OrganizationSSOConnection
 from polar.openapi import APITag
 from polar.organization.repository import OrganizationRepository
@@ -265,7 +266,7 @@ async def callback(
     if email is None:
         raise PolarAuthRedirectionError("The identity provider did not assert an email")
 
-    _, domain = email.rsplit("@", 1)
+    domain = validate_email_syntax(email).domain
     domain_repository = OrganizationDomainRepository.from_session(session)
     if (
         await domain_repository.get_verified_by_organization_and_domain(

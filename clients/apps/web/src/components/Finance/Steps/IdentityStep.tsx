@@ -1,9 +1,7 @@
 'use client'
 
 import { Button } from '@polar-sh/orbit'
-import { Box } from '@polar-sh/orbit/Box'
 import { ArrowRight, CheckIcon } from 'lucide-react'
-import { StatusBlock } from '../Account/sections/StatusBlock'
 
 interface IdentityStepProps {
   identityVerificationStatus?: string
@@ -14,26 +12,6 @@ export default function IdentityStep({
   identityVerificationStatus,
   onStartIdentityVerification,
 }: IdentityStepProps) {
-  if (identityVerificationStatus === 'verified') {
-    return (
-      <Box
-        flexDirection="column"
-        borderRadius="l"
-        borderWidth={1}
-        borderStyle="solid"
-        borderColor="border-primary"
-        backgroundColor="background-card"
-      >
-        <StatusBlock
-          tone="success"
-          icon={CheckIcon}
-          title="Identity verified"
-          description="Your identity has been successfully verified."
-        />
-      </Box>
-    )
-  }
-
   return (
     <div className="dark:bg-polar-800 rounded-2xl border bg-white p-8 text-center">
       {identityVerificationStatus === 'pending' ? (
@@ -46,6 +24,16 @@ export default function IdentityStep({
           <div className="text-sm text-gray-500">
             We&apos;ll notify you once verification is complete.
           </div>
+        </>
+      ) : identityVerificationStatus === 'verified' ? (
+        <>
+          <span className="dark:bg-polar-700 mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
+            <CheckIcon className="dark:text-polar-400 h-4 w-4 text-gray-500" />
+          </span>
+          <h4 className="mb-2 font-medium">Identity verified</h4>
+          <p className="dark:text-polar-400 mx-auto max-w-sm text-sm text-balance text-gray-600">
+            Your identity has been successfully verified.
+          </p>
         </>
       ) : identityVerificationStatus === 'failed' ? (
         <>

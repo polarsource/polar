@@ -8,7 +8,7 @@ from outpost.reducer import Updates
 
 class MemoryStorage:
     def __init__(self) -> None:
-        self.meters: dict[tuple[str, str], int | float] = {}
+        self.buckets: dict[tuple[str, str, int], int | float] = {}
 
     @classmethod
     @contextlib.asynccontextmanager
@@ -18,9 +18,9 @@ class MemoryStorage:
         yield cls()
 
     async def write_updates(self, updates: Updates) -> None:
-        for (customer_id, meter_id, func), value in updates.items():
-            key = (customer_id, meter_id)
-            previous = self.meters.get(key)
+        for (customer_id, reducer_id, bucket_start, func), value in updates.items():
+            key = (customer_id, reducer_id, bucket_start)
+            previous = self.buckets.get(key)
             match func:
                 case "count" | "sum":
                     value = (previous or 0) + value
@@ -31,4 +31,4 @@ class MemoryStorage:
                 case _:
                     message = f"Invalid aggregation function: {func}"
                     raise ValueError(message)
-            self.meters[key] = value
+            self.buckets[key] = value

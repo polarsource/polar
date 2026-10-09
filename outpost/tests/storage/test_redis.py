@@ -4,7 +4,7 @@ import pytest
 from fakeredis import FakeAsyncRedis
 from redis.exceptions import ResponseError
 
-from outpost.storage.redis import RedisStorage
+from outpost.storage.redis import BUCKET_TTL, RedisStorage
 
 
 @pytest.fixture
@@ -19,64 +19,76 @@ class TestWriteUpdates:
     async def test_mixed_batch(self, anyio_backend: str, redis: RedisStorage) -> None:
         await redis.write_updates(
             {
-                ("customer", "count", "count"): 2,
-                ("customer", "min", "min"): -4.5,
-                ("other", "sum", "sum"): 2**53 + 1,
-                ("other", "max", "max"): 10.5,
+                ("customer", "count", 300, "count"): 2,
+                ("customer", "min", 300, "min"): -4.5,
+                ("other", "sum", 300, "sum"): 2**53 + 1,
+                ("other", "max", 300, "max"): 10.5,
             },
         )
-        assert await redis.redis.hgetall("outpost:meters:customer") == {
-            b"count": b"2",
-            b"min": b"-4.5",
+        assert await redis.redis.hgetall("outpost:buckets:customer") == {
+            b"count:300": b"2",
+            b"min:300": b"-4.5",
         }
-        assert await redis.redis.hgetall("outpost:meters:other") == {
-            b"sum": str(2**53 + 1).encode(),
-            b"max": b"10.5",
+        assert await redis.redis.hgetall("outpost:buckets:other") == {
+            b"sum:300": str(2**53 + 1).encode(),
+            b"max:300": b"10.5",
         }
 
     @pytest.mark.parametrize("value", [-(2**63), 2**63 - 1])
     async def test_integer_boundaries(
         self, anyio_backend: str, redis: RedisStorage, value: int
     ) -> None:
-        await redis.write_updates({("customer", "sum", "sum"): value})
+        await redis.write_updates({("customer", "sum", 300, "sum"): value})
         with pytest.raises(ResponseError):
             await redis.write_updates(
-                {("customer", "sum", "sum"): 1 if value > 0 else -1}
+                {("customer", "sum", 300, "sum"): 1 if value > 0 else -1}
             )
         assert (
-            await redis.redis.hget("outpost:meters:customer", "sum")
+            await redis.redis.hget("outpost:buckets:customer", "sum:300")
             == str(value).encode()
         )
 
     async def test_increments(self, anyio_backend: str, redis: RedisStorage) -> None:
-        await redis.redis.hset("outpost:meters:customer", "large", 2**53)
+        await redis.redis.hset("outpost:buckets:customer", "large:300", 2**53)
         await redis.write_updates(
             {
-                ("customer", "count", "count"): 3,
-                ("customer", "sum", "sum"): 6,
-                ("customer", "large", "sum"): 1,
-                ("other", "count", "count"): 1,
+                ("customer", "count", 300, "count"): 3,
+                ("customer", "sum", 300, "sum"): 6,
+                ("customer", "large", 300, "sum"): 1,
+                ("other", "count", 300, "count"): 1,
             },
         )
         await redis.write_updates(
-            {("customer", "count", "count"): 2, ("customer", "sum", "sum"): -7},
+            {
+                ("customer", "count", 300, "count"): 2,
+                ("customer", "sum", 300, "sum"): -7,
+            },
         )
-        assert await redis.redis.hgetall("outpost:meters:customer") == {
-            b"count": b"5",
-            b"sum": b"-1",
-            b"large": str(2**53 + 1).encode(),
+        assert await redis.redis.hgetall("outpost:buckets:customer") == {
+            b"count:300": b"5",
+            b"sum:300": b"-1",
+            b"large:300": str(2**53 + 1).encode(),
         }
-        assert await redis.redis.hgetall("outpost:meters:other") == {b"count": b"1"}
+        assert await redis.redis.hgetall("outpost:buckets:other") == {
+            b"count:300": b"1"
+        }
 
     async def test_min_max(self, anyio_backend: str, redis: RedisStorage) -> None:
         for value in (0, -4.5, 10.5, 1):
             await redis.write_updates(
-                {("customer", "min", "min"): value, ("customer", "max", "max"): value},
+                {
+                    ("customer", "min", 300, "min"): value,
+                    ("customer", "max", 300, "max"): value,
+                },
             )
-        assert await redis.redis.hgetall("outpost:meters:customer") == {
-            b"min": b"-4.5",
-            b"max": b"10.5",
+        assert await redis.redis.hgetall("outpost:buckets:customer") == {
+            b"min:300": b"-4.5",
+            b"max:300": b"10.5",
         }
+
+    async def test_expires(self, anyio_backend: str, redis: RedisStorage) -> None:
+        await redis.write_updates({("customer", "count", 300, "count"): 1})
+        assert 0 < await redis.redis.ttl("outpost:buckets:customer") <= BUCKET_TTL
 
     async def test_empty(self, anyio_backend: str, redis: RedisStorage) -> None:
         await redis.write_updates({})
@@ -86,7 +98,10 @@ class TestWriteUpdates:
     async def test_invalid_stored_value(
         self, anyio_backend: str, redis: RedisStorage, func: str
     ) -> None:
-        await redis.redis.hset("outpost:meters:customer", "meter", "invalid")
+        await redis.redis.hset("outpost:buckets:customer", "reducer:300", "invalid")
         with pytest.raises(ResponseError):
-            await redis.write_updates({("customer", "meter", func): 1})
-        assert await redis.redis.hget("outpost:meters:customer", "meter") == b"invalid"
+            await redis.write_updates({("customer", "reducer", 300, func): 1})
+        assert (
+            await redis.redis.hget("outpost:buckets:customer", "reducer:300")
+            == b"invalid"
+        )

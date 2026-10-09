@@ -1,5 +1,6 @@
 import collections.abc
 import contextlib
+import datetime
 import pathlib
 import typing
 
@@ -16,7 +17,7 @@ from outpost.env import Environment, get_environment
 from outpost.event import EventsIngest
 from outpost.metrics import EVENTS_INGESTED, INGEST_SECONDS, REDUCE_SECONDS
 from outpost.polar import Configuration, create_client, listen
-from outpost.reducer import reduce
+from outpost.reducer import BUCKET_SIZE, get_bucket_start, reduce
 from outpost.storage import Storage, create_storage
 
 
@@ -39,8 +40,15 @@ async def ingest(request: Request) -> Response:
             return Response(status_code=422)
 
         state = get_state(request)
+        oldest_bucket_start = (
+            get_bucket_start(datetime.datetime.now(datetime.UTC)) - BUCKET_SIZE
+        )
         with REDUCE_SECONDS.time():
-            updates = reduce(state["configuration"].reducers, payload.events)
+            updates = reduce(
+                state["configuration"].reducers,
+                payload.events,
+                oldest_bucket_start=oldest_bucket_start,
+            )
         await state["storage"].write_updates(updates)
         EVENTS_INGESTED.inc(len(payload.events))
 

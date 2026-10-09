@@ -7,6 +7,7 @@ import multiprocessing.synchronize
 import os
 import statistics
 from concurrent.futures import ProcessPoolExecutor
+from datetime import UTC, datetime
 from time import perf_counter
 from uuid import uuid4
 
@@ -44,7 +45,7 @@ async def benchmark(args: argparse.Namespace) -> tuple[list[float], float, float
         {
             "events": [
                 {
-                    "timestamp": "2026-01-01T00:00:00Z",
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "name": "tool_call",
                     "external_customer_id": customers[i % len(customers)],
                     "metadata": {"tokens": 100, "model": "benchmark"},

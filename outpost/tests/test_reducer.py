@@ -5,7 +5,15 @@ from unittest.mock import patch
 import pytest
 
 from outpost.event import EventCreate
-from outpost.reducer import FilterClause, Reducer, get_matcher, reduce
+from outpost.reducer import (
+    BUCKET_SIZE,
+    FilterClause,
+    Reducer,
+    get_matcher,
+    reduce,
+)
+
+BUCKET = 1767225600
 
 
 @pytest.fixture
@@ -47,18 +55,44 @@ class TestReduce:
         reducer_matchers = [
             (reducer, get_matcher(reducer["filter"])) for reducer in reducers
         ]
-        assert reduce(reducer_matchers, events) == {
-            ("customer", "count", "count"): 3,
-            ("customer", "sum", "sum"): 2,
-            ("customer", "min", "min"): -2,
-            ("customer", "max", "max"): 4,
-            ("other", "count", "count"): 1,
-            ("other", "sum", "sum"): 7,
-            ("other", "min", "min"): 7,
-            ("other", "max", "max"): 7,
+        assert reduce(reducer_matchers, events, oldest_bucket_start=BUCKET) == {
+            ("customer", "count", BUCKET, "count"): 3,
+            ("customer", "sum", BUCKET, "sum"): 2,
+            ("customer", "min", BUCKET, "min"): -2,
+            ("customer", "max", BUCKET, "max"): 4,
+            ("other", "count", BUCKET, "count"): 1,
+            ("other", "sum", BUCKET, "sum"): 7,
+            ("other", "min", BUCKET, "min"): 7,
+            ("other", "max", BUCKET, "max"): 7,
         }
-        assert reduce(reducer_matchers, []) == {}
-        assert reduce([], events) == {}
+        assert reduce(reducer_matchers, [], oldest_bucket_start=BUCKET) == {}
+        assert reduce([], events, oldest_bucket_start=BUCKET) == {}
+
+    def test_buckets(self, event: EventCreate) -> None:
+        reducer: Reducer = {
+            "id": "count",
+            "filter": {"conjunction": "and", "clauses": []},
+            "aggregation": {"func": "count"},
+        }
+        events = [
+            event.model_copy(
+                update={"timestamp": datetime.fromtimestamp(timestamp, UTC)}
+            )
+            for timestamp in (
+                BUCKET - 1,
+                BUCKET,
+                BUCKET + BUCKET_SIZE - 1,
+                BUCKET + BUCKET_SIZE,
+            )
+        ]
+        assert reduce(
+            [(reducer, get_matcher(reducer["filter"]))],
+            events,
+            oldest_bucket_start=BUCKET,
+        ) == {
+            ("customer", "count", BUCKET, "count"): 2,
+            ("customer", "count", BUCKET + BUCKET_SIZE, "count"): 1,
+        }
 
     def test_filters(self, event: EventCreate) -> None:
         reducer: Reducer = {
@@ -94,8 +128,8 @@ class TestReduce:
         ]
         matcher = get_matcher(reducer["filter"])
         with patch("outpost.reducer.get_matcher", wraps=get_matcher) as compile_matcher:
-            assert reduce([(reducer, matcher)], events) == {
-                ("customer", "count", "count"): 1
+            assert reduce([(reducer, matcher)], events, oldest_bucket_start=BUCKET) == {
+                ("customer", "count", BUCKET, "count"): 1
             }
             compile_matcher.assert_not_called()
 
@@ -109,7 +143,14 @@ class TestReduce:
             "aggregation": {"func": "sum", "property": "amount"},
         }
         event.metadata = {} if amount is None else {"amount": amount}
-        assert reduce([(reducer, get_matcher(reducer["filter"]))], [event]) == {}
+        assert (
+            reduce(
+                [(reducer, get_matcher(reducer["filter"]))],
+                [event],
+                oldest_bucket_start=BUCKET,
+            )
+            == {}
+        )
 
     @pytest.mark.parametrize(
         ("func", "amount", "message"),
@@ -133,7 +174,11 @@ class TestReduce:
         }
         event.metadata = {"amount": amount}
         with pytest.raises(ValueError, match=message):
-            reduce([(reducer, get_matcher(reducer["filter"]))], [event])
+            reduce(
+                [(reducer, get_matcher(reducer["filter"]))],
+                [event],
+                oldest_bucket_start=BUCKET,
+            )
 
 
 @pytest.mark.parametrize(

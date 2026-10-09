@@ -18,25 +18,19 @@ type CustomerIdentity = tuple[uuid.UUID | None, str | None]
 type BucketId = tuple[Reducer, datetime, uuid.UUID | None, str | None]
 
 
-def get_customer_identity_key(
-    customer_id: uuid.UUID | None, external_customer_id: str | None
-) -> str:
-    key = f"{customer_id or '-'}"
-    if external_customer_id is not None:
-        key += f":{hashlib.sha256(external_customer_id.encode()).hexdigest()}"
-    return key
-
-
 def get_reducer_bucket_key(
     reducer_id: uuid.UUID,
     bucket_start: datetime,
     customer_id: uuid.UUID | None,
     external_customer_id: str | None,
 ) -> str:
-    return (
+    key = (
         f"reducer_bucket:{reducer_id}:{int(bucket_start.timestamp())}"
-        f":{get_customer_identity_key(customer_id, external_customer_id)}"
+        f":{customer_id or '-'}"
     )
+    if external_customer_id is not None:
+        key += f":{hashlib.sha256(external_customer_id.encode()).hexdigest()}"
+    return key
 
 
 async def add_to_buckets(

@@ -10,7 +10,7 @@ from polar.worker import (
     actor,
 )
 
-from .redis_store import get_customer_identity_key
+from .redis_store import get_reducer_bucket_key
 from .service import reducer_bucket as reducer_bucket_service
 
 
@@ -20,9 +20,11 @@ def _sync_debounce_key(
     customer_id: uuid.UUID | None,
     external_customer_id: str | None,
 ) -> str:
-    return (
-        f"reducer_bucket.sync:{reducer_id}:{bucket_start}"
-        f":{get_customer_identity_key(customer_id, external_customer_id)}"
+    return "reducer_bucket.sync:" + get_reducer_bucket_key(
+        reducer_id,
+        datetime.fromisoformat(bucket_start),
+        customer_id,
+        external_customer_id,
     )
 
 

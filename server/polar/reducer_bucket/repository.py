@@ -1,10 +1,8 @@
-from collections.abc import Sequence
 from datetime import datetime
 from typing import Any
 from uuid import UUID
 
 from sqlalchemy import ColumnElement, Row, and_, func, literal, null, or_, select
-from sqlalchemy.dialects.postgresql import insert
 
 from polar.kit.db.locking import pg_advisory_xact_lock
 from polar.kit.repository import RepositoryBase
@@ -115,8 +113,3 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             .limit(1)
         )
         return await self.get_one_or_none(statement)
-
-    async def insert_buckets(self, values: Sequence[dict[str, Any]]) -> None:
-        if not values:
-            return
-        await self.session.execute(insert(ReducerBucket).values(values))

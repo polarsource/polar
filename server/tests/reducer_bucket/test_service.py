@@ -18,7 +18,7 @@ from polar.models import Event, Organization, Reducer, ReducerBucket
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from polar.redis import Redis
-from polar.reducer_bucket.redis_store import get_reducer_bucket_key
+from polar.reducer_bucket.redis_store import add_to_buckets, get_reducer_bucket_key
 from polar.reducer_bucket.repository import ReducerBucketRepository
 from polar.reducer_bucket.service import (
     REDUCER_BUCKET_SIZE,
@@ -70,6 +70,14 @@ class TestGetReducerBucketStart:
 
 @pytest.mark.anyio
 class TestRollup:
+    @pytest.fixture(autouse=True)
+    def active_now(self, mocker: MockerFixture) -> None:
+        mocker.patch(
+            "polar.reducer_bucket.service.utc_now",
+            return_value=BUCKET_START + timedelta(minutes=1),
+        )
+        mocker.patch("polar.reducer_bucket.service.enqueue_job")
+
     async def test_active_buckets_to_redis_and_all_synced(
         self,
         mocker: MockerFixture,
@@ -143,9 +151,6 @@ class TestRollup:
 
         enqueue_job.assert_not_called()
 
-
-@pytest.mark.anyio
-class TestRollupActive:
     @pytest.mark.parametrize(
         ("aggregation", "read", "expected"),
         [
@@ -195,9 +200,7 @@ class TestRollupActive:
                 build_event(organization, metadata={"tokens": tokens})
                 for tokens in batch
             ]
-            await reducer_bucket_service.rollup_active(
-                redis, organization.id, [reducer], events
-            )
+            await reducer_bucket_service.rollup(session, redis, organization.id, events)
 
         key = get_reducer_bucket_key(reducer.id, BUCKET_START, None, "external")
         assert await read(redis, key) == expected
@@ -218,10 +221,10 @@ class TestRollupActive:
             save_fixture, organization=organization, meters=[meter]
         )
 
-        await reducer_bucket_service.rollup_active(
+        await reducer_bucket_service.rollup(
+            session,
             redis,
             organization.id,
-            [reducer],
             [build_event(organization, metadata={"user_id": "a"})],
         )
 
@@ -241,12 +244,12 @@ class TestRollupActive:
         )
         key = get_reducer_bucket_key(reducer.id, BUCKET_START, None, "external")
 
-        await reducer_bucket_service.rollup_active(
-            redis, organization.id, [reducer], [build_event(organization)]
+        await reducer_bucket_service.rollup(
+            session, redis, organization.id, [build_event(organization)]
         )
         await redis.expire(key, 10)
-        await reducer_bucket_service.rollup_active(
-            redis, organization.id, [reducer], [build_event(organization)]
+        await reducer_bucket_service.rollup(
+            session, redis, organization.id, [build_event(organization)]
         )
 
         assert 0 < await redis.ttl(key) <= 10
@@ -441,14 +444,9 @@ class TestSync:
     ) -> None:
         for tokens in (3, 4):
             await create_tokens_event(save_fixture, organization, tokens)
-        await reducer_bucket_service.rollup_active(
+        await add_to_buckets(
             redis,
-            organization.id,
-            [sum_reducer],
-            [
-                build_event(organization, metadata={"tokens": tokens})
-                for tokens in redis_tokens
-            ],
+            {(sum_reducer, BUCKET_START, None, "external"): list(redis_tokens)},
         )
         log = mocker.patch("polar.reducer_bucket.service.log")
 
@@ -456,8 +454,5 @@ class TestSync:
             session, redis, sum_reducer.id, BUCKET_START, None, "external"
         )
 
-        log.info.assert_called_once()
-        assert log.info.call_args.kwargs["matching"] == matching
-        assert log.info.call_args.kwargs["mismatching"] == mismatching
-        assert log.info.call_args.kwargs["missing_in_redis"] == 0
+        assert log.debug.call_count == matching
         assert log.warning.call_count == mismatching

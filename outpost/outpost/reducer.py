@@ -129,9 +129,6 @@ def reduce(
                 if isinstance(value, float) and not math.isfinite(value):
                     message = "Aggregation values must be finite"
                     raise ValueError(message)
-                if func == "sum" and not isinstance(value, int):
-                    message = "Sum requires integer values for HINCRBY"
-                    raise ValueError(message)
 
             update_key = (event.external_customer_id, reducer["id"], bucket_start, func)
             previous = updates.get(update_key)

@@ -14,8 +14,10 @@ local ttl = ARGV[1]
 for i, key in ipairs(KEYS) do
     local offset = 1 + (i - 1) * 3
     local field, func, raw_value = ARGV[offset + 1], ARGV[offset + 2], ARGV[offset + 3]
-    if func == 'count' or func == 'sum' then
+    if func == 'count' then
         redis.call('HINCRBY', key, field, raw_value)
+    elseif func == 'sum' then
+        redis.call('HINCRBYFLOAT', key, field, raw_value)
     else
         local value = tonumber(raw_value)
         assert(value and value == value and math.abs(value) ~= math.huge, 'Invalid value')

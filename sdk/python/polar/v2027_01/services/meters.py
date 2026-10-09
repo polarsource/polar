@@ -37,6 +37,7 @@ class MetersSync(SyncServiceBase):
         self,
         *,
         organization_id: str | builtins.list[str] | None = None,
+        external_id: str | builtins.list[str] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
         page: int = 1,
@@ -53,6 +54,7 @@ class MetersSync(SyncServiceBase):
 
         Args:
             organization_id: Filter by organization ID.
+            external_id: Filter by meter external ID.
             query: Filter by name.
             is_archived: Filter on archived meters.
             page: Page number, defaults to 1.
@@ -75,6 +77,7 @@ class MetersSync(SyncServiceBase):
             path_params={},
             query_params={
                 "organization_id": organization_id,
+                "external_id": external_id,
                 "query": query,
                 "is_archived": is_archived,
                 "page": page,
@@ -95,6 +98,7 @@ class MetersSync(SyncServiceBase):
         self,
         *,
         organization_id: str | builtins.list[str] | None = None,
+        external_id: str | builtins.list[str] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
         page: int = 1,
@@ -111,6 +115,7 @@ class MetersSync(SyncServiceBase):
 
         Args:
             organization_id: Filter by organization ID.
+            external_id: Filter by meter external ID.
             query: Filter by name.
             is_archived: Filter on archived meters.
             page: Page number, defaults to 1.
@@ -133,6 +138,7 @@ class MetersSync(SyncServiceBase):
         while True:
             response = self.list(
                 organization_id=organization_id,
+                external_id=external_id,
                 query=query,
                 is_archived=is_archived,
                 page=page,
@@ -390,6 +396,7 @@ class MetersAsync(AsyncServiceBase):
         self,
         *,
         organization_id: str | builtins.list[str] | None = None,
+        external_id: str | builtins.list[str] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
         page: int = 1,
@@ -406,6 +413,7 @@ class MetersAsync(AsyncServiceBase):
 
         Args:
             organization_id: Filter by organization ID.
+            external_id: Filter by meter external ID.
             query: Filter by name.
             is_archived: Filter on archived meters.
             page: Page number, defaults to 1.
@@ -428,6 +436,7 @@ class MetersAsync(AsyncServiceBase):
             path_params={},
             query_params={
                 "organization_id": organization_id,
+                "external_id": external_id,
                 "query": query,
                 "is_archived": is_archived,
                 "page": page,
@@ -448,6 +457,7 @@ class MetersAsync(AsyncServiceBase):
         self,
         *,
         organization_id: str | builtins.list[str] | None = None,
+        external_id: str | builtins.list[str] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
         page: int = 1,
@@ -464,6 +474,7 @@ class MetersAsync(AsyncServiceBase):
 
         Args:
             organization_id: Filter by organization ID.
+            external_id: Filter by meter external ID.
             query: Filter by name.
             is_archived: Filter on archived meters.
             page: Page number, defaults to 1.
@@ -486,6 +497,7 @@ class MetersAsync(AsyncServiceBase):
         while True:
             response = await self.list(
                 organization_id=organization_id,
+                external_id=external_id,
                 query=query,
                 is_archived=is_archived,
                 page=page,

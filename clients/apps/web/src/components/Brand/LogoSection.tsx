@@ -9,6 +9,7 @@ import LogoIcon from './logos/LogoIcon'
 import LogoLoader from './logos/LogoLoader'
 import LogoReveal from './logos/LogoReveal'
 import LogoType from './logos/LogoType'
+import { LogoVideo } from './logos/LogoVideo'
 import { LOGO_MARK_PATH } from './logos/paths'
 
 const LOGO_ICON_SVG = `<svg width="310" height="310" viewBox="0 0 310 310" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -75,6 +76,7 @@ export function LogoSection() {
         </>
       }
     >
+      <LogoVideo />
       <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap="l">
         <Panel>
           <LogoIcon size={88} />

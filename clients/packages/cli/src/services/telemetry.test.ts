@@ -30,6 +30,7 @@ const outcome: CommandOutcome = {
   flags: ['production'],
   outcome: 'success',
   durationMs: 42.6,
+  tty: true,
 }
 
 type Env = Record<string, string>
@@ -37,9 +38,14 @@ type Env = Record<string, string>
 const telemetry = (
   env: Env = { POLAR_CLI_POSTHOG_KEY: 'phc_test' },
   build: BuildKind = 'release',
-  { writable = true, used = new Set<PolarEnvironment>() } = {},
+  {
+    writable = true,
+    used = new Set<PolarEnvironment>(),
+    racing = undefined as string | undefined,
+  } = {},
 ) => {
   const files = new Map<string, string>()
+  let raced = false
   const events: TelemetryEvent[] = []
   const notFound = (method: string) =>
     PlatformError.systemError({
@@ -49,15 +55,28 @@ const telemetry = (
     })
   const fs = FileSystem.layerNoop({
     readFileString: (path) =>
-      files.has(path)
-        ? Effect.succeed(files.get(path)!)
-        : Effect.fail(notFound('readFileString')),
+      Effect.suspend(() => {
+        if (files.has(path)) return Effect.succeed(files.get(path)!)
+        if (racing !== undefined && !raced) {
+          raced = true
+          files.set(path, JSON.stringify({ installId: racing }))
+        }
+        return Effect.fail(notFound('readFileString'))
+      }),
     makeDirectory: () =>
       writable ? Effect.void : Effect.fail(notFound('makeDirectory')),
-    writeFileString: (path, content) =>
-      Effect.sync(() => {
-        files.set(path, content)
-      }),
+    writeFileString: (path, content, options) =>
+      options?.flag === 'wx' && files.has(path)
+        ? Effect.fail(
+            PlatformError.systemError({
+              _tag: 'AlreadyExists',
+              module: 'FileSystem',
+              method: 'writeFileString',
+            }),
+          )
+        : Effect.sync(() => {
+            files.set(path, content)
+          }),
   })
   const sender = Layer.succeed(
     Sender,
@@ -233,7 +252,7 @@ describe('outcomes', () => {
           new CliError.ShowHelp({ commandPath: ['polar'], errors: [] }),
         ),
       ),
-    ).toEqual({ outcome: 'success' })
+    ).toEqual({ outcome: 'help' })
     expect(
       outcomeOf(
         Exit.fail(
@@ -327,6 +346,15 @@ describe('outcomes', () => {
         }),
       ),
     ).toEqual({ error: 'ShowHelp:UnknownSubcommand' })
+    expect(
+      usage(
+        new CliError.UnknownSubcommand({
+          subcommand: 'porducts',
+          parent: ['polar'],
+          suggestions: ['products'],
+        }),
+      ),
+    ).toEqual({ error: 'ShowHelp:UnknownSubcommand', errorMessage: 'products' })
     expect(
       usage(
         new CliError.UnexpectedArgument({ arguments: ['a private value'] }),
@@ -514,10 +542,13 @@ describe('Telemetry.record', () => {
         arch: process.arch,
         agent: 'claude-code',
         ci: true,
+        tty: true,
+        first_run: true,
         build: 'release',
         $process_person_profile: false,
       },
     })
+    expect(second.properties['first_run']).toBe(false)
     expect(first.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/)
     expect(first.properties['runtime']).toMatch(/^bun \d/)
     expect(first.properties['cli_version']).toMatch(/^\d+\.\d+\.\d+/)
@@ -528,6 +559,25 @@ describe('Telemetry.record', () => {
     expect(second.properties['error_code']).toBeNull()
     const [stored] = [...files.values()]
     expect(JSON.parse(stored!).installId).toBe(first.distinct_id.slice(4))
+  })
+
+  test('adopts the id another process wrote first and does not claim the first run', async () => {
+    const { record, events } = telemetry(undefined, 'release', {
+      racing: 'other-process',
+    })
+    await record()
+    expect(events[0]!.distinct_id).toBe('cli:other-process')
+    expect(events[0]!.properties['first_run']).toBe(false)
+  })
+
+  test('counts --help as a help view', async () => {
+    const { record, events } = telemetry()
+    await record({ ...outcome, flags: ['help'] })
+    await record({ ...outcome, flags: ['h'], outcome: 'failure' })
+    expect(events.map((event) => event.properties['outcome'])).toEqual([
+      'help',
+      'failure',
+    ])
   })
 
   test('reports the environments the command talked to', async () => {

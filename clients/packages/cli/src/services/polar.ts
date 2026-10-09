@@ -163,7 +163,7 @@ export const make = Effect.gen(function* () {
             case 401:
               return new AuthError({
                 statusCode: error.statusCode,
-                message: `Authentication rejected for ${environment}. Check POLAR_ACCESS_TOKEN or run ${loginCommand(environment)} --new-session.`,
+                message: `Authentication rejected for ${environment}. Check POLAR_ACCESS_TOKEN or run ${loginCommand(environment, '--new-session')}.`,
               })
             case 403:
               return new AuthError({

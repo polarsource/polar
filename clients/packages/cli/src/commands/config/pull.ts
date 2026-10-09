@@ -144,7 +144,7 @@ export const pull = Command.make('pull', { file, org, force }).pipe(
       result.status === 'conflict'
         ? new BillingConfigError({
             message: `${result.file} differs from the organization for ${plural(result.entries.length, 'entry', 'entries')}`,
-            hint: 'Compare them in your editor. Keep the file with polar config apply, or overwrite it with polar config pull --force.',
+            hint: 'Compare them in your editor. Keep the file with `polar config apply`, or overwrite it with `polar config pull --force`.',
           })
         : undefined,
   }),

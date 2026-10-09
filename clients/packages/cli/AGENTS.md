@@ -53,6 +53,9 @@ the `previews` list there and only appear with `POLAR_PREVIEW=1`.
 
 Rules of thumb:
 
+- Mention commands in messages and hints in backticks: `` `polar auth login` ``.
+  `ui.failure`, `ui.warning`, `ui.step` and `ui.success` colour them for people;
+  `--json` keeps the backticks. Use `ui.command` only when rendering directly.
 - `run` never prints. In-flight status goes through `withProgress`/`note` from
   `@/utils/progress`, which stay silent under `--json`.
 - Commands that never return (`listen`) use `stream()` instead and emit

@@ -34,7 +34,9 @@ export class AuthError extends Data.TaggedError('AuthError')<{
   statusCode?: number | undefined
 }> {}
 
-export const loginCommand = (environment: PolarEnvironment) =>
-  `polar auth login --${environment}`
+export const loginCommand = (
+  environment: PolarEnvironment,
+  ...flags: ReadonlyArray<string>
+) => `\`${['polar auth login', `--${environment}`, ...flags].join(' ')}\``
 
-export const orgCommand = 'polar auth org'
+export const orgCommand = '`polar auth org`'

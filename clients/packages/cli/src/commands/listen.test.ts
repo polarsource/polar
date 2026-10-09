@@ -181,7 +181,7 @@ describe('listen command', () => {
 
   test('stops at a host that does not exist', async () => {
     await expect(run(['qweqe.invalid']).promise).rejects.toThrow(
-      'Can\'t find a host named "qweqe.invalid". To forward to a server on this machine, pass its port, e.g. polar listen 3000.',
+      'Can\'t find a host named "qweqe.invalid". To forward to a server on this machine, pass its port, e.g. `polar listen 3000`.',
     )
   })
 
@@ -199,7 +199,7 @@ describe('listen command', () => {
 
   test('asks for a forward target', async () => {
     await expect(run([]).promise).rejects.toThrow(
-      'Pass a port or URL to forward events to, e.g. polar listen 3000.',
+      'Pass a port or URL to forward events to, e.g. `polar listen 3000`.',
     )
   })
 

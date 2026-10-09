@@ -155,14 +155,14 @@ const listenCommand = (emit: Emit, url: string, org: string | undefined) =>
     if (!target) {
       return yield* new ListenError({
         code: 0,
-        message: `"${url}" is not a port or an http(s) URL. Try polar listen 3000 or polar listen http://localhost:3000/api/webhooks.`,
+        message: `"${url}" is not a port or an http(s) URL. Try \`polar listen 3000\` or \`polar listen http://localhost:3000/api/webhooks\`.`,
       })
     }
     const status = yield* probeTarget(target)
     if (status === 'unknownHost') {
       return yield* new ListenError({
         code: 0,
-        message: `Can't find a host named "${target.hostname}". To forward to a server on this machine, pass its port, e.g. polar listen 3000.`,
+        message: `Can't find a host named "${target.hostname}". To forward to a server on this machine, pass its port, e.g. \`polar listen 3000\`.`,
       })
     }
     const organization = yield* (yield* Organizations).resolve(org)
@@ -220,7 +220,7 @@ export const listen = Command.make('listen', { url, org, printSecret }).pipe(
         return yield* new ListenError({
           code: 0,
           message:
-            'Pass a port or URL to forward events to, e.g. polar listen 3000.',
+            'Pass a port or URL to forward events to, e.g. `polar listen 3000`.',
         })
       }
       return yield* listenCommand(emit, url.value, organizationId)

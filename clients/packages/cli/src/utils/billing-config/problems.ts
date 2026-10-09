@@ -123,7 +123,9 @@ const render = (config: LoadedConfig, problem: Problem) =>
             `${ui.INDENT}${ui.INDENT}${ui.dim('at')} ${config.file} ${ui.dim('›')} ${problem.path}`,
           ]
         : []),
-    ...(problem.help ? [`${ui.INDENT}${ui.dim('help:')} ${problem.help}`] : []),
+    ...(problem.help
+      ? [`${ui.INDENT}${ui.dim('help:')} ${ui.commands(problem.help)}`]
+      : []),
   ].join('\n')
 
 export const formatProblems = (

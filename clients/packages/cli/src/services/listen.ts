@@ -289,7 +289,7 @@ export const startListening = ({
           new ListenError({
             code: 0,
             message:
-              'Unable to authenticate the stream. Check your connection, keyring, and token; try polar auth whoami for details.',
+              'Unable to authenticate the stream. Check your connection, keyring, and token; try `polar auth whoami` for details.',
             cause: error,
           }),
         ),

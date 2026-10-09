@@ -256,7 +256,7 @@ test('explains an inaccessible organization in a parsed error body', async () =>
     ),
   ).rejects.toMatchObject({
     message:
-      'Organization org-2 is not accessible with this credential. Check --org or run polar auth org.',
+      'Organization org-2 is not accessible with this credential. Check --org or run `polar auth org`.',
     statusCode: 403,
   })
 })

@@ -12,21 +12,24 @@ export const red = pc.red
 
 export const command = (text: string) => pc.cyan(text)
 
+export const commands = (text: string) =>
+  text.replace(/`([^`]+)`/g, (_, inner: string) => command(inner))
+
 export const success = (message: string) =>
-  `${INDENT}${pc.green('✔')} ${message}`
+  `${INDENT}${pc.green('✔')} ${commands(message)}`
 
 export const failure = (title: string, hint?: string) => {
-  const lines = [`${INDENT}${pc.red('✖')} ${pc.bold(pc.red(title))}`]
+  const lines = [`${INDENT}${pc.red('✖')} ${pc.bold(pc.red(commands(title)))}`]
   if (hint) {
-    lines.push(`${INDENT}  ${pc.dim(hint)}`)
+    lines.push(`${INDENT}  ${pc.dim(commands(hint))}`)
   }
   return lines.join('\n')
 }
 
 export const warning = (message: string) =>
-  `${INDENT}${pc.yellow('▲')} ${message}`
+  `${INDENT}${pc.yellow('▲')} ${commands(message)}`
 
-export const step = (message: string) => `${INDENT}${pc.dim(message)}`
+export const step = (message: string) => `${INDENT}${pc.dim(commands(message))}`
 
 export const keyValue = (rows: ReadonlyArray<readonly [string, string]>) => {
   const width = Math.max(...rows.map(([label]) => Bun.stringWidth(label)))

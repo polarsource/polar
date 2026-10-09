@@ -73,7 +73,7 @@ export const describeApiFailure = (
     case 401:
       return {
         message: `Authentication rejected for ${environment}`,
-        hint: `Check POLAR_ACCESS_TOKEN or run ${loginCommand(environment)} --new-session`,
+        hint: `Check POLAR_ACCESS_TOKEN or run ${loginCommand(environment, '--new-session')}`,
       }
     case 403:
       return {

@@ -41,7 +41,7 @@ export const layer = Layer.sync(Credentials, () => {
             () =>
               new AuthError({
                 message:
-                  'Saved session is corrupt or unsupported. Run polar auth logout (with --production if needed), then log in again.',
+                  'Saved session is corrupt or unsupported. Run `polar auth logout` (with --production if needed), then log in again.',
               }),
           ),
         )

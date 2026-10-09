@@ -98,7 +98,7 @@ export const layer = Layer.effect(
         const available = yield* auth.environments
         if (available.length === 0) {
           return yield* new AuthError({
-            message: 'Not logged in. Run polar auth login.',
+            message: 'Not logged in. Run `polar auth login`.',
           })
         }
         if (available.length === 1)
@@ -110,7 +110,7 @@ export const layer = Layer.effect(
           if (found) return found
         }
         return yield* new AuthError({
-          message: `Organization ${reference} is missing or inaccessible in ${available.join(' and ')}. Check --org or run polar auth list.`,
+          message: `Organization ${reference} is missing or inaccessible in ${available.join(' and ')}. Check --org or run \`polar auth list\`.`,
         })
       })
     return Organizations.of({

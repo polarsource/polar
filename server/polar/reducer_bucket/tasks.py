@@ -30,7 +30,7 @@ def _sync_debounce_key(
 
 @actor(
     actor_name="reducer_bucket.sync",
-    priority=TaskPriority.HIGH,
+    priority=TaskPriority.LOW,
     # Every run recomputes the customer's buckets, so a burst of ingestion
     # requests collapses into one run, still at least once a minute.
     debounce_key=_sync_debounce_key,

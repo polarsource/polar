@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 import httpx2
 import pytest
 from prometheus_client import REGISTRY
@@ -27,7 +29,23 @@ class TestIngest:
                 ]
             },
         )
-        assert response.status_code == 202
+        assert response.status_code == 200
+        assert response.json() == {"inserted": 1, "duplicates": 0}
+
+    async def test_duplicates(self, client: httpx2.AsyncClient) -> None:
+        event = {
+            "timestamp": datetime.now(UTC).isoformat(),
+            "name": "tool_call",
+            "external_customer_id": "customer_123",
+            "external_id": "event_1",
+        }
+        anonymous = {key: value for key, value in event.items() if key != "external_id"}
+
+        first = await client.post("/ingest", json={"events": [event, event, anonymous]})
+        second = await client.post("/ingest", json={"events": [event, anonymous]})
+
+        assert first.json() == {"inserted": 2, "duplicates": 1}
+        assert second.json() == {"inserted": 1, "duplicates": 1}
 
 
 @pytest.mark.anyio
@@ -53,7 +71,7 @@ async def test_metrics(client: httpx2.AsyncClient) -> None:
     )
     response = await client.get("/metrics")
 
-    assert ingest_response.status_code == 202
+    assert ingest_response.status_code == 200
     assert response.status_code == 200
     for sample in samples:
         assert REGISTRY.get_sample_value(sample) == before[sample] + 1

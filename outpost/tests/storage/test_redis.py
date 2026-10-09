@@ -105,3 +105,17 @@ class TestWriteUpdates:
             await redis.redis.hget("outpost:buckets:customer", "reducer:300")
             == b"invalid"
         )
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("anyio_backend", ["asyncio"])
+class TestClaim:
+    async def test_claim(self, anyio_backend: str, redis: RedisStorage) -> None:
+        keys = [("customer", 300, "a"), ("customer", 300, "a"), ("customer", 600, "a")]
+        assert await redis.claim(keys) == [True, False, True]
+        assert await redis.claim(keys[:1]) == [False]
+        assert 0 < await redis.redis.ttl("outpost:events:customer:300") <= BUCKET_TTL
+
+    async def test_empty(self, anyio_backend: str, redis: RedisStorage) -> None:
+        assert await redis.claim([]) == []
+        assert await redis.redis.dbsize() == 0

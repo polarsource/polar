@@ -99,15 +99,33 @@ def get_bucket_start(timestamp: datetime.datetime) -> int:
 
 type Updates = dict[tuple[str, str, int, str], int | float]
 
+type EventKey = tuple[str, int, str]
+
+
+def get_event_keys(events: collections.abc.Sequence[EventCreate]) -> list[EventKey]:
+    return [
+        (
+            event.external_customer_id,
+            get_bucket_start(event.timestamp),
+            event.external_id,
+        )
+        for event in events
+        if event.external_id is not None
+    ]
+
 
 def reduce(
     reducers: collections.abc.Sequence[tuple[Reducer, EventMatcher]],
     events: collections.abc.Sequence[EventCreate],
     *,
     oldest_bucket_start: int,
+    claimed: collections.abc.Iterable[bool] = (),
 ) -> Updates:
+    is_new = iter(claimed)
     updates: Updates = {}
     for event in events:
+        if event.external_id is not None and not next(is_new):
+            continue
         bucket_start = get_bucket_start(event.timestamp)
         # Polar counts older events in its own buckets; the next snapshot carries them.
         if bucket_start < oldest_bucket_start:

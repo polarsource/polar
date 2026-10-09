@@ -10,14 +10,14 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import ValidationError
 from starlette.applications import Starlette
 from starlette.requests import Request
-from starlette.responses import FileResponse, Response
+from starlette.responses import FileResponse, JSONResponse, Response
 from starlette.routing import Route
 
 from outpost.env import Environment, get_environment
 from outpost.event import EventsIngest
 from outpost.metrics import EVENTS_INGESTED, INGEST_SECONDS, REDUCE_SECONDS
 from outpost.polar import Configuration, create_client, listen
-from outpost.reducer import BUCKET_SIZE, get_bucket_start, reduce
+from outpost.reducer import BUCKET_SIZE, get_bucket_start, get_event_keys, reduce
 from outpost.storage import Storage, create_storage
 
 
@@ -40,6 +40,7 @@ async def ingest(request: Request) -> Response:
             return Response(status_code=422)
 
         state = get_state(request)
+        claimed = await state["storage"].claim(get_event_keys(payload.events))
         oldest_bucket_start = (
             get_bucket_start(datetime.datetime.now(datetime.UTC)) - BUCKET_SIZE
         )
@@ -48,11 +49,18 @@ async def ingest(request: Request) -> Response:
                 state["configuration"].reducers,
                 payload.events,
                 oldest_bucket_start=oldest_bucket_start,
+                claimed=claimed,
             )
         await state["storage"].write_updates(updates)
         EVENTS_INGESTED.inc(len(payload.events))
 
-        return Response(status_code=202)
+        duplicates = claimed.count(False)
+        return JSONResponse(
+            {
+                "inserted": len(payload.events) - duplicates,
+                "duplicates": duplicates,
+            }
+        )
 
 
 async def metrics(_: Request) -> Response:

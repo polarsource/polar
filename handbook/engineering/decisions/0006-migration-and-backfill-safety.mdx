@@ -60,6 +60,10 @@ skips them, so `alembic check` passes between the two PRs:
 UNMAPPED_COLUMNS = {("events", "ingest_sequence")}
 ```
 
+This protects the app, not the migration. The drop still takes an `ACCESS EXCLUSIVE` lock, and on
+a busy table it can still miss its lock timeout. When that is likely, plan the drop for that table
+before merging.
+
 A concurrent index build sets its own timeout and clears the leftover from any failed attempt:
 
 ```python
@@ -86,7 +90,8 @@ with op.get_context().autocommit_block():
   `alembic check` catches model-versus-migration drift.
 - The batched script stays mandatory. The migration's `UPDATE` is only cheap because the script
   has already left it nothing to do.
-- No running code names a column when it is dropped.
+- No running code names a column when it is dropped. A drop on a busy table can still fail on its
+  lock, but it fails the deploy, not the app.
 
 ## Alternatives considered
 

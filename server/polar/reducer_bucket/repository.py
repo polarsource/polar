@@ -10,6 +10,7 @@ from polar.kit.db.locking import pg_advisory_xact_lock
 from polar.kit.repository import RepositoryBase
 from polar.meter.aggregation import PropertyAggregation
 from polar.models import Event, Reducer, ReducerBucket
+from polar.models.event import EventSource
 
 
 class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
@@ -27,7 +28,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
     async def aggregate_events(
         self, reducer: Reducer, bucket_start: datetime, bucket_end: datetime
     ) -> Sequence[Row[Any]]:
-        """count, sum, min and max of the reducer's events in the range, per
+        """count, sum, min and max of the reducer's user events in the range, per
         customer identity, ingested after its latest sealed bucket."""
         sealed = (
             select(
@@ -75,6 +76,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             )
             .where(
                 Event.organization_id == reducer.organization_id,
+                Event.source == EventSource.user,
                 Event.timestamp >= bucket_start,
                 Event.timestamp < bucket_end,
                 reducer.filter.get_sql_clause(Event),

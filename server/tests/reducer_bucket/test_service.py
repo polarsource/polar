@@ -15,6 +15,7 @@ from polar.meter.aggregation import (
     UniqueAggregation,
 )
 from polar.models import Event, Organization, Reducer, ReducerBucket
+from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from polar.reducer_bucket.redis_store import get_reducer_bucket_key
@@ -302,6 +303,14 @@ class TestSync:
     ) -> None:
         for tokens in (3, 4):
             await create_tokens_event(save_fixture, organization, tokens)
+        await create_event(
+            save_fixture,
+            organization=organization,
+            source=EventSource.system,
+            timestamp=CLOSED,
+            external_customer_id="external",
+            metadata={"tokens": 5},
+        )
 
         await reducer_bucket_service.sync(session, redis, organization.id, BUCKET_START)
 

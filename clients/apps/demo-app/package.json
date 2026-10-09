@@ -1,11 +1,22 @@
 {
   "name": "demo-app",
   "private": true,
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start -p 3001"
+  },
   "dependencies": {
     "@polar-sh/polar": "workspace:*",
+    "next": "^16.3.6",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@types/node": "catalog:"
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "typescript": "catalog:"
   }
 }

@@ -19,8 +19,13 @@ export default defineConfig({
   benefits: ({ flag, credits }) => ({
     custom_servers: flag('Custom servers').metadata({ tag: 'primary' }),
     tool_calls: credits('Included tool calls').meter('tool_call').units(1000),
+    free_tool_calls: credits('Free tool calls').meter('tool_call').units(5),
   }),
-  products: ({ product, fixed, seats, units, tier, meter }) => ({
+  products: ({ product, free, fixed, seats, units, tier, meter }) => ({
+    free: product('Free')
+      .prices(free())
+      .recurring('monthly')
+      .grants(['free_tool_calls']),
     team: product('Team')
       .prices(
         seats()

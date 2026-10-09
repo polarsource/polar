@@ -1,0 +1,256 @@
+:root {
+  --gray-100: #fdfdfc;
+  --gray-200: #f9f9f8;
+  --gray-400: #e9e9e7;
+  --gray-800: #bcbbb5;
+  --gray-900: #6f6d66;
+  --gray-1200: #21201c;
+  --accent: #3619cc;
+  --accent-light: #5034e6;
+  --ring: 0 0 0 1px #00000014, 0 2px 2px #0000000a;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: var(--gray-200);
+  color: var(--gray-1200);
+  font: 15px/1.5 ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1 {
+  margin: 0 0 4px;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+p {
+  margin: 0;
+}
+
+.muted {
+  color: var(--gray-900);
+}
+
+.faint {
+  color: var(--gray-800);
+}
+
+.card {
+  width: 100%;
+  max-width: 400px;
+  display: grid;
+  gap: 20px;
+  padding: 28px;
+  border-radius: 20px;
+  background: var(--gray-100);
+  box-shadow: var(--ring), 0 12px 32px -12px #0000001f;
+}
+
+input {
+  height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  box-shadow: var(--ring);
+  transition: box-shadow 0.2s;
+}
+
+input:focus {
+  outline: none;
+  box-shadow: 0 0 0 1px var(--accent), 0 0 0 4px #3619cc26;
+}
+
+button {
+  height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 550;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    filter 0.2s,
+    opacity 0.2s,
+    transform 0.16s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.primary {
+  color: #fff;
+  background: linear-gradient(var(--accent-light), var(--accent));
+  box-shadow:
+    inset 0 0 1px 1px #ffffff24,
+    var(--ring),
+    0 0 0 1px var(--accent);
+}
+
+.secondary {
+  color: var(--gray-1200);
+  background: linear-gradient(#fff, #f3f3f2);
+  box-shadow:
+    inset 0 0 1px 1px #ffffff24,
+    var(--ring),
+    0 0 0 1px var(--gray-400);
+}
+
+.ghost {
+  height: auto;
+  padding: 0;
+  background: none;
+  color: var(--gray-900);
+  font-weight: 400;
+}
+
+.app {
+  width: 100%;
+  max-width: 640px;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  height: min(480px, calc(100dvh - 96px));
+  border-radius: 20px;
+  background: var(--gray-100);
+  box-shadow: var(--ring), 0 12px 32px -12px #0000001f;
+  overflow: hidden;
+}
+
+.log {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 16px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: var(--ring);
+  animation: fade-in 0.2s ease-out;
+}
+
+.entry time {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.empty {
+  margin: auto;
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  border-top: 1px solid var(--gray-400);
+}
+
+.footer p {
+  flex: 1;
+  min-width: max-content;
+  transition: color 0.2s;
+}
+
+.logout {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+}
+
+dialog {
+  max-width: 340px;
+  padding: 24px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--gray-100);
+  color: inherit;
+  box-shadow: var(--ring), 0 24px 48px -12px #0000003d;
+  transition:
+    opacity 0.2s,
+    transform 0.2s cubic-bezier(0.23, 1, 0.32, 1),
+    display 0.2s allow-discrete,
+    overlay 0.2s allow-discrete;
+}
+
+dialog:not([open]) {
+  opacity: 0;
+  transform: scale(0.96);
+}
+
+@starting-style {
+  dialog[open] {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+dialog::backdrop {
+  background: #21201c33;
+  backdrop-filter: blur(2px);
+  transition:
+    background 0.2s,
+    backdrop-filter 0.2s,
+    display 0.2s allow-discrete,
+    overlay 0.2s allow-discrete;
+}
+
+dialog:not([open])::backdrop {
+  background: #21201c00;
+  backdrop-filter: blur(0);
+}
+
+@starting-style {
+  dialog[open]::backdrop {
+    background: #21201c00;
+    backdrop-filter: blur(0);
+  }
+}
+
+dialog .card {
+  padding: 0;
+  box-shadow: none;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+}

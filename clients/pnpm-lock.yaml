@@ -761,6 +761,15 @@ importers:
       '@polar-sh/polar':
         specifier: workspace:*
         version: link:../../packages/polar
+      next:
+        specifier: ^16.3.6
+        version: 16.3.8(@babel/core@8.0.6)(@opentelemetry/api@1.9.1)(@types/node@24.19.1)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      react:
+        specifier: 19.3.0
+        version: 19.3.0
+      react-dom:
+        specifier: 19.3.0
+        version: 19.3.0(react@19.3.0)
       zod:
         specifier: 'catalog:'
         version: 4.6.5
@@ -768,6 +777,15 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.1
+      '@types/react':
+        specifier: 19.3.0
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: 19.3.0
+        version: 19.3.0(@types/react@19.3.0)
+      typescript:
+        specifier: 'catalog:'
+        version: '@typescript/typescript6@6.0.2'
 
   apps/orbit:
     dependencies:

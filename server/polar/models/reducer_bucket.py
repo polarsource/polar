@@ -7,6 +7,7 @@ from sqlalchemy import (
     TIMESTAMP,
     BigInteger,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
@@ -27,6 +28,12 @@ if TYPE_CHECKING:
 class ReducerBucket(RecordModel):
     __tablename__ = "reducer_buckets"
     __table_args__ = (
+        Index(
+            "ix_reducer_buckets_organization_reducer_bucket_start",
+            "organization_id",
+            "reducer_id",
+            "bucket_start",
+        ),
         UniqueConstraint(
             "organization_id",
             "reducer_id",

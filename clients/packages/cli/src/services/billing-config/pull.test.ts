@@ -290,4 +290,18 @@ describe('pull', () => {
 
     expect(error.message).toContain('not enabled for Acme')
   })
+
+  test('names the scopes when the token cannot read the config', async () => {
+    api.routes[`GET ${exportUrl}`] = Response.json(
+      { error: 'NotPermitted' },
+      { status: 403 },
+    )
+
+    const error = await failure(run('polar.json'))
+
+    expect(error.message).toBe('You do not have access to Acme')
+    expect(error.hint).toBe(
+      'The token needs the meters:read, benefits:read, products:read scopes.',
+    )
+  })
 })

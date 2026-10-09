@@ -9,6 +9,7 @@ import {
   ApiError,
   type AppliedEntry,
   BillingConfigError,
+  type ConfigResource,
   type EntryResult,
   type LoadedConfig,
 } from '@/schemas/BillingConfig'
@@ -18,7 +19,7 @@ import type { ApiClient } from '@/services/client'
 export type Clients = Record<PolarEnvironment, ApiClient>
 
 // Sections the config API doesn't accept yet
-const UNSUPPORTED_SECTIONS = new Set(['benefits', 'products'])
+const UNSUPPORTED_SECTIONS = new Set([''])
 
 const stripUnsupported = (input: unknown): unknown =>
   typeof input === 'object' && input !== null && !Array.isArray(input)
@@ -51,20 +52,40 @@ export const errorName = (response: HttpClientResponse.HttpClientResponse) =>
     Effect.orElseSucceed(() => undefined),
   )
 
+const SECTIONS = {
+  meter: 'meters',
+  benefit: 'benefits',
+  product: 'products',
+} as const satisfies Record<typeof ConfigResource.Type, string>
+
 export const entries = (results: ReadonlyArray<typeof EntryResult.Type>) =>
   results.map(
     (entry): AppliedEntry => ({
-      section: `${entry.resource}s`,
+      section: SECTIONS[entry.resource],
       id: entry.external_id,
       action: entry.action,
       diff: entry.diff ?? [],
     }),
   )
 
+// Benefits and products sections need their own scope on top of the meters one
+export const requiredScopes = (
+  config: LoadedConfig,
+  access: 'read' | 'write',
+) => {
+  const input =
+    typeof config.input === 'object' && config.input !== null
+      ? config.input
+      : {}
+  return ['meters', 'benefits', 'products']
+    .filter((section) => section === 'meters' || section in input)
+    .map((section) => `${section}:${access}`)
+}
+
 export const unexpected = (
   response: HttpClientResponse.HttpClientResponse,
   organization: ActiveOrganization,
-  scope: string,
+  scopes: ReadonlyArray<string>,
 ) =>
   Effect.gen(function* () {
     const error = yield* errorName(response)
@@ -83,7 +104,7 @@ export const unexpected = (
     if (response.status === 403) {
       return yield* new BillingConfigError({
         message: `You do not have access to ${organization.name}`,
-        hint: `The token needs the ${scope} scope.`,
+        hint: `The token needs the ${scopes.join(', ')} ${scopes.length > 1 ? 'scopes' : 'scope'}.`,
       })
     }
     if (response.status === 404) {

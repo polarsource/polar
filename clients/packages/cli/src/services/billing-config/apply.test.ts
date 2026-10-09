@@ -80,7 +80,7 @@ describe('apply', () => {
     api.routes[`POST ${applyUrl}`] = Response.json({
       changes: [
         { resource: 'meter', external_id: 'tool-calls', action: 'created' },
-        { resource: 'benefit', external_id: 'pro', action: 'updated' },
+        { resource: 'product', external_id: 'pro', action: 'updated' },
       ],
     })
 
@@ -93,7 +93,7 @@ describe('apply', () => {
       status: 'applied',
       entries: [
         { section: 'meters', id: 'tool-calls', action: 'created', diff: [] },
-        { section: 'benefits', id: 'pro', action: 'updated', diff: [] },
+        { section: 'products', id: 'pro', action: 'updated', diff: [] },
       ],
     })
   })
@@ -210,10 +210,14 @@ describe('apply', () => {
       { status: 403 },
     )
 
-    const error = await failure(run(await write(source)))
+    const error = await failure(
+      run(await write(JSON.stringify({ meters: [], products: [] }))),
+    )
 
     expect(error.message).toBe('You do not have access to Acme')
-    expect(error.hint).toContain('meters:write')
+    expect(error.hint).toBe(
+      'The token needs the meters:write, products:write scopes.',
+    )
   })
 
   test('reports other API failures', async () => {

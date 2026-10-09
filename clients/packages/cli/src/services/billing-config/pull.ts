@@ -33,7 +33,11 @@ const exportConfig = (clients: Clients, organization: ActiveOrganization) =>
       ).pipe(withOrganization(organization.id)),
     )
     if (response.status !== 200) {
-      return yield* unexpected(response, organization, 'meters:read')
+      return yield* unexpected(response, organization, [
+        'meters:read',
+        'benefits:read',
+        'products:read',
+      ])
     }
     return yield* HttpClientResponse.schemaBodyJson(ConfigExport)(response)
   })

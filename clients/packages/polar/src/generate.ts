@@ -67,10 +67,10 @@ const renderBenefit = (
     return `flag(${name})`
   }
   helpers.add('credits')
-  const { meter_external_id, units, rollover } = benefit.properties
+  const { meter, units, rollover } = benefit.properties
   return [
     `credits(${name})`,
-    `.meter(${literal(meter_external_id)})`,
+    `.meter(${literal(meter)})`,
     `.units(${literal(units)})`,
     ...(rollover ? ['.rollover()'] : []),
   ].join('\n')
@@ -129,7 +129,7 @@ const tiersOf = (price: PriceConfig): Tiers['tiers'] =>
 const structureOf = (price: PriceConfig): string =>
   JSON.stringify([
     price.amount_type,
-    'meter_external_id' in price ? price.meter_external_id : null,
+    'meter' in price ? price.meter : null,
     'tiers' in price ? price.tiers.type : null,
     tiersOf(price).map(({ bound }) => bound ?? null),
     'minimum_units' in price ? (price.minimum_units ?? null) : null,
@@ -276,7 +276,7 @@ const renderPrice = (
     case 'metered_tiers': {
       helpers.add('meter')
       return [
-        `meter(${literal(first.meter_external_id)})`,
+        `meter(${literal(first.meter)})`,
         ...(first.amount_type === 'metered_unit'
           ? [
               '.flat()',
@@ -338,11 +338,9 @@ const renderProduct =
             `.trial(${literal(trialCount)}, ${plural(trialInterval, trialCount)})`,
           ]
         : []),
-      ...(product.benefit_external_ids.length === 0
+      ...(product.benefits.length === 0
         ? []
-        : [
-            `.grants([${product.benefit_external_ids.map(literal).join(', ')}])`,
-          ]),
+        : [`.grants([${product.benefits.map(literal).join(', ')}])`]),
     ].join('\n')
   }
 

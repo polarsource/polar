@@ -271,14 +271,13 @@ test('benefits serialize with meter credits linked by meter key', () => {
       external_id: 'custom_servers',
       type: 'feature_flag',
       description: 'Custom servers',
-      properties: {},
     },
     {
       external_id: 'tool_calls',
       type: 'meter_credit',
       description: 'tool_calls',
       properties: {
-        meter_external_id: 'tool_call',
+        meter: 'tool_call',
         units: 100,
         rollover: false,
       },
@@ -288,7 +287,7 @@ test('benefits serialize with meter credits linked by meter key', () => {
       type: 'meter_credit',
       description: 'Rollover tool calls',
       properties: {
-        meter_external_id: 'tool_call',
+        meter: 'tool_call',
         units: 50,
         rollover: true,
       },
@@ -404,7 +403,7 @@ test('products serialize prices per currency and link meters and benefits', () =
         {
           amount_type: 'metered_tiers',
           price_currency: 'usd',
-          meter_external_id: 'tool_call',
+          meter: 'tool_call',
           tiers: {
             type: 'graduated',
             tiers: [{ bound: 1000, unit_amount: '0' }, { unit_amount: '0.1' }],
@@ -414,7 +413,7 @@ test('products serialize prices per currency and link meters and benefits', () =
         {
           amount_type: 'metered_tiers',
           price_currency: 'eur',
-          meter_external_id: 'tool_call',
+          meter: 'tool_call',
           tiers: {
             type: 'graduated',
             tiers: [{ bound: 1000, unit_amount: '0' }, { unit_amount: '0.09' }],
@@ -422,7 +421,7 @@ test('products serialize prices per currency and link meters and benefits', () =
           cap_amount: 4500,
         },
       ],
-      benefit_external_ids: ['custom_servers'],
+      benefits: ['custom_servers'],
     },
   ])
 })

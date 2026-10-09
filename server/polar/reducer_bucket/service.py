@@ -1,4 +1,3 @@
-import hashlib
 import math
 import uuid
 from collections import defaultdict
@@ -22,12 +21,17 @@ from polar.redis import Redis
 from polar.reducer.repository import ReducerRepository
 from polar.worker import enqueue_job
 
+from .redis_store import (
+    BucketId,
+    add_to_buckets,
+    get_bucket_values,
+    get_reducer_bucket_key,
+)
 from .repository import ReducerBucketRepository
 
 log: Logger = structlog.get_logger()
 
 REDUCER_BUCKET_SIZE = timedelta(minutes=5)
-REDUCER_BUCKET_TTL = timedelta(days=1)
 
 
 def get_reducer_bucket_start(timestamp: datetime) -> datetime:
@@ -39,21 +43,6 @@ def get_reducer_bucket_start(timestamp: datetime) -> datetime:
 def get_oldest_active_bucket_start(now: datetime) -> datetime:
     """Start of T-1, the older of the two active bucket starts: T and T-1."""
     return get_reducer_bucket_start(now) - REDUCER_BUCKET_SIZE
-
-
-def get_reducer_bucket_key(
-    reducer_id: uuid.UUID,
-    bucket_start: datetime,
-    customer_id: uuid.UUID | None,
-    external_customer_id: str | None,
-) -> str:
-    key = (
-        f"reducer_bucket:{reducer_id}:{int(bucket_start.timestamp())}"
-        f":{customer_id or '-'}"
-    )
-    if external_customer_id is not None:
-        key += f":{hashlib.sha256(external_customer_id.encode()).hexdigest()}"
-    return key
 
 
 class ReducerBucketService:
@@ -103,9 +92,7 @@ class ReducerBucketService:
 
         # (reducer, bucket_start, customer_id, external_customer_id) -> the values
         # events add
-        buckets: dict[
-            tuple[Reducer, datetime, uuid.UUID | None, str | None], list[float]
-        ] = defaultdict(list)
+        buckets: dict[BucketId, list[float]] = defaultdict(list)
         for event in events:
             for reducer in reducers:
                 if not reducer.filter.matches(event):
@@ -125,36 +112,8 @@ class ReducerBucketService:
                 )
                 buckets[bucket_id].append(value)
 
-        ttl = int(REDUCER_BUCKET_TTL.total_seconds())
         try:
-            async with redis.pipeline(transaction=False) as pipe:
-                for bucket_id, values in buckets.items():
-                    reducer, bucket_start, customer_id, external_customer_id = bucket_id
-                    key = get_reducer_bucket_key(
-                        reducer.id, bucket_start, customer_id, external_customer_id
-                    )
-                    match reducer.aggregation.func:
-                        case AggregationFunction.cnt:
-                            await pipe.incrby(key, len(values))
-                        case AggregationFunction.sum:
-                            await pipe.incrbyfloat(key, sum(values))
-                        case AggregationFunction.avg:
-                            await pipe.hincrby(key, "count", len(values))
-                            await pipe.hincrbyfloat(key, "sum", sum(values))
-                        case AggregationFunction.min:
-                            await pipe.zadd(key, {"min": min(values)}, lt=True)
-                        case AggregationFunction.max:
-                            await pipe.zadd(key, {"max": max(values)}, gt=True)
-                        case AggregationFunction.unique:
-                            log.info(
-                                "Ignoring reducer bucket of unique aggregation",
-                                reducer_id=reducer.id,
-                                bucket_start=bucket_start.isoformat(),
-                                event_count=len(values),
-                            )
-                            continue
-                    await pipe.expire(key, ttl, nx=True)
-                await pipe.execute()
+            await add_to_buckets(redis, buckets)
         except RedisError:
             log.exception(
                 "Failed to update active reducer buckets in Redis",
@@ -257,28 +216,16 @@ class ReducerBucketService:
         buckets: Sequence[dict[str, Any]],
     ) -> None:
         aggregation = reducer.aggregation.func
-        keys = [
-            get_reducer_bucket_key(
-                reducer.id,
-                bucket_start,
-                bucket["customer_id"],
-                bucket["external_customer_id"],
-            )
-            for bucket in buckets
-        ]
         try:
-            async with redis.pipeline(transaction=False) as pipe:
-                for key in keys:
-                    match aggregation:
-                        case AggregationFunction.cnt | AggregationFunction.sum:
-                            await pipe.get(key)
-                        case AggregationFunction.avg:
-                            await pipe.hmget(key, ["count", "sum"])
-                        case AggregationFunction.min:
-                            await pipe.zscore(key, "min")
-                        case AggregationFunction.max:
-                            await pipe.zscore(key, "max")
-                results = await pipe.execute()
+            results = await get_bucket_values(
+                redis,
+                reducer,
+                bucket_start,
+                [
+                    (bucket["customer_id"], bucket["external_customer_id"])
+                    for bucket in buckets
+                ],
+            )
         except RedisError:
             log.exception(
                 "Failed to read reducer buckets from Redis for comparison",
@@ -289,7 +236,7 @@ class ReducerBucketService:
             return
 
         matching = mismatching = missing = 0
-        for key, bucket, result in zip(keys, buckets, results, strict=True):
+        for bucket, redis_values in zip(buckets, results, strict=True):
             match aggregation:
                 case AggregationFunction.cnt:
                     postgres_values: list[float | None] = [bucket["count"]]
@@ -301,10 +248,6 @@ class ReducerBucketService:
                     postgres_values = [bucket["min"]]
                 case AggregationFunction.max:
                     postgres_values = [bucket["max"]]
-            redis_values = [
-                _to_float(value)
-                for value in (result if isinstance(result, list) else [result])
-            ]
             if all(value is None for value in redis_values):
                 missing += 1
             elif _are_close(postgres_values, redis_values):
@@ -317,7 +260,12 @@ class ReducerBucketService:
                     reducer_id=reducer.id,
                     aggregation=aggregation,
                     bucket_start=bucket_start.isoformat(),
-                    key=key,
+                    key=get_reducer_bucket_key(
+                        reducer.id,
+                        bucket_start,
+                        bucket["customer_id"],
+                        bucket["external_customer_id"],
+                    ),
                     postgres=postgres_values,
                     redis=redis_values,
                 )

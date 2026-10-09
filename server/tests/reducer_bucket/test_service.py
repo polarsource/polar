@@ -17,10 +17,10 @@ from polar.meter.aggregation import (
 from polar.models import Event, Organization, Reducer, ReducerBucket
 from polar.postgres import AsyncSession
 from polar.redis import Redis
+from polar.reducer_bucket.redis_store import get_reducer_bucket_key
 from polar.reducer_bucket.repository import ReducerBucketRepository
 from polar.reducer_bucket.service import (
     REDUCER_BUCKET_SIZE,
-    get_reducer_bucket_key,
     get_reducer_bucket_start,
 )
 from polar.reducer_bucket.service import reducer_bucket as reducer_bucket_service
@@ -65,28 +65,6 @@ class TestGetReducerBucketStart:
     )
     def test_floors_to_bucket(self, timestamp: datetime, expected: datetime) -> None:
         assert get_reducer_bucket_start(timestamp) == expected
-
-
-class TestGetReducerBucketKey:
-    def test_distinguishes_customer_identities(self) -> None:
-        reducer_id = uuid.uuid4()
-        customer_id = uuid.uuid4()
-
-        keys = {
-            get_reducer_bucket_key(reducer_id, BUCKET_START, customer_id, "external"),
-            get_reducer_bucket_key(reducer_id, BUCKET_START, customer_id, None),
-            get_reducer_bucket_key(reducer_id, BUCKET_START, None, ""),
-            get_reducer_bucket_key(reducer_id, BUCKET_START, None, None),
-        }
-
-        assert len(keys) == 4
-
-    def test_hashes_external_customer_id(self) -> None:
-        key = get_reducer_bucket_key(
-            uuid.uuid4(), BUCKET_START, None, "jane@example.com"
-        )
-
-        assert "jane@example.com" not in key
 
 
 @pytest.mark.anyio

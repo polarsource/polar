@@ -28,9 +28,6 @@ log: Logger = structlog.get_logger()
 
 REDUCER_BUCKET_SIZE = timedelta(minutes=5)
 REDUCER_BUCKET_TTL = timedelta(days=1)
-REDUCER_BUCKET_SYNC_LOOKBACK = timedelta(minutes=10)
-REDUCER_BUCKET_CATCH_UP_LOOKBACK = timedelta(hours=3)
-REDUCER_BUCKET_SYNC_MARGIN = timedelta(minutes=1)
 
 
 def get_reducer_bucket_start(timestamp: datetime) -> datetime:
@@ -67,27 +64,42 @@ class ReducerBucketService:
         organization_id: uuid.UUID,
         events: Sequence[Event],
     ) -> None:
-        # Older events are synced into Postgres by the sync cron.
-        oldest_active_bucket_start = get_oldest_active_bucket_start(utc_now())
+        reducers = await ReducerRepository.from_session(
+            session
+        ).get_all_active_by_organization(organization_id)
+        if all(
+            isinstance(reducer.aggregation, UniqueAggregation) for reducer in reducers
+        ):
+            return
+
+        now = utc_now()
+        oldest_active_bucket_start = get_oldest_active_bucket_start(now)
         active_events = [
             event
             for event in events
             if get_reducer_bucket_start(event.timestamp) >= oldest_active_bucket_start
         ]
         if active_events:
-            await self.rollup_active(session, redis, organization_id, active_events)
+            # Roll up active events into buckets in Redis
+            await self.rollup_active(redis, organization_id, reducers, active_events)
+
+        for bucket_start in {get_reducer_bucket_start(e.timestamp) for e in events}:
+            # Delay syncing for the currently active bucket (T)
+            delay = bucket_start + REDUCER_BUCKET_SIZE - now
+            enqueue_job(
+                "reducer_bucket.sync",
+                organization_id,
+                bucket_start.isoformat(),
+                delay=max(0, int(delay.total_seconds() * 1000)),
+            )
 
     async def rollup_active(
         self,
-        session: AsyncSession,
         redis: Redis,
         organization_id: uuid.UUID,
+        reducers: Sequence[Reducer],
         events: Sequence[Event],
     ) -> None:
-        reducer_repository = ReducerRepository.from_session(session)
-        reducers = await reducer_repository.get_all_active_by_organization(
-            organization_id
-        )
 
         # (reducer, bucket_start, customer_id, external_customer_id) -> the values
         # events add
@@ -159,49 +171,20 @@ class ReducerBucketService:
             event_count=len(events),
         )
 
-    async def schedule_syncs(self, session: AsyncSession, lookback: timedelta) -> None:
-        """Enqueues syncing the buckets starting before T, with events ingested
-        within `lookback`, that were never written or got events since."""
-        now = utc_now()
-        repository = ReducerBucketRepository.from_session(session)
-        bucket_starts_by_organization: dict[uuid.UUID, list[str]] = defaultdict(list)
-        for organization_id, bucket_start in await repository.get_windows_to_sync(
-            bucket_size=REDUCER_BUCKET_SIZE,
-            ingested_since=now - lookback,
-            before=get_reducer_bucket_start(now),
-            write_margin=REDUCER_BUCKET_SYNC_MARGIN,
-            # A commit can land up to the margin after a write: keep re-checking
-            # for as long again.
-            recently_written_since=now - 2 * REDUCER_BUCKET_SYNC_MARGIN,
-        ):
-            bucket_starts_by_organization[organization_id].append(
-                bucket_start.isoformat()
-            )
-        for organization_id, bucket_starts in bucket_starts_by_organization.items():
-            enqueue_job(
-                "reducer_bucket.sync_organization", organization_id, bucket_starts
-            )
-
-    async def sync_organization(
+    async def sync(
         self,
         session: AsyncSession,
         redis: Redis,
         organization_id: uuid.UUID,
-        bucket_starts: Sequence[datetime],
+        bucket_start: datetime,
     ) -> None:
         repository = ReducerBucketRepository.from_session(session)
         reducer_repository = ReducerRepository.from_session(session)
-        reducers = [
-            reducer
-            for reducer in await reducer_repository.get_all_active_by_organization(
-                organization_id
-            )
-            if not isinstance(reducer.aggregation, UniqueAggregation)
-        ]
-        # Sorted, so overlapping jobs take the locks in the same order.
-        for bucket_start in sorted(bucket_starts):
-            await repository.lock_window(organization_id, bucket_start)
-            for reducer in reducers:
+        await repository.lock_window(organization_id, bucket_start)
+        for reducer in await reducer_repository.get_all_active_by_organization(
+            organization_id
+        ):
+            if not isinstance(reducer.aggregation, UniqueAggregation):
                 await self.sync_buckets(session, redis, reducer, bucket_start)
 
     async def sync_buckets(

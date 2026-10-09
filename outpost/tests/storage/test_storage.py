@@ -29,6 +29,7 @@ def snapshot(
         "external_customer_id": "customer",
         "cold_until": cold_until,
         "cold": {"reducer": cold},
+        "credited": {"meter": 100},
         "buckets": [
             {"reducer_id": "reducer", "bucket_start": start, "value": value}
             for start, value in buckets or []
@@ -45,6 +46,7 @@ class TestSnapshot:
         assert await storage.read("customer") == {
             "cold_until": None,
             "cold": {},
+            "credited": {},
             "buckets": {("reducer", 300): 1},
         }
 
@@ -57,6 +59,7 @@ class TestSnapshot:
         assert await storage.read("customer") == {
             "cold_until": 600,
             "cold": {"reducer": 10},
+            "credited": {"meter": 100},
             "buckets": {("reducer", 600): 4},
         }
 
@@ -82,6 +85,7 @@ class TestSnapshot:
         assert await storage.read("customer") == {
             "cold_until": 900,
             "cold": {"reducer": 11},
+            "credited": {"meter": 100},
             "buckets": {("reducer", 900): 3},
         }
 
@@ -94,5 +98,6 @@ class TestSnapshot:
         assert await storage.read("customer") == {
             "cold_until": 900,
             "cold": {"reducer": 11},
+            "credited": {"meter": 100},
             "buckets": {},
         }

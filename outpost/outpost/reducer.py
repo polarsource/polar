@@ -124,13 +124,34 @@ class Snapshot(typing.TypedDict):
     external_customer_id: str
     cold_until: int
     cold: dict[str, int | float]
+    credited: dict[str, int | float]
     buckets: list[SnapshotBucket]
 
 
 class CustomerState(typing.TypedDict):
     cold_until: int | None
     cold: dict[str, int | float]
+    credited: dict[str, int | float]
     buckets: dict[tuple[str, int], int | float]
+
+
+def get_consumed(reducer: Reducer, state: CustomerState) -> int | float:
+    values = [
+        value
+        for (reducer_id, _), value in state["buckets"].items()
+        if reducer_id == reducer["id"]
+    ]
+    if reducer["id"] in state["cold"]:
+        values.append(state["cold"][reducer["id"]])
+    if not values:
+        return 0
+    match reducer["aggregation"]["func"]:
+        case "min":
+            return min(values)
+        case "max":
+            return max(values)
+        case _:
+            return sum(values)
 
 
 def reduce(

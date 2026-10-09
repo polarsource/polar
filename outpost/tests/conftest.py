@@ -41,6 +41,7 @@ def polar_snapshot(external_customer_id: str) -> dict[str, typing.Any]:
         "external_customer_id": external_customer_id,
         "cold_until": 300,
         "cold": {POLAR_REDUCERS[0]["id"]: 10},
+        "credited": {POLAR_METERS[0]["id"]: 100},
         "buckets": [],
     }
 
@@ -59,6 +60,8 @@ async def polar_websocket(websocket: WebSocket) -> None:
             case "snapshot":
                 external_customer_id = message["payload"]["external_customer_id"]
                 POLAR_SNAPSHOT_REQUESTS.append(external_customer_id)
+                if external_customer_id.startswith("silent_"):
+                    continue
                 await websocket.send_json(
                     {
                         "type": "snapshot",

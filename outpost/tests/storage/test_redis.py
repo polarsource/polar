@@ -98,6 +98,7 @@ class TestWriteUpdates:
                 "external_customer_id": "customer",
                 "cold_until": 300,
                 "cold": {"reducer": 1},
+                "credited": {},
                 "buckets": [],
             }
         )

@@ -7,8 +7,10 @@ import pytest
 from outpost.event import EventCreate
 from outpost.reducer import (
     BUCKET_SIZE,
+    CustomerState,
     FilterClause,
     Reducer,
+    get_consumed,
     get_matcher,
     reduce,
 )
@@ -242,3 +244,26 @@ def test_get_matcher(
     assert get_matcher(clause)(event) is result
     assert get_matcher({"conjunction": "and", "clauses": []})(event) is True
     assert get_matcher({"conjunction": "or", "clauses": []})(event) is False
+
+
+@pytest.mark.parametrize(
+    ("func", "consumed"), [("count", 15), ("sum", 15), ("min", 2), ("max", 10)]
+)
+def test_get_consumed(
+    func: typing.Literal["count", "sum", "min", "max"], consumed: int
+) -> None:
+    reducer: Reducer = {
+        "id": "reducer",
+        "filter": {"conjunction": "and", "clauses": []},
+        "aggregation": {"func": "count"}
+        if func == "count"
+        else {"func": func, "property": "amount"},
+    }
+    state: CustomerState = {
+        "cold_until": 300,
+        "cold": {"reducer": 10, "other": 100},
+        "credited": {},
+        "buckets": {("reducer", 300): 3, ("reducer", 600): 2, ("other", 300): 50},
+    }
+    assert get_consumed(reducer, state) == consumed
+    assert get_consumed({**reducer, "id": "missing"}, state) == 0

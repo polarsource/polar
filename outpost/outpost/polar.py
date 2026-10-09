@@ -8,22 +8,35 @@ from pydantic import TypeAdapter, ValidationError
 
 from outpost.env import Environment
 from outpost.logging import get_logger
-from outpost.reducer import EventMatcher, Reducer, Snapshot, get_matcher
+from outpost.reducer import (
+    CustomerState,
+    EventMatcher,
+    Reducer,
+    Snapshot,
+    get_matcher,
+)
 from outpost.storage import Storage
 
 log = get_logger(__name__)
 
-ReducerAdapter: TypeAdapter[Reducer] = TypeAdapter(Reducer)
+
+class ConfiguredReducer(Reducer):
+    meter_ids: list[str]
+
+
+ReducerAdapter: TypeAdapter[ConfiguredReducer] = TypeAdapter(ConfiguredReducer)
 SnapshotAdapter: TypeAdapter[Snapshot] = TypeAdapter(Snapshot)
 
 
 class Configuration:
     def __init__(self) -> None:
         self.reducers: list[tuple[Reducer, EventMatcher]] = []
+        self.meters: dict[str, Reducer] = {}
         self.ready = anyio.Event()
 
     def update(self, reducers: list[dict[str, typing.Any]]) -> None:
         supported: list[tuple[Reducer, EventMatcher]] = []
+        meters: dict[str, Reducer] = {}
         for raw_reducer in reducers:
             try:
                 reducer = ReducerAdapter.validate_python(raw_reducer)
@@ -31,7 +44,9 @@ class Configuration:
                 log.warning("Unsupported reducer %s", raw_reducer.get("id"))
                 continue
             supported.append((reducer, get_matcher(reducer["filter"])))
+            meters.update(dict.fromkeys(reducer["meter_ids"], reducer))
         self.reducers = supported
+        self.meters = meters
         self.ready.set()
 
 
@@ -49,6 +64,21 @@ class Snapshots:
             warm = self.warm[external_customer_id] = anyio.Event()
             self.requests.send_nowait(external_customer_id)
         return warm
+
+    async def read(
+        self, storage: Storage, external_customer_id: str, *, timeout: float
+    ) -> CustomerState | None:
+        for _ in range(2):
+            warm = self.warm_up(external_customer_id)
+            with anyio.move_on_after(timeout):
+                await warm.wait()
+            if not warm.is_set():
+                return None
+            customer = await storage.read(external_customer_id)
+            if customer["cold_until"] is not None:
+                return customer
+            del self.warm[external_customer_id]
+        return None
 
     async def apply(self, storage: Storage, payload: typing.Any) -> None:
         snapshot = SnapshotAdapter.validate_python(payload)

@@ -108,7 +108,14 @@ class TestRollup:
         assert sorted(
             (*call.args, call.kwargs["delay"]) for call in enqueue_job.call_args_list
         ) == [
-            ("reducer_bucket.sync", organization.id, start.isoformat(), delay)
+            (
+                "reducer_bucket.sync",
+                reducer.id,
+                start.isoformat(),
+                None,
+                "external",
+                delay,
+            )
             for start, delay in sorted(
                 [(previous_start, 0), (outdated_start, 0), (BUCKET_START, 240_000)]
             )
@@ -293,6 +300,27 @@ async def get_buckets(session: AsyncSession) -> list[ReducerBucket]:
 
 @pytest.mark.anyio
 class TestSync:
+    async def test_skips_inactive_reducers(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        meter.archived_at = BILLED_AT
+        await save_fixture(meter)
+        await create_tokens_event(save_fixture, organization, 3)
+
+        await reducer_bucket_service.sync(
+            session, redis, reducer.id, BUCKET_START, None, "external"
+        )
+
+        assert await get_buckets(session) == []
+
     async def test_writes_buckets(
         self,
         save_fixture: SaveFixture,
@@ -311,8 +339,17 @@ class TestSync:
             external_customer_id="external",
             metadata={"tokens": 5},
         )
+        await create_event(
+            save_fixture,
+            organization=organization,
+            timestamp=CLOSED,
+            external_customer_id="other",
+            metadata={"tokens": 6},
+        )
 
-        await reducer_bucket_service.sync(session, redis, organization.id, BUCKET_START)
+        await reducer_bucket_service.sync(
+            session, redis, sum_reducer.id, BUCKET_START, None, "external"
+        )
 
         [bucket] = await get_buckets(session)
         assert bucket.reducer_id == sum_reducer.id
@@ -338,13 +375,15 @@ class TestSync:
         for tokens in (3, 4, 5):
             await create_tokens_event(save_fixture, organization, tokens)
             await reducer_bucket_service.sync(
-                session, redis, organization.id, BUCKET_START
+                session, redis, sum_reducer.id, BUCKET_START, None, "external"
             )
         [bucket] = await get_buckets(session)
         modified_at = bucket.modified_at
 
         # Unchanged: nothing is written.
-        await reducer_bucket_service.sync(session, redis, organization.id, BUCKET_START)
+        await reducer_bucket_service.sync(
+            session, redis, sum_reducer.id, BUCKET_START, None, "external"
+        )
 
         [bucket] = await get_buckets(session)
         assert (bucket.generation, bucket.count, bucket.sum) == (1, 3, Decimal(12))
@@ -360,7 +399,9 @@ class TestSync:
         organization: Organization,
     ) -> None:
         await create_tokens_event(save_fixture, organization, 3, ingested_at=CLOSED)
-        await reducer_bucket_service.sync(session, redis, organization.id, BUCKET_START)
+        await reducer_bucket_service.sync(
+            session, redis, sum_reducer.id, BUCKET_START, None, "external"
+        )
         [billed] = await get_buckets(session)
         billed.sealed_at = BILLED_AT
         await save_fixture(billed)
@@ -373,7 +414,7 @@ class TestSync:
                 ingested_at=BILLED_AT + timedelta(minutes=1),
             )
             await reducer_bucket_service.sync(
-                session, redis, organization.id, BUCKET_START
+                session, redis, sum_reducer.id, BUCKET_START, None, "external"
             )
 
         first, second = await get_buckets(session)
@@ -411,7 +452,9 @@ class TestSync:
         )
         log = mocker.patch("polar.reducer_bucket.service.log")
 
-        await reducer_bucket_service.sync(session, redis, organization.id, BUCKET_START)
+        await reducer_bucket_service.sync(
+            session, redis, sum_reducer.id, BUCKET_START, None, "external"
+        )
 
         log.info.assert_called_once()
         assert log.info.call_args.kwargs["matching"] == matching

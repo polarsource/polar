@@ -1,7 +1,7 @@
 import math
 import uuid
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -63,22 +63,27 @@ class ReducerBucketService:
 
         now = utc_now()
         oldest_active_bucket_start = get_oldest_active_bucket_start(now)
-        active_events = [
-            event
-            for event in events
-            if get_reducer_bucket_start(event.timestamp) >= oldest_active_bucket_start
-        ]
-        if active_events:
+        buckets = _get_values_by_bucket(reducers, events)
+        active_buckets = {
+            bucket_id: values
+            for bucket_id, values in buckets.items()
+            if bucket_id[1] >= oldest_active_bucket_start
+        }
+        if active_buckets:
             # Roll up active events into buckets in Redis
-            await self.rollup_active(redis, organization_id, reducers, active_events)
+            await self.add_active(redis, organization_id, active_buckets, len(events))
 
-        for bucket_start in {get_reducer_bucket_start(e.timestamp) for e in events}:
+        for reducer, bucket_start, customer_id, external_customer_id in buckets:
+            if isinstance(reducer.aggregation, UniqueAggregation):
+                continue
             # Delay syncing for the currently active bucket (T)
             delay = bucket_start + REDUCER_BUCKET_SIZE - now
             enqueue_job(
                 "reducer_bucket.sync",
-                organization_id,
+                reducer.id,
                 bucket_start.isoformat(),
+                customer_id,
+                external_customer_id,
                 delay=max(0, int(delay.total_seconds() * 1000)),
             )
 
@@ -89,29 +94,17 @@ class ReducerBucketService:
         reducers: Sequence[Reducer],
         events: Sequence[Event],
     ) -> None:
+        await self.add_active(
+            redis, organization_id, _get_values_by_bucket(reducers, events), len(events)
+        )
 
-        # (reducer, bucket_start, customer_id, external_customer_id) -> the values
-        # events add
-        buckets: dict[BucketId, list[float]] = defaultdict(list)
-        for event in events:
-            for reducer in reducers:
-                if not reducer.filter.matches(event):
-                    continue
-                aggregation = reducer.aggregation
-                value = 1.0
-                if isinstance(aggregation, PropertyAggregation):
-                    property_value = aggregation.get_value(event)
-                    if property_value is None:
-                        continue
-                    value = property_value
-                bucket_id = (
-                    reducer,
-                    get_reducer_bucket_start(event.timestamp),
-                    event.customer_id,
-                    event.external_customer_id,
-                )
-                buckets[bucket_id].append(value)
-
+    async def add_active(
+        self,
+        redis: Redis,
+        organization_id: uuid.UUID,
+        buckets: Mapping[BucketId, Sequence[float]],
+        event_count: int,
+    ) -> None:
         try:
             await add_to_buckets(redis, buckets)
         except RedisError:
@@ -119,7 +112,7 @@ class ReducerBucketService:
                 "Failed to update active reducer buckets in Redis",
                 organization_id=organization_id,
                 bucket_count=len(buckets),
-                event_count=len(events),
+                event_count=event_count,
             )
             return
 
@@ -127,86 +120,65 @@ class ReducerBucketService:
             "Active reducer buckets updated in Redis",
             organization_id=organization_id,
             bucket_count=len(buckets),
-            event_count=len(events),
+            event_count=event_count,
         )
 
     async def sync(
         self,
         session: AsyncSession,
         redis: Redis,
-        organization_id: uuid.UUID,
+        reducer_id: uuid.UUID,
         bucket_start: datetime,
+        customer_id: uuid.UUID | None,
+        external_customer_id: str | None,
     ) -> None:
+        reducer = await ReducerRepository.from_session(session).get_active_by_id(
+            reducer_id
+        )
+        if reducer is None or isinstance(reducer.aggregation, UniqueAggregation):
+            return
         repository = ReducerBucketRepository.from_session(session)
-        reducer_repository = ReducerRepository.from_session(session)
-        await repository.lock_window(organization_id, bucket_start)
-        for reducer in await reducer_repository.get_all_active_by_organization(
-            organization_id
-        ):
-            if not isinstance(reducer.aggregation, UniqueAggregation):
-                await self.sync_buckets(session, redis, reducer, bucket_start)
-
-    async def sync_buckets(
-        self,
-        session: AsyncSession,
-        redis: Redis,
-        reducer: Reducer,
-        bucket_start: datetime,
-    ) -> None:
-        repository = ReducerBucketRepository.from_session(session)
-        latest = {
-            (bucket.customer_id, bucket.external_customer_id): bucket
-            for bucket in await repository.get_latest_by_reducer_and_bucket(
-                reducer, bucket_start
-            )
-        }
-        buckets: list[dict[str, Any]] = []
-        first_written: list[dict[str, Any]] = []
-        for (
+        await repository.lock_buckets(
+            reducer, bucket_start, customer_id, external_customer_id
+        )
+        count, total, minimum, maximum = await repository.aggregate_events(
+            reducer,
+            bucket_start,
+            bucket_start + REDUCER_BUCKET_SIZE,
             customer_id,
             external_customer_id,
-            count,
-            total,
-            minimum,
-            maximum,
-        ) in await repository.aggregate_events(
-            reducer, bucket_start, bucket_start + REDUCER_BUCKET_SIZE
-        ):
-            statistics = {
-                "count": count,
-                "sum": total,
-                "min": minimum,
-                "max": maximum,
-            }
-            previous = latest.get((customer_id, external_customer_id))
-            # Sealed buckets were billed: events since go to a new generation.
-            if previous is not None and previous.sealed_at is None:
-                if not _are_close(
-                    (count, total, minimum, maximum),
-                    (
-                        previous.count,
-                        float(previous.sum),
-                        _to_float(previous.min),
-                        _to_float(previous.max),
-                    ),
-                ):
-                    await repository.update(previous, update_dict=statistics)
-                continue
-            bucket = {
-                "organization_id": reducer.organization_id,
-                "reducer_id": reducer.id,
-                "customer_id": customer_id,
-                "external_customer_id": external_customer_id,
-                "bucket_start": bucket_start,
-                **statistics,
-                "generation": 1 if previous is None else previous.generation + 1,
-            }
-            buckets.append(bucket)
-            if previous is None:
-                first_written.append(bucket)
-        await repository.insert_buckets(buckets)
-        if first_written:
-            await self.compare_with_redis(redis, reducer, bucket_start, first_written)
+        )
+        if count == 0:
+            return
+        statistics = {"count": count, "sum": total, "min": minimum, "max": maximum}
+        previous = await repository.get_latest(
+            reducer, bucket_start, customer_id, external_customer_id
+        )
+        # Sealed buckets were billed: events since go to a new generation.
+        if previous is not None and previous.sealed_at is None:
+            if not _are_close(
+                (count, total, minimum, maximum),
+                (
+                    previous.count,
+                    float(previous.sum),
+                    _to_float(previous.min),
+                    _to_float(previous.max),
+                ),
+            ):
+                await repository.update(previous, update_dict=statistics)
+            return
+        bucket = {
+            "organization_id": reducer.organization_id,
+            "reducer_id": reducer.id,
+            "customer_id": customer_id,
+            "external_customer_id": external_customer_id,
+            "bucket_start": bucket_start,
+            **statistics,
+            "generation": 1 if previous is None else previous.generation + 1,
+        }
+        await repository.insert_buckets([bucket])
+        if previous is None:
+            await self.compare_with_redis(redis, reducer, bucket_start, [bucket])
 
     async def compare_with_redis(
         self,
@@ -280,6 +252,32 @@ class ReducerBucketService:
             mismatching=mismatching,
             missing_in_redis=missing,
         )
+
+
+def _get_values_by_bucket(
+    reducers: Sequence[Reducer], events: Sequence[Event]
+) -> dict[BucketId, list[float]]:
+    """The values each event adds to the buckets of the reducers it matches."""
+    buckets: dict[BucketId, list[float]] = defaultdict(list)
+    for event in events:
+        for reducer in reducers:
+            if not reducer.filter.matches(event):
+                continue
+            aggregation = reducer.aggregation
+            value = 1.0
+            if isinstance(aggregation, PropertyAggregation):
+                property_value = aggregation.get_value(event)
+                if property_value is None:
+                    continue
+                value = property_value
+            bucket_id = (
+                reducer,
+                get_reducer_bucket_start(event.timestamp),
+                event.customer_id,
+                event.external_customer_id,
+            )
+            buckets[bucket_id].append(value)
+    return buckets
 
 
 def _are_close(values: Sequence[float | None], others: Sequence[float | None]) -> bool:

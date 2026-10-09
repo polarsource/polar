@@ -96,7 +96,7 @@ async def anonymize_expired() -> None:
     while True:
         async with AsyncSessionMaker() as session:
             repository = CheckoutRepository.from_session(session)
-            batch = await repository.anonymize_expired(older_than, batch_size=5000)
+            batch = await repository.anonymize_expired(older_than, batch_size=1000)
         if batch == 0:
             break
         anonymized += batch

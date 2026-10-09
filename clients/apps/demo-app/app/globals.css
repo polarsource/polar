@@ -48,6 +48,10 @@ p {
   color: var(--gray-800);
 }
 
+.text-pretty {
+  text-wrap: pretty;
+}
+
 .card {
   width: 100%;
   max-width: 400px;
@@ -128,6 +132,31 @@ button:disabled {
   background: none;
   color: var(--gray-900);
   font-weight: 400;
+}
+
+.multiplier {
+  padding: 2px 5px;
+  border-radius: 5px;
+  background: #0000000f;
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.link {
+  height: auto;
+  padding: 0;
+  background: none;
+  color: var(--accent);
+  font-weight: 550;
+}
+
+.link:hover:not(:disabled) {
+  filter: none;
+  text-decoration: underline;
+}
+
+.link:active:not(:disabled) {
+  transform: none;
 }
 
 .app {
@@ -283,6 +312,55 @@ dialog .actions .ghost {
 dialog .actions .ghost:hover:not(:disabled) {
   color: var(--gray-900);
   filter: none;
+}
+
+.packs {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  text-align: left;
+}
+
+.packs:disabled {
+  opacity: 0.5;
+}
+
+.pack {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: var(--ring);
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.pack:has(:checked) {
+  box-shadow: 0 0 0 1px var(--accent), 0 0 0 4px #3619cc26;
+}
+
+.pack input {
+  height: auto;
+  margin: 0;
+  box-shadow: none;
+  accent-color: var(--accent);
+}
+
+.pack span:first-of-type {
+  flex: 1;
+}
+
+.packs:disabled .pack {
+  cursor: not-allowed;
+}
+
+.error {
+  color: #c4320a;
+  font-size: 13px;
 }
 
 .spinner {

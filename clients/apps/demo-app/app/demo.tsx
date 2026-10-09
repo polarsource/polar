@@ -1,11 +1,34 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { call, checkUpgraded, getBalance, upgrade } from './actions'
+import type { getTopUps } from '../polar'
+import { call, checkUpgraded, getBalance, topUp, upgrade } from './actions'
 
 type Server = 'builtin' | 'custom'
 
-type Entry = { id: number; server: Server; at: number; pending: boolean }
+type Entry = {
+  id: number
+  server: Server
+  count: number
+  at: number
+  pending: boolean
+}
+
+// Tool call history per customer: { [externalCustomerId]: [{ server, at }] }
+const HISTORY_KEY = 'tool_call_history'
+
+type History = Record<
+  string,
+  (Pick<Entry, 'server' | 'at'> & Partial<Pick<Entry, 'count'>>)[]
+>
+
+const readHistory = (): History => {
+  try {
+    return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '{}')
+  } catch {
+    return {}
+  }
+}
 
 const LABELS: Record<Server, string> = { builtin: 'built-in', custom: 'custom' }
 
@@ -19,20 +42,40 @@ const timeAgo = (at: number, now: number) => {
   return relative.format(-Math.floor(seconds / 3600), 'hour')
 }
 
-type Modal = 'paywall' | 'upgrading' | 'upgraded'
+// Shift calls the tool 100 times, Cmd 10 times
+const countOf = (event: { shiftKey: boolean; metaKey: boolean }) =>
+  event.shiftKey ? 100 : event.metaKey ? 10 : 1
+
+type Modal = 'paywall' | 'upgrading' | 'upgraded' | 'topup'
+
+type TopUpPack = Awaited<ReturnType<typeof getTopUps>>[number]
+
+const number = new Intl.NumberFormat('en-US')
 
 export function Demo({
+  externalCustomerId,
   proPrice,
+  pro: initialPro,
+  topUps,
   upgrading,
 }: {
+  externalCustomerId: string
   proPrice: string
+  pro: boolean
+  topUps: TopUpPack[]
   upgrading: boolean
 }) {
+  const [pro, setPro] = useState(initialPro)
+  const [pack, setPack] = useState(topUps[0]?.id)
+  const [purchasing, setPurchasing] = useState(false)
+  const [purchaseError, setPurchaseError] = useState<string>()
   const [balance, setBalance] = useState<number>()
   const [pristine, setPristine] = useState(false)
   const [syncStartedAt, setSyncStartedAt] = useState<number>()
   const [calling, setCalling] = useState(false)
+  const [heldCount, setHeldCount] = useState(1)
   const [entries, setEntries] = useState<Entry[]>([])
+  const [historyLoaded, setHistoryLoaded] = useState(false)
   const [now, setNow] = useState(() => Date.now())
   const [modal, setModal] = useState<Modal | undefined>(
     upgrading ? 'upgrading' : undefined,
@@ -56,6 +99,7 @@ export function Demo({
     let timeout: ReturnType<typeof setTimeout>
     const poll = async () => {
       if (await checkUpgraded()) {
+        setPro(true)
         setModal('upgraded')
         setPristine(false)
       } else timeout = setTimeout(poll, 1000)
@@ -64,6 +108,49 @@ export function Demo({
 
     return () => clearTimeout(timeout)
   }, [upgrading])
+
+  // Loaded after mount, as localStorage isn't available during server rendering
+  useEffect(() => {
+    setEntries(
+      (readHistory()[externalCustomerId] ?? []).map(({ server, at, count }) => ({
+        id: at,
+        server,
+        count: count ?? 1,
+        at,
+        pending: false,
+      })),
+    )
+    setHistoryLoaded(true)
+  }, [externalCustomerId])
+
+  useEffect(() => {
+    if (!historyLoaded) return
+    try {
+      localStorage.setItem(
+        HISTORY_KEY,
+        JSON.stringify({
+          ...readHistory(),
+          [externalCustomerId]: entries
+            .filter((entry) => !entry.pending)
+            .map(({ server, count, at }) => ({ server, count, at })),
+        }),
+      )
+    } catch {}
+  }, [entries, historyLoaded, externalCustomerId])
+
+  // Mirrors the held modifier keys in the button labels
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => setHeldCount(countOf(event))
+    const reset = () => setHeldCount(1)
+    window.addEventListener('keydown', onKey)
+    window.addEventListener('keyup', onKey)
+    window.addEventListener('blur', reset)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('keyup', onKey)
+      window.removeEventListener('blur', reset)
+    }
+  }, [])
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000)
@@ -86,13 +173,17 @@ export function Demo({
     return () => clearTimeout(timeout)
   }, [pristine])
 
-  const onClick = async (server: Server) => {
+  const onClick = async (server: Server, event: React.MouseEvent) => {
+    const count = countOf(event)
     const id = Date.now()
     setNow(id)
     setCalling(true)
-    setEntries((entries) => [{ id, server, at: id, pending: true }, ...entries])
+    setEntries((entries) => [
+      { id, server, count, at: id, pending: true },
+      ...entries,
+    ])
 
-    const result = await call(server)
+    const result = await call(server, count)
     setCalling(false)
 
     if (result.paywall) {
@@ -111,6 +202,31 @@ export function Demo({
     setPristine(false)
   }
 
+  const openTopUp = () => {
+    setPurchaseError(undefined)
+    setModal('topup')
+  }
+
+  const onTopUp = async () => {
+    if (!pack) return
+    setPurchasing(true)
+    setPurchaseError(undefined)
+
+    const result = await topUp(pack).catch(() => ({
+      error: 'Something went wrong. Please try again.',
+    }))
+    setPurchasing(false)
+
+    if (result.error) {
+      setPurchaseError(result.error)
+      return
+    }
+
+    setModal(undefined)
+    setPristine(false)
+  }
+
+  const selectedPack = topUps.find((topUp) => topUp.id === pack)
   const disabled = calling || !pristine
   const syncSeconds =
     syncStartedAt === undefined
@@ -124,9 +240,13 @@ export function Demo({
         {entries.map((entry) => (
           <li key={entry.id} className="entry">
             <span className={entry.pending ? 'muted' : undefined}>
-              {entry.pending
-                ? `Calling ${LABELS[entry.server]} tool…`
-                : `A ${LABELS[entry.server]} tool has been called`}
+              {entry.count === 1
+                ? entry.pending
+                  ? `Calling ${LABELS[entry.server]} tool…`
+                  : `A ${LABELS[entry.server]} tool has been called`
+                : entry.pending
+                  ? `Calling ${LABELS[entry.server]} tool ${entry.count} times…`
+                  : `A ${LABELS[entry.server]} tool has been called ${entry.count} times`}
             </span>
             <time className="faint">{timeAgo(entry.at, now)}</time>
           </li>
@@ -139,18 +259,27 @@ export function Demo({
             : !pristine
               ? `Syncing balance… (${syncSeconds} ${syncSeconds === 1 ? 'second' : 'seconds'})`
               : `${balance} tool ${balance === 1 ? 'call' : 'calls'} remaining`}
+          {pro && pristine && topUps.length > 0 && (
+            <>
+              {' · '}
+              <button className="link" onClick={openTopUp}>
+                Top up
+              </button>
+            </>
+          )}
         </p>
+        {heldCount > 1 && <span className="multiplier">×{heldCount}</span>}
         <button
           className="primary"
           disabled={disabled}
-          onClick={() => onClick('builtin')}
+          onClick={(event) => onClick('builtin', event)}
         >
           Built-in tool
         </button>
         <button
           className="secondary"
           disabled={disabled}
-          onClick={() => onClick('custom')}
+          onClick={(event) => onClick('custom', event)}
         >
           Custom tool
         </button>
@@ -158,7 +287,7 @@ export function Demo({
       <dialog
         ref={dialog}
         onCancel={(event) => {
-          if (modal === 'upgrading') event.preventDefault()
+          if (modal === 'upgrading' || purchasing) event.preventDefault()
         }}
         onClose={() => setModal(undefined)}
       >
@@ -178,6 +307,50 @@ export function Demo({
               </form>
               <button className="ghost" onClick={() => setModal(undefined)}>
                 Not now
+              </button>
+            </div>
+          </div>
+        )}
+        {content === 'topup' && (
+          <div className="card">
+            <div>
+              <h1>Top up</h1>
+              <p className="muted text-pretty">
+                Extra tool calls roll over until you use them.
+              </p>
+            </div>
+            <fieldset className="packs" disabled={purchasing}>
+              {topUps.map((topUp) => (
+                <label key={topUp.id} className="pack">
+                  <input
+                    type="radio"
+                    name="pack"
+                    value={topUp.id}
+                    checked={pack === topUp.id}
+                    onChange={() => setPack(topUp.id)}
+                  />
+                  <span>{number.format(topUp.units)} tool calls</span>
+                  <span className="muted">{topUp.price}</span>
+                </label>
+              ))}
+            </fieldset>
+            {purchaseError && <p className="error">{purchaseError}</p>}
+            <div className="actions">
+              <button
+                className="primary"
+                disabled={!selectedPack || purchasing}
+                onClick={onTopUp}
+              >
+                {purchasing
+                  ? 'Charging your card…'
+                  : `Buy for ${selectedPack?.price}`}
+              </button>
+              <button
+                className="ghost"
+                disabled={purchasing}
+                onClick={() => setModal(undefined)}
+              >
+                I changed my mind
               </button>
             </div>
           </div>

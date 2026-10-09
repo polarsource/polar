@@ -1,5 +1,5 @@
 import { getExternalCustomerId, login, logout } from './actions'
-import { getProPrice } from '../polar'
+import { getProPrice, getTopUps, isPro } from '../polar'
 import { Demo } from './demo'
 
 export const dynamic = 'force-dynamic'
@@ -9,7 +9,8 @@ export default async function Page({
 }: {
   searchParams: Promise<{ checkout_id?: string }>
 }) {
-  if (!(await getExternalCustomerId())) {
+  const externalId = await getExternalCustomerId()
+  if (!externalId) {
     return (
       <form action={login} className="card">
         <div>
@@ -24,10 +25,19 @@ export default async function Page({
     )
   }
 
+  const [proPrice, pro, topUps] = await Promise.all([
+    getProPrice(),
+    isPro(externalId),
+    getTopUps(),
+  ])
+
   return (
     <>
       <Demo
-        proPrice={await getProPrice()}
+        externalCustomerId={externalId}
+        proPrice={proPrice}
+        pro={pro}
+        topUps={topUps}
         upgrading={(await searchParams).checkout_id !== undefined}
       />
       <form action={logout} className="logout">

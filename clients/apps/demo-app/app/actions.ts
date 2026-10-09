@@ -9,6 +9,8 @@ import {
   ensureFreePlan,
   isPro,
   polar,
+  purchaseTopUp,
+  type TopUp,
 } from '../polar'
 
 const COOKIE = 'external_customer_id'
@@ -30,11 +32,14 @@ export async function logout() {
   redirect('/')
 }
 
-export async function call(server: 'builtin' | 'custom') {
+const CALL_COUNTS = [1, 10, 100]
+
+export async function call(server: 'builtin' | 'custom', count: number) {
   const externalId = await getExternalCustomerId()
   if (!externalId) redirect('/')
+  if (!CALL_COUNTS.includes(count)) throw new Error(`Invalid count ${count}`)
 
-  return callTool(externalId, server)
+  return callTool(externalId, server, count)
 }
 
 export async function getBalance() {
@@ -57,4 +62,11 @@ export async function checkUpgraded() {
   if (!externalId) redirect('/')
 
   return isPro(externalId)
+}
+
+export async function topUp(pack: TopUp) {
+  const externalId = await getExternalCustomerId()
+  if (!externalId) redirect('/')
+
+  return purchaseTopUp(externalId, pack)
 }

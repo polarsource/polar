@@ -1,0 +1,567 @@
+sdk/cli-commands/src/subscriptions/update.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 8,21,185
+clients/apps/web/src/components/Layout/Public/ArticleLayout.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 2,4-7,10-15
+sdk/cli-commands/src/license_keys/rotate.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,11,24
+sdk/generator/cli_commands/template/src/runtime.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 2,31
+clients/apps/web/src/app/(main)/(website)/(landing)/legal/page.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-7,40-51,53-70,73-85,88-101,105-133,136-171
+README.md
+  s_0b9fbfe84442f2::t_47510341d5109d 4
+server/polar/outpost/tasks.py
+  s_0b9fbfe84442f2::t_47510341d5109d 1-15
+clients/packages/checkout/src/components/PolarLogo.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-7,16-29
+sdk/typescript/src/2027-01/services/events.ts
+  ai_agent 16,224,236
+clients/apps/web/src/app/(main)/(website)/(landing)/features/meters/page.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-36
+clients/apps/web/src/app/(main)/(website)/(landing)/(mdx)/blog/(header)/layout.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 11-15
+sdk/cli-commands/src/customer_seats/revoke_seat.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,11,24
+clients/apps/web/src/app/(main)/(website)/(landing)/company/page.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 7,36,40-53,142,144,159,163,166
+sdk/cli-commands/src/meters/get.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,23
+sdk/generator/generator/release.py
+  s_0b9fbfe84442f2::t_47510341d5109d 9,13,27-29,44-45,49,52,65-68,71,77-88,91,94,101-115,118-119,125,128,130-131,135,137
+sdk/cli-commands/src/checkouts/get.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,23
+clients/apps/web/src/components/Brand/posters/BenefitsPoster.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-56
+sdk/generator/python/emitter.py
+  s_0b9fbfe84442f2::t_47510341d5109d 4,68-80
+sdk/typescript/pnpm-lock.yaml
+  ai_agent 171,177,189,196-197,321-322,327-328,333-334,339-340,345-346,351-352,357-358,363-364,370-371,377-378,384-385,391-392,398-399,405-406,412-413,419-420,425-426,431-432,437-438,446-447,452-453,458-459,464-465,470-471,476-477,482-483,489-490,496-497,503-504,510-511,517-518,524-525,530-531,536-537,560-561,596,602,608,614,621,628,635,642,649,656,662,668,674,680,686,692,699,706,713,720,727,734,740,746,763-764,927-928,932,979-980,987-988,997-998,1015-1016,1065-1066,1072-1073,1174,1233,1236,1239,1242,1245,1248,1251,1254,1257,1260,1263,1266,1269,1272,1275,1278,1281,1284,1287,1294,1297,1300,1303,1306,1309,1312,1315,1318,1321,1324,1327,1330,1333,1336,1354,1356,1364-1365,1367,1373,1377,1397,1479,1597,1599-1617,1629,1635,1640,1649,1651,1654-1668,1672,1681,1694,1708-1709,1730,1734,1739,1742,1745,1748,1760,1764-1765,1768
+sdk/cli-commands/src/inputs.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 32-38
+docs/integrate/cli/reference/meters.mdx
+  s_0b9fbfe84442f2::t_47510341d5109d 32,57-62,75,103,133
+sdk/cli-commands/src/customers/get_external.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,23
+clients/packages/cli/src/utils/fields.test.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 1-102
+clients/packages/polar/src/internal/api/meters.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 1,3,6-14,16,18-20
+docs/openapi/2027-01.openapi.json
+  ai_agent 23760-23877,28776-28797,70851,70853-70854
+docs/integrate/cli/reference/discounts.mdx
+  s_0b9fbfe84442f2::t_47510341d5109d 32,85-90,103,129
+docs/integrate/cli/reference/customers.mdx
+  s_0b9fbfe84442f2::t_47510341d5109d 40,111-116,131-136,151-156,171-176,189,218,241,264,293,339,364,428-433,449-454,473,498,524,549
+docs/integrate/cli/reference/license_keys.mdx
+  s_0b9fbfe84442f2::t_47510341d5109d 34-39,55-60,73,100,121
+sdk/cli-commands/src/meters/list.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6-12,19,86
+sdk/cli-commands/src/custom_fields/create.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 7,20,88
+sdk/cli-commands/src/meters/update.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 8,21,102
+clients/apps/web/src/components/Brand/posters/GeometryPosters.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-177
+server/tests/organization/test_service.py
+  s_0b9fbfe84442f2::t_47510341d5109d 204,4387,4399
+server/polar/outpost/schemas.py
+  s_0b9fbfe84442f2::t_47510341d5109d 1-82
+clients/apps/web/src/components/Landing/DesktopNav.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 63,181,185,202,207
+docs/integrate/cli/reference/custom_fields.mdx
+  s_0b9fbfe84442f2::t_47510341d5109d 32,75-80,93,120
+server/polar/organization/service.py
+  s_0b9fbfe84442f2::t_47510341d5109d 482
+clients/apps/demo-app/polar.config.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 1,3-17
+sdk/cli-commands/src/customers/update.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6-12,19,87
+sdk/cli-commands/src/discounts/get.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,23
+clients/apps/web/src/app/(main)/(website)/(landing)/(mdx)/blog/(header)/_posts/building-the-next-evolution-of-polar/page.mdx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-99
+clients/apps/web/src/components/Landing/LogoGrid.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 4-10,19,23,27,31,34-37,40-41,43-59,61-77
+server/polar/customer_portal/schemas/organization.py
+  s_0b9fbfe84442f2::t_47510341d5109d 1,7,13,31-38
+server/tests/outpost/test_endpoints.py
+  s_0b9fbfe84442f2::t_47510341d5109d 1-93
+server/uv.lock
+  ai_agent 15,1564-1578,2777,2880
+docs/integrate/cli/reference/subscriptions.mdx
+  s_0b9fbfe84442f2::t_47510341d5109d 33-38,51,90,111
+sdk/cli-commands/src/webhooks/create_webhook_endpoint.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6-12,21,133
+clients/apps/web/src/app/(main)/(website)/(landing)/features/event-ingestion/page.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-36
+clients/apps/web/src/app/(main)/(website)/(landing)/company/HeroMark.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-23
+clients/packages/cli/src/utils/fields.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 1-88
+docs/integrate/cli/reference/checkout_links.mdx
+  s_0b9fbfe84442f2::t_47510341d5109d 32,84-89,102,128
+clients/apps/web/src/components/Brand/posters/GrowthPoster.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-60
+sdk/python/polar/__init__.py
+  ai_agent 11
+sdk/cli-commands/src/products/get.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,23
+server/polar/models/customer_meter.py
+  s_0b9fbfe84442f2::t_47510341d5109d 64-69
+sdk/cli-commands/src/metrics/limits.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,7-23
+sdk/cli-commands/src/webhooks/update_webhook_endpoint.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6-12,22,125
+sdk/cli-commands/src/customer_meters/get.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,23
+sdk/cli-commands/src/customers/members/list.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,13,55
+clients/apps/web/src/components/Brand/brand.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 54-59
+sdk/cli-commands/src/meters/quantities.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,13,698
+sdk/cli-commands/src/products/list.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6-12,19,112
+clients/packages/polar/src/schema/meter.test.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 7,27
+docs/integrate/cli/reference/payments.mdx
+  s_0b9fbfe84442f2::t_47510341d5109d 31-36,49
+clients/packages/cli/src/utils/callback-page.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 49
+sdk/cli-commands/src/benefits/grants.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,13,56
+sdk/cli-commands/src/customers/get_state.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,23
+clients/packages/polar/src/client/actor.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5-6,122-124,126-127,139-141,145,153,157,161-163,167,169-172
+clients/apps/web/src/components/Landing/features/MetersPage.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-148
+sdk/cli-commands/src/customers/members/create.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 7,19,68
+sdk/cli-commands/src/events/list_names.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,13,87
+clients/apps/web/src/components/Brand/BrandHero.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-3,5-48
+docs/integrate/cli/reference/orders.mdx
+  s_0b9fbfe84442f2::t_47510341d5109d 35-40,55-60,75-80,93,143
+sdk/cli-commands/src/customers/create.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6-12,19,101
+docs/integrate/cli/reference/benefits.mdx
+  s_0b9fbfe84442f2::t_47510341d5109d 34,81,100-105,124,144,174
+docs/integrate/cli/reference/customer_seats.mdx
+  s_0b9fbfe84442f2::t_47510341d5109d 33,58,81,95,114-119,139
+sdk/cli-commands/src/customers/list_payment_methods_external.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,15,43
+clients/apps/web/src/components/Brand/posters/EthosPoster.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-89
+sdk/generator/cli_commands/template/src/inputs.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 28-34
+server/polar/declarative_config/schemas.py
+  s_0b9fbfe84442f2::t_47510341d5109d 1,3,5-6,8-22,24-30,33-34,50-205,210,220-235,252,254-255,257,278-286,291,300,310,312-356
+server/tests/declarative_config/test_service.py
+  s_0b9fbfe84442f2::t_47510341d5109d 5-10,23,63-91,96-99,103,111,118-121,124,139,149-152,155,163,172-175,178,190,200-203,206,214,229,251,265,270,278,290-293,296,304,317,324,333,349,353-422
+clients/apps/web/src/components/Brand/logos/LogoIcon.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 2,15,20
+server/polar/invoice/invoice-logo.svg
+  s_0b9fbfe84442f2::t_47510341d5109d 1
+clients/packages/polar/src/generate.test.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 106-151
+server/polar/declarative_config/validation.py
+  s_0b9fbfe84442f2::t_47510341d5109d 11,17,23-24,35,37-38,43,54,61-76,78,81-83,93-94,102-116,127-128,216-239,246-247,250-251,253-257,259
+server/polar/customer_meter/service.py
+  s_0b9fbfe84442f2::t_47510341d5109d 30,198-203
+sdk/cli-commands/src/license_keys/list.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,13,60
+docs/integrate/cli/reference/products.mdx
+  s_0b9fbfe84442f2::t_47510341d5109d 33,84-89,102,135,168
+clients/apps/web/src/components/Landing/features/EventIngestionPage.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-144
+sdk/cli-commands/src/customers/get.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,23
+server/polar/organization/schemas.py
+  s_0b9fbfe84442f2::t_47510341d5109d 50,180-184,266-270
+clients/apps/web/src/components/Brand/logos/LogoReveal.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 3-25,27-32,35-42,44,47-50,52-57,60-65,67-71,73-109,113
+sdk/cli-commands/src/refunds/create.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 8,22,96
+clients/packages/client/src/v1.ts
+  ai_agent 6038-6065,6079-6084,6108,6111-6113,16006-16016,16030-16031,16044-16215,16276-16283,16339-16375,16378,16382-16383,16385-16412,16414-16415,16418,16421,16425-16486,16489,16495-16511,16513-16521,62356-62407,62439,62450,62459-62460,62505,71163-71168,71174-71194
+sdk/typescript/package.json
+  ai_agent 3
+server/polar/meter/repository.py
+  s_0b9fbfe84442f2::t_47510341d5109d 23-32,65-75
+sdk/cli-commands/src/customer_seats/resend_invitation.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,23
+sdk/python/polar/v2027_01/inputs.py
+  ai_agent 69-71,112-114,140-142,184-186,209-211,246-248,273-275,314-316,342-344,386-388,423-425,464-466,494-496,535-537,563-565,609-611,2371-2373,2410-2412,2832-2834,2884-2886,3488-3490,3701-3703,3727-3728
+clients/apps/web/src/components/Brand/posters/StatePoster.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-40
+sdk/cli-commands/src/checkout_links/create.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 7,20,146
+sdk/cli-commands/src/custom_fields/get.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,23
+server/polar/outpost/auth.py
+  s_0b9fbfe84442f2::t_47510341d5109d 1-35
+clients/packages/polar/src/internal/api/customer-meters.test.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 1-3,5,7-9,11-18
+sdk/cli-commands/src/products/update.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 8,21,140
+dev/cli/logo.py
+  s_0b9fbfe84442f2::t_47510341d5109d 6-21
+clients/apps/web/src/app/(main)/(website)/(landing)/brand/page.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1,6-8,10-32,35-36
+clients/apps/web/src/components/Brand/posters/story/ActSignal.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-114
+sdk/cli-commands/src/customer_seats/assign_seat.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6-12,19,89
+sdk/cli-commands/src/products/create.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 7,20,156
+clients/apps/web/src/components/Brand/VoiceSection.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-3,31-34,36,38-40,42-50,52-65,67-68
+clients/apps/web/src/components/Landing/chapters/useUsageConversation.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 1-106
+sdk/generator/typescript/emitter.py
+  s_0b9fbfe84442f2::t_47510341d5109d 4,33-38,150-154
+clients/apps/web/src/components/Layout/Dashboard/DashboardSidebar.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 117-124
+sdk/cli-commands/src/webhooks/get_webhook_endpoint.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,23
+sdk/cli-commands/src/customer_seats/list_seats.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,13,38
+sdk/cli-commands/src/customers/get_state_external.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,23
+sdk/generator/generator/emitter.py
+  s_0b9fbfe84442f2::t_47510341d5109d 2,7,15-37,45-46,50,65-68,88
+clients/packages/polar/src/client/actor.test.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 79-101
+clients/packages/polar/src/schema/benefit.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 1-100
+server/polar/organization/resolver.py
+  s_0b9fbfe84442f2::t_47510341d5109d 10,25
+sdk/cli-commands/src/benefit_grants/list.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,13,83
+sdk/cli-commands/src/payments/list.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,13,91
+sdk/cli-commands/src/customer_meters/list.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,13,92
+clients/apps/web/src/app/(main)/(website)/(landing)/(mdx)/blog/(header)/[slug]/page.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1,7-8,10-12,21,25
+server/polar/outpost/endpoints.py
+  s_0b9fbfe84442f2::t_47510341d5109d 1-101
+clients/packages/cli/src/api-runtime.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 2,7,167-181,183-196
+clients/packages/polar/src/runtime.test.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 11,20-21,42,48-51
+clients/apps/web/src/components/Brand/posters/story/ActUnderstand.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-114
+sdk/cli-commands/src/customers/members/update.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,13,47
+sdk/cli-commands/src/files/list.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,13,53
+server/polar/api.py
+  s_0b9fbfe84442f2::t_47510341d5109d 55,195-196
+clients/apps/web/src/components/Landing/CustomerStory.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-81
+sdk/cli-commands/src/customers/list.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6-12,19,95
+server/tests/fixtures/base.py
+  s_0b9fbfe84442f2::t_47510341d5109d 8,85-89,101-103
+sdk/cli-commands/src/orders/invoice.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,23
+clients/apps/web/src/components/Landing/desktopNavigation.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 24-25
+clients/packages/cli/src/api-runtime.test.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 82-186
+sdk/cli-commands/src/benefits/create.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 7,20,97
+clients/packages/polar/src/internal/api/benefits.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 2,31-33
+clients/apps/web/src/components/Brand/logos/LogoLoader.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1,3-19,21-31,33,35-37,39-46,49-50,52-55,58,60-61,63-68,70-79,81-91,94-128,132
+docs/integrate/cli/reference/event_types.mdx
+  s_0b9fbfe84442f2::t_47510341d5109d 29,60
+clients/apps/web/src/components/Benefit/BenefitPage.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 87-93,159
+sdk/cli-commands/src/checkouts/list.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,13,98
+sdk/cli-commands/src/customer_seats/claim_seat.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,17,46
+clients/apps/app/components/Shared/PolarLogo.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 3-7,10-12
+clients/apps/web/src/components/Brand/BrandPage.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-20
+clients/apps/web/src/components/Brand/LogoSection.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 3-6,9-10,12,14-15,18-45,49,58-61,63-76,78-100
+sdk/cli-commands/src/products/update_benefits.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,13,47
+clients/apps/web/src/components/Customer/CustomerPage/CustomerSubnav.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 27
+clients/apps/web/src/components/Customer/CustomerPage/CustomerMembers.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 17
+server/polar/outpost/service.py
+  s_0b9fbfe84442f2::t_47510341d5109d 1-122
+clients/apps/web/src/components/Landing/chapters/UsageBillingCharge.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-4,6-20,22-25,27-59
+sdk/python/polar/v2027_01/services/customer_meters.py
+  ai_agent 33,50,73,94,111,134,197,214,237,258,275,298
+sdk/python/polar/v2027_01/services/events.py
+  ai_agent 14,307,324,602,619
+docs/integrate/cli/reference/organizations.mdx
+  s_0b9fbfe84442f2::t_47510341d5109d 31-36,49
+sdk/cli-commands/src/discounts/create.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 7,20,277
+clients/apps/web/src/components/Brand/MarketingSection.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 3-5,7-9,11,13-58,64-70,72-79,81-111
+sdk/cli-commands/src/subscriptions/revoke.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,11,24
+clients/apps/web/src/components/Brand/posters/WebhooksPoster.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-39
+clients/apps/web/src/components/Landing/Testimonials.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 123-124,126-183,185-207,210-213,216-237,239-242,245-248
+clients/packages/polar/src/schema/runtime.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6-7,19,22-26
+clients/apps/web/src/components/Landing/chapters/UsageBilling.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-79
+sdk/cli-commands/src/customers/update_external.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6-12,19,73
+sdk/cli-commands/src/customers/list_payment_methods.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,15,43
+clients/apps/web/src/components/Landing/LogoGrid.test.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 35,45
+clients/packages/polar/src/runtime.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 2-6,14-15,19
+clients/packages/polar/src/generate.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 3,27,56-81,88-89,91-92,94-113,120
+server/pyproject.toml
+  s_0b9fbfe84442f2::t_47510341d5109d 110
+.github/workflows/sdk-release.yml
+  s_0b9fbfe84442f2::t_47510341d5109d 113-126,129,133,219
+clients/apps/web/src/components/Brand/posters/story/ActPrice.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-105
+sdk/typescript/src/2027-01/models.ts
+  ai_agent 2933-2935,2958-2961,3124-3127,3264-3267,3290-3293,3472-3475,3626-3629,3652-3655,3826-3829,3901-3904,3927-3930,4078-4081,4156-4159,4182-4185,4368-4371,5423-5426,5449-5452,5651-5654,5729-5732,5755-5758,5965-5968,6103-6106,6129-6132,6330-6333,16265-16268,16323-16326,16555-16558,19187,19189,19653-19660,19757-19760,19801-19804,19868-19871,20999-21002,22050-22053,22082-22085
+clients/apps/web/src/utils/blog.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 14-15,88,93-98,102-108
+sdk/cli-commands/src/custom_fields/update.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 7,20,77
+sdk/python/polar/v2027_01/outputs.py
+  ai_agent 112-117,757-759,924-926,1093-1095,1213-1215,1332-1334,2084-2086,2213-2215,2399-2401,7385-7387,8896-8897,9102-9107,9181-9182
+sdk/cli-commands/src/organizations/list.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,13,63
+docs/integrate/cli/reference/customer_meters.mdx
+  s_0b9fbfe84442f2::t_47510341d5109d 31-36,49
+sdk/cli-commands/src/webhooks/list_webhook_endpoints.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,15,51
+server/polar/declarative_config/service.py
+  s_0b9fbfe84442f2::t_47510341d5109d 2-4,6,16-18,22,25-28,31,33-36,38,43-47,60-73,98,114-115,131-133,138-205,208,210,213,226,228,230,243,245-248
+sdk/generator/cli_commands/emitter.py
+  s_0b9fbfe84442f2::t_47510341d5109d 245-253,291
+sdk/generator/cli.py
+  s_0b9fbfe84442f2::t_47510341d5109d 9,64-69,79-85,93-95,127-134,138-140,144-146,173-180,183,186
+clients/apps/web/src/components/Brand/logos/LogoType.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 2,15,22-23
+sdk/cli-commands/src/license_keys/get.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,23
+sdk/cli-commands/src/customers/members/update_external.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,15,49
+sdk/cli-commands/src/checkout_links/get.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,23
+sdk/cli-commands/src/webhooks/redeliver_webhook_event.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,23
+docs/integrate/cli/reference/benefit_grants.mdx
+  s_0b9fbfe84442f2::t_47510341d5109d 28
+server/polar/backoffice/static/logo.light.svg
+  s_0b9fbfe84442f2::t_47510341d5109d 1
+sdk/cli-commands/src/customers/members/get.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,24
+server/polar/backoffice/components/_base.py
+  s_0b9fbfe84442f2::t_47510341d5109d 47
+clients/apps/web/src/components/Brand/posters/StackPoster.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-63
+sdk/cli-commands/src/benefits/update.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 7,20,88
+sdk/generator/justfile
+  s_0b9fbfe84442f2::t_47510341d5109d 37-45
+server/polar/outpost/stream.py
+  s_0b9fbfe84442f2::t_47510341d5109d 1-55
+sdk/python/polar/v2027_01/errors.py
+  ai_agent 11-12,996-1002
+clients/apps/web/src/components/Brand/posters/FigurePoster.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-60
+sdk/cli-commands/src/license_keys/get_activation.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,24
+docs/openapi/2026-10.openapi.json
+  ai_agent 78233-78236
+sdk/cli-commands/src/orders/generate_invoice.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,23
+clients/apps/web/src/components/Brand/posters/boards.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 1-137
+clients/apps/web/src/components/Landing/chapters/UsageBillingMock.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-200
+clients/packages/orbit/src/utils/text-styles.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 8,24-29
+sdk/cli-commands/src/orders/update.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6-12,19,51
+sdk/cli-commands/src/webhooks/reset_webhook_endpoint_secret.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,23
+sdk/cli-commands/src/orders/list.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6-12,19,153
+server/polar/tasks.py
+  s_0b9fbfe84442f2::t_47510341d5109d 36,81
+sdk/cli-commands/src/payments/get.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,23
+server/polar/backoffice/static/logo.dark.svg
+  s_0b9fbfe84442f2::t_47510341d5109d 1
+clients/apps/web/src/components/Brand/TypographySection.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-3,6-44,47-49,51-85,87-136,138-140,144-172
+docs/integrate/cli/reference/files.mdx
+  s_0b9fbfe84442f2::t_47510341d5109d 49
+clients/apps/web/src/components/CustomerPortal/CustomerPortalSettings.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 169-188
+clients/apps/web/src/components/Brand/logos/timing.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 1-5
+clients/apps/web/src/components/Brand/posters/UnitsPoster.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-37
+clients/apps/web/src/components/Brand/ColorSection.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-3,20-24,26-43,50-53,55-56,58-65,69-70
+sdk/cli-commands/src/refunds/list.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,13,94
+server/polar/customer_meter/repository.py
+  s_0b9fbfe84442f2::t_47510341d5109d 61-80
+server/polar/declarative_config/endpoints.py
+  s_0b9fbfe84442f2::t_47510341d5109d 1,6-13,16-23,29-69,80-81,89,91-94,102,107-112,114,127,142,144-146
+docs/openapi/2026-04.openapi.json
+  ai_agent 78259-78262
+docs/integrate/cli/reference/webhooks.mdx
+  s_0b9fbfe84442f2::t_47510341d5109d 35,78-83,96,120,140-145,160-165,185
+clients/apps/web/src/app/providers.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 46
+clients/apps/web/src/components/Brand/posters/LedgerPoster.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-66
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/customers/[customerId]/members/page.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 24
+sdk/cli-commands/src/benefits/files.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,13,41
+sdk/cli-commands/src/benefits/list.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6-12,19,109
+sdk/cli-commands/src/custom_fields/list.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,13,85
+sdk/cli-commands/src/discounts/list.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,13,74
+sdk/cli-commands/src/subscriptions/get.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,23
+clients/apps/web/src/components/Brand/posters/OrbitPoster.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-7,9-40,42-45
+sdk/generator/cli_commands/template/src/command.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 28-30,55,100-101
+sdk/cli-commands/src/checkout_links/update.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6-12,19,124
+clients/packages/polar/src/internal/api/utils.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 11-34
+sdk/generator/tests/test_cli_commands.py
+  s_0b9fbfe84442f2::t_47510341d5109d 673-712
+sdk/cli-commands/src/customer_seats/get_claim_info.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,14,29
+sdk/python/polar/v2027_01/services/meters.py
+  ai_agent 13,189-232,543-582
+sdk/cli-commands/src/orders/get.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,23
+sdk/cli-commands/src/customers/members/list_external.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,15,57
+clients/packages/polar/src/internal/api/meters.test.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 2,7-18,20-32,35-38,43-45
+sdk/cli-commands/src/benefits/get.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,23
+sdk/cli-commands/src/license_keys/update.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6-12,20,82
+sdk/generator/README.md
+  s_0b9fbfe84442f2::t_47510341d5109d 48-53
+sdk/cli-commands/src/subscriptions/list.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6-12,19,184
+clients/packages/orbit/src/primitives/createText.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 12,63,70,162-166,263,307
+clients/apps/web/src/components/Brand/posters/story/ActInvoice.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-116
+sdk/cli-commands/src/organizations/get.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,23
+sdk/cli-commands/src/customers/members/get_external.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,24
+server/tests/declarative_config/test_endpoints.py
+  s_0b9fbfe84442f2::t_47510341d5109d 1-2,7-8,73-79,113-145,210-224,298-499
+clients/apps/web/src/components/Customer/CustomerPage/MembersSection.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 63
+sdk/cli-commands/src/metrics/get.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,13,703
+docs/integrate/cli/reference/refunds.mdx
+  s_0b9fbfe84442f2::t_47510341d5109d 30,51
+clients/apps/web/src/components/Brand/logos/paths.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 1-27
+clients/apps/web/src/components/Brand/posters/LabelsPoster.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-61
+clients/apps/web/src/app/layout.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 57
+clients/pnpm-lock.yaml
+  ai_agent 1449-1450,4717-4720,18465
+sdk/cli-commands/src/discounts/update.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6-12,19,250
+clients/packages/polar/src/internal/api/customer-meters.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 7,9,11-12,14-19
+sdk/cli-commands/src/checkout_links/list.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,13,71
+docs/integrate/cli/reference/checkouts.mdx
+  s_0b9fbfe84442f2::t_47510341d5109d 31-36,49
+sdk/cli-commands/src/customers/members/create_external.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 7,21,70
+clients/packages/cli/src/services/billing-config/api.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 20-31,43
+clients/apps/web/src/components/Brand/posters/ArithmeticPoster.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-41
+clients/apps/web/src/components/Customer/CustomerPage/CustomerHeader.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 78,121
+clients/apps/web/src/components/Brand/posters/PosterFrame.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-212
+clients/apps/web/src/components/Layout/Public/PolarLogotype.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 105,107
+clients/apps/web/src/components/Landing/LandingPage.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 9,11,21,23
+clients/apps/web/src/components/Brand/IllustrationSection.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-5,11-12,16,30-33,35-36,38-44,47-52,54-55,57-58
+docs/integrate/cli/reference/events.mdx
+  s_0b9fbfe84442f2::t_47510341d5109d 31-36,49
+sdk/cli-commands/src/event_types/list.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,13,102
+clients/apps/web/src/components/Brand/posters/WavePoster.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-47
+sdk/cli-commands/src/meters/create.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 7,20,101
+sdk/cli-commands/src/webhooks/list_webhook_deliveries.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6,15,129
+clients/apps/web/src/app/(main)/(website)/(landing)/company/OpenRoles.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 8,11-12,15-16,26-35
+sdk/cli-commands/src/runtime.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 2,31
+clients/apps/web/src/components/Brand/posters/story/ActSettle.tsx
+  s_0b9fbfe84442f2::t_47510341d5109d 1-123
+sdk/cli-commands/src/events/get.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 5,10,23
+sdk/cli-commands/src/event_types/update.ts
+  s_0b9fbfe84442f2::t_47510341d5109d 6-12,19,58
+docs/integrate/cli/reference/metrics.mdx
+  s_0b9fbfe84442f2::t_47510341d5109d 29,48-53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "fa6abbed64180d98544627f187b34e853d46607b",
+  "prompts": {},
+  "sessions": {
+    "s_0b9fbfe84442f2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f40c5f05-dc29-4096-b206-7662d6cf88cd",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

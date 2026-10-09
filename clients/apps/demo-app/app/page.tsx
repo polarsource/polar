@@ -1,6 +1,8 @@
-import { getExternalCustomerId, login, logout } from './actions'
+import { getExternalCustomerId, logout } from './actions'
 import { getProPrice, getTopUps, isPro } from '../polar'
 import { Demo } from './demo'
+import { highlightSteps } from './highlight'
+import { Login } from './login'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,26 +13,14 @@ export default async function Page({
 }) {
   const externalId = await getExternalCustomerId()
   if (!externalId) {
-    return (
-      <form action={login} className="card">
-        <input
-          name="email"
-          type="email"
-          placeholder="you@example.com"
-          aria-label="Email"
-          required
-        />
-        <button type="submit" className="primary">
-          Continue
-        </button>
-      </form>
-    )
+    return <Login snippets={await highlightSteps()} />
   }
 
-  const [proPrice, pro, topUps] = await Promise.all([
+  const [proPrice, pro, topUps, snippets] = await Promise.all([
     getProPrice(),
     isPro(externalId),
     getTopUps(),
+    highlightSteps(),
   ])
 
   return (
@@ -41,6 +31,7 @@ export default async function Page({
         pro={pro}
         topUps={topUps}
         upgrading={(await searchParams).checkout_id !== undefined}
+        snippets={snippets}
       />
       <form action={logout} className="logout">
         <button type="submit" className="ghost">

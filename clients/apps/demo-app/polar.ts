@@ -205,15 +205,16 @@ export const callTool = async (
   count: number,
 ) => {
   const customer = polar.actor({ externalCustomerId: externalId })
+  let granted: boolean | undefined
 
   if (server === 'custom') {
     const benefitsSpan = log.start('Checking benefits')
-    const { granted } = await customer.access('custom_servers')
+    ;({ granted } = await customer.access('custom_servers'))
     benefitsSpan.end()
 
     if (!granted) {
       log('Customer has no custom servers benefit')
-      return { paywall: true }
+      return { paywall: true, granted }
     }
   }
 
@@ -222,7 +223,7 @@ export const callTool = async (
 
   if (server === 'builtin' && balance < count) {
     log('Not enough balance, cannot do the thing')
-    return { paywall: true }
+    return { paywall: true, balance, granted }
   }
 
   // One event per call, so tracking keeps the balance's pristine state accurate
@@ -240,5 +241,5 @@ export const callTool = async (
   )
   ingestSpan.end()
 
-  return { paywall: false }
+  return { paywall: false, balance, granted }
 }

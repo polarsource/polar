@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState } from 'react'
 import type { getTopUps } from '../polar'
 import { call, checkUpgraded, getBalance, topUp, upgrade } from './actions'
+import { CodePanel, type Outcomes } from './code-panel'
+import type { HighlightedSteps } from './highlight'
+import type { Step } from './steps'
 
 type Server = 'builtin' | 'custom'
 
@@ -67,18 +70,40 @@ type TopUpPack = Awaited<ReturnType<typeof getTopUps>>[number]
 
 const number = new Intl.NumberFormat('en-US')
 
+const plural = (count: number, word: string) =>
+  `${count} ${count === 1 ? word : `${word}s`}`
+
+// Mirrors the SDK calls in the side panel's snippet for each server
+const describeCall = (
+  server: Server,
+  count: number,
+  result: Awaited<ReturnType<typeof call>>,
+) => {
+  const lines =
+    server === 'custom'
+      ? [`access('custom_servers') → { granted: ${result.granted} }`]
+      : [`balance('tool_call') → { balance: ${result.balance} }`]
+  if (!result.paywall) lines.push(`track() → ${plural(count, 'event')}`)
+  else if (server === 'builtin')
+    lines.push(`${result.balance} < ${count} → paywall`)
+  else lines.push('→ paywall')
+  return lines.join('\n')
+}
+
 export function Demo({
   externalCustomerId,
   proPrice,
   pro: initialPro,
   topUps,
   upgrading,
+  snippets,
 }: {
   externalCustomerId: string
   proPrice: string
   pro: boolean
   topUps: TopUpPack[]
   upgrading: boolean
+  snippets: HighlightedSteps
 }) {
   const [pro, setPro] = useState(initialPro)
   const [pack, setPack] = useState(topUps[0]?.id)
@@ -98,6 +123,12 @@ export function Demo({
   // Keeps the last content rendered while the dialog fades out
   const [content, setContent] = useState(modal)
   const dialog = useRef<HTMLDialogElement>(null)
+  const [active, setActive] = useState<{ step: Step }>({
+    step: 'balance',
+  })
+  const [outcomes, setOutcomes] = useState<Outcomes>({})
+  const setOutcome = (step: Step, outcome: string) =>
+    setOutcomes((outcomes) => ({ ...outcomes, [step]: outcome }))
 
   useEffect(() => {
     if (modal) {
@@ -176,6 +207,10 @@ export function Demo({
     const poll = async () => {
       const result = await getBalance()
       setBalance(result.balance)
+      setOutcome(
+        'balance',
+        `balance('tool_call') → { balance: ${result.balance}, pristine: ${result.pristine} }`,
+      )
       if (result.pristine) setPristine(true)
       else timeout = setTimeout(poll, 1000)
     }
@@ -189,10 +224,12 @@ export function Demo({
     const at = Date.now()
     setNow(at)
     setCalling(true)
+    setActive({ step: server })
     setEntries((entries) => [...entriesOf(server, at, count, true), ...entries])
 
     const result = await call(server, count)
     setCalling(false)
+    setOutcome(server, describeCall(server, count, result))
 
     if (result.paywall) {
       setEntries((entries) => entries.filter((entry) => entry.at !== at))
@@ -242,153 +279,156 @@ export function Demo({
       : Math.max(0, Math.floor((now - syncStartedAt) / 1000))
 
   return (
-    <main className="app">
-      <ul className="log">
-        {entries.length === 0 && (
-          <li className="empty muted">No tool calls yet</li>
-        )}
-        {entries.map((entry) => (
-          <li key={entry.id} className="entry">
-            <span className={entry.pending ? 'muted' : undefined}>
-              {entry.pending
-                ? `Calling ${LABELS[entry.server]} tool…`
-                : `A ${LABELS[entry.server]} tool has been called`}
-            </span>
-            <time className="faint">{timeAgo(entry.at, now)}</time>
-          </li>
-        ))}
-      </ul>
-      <footer className="footer">
-        <p className={pristine ? undefined : 'muted'}>
-          {balance === undefined
-            ? 'Loading balance…'
-            : !pristine
-              ? `Syncing balance… (${syncSeconds} ${syncSeconds === 1 ? 'second' : 'seconds'})`
-              : `${balance} tool ${balance === 1 ? 'call' : 'calls'} remaining`}
-          {pro && pristine && topUps.length > 0 && (
-            <>
-              {' · '}
-              <button className="link" onClick={openTopUp}>
-                Top up
-              </button>
-            </>
+    <>
+      <main className="app">
+        <ul className="log">
+          {entries.length === 0 && (
+            <li className="empty muted">No tool calls yet</li>
           )}
-        </p>
-        {heldCount > 1 && <span className="multiplier">×{heldCount}</span>}
-        <button
-          className="primary"
-          disabled={disabled}
-          onClick={(event) => onClick('builtin', event)}
-        >
-          Built-in tool
-        </button>
-        <button
-          className="secondary"
-          disabled={disabled}
-          onClick={(event) => onClick('custom', event)}
-        >
-          Custom tool
-        </button>
-      </footer>
-      <dialog
-        ref={dialog}
-        onCancel={(event) => {
-          if (modal === 'upgrading' || purchasing) event.preventDefault()
-        }}
-        onClose={() => setModal(undefined)}
-      >
-        {content === 'paywall' && (
-          <div className="card">
-            <div>
-              <h1>Upgrade to Pro</h1>
-              <p className="muted">
-                Get 1,000 tool calls a month and access to custom servers.
-              </p>
-            </div>
-            <div className="actions">
-              <form action={upgrade}>
-                <button type="submit" className="primary">
-                  Get Pro for {proPrice}
+          {entries.map((entry) => (
+            <li key={entry.id} className="entry">
+              <span className={entry.pending ? 'muted' : undefined}>
+                {entry.pending
+                  ? `Calling ${LABELS[entry.server]} tool…`
+                  : `A ${LABELS[entry.server]} tool has been called`}
+              </span>
+              <time className="faint">{timeAgo(entry.at, now)}</time>
+            </li>
+          ))}
+        </ul>
+        <footer className="footer">
+          <p className={pristine ? undefined : 'muted'}>
+            {balance === undefined
+              ? 'Loading balance…'
+              : !pristine
+                ? `Syncing balance… (${syncSeconds} ${syncSeconds === 1 ? 'second' : 'seconds'})`
+                : `${balance} tool ${balance === 1 ? 'call' : 'calls'} remaining`}
+            {pro && pristine && topUps.length > 0 && (
+              <>
+                {' · '}
+                <button className="link" onClick={openTopUp}>
+                  Top up
                 </button>
-              </form>
-              <button className="ghost" onClick={() => setModal(undefined)}>
-                Not now
-              </button>
+              </>
+            )}
+          </p>
+          {heldCount > 1 && <span className="multiplier">×{heldCount}</span>}
+          <button
+            className="primary"
+            disabled={disabled}
+            onClick={(event) => onClick('builtin', event)}
+          >
+            Built-in tool
+          </button>
+          <button
+            className="secondary"
+            disabled={disabled}
+            onClick={(event) => onClick('custom', event)}
+          >
+            Custom tool
+          </button>
+        </footer>
+        <dialog
+          ref={dialog}
+          onCancel={(event) => {
+            if (modal === 'upgrading' || purchasing) event.preventDefault()
+          }}
+          onClose={() => setModal(undefined)}
+        >
+          {content === 'paywall' && (
+            <div className="card">
+              <div>
+                <h1>Upgrade to Pro</h1>
+                <p className="muted">
+                  Get 1,000 tool calls a month and access to custom servers.
+                </p>
+              </div>
+              <div className="actions">
+                <form action={upgrade}>
+                  <button type="submit" className="primary">
+                    Get Pro for {proPrice}
+                  </button>
+                </form>
+                <button className="ghost" onClick={() => setModal(undefined)}>
+                  Not now
+                </button>
+              </div>
             </div>
-          </div>
-        )}
-        {content === 'topup' && (
-          <div className="card">
-            <div>
-              <h1>Top up</h1>
-              <p className="muted text-pretty">
-                Extra tool calls roll over until you use them.
-              </p>
+          )}
+          {content === 'topup' && (
+            <div className="card">
+              <div>
+                <h1>Top up</h1>
+                <p className="muted text-pretty">
+                  Extra tool calls roll over until you use them.
+                </p>
+              </div>
+              <fieldset className="packs" disabled={purchasing}>
+                {topUps.map((topUp) => (
+                  <label key={topUp.id} className="pack">
+                    <input
+                      type="radio"
+                      name="pack"
+                      value={topUp.id}
+                      checked={pack === topUp.id}
+                      onChange={() => setPack(topUp.id)}
+                    />
+                    <span>{number.format(topUp.units)} tool calls</span>
+                    <span className="muted">{topUp.price}</span>
+                  </label>
+                ))}
+              </fieldset>
+              {purchaseError && <p className="error">{purchaseError}</p>}
+              <div className="actions">
+                <button
+                  className="primary"
+                  disabled={!selectedPack || purchasing}
+                  onClick={onTopUp}
+                >
+                  {purchasing
+                    ? 'Charging your card…'
+                    : `Buy for ${selectedPack?.price}`}
+                </button>
+                <button
+                  className="ghost"
+                  disabled={purchasing}
+                  onClick={() => setModal(undefined)}
+                >
+                  I changed my mind
+                </button>
+              </div>
             </div>
-            <fieldset className="packs" disabled={purchasing}>
-              {topUps.map((topUp) => (
-                <label key={topUp.id} className="pack">
-                  <input
-                    type="radio"
-                    name="pack"
-                    value={topUp.id}
-                    checked={pack === topUp.id}
-                    onChange={() => setPack(topUp.id)}
-                  />
-                  <span>{number.format(topUp.units)} tool calls</span>
-                  <span className="muted">{topUp.price}</span>
-                </label>
-              ))}
-            </fieldset>
-            {purchaseError && <p className="error">{purchaseError}</p>}
-            <div className="actions">
+          )}
+          {content === 'upgrading' && (
+            <div className="card">
+              <span className="spinner" />
+              <div>
+                <h1>Confirming your upgrade</h1>
+                <p className="muted">This usually takes a few seconds.</p>
+              </div>
+            </div>
+          )}
+          {content === 'upgraded' && (
+            <div className="card">
+              <div>
+                <h1>Welcome to Pro</h1>
+                <p className="muted">
+                  You now have 1,000 tool calls a month and access to custom
+                  servers.
+                </p>
+              </div>
               <button
                 className="primary"
-                disabled={!selectedPack || purchasing}
-                onClick={onTopUp}
-              >
-                {purchasing
-                  ? 'Charging your card…'
-                  : `Buy for ${selectedPack?.price}`}
-              </button>
-              <button
-                className="ghost"
-                disabled={purchasing}
+                autoFocus
                 onClick={() => setModal(undefined)}
               >
-                I changed my mind
+                Continue
               </button>
             </div>
-          </div>
-        )}
-        {content === 'upgrading' && (
-          <div className="card">
-            <span className="spinner" />
-            <div>
-              <h1>Confirming your upgrade</h1>
-              <p className="muted">This usually takes a few seconds.</p>
-            </div>
-          </div>
-        )}
-        {content === 'upgraded' && (
-          <div className="card">
-            <div>
-              <h1>Welcome to Pro</h1>
-              <p className="muted">
-                You now have 1,000 tool calls a month and access to custom
-                servers.
-              </p>
-            </div>
-            <button
-              className="primary"
-              autoFocus
-              onClick={() => setModal(undefined)}
-            >
-              Continue
-            </button>
-          </div>
-        )}
-      </dialog>
-    </main>
+          )}
+        </dialog>
+      </main>
+      <CodePanel snippets={snippets} active={active} outcomes={outcomes} />
+    </>
   )
 }

@@ -9,6 +9,7 @@
   --accent: #3619cc;
   --accent-light: #5034e6;
   --ring: 0 0 0 1px #00000014, 0 2px 2px #0000000a;
+  --panel-width: 568px;
   color-scheme: light;
 }
 
@@ -377,4 +378,152 @@ dialog .actions .ghost:hover:not(:disabled) {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Code panel, docked to the right so the app stays centered in the rest */
+
+.panel {
+  display: none;
+}
+
+@media (min-width: 1180px) {
+  body:has(.panel) {
+    padding-right: calc(var(--panel-width) + 16px);
+  }
+
+  /* Keep the panel visible next to open dialogs */
+  body:has(.panel) dialog {
+    right: var(--panel-width);
+  }
+
+  body:has(.panel) dialog::backdrop {
+    right: var(--panel-width);
+  }
+
+  .panel {
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: var(--panel-width);
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    background: #0d1117;
+    color: #e6edf3;
+    box-shadow: -1px 0 0 #00000014;
+  }
+}
+
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 16px 12px;
+  border-bottom: 1px solid #ffffff14;
+}
+
+.step {
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 8px;
+  background: none;
+  color: #8b949e;
+  font-size: 13px;
+  font-weight: 500;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+
+.step:hover:not(:disabled) {
+  filter: none;
+  color: #e6edf3;
+}
+
+.step[aria-current] {
+  background: #ffffff14;
+  color: #e6edf3;
+}
+
+.panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px 0;
+  overflow-y: auto;
+  animation: fade-in 0.2s ease-out;
+}
+
+.panel-header {
+  padding: 0 20px;
+}
+
+.panel-header h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.panel-header p {
+  color: #8b949e;
+  font-size: 14px;
+}
+
+.file {
+  margin: 0;
+}
+
+.file figcaption {
+  padding: 0 20px 8px;
+  color: #8b949e;
+  font: 12px ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.file pre {
+  margin: 0;
+  overflow-x: auto;
+  background: none !important;
+  font: 13px/1.65 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.file code {
+  display: grid;
+  width: max-content;
+  min-width: 100%;
+}
+
+.file .line {
+  min-height: 1.65em;
+  padding: 0 20px;
+  border-left: 2px solid transparent;
+  transition: opacity 0.2s;
+}
+
+/* Dim everything but the marked lines, so the SDK calls stand out */
+.file pre:has(.marked) .line:not(.marked) {
+  opacity: 0.5;
+}
+
+.file .marked {
+  border-left-color: var(--accent-light);
+  background: #5034e626;
+}
+
+.outcome {
+  display: grid;
+  gap: 6px;
+  padding: 16px 20px;
+  border-top: 1px solid #ffffff14;
+}
+
+.outcome span {
+  color: #8b949e;
+  font-size: 12px;
+}
+
+.outcome pre {
+  margin: 0;
+  color: #7ee787;
+  font: 13px/1.65 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre-wrap;
+  animation: fade-in 0.2s ease-out;
 }

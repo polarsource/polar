@@ -11,6 +11,7 @@
     "next": "^16.3.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "shiki": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

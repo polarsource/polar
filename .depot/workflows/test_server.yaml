@@ -1,0 +1,406 @@
+name: Server
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    types: [opened, synchronize, edited]
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  changes:
+    name: "Detect changes"
+    runs-on: depot-ubuntu-24.04-4
+    outputs:
+      server: ${{ steps.filter.outputs.server }}
+      emails: ${{ steps.filter.outputs.emails }}
+      migrations: ${{ steps.filter.outputs.migrations }}
+      tinybird: ${{ steps.filter.outputs.tinybird }}
+      server_files: ${{ steps.filter.outputs.server_files }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: dorny/paths-filter@v4.0.3
+        id: filter
+        with:
+          list-files: json
+          filters: |
+            server:
+              - 'server/**'
+              - '.depot/workflows/test_server.yaml'
+            emails:
+              - 'server/emails/**'
+              - '.depot/workflows/test_server.yaml'
+            migrations:
+              - 'server/migrations/versions/**'
+            tinybird:
+              - 'server/tinybird/**'
+
+  linters:
+    name: "Server: Linters 📝"
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
+    timeout-minutes: 15
+    runs-on: depot-ubuntu-24.04-4
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      # - uses: actions/cache@v4
+      #   with:
+      #     path: |
+      #       server/.mypy_cache
+      #     key: mypy-${{ runner.os }}-${{ github.sha }}
+      #     restore-keys: |
+      #       mypy-${{ runner.os }}-
+      #       mypy-
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version-file: "server/pyproject.toml"
+
+      - name: 🔧 uv install
+        working-directory: ./server
+        run: uv sync --dev --frozen
+
+      - name: 🐶 Lint Server (ruff)
+        working-directory: ./server
+        run: uv run task lint_check
+
+      - name: 🛟 Type Check Server (mypy)
+        working-directory: ./server
+        run: uv run task lint_types
+
+
+  emails:
+    name: "Server: Emails 📬"
+    needs: changes
+    if: needs.changes.outputs.emails == 'true'
+    timeout-minutes: 10
+    runs-on: depot-ubuntu-24.04-4
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: pnpm/action-setup@v6.0.10
+        with:
+          package_json_file: server/emails/package.json
+
+      - name: 📬 Setup Node.js environment for server/emails
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: server/emails/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "server/emails/pnpm-lock.yaml"
+
+      - name: 🔧 pnpm install
+        working-directory: server/emails
+        run: pnpm install --frozen-lockfile
+
+      - name: 📝 Lint
+        working-directory: server/emails
+        run: pnpm lint
+
+      - name: 🛟 Type Check
+        working-directory: server/emails
+        run: pnpm typecheck
+
+  tinybird-check:
+    name: "Server: Tinybird Schema 🐦"
+    needs: changes
+    if: needs.changes.outputs.tinybird == 'true'
+    runs-on: depot-ubuntu-24.04-4
+    services:
+      tinybird:
+        image: tinybirdco/tinybird-local:latest
+        ports:
+          - 7181:7181
+        options: >-
+          --health-cmd "curl -sf http://127.0.0.1:7181/tokens || exit 1"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 40s
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: 🐦 Install Tinybird CLI
+        run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: 🐦 Validate Tinybird schema
+        working-directory: ./server/tinybird
+        run: |
+          export TB_HOST=http://localhost:7181
+          export TB_ADMIN_TOKEN=$(curl -s http://localhost:7181/tokens | jq -r .admin_token)
+          tb fmt --diff --no-color datasources/*.datasource pipes/*.pipe endpoints/*.pipe
+          tb build
+          tb test run
+
+  migration-check:
+    name: "Server: Migration Check 📚"
+    needs: changes
+    if: needs.changes.outputs.migrations == 'true' && github.event_name == 'pull_request'
+    runs-on: depot-ubuntu-24.04-4
+    steps:
+      - name: Check for disallowed files
+        id: check
+        env:
+          SERVER_FILES: ${{ needs.changes.outputs.server_files }}
+        run: |
+          DISALLOWED=""
+          for file in $(echo "$SERVER_FILES" | jq -r '.[]'); do
+            # Allow: migrations, models, scripts, and the workflow file itself
+            if [[ "$file" == server/migrations/* ]]; then
+              continue
+            fi
+            if [[ "$file" == server/polar/models/* ]]; then
+              continue
+            fi
+            if [[ "$file" == server/scripts/* ]]; then
+              continue
+            fi
+            if [[ "$file" == .github/* ]]; then
+              continue
+            fi
+            if [[ "$file" == .depot/* ]]; then
+              continue
+            fi
+            DISALLOWED="$DISALLOWED$file\n"
+          done
+
+          if [ -n "$DISALLOWED" ]; then
+            echo "has_disallowed=true" >> $GITHUB_OUTPUT
+            FILES_LIST=$(echo -e "$DISALLOWED" | sed '/^$/d' | sed 's/^/- `/' | sed 's/$/`/')
+            echo "files_list<<EOF" >> $GITHUB_OUTPUT
+            echo "$FILES_LIST" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "has_disallowed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Find existing comment
+        uses: peter-evans/find-comment@v4
+        id: fc
+        with:
+          issue-number: ${{ github.event.number }}
+          body-includes: "<!-- __MIGRATION_CHECK -->"
+
+      - name: Create or update failure comment
+        if: steps.check.outputs.has_disallowed == 'true'
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          issue-number: ${{ github.event.number }}
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            <!-- __MIGRATION_CHECK -->
+            ## ⚠️ Migration Isolation Check Failed
+
+            This PR contains database migrations along with other code changes. To ensure safe deployments, please split this into separate PRs,
+            or verify that your changes will not break. Keep in mind that the API is deployed before the workers.
+
+            1. **Migration PR**: Only model changes and the migration file
+            2. **Code PR**: All other changes (can be merged after migration PR)
+
+            ### Files that should be in a separate PR:
+            ${{ steps.check.outputs.files_list }}
+
+            ### Why?
+            Migrations are deployed separately and run before code changes. Mixing them can cause deployment issues if the new code depends on the migration.
+
+      - name: Delete resolved comment
+        if: steps.check.outputs.has_disallowed == 'false' && steps.fc.outputs.comment-id != ''
+        uses: actions/github-script@v9
+        with:
+          script: |
+            github.rest.issues.deleteComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: ${{ steps.fc.outputs.comment-id }}
+            })
+
+      - name: Fail check
+        if: steps.check.outputs.has_disallowed == 'true'
+        run: exit 1
+
+  test:
+    name: "Server: Tests 🐍 (${{ matrix.shard }}/4)"
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    runs-on: depot-ubuntu-24.04-8
+    timeout-minutes: 15
+    env:
+      POLAR_ENV: testing
+      POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ github.workspace }}/server/emails/bin/react-email-pkg
+      POLAR_TEST_DATABASE_TEMPLATE: polar_test
+
+    services:
+      postgres:
+        image: postgres:15.1-bullseye
+        env:
+          POSTGRES_USER: polar
+          POSTGRES_PASSWORD: polar
+          POSTGRES_DB: polar_test
+          POSTGRES_PORT: 5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7.4-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+      minio:
+        image: bitnamilegacy/minio:2024.5.28
+        ports:
+          - 9000:9000
+          - 9001:9001
+        env:
+          MINIO_ROOT_USER: polar
+          MINIO_ROOT_PASSWORD: polarpolar
+        options: >-
+          --health-cmd "curl -I http://127.0.0.1:9000/minio/health/live"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      tinybird:
+        image: tinybirdco/tinybird-local:latest
+        ports:
+          - 7181:7181
+          - 7182:7182
+        options: >-
+          --health-cmd "curl -s http://127.0.0.1:7181/tokens || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: 💿 MinIO Setup
+        working-directory: ./server/.minio
+        env:
+          MINIO_HOST: 127.0.0.1
+          MINIO_ROOT_USER: polar
+          MINIO_ROOT_PASSWORD: polarpolar
+          ACCESS_KEY: polar-development
+          SECRET_ACCESS_KEY: polar123456789
+          BUCKET_NAME: polar-s3
+          BUCKET_TESTING_NAME: testing-polar-s3
+          POLICY_FILE: policy.json
+        run: bash github.sh
+
+      - name: 📬 Restore emails renderer
+        id: emails
+        uses: actions/cache@v6.1.0
+        with:
+          path: server/emails/bin
+          key: emails-renderer-${{ runner.os }}-${{ hashFiles('server/emails/src/**', 'server/emails/package.json', 'server/emails/pnpm-lock.yaml', 'server/emails/tsup.config.js', 'server/emails/.node-version') }}
+
+      - uses: pnpm/action-setup@v6.0.10
+        if: steps.emails.outputs.cache-hit != 'true'
+        with:
+          package_json_file: server/emails/package.json
+
+      - name: 📬 Setup Node.js environment for server/emails
+        if: steps.emails.outputs.cache-hit != 'true'
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: server/emails/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "clients/pnpm-lock.yaml"
+
+      - name: 📬 Build server/emails
+        if: steps.emails.outputs.cache-hit != 'true'
+        working-directory: server/emails
+        run: pnpm install --frozen-lockfile && pnpm build
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version-file: "server/pyproject.toml"
+
+      - name: Cache CJK fonts
+        id: cjk-fonts-cache
+        uses: actions/cache@v6.1.0
+        with:
+          path: /usr/share/fonts/opentype/noto
+          key: cjk-fonts-${{ runner.os }}-noto-cjk-v1
+
+      - name: Install CJK fonts
+        if: steps.cjk-fonts-cache.outputs.cache-hit != 'true'
+        run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk
+
+      - name: 🔧 uv install
+        working-directory: ./server
+        run: |
+          uv sync --dev --frozen
+          uv run task generate_dev_jwks
+
+      - name: 🐦 Install Tinybird CLI
+        run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: 🐦 Prepare Tinybird workspace
+        working-directory: ./server
+        run: |
+          token=$(uv run python -m scripts.tinybird_test_workspace)
+          echo "::add-mask::$token"
+          echo "POLAR_TEST_TINYBIRD_TOKEN=$token" >> "$GITHUB_ENV"
+
+      - name: ⚗️ alembic migrate
+        working-directory: ./server
+        run: uv run task db_migrate
+
+      - name: ⚗️ alembic check
+        working-directory: ./server
+        run: uv run alembic check
+
+      - name: 📊 Restore test durations
+        uses: actions/cache/restore@v6.1.0
+        with:
+          path: server/.test_durations
+          key: test-durations-${{ github.sha }}
+          restore-keys: test-durations-
+
+      - name: 🐍 Run tests (pytest)
+        working-directory: ./server
+        run: uv run pytest --splits 4 --group ${{ matrix.shard }} -n 12 --dist=loadgroup --no-cov --durations=0 --store-durations
+
+      - name: 💾 Save test durations
+        if: github.event_name == 'push'
+        uses: actions/cache/save@v6.1.0
+        with:
+          path: server/.test_durations
+          key: test-durations-${{ github.sha }}
+

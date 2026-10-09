@@ -31,7 +31,7 @@ export default function IdentityStep({
             <CheckIcon className="dark:text-polar-400 h-4 w-4 text-gray-500" />
           </span>
           <h4 className="mb-2 font-medium">Identity verified</h4>
-          <p className="dark:text-polar-400 mx-auto text-sm text-gray-500">
+          <p className="dark:text-polar-400 mx-auto max-w-sm text-sm text-balance text-gray-600">
             Your identity has been successfully verified.
           </p>
         </>

@@ -11,7 +11,7 @@ from polar.meter.aggregation import AggregationFunction, UniqueAggregation
 from polar.models import Customer, Meter, MeterReducer, Reducer
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.redis import Redis, create_redis
-from polar.reducer_bucket.redis_store import get_reducer_bucket_key
+from polar.reducer_bucket.redis_store import CustomerIdentity, get_bucket_values
 from polar.reducer_bucket.repository import ReducerBucketRepository
 from polar.reducer_bucket.service import (
     REDUCER_BUCKET_SIZE,
@@ -34,46 +34,34 @@ class ReducerService:
         exclude_bucket: datetime | None,
     ) -> Aggregate:
         aggregate = Aggregate()
-        identities: list[tuple[UUID | None, str | None]] = [(customer.id, None)]
+        identities: list[CustomerIdentity] = [(customer.id, None)]
         if customer.external_id is not None:
             identities.extend(
                 [(None, customer.external_id), (customer.id, customer.external_id)]
             )
-        async with redis.pipeline(transaction=False) as pipeline:
+        async with asyncio.timeout(5):
             bucket_start = start
             while bucket_start < end:
                 if bucket_start != exclude_bucket:
-                    for internal_id, external_id in identities:
-                        key = get_reducer_bucket_key(
-                            reducer.id, bucket_start, internal_id, external_id
-                        )
+                    for values in await get_bucket_values(
+                        redis, reducer, bucket_start, identities
+                    ):
+                        if None in values:
+                            continue
+                        numbers = [Decimal(str(value)) for value in values]
                         match reducer.aggregation.func:
+                            case AggregationFunction.cnt:
+                                aggregate.add(Aggregate(count=int(numbers[0])))
+                            case AggregationFunction.sum:
+                                aggregate.add(Aggregate(total=numbers[0]))
                             case AggregationFunction.avg:
-                                pipeline.hmget(key, ["count", "sum"])
-                            case AggregationFunction.min | AggregationFunction.max:
-                                pipeline.zscore(key, reducer.aggregation.func.value)
+                                count, total = numbers
+                                aggregate.add(Aggregate(count=int(count), total=total))
                             case _:
-                                pipeline.get(key)
+                                aggregate.add(
+                                    Aggregate(minimum=numbers[0], maximum=numbers[0])
+                                )
                 bucket_start += REDUCER_BUCKET_SIZE
-            async with asyncio.timeout(5):
-                values = await pipeline.execute()
-        for value in values:
-            if value is None:
-                continue
-            match reducer.aggregation.func:
-                case AggregationFunction.avg:
-                    count, total = value
-                    if count is not None and total is not None:
-                        aggregate.add(
-                            Aggregate(count=int(count), total=Decimal(str(total)))
-                        )
-                case AggregationFunction.cnt:
-                    aggregate.add(Aggregate(count=int(value)))
-                case AggregationFunction.sum:
-                    aggregate.add(Aggregate(total=Decimal(str(value))))
-                case _:
-                    number = Decimal(str(value))
-                    aggregate.add(Aggregate(minimum=number, maximum=number))
 
         return aggregate
 

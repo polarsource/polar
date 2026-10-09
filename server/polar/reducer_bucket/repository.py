@@ -17,7 +17,6 @@ from sqlalchemy import (
 )
 
 from polar.kit.db.locking import pg_advisory_xact_lock
-from polar.kit.metadata import get_nested_metadata_attr
 from polar.kit.repository import RepositoryBase
 from polar.meter.aggregation import PropertyAggregation
 from polar.models import Customer, Event, Reducer, ReducerBucket
@@ -169,12 +168,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
     ) -> Aggregate:
         value: ColumnElement[Decimal | None] = literal(None, type_=Numeric)
         if isinstance(reducer.aggregation, PropertyAggregation):
-            prop = reducer.aggregation.property
-            if prop in Event._filterable_fields:
-                _, attr = Event._filterable_fields[prop]
-                value = cast(attr, Numeric)
-            else:
-                value = cast(get_nested_metadata_attr(Event, prop).astext, Numeric)
+            value = cast(reducer.aggregation.get_sql_value(Event), Numeric)
         statement = select(
             func.count(),
             func.coalesce(func.sum(value), 0),

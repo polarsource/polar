@@ -9,6 +9,7 @@ from polar.backoffice import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
 from polar.enums import PayoutAccountType
 from polar.models import Account, Organization, User
+from polar.models.organization import OrganizationStatus
 from polar.models.payout import PayoutStatus
 from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.models.user_session import UserSession
@@ -303,3 +304,171 @@ class TestRetry:
             payout_id=payout.id,
             account_amount=None,
         )
+
+
+@pytest.mark.anyio
+class TestReleaseHeldPayout:
+    async def test_held_shows_button_and_confirmation(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        account: Account,
+        user: User,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.held,
+            attempts=[],
+        )
+
+        response = await backoffice_client.get(f"/payouts/{payout.id}")
+
+        assert response.status_code == 200
+        assert "Release Payout" in response.text
+        assert "Retry Payout" not in response.text
+
+        response = await backoffice_client.get(
+            f"/payouts/{payout.id}/release-held-payout"
+        )
+
+        assert response.status_code == 200
+        assert "without approving the organization" in response.text
+        assert "Leave the organization in its current status" in response.text
+        assert "Start the transfer for this payout only" in response.text
+
+    async def test_manual_confirmation_stays_pending(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        account: Account,
+        user: User,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.manual
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.held,
+            attempts=[],
+        )
+
+        response = await backoffice_client.get(
+            f"/payouts/{payout.id}/release-held-payout"
+        )
+
+        assert response.status_code == 200
+        assert "marked as paid" in response.text
+
+    async def test_pending_hides_button(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        account: Account,
+        user: User,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.pending,
+            attempts=[],
+        )
+
+        response = await backoffice_client.get(f"/payouts/{payout.id}")
+
+        assert response.status_code == 200
+        assert "Release Payout" not in response.text
+
+        response = await backoffice_client.get(
+            f"/payouts/{payout.id}/release-held-payout"
+        )
+
+        assert response.status_code == 409
+        assert "is not held" in response.text
+
+    async def test_post_releases_one_payout_and_leaves_org_under_review(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        account: Account,
+        user: User,
+        mocker: MockerFixture,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        await save_fixture(organization)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        held = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.held,
+            attempts=[],
+        )
+        other_held = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.held,
+            attempts=[],
+        )
+        enqueue_job_mock = mocker.patch("polar.payout.service.enqueue_job")
+
+        response = await backoffice_client.post(
+            f"/payouts/{held.id}/release-held-payout"
+        )
+
+        assert response.status_code == 200
+        assert f"/payouts/{held.id}" in response.text
+        enqueue_job_mock.assert_called_once_with("payout.transfer", payout_id=held.id)
+
+        await session.refresh(held, attribute_names=["status"])
+        await session.refresh(other_held, attribute_names=["status"])
+        await session.refresh(organization, attribute_names=["status"])
+        assert held.status == PayoutStatus.pending
+        assert other_held.status == PayoutStatus.held
+        assert organization.status == OrganizationStatus.REVIEW
+
+    async def test_post_pending_does_not_enqueue(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        account: Account,
+        user: User,
+        mocker: MockerFixture,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.pending,
+            attempts=[],
+        )
+        enqueue_job_mock = mocker.patch("polar.payout.service.enqueue_job")
+
+        response = await backoffice_client.post(
+            f"/payouts/{payout.id}/release-held-payout"
+        )
+
+        assert response.status_code == 409
+        enqueue_job_mock.assert_not_called()

@@ -133,6 +133,7 @@ const structureOf = (price: PriceConfig): string =>
     'tiers' in price ? price.tiers.type : null,
     tiersOf(price).map(({ bound }) => bound ?? null),
     'minimum_units' in price ? (price.minimum_units ?? null) : null,
+    'unit_label' in price ? (price.unit_label ?? null) : null,
   ])
 
 const groupPrices = (
@@ -269,6 +270,13 @@ const renderPrice = (
             ]
       if (first.minimum_units !== undefined) {
         lines.push(`.min(${literal(first.minimum_units)})`)
+      }
+      if (
+        first.amount_type === 'unit_based' &&
+        first.unit_label !== undefined
+      ) {
+        const { '=1': singular, other: plural } = first.unit_label.en
+        lines.push(`.label(${literal(singular)}, ${literal(plural)})`)
       }
       return lines.join('\n')
     }

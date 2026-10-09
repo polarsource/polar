@@ -245,7 +245,14 @@ export const pricingConfig = defineConfig({
       .recurring(3, 'months')
       .trial(1, 'month'),
     devices: product('Devices')
-      .prices(units().flat().min(1).amount(usd(5)).max(1000))
+      .prices(
+        units()
+          .flat()
+          .min(1)
+          .amount(usd(5))
+          .max(1000)
+          .label('device', 'devices'),
+      )
       .recurring('yearly'),
   }),
 })

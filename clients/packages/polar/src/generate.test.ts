@@ -207,12 +207,14 @@ const cases: [string, PolarConfig][] = [
               .grants(['custom_servers']),
             starter: product('Starter')
               .prices(
-                units().graduated(
-                  tier().included(10),
-                  tier().max(20).free(),
-                  tier().max(50).amount(api.usd(0.05)),
-                  tier().free(),
-                ),
+                units()
+                  .graduated(
+                    tier().included(10),
+                    tier().max(20).free(),
+                    tier().max(50).amount(api.usd(0.05)),
+                    tier().free(),
+                  )
+                  .label('seat', 'seats'),
                 meter('tokens').volume(
                   tier().max(5).amount(api.usd(0)),
                   tier().amount(api.usd(0)),
@@ -221,7 +223,12 @@ const cases: [string, PolarConfig][] = [
               .recurring('monthly'),
             devices: product('Devices')
               .prices(
-                units().flat().min(2).amount(api.currency('nok')(50)).max(10),
+                units()
+                  .flat()
+                  .min(2)
+                  .amount(api.currency('nok')(50))
+                  .max(10)
+                  .label('device', 'devices'),
               )
               .recurring('yearly')
               .trial(14, 'days'),

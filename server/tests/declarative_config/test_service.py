@@ -31,6 +31,7 @@ from polar.meter.unit import MeterUnit
 from polar.models import (
     Organization,
     ProductPriceMeteredTiers,
+    ProductPriceUnit,
     User,
     UserOrganization,
 )
@@ -51,6 +52,7 @@ from tests.fixtures.random_objects import (
     create_meter,
     create_product,
     create_product_price_metered_tiers,
+    create_product_price_unit_based,
 )
 
 TOOL_CALLS_METER = {
@@ -150,6 +152,28 @@ USAGE_PRODUCT = {
     "description": "Description",
     "recurring_interval": "month",
     "prices": [METERED_TIERS_PRICE],
+}
+
+
+UNIT_BASED_PRICE = {
+    "amount_type": "unit_based",
+    "tax_behavior": "exclusive",
+    "tiers": {
+        "type": "graduated",
+        "tiers": [
+            {"bound": 10, "unit_amount": "1000"},
+            {"bound": None, "unit_amount": "800"},
+        ],
+    },
+}
+
+
+DEVICES_PRODUCT = {
+    "external_id": "devices",
+    "name": "Devices",
+    "description": "Description",
+    "recurring_interval": "month",
+    "prices": [UNIT_BASED_PRICE],
 }
 
 
@@ -772,6 +796,39 @@ class TestApply:
         assert product.name == "Usage Plus"
         assert [price.id for price in product.prices] == [price.id]
 
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_create_and_update_unit_based_price(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        config = {"products": [DEVICES_PRODUCT]}
+
+        await declarative_config_service.apply(
+            session, redis, auth_subject, Config.model_validate(config)
+        )
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["devices"])
+        [price] = product.prices
+        updated = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"products": [{**DEVICES_PRODUCT, "name": "Devices Plus"}]}
+            ),
+        )
+
+        assert isinstance(price, ProductPriceUnit)
+        assert price.get_minimum_purchasable_units() == 1
+        assert updated.changes[0].action == ConfigAction.updated
+        await session.refresh(product)
+        assert product.name == "Devices Plus"
+        assert [price.id for price in product.prices] == [price.id]
+
 
 @pytest.mark.anyio
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
@@ -1126,6 +1183,117 @@ class TestPlan:
 
         plan = await declarative_config_service.plan(
             session, auth_subject, Config.model_validate({"products": [TEAM_PRODUCT]})
+        )
+
+        assert [(issue.severity, issue.loc) for issue in plan.issues] == [
+            (ConfigIssueSeverity.error, ["body", "products", 0, "prices"])
+        ]
+
+    @pytest.mark.parametrize(
+        ("price", "action", "diff"),
+        [
+            pytest.param(UNIT_BASED_PRICE, ConfigAction.unchanged, [], id="unchanged"),
+            pytest.param(
+                {
+                    **UNIT_BASED_PRICE,
+                    "tiers": {
+                        "type": "graduated",
+                        "tiers": [
+                            {"bound": 10, "unit_amount": "1000"},
+                            {"bound": None, "unit_amount": "700"},
+                        ],
+                    },
+                },
+                ConfigAction.updated,
+                ["prices"],
+                id="tier_rate",
+            ),
+            pytest.param(
+                {**UNIT_BASED_PRICE, "minimum_units": 5},
+                ConfigAction.updated,
+                ["prices"],
+                id="minimum_units",
+            ),
+            pytest.param(
+                {
+                    **UNIT_BASED_PRICE,
+                    "unit_label": {"en": {"=1": "device", "other": "devices"}},
+                },
+                ConfigAction.updated,
+                ["prices"],
+                id="unit_label",
+            ),
+        ],
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_product_unit_based_price(
+        self,
+        price: dict[str, Any],
+        action: ConfigAction,
+        diff: list[str],
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            name="Devices",
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[],
+            external_id="devices",
+        )
+        existing_price = await create_product_price_unit_based(
+            save_fixture,
+            product=product,
+            tiers=Tiers.model_validate(UNIT_BASED_PRICE["tiers"]),
+        )
+        product.prices.append(existing_price)
+        product.all_prices.append(existing_price)
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {"products": [{**DEVICES_PRODUCT, "prices": [price]}]}
+            ),
+        )
+
+        assert plan.issues == []
+        assert plan.changes[0].action == action
+        assert [change.field for change in plan.changes[0].diff] == diff
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_product_unit_based_price_unsupported(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            name="Devices",
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[],
+            external_id="devices",
+        )
+        existing_price = await create_product_price_unit_based(
+            save_fixture,
+            product=product,
+            tiers=Tiers.model_validate(UNIT_BASED_PRICE["tiers"]),
+        )
+        existing_price.maximum_units = 5
+        await save_fixture(existing_price)
+        product.prices.append(existing_price)
+        product.all_prices.append(existing_price)
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate({"products": [DEVICES_PRODUCT]}),
         )
 
         assert [(issue.severity, issue.loc) for issue in plan.issues] == [

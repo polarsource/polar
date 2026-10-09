@@ -20,7 +20,7 @@ export default defineConfig({
     custom_servers: flag('Custom servers'),
     tool_calls: credits('Included tool calls').meter('tool_call').units(1000),
   }),
-  products: ({ product, fixed, seats, tier, meter }) => ({
+  products: ({ product, fixed, seats, units, tier, meter }) => ({
     team: product('Team')
       .prices(
         seats()
@@ -33,6 +33,16 @@ export default defineConfig({
       )
       .recurring('monthly')
       .grants(['custom_servers']),
+    servers: product('Servers')
+      .prices(
+        units()
+          .volume(
+            tier().max(10).amount(usd(10), eur(9)),
+            tier().amount(usd(8), eur(7)),
+          )
+          .min(2),
+      )
+      .recurring('monthly'),
     usage: product('Usage')
       .prices(
         meter('tool_call')

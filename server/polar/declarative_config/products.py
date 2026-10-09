@@ -13,6 +13,7 @@ from polar.product.schemas import (
     ProductPriceMeteredTiersCreate,
     ProductPriceMeteredUnitCreate,
     ProductPriceSeatBasedCreate,
+    ProductPriceUnitBasedCreate,
     ProductPriceUpdate,
     ProductUpdate,
 )
@@ -23,6 +24,7 @@ from .schemas import (
     ConfigProductPriceMeteredTiers,
     ConfigProductPriceMeteredUnit,
     ConfigProductPriceSeatBased,
+    ConfigProductPriceUnitBased,
 )
 from .validation import PriceKey, ProductChange, price_config, price_key
 
@@ -35,6 +37,7 @@ _PRICE_INPUT_FIELDS = {
     "cap_amount",
     "tiers",
     "minimum_units",
+    "unit_label",
 }
 
 
@@ -69,6 +72,7 @@ def price_create(
     | ProductPriceMeteredUnitCreate
     | ProductPriceSeatBasedCreate
     | ProductPriceMeteredTiersCreate
+    | ProductPriceUnitBasedCreate
 ):
     if isinstance(price, ConfigProductPriceMeteredUnit):
         return ProductPriceMeteredUnitCreate(
@@ -83,6 +87,9 @@ def price_create(
 
     if isinstance(price, ConfigProductPriceSeatBased):
         return ProductPriceSeatBasedCreate(**price.model_dump())
+
+    if isinstance(price, ConfigProductPriceUnitBased):
+        return ProductPriceUnitBasedCreate(**price.model_dump())
 
     return ProductPriceFixedCreate(**price.model_dump())
 

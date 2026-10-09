@@ -16425,6 +16425,7 @@ export interface components {
     ConfigProductPrice:
       | components['schemas']['ConfigProductPriceFixed']
       | components['schemas']['ConfigProductPriceMeteredUnit']
+      | components['schemas']['ConfigProductPriceSeatBased']
     /** ConfigProductPriceFixed */
     ConfigProductPriceFixed: {
       /**
@@ -16474,6 +16475,29 @@ export interface components {
        * @description Optional maximum charge in cents.
        */
       cap_amount?: number | null
+    }
+    /** ConfigProductPriceSeatBased */
+    ConfigProductPriceSeatBased: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'seat_based'
+      /**
+       * @description The currency in which the customer will be charged.
+       * @default usd
+       */
+      price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
+      /** @description Tiered pricing based on the purchased seat quantity. */
+      tiers: components['schemas']['TiersInput']
+      /**
+       * Minimum Units
+       * @description The minimum purchasable seat quantity (inclusive).
+       * @default 1
+       */
+      minimum_units: number
     }
     /**
      * ConfigResource
@@ -71190,6 +71214,9 @@ export const configProductPriceFixedAmount_typeValues: ReadonlyArray<
 export const configProductPriceMeteredUnitAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredUnit']['amount_type']
 > = ['metered_unit']
+export const configProductPriceSeatBasedAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceSeatBased']['amount_type']
+> = ['seat_based']
 export const configResourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigResource']
 > = ['meter', 'benefit', 'product']

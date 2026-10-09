@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 import pytest
 from httpx import AsyncClient
@@ -110,10 +111,35 @@ class TestApply:
         [error] = response.json()["detail"]
         assert error["loc"] == ["body", "meters", 0, "agregation"]
 
+    @pytest.mark.parametrize(
+        "price",
+        [
+            pytest.param(
+                {
+                    "amount_type": "metered_unit",
+                    "meter": "sdk-tool-calls",
+                    "unit_amount": "0.5",
+                },
+                id="metered_unit",
+            ),
+            pytest.param(
+                {
+                    "amount_type": "metered_tiers",
+                    "meter": "sdk-tool-calls",
+                    "tiers": {
+                        "type": "graduated",
+                        "tiers": [{"bound": None, "unit_amount": "0.5"}],
+                    },
+                },
+                id="metered_tiers",
+            ),
+        ],
+    )
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_one_time_product_metered_price(
         self,
+        price: dict[str, Any],
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
@@ -126,13 +152,7 @@ class TestApply:
                     {
                         "external_id": "pack",
                         "name": "Pack",
-                        "prices": [
-                            {
-                                "amount_type": "metered_unit",
-                                "meter": "sdk-tool-calls",
-                                "unit_amount": "0.5",
-                            }
-                        ],
+                        "prices": [price],
                     }
                 ],
                 "organization_id": str(organization.id),

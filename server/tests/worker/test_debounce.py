@@ -99,7 +99,7 @@ class TestCheckDebounce:
         context = await check_debounce(fake_redis, actor, "msg-1", "debounce:test:key")
 
         assert context == DebounceContext(
-            debounce_key="debounce:test:key", enqueue_timestamp=None
+            debounce_key="debounce:test:key", message_id="msg-1", enqueue_timestamp=None
         )
 
     async def test_executed_skips(self, fake_redis: FakeAsyncRedis) -> None:
@@ -215,7 +215,7 @@ class TestFinalizeDebounce:
     async def test_expired_hash_leaves_no_key(self, fake_redis: FakeAsyncRedis) -> None:
         actor = make_actor()
         context = DebounceContext(
-            debounce_key="debounce:test:key", enqueue_timestamp=None
+            debounce_key="debounce:test:key", message_id="owner", enqueue_timestamp=None
         )
 
         await finalize_debounce(fake_redis, actor, context, None)

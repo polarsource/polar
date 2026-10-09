@@ -40,7 +40,7 @@ async def polar_websocket(websocket: WebSocket) -> None:
             await websocket.send_json(
                 {
                     "type": "configuration",
-                    "payload": {"meters": POLAR_METERS, "reducers": POLAR_REDUCERS},
+                    "payload": {"reducers": POLAR_REDUCERS},
                 }
             )
 

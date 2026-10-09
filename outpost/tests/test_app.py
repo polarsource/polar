@@ -37,6 +37,26 @@ class TestIngest:
         assert response.status_code == 200
         assert response.json() == {"inserted": 1, "duplicates": 0}
 
+    async def test_nested_metadata(self, client: httpx2.AsyncClient) -> None:
+        response = await client.post(
+            "/ingest",
+            json={
+                "events": [
+                    {
+                        "timestamp": "2026-01-01T00:00:00Z",
+                        "name": "llm.call",
+                        "external_customer_id": "customer_123",
+                        "metadata": {
+                            "_llm": {"model": "gpt-4o", "total_tokens": 30},
+                            "tokens": 30,
+                        },
+                    }
+                ]
+            },
+        )
+        assert response.status_code == 200
+        assert response.json() == {"inserted": 1, "duplicates": 0}
+
     async def test_duplicates(self, client: httpx2.AsyncClient) -> None:
         event = {
             "timestamp": datetime.now(UTC).isoformat(),

@@ -16426,6 +16426,7 @@ export interface components {
       | components['schemas']['ConfigProductPriceFixed']
       | components['schemas']['ConfigProductPriceMeteredUnit']
       | components['schemas']['ConfigProductPriceSeatBased']
+      | components['schemas']['ConfigProductPriceMeteredTiers']
     /** ConfigProductPriceFixed */
     ConfigProductPriceFixed: {
       /**
@@ -16445,6 +16446,32 @@ export interface components {
        * @description The price in cents. Set to `0` for a free price. Must be at least the currency's minimum amount.
        */
       price_amount: number
+    }
+    /** ConfigProductPriceMeteredTiers */
+    ConfigProductPriceMeteredTiers: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'metered_tiers'
+      /**
+       * @description The currency in which the customer will be charged.
+       * @default usd
+       */
+      price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
+      /**
+       * Meter
+       * @description The `external_id` of a meter declared in the same config.
+       */
+      meter: string
+      tiers: components['schemas']['TiersInput']
+      /**
+       * Cap Amount
+       * @description Optional maximum charge in cents.
+       */
+      cap_amount?: number | null
     }
     /** ConfigProductPriceMeteredUnit */
     ConfigProductPriceMeteredUnit: {
@@ -71211,6 +71238,9 @@ export const configIssueTypeValues: ReadonlyArray<
 export const configProductPriceFixedAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceFixed']['amount_type']
 > = ['fixed']
+export const configProductPriceMeteredTiersAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredTiers']['amount_type']
+> = ['metered_tiers']
 export const configProductPriceMeteredUnitAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredUnit']['amount_type']
 > = ['metered_unit']

@@ -2308,6 +2308,30 @@
             "description": "Filter by benefit IDs."
           },
           {
+            "name": "external_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ExternalID Filter",
+              "description": "Filter by benefit external ID."
+            },
+            "description": "Filter by benefit external ID."
+          },
+          {
             "name": "exclude_id",
             "in": "query",
             "required": false,
@@ -4622,6 +4646,30 @@
               "description": "Filter by product ID."
             },
             "description": "Filter by product ID."
+          },
+          {
+            "name": "external_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ExternalID Filter",
+              "description": "Filter by product external ID."
+            },
+            "description": "Filter by product external ID."
           },
           {
             "name": "organization_id",
@@ -23510,6 +23558,30 @@
               "description": "Filter by organization ID."
             },
             "description": "Filter by organization ID."
+          },
+          {
+            "name": "external_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ExternalID Filter",
+              "description": "Filter by meter external ID."
+            },
+            "description": "Filter by meter external ID."
           },
           {
             "name": "query",

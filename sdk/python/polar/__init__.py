@@ -8,7 +8,7 @@ from polar.base import (
     deserialize,
 )
 
-__version__ = "1.0.3a1"
+__version__ = "1.0.3a2"
 __all__ = [
     "PolarClientError",
     "PolarDeserializationError",

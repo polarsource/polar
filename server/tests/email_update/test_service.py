@@ -2,8 +2,9 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
-from polar.email_update.service import EmailAlreadyInUse
+from polar.email_update.service import EmailAlreadyInUse, InvalidEmailUpdate
 from polar.email_update.service import email_update as email_update_service
+from polar.models import User
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_user
@@ -47,3 +48,28 @@ class TestVerify:
 
         assert user.email == "user@example.com"
         resend_mock.enqueue_sync_user.assert_not_called()
+
+    @pytest.mark.auth
+    async def test_stale_token_cannot_overwrite_verified_email(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        mocker: MockerFixture,
+    ) -> None:
+        mocker.patch("polar.email_update.service.resend_service")
+        user = auth_subject.subject
+
+        _, token_first = await email_update_service.request_email_update(
+            "first@example.com", session, auth_subject
+        )
+        _, token_second = await email_update_service.request_email_update(
+            "second@example.com", session, auth_subject
+        )
+
+        await email_update_service.verify(session, token_second, user)
+        assert user.email == "second@example.com"
+
+        with pytest.raises(InvalidEmailUpdate):
+            await email_update_service.verify(session, token_first, user)
+
+        assert user.email == "second@example.com"

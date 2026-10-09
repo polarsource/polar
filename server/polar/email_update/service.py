@@ -59,6 +59,9 @@ class EmailUpdateService(ResourceServiceReader[EmailVerification]):
                 ]
             )
 
+        repository = EmailVerificationRepository.from_session(session)
+        await repository.delete_by_user_id(user.id)
+
         token, token_hash = generate_token_hash_pair(prefix=TOKEN_PREFIX)
         email_update_record = EmailVerification(
             email=email, token_hash=token_hash, user=user

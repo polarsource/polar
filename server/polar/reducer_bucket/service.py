@@ -65,7 +65,7 @@ class ReducerBucketService:
 
         now = utc_now()
         oldest_active_bucket_start = get_oldest_active_bucket_start(now)
-        buckets = _get_values_by_bucket(reducers, events)
+        buckets = _reduce_events_to_bucket_contributions(reducers, events)
         active_buckets = {
             bucket_id: values
             for bucket_id, values in buckets.items()
@@ -215,7 +215,7 @@ class ReducerBucketService:
             )
 
 
-def _get_values_by_bucket(
+def _reduce_events_to_bucket_contributions(
     reducers: Sequence[Reducer], events: Sequence[Event]
 ) -> dict[BucketId, list[float]]:
     """The values each event adds to the buckets of the reducers it matches."""

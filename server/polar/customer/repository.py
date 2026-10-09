@@ -27,6 +27,7 @@ from sqlalchemy.orm import InstanceState, InstrumentedAttribute
 from polar.authz.types import AccessibleOrganizationID
 from polar.event.system import CustomerUpdatedFields, SystemEvent
 from polar.kit.address import Address
+from polar.kit.db.locking import pg_advisory_xact_lock
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -208,6 +209,11 @@ class CustomerRepository(
             Customer.id == id, Customer.organization_id == organization_id
         )
         return await self.get_one_or_none(statement)
+
+    async def lock_email(self, organization_id: UUID, email: str) -> None:
+        await pg_advisory_xact_lock(
+            self.session, "customer.email", f"{organization_id}:{email.lower()}"
+        )
 
     async def get_by_email_and_organization(
         self, email: str, organization_id: UUID

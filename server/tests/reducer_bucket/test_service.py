@@ -109,24 +109,12 @@ class TestRollup:
             get_reducer_bucket_key(reducer.id, start, None, "external")
             for start in bucket_starts
         )
-        _, previous_start, outdated_start = bucket_starts
         assert cast(bytes | None, await redis.get(current)) == b"1"
         assert cast(bytes | None, await redis.get(previous)) == b"1"
         assert await redis.exists(outdated) == 0
-        assert sorted(
-            (*call.args, call.kwargs["delay"]) for call in enqueue_job.call_args_list
-        ) == [
-            (
-                "reducer_bucket.sync",
-                reducer.id,
-                start.isoformat(),
-                None,
-                "external",
-                delay,
-            )
-            for start, delay in sorted(
-                [(previous_start, 0), (outdated_start, 0), (BUCKET_START, 240_000)]
-            )
+        assert sorted(call.args for call in enqueue_job.call_args_list) == [
+            ("reducer_bucket.sync", reducer.id, start.isoformat(), None, "external")
+            for start in sorted(bucket_starts)
         ]
 
     async def test_skips_organizations_without_syncable_reducers(

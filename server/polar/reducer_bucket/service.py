@@ -58,8 +58,7 @@ class ReducerBucketService:
         if not reducers:
             return
 
-        now = utc_now()
-        oldest_active_bucket_start = get_oldest_active_bucket_start(now)
+        oldest_active_bucket_start = get_oldest_active_bucket_start(utc_now())
         buckets = _reduce_events_to_bucket_contributions(reducers, events)
         active_buckets = {
             bucket_id: values
@@ -86,15 +85,12 @@ class ReducerBucketService:
                 )
 
         for reducer, bucket_start, customer_id, external_customer_id in buckets:
-            # Delay syncing for the currently active bucket (T)
-            delay = bucket_start + REDUCER_BUCKET_SIZE - now
             enqueue_job(
                 "reducer_bucket.sync",
                 reducer.id,
                 bucket_start.isoformat(),
                 customer_id,
                 external_customer_id,
-                delay=max(0, int(delay.total_seconds() * 1000)),
             )
 
     async def sync(

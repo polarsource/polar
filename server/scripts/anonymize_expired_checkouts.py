@@ -24,7 +24,7 @@ async def anonymize_expired_checkouts(
         min=0,
         help="Scrub expired checkouts created more than this many days ago",
     ),
-    batch_size: int = typer.Option(5000, help="Number of rows to scrub per batch"),
+    batch_size: int = typer.Option(1000, help="Number of rows to scrub per batch"),
     sleep_seconds: float = typer.Option(0.1, help="Seconds to sleep between batches"),
     execute: bool = typer.Option(False, "--execute", help="Apply the changes"),
 ) -> None:

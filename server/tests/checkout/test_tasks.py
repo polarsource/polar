@@ -80,7 +80,7 @@ class TestAnonymizeExpired:
             side_effect=lambda: _session_maker(session),
         )
         anonymize_expired_mock = mocker.patch.object(
-            CheckoutRepository, "anonymize_expired", side_effect=[5000, 5000, 120, 0]
+            CheckoutRepository, "anonymize_expired", side_effect=[1000, 1000, 120, 0]
         )
 
         await _anonymize_expired()

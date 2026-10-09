@@ -51,7 +51,8 @@ class Configuration:
 
 
 class Snapshots:
-    def __init__(self) -> None:
+    def __init__(self, *, fake: bool = False) -> None:
+        self.fake = fake
         # ponytail: never forgets a customer, evict idle ones if memory grows
         self.warm: dict[str, anyio.Event] = {}
         self.requests, self.pending_requests = anyio.create_memory_object_stream[str](
@@ -96,13 +97,29 @@ def request_snapshot(external_customer_id: str) -> dict[str, typing.Any]:
 
 
 async def send_snapshot_requests(
-    websocket: AsyncWebSocketSession, snapshots: Snapshots
+    websocket: AsyncWebSocketSession, snapshots: Snapshots, storage: Storage
 ) -> None:
+    async def send(external_customer_id: str) -> None:
+        if snapshots.fake:
+            # shortcut: zero historical usage and credits until backend snapshots are ready.
+            await snapshots.apply(
+                storage,
+                {
+                    "external_customer_id": external_customer_id,
+                    "cold_until": 0,
+                    "cold": {},
+                    "credited": {},
+                    "buckets": [],
+                },
+            )
+        else:
+            await websocket.send_json(request_snapshot(external_customer_id))
+
     for external_customer_id in list(snapshots.warm):
-        await websocket.send_json(request_snapshot(external_customer_id))
+        await send(external_customer_id)
     while True:
         external_customer_id = await snapshots.pending_requests.receive()
-        await websocket.send_json(request_snapshot(external_customer_id))
+        await send(external_customer_id)
 
 
 def create_client(env: Environment) -> httpx2.AsyncClient:
@@ -125,7 +142,7 @@ async def listen(
                 anyio.create_task_group() as tg,
             ):
                 await websocket.send_json({"type": "configuration"})
-                tg.start_soon(send_snapshot_requests, websocket, snapshots)
+                tg.start_soon(send_snapshot_requests, websocket, snapshots, storage)
                 while True:
                     message = await websocket.receive_json()
                     match message["type"]:

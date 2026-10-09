@@ -10,6 +10,10 @@ export POLAR_TOKEN=polar_oat_...
 export POLAR_API_URL=http://127.0.0.1:8000  # default: https://api.polar.sh
 ```
 
+Until backend snapshots are available, set `POLAR_OUTPOST_FAKE_SNAPSHOTS=true`
+to answer snapshot requests locally with zero historical usage and credits.
+Locally ingested events still count. Reducer configuration still comes from Polar.
+
 Start Outpost with in-memory storage (default, one worker):
 
 ```sh

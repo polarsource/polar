@@ -8,7 +8,9 @@ from starlette.applications import Starlette
 from starlette.routing import WebSocketRoute
 from starlette.websockets import WebSocket
 
+from outpost.env import Environment
 from outpost.polar import Configuration, Snapshots, listen
+from outpost.reducer import get_consumed
 from outpost.storage.memory import MemoryStorage
 
 from .conftest import (
@@ -138,6 +140,43 @@ async def test_snapshots_read_requests_an_expired_snapshot() -> None:
     assert customer is not None
     assert customer["cold"] == polar_snapshot("customer")["cold"]
     assert POLAR_SNAPSHOT_REQUESTS.count("customer") == 2
+
+
+@pytest.mark.anyio
+async def test_fake_snapshots(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("POLAR_OUTPOST_FAKE_SNAPSHOTS", "true")
+    configuration = Configuration()
+    snapshots = Snapshots(fake=Environment().fake_snapshots)
+    storage = MemoryStorage()
+    warm = snapshots.warm_up("customer")
+    reducer_id = POLAR_REDUCERS[0]["id"]
+    await storage.write_updates({("customer", reducer_id, 300, "count"): 2})
+
+    async with (
+        AsyncClient(
+            base_url="http://polar", transport=ASGIWebSocketTransport(polar_app)
+        ) as client,
+        anyio.create_task_group() as tg,
+    ):
+        tg.start_soon(listen, client, configuration, snapshots, storage)
+        with anyio.fail_after(5):
+            await configuration.ready.wait()
+            await warm.wait()
+            customer = await snapshots.read(storage, "customer", timeout=5)
+            empty = await snapshots.read(storage, "silent_customer", timeout=5)
+        tg.cancel_scope.cancel()
+
+    assert customer == {
+        "cold_until": 0,
+        "cold": {},
+        "credited": {},
+        "buckets": {(reducer_id, 300): 2},
+    }
+    assert empty == {"cold_until": 0, "cold": {}, "credited": {}, "buckets": {}}
+    reducer = configuration.reducers[0][0]
+    assert get_consumed(reducer, customer) == 2
+    assert get_consumed(reducer, empty) == 0
+    assert POLAR_SNAPSHOT_REQUESTS == []
 
 
 @pytest.mark.anyio

@@ -138,7 +138,7 @@ async def dashboard(_: Request) -> Response:
 async def lifespan(_: Starlette) -> collections.abc.AsyncGenerator[LifespanState]:
     env = get_environment()
     configuration = Configuration()
-    snapshots = Snapshots()
+    snapshots = Snapshots(fake=env.fake_snapshots)
     async with (
         create_storage(env) as storage,
         create_client(env) as polar_client,

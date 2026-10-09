@@ -8,6 +8,7 @@ class Environment(BaseSettings):
     )
     polar_token: str = Field(validation_alias="POLAR_TOKEN")
     redis_url: RedisDsn | None = Field(default=None, validation_alias="REDIS_URL")
+    fake_snapshots: bool = False
 
     model_config = SettingsConfigDict(env_file=".env", env_prefix="POLAR_OUTPOST_")
 

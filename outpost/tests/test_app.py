@@ -1,5 +1,6 @@
 import httpx2
 import pytest
+from prometheus_client import REGISTRY
 
 
 @pytest.mark.anyio
@@ -27,3 +28,33 @@ class TestIngest:
             },
         )
         assert response.status_code == 202
+
+
+@pytest.mark.anyio
+async def test_metrics(client: httpx2.AsyncClient) -> None:
+    samples = (
+        "outpost_ingest_seconds_count",
+        "outpost_reduce_seconds_count",
+        "outpost_events_ingested_total",
+    )
+    before = {sample: REGISTRY.get_sample_value(sample) or 0 for sample in samples}
+
+    ingest_response = await client.post(
+        "/ingest",
+        json={
+            "events": [
+                {
+                    "timestamp": "2026-01-01T00:00:00Z",
+                    "name": "tool_call",
+                    "external_customer_id": "customer_123",
+                }
+            ]
+        },
+    )
+    response = await client.get("/metrics")
+
+    assert ingest_response.status_code == 202
+    assert response.status_code == 200
+    for sample in samples:
+        assert REGISTRY.get_sample_value(sample) == before[sample] + 1
+        assert sample in response.text

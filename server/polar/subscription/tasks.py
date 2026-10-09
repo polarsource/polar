@@ -163,9 +163,14 @@ async def subscription_enqueue_benefits_grants(
         await subscription_service.enqueue_benefits_grants(session, subscription)
 
 
+def _update_meters_debounce_key(subscription_id: uuid.UUID) -> str:
+    return f"subscription.update_meters:{subscription_id}"
+
+
 @actor(
     actor_name="subscription.update_meters",
     priority=TaskPriority.LOW,
+    debounce_key=_update_meters_debounce_key,
 )
 async def subscription_update_meters(
     subscription_id: Annotated[uuid.UUID, LoggableField],

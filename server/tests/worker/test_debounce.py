@@ -2,10 +2,13 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from fakeredis import FakeAsyncRedis
+from fakeredis import FakeAsyncRedis, FakeRedis
+from pytest_mock import MockerFixture
+from redis import ConnectionPool
 
 from polar.worker._debounce import (
     DebounceContext,
+    DebounceMiddleware,
     check_debounce,
     finalize_debounce,
     now_timestamp,
@@ -96,7 +99,7 @@ class TestCheckDebounce:
         context = await check_debounce(fake_redis, actor, "msg-1", "debounce:test:key")
 
         assert context == DebounceContext(
-            debounce_key="debounce:test:key", enqueue_timestamp=None
+            debounce_key="debounce:test:key", message_id="msg-1", enqueue_timestamp=None
         )
 
     async def test_executed_skips(self, fake_redis: FakeAsyncRedis) -> None:
@@ -194,12 +197,53 @@ class TestFinalizeDebounce:
         assert await fake_redis.hget(key, "executed") == "0"
         assert await fake_redis.ttl(key) > 0
 
+    async def test_newer_enqueue_during_run_still_executes(
+        self, fake_redis: FakeAsyncRedis
+    ) -> None:
+        actor = make_actor(debounce_key=lambda: "test:key")
+        debounce = await set_debounce_key(fake_redis, actor, "first", (), {})
+        assert debounce is not None
+        key, _ = debounce
+        context = await check_debounce(fake_redis, actor, "first", key)
+        assert context is not None
+
+        await set_debounce_key(fake_redis, actor, "second", (), {})
+        await finalize_debounce(fake_redis, actor, context, None)
+
+        assert await check_debounce(fake_redis, actor, "second", key) is not None
+
     async def test_expired_hash_leaves_no_key(self, fake_redis: FakeAsyncRedis) -> None:
         actor = make_actor()
         context = DebounceContext(
-            debounce_key="debounce:test:key", enqueue_timestamp=None
+            debounce_key="debounce:test:key", message_id="owner", enqueue_timestamp=None
         )
 
         await finalize_debounce(fake_redis, actor, context, None)
 
         assert await fake_redis.exists("debounce:test:key") == 0
+
+
+class TestDebounceMiddlewareAfterProcessMessage:
+    def test_newer_enqueue_during_run_still_executes(
+        self, mocker: MockerFixture
+    ) -> None:
+        sync_redis = FakeRedis()
+        middleware = DebounceMiddleware(ConnectionPool())
+        mocker.patch.object(middleware, "_redis", sync_redis)
+        key = "debounce:test:key"
+        sync_redis.hset(
+            key,
+            mapping={
+                "message_id": "second",
+                "executed": 0,
+                "enqueue_timestamp": now_timestamp(),
+            },
+        )
+        message = MagicMock(
+            message_id="first",
+            options={"debounce_key": key, "debounce_enqueue_timestamp": None},
+        )
+
+        middleware.after_process_message(MagicMock(), message, exception=None)
+
+        assert sync_redis.hget(key, "executed") == b"0"

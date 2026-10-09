@@ -23,6 +23,14 @@ else:
 log: Logger = structlog.get_logger()
 
 DEBOUNCE_KEY_TTL = timedelta(hours=1)
+
+# A newer enqueue takes ownership of the key; it must still run.
+MARK_EXECUTED_IF_OWNER_SCRIPT = """
+if redis.call("HGET", KEYS[1], "message_id") == ARGV[1] then
+    redis.call("HSET", KEYS[1], "executed", 1)
+    redis.call("HDEL", KEYS[1], "enqueue_timestamp")
+end
+"""
 """
 The TTL for debounce keys, a fail-safe to avoid keys being stuck in Redis.
 """
@@ -82,6 +90,7 @@ async def set_debounce_key(
 @dataclasses.dataclass
 class DebounceContext:
     debounce_key: str
+    message_id: str
     enqueue_timestamp: int | None
     max_threshold_execution: bool = False
 
@@ -96,7 +105,9 @@ async def check_debounce(
 
     debounce_data = await redis.hgetall(debounce_key)
     if not debounce_data:
-        return DebounceContext(debounce_key=debounce_key, enqueue_timestamp=None)
+        return DebounceContext(
+            debounce_key=debounce_key, message_id=message_id, enqueue_timestamp=None
+        )
 
     if int(debounce_data.get("executed", 0)):
         log.debug("Debounce key already executed, skipping", debounce_key=debounce_key)
@@ -108,7 +119,9 @@ async def check_debounce(
 
     if message_owner == message_id:
         return DebounceContext(
-            debounce_key=debounce_key, enqueue_timestamp=enqueue_timestamp
+            debounce_key=debounce_key,
+            message_id=message_id,
+            enqueue_timestamp=enqueue_timestamp,
         )
 
     max_threshold: int = actor.options.get(
@@ -123,6 +136,7 @@ async def check_debounce(
         )
         return DebounceContext(
             debounce_key=debounce_key,
+            message_id=message_id,
             enqueue_timestamp=enqueue_timestamp,
             max_threshold_execution=True,
         )
@@ -160,10 +174,9 @@ async def finalize_debounce(
             await pipe.execute()
     elif exception is None and context.enqueue_timestamp is not None:
         log.debug("Marking debounce key as executed", debounce_key=debounce_key)
-        async with redis.pipeline(transaction=True) as pipe:
-            await pipe.hset(debounce_key, "executed", 1)
-            await pipe.hdel(debounce_key, "enqueue_timestamp")
-            await pipe.execute()
+        await redis.eval(
+            MARK_EXECUTED_IF_OWNER_SCRIPT, 1, debounce_key, context.message_id
+        )
 
 
 class DebounceMiddleware(dramatiq.Middleware):
@@ -259,19 +272,20 @@ class DebounceMiddleware(dramatiq.Middleware):
                 queue=queue_name, task_name=message.actor_name
             ).observe(delay)
 
-        with self._redis.pipeline(transaction=True) as pipe:
-            if message.options.pop("debounce_max_threshold_execution", False):
-                log.debug(
-                    "Bumping debounce key enqueue timestamp after max threshold execution",
-                    debounce_key=debounce_key,
-                )
+        if message.options.pop("debounce_max_threshold_execution", False):
+            log.debug(
+                "Bumping debounce key enqueue timestamp after max threshold execution",
+                debounce_key=debounce_key,
+            )
+            with self._redis.pipeline(transaction=True) as pipe:
                 pipe.hset(debounce_key, "enqueue_timestamp", now_timestamp())
                 pipe.expire(debounce_key, DEBOUNCE_KEY_TTL)
-            elif exception is None:
-                log.debug("Marking debounce key as executed", debounce_key=debounce_key)
-                pipe.hset(debounce_key, "executed", 1)
-                pipe.hdel(debounce_key, "enqueue_timestamp")
-            pipe.execute()
+                pipe.execute()
+        elif exception is None:
+            log.debug("Marking debounce key as executed", debounce_key=debounce_key)
+            self._redis.eval(
+                MARK_EXECUTED_IF_OWNER_SCRIPT, 1, debounce_key, message.message_id
+            )
 
     def _get_debounce_max_threshold(
         self, broker: dramatiq.Broker, message: dramatiq.MessageProxy

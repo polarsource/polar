@@ -20,13 +20,17 @@ from reauth.factors.oauth2.state import ExpiredStateException, InvalidStateExcep
 
 from polar.config import settings
 from polar.exceptions import ResourceNotFound
+from polar.kit.email import validate_email_syntax
 from polar.models import Organization, OrganizationSSOConnection
 from polar.openapi import APITag
 from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
-from polar.sso.repository import OrganizationSSOConnectionRepository
+from polar.sso.repository import (
+    OrganizationDomainRepository,
+    OrganizationSSOConnectionRepository,
+)
 from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
 from polar.user_organization.repository import UserOrganizationRepository
@@ -261,6 +265,18 @@ async def callback(
     email = claims.get("email")
     if email is None:
         raise PolarAuthRedirectionError("The identity provider did not assert an email")
+
+    domain = validate_email_syntax(email).domain
+    domain_repository = OrganizationDomainRepository.from_session(session)
+    if (
+        await domain_repository.get_verified_by_organization_and_domain(
+            connection.organization_id, domain
+        )
+        is None
+    ):
+        raise PolarAuthRedirectionError(
+            "This email address is not in a verified domain of this organization"
+        )
 
     user, created = await user_service.get_by_email_or_create(session, email)
     if created:

@@ -33,3 +33,6 @@ extend-select = ["I", "TRY", "UP"]
 [tool.uv]
 default-groups = ["dev"]
 exclude-newer = "7 days"
+
+[tool.setuptools.package-data]
+outpost = ["dashboard.html"]

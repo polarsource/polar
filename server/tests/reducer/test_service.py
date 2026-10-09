@@ -14,7 +14,7 @@ from polar.models import Customer, Meter, Organization, ReducerBucket
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from polar.reducer.service import reducer as reducer_service
-from polar.reducer_bucket.service import get_reducer_bucket_key
+from polar.reducer_bucket.redis_store import get_reducer_bucket_key
 from polar.reducer_bucket.service import reducer_bucket as reducer_bucket_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_event, create_reducer
@@ -39,7 +39,7 @@ class TestGetQuantity:
         expected: Decimal,
         mocker: MockerFixture,
         session: AsyncSession,
-        reducer_redis: Redis,
+        redis: Redis,
         save_fixture: SaveFixture,
         organization: Organization,
         customer: Customer,
@@ -62,11 +62,11 @@ class TestGetQuantity:
             "polar.reducer.service.utc_now", return_value=BASE + timedelta(minutes=16)
         )
         for start, generation, sealed, count, total, minimum, maximum in (
-            (BASE - timedelta(days=1), 0, BASE, 100, 1000, 10, 10),
-            (BASE - timedelta(days=1), 1, None, 1, 7, 7, 7),
-            (BASE, 0, None, 999, 999, 999, 999),
-            (BASE + timedelta(minutes=5), 0, None, 2, 30, 10, 20),
-            (BASE + timedelta(minutes=10), 0, None, 999, 999, 999, 999),
+            (BASE - timedelta(days=1), 1, BASE, 100, 1000, 10, 10),
+            (BASE - timedelta(days=1), 2, None, 1, 7, 7, 7),
+            (BASE, 1, None, 999, 999, 999, 999),
+            (BASE + timedelta(minutes=5), 1, None, 2, 30, 10, 20),
+            (BASE + timedelta(minutes=10), 1, None, 999, 999, 999, 999),
         ):
             await save_fixture(
                 ReducerBucket(
@@ -109,12 +109,12 @@ class TestGetQuantity:
             for tokens in (-2, 4)
         ]
         await reducer_bucket_service.rollup_active(
-            reducer_redis, organization.id, [reducer], active_events
+            redis, organization.id, [reducer], active_events
         )
 
         quantity = await reducer_service.get_quantity(
             session,
-            reducer_redis,
+            redis,
             meter_id=meter.id,
             customer_id=customer.id,
             start=BASE + timedelta(minutes=2),
@@ -129,7 +129,7 @@ class TestGetQuantity:
         store: str,
         mocker: MockerFixture,
         session: AsyncSession,
-        reducer_redis: Redis,
+        redis: Redis,
         save_fixture: SaveFixture,
         organization: Organization,
         customer: Customer,
@@ -153,13 +153,13 @@ class TestGetQuantity:
                 )
             )
         else:
-            await reducer_redis.set(
+            await redis.set(
                 get_reducer_bucket_key(reducer.id, start, customer.id, None), 7
             )
 
         quantity = await reducer_service.get_quantity(
             session,
-            reducer_redis,
+            redis,
             meter_id=meter.id,
             customer_id=customer.id,
             start=start,
@@ -171,7 +171,7 @@ class TestGetQuantity:
     async def test_window_inside_one_bucket_reads_events_once(
         self,
         session: AsyncSession,
-        reducer_redis: Redis,
+        redis: Redis,
         save_fixture: SaveFixture,
         organization: Organization,
         customer: Customer,
@@ -188,7 +188,7 @@ class TestGetQuantity:
 
         quantity = await reducer_service.get_quantity(
             session,
-            reducer_redis,
+            redis,
             meter_id=meter.id,
             customer_id=customer.id,
             start=BASE + timedelta(minutes=2),
@@ -200,7 +200,7 @@ class TestGetQuantity:
     async def test_customer_identities(
         self,
         session: AsyncSession,
-        reducer_redis: Redis,
+        redis: Redis,
         save_fixture: SaveFixture,
         organization: Organization,
         customer: Customer,
@@ -232,7 +232,7 @@ class TestGetQuantity:
                     count=1,
                 )
             )
-            await reducer_redis.set(
+            await redis.set(
                 get_reducer_bucket_key(
                     reducer.id,
                     BASE + timedelta(minutes=10),
@@ -244,7 +244,7 @@ class TestGetQuantity:
 
         quantity = await reducer_service.get_quantity(
             session,
-            reducer_redis,
+            redis,
             meter_id=meter.id,
             customer_id=customer.id,
             start=None,

@@ -1,29 +1,18 @@
-from collections.abc import AsyncIterator
-
 import pytest
-from fakeredis import FakeAsyncRedis, FakeServer
+from fakeredis import FakeAsyncRedis
 from pytest_mock import MockerFixture
 
 from polar.redis import Redis
 
 
 @pytest.fixture(autouse=True)
-async def redis(redis_server: FakeServer) -> Redis:
-    return FakeAsyncRedis(server=redis_server)
-
-
-@pytest.fixture
-def redis_server() -> FakeServer:
-    return FakeServer()
+async def redis() -> Redis:
+    return FakeAsyncRedis()
 
 
 @pytest.fixture(autouse=True)
-async def reducer_redis(
-    mocker: MockerFixture, redis_server: FakeServer
-) -> AsyncIterator[Redis]:
-    async with FakeAsyncRedis(server=redis_server, decode_responses=True) as redis:
-        mocker.patch("polar.reducer.service.create_redis", return_value=redis)
-        yield redis
+def patch_reducer_redis(mocker: MockerFixture, redis: Redis) -> None:
+    mocker.patch("polar.reducer.service.create_redis", return_value=redis)
 
 
 @pytest.fixture(autouse=True)

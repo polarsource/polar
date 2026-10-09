@@ -1,6 +1,6 @@
 import typing
 
-from pydantic import AwareDatetime, BaseModel, Field
+from pydantic import AwareDatetime, BaseModel, Field, JsonValue
 
 
 class EventCreate(BaseModel):
@@ -9,7 +9,7 @@ class EventCreate(BaseModel):
     external_customer_id: str
     external_id: str | None = None
     external_member_id: str | None = None
-    metadata: dict[str, str | int | float | bool] = Field(default_factory=dict)
+    metadata: dict[str, JsonValue] = Field(default_factory=dict)
 
     def get_property(self, property: str) -> typing.Any:
         match property:

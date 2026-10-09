@@ -1,6 +1,7 @@
 import { Duration, Effect, Option } from 'effect'
 import { Command } from 'effect/cli'
-import { DONE, formatEntries, tally } from '@/utils/billing-config/entries'
+import { tally } from '@/utils/billing-config/entries'
+import { formatTree } from '@/utils/billing-config/tree'
 import { formatProblems, plural } from '@/utils/billing-config/problems'
 import { output } from '@/utils/command'
 import { configFile as file, org } from '@/utils/flags'
@@ -37,7 +38,7 @@ const render = (config: LoadedConfig, result: ApplyResult) =>
     : [
         ui.blank,
         ...(result.entries.length > 0
-          ? [formatEntries(result.entries, DONE), ui.blank]
+          ? [formatTree(config.input, result.entries), ui.blank]
           : []),
         applied(config, result.entries),
       ]

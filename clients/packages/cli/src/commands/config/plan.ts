@@ -9,7 +9,8 @@ import {
 } from '@/schemas/BillingConfig'
 import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
-import { PLANNED, formatEntries } from '@/utils/billing-config/entries'
+import { TO_DO, tally } from '@/utils/billing-config/entries'
+import { formatTree } from '@/utils/billing-config/tree'
 import { formatProblems, plural } from '@/utils/billing-config/problems'
 import { output } from '@/utils/command'
 import { configFile as file, org } from '@/utils/flags'
@@ -27,11 +28,18 @@ export const summary = (issues: ReadonlyArray<ConfigIssue>) =>
 const render = (config: LoadedConfig, result: PlanResult) => [
   ui.blank,
   ...(result.entries.length > 0
-    ? [formatEntries(result.entries, PLANNED), ui.blank]
+    ? [formatTree(config.input, result.entries), ui.blank]
     : []),
   ...(result.issues.length > 0
     ? [formatProblems(config, result.issues), ui.blank, summary(result.issues)]
-    : [ui.success(`${config.file} can be applied`)]),
+    : result.entries.every((entry) => entry.action === 'unchanged')
+      ? [ui.success(`${config.file} is up to date, nothing to apply`)]
+      : [
+          ui.success(
+            `${config.file} can be applied: ${tally(result.entries, TO_DO)}`,
+          ),
+          `${ui.INDENT}${ui.INDENT}${ui.dim('Run')} ${ui.command('polar config apply')} ${ui.dim('to make these changes.')}`,
+        ]),
 ]
 
 export const plan = Command.make('plan', { file, org }).pipe(

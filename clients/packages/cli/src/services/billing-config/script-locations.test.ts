@@ -117,3 +117,52 @@ describe('locateInScript', () => {
     ).toBeUndefined()
   })
 })
+
+describe('locateInScript with an events section', () => {
+  const config = [
+    "import { defineConfig } from '@polar-sh/polar'",
+    '',
+    'export default defineConfig({',
+    '  events: {',
+    '    tool_call: z.object({ tool: z.string() }),',
+    '  },',
+    '  meters: ({ meter, events }) => ({',
+    "    tool_call: meter('Tool calls').on(events.tool_call).count(),",
+    '  }),',
+    '  benefits: ({ credits }) => ({',
+    "    tool_calls: credits('Included').meter('tool_call').units(1000),",
+    '  }),',
+    '  products: ({ product, free }) => ({',
+    "    free: product('Free').prices(free()).recurring('monthly').grants(['tool_calls']),",
+    '  }),',
+    '})',
+    '',
+  ].join('\n')
+  const input = {
+    meters: [{ external_id: 'tool_call' }],
+    benefits: [{ external_id: 'tool_calls' }],
+    products: [{ external_id: 'free', benefits: ['tool_calls'] }],
+  }
+
+  test('anchors a meter inside the meters section, not on its event', () => {
+    expect(
+      locateInScript(
+        config,
+        input,
+        ['meters', 0, 'filter', 'clauses', 0, 'value'],
+        'tool_call',
+      ),
+    ).toEqual({ line: 8, column: 35, length: 4 })
+  })
+
+  test('keeps a product inside the products section', () => {
+    expect(
+      locateInScript(
+        config,
+        input,
+        ['products', 0, 'benefits', 0],
+        'tool_calls',
+      ),
+    ).toEqual({ line: 14, column: 71, length: 12 })
+  })
+})

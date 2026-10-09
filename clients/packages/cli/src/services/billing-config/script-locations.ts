@@ -31,7 +31,7 @@ const literalPattern = (value: unknown) =>
 
 const FIELD_PATTERNS: Record<string, RegExp> = {
   name: /displayName|(?<![\w.])name(?=\s*:)/,
-  filter: /\.where\(|(?<![\w.])filter(?=\s*:)/,
+  filter: /\.where\(|\.on\(|(?<![\w.])filter(?=\s*:)/,
   aggregation:
     /\.(count|sum|max|min|avg|unique)\(|(?<![\w.])aggregation(?=\s*:)/,
   unit: /\.unit\(|(?<![\w.])unit(?=\s*:)/,
@@ -45,13 +45,44 @@ const find = (source: string, pattern: RegExp, from: number, to: number) => {
     : { offset: from + match.index, length: match[0].length }
 }
 
-const anchorsOf = (source: string, externalIds: ReadonlyArray<string>) => {
+type Range = { start: number; end: number }
+
+const findAll = (source: string, pattern: RegExp, from: number) =>
+  [...source.slice(from).matchAll(new RegExp(pattern.source, 'gm'))].map(
+    (match) => ({ offset: from + match.index, length: match[0].length }),
+  )
+
+const SECTIONS = ['events', 'meters', 'benefits', 'products']
+
+const sectionRange = (source: string, section: string): Range => {
+  const whole = { start: 0, end: source.length }
+  const column = ({ offset }: { offset: number }) =>
+    offset - source.lastIndexOf('\n', offset - 1)
+  const own = findAll(source, keyPattern(section), 0)
+  const start = own.find(
+    (match) => column(match) === Math.min(...own.map(column)),
+  )
+  if (start === undefined) return whole
+  const from = start.offset + start.length
+  const ends = SECTIONS.filter((other) => other !== section).flatMap((other) =>
+    findAll(source, keyPattern(other), from)
+      .filter((match) => column(match) <= column(start))
+      .map(({ offset }) => offset),
+  )
+  return { start: from, end: Math.min(source.length, ...ends) }
+}
+
+const anchorsOf = (
+  source: string,
+  externalIds: ReadonlyArray<string>,
+  range: Range,
+) => {
   const anchors: Array<{ offset: number; length: number } | undefined> = []
-  let cursor = 0
+  let cursor = range.start
   for (const id of externalIds) {
     const pattern = keyPattern(id)
-    const ahead = find(source, pattern, cursor, source.length)
-    const anchor = ahead ?? find(source, pattern, 0, source.length)
+    const ahead = find(source, pattern, cursor, range.end)
+    const anchor = ahead ?? find(source, pattern, range.start, range.end)
     anchors.push(anchor)
     if (ahead !== undefined) cursor = ahead.offset + ahead.length
   }
@@ -60,17 +91,19 @@ const anchorsOf = (source: string, externalIds: ReadonlyArray<string>) => {
 
 const entryRange = (
   source: string,
+  section: string,
   externalIds: ReadonlyArray<string | undefined>,
   index: number,
-) => {
+): Range | undefined => {
   const known = externalIds.map((id) => id ?? '')
-  const anchors = anchorsOf(source, known)
+  const within = sectionRange(source, section)
+  const anchors = anchorsOf(source, known, within)
   const start = anchors[index]
   if (start === undefined) return undefined
   const next = anchors
     .slice(index + 1)
     .find((anchor) => anchor !== undefined && anchor.offset > start.offset)
-  return { start: start.offset, end: next?.offset ?? source.length }
+  return { start: start.offset, end: next?.offset ?? within.end }
 }
 
 export const locateInScript = (
@@ -88,7 +121,7 @@ export const locateInScript = (
   )
   const externalId = externalIds[index]
   if (externalId === undefined) return undefined
-  const range = entryRange(source, externalIds, index)
+  const range = entryRange(source, section, externalIds, index)
   if (range === undefined) return undefined
   const field = rest[0]
   const fieldMatch =

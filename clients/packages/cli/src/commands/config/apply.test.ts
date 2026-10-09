@@ -143,7 +143,9 @@ describe('polar config apply', () => {
       ],
     })
     expect(failed).toBe(false)
-    expect(output).toContain('+ tool-calls  created')
+    expect(output).toContain(
+      '+ tool-calls\n      events       all events\n      aggregation  count',
+    )
     expect(output).toContain(
       'polar.json applied: 2 entries (1 created, 0 updated, 1 unchanged)',
     )

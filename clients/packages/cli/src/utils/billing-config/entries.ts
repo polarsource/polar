@@ -1,42 +1,24 @@
+import type { AppliedEntry } from '@/schemas/BillingConfig'
 import {
   Rendered,
   describeValue,
+  name,
   priceGroups,
 } from '@/utils/billing-config/describe'
-import type { AppliedEntry } from '@/schemas/BillingConfig'
+import { recurrence } from '@/utils/billing-config/sentences'
 import * as ui from '@/utils/ui'
 
-const MARKS: Record<AppliedEntry['action'], string> = {
+type Action = AppliedEntry['action']
+type Change = AppliedEntry['diff'][number]
+type Color = (text: string) => string
+
+export const MARKS: Record<Action, string> = {
   created: ui.green('+'),
   updated: ui.yellow('~'),
   unchanged: ui.dim('='),
 }
 
-const bySection = (entries: ReadonlyArray<AppliedEntry>) =>
-  [...new Set(entries.map((entry) => entry.section))].map((section) => ({
-    section,
-    entries: entries.filter((entry) => entry.section === section),
-  }))
-
-type Labels = Record<AppliedEntry['action'], string>
-
-export const DONE: Labels = {
-  created: 'created',
-  updated: 'updated',
-  unchanged: 'unchanged',
-}
-
-export const PLANNED: Labels = {
-  created: 'will be created',
-  updated: 'will be updated',
-  unchanged: 'unchanged',
-}
-
-const DIFF_INDENT = ui.INDENT.repeat(4)
-const ID_OFFSET = ui.INDENT.length * 2 + 2
 const INLINE_LIMIT = 40
-
-type Color = (text: string) => string
 
 const describe = (input: unknown) => {
   if (input === undefined || input === null) return undefined
@@ -57,50 +39,46 @@ const paint = (input: unknown, color: Color) =>
     : color(lines(input)[0] ?? '')
 
 const row = (
+  indent: string,
   label: string,
   width: number,
   first: string,
   rest: string[] = [],
 ) => [
-  `${DIFF_INDENT}${ui.dim(label.padEnd(width))}  ${first}`,
-  ...rest.map((line) => `${DIFF_INDENT}${' '.repeat(width + 2)}${line}`),
+  `${indent}${ui.dim(label.padEnd(width))}  ${first}`,
+  ...rest.map((line) => `${indent}${' '.repeat(width + 2)}${line}`),
 ]
 
-const block = (input: unknown, prefix: string, color: Color) =>
+const block = (indent: string, input: unknown, prefix: string, color: Color) =>
   lines(input).map(
     (line, index) =>
-      `${DIFF_INDENT}${ui.INDENT}${color(`${index === 0 ? prefix : ' '.repeat(prefix.length)}${line}`)}`,
+      `${indent}${ui.INDENT}${color(`${index === 0 ? prefix : ' '.repeat(prefix.length)}${line}`)}`,
   )
 
 const formatChange = (
-  change: AppliedEntry['diff'][number],
-  action: AppliedEntry['action'],
+  indent: string,
+  change: Change,
+  action: Action,
   width: number,
 ) => {
   if (action === 'created') {
     const [first = '', ...rest] = lines(change.after).map(ui.green)
-    return row(change.field, width, first, rest)
+    return row(indent, change.field, width, first, rest)
   }
   if (isInline(change.before) && isInline(change.after)) {
     return row(
+      indent,
       change.field,
       width,
       `${paint(change.before, ui.red)} ${ui.dim('→')} ${paint(change.after, ui.green)}`,
     )
   }
   return [
-    `${DIFF_INDENT}${ui.dim(change.field)}`,
-    ...block(change.before, '- ', ui.red),
-    ...block(change.after, '+ ', ui.green),
+    `${indent}${ui.dim(change.field)}`,
+    ...block(indent, change.before, '- ', ui.red),
+    ...block(indent, change.after, '+ ', ui.green),
   ]
 }
-
-const formatDiff = (entry: AppliedEntry, width: number) =>
-  entry.diff.flatMap((change) => formatChange(change, entry.action, width))
-
-const name = (input: string) => ui.printable(input).replace(/\s+/g, ' ').trim()
-
-type Change = AppliedEntry['diff'][number]
 
 const expand = (change: Change): Change[] => {
   const before = priceGroups(change.before)
@@ -116,16 +94,6 @@ const expand = (change: Change): Change[] => {
   }))
 }
 
-const recurrence = (interval: unknown, count: unknown) => {
-  if (interval === undefined || interval === null) return undefined
-  const times = typeof count === 'number' ? count : 1
-  return new Rendered(
-    times === 1
-      ? `every ${String(interval)}`
-      : `every ${times} ${String(interval)}s`,
-  )
-}
-
 const mergeRecurrence = (diff: ReadonlyArray<Change>): Change[] => {
   const interval = diff.find((change) => change.field === 'recurring_interval')
   const count = diff.find(
@@ -134,50 +102,56 @@ const mergeRecurrence = (diff: ReadonlyArray<Change>): Change[] => {
   if (interval === undefined || count === undefined) return [...diff]
   const merged: Change = {
     field: 'recurrence',
-    before: recurrence(interval.before, count.before),
-    after: recurrence(interval.after, count.after),
+    before: new Rendered(recurrence(interval.before, count.before)),
+    after: new Rendered(recurrence(interval.after, count.after)),
   }
   return diff.flatMap((change) =>
     change === interval ? [merged] : change === count ? [] : [change],
   )
 }
 
-const sanitize = (entry: AppliedEntry): AppliedEntry => ({
-  ...entry,
-  id: name(entry.id),
-  diff: mergeRecurrence(entry.diff)
-    .flatMap(expand)
-    .map((change) => ({ ...change, field: name(change.field) })),
-})
-
-export const formatEntries = (
-  raw: ReadonlyArray<AppliedEntry>,
-  labels: Labels = DONE,
+export const formatRows = (
+  indent: string,
+  diff: ReadonlyArray<Change>,
+  action: Action,
 ) => {
-  const entries = raw.map(sanitize)
-  return bySection(entries)
-    .map(({ section, entries }) => {
-      const column = Math.max(
-        ...entries.map((entry) => entry.id.length + ID_OFFSET),
-        ...entries.flatMap((entry) =>
-          entry.diff.map((change) => change.field.length + DIFF_INDENT.length),
-        ),
-      )
-      return [
-        `${ui.INDENT}${ui.bold(section)}`,
-        ...entries.flatMap((entry) => [
-          `${ui.INDENT}${ui.INDENT}${MARKS[entry.action]} ${entry.id.padEnd(column - ID_OFFSET)}  ${ui.dim(labels[entry.action])}`,
-          ...formatDiff(entry, column - DIFF_INDENT.length),
-        ]),
-      ].join('\n')
-    })
-    .join('\n\n')
+  const changes = mergeRecurrence(diff)
+    .flatMap(expand)
+    .map((change) => ({ ...change, field: name(change.field) }))
+  const width = Math.max(0, ...changes.map((change) => change.field.length))
+  return changes.flatMap((change) =>
+    formatChange(indent, change, action, width),
+  )
 }
 
-export const tally = (entries: ReadonlyArray<AppliedEntry>) =>
+type Labels = Record<Action, string>
+
+const DONE: Labels = {
+  created: 'created',
+  updated: 'updated',
+  unchanged: 'unchanged',
+}
+
+export const TO_DO: Labels = {
+  created: 'to create',
+  updated: 'to update',
+  unchanged: 'unchanged',
+}
+
+const COLORS: Record<Action, Color> = {
+  created: ui.green,
+  updated: ui.yellow,
+  unchanged: ui.dim,
+}
+
+export const tally = (
+  entries: ReadonlyArray<AppliedEntry>,
+  labels: Labels = DONE,
+) =>
   (['created', 'updated', 'unchanged'] as const)
-    .map(
-      (action) =>
-        `${entries.filter((entry) => entry.action === action).length} ${action}`,
+    .map((action) =>
+      COLORS[action](
+        `${entries.filter((entry) => entry.action === action).length} ${labels[action]}`,
+      ),
     )
     .join(', ')

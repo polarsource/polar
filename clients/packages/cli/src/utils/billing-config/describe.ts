@@ -1,6 +1,6 @@
 import * as ui from '@/utils/ui'
 
-const name = (input: unknown) =>
+export const name = (input: unknown) =>
   ui.printable(String(input)).replace(/\s+/g, ' ').trim()
 
 const OPERATORS: Record<string, string> = {
@@ -14,7 +14,7 @@ const OPERATORS: Record<string, string> = {
   not_like: '!~',
 }
 
-const record = (input: unknown): Record<string, unknown> | undefined =>
+export const record = (input: unknown): Record<string, unknown> | undefined =>
   typeof input === 'object' && input !== null && !Array.isArray(input)
     ? (input as Record<string, unknown>)
     : undefined
@@ -22,7 +22,12 @@ const record = (input: unknown): Record<string, unknown> | undefined =>
 const clause = (input: Record<string, unknown>) =>
   `${name(input['property'])} ${OPERATORS[String(input['operator'])] ?? name(input['operator'])} ${JSON.stringify(input['value'])}`
 
-const filter = (input: Record<string, unknown>, nested = false): string => {
+export const ALL_EVENTS = 'all events'
+
+export const filter = (
+  input: Record<string, unknown>,
+  nested = false,
+): string => {
   const clauses = (input['clauses'] as unknown[]).map((item) => {
     const value = record(item)
     return value && 'conjunction' in value
@@ -31,7 +36,7 @@ const filter = (input: Record<string, unknown>, nested = false): string => {
         ? clause(value)
         : JSON.stringify(item)
   })
-  if (clauses.length === 0) return 'all events'
+  if (clauses.length === 0) return ALL_EVENTS
   if (clauses.length === 1) return clauses[0] ?? ''
   const conjunction = String(input['conjunction']).toUpperCase()
   return nested
@@ -39,7 +44,7 @@ const filter = (input: Record<string, unknown>, nested = false): string => {
     : clauses.join(`\n${conjunction} `)
 }
 
-const aggregation = (input: Record<string, unknown>) =>
+export const aggregation = (input: Record<string, unknown>) =>
   input['property'] === undefined
     ? name(input['func'])
     : `${name(input['func'])}(${name(input['property'])})`
@@ -61,7 +66,7 @@ const scaleOf = (minor: unknown) => {
   return fraction.replace(/0+$/, '').length
 }
 
-const money = (minor: unknown, currency: unknown) => {
+export const money = (minor: unknown, currency: unknown) => {
   const code = String(currency).toUpperCase()
   const units = Number(minor)
   if (!Number.isFinite(units) || !/^[A-Z]{3}$/.test(code)) {
@@ -69,19 +74,22 @@ const money = (minor: unknown, currency: unknown) => {
   }
   const digits = minorUnits(code)
   const amount = units / 10 ** digits
+  const minimum = Number.isInteger(amount) ? 0 : digits
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: code,
-    currencyDisplay: 'code',
-    minimumFractionDigits: digits,
-    maximumFractionDigits: Math.min(
-      MAX_FRACTION_DIGITS,
-      Math.max(digits, scaleOf(minor) + digits),
+    minimumFractionDigits: minimum,
+    maximumFractionDigits: Math.max(
+      minimum,
+      Math.min(MAX_FRACTION_DIGITS, scaleOf(minor) + digits),
     ),
   })
     .format(amount)
-    .replace(/\u00a0/g, ' ')
+    .replace(/ /g, ' ')
 }
+
+export const count = (input: unknown) =>
+  typeof input === 'number' ? input.toLocaleString('en-US') : name(input)
 
 export class Rendered {
   readonly text: string
@@ -95,48 +103,62 @@ export interface PriceGroup {
   readonly text: Rendered
 }
 
-const groupLabel = (input: Record<string, unknown>) => {
-  switch (input['amount_type']) {
-    case 'fixed':
-      return 'fixed'
-    case 'metered_unit':
-      return `per ${name(input['meter'])}`
-    default:
-      return undefined
-  }
-}
+const SCALES = [1, 1_000, 1_000_000]
 
-const groupText = (items: ReadonlyArray<Record<string, unknown>>) => {
-  const amounts = items.map((item) =>
-    money(
-      item['amount_type'] === 'fixed'
-        ? item['price_amount']
-        : item['unit_amount'],
-      item['price_currency'],
-    ),
-  )
-  const caps = items.flatMap((item) =>
+const wholeMinor = (minor: unknown, scale: number) =>
+  Number.isInteger(Number((Number(minor) * scale).toPrecision(15)))
+
+export const unitScale = (minors: ReadonlyArray<unknown>) =>
+  minors.some((minor) => Math.abs(Number(minor)) < 1)
+    ? (SCALES.find((scale) =>
+        minors.every((minor) => wholeMinor(minor, scale)),
+      ) ?? 1)
+    : 1
+
+export const scaled = (minor: unknown, scale: number) =>
+  scale === 1 ? minor : Number((Number(minor) * scale).toPrecision(15))
+
+const price = (item: Record<string, unknown>): PriceGroup | undefined => {
+  const currency = String(item['price_currency']).toUpperCase()
+  if (item['amount_type'] === 'fixed') {
+    return {
+      label: currency,
+      text: new Rendered(money(item['price_amount'], item['price_currency'])),
+    }
+  }
+  if (item['amount_type'] !== 'metered_unit') return undefined
+  const cap =
     item['cap_amount'] === undefined || item['cap_amount'] === null
-      ? []
-      : [money(item['cap_amount'], item['price_currency'])],
+      ? undefined
+      : money(item['cap_amount'], item['price_currency'])
+  const scale = unitScale([item['unit_amount']])
+  const amount = money(
+    scaled(item['unit_amount'], scale),
+    item['price_currency'],
   )
-  return caps.length === 0
-    ? amounts.join(', ')
-    : `${amounts.join(', ')}\ncapped at ${caps.join(', ')}`
+  return {
+    label: `${currency} per ${name(item['meter'])}`,
+    text: new Rendered(
+      `${amount}${scale === 1 ? '' : ` per ${count(scale)}`}${cap === undefined ? '' : `\ncapped at ${cap}`}`,
+    ),
+  }
 }
 
 export const priceGroups = (input: unknown): PriceGroup[] | undefined => {
   if (!Array.isArray(input) || input.length === 0) return undefined
-  const groups = new Map<string, Record<string, unknown>[]>()
+  const groups = new Map<string, string[]>()
   for (const item of input) {
     const value = record(item)
-    const label = value === undefined ? undefined : groupLabel(value)
-    if (value === undefined || label === undefined) return undefined
-    groups.set(label, [...(groups.get(label) ?? []), value])
+    const group = value === undefined ? undefined : price(value)
+    if (group === undefined) return undefined
+    groups.set(group.label, [
+      ...(groups.get(group.label) ?? []),
+      group.text.text,
+    ])
   }
-  return [...groups].map(([label, items]) => ({
+  return [...groups].map(([label, texts]) => ({
     label,
-    text: new Rendered(groupText(items)),
+    text: new Rendered(texts.join('\n')),
   }))
 }
 
@@ -146,7 +168,7 @@ const prices = (items: unknown[]) =>
     .join('\n')
 
 const credit = (input: Record<string, unknown>) =>
-  `${name(input['units'])} units of ${name(input['meter'])}${input['rollover'] === true ? ', rolling over' : ''}`
+  `${count(input['units'])} ${name(input['meter'])} credits${input['rollover'] === true ? ', unused credits roll over' : ''}`
 
 const scalars = (items: unknown[]) =>
   items.every((item) => typeof item === 'string' || typeof item === 'number')

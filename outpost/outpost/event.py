@@ -12,10 +12,15 @@ class EventCreate(BaseModel):
     metadata: dict[str, str | int | float | bool] = Field(default_factory=dict)
 
     def get_property(self, property: str) -> typing.Any:
-        try:
-            return getattr(self, property)
-        except AttributeError:
-            return self.metadata.get(property)
+        match property:
+            case "timestamp":
+                return int(self.timestamp.timestamp())
+            case "name":
+                return self.name
+            case "source":
+                return "user"
+            case _:
+                return self.metadata.get(property)
 
 
 class EventsIngest(BaseModel):

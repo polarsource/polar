@@ -1,4 +1,8 @@
-import { describeValue } from '@/utils/billing-config/describe'
+import {
+  Rendered,
+  describeValue,
+  priceGroups,
+} from '@/utils/billing-config/describe'
 import type { AppliedEntry } from '@/schemas/BillingConfig'
 import * as ui from '@/utils/ui'
 
@@ -29,6 +33,7 @@ export const PLANNED: Labels = {
 }
 
 const DIFF_INDENT = ui.INDENT.repeat(4)
+const ID_OFFSET = ui.INDENT.length * 2 + 2
 const INLINE_LIMIT = 40
 
 type Color = (text: string) => string
@@ -95,10 +100,54 @@ const formatDiff = (entry: AppliedEntry, width: number) =>
 
 const name = (input: string) => ui.printable(input).replace(/\s+/g, ' ').trim()
 
+type Change = AppliedEntry['diff'][number]
+
+const expand = (change: Change): Change[] => {
+  const before = priceGroups(change.before)
+  const after = priceGroups(change.after)
+  if (before === undefined && after === undefined) return [change]
+  const labels = [
+    ...new Set([...(before ?? []), ...(after ?? [])].map(({ label }) => label)),
+  ]
+  return labels.map((label) => ({
+    field: `${change.field} (${label})`,
+    before: before?.find((group) => group.label === label)?.text,
+    after: after?.find((group) => group.label === label)?.text,
+  }))
+}
+
+const recurrence = (interval: unknown, count: unknown) => {
+  if (interval === undefined || interval === null) return undefined
+  const times = typeof count === 'number' ? count : 1
+  return new Rendered(
+    times === 1
+      ? `every ${String(interval)}`
+      : `every ${times} ${String(interval)}s`,
+  )
+}
+
+const mergeRecurrence = (diff: ReadonlyArray<Change>): Change[] => {
+  const interval = diff.find((change) => change.field === 'recurring_interval')
+  const count = diff.find(
+    (change) => change.field === 'recurring_interval_count',
+  )
+  if (interval === undefined || count === undefined) return [...diff]
+  const merged: Change = {
+    field: 'recurrence',
+    before: recurrence(interval.before, count.before),
+    after: recurrence(interval.after, count.after),
+  }
+  return diff.flatMap((change) =>
+    change === interval ? [merged] : change === count ? [] : [change],
+  )
+}
+
 const sanitize = (entry: AppliedEntry): AppliedEntry => ({
   ...entry,
   id: name(entry.id),
-  diff: entry.diff.map((change) => ({ ...change, field: name(change.field) })),
+  diff: mergeRecurrence(entry.diff)
+    .flatMap(expand)
+    .map((change) => ({ ...change, field: name(change.field) })),
 })
 
 export const formatEntries = (
@@ -106,23 +155,22 @@ export const formatEntries = (
   labels: Labels = DONE,
 ) => {
   const entries = raw.map(sanitize)
-  const width = Math.max(...entries.map((entry) => entry.id.length))
-  const fieldWidth = Math.max(
-    width - ui.INDENT.length,
-    ...entries.flatMap((entry) =>
-      entry.diff.map((change) => change.field.length),
-    ),
-  )
   return bySection(entries)
-    .map(({ section, entries }) =>
-      [
+    .map(({ section, entries }) => {
+      const column = Math.max(
+        ...entries.map((entry) => entry.id.length + ID_OFFSET),
+        ...entries.flatMap((entry) =>
+          entry.diff.map((change) => change.field.length + DIFF_INDENT.length),
+        ),
+      )
+      return [
         `${ui.INDENT}${ui.bold(section)}`,
         ...entries.flatMap((entry) => [
-          `${ui.INDENT}${ui.INDENT}${MARKS[entry.action]} ${entry.id.padEnd(width)}  ${ui.dim(labels[entry.action])}`,
-          ...formatDiff(entry, fieldWidth),
+          `${ui.INDENT}${ui.INDENT}${MARKS[entry.action]} ${entry.id.padEnd(column - ID_OFFSET)}  ${ui.dim(labels[entry.action])}`,
+          ...formatDiff(entry, column - DIFF_INDENT.length),
         ]),
-      ].join('\n'),
-    )
+      ].join('\n')
+    })
     .join('\n\n')
 }
 

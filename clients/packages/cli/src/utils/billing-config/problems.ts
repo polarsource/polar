@@ -46,6 +46,10 @@ const describe = (issue: ConfigIssue): Problem => {
           : lowercaseFirst(issue.message),
       location: issue.location,
       path: issue.path,
+      help:
+        issue.code === 'unknown_event'
+          ? `The meter counts events with this name, so it stays at zero until your app sends one. Fine for a new event; if the name looks wrong, compare it with ${ui.command('polar events list_names')}.`
+          : undefined,
     }
   }
   const base = {

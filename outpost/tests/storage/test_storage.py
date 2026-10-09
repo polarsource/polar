@@ -21,14 +21,14 @@ async def storage(
 
 
 def snapshot(
-    sealed_until: int,
-    sealed: float = 10,
+    cold_until: int,
+    cold: float = 10,
     buckets: list[tuple[int, float]] | None = None,
 ) -> Snapshot:
     return {
         "external_customer_id": "customer",
-        "sealed_until": sealed_until,
-        "sealed": {"reducer": sealed},
+        "cold_until": cold_until,
+        "cold": {"reducer": cold},
         "buckets": [
             {"reducer_id": "reducer", "bucket_start": start, "value": value}
             for start, value in buckets or []
@@ -43,8 +43,8 @@ class TestSnapshot:
         await storage.write_updates({("customer", "reducer", 300, "count"): 1})
 
         assert await storage.read("customer") == {
-            "sealed_until": None,
-            "sealed": {},
+            "cold_until": None,
+            "cold": {},
             "buckets": {("reducer", 300): 1},
         }
 
@@ -55,12 +55,12 @@ class TestSnapshot:
         await storage.write_updates({("customer", "reducer", 600, "count"): 1})
 
         assert await storage.read("customer") == {
-            "sealed_until": 600,
-            "sealed": {"reducer": 10},
+            "cold_until": 600,
+            "cold": {"reducer": 10},
             "buckets": {("reducer", 600): 4},
         }
 
-    async def test_drops_sealed_buckets(
+    async def test_drops_cold_buckets(
         self, anyio_backend: str, storage: Storage
     ) -> None:
         await storage.apply_snapshot(snapshot(600))
@@ -71,7 +71,7 @@ class TestSnapshot:
             }
         )
 
-        await storage.apply_snapshot(snapshot(900, sealed=11, buckets=[(900, 5)]))
+        await storage.apply_snapshot(snapshot(900, cold=11, buckets=[(900, 5)]))
         await storage.write_updates(
             {
                 ("customer", "reducer", 600, "count"): 1,
@@ -80,19 +80,19 @@ class TestSnapshot:
         )
 
         assert await storage.read("customer") == {
-            "sealed_until": 900,
-            "sealed": {"reducer": 11},
+            "cold_until": 900,
+            "cold": {"reducer": 11},
             "buckets": {("reducer", 900): 3},
         }
 
     async def test_ignores_older_snapshot(
         self, anyio_backend: str, storage: Storage
     ) -> None:
-        await storage.apply_snapshot(snapshot(900, sealed=11))
-        await storage.apply_snapshot(snapshot(600, sealed=10))
+        await storage.apply_snapshot(snapshot(900, cold=11))
+        await storage.apply_snapshot(snapshot(600, cold=10))
 
         assert await storage.read("customer") == {
-            "sealed_until": 900,
-            "sealed": {"reducer": 11},
+            "cold_until": 900,
+            "cold": {"reducer": 11},
             "buckets": {},
         }

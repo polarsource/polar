@@ -39,8 +39,8 @@ POLAR_SNAPSHOT_REQUESTS: list[str] = []
 def polar_snapshot(external_customer_id: str) -> dict[str, typing.Any]:
     return {
         "external_customer_id": external_customer_id,
-        "sealed_until": 300,
-        "sealed": {POLAR_REDUCERS[0]["id"]: 10},
+        "cold_until": 300,
+        "cold": {POLAR_REDUCERS[0]["id"]: 10},
         "buckets": [],
     }
 

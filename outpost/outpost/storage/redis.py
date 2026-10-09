@@ -16,8 +16,8 @@ for i = 1, #KEYS, 2 do
     local offset = 1 + (i - 1) * 2
     local field, func, raw_value, bucket_start =
         ARGV[offset + 1], ARGV[offset + 2], ARGV[offset + 3], ARGV[offset + 4]
-    local sealed_until = tonumber(redis.call('HGET', snapshot_key, 'sealed_until'))
-    if not sealed_until or tonumber(bucket_start) >= sealed_until then
+    local cold_until = tonumber(redis.call('HGET', snapshot_key, 'cold_until'))
+    if not cold_until or tonumber(bucket_start) >= cold_until then
         if func == 'count' then
             redis.call('HINCRBY', key, field, raw_value)
         elseif func == 'sum' then
@@ -39,7 +39,7 @@ for i = 1, #KEYS, 2 do
             end
         end
         redis.call('EXPIRE', key, ttl)
-        if sealed_until then
+        if cold_until then
             redis.call('EXPIRE', snapshot_key, ttl)
         end
     end
@@ -49,20 +49,20 @@ return 0
 
 APPLY_SNAPSHOT_SCRIPT = """
 local snapshot_key, buckets_key = KEYS[1], KEYS[2]
-local sealed_until, ttl, sealed_count = tonumber(ARGV[1]), ARGV[2], tonumber(ARGV[3])
-local current = tonumber(redis.call('HGET', snapshot_key, 'sealed_until'))
-if current and current > sealed_until then
+local cold_until, ttl, cold_count = tonumber(ARGV[1]), ARGV[2], tonumber(ARGV[3])
+local current = tonumber(redis.call('HGET', snapshot_key, 'cold_until'))
+if current and current > cold_until then
     return 0
 end
 redis.call('DEL', snapshot_key)
-redis.call('HSET', snapshot_key, 'sealed_until', sealed_until)
+redis.call('HSET', snapshot_key, 'cold_until', cold_until)
 local i = 4
-for _ = 1, sealed_count do
+for _ = 1, cold_count do
     redis.call('HSET', snapshot_key, ARGV[i], ARGV[i + 1])
     i = i + 2
 end
 for _, field in ipairs(redis.call('HKEYS', buckets_key)) do
-    if tonumber(string.match(field, ':(%d+)$')) < sealed_until then
+    if tonumber(string.match(field, ':(%d+)$')) < cold_until then
         redis.call('HDEL', buckets_key, field)
     end
 end
@@ -123,11 +123,11 @@ class RedisStorage:
     async def apply_snapshot(self, snapshot: Snapshot) -> None:
         customer_id = snapshot["external_customer_id"]
         args: list[str | int | float] = [
-            snapshot["sealed_until"],
+            snapshot["cold_until"],
             BUCKET_TTL,
-            len(snapshot["sealed"]),
+            len(snapshot["cold"]),
         ]
-        for reducer_id, value in snapshot["sealed"].items():
+        for reducer_id, value in snapshot["cold"].items():
             args.extend((reducer_id, value))
         for bucket in snapshot["buckets"]:
             args.extend(
@@ -147,10 +147,10 @@ class RedisStorage:
         for field, value in stored_buckets.items():
             reducer_id, bucket_start = field.decode().rsplit(":", 1)
             buckets[(reducer_id, int(bucket_start))] = float(value)
-        sealed_until = snapshot.pop(b"sealed_until", None)
+        cold_until = snapshot.pop(b"cold_until", None)
         return {
-            "sealed_until": int(sealed_until) if sealed_until is not None else None,
-            "sealed": {
+            "cold_until": int(cold_until) if cold_until is not None else None,
+            "cold": {
                 reducer_id.decode(): float(value)
                 for reducer_id, value in snapshot.items()
             },

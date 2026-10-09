@@ -30,7 +30,7 @@ class MemoryStorage:
     async def write_updates(self, updates: Updates) -> None:
         for (customer_id, reducer_id, bucket_start, func), value in updates.items():
             snapshot = self.snapshots.get(customer_id)
-            if snapshot is not None and bucket_start < snapshot["sealed_until"]:
+            if snapshot is not None and bucket_start < snapshot["cold_until"]:
                 continue
             key = (customer_id, reducer_id, bucket_start)
             previous = self.buckets.get(key)
@@ -62,14 +62,14 @@ class MemoryStorage:
     async def apply_snapshot(self, snapshot: Snapshot) -> None:
         customer_id = snapshot["external_customer_id"]
         current = self.snapshots.get(customer_id)
-        if current is not None and current["sealed_until"] > snapshot["sealed_until"]:
+        if current is not None and current["cold_until"] > snapshot["cold_until"]:
             return
         self.snapshots[customer_id] = snapshot
         # ponytail: full scan, index buckets per customer if the memory store grows
         self.buckets = {
             key: value
             for key, value in self.buckets.items()
-            if key[0] != customer_id or key[2] >= snapshot["sealed_until"]
+            if key[0] != customer_id or key[2] >= snapshot["cold_until"]
         }
         if current is None:
             for bucket in snapshot["buckets"]:
@@ -79,8 +79,8 @@ class MemoryStorage:
     async def read(self, customer_id: str) -> CustomerState:
         snapshot = self.snapshots.get(customer_id)
         return {
-            "sealed_until": snapshot["sealed_until"] if snapshot else None,
-            "sealed": snapshot["sealed"] if snapshot else {},
+            "cold_until": snapshot["cold_until"] if snapshot else None,
+            "cold": snapshot["cold"] if snapshot else {},
             "buckets": {
                 (reducer_id, bucket_start): value
                 for (customer, reducer_id, bucket_start), value in self.buckets.items()

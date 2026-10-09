@@ -79,8 +79,8 @@ async def test_listen_reconnects(
         tg.cancel_scope.cancel()
 
     assert connections == 2
-    assert (await storage.read("customer"))["sealed"] == polar_snapshot("customer")[
-        "sealed"
+    assert (await storage.read("customer"))["cold"] == polar_snapshot("customer")[
+        "cold"
     ]
 
 
@@ -103,7 +103,7 @@ async def test_listen_applies_snapshots() -> None:
         tg.cancel_scope.cancel()
 
     assert await storage.read("customer") == {
-        "sealed_until": 300,
-        "sealed": polar_snapshot("customer")["sealed"],
+        "cold_until": 300,
+        "cold": polar_snapshot("customer")["cold"],
         "buckets": {},
     }

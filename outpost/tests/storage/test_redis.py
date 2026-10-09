@@ -96,8 +96,8 @@ class TestWriteUpdates:
         await redis.apply_snapshot(
             {
                 "external_customer_id": "customer",
-                "sealed_until": 300,
-                "sealed": {"reducer": 1},
+                "cold_until": 300,
+                "cold": {"reducer": 1},
                 "buckets": [],
             }
         )

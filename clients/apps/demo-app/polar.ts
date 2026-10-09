@@ -16,6 +16,68 @@ export const polar = RuntimeSDK(config, {
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
+const findPlan = async (externalId: 'free' | 'pro') => {
+  const { items: products } = await polar.sdk.products.list({
+    is_recurring: true,
+    limit: 100,
+  })
+  const plan = products.find((product) => product.external_id === externalId)
+  if (!plan) {
+    throw new Error(`The ${externalId} plan is not deployed in this environment.`)
+  }
+  return plan
+}
+
+export const getProPrice = async () => {
+  const pro = await findPlan('pro')
+  const price = pro.prices.find(
+    (price) => price.amount_type === 'fixed' && price.price_currency === 'usd',
+  )
+  if (price?.amount_type !== 'fixed') {
+    throw new Error('The pro plan has no fixed USD price.')
+  }
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'usd',
+  }).format(price.price_amount / 100)
+}
+
+export const createProCheckout = async (externalId: string, origin: string) => {
+  const pro = await findPlan('pro')
+  const { items } = await polar.sdk.subscriptions.list({
+    external_customer_id: externalId,
+    active: true,
+    limit: 1,
+  })
+
+  const checkout = await polar.sdk.checkouts.create({
+    products: [pro.id],
+    external_customer_id: externalId,
+    // Upgrades the free subscription instead of creating a second one
+    subscription_id: items[0]?.id,
+    success_url: `${origin}/?checkout_id={CHECKOUT_ID}`,
+    return_url: origin,
+  })
+  return checkout.url
+}
+
+export const isPro = async (externalId: string) => {
+  const pro = await findPlan('pro')
+  const { items } = await polar.sdk.subscriptions.list({
+    external_customer_id: externalId,
+    product_id: pro.id,
+    active: true,
+    limit: 1,
+  })
+  if (items.length === 0) return false
+
+  // Benefits are granted asynchronously after the subscription becomes active
+  const { granted } = await polar
+    .actor({ externalCustomerId: externalId })
+    .access('custom_servers')
+  return granted
+}
+
 export const ensureFreePlan = async (email: string, externalId: string) => {
   try {
     await polar.sdk.customers.getExternal(externalId)
@@ -32,14 +94,7 @@ export const ensureFreePlan = async (email: string, externalId: string) => {
   })
   if (items.length > 0) return
 
-  const { items: products } = await polar.sdk.products.list({
-    is_recurring: true,
-    limit: 100,
-  })
-  const freePlan = products.find((product) => product.external_id === 'free')
-  if (!freePlan) {
-    throw new Error('The free plan is not deployed in this environment.')
-  }
+  const freePlan = await findPlan('free')
 
   log('Subscribing customer to the free plan', externalId)
   await polar.sdk.subscriptions.create({

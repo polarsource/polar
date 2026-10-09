@@ -3,6 +3,7 @@
   --gray-200: #f9f9f8;
   --gray-400: #e9e9e7;
   --gray-800: #bcbbb5;
+  --gray-850: #8f8d86;
   --gray-900: #6f6d66;
   --gray-1200: #21201c;
   --accent: #3619cc;
@@ -40,7 +41,7 @@ p {
 }
 
 .muted {
-  color: var(--gray-900);
+  color: var(--gray-850);
 }
 
 .faint {
@@ -209,6 +210,10 @@ dialog {
     overlay 0.2s allow-discrete;
 }
 
+dialog:focus-visible {
+  outline: none;
+}
+
 dialog:not([open]) {
   opacity: 0;
   transform: scale(0.96);
@@ -246,11 +251,52 @@ dialog:not([open])::backdrop {
 dialog .card {
   padding: 0;
   box-shadow: none;
+  text-align: center;
 }
 
 @keyframes fade-in {
   from {
     opacity: 0;
     transform: translateY(2px);
+  }
+}
+
+dialog .actions {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+}
+
+dialog .actions form,
+dialog .actions .primary {
+  width: 100%;
+}
+
+dialog .actions .ghost {
+  font-size: 12px;
+  /* Text links have no visible box, so pull the padding in to balance it optically */
+  margin-bottom: -10px;
+  color: var(--gray-850);
+  transition: color 0.2s;
+}
+
+dialog .actions .ghost:hover:not(:disabled) {
+  color: var(--gray-900);
+  filter: none;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  justify-self: center;
+  border: 2px solid var(--gray-400);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }

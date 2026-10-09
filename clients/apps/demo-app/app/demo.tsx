@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { call, getBalance } from './actions'
+import { call, checkUpgraded, getBalance, upgrade } from './actions'
 
 type Server = 'builtin' | 'custom'
 
@@ -19,20 +19,51 @@ const timeAgo = (at: number, now: number) => {
   return relative.format(-Math.floor(seconds / 3600), 'hour')
 }
 
-export function Demo() {
+type Modal = 'paywall' | 'upgrading' | 'upgraded'
+
+export function Demo({
+  proPrice,
+  upgrading,
+}: {
+  proPrice: string
+  upgrading: boolean
+}) {
   const [balance, setBalance] = useState<number>()
   const [pristine, setPristine] = useState(false)
   const [syncStartedAt, setSyncStartedAt] = useState<number>()
   const [calling, setCalling] = useState(false)
   const [entries, setEntries] = useState<Entry[]>([])
   const [now, setNow] = useState(() => Date.now())
-  const [paywall, setPaywall] = useState(false)
+  const [modal, setModal] = useState<Modal | undefined>(
+    upgrading ? 'upgrading' : undefined,
+  )
+  // Keeps the last content rendered while the dialog fades out
+  const [content, setContent] = useState(modal)
   const dialog = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
-    if (paywall) dialog.current?.showModal()
-    else dialog.current?.close()
-  }, [paywall])
+    if (modal) {
+      setContent(modal)
+      dialog.current?.showModal()
+    } else dialog.current?.close()
+  }, [modal])
+
+  // Back from checkout: poll until the Pro subscription and its benefits are active
+  useEffect(() => {
+    if (!upgrading) return
+    window.history.replaceState(null, '', '/')
+
+    let timeout: ReturnType<typeof setTimeout>
+    const poll = async () => {
+      if (await checkUpgraded()) {
+        setModal('upgraded')
+        setPristine(false)
+      } else timeout = setTimeout(poll, 1000)
+    }
+    void poll()
+
+    return () => clearTimeout(timeout)
+  }, [upgrading])
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000)
@@ -66,7 +97,7 @@ export function Demo() {
 
     if (result.paywall) {
       setEntries((entries) => entries.filter((entry) => entry.id !== id))
-      setPaywall(true)
+      setModal('paywall')
       return
     }
 
@@ -124,18 +155,60 @@ export function Demo() {
           Custom tool
         </button>
       </footer>
-      <dialog ref={dialog} onClose={() => setPaywall(false)}>
-        <div className="card">
-          <div>
-            <h1>Upgrade to Pro</h1>
-            <p className="muted">
-              Get 1,000 tool calls a month and access to custom servers.
-            </p>
+      <dialog
+        ref={dialog}
+        onCancel={(event) => {
+          if (modal === 'upgrading') event.preventDefault()
+        }}
+        onClose={() => setModal(undefined)}
+      >
+        {content === 'paywall' && (
+          <div className="card">
+            <div>
+              <h1>Upgrade to Pro</h1>
+              <p className="muted">
+                Get 1,000 tool calls a month and access to custom servers.
+              </p>
+            </div>
+            <div className="actions">
+              <form action={upgrade}>
+                <button type="submit" className="primary">
+                  Get Pro for {proPrice}
+                </button>
+              </form>
+              <button className="ghost" onClick={() => setModal(undefined)}>
+                Not now
+              </button>
+            </div>
           </div>
-          <button className="primary" onClick={() => setPaywall(false)}>
-            Got it
-          </button>
-        </div>
+        )}
+        {content === 'upgrading' && (
+          <div className="card">
+            <span className="spinner" />
+            <div>
+              <h1>Confirming your upgrade</h1>
+              <p className="muted">This usually takes a few seconds.</p>
+            </div>
+          </div>
+        )}
+        {content === 'upgraded' && (
+          <div className="card">
+            <div>
+              <h1>Welcome to Pro</h1>
+              <p className="muted">
+                You now have 1,000 tool calls a month and access to custom
+                servers.
+              </p>
+            </div>
+            <button
+              className="primary"
+              autoFocus
+              onClick={() => setModal(undefined)}
+            >
+              Continue
+            </button>
+          </div>
+        )}
       </dialog>
     </main>
   )

@@ -14,7 +14,10 @@ export default defineConfig({
     }),
   },
   meters: ({ meter, events }) => ({
-    tool_call: meter().on(events.tool_call).unit('custom', 'tool call').count(),
+    tool_call: meter('Tool calls')
+      .on(events.tool_call)
+      .unit('custom', 'tool calls')
+      .count(),
   }),
   benefits: ({ flag, credits }) => ({
     custom_servers: flag('Custom servers').metadata({ tag: 'primary' }),

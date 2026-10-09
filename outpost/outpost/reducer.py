@@ -29,7 +29,7 @@ class PropertyAggregation(typing.TypedDict):
 type Aggregation = CountAggregation | PropertyAggregation
 
 
-class Meter(typing.TypedDict):
+class Reducer(typing.TypedDict):
     id: str
     filter: Filter
     aggregation: Aggregation
@@ -92,15 +92,15 @@ type Updates = dict[tuple[str, str, str], int | float]
 
 
 def reduce(
-    meters: collections.abc.Sequence[tuple[Meter, EventMatcher]],
+    reducers: collections.abc.Sequence[tuple[Reducer, EventMatcher]],
     events: collections.abc.Sequence[EventCreate],
 ) -> Updates:
     updates: Updates = {}
     for event in events:
-        for meter, matcher in meters:
+        for reducer, matcher in reducers:
             if not matcher(event):
                 continue
-            aggregation = meter["aggregation"]
+            aggregation = reducer["aggregation"]
             func = aggregation["func"]
             if func == "count":
                 value: int | float = 1
@@ -118,7 +118,7 @@ def reduce(
                     message = "Sum requires integer values for HINCRBY"
                     raise ValueError(message)
 
-            update_key = (event.external_customer_id, meter["id"], func)
+            update_key = (event.external_customer_id, reducer["id"], func)
             previous = updates.get(update_key)
             match func:
                 case "count" | "sum":

@@ -23,6 +23,14 @@ POLAR_METERS: list[dict[str, typing.Any]] = [
         "aggregation": {"func": "count"},
     }
 ]
+POLAR_REDUCERS: list[dict[str, typing.Any]] = [
+    {
+        "id": "00000000-0000-0000-0000-000000000011",
+        "filter": POLAR_METERS[0]["filter"],
+        "aggregation": POLAR_METERS[0]["aggregation"],
+        "meter_ids": [POLAR_METERS[0]["id"]],
+    }
+]
 
 
 async def polar_websocket(websocket: WebSocket) -> None:
@@ -30,7 +38,10 @@ async def polar_websocket(websocket: WebSocket) -> None:
     async for message in websocket.iter_json():
         if message["type"] == "configuration":
             await websocket.send_json(
-                {"type": "configuration", "payload": {"meters": POLAR_METERS}}
+                {
+                    "type": "configuration",
+                    "payload": {"reducers": POLAR_REDUCERS},
+                }
             )
 
 

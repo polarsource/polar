@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from outpost.event import EventCreate
-from outpost.reducer import FilterClause, Meter, get_matcher, reduce
+from outpost.reducer import FilterClause, Reducer, get_matcher, reduce
 
 
 @pytest.fixture
@@ -19,7 +19,7 @@ def event() -> EventCreate:
 
 class TestReduce:
     def test_aggregations(self, event: EventCreate) -> None:
-        meters: list[Meter] = [
+        reducers: list[Reducer] = [
             {
                 "id": "count",
                 "filter": {"conjunction": "and", "clauses": []},
@@ -27,7 +27,7 @@ class TestReduce:
             }
         ]
         for func in ("sum", "min", "max"):
-            meters.append(
+            reducers.append(
                 {
                     "id": func,
                     "filter": {"conjunction": "and", "clauses": []},
@@ -44,8 +44,10 @@ class TestReduce:
                 update={"external_customer_id": "other", "metadata": {"amount": 7}}
             ),
         )
-        meter_matchers = [(meter, get_matcher(meter["filter"])) for meter in meters]
-        assert reduce(meter_matchers, events) == {
+        reducer_matchers = [
+            (reducer, get_matcher(reducer["filter"])) for reducer in reducers
+        ]
+        assert reduce(reducer_matchers, events) == {
             ("customer", "count", "count"): 3,
             ("customer", "sum", "sum"): 2,
             ("customer", "min", "min"): -2,
@@ -55,11 +57,11 @@ class TestReduce:
             ("other", "min", "min"): 7,
             ("other", "max", "max"): 7,
         }
-        assert reduce(meter_matchers, []) == {}
+        assert reduce(reducer_matchers, []) == {}
         assert reduce([], events) == {}
 
     def test_filters(self, event: EventCreate) -> None:
-        meter: Meter = {
+        reducer: Reducer = {
             "id": "count",
             "filter": {
                 "conjunction": "and",
@@ -90,9 +92,9 @@ class TestReduce:
             ),
             matching.model_copy(update={"metadata": {"tier": "paid", "enabled": True}}),
         ]
-        matcher = get_matcher(meter["filter"])
+        matcher = get_matcher(reducer["filter"])
         with patch("outpost.reducer.get_matcher", wraps=get_matcher) as compile_matcher:
-            assert reduce([(meter, matcher)], events) == {
+            assert reduce([(reducer, matcher)], events) == {
                 ("customer", "count", "count"): 1
             }
             compile_matcher.assert_not_called()
@@ -101,13 +103,13 @@ class TestReduce:
     def test_skips_non_numeric_values(
         self, event: EventCreate, amount: str | bool | None
     ) -> None:
-        meter: Meter = {
+        reducer: Reducer = {
             "id": "sum",
             "filter": {"conjunction": "and", "clauses": []},
             "aggregation": {"func": "sum", "property": "amount"},
         }
         event.metadata = {} if amount is None else {"amount": amount}
-        assert reduce([(meter, get_matcher(meter["filter"]))], [event]) == {}
+        assert reduce([(reducer, get_matcher(reducer["filter"]))], [event]) == {}
 
     @pytest.mark.parametrize(
         ("func", "amount", "message"),
@@ -124,14 +126,14 @@ class TestReduce:
         amount: float,
         message: str,
     ) -> None:
-        meter: Meter = {
-            "id": "meter",
+        reducer: Reducer = {
+            "id": "reducer",
             "filter": {"conjunction": "and", "clauses": []},
             "aggregation": {"func": func, "property": "amount"},
         }
         event.metadata = {"amount": amount}
         with pytest.raises(ValueError, match=message):
-            reduce([(meter, get_matcher(meter["filter"]))], [event])
+            reduce([(reducer, get_matcher(reducer["filter"]))], [event])
 
 
 @pytest.mark.parametrize(

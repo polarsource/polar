@@ -40,7 +40,7 @@ async def ingest(request: Request) -> Response:
 
         state = get_state(request)
         with REDUCE_SECONDS.time():
-            updates = reduce(state["configuration"].meters, payload.events)
+            updates = reduce(state["configuration"].reducers, payload.events)
         await state["storage"].write_updates(updates)
         EVENTS_INGESTED.inc(len(payload.events))
 

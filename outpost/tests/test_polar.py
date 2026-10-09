@@ -10,20 +10,22 @@ from starlette.websockets import WebSocket
 
 from outpost.polar import Configuration, listen
 
-from .conftest import POLAR_METERS, polar_websocket
+from .conftest import POLAR_REDUCERS, polar_websocket
 
 
-def test_configuration_skips_unsupported_meters() -> None:
+def test_configuration_skips_unsupported_reducers() -> None:
     configuration = Configuration()
     unsupported = {
-        **POLAR_METERS[0],
-        "id": "00000000-0000-0000-0000-000000000002",
+        **POLAR_REDUCERS[0],
+        "id": "00000000-0000-0000-0000-000000000012",
         "aggregation": {"func": "unique", "property": "user"},
     }
 
-    configuration.update([*POLAR_METERS, unsupported])
+    configuration.update([*POLAR_REDUCERS, unsupported])
 
-    assert [meter["id"] for meter, _ in configuration.meters] == [POLAR_METERS[0]["id"]]
+    assert [reducer["id"] for reducer, _ in configuration.reducers] == [
+        POLAR_REDUCERS[0]["id"]
+    ]
     assert configuration.ready.is_set()
 
 

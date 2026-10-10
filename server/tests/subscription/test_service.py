@@ -8,6 +8,7 @@ from unittest.mock import ANY, AsyncMock, MagicMock, call
 import freezegun
 import pytest
 import stripe as stripe_lib
+from babel.dates import format_date
 from freezegun import freeze_time
 from pytest_mock import MockerFixture
 from sqlalchemy.util.typing import TypeAlias
@@ -21,6 +22,7 @@ from polar.email.schemas import (
     SubscriptionRevokedEmail,
 )
 from polar.enums import (
+    PaymentMode,
     PaymentProcessor,
     SubscriptionProrationBehavior,
     SubscriptionRecurringInterval,
@@ -5697,6 +5699,126 @@ class TestUpdate:
             updated,
         )
 
+    @pytest.mark.parametrize(
+        "trial_extension",
+        [timedelta(0), timedelta(days=30)],
+        ids=["unchanged_trial_end", "extended_trial"],
+    )
+    async def test_next_period_interval_change_with_trial_end_bills_one_full_period(
+        self,
+        trial_extension: timedelta,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        enqueue_job_mock: MagicMock,
+        webhook_service_send_mock: MagicMock,
+    ) -> None:
+        mocker.patch.object(order_service, "trigger_payment", new_callable=AsyncMock)
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.payment_method = payment_method
+        await save_fixture(subscription)
+
+        assert subscription.trial_end is not None
+        trial_end = subscription.trial_end + trial_extension
+        yearly_price = 10_000
+        yearly_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            prices=[(yearly_price, "usd")],
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update(
+                session,
+                ctx,
+                subscription,
+                update=SubscriptionUpdateBase(
+                    product_id=yearly_product.id,
+                    proration_behavior=SubscriptionProrationBehavior.next_period,
+                    trial_end=trial_end,
+                ),
+            )
+
+        assert updated.status == SubscriptionStatus.trialing
+        assert updated.product == product
+        assert updated.trial_end == trial_end
+        assert updated.current_period_end == trial_end
+
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        pending_update = (
+            await subscription_update_repository.get_unapplied_by_subscription_id(
+                updated.id
+            )
+        )
+        expected_period_end = SubscriptionRecurringInterval.year.get_next_period(
+            trial_end, trial_end.day, 1
+        )
+        assert pending_update is not None
+        assert pending_update.applies_at == trial_end
+        assert pending_update.new_cycle_start == trial_end
+        assert pending_update.new_cycle_end == expected_period_end
+
+        with freeze_time(trial_end):
+            async with SubscriptionUpdateContext(
+                session, updated, subscription_service
+            ) as ctx:
+                cycled = await subscription_service.cycle(
+                    session, ctx, updated, payment_mode=PaymentMode.sync
+                )
+            # A zero-length period is already due, so the scheduler fires again.
+            if cycled.current_period_end <= utc_now():
+                async with SubscriptionUpdateContext(
+                    session, cycled, subscription_service
+                ) as ctx:
+                    cycled = await subscription_service.cycle(
+                        session, ctx, cycled, payment_mode=PaymentMode.sync
+                    )
+
+        assert cycled.status == SubscriptionStatus.active
+        assert cycled.product == yearly_product
+        assert cycled.pending_update is None
+        assert cycled.current_period_start == trial_end
+        assert cycled.current_period_end == expected_period_end
+
+        order_repository = OrderRepository.from_session(session)
+        orders = await order_repository.get_all_by_subscription(cycled.id)
+        assert len(orders) == 1
+        order = orders[0]
+        assert (
+            order.billing_reason
+            == OrderBillingReasonInternal.subscription_cycle_after_trial
+        )
+        assert order.subtotal_amount == yearly_price
+        assert len(order.items) == 1
+        item = order.items[0]
+        assert item.start_timestamp == trial_end
+        assert item.end_timestamp == expected_period_end
+        assert (
+            f"From {format_date(trial_end.date(), locale='en_US')} "
+            f"to {format_date(expected_period_end.date(), locale='en_US')}"
+        ) in item.label
+        assert not any(
+            call.args and call.args[0] == "order.create_subscription_order"
+            for call in enqueue_job_mock.call_args_list
+        )
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_cycled,
+            organization,
+            cycled,
+        )
+
 
 @pytest.mark.anyio
 class TestUpdateProduct:
@@ -7780,6 +7902,59 @@ class TestUpdateTrial:
             )
 
         assert updated_subscription.current_period_start == new_trial_end
+
+    async def test_later_trial_extension_reschedules_pending_interval_change(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        assert subscription.trial_end is not None
+        yearly_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            prices=[(10_000, "usd")],
+        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=yearly_product.id,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
+
+        pending_update = subscription.pending_update
+        assert pending_update is not None
+        session.expire(pending_update, ["product", "subscription"])
+
+        new_trial_end = subscription.trial_end + timedelta(days=30)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_trial(
+                session, ctx, subscription, trial_end=new_trial_end
+            )
+
+        reloaded = await SubscriptionUpdateRepository.from_session(
+            session
+        ).get_unapplied_by_subscription_id(subscription.id)
+        expected_period_end = SubscriptionRecurringInterval.year.get_next_period(
+            new_trial_end, new_trial_end.day, 1
+        )
+        assert reloaded is not None
+        assert reloaded.applies_at == new_trial_end
+        assert reloaded.new_cycle_start == new_trial_end
+        assert reloaded.new_cycle_end == expected_period_end
+        assert subscription.current_period_end == new_trial_end
 
 
 @pytest.mark.anyio

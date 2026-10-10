@@ -241,6 +241,12 @@ export const defineConfig = <
             ...definition.trialPeriod,
             prices: productPrices(external_id, definition),
             benefits: definition.benefits,
+            ...(definition.descriptionText !== undefined && {
+              description: definition.descriptionText,
+            }),
+            ...(definition.visibilityLevel !== undefined && {
+              visibility: definition.visibilityLevel,
+            }),
           }
         },
       ),

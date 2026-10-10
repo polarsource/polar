@@ -21,7 +21,9 @@ const TiersConfig = tiersOf(DecimalAmount)
 type TiersConfig = typeof TiersConfig.Type
 
 const UnitNoun = Schema.String.check(
-  Schema.isMinLength(1),
+  Schema.makeFilter((value) =>
+    value.trim().length > 0 ? undefined : 'Unit labels must not be blank.',
+  ),
   Schema.isMaxLength(32),
 )
 

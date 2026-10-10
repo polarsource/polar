@@ -267,8 +267,8 @@ test('unit prices take a unit label', () => {
     unit_label: { en: { '=1': 'device', other: 'devices' } },
   })
   expect(decode(labeled)).toEqual(labeled)
-  const [empty] = priceConfigs(base.label('', ''), ['usd'], 'Price')
-  expect(() => decode(empty)).toThrow()
+  const [blank] = priceConfigs(base.label('device', ' '), ['usd'], 'Price')
+  expect(() => decode(blank)).toThrow('Unit labels must not be blank.')
 })
 
 test('flat metered prices need a rate above zero', () => {

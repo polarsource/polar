@@ -426,6 +426,27 @@ test('products serialize prices per currency and link meters and benefits', () =
   ])
 })
 
+test('product description and visibility are only sent when set', () => {
+  const config = defineConfig({
+    meters: () => ({}),
+    products: ({ product, free }) => ({
+      beta: product('Beta')
+        .prices(free())
+        .recurring('monthly')
+        .description('Early access')
+        .visibility('private'),
+      pro: product('Pro').prices(free()).recurring('monthly'),
+    }),
+  })
+  const [beta, pro] = config.toJSON().products ?? []
+  expect(beta).toMatchObject({
+    description: 'Early access',
+    visibility: 'private',
+  })
+  expect(pro).not.toHaveProperty('description')
+  expect(pro).not.toHaveProperty('visibility')
+})
+
 test('products only reference declared meters and benefits', () => {
   expect(() =>
     defineConfig({

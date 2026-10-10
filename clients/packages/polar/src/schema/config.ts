@@ -265,6 +265,12 @@ export const defineConfig = <
             ...(definition[metadataKey] !== undefined && {
               metadata: definition[metadataKey],
             }),
+            ...(definition.descriptionText !== undefined && {
+              description: definition.descriptionText,
+            }),
+            ...(definition.visibilityLevel !== undefined && {
+              visibility: definition.visibilityLevel,
+            }),
           }
         },
       ),

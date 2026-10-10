@@ -363,6 +363,12 @@ const renderProduct =
         ? []
         : [`.grants([${product.benefits.map(literal).join(', ')}])`]),
       ...renderMetadata(product.metadata),
+      ...(product.description === undefined
+        ? []
+        : [`.description(${literal(product.description)})`]),
+      ...(product.visibility === undefined || product.visibility === 'public'
+        ? []
+        : [`.visibility(${literal(product.visibility)})`]),
     ].join('\n')
   }
 

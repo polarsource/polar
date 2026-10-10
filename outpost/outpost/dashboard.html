@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Outpost Dashboard</title>
+<style>
+:root {
+  color-scheme: light;
+  --surface: #fcfcfb;
+  --card: #ffffff;
+  --border: #e6e5e1;
+  --grid: #efeeea;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #7a7974;
+  --series-1: #2a78d6;
+  --p50: #86b6ef;
+  --p95: #2a78d6;
+  --p99: #104281;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface: #111110;
+    --card: #1a1a19;
+    --border: #2c2c2a;
+    --grid: #262624;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #8f8e86;
+    --series-1: #3987e5;
+    --p50: #1c5cab;
+    --p95: #5598e7;
+    --p99: #cde2fb;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface: #111110;
+  --card: #1a1a19;
+  --border: #2c2c2a;
+  --grid: #262624;
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted: #8f8e86;
+  --series-1: #3987e5;
+  --p50: #1c5cab;
+  --p95: #5598e7;
+  --p99: #cde2fb;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 24px 16px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font: 14px/1.4 ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+main { max-width: 1100px; margin: 0 auto; display: grid; gap: 16px; }
+header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+h1 { font-size: 18px; margin: 0; }
+h2 { font-size: 14px; font-weight: 600; margin: 0 0 8px; }
+.status { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+.tile .label { color: var(--text-secondary); font-size: 12px; }
+.tile .value { font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.tile .unit { font-size: 14px; color: var(--text-muted); margin-left: 4px; }
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+.legend { display: flex; gap: 12px; color: var(--text-secondary); font-size: 12px; margin-bottom: 4px; }
+.legend i { display: inline-block; width: 12px; height: 2px; vertical-align: middle; margin-right: 4px; border-radius: 1px; }
+.chart { position: relative; }
+svg { display: block; width: 100%; height: 180px; overflow: visible; }
+svg text { fill: var(--text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.tooltip {
+  position: absolute; pointer-events: none; display: none;
+  background: var(--card); border: 1px solid var(--border); border-radius: 6px;
+  padding: 6px 8px; font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.12);
+}
+table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+td, th { text-align: right; padding: 4px 12px 4px 0; }
+th:first-child, td:first-child { text-align: left; }
+th { color: var(--text-secondary); font-weight: 500; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Outpost</h1>
+    <span class="status" id="status">Waiting for /metrics…</span>
+  </header>
+  <section class="tiles">
+    <div class="card tile"><div class="label">Events ingested</div><div class="value" id="tile-events">–</div></div>
+    <div class="card tile"><div class="label">Ingest requests</div><div class="value" id="tile-requests">–</div></div>
+    <div class="card tile"><div class="label">Ingest p95</div><div class="value" id="tile-ingest">–</div></div>
+    <div class="card tile"><div class="label">Reduce p95</div><div class="value" id="tile-reduce">–</div></div>
+    <div class="card tile"><div class="label">Decide p95</div><div class="value" id="tile-decide">–</div></div>
+  </section>
+  <section class="charts">
+    <div class="card"><h2>Ingest latency (ms)</h2><div class="legend" data-quantiles></div><div class="chart" id="chart-ingest"></div></div>
+    <div class="card"><h2>Reduce latency (ms)</h2><div class="legend" data-quantiles></div><div class="chart" id="chart-reduce"></div></div>
+    <div class="card"><h2>Decide latency (ms)</h2><div class="legend" data-quantiles></div><div class="chart" id="chart-decide"></div></div>
+    <div class="card"><h2>Events per second</h2><div class="chart" id="chart-events"></div></div>
+  </section>
+  <details class="card">
+    <summary>Table</summary>
+    <table id="table"></table>
+  </details>
+</main>
+<script>
+const POLL_MS = 1000;
+const WINDOW_S = 5;
+const HISTORY = 120;
+const QUANTILES = [
+  { key: "p50", q: 0.5, color: "var(--p50)" },
+  { key: "p95", q: 0.95, color: "var(--p95)" },
+  { key: "p99", q: 0.99, color: "var(--p99)" },
+];
+
+const samples = [];
+const history = [];
+
+for (const legend of document.querySelectorAll("[data-quantiles]")) {
+  legend.innerHTML = QUANTILES.map((s) => `<span><i style="background:${s.color}"></i>${s.key}</span>`).join("");
+}
+
+function parseMetrics(text) {
+  const values = {};
+  const buckets = {};
+  for (const line of text.split("\n")) {
+    if (!line || line.startsWith("#")) continue;
+    const match = line.match(/^(\w+)(?:\{([^}]*)\})?\s+(\S+)/);
+    if (!match) continue;
+    const [, name, labels, raw] = match;
+    const value = Number(raw);
+    if (name.endsWith("_bucket")) {
+      const le = labels.match(/le="([^"]+)"/)[1];
+      (buckets[name.slice(0, -7)] ??= []).push([le === "+Inf" ? Infinity : Number(le), value]);
+    } else {
+      values[name] = value;
+    }
+  }
+  return { values, buckets };
+}
+
+function quantile(q, current, previous) {
+  const deltas = current.map(([le, count], i) => [le, count - (previous?.[i]?.[1] ?? 0)]);
+  const total = deltas.at(-1)[1];
+  if (total <= 0) return null;
+  const rank = q * total;
+  let lowerBound = 0;
+  let lowerCount = 0;
+  for (const [le, count] of deltas) {
+    if (count >= rank) {
+      if (le === Infinity) return lowerBound;
+      return lowerBound + ((le - lowerBound) * (rank - lowerCount)) / Math.max(count - lowerCount, 1e-9);
+    }
+    lowerBound = le;
+    lowerCount = count;
+  }
+  return null;
+}
+
+function compute(current, previous) {
+  const seconds = (current.at - previous.at) / 1000;
+  const point = { at: current.at };
+  point.events = (current.values.outpost_events_ingested_total - previous.values.outpost_events_ingested_total) / seconds;
+  point.requests = (current.values.outpost_ingest_seconds_count - previous.values.outpost_ingest_seconds_count) / seconds;
+  for (const metric of ["ingest", "reduce", "decide"]) {
+    const name = `outpost_${metric}_seconds`;
+    for (const { key, q } of QUANTILES) {
+      const value = quantile(q, current.buckets[name], previous.buckets[name]);
+      point[`${metric}_${key}`] = value === null ? null : value * 1000;
+    }
+  }
+  return point;
+}
+
+const format = (value, digits = 1) => (value === null || value === undefined || Number.isNaN(value) ? "–" : value.toLocaleString(undefined, { maximumFractionDigits: digits }));
+const time = (at) => new Date(at).toLocaleTimeString();
+
+function niceMax(value) {
+  if (!value || value <= 0) return 1;
+  const magnitude = 10 ** Math.floor(Math.log10(value));
+  return [1, 2, 2.5, 5, 10].map((m) => m * magnitude).find((m) => m >= value);
+}
+
+function renderChart(container, series, unit) {
+  const width = container.clientWidth || 320;
+  const height = 180;
+  const left = 44;
+  const right = 36;
+  const top = 8;
+  const bottom = 20;
+  const values = history.flatMap((p) => series.map((s) => p[s.key])).filter((v) => v !== null && v !== undefined);
+  const max = niceMax(Math.max(0, ...values));
+  const x = (i) => left + (i / (HISTORY - 1)) * (width - left - right);
+  const offset = HISTORY - history.length;
+  const y = (v) => top + (1 - v / max) * (height - top - bottom);
+  const ticks = [0, max / 2, max];
+  let svg = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${container.previousElementSibling?.textContent ?? ""}">`;
+  for (const tick of ticks) {
+    svg += `<line x1="${left}" x2="${width - right}" y1="${y(tick)}" y2="${y(tick)}" stroke="var(--grid)" />`;
+    svg += `<text x="${left - 6}" y="${y(tick) + 4}" text-anchor="end">${format(tick, 2)}</text>`;
+  }
+  for (const s of series) {
+    let path = "";
+    let pen = false;
+    history.forEach((p, i) => {
+      const v = p[s.key];
+      if (v === null || v === undefined) { pen = false; return; }
+      path += `${pen ? "L" : "M"}${x(i + offset).toFixed(1)},${y(v).toFixed(1)}`;
+      pen = true;
+    });
+    svg += `<path d="${path}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />`;
+    const last = history.at(-1)?.[s.key];
+    if (series.length > 1 && last !== null && last !== undefined) {
+      svg += `<text x="${width - right + 4}" y="${y(last) + 4}">${s.label}</text>`;
+    }
+  }
+  svg += `<line class="crosshair" y1="${top}" y2="${height - bottom}" stroke="var(--text-muted)" stroke-dasharray="2 2" visibility="hidden" />`;
+  svg += `</svg><div class="tooltip"></div>`;
+  container.innerHTML = svg;
+
+  const svgElement = container.querySelector("svg");
+  const crosshair = container.querySelector(".crosshair");
+  const tooltip = container.querySelector(".tooltip");
+  svgElement.addEventListener("pointermove", (event) => {
+    const box = svgElement.getBoundingClientRect();
+    const px = ((event.clientX - box.left) / box.width) * width;
+    const i = Math.round(((px - left) / (width - left - right)) * (HISTORY - 1)) - offset;
+    const point = history[i];
+    if (!point) return;
+    crosshair.setAttribute("x1", x(i + offset));
+    crosshair.setAttribute("x2", x(i + offset));
+    crosshair.setAttribute("visibility", "visible");
+    tooltip.innerHTML = `<div>${time(point.at)}</div>` + series.map((s) => `<div><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${s.color};margin-right:6px"></i>${s.label} ${format(point[s.key], 2)} ${unit}</div>`).join("");
+    tooltip.style.display = "block";
+    const tx = ((x(i + offset) / width) * box.width);
+    tooltip.style.left = `${Math.min(tx + 12, box.width - tooltip.offsetWidth)}px`;
+    tooltip.style.top = "8px";
+  });
+  svgElement.addEventListener("pointerleave", () => {
+    crosshair.setAttribute("visibility", "hidden");
+    tooltip.style.display = "none";
+  });
+}
+
+function render() {
+  const point = history.at(-1);
+  if (!point) return;
+  document.getElementById("tile-events").innerHTML = `${format(point.events, 0)}<span class="unit">/s</span>`;
+  document.getElementById("tile-requests").innerHTML = `${format(point.requests, 1)}<span class="unit">/s</span>`;
+  document.getElementById("tile-ingest").innerHTML = `${format(point.ingest_p95, 2)}<span class="unit">ms</span>`;
+  document.getElementById("tile-reduce").innerHTML = `${format(point.reduce_p95, 3)}<span class="unit">ms</span>`;
+  document.getElementById("tile-decide").innerHTML = `${format(point.decide_p95, 2)}<span class="unit">ms</span>`;
+  const quantileSeries = (metric) => QUANTILES.map(({ key, color }) => ({ key: `${metric}_${key}`, label: key, color }));
+  renderChart(document.getElementById("chart-ingest"), quantileSeries("ingest"), "ms");
+  renderChart(document.getElementById("chart-reduce"), quantileSeries("reduce"), "ms");
+  renderChart(document.getElementById("chart-decide"), quantileSeries("decide"), "ms");
+  renderChart(document.getElementById("chart-events"), [{ key: "events", label: "events", color: "var(--series-1)" }], "/s");
+  document.getElementById("table").innerHTML =
+    "<tr><th>Time</th><th>Events/s</th><th>Requests/s</th><th>Ingest p50</th><th>p95</th><th>p99</th><th>Reduce p50</th><th>p95</th><th>p99</th><th>Decide p50</th><th>p95</th><th>p99</th></tr>" +
+    history.slice(-10).reverse().map((p) => `<tr><td>${time(p.at)}</td><td>${format(p.events, 0)}</td><td>${format(p.requests)}</td><td>${format(p.ingest_p50, 2)}</td><td>${format(p.ingest_p95, 2)}</td><td>${format(p.ingest_p99, 2)}</td><td>${format(p.reduce_p50, 3)}</td><td>${format(p.reduce_p95, 3)}</td><td>${format(p.reduce_p99, 3)}</td><td>${format(p.decide_p50, 2)}</td><td>${format(p.decide_p95, 2)}</td><td>${format(p.decide_p99, 2)}</td></tr>`).join("");
+}
+
+async function poll() {
+  const status = document.getElementById("status");
+  try {
+    const response = await fetch("/metrics", { cache: "no-store" });
+    const sample = { at: Date.now(), ...parseMetrics(await response.text()) };
+    samples.push(sample);
+    if (samples.length > WINDOW_S + 1) samples.shift();
+    if (samples.length > 1) {
+      history.push(compute(sample, samples[0]));
+      if (history.length > HISTORY) history.shift();
+      render();
+    }
+    status.textContent = `Updated ${time(sample.at)} · ${WINDOW_S}s window`;
+  } catch (error) {
+    status.textContent = `Cannot read /metrics: ${error.message}`;
+  }
+}
+
+poll();
+setInterval(poll, POLL_MS);
+</script>
+</body>
+</html>

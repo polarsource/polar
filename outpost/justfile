@@ -1,0 +1,25 @@
+# https://just.systems
+
+install:
+    uv sync --all-extras
+
+lint:
+    uv run ruff format .
+    uv run ruff check --fix .
+    uv run ty check outpost/ tests/
+
+lint-check:
+    uv run ruff format --check .
+    uv run ruff check .
+    uv run ty check outpost/ tests/
+
+test:
+    uv run pytest
+
+dev:
+    uv run python -m outpost --reload
+
+default_workers := '1'
+
+up workers=default_workers:
+    uv run python -m outpost --workers {{workers}}

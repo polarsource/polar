@@ -22,6 +22,7 @@ from polar.models import (
     Product,
     ProductPrice,
     ProductPriceFixed,
+    ProductPriceMeteredTiers,
     ProductPriceMeteredUnit,
     ProductPriceSeatUnit,
 )
@@ -40,6 +41,7 @@ from .schemas import (
     ConfigIssueType,
     ConfigMeter,
     ConfigProduct,
+    ConfigProductPriceMeteredTiers,
     ConfigProductPriceMeteredUnit,
     ConfigResource,
 )
@@ -158,7 +160,10 @@ def unknown_references(config: Config) -> list[ConfigIssue]:
     for index, product in enumerate(config.products):
         for price_index, price in enumerate(product.prices):
             if (
-                isinstance(price, ConfigProductPriceMeteredUnit)
+                isinstance(
+                    price,
+                    (ConfigProductPriceMeteredUnit, ConfigProductPriceMeteredTiers),
+                )
                 and price.meter not in meters
             ):
                 issues.append(
@@ -470,6 +475,18 @@ def price_config(
             **config,
             "meter": meter_external_ids[meter_id],
             "unit_amount": price.unit_amount,
+            "cap_amount": price.cap_amount,
+        }
+
+    if isinstance(price, ProductPriceMeteredTiers):
+        meter_id = str(price.meter_id)
+        if meter_id not in meter_external_ids:
+            return None
+
+        return {
+            **config,
+            "meter": meter_external_ids[meter_id],
+            "tiers": price.tiers.model_dump(),
             "cap_amount": price.cap_amount,
         }
 

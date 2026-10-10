@@ -10,6 +10,7 @@ from polar.product.schemas import (
     ProductCreateRecurring,
     ProductPriceCreate,
     ProductPriceFixedCreate,
+    ProductPriceMeteredTiersCreate,
     ProductPriceMeteredUnitCreate,
     ProductPriceSeatBasedCreate,
     ProductPriceUpdate,
@@ -19,6 +20,7 @@ from polar.product.schemas import (
 from .schemas import (
     ConfigProduct,
     ConfigProductPrice,
+    ConfigProductPriceMeteredTiers,
     ConfigProductPriceMeteredUnit,
     ConfigProductPriceSeatBased,
 )
@@ -66,11 +68,17 @@ def price_create(
     ProductPriceFixedCreate
     | ProductPriceMeteredUnitCreate
     | ProductPriceSeatBasedCreate
+    | ProductPriceMeteredTiersCreate
 ):
     if isinstance(price, ConfigProductPriceMeteredUnit):
         return ProductPriceMeteredUnitCreate(
             **price.model_dump(exclude={"meter"}),
             meter_id=meter_ids[price.meter],
+        )
+
+    if isinstance(price, ConfigProductPriceMeteredTiers):
+        return ProductPriceMeteredTiersCreate(
+            **price.model_dump(exclude={"meter"}), meter_id=meter_ids[price.meter]
         )
 
     if isinstance(price, ConfigProductPriceSeatBased):

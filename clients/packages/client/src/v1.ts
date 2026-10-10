@@ -16427,6 +16427,7 @@ export interface components {
       | components['schemas']['ConfigProductPriceMeteredUnit']
       | components['schemas']['ConfigProductPriceSeatBased']
       | components['schemas']['ConfigProductPriceMeteredTiers']
+      | components['schemas']['ConfigProductPriceUnitBased']
     /** ConfigProductPriceFixed */
     ConfigProductPriceFixed: {
       /**
@@ -16525,6 +16526,38 @@ export interface components {
        * @default 1
        */
       minimum_units: number
+    }
+    /** ConfigProductPriceUnitBased */
+    ConfigProductPriceUnitBased: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'unit_based'
+      /**
+       * @description The currency in which the customer will be charged.
+       * @default usd
+       */
+      price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
+      /** @description Tiered pricing based on the purchased unit quantity. */
+      tiers: components['schemas']['TiersInput']
+      /**
+       * Minimum Units
+       * @description The minimum purchasable unit quantity (inclusive).
+       * @default 1
+       */
+      minimum_units: number
+      /**
+       * Unit Label
+       * @description Per-locale unit nouns shown at checkout and on invoices. `{"en": {"=1": "device", "other": "devices"}}`. Defaults to "unit"/"units" when unset.
+       */
+      unit_label?: {
+        [key: string]: {
+          [key: string]: string
+        }
+      } | null
     }
     /**
      * ConfigResource
@@ -71247,6 +71280,9 @@ export const configProductPriceMeteredUnitAmount_typeValues: ReadonlyArray<
 export const configProductPriceSeatBasedAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceSeatBased']['amount_type']
 > = ['seat_based']
+export const configProductPriceUnitBasedAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceUnitBased']['amount_type']
+> = ['unit_based']
 export const configResourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigResource']
 > = ['meter', 'benefit', 'product']

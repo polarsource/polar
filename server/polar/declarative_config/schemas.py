@@ -28,6 +28,7 @@ from polar.product.schemas import (
     ProductPriceCreateBase,
     ProductPriceFixedCreate,
     ProductPriceSeatBasedCreate,
+    ProductPriceUnitBasedCreate,
 )
 from polar.product.tiers import TiersInput
 
@@ -124,6 +125,16 @@ class ConfigProductPriceSeatBased(ProductPriceSeatBasedCreate):
     )
 
 
+class ConfigProductPriceUnitBased(ProductPriceUnitBasedCreate):
+    model_config = ConfigDict(extra="forbid")
+
+    minimum_units: int = Field(
+        default=1,
+        ge=1,
+        description="The minimum purchasable unit quantity (inclusive).",
+    )
+
+
 class ConfigProductPriceMeteredTiers(ProductPriceCreateBase):
     model_config = ConfigDict(extra="forbid")
 
@@ -179,7 +190,8 @@ ConfigProductPrice = Annotated[
     ConfigProductPriceFixed
     | ConfigProductPriceMeteredUnit
     | ConfigProductPriceSeatBased
-    | ConfigProductPriceMeteredTiers,
+    | ConfigProductPriceMeteredTiers
+    | ConfigProductPriceUnitBased,
     Discriminator("amount_type"),
     SetSchemaReference("ConfigProductPrice"),
 ]

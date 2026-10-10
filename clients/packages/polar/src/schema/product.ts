@@ -18,6 +18,10 @@ const IntervalUnit = Schema.Literals(['day', 'week', 'month', 'year'])
 
 type IntervalUnit = typeof IntervalUnit.Type
 
+const Visibility = Schema.Literals(['draft', 'private', 'public'])
+
+type Visibility = typeof Visibility.Type
+
 const AT_MOST_ONE = {
   fixed: 'Only one fixed or free price is allowed.',
   seat_based: 'Only one seat-based price is allowed.',
@@ -76,6 +80,8 @@ export const ProductConfig = Schema.Struct({
   ),
   prices: Schema.Array(PriceConfig).check(Schema.isMinLength(1)),
   benefits: Schema.Array(Schema.String),
+  description: Schema.optionalKey(Schema.String),
+  visibility: Schema.optionalKey(Visibility),
 }).check(
   Schema.makeFilter(({ prices }) =>
     compositionIssues(prices).map((issue) => ({ path: ['prices'], issue })),
@@ -130,6 +136,8 @@ class ProductBuilder<
     readonly billing: Billing,
     readonly trialPeriod: Trial | undefined = undefined,
     readonly benefits: ReadonlyArray<Benefit> = [],
+    readonly descriptionText: string | undefined = undefined,
+    readonly visibilityLevel: Visibility | undefined = undefined,
   ) {}
 
   prices(
@@ -141,6 +149,8 @@ class ProductBuilder<
       this.billing,
       this.trialPeriod,
       this.benefits,
+      this.descriptionText,
+      this.visibilityLevel,
     )
   }
 
@@ -169,6 +179,8 @@ class ProductBuilder<
       billing,
       this.trialPeriod,
       this.benefits,
+      this.descriptionText,
+      this.visibilityLevel,
     )
   }
 
@@ -179,6 +191,8 @@ class ProductBuilder<
       { recurring_interval: null, recurring_interval_count: null },
       undefined,
       this.benefits,
+      this.descriptionText,
+      this.visibilityLevel,
     )
   }
 
@@ -193,6 +207,8 @@ class ProductBuilder<
       this.billing,
       { trial_interval: unitOf(interval), trial_interval_count: count },
       this.benefits,
+      this.descriptionText,
+      this.visibilityLevel,
     )
   }
 
@@ -205,6 +221,34 @@ class ProductBuilder<
       this.billing,
       this.trialPeriod,
       benefits,
+      this.descriptionText,
+      this.visibilityLevel,
+    )
+  }
+
+  description(description: string): ProductBuilder<Meter, Benefit, P, Billing> {
+    return new ProductBuilder(
+      this.name,
+      this.priceList,
+      this.billing,
+      this.trialPeriod,
+      this.benefits,
+      description,
+      this.visibilityLevel,
+    )
+  }
+
+  visibility(
+    visibility: Visibility,
+  ): ProductBuilder<Meter, Benefit, P, Billing> {
+    return new ProductBuilder(
+      this.name,
+      this.priceList,
+      this.billing,
+      this.trialPeriod,
+      this.benefits,
+      this.descriptionText,
+      visibility,
     )
   }
 }

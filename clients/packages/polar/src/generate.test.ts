@@ -224,7 +224,9 @@ const cases: [string, PolarConfig][] = [
                 units().flat().min(2).amount(api.currency('nok')(50)).max(10),
               )
               .recurring('yearly')
-              .trial(14, 'days'),
+              .trial(14, 'days')
+              .description('Billed per device, "yearly".\nCancel anytime.')
+              .visibility('private'),
           }
         },
       })

@@ -24,6 +24,7 @@ from polar.declarative_config.service import (
 from polar.declarative_config.service import (
     declarative_config as declarative_config_service,
 )
+from polar.discount.repository import DiscountRepository
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
@@ -36,6 +37,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.benefit import BenefitType
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.product_price import ProductPriceAmountType
 from polar.models.user_organization import OrganizationRole
 from polar.oauth2.exceptions import InsufficientScopeError
@@ -48,6 +50,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
     create_benefit,
+    create_discount,
     create_event,
     create_meter,
     create_product,
@@ -112,6 +115,22 @@ PRO_PRODUCT = {
         },
     ],
     "benefits": ["tool-call-credits", "beta"],
+}
+
+PACK_PRODUCT = {
+    "external_id": "pack",
+    "name": "Pack",
+    "prices": [{"amount_type": "fixed", "price_amount": 1000}],
+}
+
+LAUNCH_DISCOUNT = {
+    "external_id": "launch",
+    "name": "Launch",
+    "type": "percentage",
+    "basis_points": 2000,
+    "duration": "once",
+    "code": "LAUNCH20",
+    "products": ["pack"],
 }
 
 
@@ -829,6 +848,113 @@ class TestApply:
         assert product.name == "Devices Plus"
         assert [price.id for price in product.prices] == [price.id]
 
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_create_and_update_discount(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        created = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"products": [PACK_PRODUCT], "discounts": [LAUNCH_DISCOUNT]}
+            ),
+        )
+        repository = DiscountRepository.from_session(session)
+        [discount] = await repository.get_all_by_external_ids(
+            organization.id, ["launch"]
+        )
+        assert discount.code == "LAUNCH20"
+        assert [product.external_id for product in discount.products] == ["pack"]
+
+        updated = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "products": [PACK_PRODUCT],
+                    "discounts": [
+                        {
+                            **LAUNCH_DISCOUNT,
+                            "name": "Launch week",
+                            "code": None,
+                            "products": [],
+                        }
+                    ],
+                }
+            ),
+        )
+
+        assert created.changes[1].action == ConfigAction.created
+        assert updated.changes[1].action == ConfigAction.updated
+        await session.refresh(discount)
+        assert discount.name == "Launch week"
+        assert discount.code is None
+        assert discount.products == []
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(
+            subject="organization", scopes={Scope.meters_write, Scope.products_write}
+        )
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_discounts_require_discounts_scope(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        with pytest.raises(InsufficientScopeError):
+            await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate(
+                    {"products": [PACK_PRODUCT], "discounts": [LAUNCH_DISCOUNT]}
+                ),
+            )
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_discount_validation_error_location(
+        self,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization,
+            code="LAUNCH20",
+        )
+        mocker.patch(
+            "polar.declarative_config.validation.DiscountRepository.get_all_by_codes",
+            return_value=[],
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate(
+                    {"products": [PACK_PRODUCT], "discounts": [LAUNCH_DISCOUNT]}
+                ),
+            )
+
+        [error] = exc_info.value.errors()
+        assert error["loc"] == ("body", "discounts", 0, "code")
+
 
 @pytest.mark.anyio
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
@@ -1521,3 +1647,197 @@ class TestPlan:
             for issue in plan.issues
             if issue.type == ConfigIssueType.duplicate_external_id
         ] == [["body", "benefits", 1, "external_id"]]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_discount_diff(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="pack",
+        )
+        await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=2000,
+            duration=DiscountDuration.once,
+            organization=organization,
+            name="Launch",
+            code="LAUNCH20",
+            products=[product],
+            external_id="launch",
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "products": [PACK_PRODUCT],
+                    "discounts": [
+                        {**LAUNCH_DISCOUNT, "basis_points": 2500, "products": []}
+                    ],
+                }
+            ),
+        )
+
+        discount_change = plan.changes[1]
+        assert discount_change.resource == ConfigResource.discount
+        assert discount_change.action == ConfigAction.updated
+        assert [
+            (change.field, change.before, change.after)
+            for change in discount_change.diff
+        ] == [("basis_points", 2000, 2500), ("products", ["pack"], [])]
+        assert [
+            issue
+            for issue in plan.issues
+            if issue.severity == ConfigIssueSeverity.error
+        ] == []
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_discount_immutable_fields(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=2000,
+            duration=DiscountDuration.once,
+            organization=organization,
+            external_id="launch",
+        )
+        discount.redemptions_count = 1
+        await save_fixture(discount)
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "products": [PACK_PRODUCT],
+                    "discounts": [
+                        {
+                            **LAUNCH_DISCOUNT,
+                            "basis_points": 2500,
+                            "duration": "repeating",
+                            "duration_in_months": 3,
+                        }
+                    ],
+                }
+            ),
+        )
+
+        assert [(issue.type, issue.loc) for issue in plan.issues] == [
+            (ConfigIssueType.duration_changed, ["body", "discounts", 0, "duration"]),
+            (
+                ConfigIssueType.discount_locked,
+                ["body", "discounts", 0, "basis_points"],
+            ),
+            (
+                ConfigIssueType.discount_locked,
+                ["body", "discounts", 0, "duration_in_months"],
+            ),
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_discount_type_changed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            external_id="launch",
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {"products": [PACK_PRODUCT], "discounts": [LAUNCH_DISCOUNT]}
+            ),
+        )
+
+        assert [
+            issue.loc
+            for issue in plan.issues
+            if issue.type == ConfigIssueType.type_changed
+        ] == [["body", "discounts", 0, "type"]]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_discount_duplicate_codes(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization,
+            code="launch20",
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "products": [PACK_PRODUCT],
+                    "discounts": [
+                        LAUNCH_DISCOUNT,
+                        {**LAUNCH_DISCOUNT, "external_id": "partner"},
+                    ],
+                }
+            ),
+        )
+
+        assert [
+            (issue.loc, issue.msg)
+            for issue in plan.issues
+            if issue.type == ConfigIssueType.duplicate_code
+        ] == [
+            (
+                ["body", "discounts", 0, "code"],
+                "Another discount already uses this code.",
+            ),
+            (
+                ["body", "discounts", 1, "code"],
+                "Another discount in this config has the same code.",
+            ),
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_discount_unknown_product(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate({"discounts": [LAUNCH_DISCOUNT]}),
+        )
+
+        assert [
+            (issue.loc, issue.input)
+            for issue in plan.issues
+            if issue.type == ConfigIssueType.unknown_reference
+        ] == [(["body", "discounts", 0, "products", 0], "pack")]

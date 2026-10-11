@@ -53,8 +53,15 @@ vi.mock('@stripe/react-stripe-js', () => ({
   }: {
     children: (ctx: { stripe: unknown; elements: unknown }) => React.ReactNode
   }) => <>{children({ stripe: null, elements: null })}</>,
-  PaymentElement: () => (
-    <div data-testid="mock-payment-element">mock payment element</div>
+  PaymentElement: (props: { onReady: () => void; onLoadError: () => void }) => (
+    <div data-testid="mock-payment-element">
+      <button type="button" onClick={props.onReady}>
+        mock ready
+      </button>
+      <button type="button" onClick={props.onLoadError}>
+        mock load error
+      </button>
+    </div>
   ),
 }))
 
@@ -678,6 +685,36 @@ describe('CheckoutForm', () => {
         developerTools: { assistant: { enabled: false } },
       })
       expect(screen.getByTestId('mock-payment-element')).toBeInTheDocument()
+    })
+
+    const renderStripeForm = () => {
+      render(
+        <FormWrapper
+          checkout={stripeCheckout()}
+          {...defaultProps}
+          themePreset={{ stripe: {} } as ThemingPresetProps}
+          locale="en"
+        />,
+      )
+      return screen.getByRole('button', { name: 'Pay now' })
+    }
+
+    it('enables submit once the Payment Element is ready', () => {
+      const submit = renderStripeForm()
+      expect(submit).toBeDisabled()
+      fireEvent.click(screen.getByText('mock ready'))
+      expect(submit).toBeEnabled()
+    })
+
+    it('shows an error when the Payment Element fails to load', async () => {
+      const submit = renderStripeForm()
+      await act(async () =>
+        fireEvent.click(screen.getByText('mock load error')),
+      )
+      expect(submit).toBeDisabled()
+      expect(
+        screen.getByText(/payment form failed to load/),
+      ).toBeInTheDocument()
     })
 
     it('does not render the PaymentElement when is_payment_form_required is false', () => {

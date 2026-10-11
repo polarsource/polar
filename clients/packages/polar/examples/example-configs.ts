@@ -255,4 +255,23 @@ export const pricingConfig = defineConfig({
       )
       .recurring('yearly'),
   }),
+  // Percentages take at most 2 decimals; amounts use the same money helpers as prices.
+  // A discount without .products() applies to every product.
+  discounts: ({ discount }) => ({
+    launch: discount('Launch 20%')
+      .percent(20)
+      .repeating(3, 'months')
+      .code('LAUNCH20')
+      .products('team')
+      .maxRedemptions(500)
+      .endsAt('2026-12-31'),
+    welcome: discount('Welcome $10')
+      .amount(usd(10), eur(9))
+      .once()
+      .perCustomer(1),
+    annual: discount('Annual devices')
+      .percent(15)
+      .repeating(1, 'year')
+      .products('devices'),
+  }),
 })

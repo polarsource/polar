@@ -4,6 +4,7 @@ import { MARKS, formatRows } from '@/utils/billing-config/entries'
 import {
   type MeterUse,
   benefitSentence,
+  discountSentence,
   meterSentence,
   meterUnit,
   productMeters,
@@ -11,9 +12,14 @@ import {
 } from '@/utils/billing-config/sentences'
 import * as ui from '@/utils/ui'
 
-type Section = 'meters' | 'benefits' | 'products'
+type Section = 'meters' | 'benefits' | 'products' | 'discounts'
 
-const SECTIONS: ReadonlyArray<Section> = ['meters', 'benefits', 'products']
+const SECTIONS: ReadonlyArray<Section> = [
+  'meters',
+  'benefits',
+  'products',
+  'discounts',
+]
 
 type Sentence = ReadonlyArray<string>
 
@@ -21,6 +27,7 @@ const SENTENCES: Record<Section, (input: unknown) => Sentence | undefined> = {
   meters: meterSentence,
   benefits: benefitSentence,
   products: productSentence,
+  discounts: discountSentence,
 }
 
 const COVERED: Record<Section, ReadonlySet<string>> = {
@@ -33,6 +40,20 @@ const COVERED: Record<Section, ReadonlySet<string>> = {
     'recurring_interval_count',
     'prices',
     'benefits',
+  ]),
+  discounts: new Set([
+    'name',
+    'type',
+    'basis_points',
+    'amounts',
+    'duration',
+    'duration_in_months',
+    'code',
+    'products',
+    'max_redemptions',
+    'max_redemptions_per_customer',
+    'starts_at',
+    'ends_at',
   ]),
 }
 
@@ -135,6 +156,7 @@ export const formatTree = (
     meters: documents(input, 'meters'),
     benefits: documents(input, 'benefits'),
     products: documents(input, 'products'),
+    discounts: documents(input, 'discounts'),
   }
 
   const product = (entry: AppliedEntry) => {

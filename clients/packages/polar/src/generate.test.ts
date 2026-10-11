@@ -231,6 +231,35 @@ const cases: [string, PolarConfig][] = [
       .toJSON(),
   ],
   [
+    'metadata on every resource',
+    api
+      .defineConfig({
+        meters: ({ meter }) => ({
+          calls: meter('Calls')
+            .where(api.eq('name', 'tool_call'))
+            .unit('token')
+            .metadata({ team: 'search', '"\\\n` ${notCode}': -0 })
+            .count(),
+        }),
+        benefits: ({ flag, credits }) => ({
+          custom_servers: flag('Custom servers').metadata({ limit: 5 }),
+          tool_calls: credits('Tool calls')
+            .meter('calls')
+            .units(100)
+            .rollover()
+            .metadata({ visible: true, ratio: 0.5 }),
+        }),
+        products: ({ product, free }) => ({
+          pro: product('Pro')
+            .prices(free())
+            .recurring('monthly')
+            .grants(['custom_servers'])
+            .metadata({ ['__proto__']: 'pro', constructor: 'x' }),
+        }),
+      })
+      .toJSON(),
+  ],
+  [
     'special IDs and strings',
     {
       meters: ['__proto__', 'constructor', '"\\\n` ${notCode}'].map(
@@ -463,4 +492,11 @@ test('groups interleaved currencies into one builder call per price', async () =
   )
   expect(source).toContain('fixed().amount(usd(1), eur(0.9))')
   expect(source).toContain('.amount(usd(0.1), eur(0.09))')
+})
+
+test('leaves empty metadata out of the generated code', async () => {
+  const source = await Effect.runPromise(
+    generateConfig({ meters: [{ ...meter, metadata: {} }] }),
+  )
+  expect(source).not.toContain('.metadata(')
 })

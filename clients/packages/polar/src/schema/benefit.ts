@@ -1,4 +1,5 @@
 import { Schema } from 'effect'
+import { Metadata, metadataKey } from './metadata'
 
 const benefitFields = {
   external_id: Schema.String.check(Schema.isMinLength(1)),
@@ -6,6 +7,7 @@ const benefitFields = {
     Schema.isMinLength(3),
     Schema.isMaxLength(42),
   ),
+  metadata: Schema.optionalKey(Metadata),
 }
 
 export const BenefitConfig = Schema.Union([
@@ -33,6 +35,7 @@ export type BenefitDefinition<Meter extends string = string> =
   | {
       readonly name: string | undefined
       readonly type: 'feature_flag'
+      readonly [metadataKey]?: Metadata | undefined
     }
   | {
       readonly name: string | undefined
@@ -42,15 +45,34 @@ export type BenefitDefinition<Meter extends string = string> =
         readonly units: number
         readonly rollover: boolean
       }
+      readonly [metadataKey]?: Metadata | undefined
     }
 
-export const flag = (name?: string): BenefitDefinition<never> => ({
-  name,
-  type: 'feature_flag',
-})
+class FlagDefinition<Values extends Metadata | undefined = undefined> {
+  readonly type = 'feature_flag'
+  readonly [metadataKey]: Values
 
-class CreditsDefinition<Meter extends string> {
+  constructor(
+    readonly name: string | undefined,
+    metadata: Values,
+  ) {
+    this[metadataKey] = metadata
+  }
+
+  metadata<const Next extends Metadata>(metadata: Next): FlagDefinition<Next> {
+    return new FlagDefinition(this.name, { ...metadata })
+  }
+}
+
+export const flag = (name?: string): FlagDefinition =>
+  new FlagDefinition(name, undefined)
+
+class CreditsDefinition<
+  Meter extends string,
+  Values extends Metadata | undefined = undefined,
+> {
   readonly type = 'meter_credit'
+  readonly [metadataKey]: Values
 
   constructor(
     readonly name: string | undefined,
@@ -59,13 +81,23 @@ class CreditsDefinition<Meter extends string> {
       readonly units: number
       readonly rollover: boolean
     },
-  ) {}
+    metadata: Values,
+  ) {
+    this[metadataKey] = metadata
+  }
 
-  rollover(): CreditsDefinition<Meter> {
-    return new CreditsDefinition(this.name, {
-      ...this.properties,
-      rollover: true,
-    })
+  rollover(): CreditsDefinition<Meter, Values> {
+    return new CreditsDefinition(
+      this.name,
+      { ...this.properties, rollover: true },
+      this[metadataKey],
+    )
+  }
+
+  metadata<const Next extends Metadata>(
+    metadata: Next,
+  ): CreditsDefinition<Meter, Next> {
+    return new CreditsDefinition(this.name, this.properties, { ...metadata })
   }
 }
 
@@ -76,11 +108,11 @@ class CreditsBuilder<Meter extends string> {
   ) {}
 
   units(units: number): CreditsDefinition<Meter> {
-    return new CreditsDefinition(this.name, {
-      meter: this.meterExternalId,
-      units,
-      rollover: false,
-    })
+    return new CreditsDefinition(
+      this.name,
+      { meter: this.meterExternalId, units, rollover: false },
+      undefined,
+    )
   }
 }
 

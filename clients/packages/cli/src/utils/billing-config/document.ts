@@ -5,7 +5,7 @@ import {
   BillingConfigError,
   type ConfigDocument,
 } from '@/schemas/BillingConfig'
-import { compact } from '@/utils/billing-config/compare'
+import { normalize } from '@/utils/billing-config/compare'
 
 const SCRIPT_EXTENSIONS = new Set(['.ts', '.mts', '.mjs'])
 
@@ -23,7 +23,7 @@ export const renderDocument = (file: string, document: ConfigDocument) =>
           Object.fromEntries(
             Object.entries(document).map(([section, items]) => [
               section,
-              items.map(compact),
+              items.map(normalize),
             ]),
           ),
         ).pipe(

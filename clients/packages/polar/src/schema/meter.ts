@@ -9,6 +9,7 @@ import {
   type PropertyReference,
   type SharedEventOutput,
 } from './event'
+import { Metadata as MeterMetadata } from './metadata'
 
 export const MeterFilterClause = Schema.Struct({
   property: Schema.String,
@@ -64,6 +65,7 @@ const meterFields = {
   name: Schema.String.check(Schema.isMinLength(3)),
   filter: MeterFilter,
   aggregation: MeterAggregation,
+  metadata: Schema.optionalKey(MeterMetadata),
 }
 
 export const MeterConfig = Schema.Union([
@@ -188,6 +190,7 @@ export class MeterBuilder<Names extends string = string, Metadata = unknown> {
     },
     protected readonly meterUnit: Unit = { unit: 'scalar' },
     private readonly events: readonly string[] = [],
+    protected readonly meterMetadata: MeterMetadata | undefined = undefined,
   ) {}
 
   where(input: ConditionInput<Names>): MeterBuilder<Names, Metadata> {
@@ -210,6 +213,7 @@ export class MeterBuilder<Names extends string = string, Metadata = unknown> {
       structuredClone(combined),
       this.meterUnit,
       this.events,
+      this.meterMetadata,
     )
   }
 
@@ -220,7 +224,23 @@ export class MeterBuilder<Names extends string = string, Metadata = unknown> {
       args[0] === 'custom'
         ? { unit: 'custom', custom_label: args[1] }
         : { unit: args[0] }
-    return new MeterBuilder(this.name, this.meterFilter, unit, this.events)
+    return new MeterBuilder(
+      this.name,
+      this.meterFilter,
+      unit,
+      this.events,
+      this.meterMetadata,
+    )
+  }
+
+  metadata(metadata: MeterMetadata): MeterBuilder<Names, Metadata> {
+    return new MeterBuilder(
+      this.name,
+      this.meterFilter,
+      this.meterUnit,
+      this.events,
+      { ...metadata },
+    )
   }
 
   count() {
@@ -253,6 +273,9 @@ export class MeterBuilder<Names extends string = string, Metadata = unknown> {
       filter: structuredClone(this.meterFilter),
       aggregation,
       ...this.meterUnit,
+      ...(this.meterMetadata !== undefined && {
+        metadata: { ...this.meterMetadata },
+      }),
     }
   }
 }
@@ -262,6 +285,12 @@ export type MeterDefinition = ReturnType<MeterBuilder['count']>
 export class UnboundMeter<
   Events extends EventDefinitions,
 > extends MeterBuilder {
+  override metadata(metadata: MeterMetadata): UnboundMeter<Events> {
+    return new UnboundMeter(this.name, undefined, this.meterUnit, [], {
+      ...metadata,
+    })
+  }
+
   on<const Name extends keyof Events & string>(
     ...events: [EventReference<Name>, ...EventReference<Name>[]]
   ): MeterBuilder<Name, SharedEventOutput<Events, Name>> {
@@ -276,6 +305,7 @@ export class UnboundMeter<
       clauses.length === 1 ? and(...clauses) : or(...clauses),
       this.meterUnit,
       names,
+      this.meterMetadata,
     )
   }
 }

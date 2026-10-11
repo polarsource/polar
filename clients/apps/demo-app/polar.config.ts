@@ -17,7 +17,7 @@ export default defineConfig({
     tool_call: meter().on(events.tool_call).unit('custom', 'tool call').count(),
   }),
   benefits: ({ flag, credits }) => ({
-    custom_servers: flag('Custom servers'),
+    custom_servers: flag('Custom servers').metadata({ tag: 'primary' }),
     tool_calls: credits('Included tool calls').meter('tool_call').units(1000),
   }),
   products: ({ product, fixed, meter }) => ({

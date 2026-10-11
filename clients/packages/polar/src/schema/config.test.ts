@@ -477,3 +477,65 @@ test('defineConfig rejects amounts with more decimals than the currency', () => 
     }),
   ).toThrow()
 })
+
+test('meters, benefits and products serialize their metadata', () => {
+  const config = defineConfig({
+    meters: ({ meter }) => ({
+      calls: meter('Calls').metadata({ team: 'search' }).count(),
+      tokens: meter('Tokens').where(gte('tokens', 1)).count(),
+    }),
+    benefits: ({ flag, credits }) => ({
+      custom_servers: flag('Custom servers').metadata({ limit: 5 }),
+      tool_calls: credits('Tool calls')
+        .meter('calls')
+        .units(100)
+        .metadata({ visible: true })
+        .rollover(),
+    }),
+    products: ({ product, free }) => ({
+      pro: product('Pro')
+        .metadata({ plan: 'pro', rank: 2 })
+        .prices(free())
+        .recurring('monthly')
+        .grants(['custom_servers']),
+    }),
+  })
+  const json = config.toJSON()
+  expect(json.meters.map((meter) => meter.metadata)).toEqual([
+    { team: 'search' },
+    undefined,
+  ])
+  expect(json.meters[1]).not.toHaveProperty('metadata')
+  expect(json.benefits?.map((benefit) => benefit.metadata)).toEqual([
+    { limit: 5 },
+    { visible: true },
+  ])
+  expect(json.products?.[0]?.metadata).toEqual({ plan: 'pro', rank: 2 })
+})
+
+test('metadata follows the API limits', () => {
+  const withMetadata = (metadata: Record<string, string | number | boolean>) =>
+    defineConfig({
+      meters: ({ meter }) => ({ calls: meter().metadata(metadata).count() }),
+    })
+
+  expect(() => withMetadata({ ['k'.repeat(41)]: 'value' })).toThrow()
+  expect(() => withMetadata({ '': 'value' })).toThrow()
+  expect(() => withMetadata({ key: '' })).toThrow()
+  expect(() => withMetadata({ key: 'v'.repeat(501) })).toThrow()
+  expect(() => withMetadata({ key: Number.NaN })).toThrow()
+  expect(() =>
+    withMetadata(
+      Object.fromEntries(
+        Array.from({ length: 51 }, (_, index) => [`key${index}`, index]),
+      ),
+    ),
+  ).toThrow()
+  expect(
+    withMetadata(
+      Object.fromEntries(
+        Array.from({ length: 50 }, (_, index) => [`key${index}`, index]),
+      ),
+    ).toJSON().meters[0]?.metadata,
+  ).toHaveProperty('key49', 49)
+})

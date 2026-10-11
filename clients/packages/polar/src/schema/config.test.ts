@@ -434,7 +434,7 @@ test('product description and visibility are only sent when set', () => {
         .prices(free())
         .recurring('monthly')
         .description('Early access')
-        .visibility('private'),
+        .private(),
       pro: product('Pro').prices(free()).recurring('monthly'),
     }),
   })

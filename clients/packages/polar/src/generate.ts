@@ -366,9 +366,7 @@ const renderProduct =
       ...(product.description === undefined
         ? []
         : [`.description(${literal(product.description)})`]),
-      ...(product.visibility === undefined || product.visibility === 'public'
-        ? []
-        : [`.visibility(${literal(product.visibility)})`]),
+      ...(product.visibility === 'private' ? ['.private()'] : []),
     ].join('\n')
   }
 

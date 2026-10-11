@@ -268,9 +268,7 @@ export const defineConfig = <
             ...(definition.descriptionText !== undefined && {
               description: definition.descriptionText,
             }),
-            ...(definition.visibilityLevel !== undefined && {
-              visibility: definition.visibilityLevel,
-            }),
+            ...(definition.isPrivate && { visibility: 'private' as const }),
           }
         },
       ),

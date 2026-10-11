@@ -19,10 +19,6 @@ const IntervalUnit = Schema.Literals(['day', 'week', 'month', 'year'])
 
 type IntervalUnit = typeof IntervalUnit.Type
 
-const Visibility = Schema.Literals(['draft', 'private', 'public'])
-
-type Visibility = typeof Visibility.Type
-
 const AT_MOST_ONE = {
   fixed: 'Only one fixed or free price is allowed.',
   seat_based: 'Only one seat-based price is allowed.',
@@ -83,7 +79,7 @@ export const ProductConfig = Schema.Struct({
   benefits: Schema.Array(Schema.String),
   metadata: Schema.optionalKey(Metadata),
   description: Schema.optionalKey(Schema.String),
-  visibility: Schema.optionalKey(Visibility),
+  visibility: Schema.optionalKey(Schema.Literals(['private', 'public'])),
 }).check(
   Schema.makeFilter(({ prices }) =>
     compositionIssues(prices).map((issue) => ({ path: ['prices'], issue })),
@@ -142,7 +138,7 @@ class ProductBuilder<
     readonly benefits: ReadonlyArray<Benefit> = [],
     metadata: Metadata | undefined = undefined,
     readonly descriptionText: string | undefined = undefined,
-    readonly visibilityLevel: Visibility | undefined = undefined,
+    readonly isPrivate: boolean = false,
   ) {
     this[metadataKey] = metadata
   }
@@ -158,7 +154,7 @@ class ProductBuilder<
       this.benefits,
       this[metadataKey],
       this.descriptionText,
-      this.visibilityLevel,
+      this.isPrivate,
     )
   }
 
@@ -189,7 +185,7 @@ class ProductBuilder<
       this.benefits,
       this[metadataKey],
       this.descriptionText,
-      this.visibilityLevel,
+      this.isPrivate,
     )
   }
 
@@ -202,7 +198,7 @@ class ProductBuilder<
       this.benefits,
       this[metadataKey],
       this.descriptionText,
-      this.visibilityLevel,
+      this.isPrivate,
     )
   }
 
@@ -219,7 +215,7 @@ class ProductBuilder<
       this.benefits,
       this[metadataKey],
       this.descriptionText,
-      this.visibilityLevel,
+      this.isPrivate,
     )
   }
 
@@ -234,7 +230,7 @@ class ProductBuilder<
       benefits,
       this[metadataKey],
       this.descriptionText,
-      this.visibilityLevel,
+      this.isPrivate,
     )
   }
 
@@ -247,7 +243,7 @@ class ProductBuilder<
       this.benefits,
       { ...metadata },
       this.descriptionText,
-      this.visibilityLevel,
+      this.isPrivate,
     )
   }
 
@@ -260,13 +256,11 @@ class ProductBuilder<
       this.benefits,
       this[metadataKey],
       description,
-      this.visibilityLevel,
+      this.isPrivate,
     )
   }
 
-  visibility(
-    visibility: Visibility,
-  ): ProductBuilder<Meter, Benefit, P, Billing> {
+  private(): ProductBuilder<Meter, Benefit, P, Billing> {
     return new ProductBuilder(
       this.name,
       this.priceList,
@@ -275,7 +269,7 @@ class ProductBuilder<
       this.benefits,
       this[metadataKey],
       this.descriptionText,
-      visibility,
+      true,
     )
   }
 }

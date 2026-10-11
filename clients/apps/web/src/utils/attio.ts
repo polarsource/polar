@@ -12,7 +12,7 @@ interface AttioResponse<T> {
   data: T
 }
 
-class AttioError extends Error {
+export class AttioError extends Error {
   constructor(
     public status: number,
     public body: unknown,
@@ -91,6 +91,22 @@ export const upsertCompany = async (
   return result.data
 }
 
+const LINKEDIN_PROFILE_REGEX =
+  /^(?:https?:\/\/)?(?:[a-z]{2,3}\.|www\.)?linkedin\.com\/in\/([^/?#\s]+)/i
+
+// Attio rejects LinkedIn values that aren't a valid profile handle or URL, so
+// normalize what we can and drop the rest instead of failing the submission.
+export const normalizeLinkedinUrl = (raw?: string): string | null => {
+  const match = raw?.trim().match(LINKEDIN_PROFILE_REGEX)
+  if (!match) return null
+  return `https://www.linkedin.com/in/${match[1]}`
+}
+
+const isLinkedinValidationError = (error: unknown): boolean =>
+  error instanceof AttioError &&
+  error.status === 400 &&
+  JSON.stringify(error.body).includes('LINKEDIN_HANDLE_INVALID')
+
 interface CreatePersonInput {
   firstName: string
   lastName: string
@@ -116,8 +132,9 @@ export const createPerson = async (
   if (input.jobTitle) {
     values.job_title = input.jobTitle
   }
-  if (input.linkedinUrl) {
-    values.linkedin = input.linkedinUrl
+  const linkedin = normalizeLinkedinUrl(input.linkedinUrl)
+  if (linkedin) {
+    values.linkedin = linkedin
   }
   if (input.companyRecordId) {
     values.company = [
@@ -125,14 +142,25 @@ export const createPerson = async (
     ]
   }
 
-  const result = await request<AttioResponse<AttioRecord>>(
-    '/objects/people/records?matching_attribute=email_addresses',
-    {
-      method: 'PUT',
-      body: JSON.stringify({ data: { values } }),
-    },
-  )
-  return result.data
+  const upsertPerson = (values: Record<string, unknown>) =>
+    request<AttioResponse<AttioRecord>>(
+      '/objects/people/records?matching_attribute=email_addresses',
+      {
+        method: 'PUT',
+        body: JSON.stringify({ data: { values } }),
+      },
+    )
+
+  try {
+    return (await upsertPerson(values)).data
+  } catch (error) {
+    // A bad LinkedIn value shouldn't block the application: retry without it.
+    if (!values.linkedin || !isLinkedinValidationError(error)) {
+      throw error
+    }
+    const { linkedin: _linkedin, ...valuesWithoutLinkedin } = values
+    return (await upsertPerson(valuesWithoutLinkedin)).data
+  }
 }
 
 interface AddToListInput {

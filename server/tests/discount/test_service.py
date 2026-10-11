@@ -193,6 +193,73 @@ class TestCreate:
                 auth_subject,
             )
 
+    @pytest.mark.auth
+    async def test_existing_external_id(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            external_id="ext_1337",
+        )
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await discount_service.create(
+                session,
+                DiscountFixedCreate(
+                    duration=DiscountDuration.once,
+                    amounts={PresentmentCurrency.usd: 1000},
+                    name="Discount",
+                    external_id="ext_1337",
+                    organization_id=organization.id,
+                ),
+                auth_subject,
+            )
+
+        assert e.value.errors()[0]["loc"] == ("body", "external_id")
+
+    @pytest.mark.auth
+    async def test_external_id_of_deleted_discount(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        deleted_discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            external_id="ext_1337",
+        )
+        deleted_discount.set_deleted_at()
+        await save_fixture(deleted_discount)
+
+        discount = await discount_service.create(
+            session,
+            DiscountFixedCreate(
+                duration=DiscountDuration.once,
+                amounts={PresentmentCurrency.usd: 1000},
+                name="Discount",
+                external_id="ext_1337",
+                organization_id=organization.id,
+            ),
+            auth_subject,
+        )
+
+        assert discount.external_id == "ext_1337"
+
 
 @pytest.mark.anyio
 class TestUpdate:
@@ -654,6 +721,122 @@ class TestUpdate:
         )
 
         assert updated_discount.code == "mycode"
+
+    @pytest.mark.auth
+    async def test_same_external_id(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization,
+            external_id="ext_1337",
+        )
+
+        updated_discount = await discount_service.update(
+            session,
+            discount,
+            discount_update=DiscountUpdate(name="Renamed", external_id="ext_1337"),
+            auth_subject=auth_subject,
+        )
+
+        assert updated_discount.external_id == "ext_1337"
+
+    @pytest.mark.auth
+    async def test_set_external_id(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+
+        updated_discount = await discount_service.update(
+            session,
+            discount,
+            discount_update=DiscountUpdate(external_id="ext_1337"),
+            auth_subject=auth_subject,
+        )
+
+        assert updated_discount.external_id == "ext_1337"
+
+    @pytest.mark.auth
+    async def test_external_id_cannot_be_changed(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization,
+            external_id="ext_1337",
+        )
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await discount_service.update(
+                session,
+                discount,
+                discount_update=DiscountUpdate(external_id="ext_42"),
+                auth_subject=auth_subject,
+            )
+
+        assert e.value.errors()[0]["loc"] == ("body", "external_id")
+
+    @pytest.mark.auth
+    async def test_external_id_already_exists(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization,
+            external_id="ext_1337",
+        )
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=2000,
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await discount_service.update(
+                session,
+                discount,
+                discount_update=DiscountUpdate(external_id="ext_1337"),
+                auth_subject=auth_subject,
+            )
+
+        assert e.value.errors()[0]["loc"] == ("body", "external_id")
 
     @pytest.mark.auth
     async def test_webhook(

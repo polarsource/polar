@@ -21774,6 +21774,12 @@ export interface components {
      */
     DiscountFixedCreate: {
       /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id?: string | null
+      /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
        *
@@ -21950,6 +21956,12 @@ export interface components {
        * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       /** Products */
       products: components['schemas']['DiscountProduct'][]
     }
@@ -22136,6 +22148,12 @@ export interface components {
        * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       /** Products */
       products: components['schemas']['DiscountProduct'][]
     }
@@ -22235,6 +22253,12 @@ export interface components {
      * @description Schema to create a percentage discount.
      */
     DiscountPercentageCreate: {
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id?: string | null
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -22389,6 +22413,12 @@ export interface components {
        * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       /** Products */
       products: components['schemas']['DiscountProduct'][]
     }
@@ -22541,6 +22571,12 @@ export interface components {
        * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       /** Products */
       products: components['schemas']['DiscountProduct'][]
     }
@@ -22728,6 +22764,12 @@ export interface components {
      * @description Schema to update a discount.
      */
     DiscountUpdate: {
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id?: string | null
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -52992,6 +53034,8 @@ export interface operations {
       query?: {
         /** @description Filter by organization ID. */
         organization_id?: string | string[] | null
+        /** @description Filter by discount external ID. */
+        external_id?: string | string[] | null
         /** @description Filter by name. */
         query?: string | null
         /** @description Page number, defaults to 1. */

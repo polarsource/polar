@@ -14,6 +14,7 @@ from pydantic import (
 )
 
 from polar.kit.currency import PresentmentCurrency
+from polar.kit.external_id import ExternalIDInputMixin, ExternalIDOutputMixin
 from polar.kit.metadata import (
     MetadataInputMixin,
     MetadataOutputMixin,
@@ -166,7 +167,7 @@ ProductsList = Annotated[
 ]
 
 
-class DiscountCreateBase(MetadataInputMixin, Schema):
+class DiscountCreateBase(MetadataInputMixin, ExternalIDInputMixin, Schema):
     name: Name
     code: Code = None
 
@@ -276,7 +277,7 @@ class DiscountPercentageCreate(DiscountCreateBase):
         return self
 
 
-class DiscountUpdate(MetadataInputMixin, Schema):
+class DiscountUpdate(MetadataInputMixin, ExternalIDInputMixin, Schema):
     """
     Schema to update a discount.
     """
@@ -424,7 +425,7 @@ class DiscountPercentageRepeatDurationBase(
 ): ...
 
 
-class DiscountFullBase(DiscountBase):
+class DiscountFullBase(ExternalIDOutputMixin, DiscountBase):
     products: list[DiscountProduct]
 
 

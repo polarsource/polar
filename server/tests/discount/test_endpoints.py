@@ -13,6 +13,7 @@ from polar.models.discount import (
     DiscountType,
 )
 from polar.postgres import AsyncSession
+from polar.version import V2026_10, V2027_01
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_discount
 
@@ -101,6 +102,77 @@ class TestListDiscounts:
         )
         assert fixed_item["type"] == "fixed"
         assert isinstance(fixed_discount, DiscountFixed)
+
+    @pytest.mark.auth
+    @pytest.mark.api_version(V2027_01)
+    async def test_filter_by_external_id(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        deleted_discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization,
+            external_id="launch",
+        )
+        deleted_discount.set_deleted_at()
+        await save_fixture(deleted_discount)
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization,
+            external_id="launch",
+        )
+        await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=2000,
+            duration=DiscountDuration.once,
+            organization=organization,
+            external_id="partner",
+        )
+
+        response = await client.get(
+            "/v1/discounts/", params={"external_id": ["launch", "missing"]}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert [item["id"] for item in json["items"]] == [str(discount.id)]
+        assert json["items"][0]["external_id"] == "launch"
+
+    @pytest.mark.auth
+    @pytest.mark.api_version(V2026_10)
+    async def test_external_id_filter_ignored_before_2027_01(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        for external_id in ("launch", None):
+            await create_discount(
+                save_fixture,
+                type=DiscountType.percentage,
+                basis_points=1000,
+                duration=DiscountDuration.once,
+                organization=organization,
+                external_id=external_id,
+            )
+
+        response = await client.get("/v1/discounts/", params={"external_id": "launch"})
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 2
+        assert "external_id" not in json["items"][0]
 
 
 @pytest.mark.anyio
@@ -203,6 +275,29 @@ class TestCreateDiscount:
         )
 
         assert response.status_code == 201
+
+    @pytest.mark.auth
+    @pytest.mark.api_version(V2027_01)
+    async def test_external_id_2027_01(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/discounts/",
+            json={
+                "name": "Discount",
+                "type": "percentage",
+                "duration": "once",
+                "basis_points": 1000,
+                "external_id": "ext_1337",
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 201
+        assert response.json()["external_id"] == "ext_1337"
 
     @pytest.mark.auth
     async def test_valid_max_redemptions_per_customer(

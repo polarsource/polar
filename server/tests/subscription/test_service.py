@@ -6717,6 +6717,61 @@ class TestUpdateProduct:
 
         assert updated_subscription.product == new_product
 
+    async def test_yearly_subscription_on_monthly_product_resets_cycle(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(1000, "usd")],
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(2000, "usd")],
+        )
+
+        current_period_start = utc_now()
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_start=current_period_start,
+            current_period_end=current_period_start + timedelta(days=365),
+        )
+        subscription.recurring_interval = SubscriptionRecurringInterval.year
+        await save_fixture(subscription)
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=new_product.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
+
+        assert updated_subscription.recurring_interval == (
+            SubscriptionRecurringInterval.month
+        )
+        assert updated_subscription.current_period_end is not None
+        assert updated_subscription.current_period_end < (
+            current_period_start + timedelta(days=32)
+        )
+
     async def test_next_period_behavior_new_update(
         self,
         session: AsyncSession,

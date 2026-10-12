@@ -24,7 +24,12 @@ from polar.models import (
 from polar.models.payout import PayoutStatus
 from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.payout.repository import PayoutRepository
-from polar.payout.service import NoSyncableAttempt, PayoutNotManual, PayoutNotPending
+from polar.payout.service import (
+    NoSyncableAttempt,
+    PayoutNotHeld,
+    PayoutNotManual,
+    PayoutNotPending,
+)
 from polar.payout.service import payout as payout_service
 from polar.payout.sorting import ListSorting, PayoutSortProperty
 from polar.postgres import AsyncSession, get_db_session
@@ -403,6 +408,17 @@ async def get(
                                 hx_target="#modal",
                             ):
                                 text("Retry Payout")
+                        if payout.status == PayoutStatus.held:
+                            with tag.button(
+                                classes="btn btn-success",
+                                hx_get=str(
+                                    request.url_for(
+                                        "payouts:release_held_payout", id=payout.id
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Release Payout")
                         if payout.is_cancelable:
                             with tag.button(
                                 classes="btn btn-error",
@@ -610,6 +626,79 @@ async def mark_paid(
                     hx_target="#modal",
                 ):
                     text("Mark as Paid")
+
+
+@router.api_route(
+    "/{id}/release-held-payout",
+    name="payouts:release_held_payout",
+    methods=["GET", "POST"],
+)
+async def release_held_payout(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    repository = PayoutRepository.from_session(session)
+    payout = await repository.get_by_id(id)
+
+    if payout is None:
+        raise HTTPException(status_code=404)
+
+    if payout.status != PayoutStatus.held:
+        raise PayoutNotHeld(payout)
+
+    if request.method == "POST":
+        await payout_service.release_held_payout(session, payout)
+        await add_toast(
+            request,
+            f"Payout {payout.id} queued. The organization keeps its current status.",
+            variant="success",
+        )
+        with tag.div(hx_redirect=str(request.url_for("payouts:get", id=payout.id))):
+            pass
+        return
+
+    with modal(f"Release Payout {payout.id}", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p():
+                text(
+                    "Release "
+                    f"{formatters.currency(payout.amount, payout.currency)} "
+                    "without approving the organization."
+                )
+
+            with tag.p():
+                text("This will:")
+            with tag.ul(classes="list-disc list-inside"):
+                with tag.li():
+                    text("Move this payout from held to pending")
+                if payout.processor == PayoutAccountType.stripe:
+                    with tag.li():
+                        text("Start the transfer for this payout only")
+                else:
+                    with tag.li():
+                        text(
+                            "Leave it pending so it can be marked as paid "
+                            "once the manual transfer is sent"
+                        )
+                with tag.li():
+                    text("Leave the organization in its current status")
+                with tag.li():
+                    text("Leave every other held payout on this account held")
+
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Go back")
+                with button(
+                    type="button",
+                    variant="primary",
+                    hx_post=str(
+                        request.url_for("payouts:release_held_payout", id=payout.id)
+                    ),
+                    hx_target="#modal",
+                ):
+                    text("Release Payout")
 
 
 @router.api_route("/{id}/cancel", name="payouts:cancel", methods=["GET", "POST"])

@@ -16425,6 +16425,9 @@ export interface components {
     ConfigProductPrice:
       | components['schemas']['ConfigProductPriceFixed']
       | components['schemas']['ConfigProductPriceMeteredUnit']
+      | components['schemas']['ConfigProductPriceSeatBased']
+      | components['schemas']['ConfigProductPriceMeteredTiers']
+      | components['schemas']['ConfigProductPriceUnitBased']
     /** ConfigProductPriceFixed */
     ConfigProductPriceFixed: {
       /**
@@ -16444,6 +16447,32 @@ export interface components {
        * @description The price in cents. Set to `0` for a free price. Must be at least the currency's minimum amount.
        */
       price_amount: number
+    }
+    /** ConfigProductPriceMeteredTiers */
+    ConfigProductPriceMeteredTiers: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'metered_tiers'
+      /**
+       * @description The currency in which the customer will be charged.
+       * @default usd
+       */
+      price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
+      /**
+       * Meter
+       * @description The `external_id` of a meter declared in the same config.
+       */
+      meter: string
+      tiers: components['schemas']['TiersInput']
+      /**
+       * Cap Amount
+       * @description Optional maximum charge in cents.
+       */
+      cap_amount?: number | null
     }
     /** ConfigProductPriceMeteredUnit */
     ConfigProductPriceMeteredUnit: {
@@ -16474,6 +16503,61 @@ export interface components {
        * @description Optional maximum charge in cents.
        */
       cap_amount?: number | null
+    }
+    /** ConfigProductPriceSeatBased */
+    ConfigProductPriceSeatBased: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'seat_based'
+      /**
+       * @description The currency in which the customer will be charged.
+       * @default usd
+       */
+      price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
+      /** @description Tiered pricing based on the purchased seat quantity. */
+      tiers: components['schemas']['TiersInput']
+      /**
+       * Minimum Units
+       * @description The minimum purchasable seat quantity (inclusive).
+       * @default 1
+       */
+      minimum_units: number
+    }
+    /** ConfigProductPriceUnitBased */
+    ConfigProductPriceUnitBased: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'unit_based'
+      /**
+       * @description The currency in which the customer will be charged.
+       * @default usd
+       */
+      price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
+      /** @description Tiered pricing based on the purchased unit quantity. */
+      tiers: components['schemas']['TiersInput']
+      /**
+       * Minimum Units
+       * @description The minimum purchasable unit quantity (inclusive).
+       * @default 1
+       */
+      minimum_units: number
+      /**
+       * Unit Label
+       * @description Per-locale unit nouns shown at checkout and on invoices. `{"en": {"=1": "device", "other": "devices"}}`. Defaults to "unit"/"units" when unset.
+       */
+      unit_label?: {
+        [key: string]: {
+          [key: string]: string
+        }
+      } | null
     }
     /**
      * ConfigResource
@@ -21774,6 +21858,12 @@ export interface components {
      */
     DiscountFixedCreate: {
       /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id?: string | null
+      /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
        *
@@ -21907,6 +21997,12 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
@@ -21998,6 +22094,12 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
@@ -22093,6 +22195,12 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
@@ -22186,6 +22294,12 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
@@ -22235,6 +22349,12 @@ export interface components {
      * @description Schema to create a percentage discount.
      */
     DiscountPercentageCreate: {
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id?: string | null
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -22346,6 +22466,12 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
@@ -22420,6 +22546,12 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
@@ -22498,6 +22630,12 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
@@ -22574,6 +22712,12 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
@@ -22728,6 +22872,12 @@ export interface components {
      * @description Schema to update a discount.
      */
     DiscountUpdate: {
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id?: string | null
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -52992,6 +53142,8 @@ export interface operations {
       query?: {
         /** @description Filter by organization ID. */
         organization_id?: string | string[] | null
+        /** @description Filter by discount external ID. */
+        external_id?: string | string[] | null
         /** @description Filter by name. */
         query?: string | null
         /** @description Page number, defaults to 1. */
@@ -71187,9 +71339,18 @@ export const configIssueTypeValues: ReadonlyArray<
 export const configProductPriceFixedAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceFixed']['amount_type']
 > = ['fixed']
+export const configProductPriceMeteredTiersAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredTiers']['amount_type']
+> = ['metered_tiers']
 export const configProductPriceMeteredUnitAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredUnit']['amount_type']
 > = ['metered_unit']
+export const configProductPriceSeatBasedAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceSeatBased']['amount_type']
+> = ['seat_based']
+export const configProductPriceUnitBasedAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceUnitBased']['amount_type']
+> = ['unit_based']
 export const configResourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigResource']
 > = ['meter', 'benefit', 'product']

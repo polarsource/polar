@@ -1,9 +1,7 @@
-import math
 import uuid
 from collections import defaultdict
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
-from typing import Any
 
 import structlog
 from redis.exceptions import RedisError
@@ -11,7 +9,6 @@ from redis.exceptions import RedisError
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.meter.aggregation import (
-    AggregationFunction,
     PropertyAggregation,
     UniqueAggregation,
 )
@@ -35,11 +32,6 @@ def get_reducer_bucket_start(timestamp: datetime) -> datetime:
     return datetime.fromtimestamp(epoch - epoch % size, tz=UTC)
 
 
-def get_oldest_active_bucket_start(now: datetime) -> datetime:
-    """Start of T-1, the older of the two active bucket starts: T and T-1."""
-    return get_reducer_bucket_start(now) - REDUCER_BUCKET_SIZE
-
-
 class ReducerBucketService:
     async def rollup(
         self,
@@ -58,45 +50,92 @@ class ReducerBucketService:
         if not reducers:
             return
 
-        oldest_active_bucket_start = get_oldest_active_bucket_start(utc_now())
-        buckets = _reduce_events_to_bucket_contributions(reducers, events)
-        active_buckets = {
+        now = utc_now()
+        current_bucket_start = get_reducer_bucket_start(now)
+        oldest_active_bucket_start = current_bucket_start - REDUCER_BUCKET_SIZE
+        contributions = _reduce_events_to_bucket_contributions(reducers, events)
+        contributions_to_active_buckets = {
             bucket_id: values
-            for bucket_id, values in buckets.items()
+            for bucket_id, values in contributions.items()
             if bucket_id[1] >= oldest_active_bucket_start
         }
-        if active_buckets:
+        if contributions_to_active_buckets:
             # Roll up active events into buckets in Redis
             try:
-                await redis_store.add_to_buckets(redis, active_buckets)
+                await redis_store.add_to_buckets(redis, contributions_to_active_buckets)
             except RedisError:
                 log.exception(
                     "Failed to update active reducer buckets in Redis",
                     organization_id=organization_id,
-                    bucket_count=len(active_buckets),
+                    bucket_count=len(contributions_to_active_buckets),
                     event_count=len(events),
                 )
             else:
                 log.info(
                     "Active reducer buckets updated in Redis",
                     organization_id=organization_id,
-                    bucket_count=len(active_buckets),
+                    bucket_count=len(contributions_to_active_buckets),
                     event_count=len(events),
                 )
 
-        for reducer, bucket_start, customer_id, external_customer_id in buckets:
+        contributions_to_closed_buckets = {
+            bucket_id: values
+            for bucket_id, values in contributions.items()
+            if bucket_id[1] < current_bucket_start
+        }
+        if contributions_to_closed_buckets:
+            await self.add_to_closed_buckets(session, contributions_to_closed_buckets)
+
+        for reducer, bucket_start, customer_id, external_customer_id in contributions:
+            if bucket_start < current_bucket_start:
+                continue
+            # Current buckets are only in Redis: persist them once they close.
+            delay = bucket_start + REDUCER_BUCKET_SIZE - now
             enqueue_job(
                 "reducer_bucket.sync",
                 reducer.id,
                 bucket_start.isoformat(),
                 customer_id,
                 external_customer_id,
+                delay=int(delay.total_seconds() * 1000),
+            )
+
+    async def add_to_closed_buckets(
+        self,
+        session: AsyncSession,
+        contributions: dict[redis_store.BucketId, list[float]],
+    ) -> None:
+        repository = ReducerBucketRepository.from_session(session)
+        # Sorted, so concurrent requests take the bucket locks in the same order.
+        for bucket_id in sorted(
+            contributions,
+            key=lambda bucket_id: redis_store.get_reducer_bucket_key(
+                bucket_id[0].id, *bucket_id[1:]
+            ),
+        ):
+            reducer, bucket_start, customer_id, external_customer_id = bucket_id
+            values = contributions[bucket_id]
+            # Shared with sync, which recomputes the bucket from its events.
+            await repository.lock_buckets(
+                reducer, bucket_start, customer_id, external_customer_id
+            )
+            statistics = (
+                {"total": sum(values), "minimum": min(values), "maximum": max(values)}
+                if isinstance(reducer.aggregation, PropertyAggregation)
+                else {}
+            )
+            await repository.add_contribution(
+                reducer,
+                bucket_start,
+                customer_id,
+                external_customer_id,
+                count=len(values),
+                **statistics,
             )
 
     async def sync(
         self,
         session: AsyncSession,
-        redis: Redis,
         reducer_id: uuid.UUID,
         bucket_start: datetime,
         customer_id: uuid.UUID | None,
@@ -126,18 +165,9 @@ class ReducerBucketService:
         )
         # Sealed buckets were billed: events since go to a new generation.
         if previous is not None and previous.sealed_at is None:
-            if not _are_close(
-                (count, total, minimum, maximum),
-                (
-                    previous.count,
-                    float(previous.sum),
-                    _to_float(previous.min),
-                    _to_float(previous.max),
-                ),
-            ):
-                await repository.update(previous, update_dict=statistics)
+            await repository.update(previous, update_dict=statistics)
             return
-        bucket = await repository.create(
+        await repository.create(
             ReducerBucket(
                 organization_id=reducer.organization_id,
                 reducer=reducer,
@@ -149,68 +179,13 @@ class ReducerBucketService:
             ),
             flush=True,
         )
-        if previous is None:
-            await self.compare_with_redis(redis, reducer, bucket)
-
-    async def compare_with_redis(
-        self, redis: Redis, reducer: Reducer, bucket: ReducerBucket
-    ) -> None:
-        aggregation = reducer.aggregation.func
-        log_fields = {
-            "organization_id": reducer.organization_id,
-            "reducer_id": reducer.id,
-            "aggregation": aggregation,
-            "bucket_start": bucket.bucket_start.isoformat(),
-            "key": redis_store.get_reducer_bucket_key(
-                reducer.id,
-                bucket.bucket_start,
-                bucket.customer_id,
-                bucket.external_customer_id,
-            ),
-        }
-        try:
-            [redis_values] = await redis_store.get_bucket_values(
-                redis,
-                reducer,
-                bucket.bucket_start,
-                [(bucket.customer_id, bucket.external_customer_id)],
-            )
-        except RedisError:
-            log.exception(
-                "Failed to read reducer bucket from Redis for comparison",
-                **log_fields,
-            )
-            return
-
-        match aggregation:
-            case AggregationFunction.cnt:
-                postgres_values: list[float | None] = [bucket.count]
-            case AggregationFunction.sum:
-                postgres_values = [_to_float(bucket.sum)]
-            case AggregationFunction.avg:
-                postgres_values = [bucket.count, _to_float(bucket.sum)]
-            case AggregationFunction.min:
-                postgres_values = [_to_float(bucket.min)]
-            case AggregationFunction.max:
-                postgres_values = [_to_float(bucket.max)]
-        if all(value is None for value in redis_values):
-            log.info("Reducer bucket missing in Redis", **log_fields)
-        elif _are_close(postgres_values, redis_values):
-            log.debug("Reducer bucket matches Redis", **log_fields)
-        else:
-            log.warning(
-                "Reducer bucket differs from Redis",
-                **log_fields,
-                postgres=postgres_values,
-                redis=redis_values,
-            )
 
 
 def _reduce_events_to_bucket_contributions(
     reducers: Sequence[Reducer], events: Sequence[Event]
 ) -> dict[redis_store.BucketId, list[float]]:
     """The values each event adds to the buckets of the reducers it matches."""
-    buckets: dict[redis_store.BucketId, list[float]] = defaultdict(list)
+    contributions: dict[redis_store.BucketId, list[float]] = defaultdict(list)
     for event in events:
         for reducer in reducers:
             if not reducer.filter.matches(event):
@@ -228,24 +203,8 @@ def _reduce_events_to_bucket_contributions(
                 event.customer_id,
                 event.external_customer_id,
             )
-            buckets[bucket_id].append(value)
-    return buckets
-
-
-def _are_close(values: Sequence[float | None], others: Sequence[float | None]) -> bool:
-    """Equal, with floats compared with a tolerance and None only equal to None."""
-    return all(
-        value is None
-        and other is None
-        or value is not None
-        and other is not None
-        and math.isclose(value, other)
-        for value, other in zip(values, others, strict=True)
-    )
-
-
-def _to_float(value: Any) -> float | None:
-    return float(value) if value is not None else None
+            contributions[bucket_id].append(value)
+    return contributions
 
 
 reducer_bucket = ReducerBucketService()

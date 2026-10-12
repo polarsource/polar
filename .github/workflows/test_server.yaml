@@ -44,7 +44,12 @@ jobs:
               - 'server/migrations/versions/**'
             migration_heads:
               - 'server/migrations/versions/**'
+              - 'server/migrations/env.py'
+              - 'server/polar/models/**'
+              - 'server/polar/kit/db/models/**'
               - 'server/scripts/check_migrations.py'
+              - 'server/tests/scripts/test_check_migrations.py'
+              - '.github/workflows/test_server.yaml'
             tinybird:
               - 'server/tinybird/**'
             env_vars:
@@ -351,7 +356,7 @@ jobs:
         working-directory: ./server
         run: uv sync --frozen --no-dev
 
-      - name: Check Alembic heads and migration filenames
+      - name: Check Alembic heads, migration filenames, and column drops
         working-directory: ./server
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}

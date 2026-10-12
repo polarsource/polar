@@ -6,6 +6,7 @@ import type { AuthError } from '@/schemas/Auth'
 import type { BillingConfigError } from '@/schemas/BillingConfig'
 import type { GitHubReleaseError } from '@/services/github-releases'
 import type { UpdaterError } from '@/services/updater'
+import * as ui from '@/utils/ui'
 
 export type CommandError =
   | ApiCommandError
@@ -60,6 +61,17 @@ export const errorJson = (error: unknown) => {
     message: title,
     ...(hint ? { hint } : {}),
   })
+}
+
+export const isJsonFlag = (args: ReadonlyArray<string>) =>
+  args.some((arg) => arg === '--json' || /^--json=(true|yes|on|1|y)$/.test(arg))
+
+export const reportedError = (args: ReadonlyArray<string>, error: unknown) => {
+  if (!isJsonFlag(args)) {
+    const { title, hint } = describeError(error)
+    return `\n${ui.failure(title, hint)}\n\n`
+  }
+  return `${errorJson(error)}\n`
 }
 
 export const describeError = (error: unknown): ErrorDescription => {

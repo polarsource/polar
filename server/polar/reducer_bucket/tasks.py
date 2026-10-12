@@ -5,7 +5,6 @@ from typing import Annotated
 from polar.observability.task_logging import LoggableField
 from polar.worker import (
     AsyncSessionMaker,
-    RedisMiddleware,
     TaskPriority,
     actor,
 )
@@ -31,11 +30,9 @@ def _sync_debounce_key(
 @actor(
     actor_name="reducer_bucket.sync",
     priority=TaskPriority.LOW,
-    # Every run recomputes the customer's buckets, so a burst of ingestion
-    # requests collapses into one run, still at least once a minute.
     debounce_key=_sync_debounce_key,
     debounce_min_threshold=10,
-    debounce_max_threshold=60,
+    debounce_max_threshold=360,
 )
 async def sync(
     reducer_id: Annotated[uuid.UUID, LoggableField],
@@ -46,7 +43,6 @@ async def sync(
     async with AsyncSessionMaker() as session:
         await reducer_bucket_service.sync(
             session,
-            RedisMiddleware.get(),
             reducer_id,
             datetime.fromisoformat(bucket_start),
             customer_id,

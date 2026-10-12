@@ -283,6 +283,30 @@ export const CurrentPeriodOverview = ({
           </span>
         </div>
 
+        {subscriptionPreview &&
+          subscriptionPreview.applied_balance_amount !== 0 && (
+            <>
+              <div className="dark:text-polar-500 mt-1 flex items-center justify-between text-gray-500">
+                <span>Applied balance</span>
+                <span>
+                  {formatCurrency('compact')(
+                    subscriptionPreview.applied_balance_amount,
+                    subscription.currency,
+                  )}
+                </span>
+              </div>
+              <div className="mt-1 flex items-center justify-between">
+                <span className="font-medium">To be paid</span>
+                <span className="text-lg font-medium">
+                  {formatCurrency('compact')(
+                    subscriptionPreview.due_amount,
+                    subscription.currency,
+                  )}
+                </span>
+              </div>
+            </>
+          )}
+
         {isCancelingAtPeriodEnd && (
           <p className="max-w-sm text-xs text-gray-500">
             This will be the final charge before the subscription ends.

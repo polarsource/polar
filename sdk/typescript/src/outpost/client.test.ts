@@ -26,9 +26,9 @@ let redis: Redis;
 let server: WebSocketServer;
 let core: ClientBase;
 let reducers: Reducer[];
-let snapshot: Record<string, unknown> | undefined;
 let delayConfiguration = false;
 const connections: WebSocket[] = [];
+const requests: unknown[] = [];
 const outposts: Outpost[] = [];
 
 beforeAll(async () => {
@@ -65,10 +65,9 @@ beforeAll(async () => {
     connections.push(ws);
     ws.on("message", (data) => {
       const message = JSON.parse(data.toString());
+      requests.push(message);
       if (message.type === "configuration" && !delayConfiguration)
         ws.send(JSON.stringify({ type: "configuration", payload: { reducers } }));
-      if (message.type === "snapshot" && snapshot)
-        ws.send(JSON.stringify({ type: "snapshot", payload: snapshot }));
     });
   });
 });
@@ -83,7 +82,7 @@ beforeEach(async () => {
       aggregation: { func: "sum", property: "tokens" },
     },
   ];
-  snapshot = undefined;
+  requests.length = 0;
   delayConfiguration = false;
 });
 
@@ -146,14 +145,19 @@ it.each([
   },
 );
 
-it("handles configuration asynchronously and reports a missing customer snapshot", async () => {
+it("handles configuration asynchronously with zero history and credits", async () => {
   delayConfiguration = true;
   const outpost = await start();
   const result = ingest(outpost, 3);
   for (const ws of connections)
     ws.send(JSON.stringify({ type: "configuration", payload: { reducers } }));
   expect(await result).toEqual({ inserted: 1, duplicates: 0 });
-  await expect(outpost.customerMeter(meter)).rejects.toThrow("snapshot is not ready");
+  expect(await outpost.customerMeter(meter)).toEqual({
+    ...meter,
+    consumed_units: 3,
+    credited_units: 0,
+    balance: -3,
+  });
   expect(await outpost.customerMeter({ ...customer, meter_id: "unknown" })).toBeNull();
 });
 
@@ -162,9 +166,14 @@ it("propagates snapshots, removes cold buckets, and rejects older cutoffs", asyn
   await redis.hset(key, { [`bucket:tokens:${bucket - 300}`]: 99, [`bucket:tokens:${bucket}`]: 3 });
   const reader = await start();
   await reader.actor(customer);
-  snapshot = { ...customer, cold_until: bucket, cold: { tokens: 8 }, credited: { meter: 100 } };
   const writer = await start();
   await writer.actor(customer);
+  connections.at(-1)!.send(
+    JSON.stringify({
+      type: "snapshot",
+      payload: { ...customer, cold_until: bucket, cold: { tokens: 8 }, credited: { meter: 100 } },
+    }),
+  );
   await vi.waitFor(async () => expect((await reader.customerMeter(meter))?.balance).toBe(89));
   expect(await redis.hexists(key, `bucket:tokens:${bucket - 300}`)).toBe(0);
   await redis.eval(
@@ -186,6 +195,31 @@ it("propagates snapshots, removes cold buckets, and rejects older cutoffs", asyn
   });
   expect((await writer.customerMeter(meter))?.balance).toBe(89);
 });
+
+it.each([
+  ["count", 1],
+  ["sum", 3],
+  ["min", 3],
+  ["max", 3],
+] as const)(
+  "uses zero baseline for %s without requesting a snapshot or losing local usage",
+  async (func, expected) => {
+    reducers[0].aggregation = func === "count" ? { func } : { func, property: "tokens" };
+    const reader = await start();
+    expect(await reader.customerMeter(meter)).toEqual({
+      ...meter,
+      consumed_units: 0,
+      credited_units: 0,
+      balance: 0,
+    });
+    const writer = await start();
+    await ingest(writer, 3);
+    await vi.waitFor(async () =>
+      expect((await reader.customerMeter(meter))?.consumed_units).toBe(expected),
+    );
+    expect(requests).toEqual([{ type: "configuration" }, { type: "configuration" }]);
+  },
+);
 
 it("ignores old revisions above JS integer precision and reloads on an epoch change", async () => {
   await seed();

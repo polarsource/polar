@@ -95,7 +95,6 @@ export class Outpost {
   private websocket?: WebSocket;
   private reducers: Reducer[] = [];
   private readonly cache = new Map<string, LocalState>();
-  private readonly actors = new Set<string>();
   private configured = signal();
   private synced = signal();
   private isSynced = false;
@@ -209,7 +208,6 @@ export class Outpost {
     this.configured.resolve();
     await Promise.allSettled([...closed, this.messages, this.synchronizing]);
     this.cache.clear();
-    this.actors.clear();
     this.reducers = [];
   }
 
@@ -253,9 +251,9 @@ export class Outpost {
     const reducer = this.reducers.find((item) => item.meter_ids?.includes(input.meter_id));
     if (!reducer) return null;
     const state = (await this.warmCustomer(customer)).state;
-    if (!state || state.cold_until === undefined)
-      throw new PolarError("Customer snapshot is not ready");
-    const cutoff = number(state.cold_until);
+    if (!state) throw new PolarError("Customer state is not ready");
+    // shortcut: missing snapshots mean zero history and credits until Polar supports snapshot requests.
+    const cutoff = state.cold_until === undefined ? -Infinity : number(state.cold_until);
     const values = Object.entries(state)
       .filter(
         ([field]) =>
@@ -318,26 +316,14 @@ export class Outpost {
       if (this.cache.size > CACHE_SIZE) {
         const evicted = this.cache.keys().next().value!;
         this.cache.delete(evicted);
-        this.actors.delete(evicted);
       }
     }
     this.cache.delete(customer);
     this.cache.set(customer, local);
-    if (local.state && this.actors.has(customer)) return local;
+    if (local.state) return local;
     const entry = local;
     await locked(entry, async () => {
       if (!entry.state) entry.state = await this.loadState(customer);
-      if (!this.actors.has(customer)) {
-        const separator = customer.indexOf(":");
-        await this.send({
-          type: "snapshot",
-          payload: {
-            [customer.startsWith("customer:") ? "customer_id" : "external_customer_id"]:
-              customer.slice(separator + 1),
-          },
-        });
-        this.actors.add(customer);
-      }
     });
     return entry;
   }

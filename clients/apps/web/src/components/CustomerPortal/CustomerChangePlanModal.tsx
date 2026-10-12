@@ -115,7 +115,9 @@ const CustomerChangePlanModal = ({
 
     const willTrigger =
       prorationBehavior !== 'next_period' &&
-      selectedProduct.recurring_interval !== subscription.recurring_interval
+      (selectedProduct.recurring_interval !== subscription.recurring_interval ||
+        selectedProduct.recurring_interval_count !==
+          subscription.recurring_interval_count)
 
     if (!willTrigger) return [false, null]
 

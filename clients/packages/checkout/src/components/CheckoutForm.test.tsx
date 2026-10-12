@@ -706,6 +706,35 @@ describe('CheckoutForm', () => {
       expect(submit).toBeEnabled()
     })
 
+    it('disables submit again when the Payment Element is remounted', () => {
+      const props = {
+        ...defaultProps,
+        themePreset: { stripe: {} } as ThemingPresetProps,
+        locale: 'en' as const,
+      }
+      const { rerender } = render(
+        <FormWrapper checkout={stripeCheckout()} {...props} />,
+      )
+      fireEvent.click(screen.getByText('mock ready'))
+
+      rerender(
+        <FormWrapper
+          checkout={stripeCheckout({
+            is_payment_form_required: false,
+            is_payment_required: false,
+            is_free_product_price: true,
+            amount: 0,
+            net_amount: 0,
+            total_amount: 0,
+          })}
+          {...props}
+        />,
+      )
+      rerender(<FormWrapper checkout={stripeCheckout()} {...props} />)
+
+      expect(screen.getByRole('button', { name: 'Pay now' })).toBeDisabled()
+    })
+
     it('shows an error when the Payment Element fails to load', async () => {
       const submit = renderStripeForm()
       await act(async () =>

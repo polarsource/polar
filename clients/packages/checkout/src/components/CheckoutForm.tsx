@@ -833,6 +833,9 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     : false
   const t = useTranslations(locale ?? 'en')
   const [isPaymentElementReady, setIsPaymentElementReady] = useState(false)
+  if (!checkout.is_payment_form_required && isPaymentElementReady) {
+    setIsPaymentElementReady(false)
+  }
   const isPaymentFormReady =
     !checkout.is_payment_form_required || isPaymentElementReady
 

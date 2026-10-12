@@ -256,3 +256,28 @@ class TestConvert:
 
         assert await _product_interval(session, product) == (None, None)
         assert await _price_state(session, price) == (None, None, False)
+
+    async def test_counts_one_time_price_on_legacy_recurring_product(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        product, _, _ = await _legacy_product(save_fixture, organization)
+        one_time_price = await create_legacy_recurring_product_price(
+            save_fixture,
+            amount_type=ProductPriceAmountType.fixed,
+            product=product,
+            recurring_interval=month,
+        )
+        one_time_price.type = ProductPriceType.one_time
+        await save_fixture(one_time_price)
+        scope = Scope(product_id=product.id)
+
+        assert (
+            await session.execute(planned_clear_count_statement(scope))
+        ).scalar_one() == 3
+
+        await _convert(session, scope)
+
+        assert await _price_state(session, one_time_price) == (None, None, False)

@@ -368,7 +368,7 @@ def planned_clear_count_statement(scope: Scope) -> Select[tuple[int]]:
         select(func.count())
         .select_from(ProductPrice)
         .join(Product, Product.id == ProductPrice.product_id)
-        .where(*_convertible(scope), ProductPrice.type == ProductPriceType.recurring)
+        .where(*_convertible(scope), ProductPrice.type.is_not(None))
     )
 
 

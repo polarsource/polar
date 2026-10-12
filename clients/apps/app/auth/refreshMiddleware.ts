@@ -43,6 +43,10 @@ export const refreshMiddleware: Middleware = {
 
     const retry = new Request(request)
     retry.headers.set('Authorization', `Bearer ${newAccessToken}`)
-    return await options.fetch(retry)
+    const retried: Body & ResponseInit = await options.fetch(retry)
+    // openapi-fetch rejects anything that is not an instance of the global
+    // Response, and expo/fetch returns its own implementation.
+    if (retried instanceof Response) return retried
+    return new Response(await retried.arrayBuffer(), retried)
   },
 }

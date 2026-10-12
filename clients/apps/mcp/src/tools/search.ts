@@ -6,7 +6,7 @@ import { spec } from '../spec'
 
 const SEARCH_LIMITS = { cpuMs: 5_000, subRequests: 0 }
 
-const description = `Search the Polar API OpenAPI spec (API version ${spec.apiVersion}) by writing JavaScript. The code runs in a sandbox without network access.
+const description = `Search the Polar API OpenAPI spec (API version ${spec.apiVersion}) by writing JavaScript. The code runs in a sandbox without network access. For guides and concepts, use search_docs instead.
 
 Available in your code:
 

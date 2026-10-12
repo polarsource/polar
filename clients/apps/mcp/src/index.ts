@@ -7,6 +7,7 @@ import { Effect, Layer, ManagedRuntime } from 'effect'
 import { FetchHttpClient, HttpClient } from 'effect/http'
 import { Auth, getBearerToken, unauthorized } from './auth'
 import { detectClient, toolModeFor } from './clients'
+import { Docs } from './docs'
 import { createServer } from './server'
 import { Sandbox } from './sandbox'
 
@@ -27,7 +28,11 @@ const CORS_HEADERS = {
 
 const servers: Record<string, string | undefined> = env.POLAR_SERVERS
 const runtime = ManagedRuntime.make(
-  Layer.mergeAll(Auth.layer, Sandbox.layer(env.LOADER)).pipe(
+  Layer.mergeAll(
+    Auth.layer,
+    Sandbox.layer(env.LOADER),
+    Docs.layer(env.MINTLIFY_SEARCH_KEY),
+  ).pipe(
     Layer.provideMerge(FetchHttpClient.layer),
     Layer.provide(Layer.succeed(HttpClient.TracerDisabledWhen, () => true)),
   ),
@@ -90,7 +95,9 @@ const handle = Effect.fn('handle')(function* (request: Request) {
   const readOnly = url.searchParams.get('readonly') === 'true'
   const body = yield* readJsonBody(request)
   const toolMode = toolModeFor(url, detectClient(request, body))
-  const context = yield* Effect.context<Sandbox | HttpClient.HttpClient>()
+  const context = yield* Effect.context<
+    Sandbox | Docs | HttpClient.HttpClient
+  >()
   return yield* Effect.promise(() =>
     createMcpHandler(() =>
       Effect.runPromiseWith(context)(

@@ -14,6 +14,7 @@ export const env = {
     'polar-sandbox': 'https://sandbox-api.polar.test',
   },
   LOADER: { get },
+  MINTLIFY_SEARCH_KEY: 'mint_dsc_test',
 }
 export const exports = {
   PolarApiOutbound: vi.fn(() => ({ fetch: vi.fn() })),

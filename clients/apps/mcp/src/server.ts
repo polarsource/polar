@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/server'
 import { Effect } from 'effect'
 import type { ToolMode } from './clients'
 import type { PolarApiOutboundProps } from './outbound'
+import { registerDocsTools } from './tools/docs'
 import { registerExecuteTool } from './tools/execute'
 import { registerOperationTools } from './tools/operations'
 import { registerSearchTool } from './tools/search'
@@ -18,5 +19,6 @@ export const createServer = Effect.fn('createServer')(function* (
     yield* registerSearchTool(server)
     yield* registerExecuteTool(server, props)
   }
+  yield* registerDocsTools(server)
   return server
 })

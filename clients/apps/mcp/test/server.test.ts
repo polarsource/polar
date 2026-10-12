@@ -4,6 +4,8 @@ import { request, rpc } from './client'
 import tools from '../src/generated/tools.json'
 import { evaluate, exports, get } from './workers'
 
+const DOCS_TOOLS = ['search_docs', 'read_docs_page']
+
 const fetchMock = vi.fn<typeof fetch>()
 
 beforeEach(() => {
@@ -82,37 +84,40 @@ test('code mode is the default; client hints and explicit overrides select opera
   expect(defaultTools.map((tool: { name: string }) => tool.name)).toEqual([
     'search',
     'execute',
+    ...DOCS_TOOLS,
   ])
   expect(defaultTools[0].inputSchema.properties.code.type).toBe('string')
   expect(defaultTools[0].inputSchema.required).toEqual(['code'])
   const operations = (
     await rpc('tools/list', {}, '', { 'User-Agent': 'claude-code/1.0' })
   ).result.tools
-  expect(operations.map((tool: { name: string }) => tool.name)).toEqual(
-    tools.map((tool) => tool.name),
-  )
+  expect(operations.map((tool: { name: string }) => tool.name)).toEqual([
+    ...tools.map((tool) => tool.name),
+    ...DOCS_TOOLS,
+  ])
   expect(
     (
       await rpc('tools/list', {}, '?codemode=true', {
         'User-Agent': 'Cursor/1.0',
       })
     ).result.tools,
-  ).toHaveLength(2)
+  ).toHaveLength(4)
   const meta = {
     _meta: { [CLIENT_INFO_META_KEY]: { name: 'codex-mcp-client' } },
   }
   expect((await rpc('tools/list', meta)).result.tools).toHaveLength(
-    tools.length,
+    tools.length + DOCS_TOOLS.length,
   )
   expect(
     (await rpc('tools/list', meta, '?codemode=true')).result.tools,
-  ).toHaveLength(2)
+  ).toHaveLength(4)
   const readOnly = (
     await rpc('tools/list', {}, '?codemode=false&readonly=true')
   ).result.tools
-  expect(readOnly.map((tool: { name: string }) => tool.name)).toEqual(
-    tools.filter((tool) => tool.method === 'GET').map((tool) => tool.name),
-  )
+  expect(readOnly.map((tool: { name: string }) => tool.name)).toEqual([
+    ...tools.filter((tool) => tool.method === 'GET').map((tool) => tool.name),
+    ...DOCS_TOOLS,
+  ])
 })
 
 test('search and execute preserve sandbox isolation, outbound credentials, and limits', async () => {
@@ -231,4 +236,78 @@ test('operation tools preserve query serialization, credentials, JSON results an
       )
     ).result.content[0].text,
   ).toBe('No content')
+})
+
+test('docs tools search Mintlify and read pages as markdown from the docs site', async () => {
+  fetchMock.mockResolvedValueOnce(
+    Response.json([
+      {
+        path: '/features/checkout/links',
+        content: 'Create a checkout link',
+        metadata: { title: 'Checkout Links' },
+      },
+      {
+        path: 'https://polar.sh/docs/integrate/sdk/adapters/nextjs#checkout',
+        content: 'Next.js checkout',
+      },
+    ]),
+  )
+  const search = await rpc('tools/call', {
+    name: 'search_docs',
+    arguments: { query: 'checkout links' },
+  })
+  expect(search.result.content[0].text).toBe(
+    [
+      '## Checkout Links\nPage: features/checkout/links\nURL: https://polar.sh/docs/features/checkout/links\n\nCreate a checkout link',
+      '## integrate/sdk/adapters/nextjs\nPage: integrate/sdk/adapters/nextjs\nURL: https://polar.sh/docs/integrate/sdk/adapters/nextjs\n\nNext.js checkout',
+    ].join('\n\n---\n\n'),
+  )
+  const [input, init] = fetchMock.mock.calls[0]
+  expect(input instanceof Request ? input.url : String(input)).toBe(
+    'https://api.mintlify.com/discovery/v1/search/polar',
+  )
+  expect(init?.method).toBe('POST')
+  expect(new Headers(init?.headers).get('Authorization')).toBe(
+    'Bearer mint_dsc_test',
+  )
+  expect(
+    JSON.parse(new TextDecoder().decode(init?.body as Uint8Array)),
+  ).toEqual({ query: 'checkout links', pageSize: 8 })
+
+  fetchMock.mockResolvedValueOnce(new Response('# Checkout Links'))
+  expect(
+    (
+      await rpc('tools/call', {
+        name: 'read_docs_page',
+        arguments: { page: '/features/checkout/links.mdx' },
+      })
+    ).result.content[0].text,
+  ).toBe('# Checkout Links')
+  const [page] = fetchMock.mock.calls[1]
+  expect(page instanceof Request ? page.url : String(page)).toBe(
+    'https://polar.sh/docs/features/checkout/links.md',
+  )
+
+  fetchMock.mockResolvedValueOnce(new Response('Not found', { status: 404 }))
+  const missing = await rpc('tools/call', {
+    name: 'read_docs_page',
+    arguments: { page: 'missing' },
+  })
+  expect(missing.result.isError).toBe(true)
+  expect(missing.result.content[0].text).toContain('404')
+
+  const outside = await rpc('tools/call', {
+    name: 'read_docs_page',
+    arguments: { page: 'https://polar.sh/docs/http:evil.example' },
+  })
+  expect(outside.result).toEqual({
+    content: [
+      {
+        type: 'text',
+        text: 'Error: Not a Polar docs page: https://polar.sh/docs/http:evil.example',
+      },
+    ],
+    isError: true,
+  })
+  expect(fetchMock).toHaveBeenCalledTimes(3)
 })

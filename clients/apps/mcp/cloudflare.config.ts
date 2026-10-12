@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => ({
     entrypoint,
     env: {
       LOADER: bindings.workerLoader(),
+      MINTLIFY_SEARCH_KEY: bindings.secret(),
       POLAR_SERVERS: bindings.json(
         mode === 'development'
           ? { ...POLAR_SERVERS, ...LOCAL_POLAR_SERVERS }

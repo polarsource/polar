@@ -6,10 +6,7 @@ Create Date: 2026-10-12 12:20:17.086901
 
 """
 
-import sqlalchemy as sa
 from alembic import op
-
-# Polar Custom Imports
 
 # revision identifiers, used by Alembic.
 revision = "a95df2da94c0"
@@ -17,28 +14,70 @@ down_revision = "f591dcd9ab42"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 
-# Cleanup crons archive rows out of partial created_at indexes daily; the default
-# scale factor (0.2) leaves weeks of dead index entries for queries to walk through.
-AUTOVACUUM_VACUUM_SCALE_FACTORS = {
-    "webhook_events": 0.01,
-    "webhook_deliveries": 0.01,
-    "checkouts": 0.02,
-}
-
 
 def upgrade() -> None:
-    # Ensures we don't break app by applying a deadlock-inducing migration.
-    # CREATE INDEX CONCURRENTLY needs its own, far larger timeout -- see ADR-0006.
     op.execute("SET LOCAL lock_timeout = '5s'")
-    for table, scale_factor in AUTOVACUUM_VACUUM_SCALE_FACTORS.items():
-        op.execute(
-            f"ALTER TABLE {table} SET (autovacuum_vacuum_scale_factor = {scale_factor})"
+    op.execute("""
+        ALTER TABLE webhook_events SET (
+            autovacuum_vacuum_threshold = 1000,
+            autovacuum_vacuum_scale_factor = 0.01,
+            autovacuum_vacuum_insert_threshold = 1000,
+            autovacuum_vacuum_insert_scale_factor = 0.01,
+            autovacuum_analyze_threshold = 1000,
+            autovacuum_analyze_scale_factor = 0.02
         )
+    """)
+    op.execute("""
+        ALTER TABLE webhook_deliveries SET (
+            autovacuum_vacuum_threshold = 1000,
+            autovacuum_vacuum_scale_factor = 0.01,
+            autovacuum_vacuum_insert_threshold = 1000,
+            autovacuum_vacuum_insert_scale_factor = 0.01,
+            autovacuum_analyze_threshold = 1000,
+            autovacuum_analyze_scale_factor = 0.02
+        )
+    """)
+    op.execute("""
+        ALTER TABLE checkouts SET (
+            autovacuum_vacuum_threshold = 1000,
+            autovacuum_vacuum_scale_factor = 0.02,
+            autovacuum_vacuum_insert_threshold = 1000,
+            autovacuum_vacuum_insert_scale_factor = 0.02,
+            autovacuum_analyze_threshold = 1000,
+            autovacuum_analyze_scale_factor = 0.04
+        )
+    """)
 
 
 def downgrade() -> None:
-    # Ensures we don't break app by applying a deadlock-inducing migration.
-    # CREATE INDEX CONCURRENTLY needs its own, far larger timeout -- see ADR-0006.
     op.execute("SET LOCAL lock_timeout = '5s'")
-    for table in AUTOVACUUM_VACUUM_SCALE_FACTORS:
-        op.execute(f"ALTER TABLE {table} RESET (autovacuum_vacuum_scale_factor)")
+    op.execute("""
+        ALTER TABLE webhook_events RESET (
+            autovacuum_vacuum_threshold,
+            autovacuum_vacuum_scale_factor,
+            autovacuum_vacuum_insert_threshold,
+            autovacuum_vacuum_insert_scale_factor,
+            autovacuum_analyze_threshold,
+            autovacuum_analyze_scale_factor
+        )
+    """)
+    op.execute("""
+        ALTER TABLE webhook_deliveries RESET (
+            autovacuum_vacuum_threshold,
+            autovacuum_vacuum_scale_factor,
+            autovacuum_vacuum_insert_threshold,
+            autovacuum_vacuum_insert_scale_factor,
+            autovacuum_analyze_threshold,
+            autovacuum_analyze_scale_factor
+        )
+    """)
+    op.execute("""
+        ALTER TABLE checkouts RESET (
+            autovacuum_vacuum_threshold,
+            autovacuum_vacuum_scale_factor,
+            autovacuum_vacuum_insert_threshold,
+            autovacuum_vacuum_insert_scale_factor,
+            autovacuum_analyze_threshold,
+            autovacuum_analyze_scale_factor
+        )
+    """)

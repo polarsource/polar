@@ -49,6 +49,16 @@ class WebhookEvent(RecordModel):
                 "AND payload IS NOT NULL AND NOT skipped"
             ),
         ),
+        {
+            "postgresql_with": {
+                "autovacuum_vacuum_threshold": 1000,
+                "autovacuum_vacuum_scale_factor": 0.01,
+                "autovacuum_vacuum_insert_threshold": 1000,
+                "autovacuum_vacuum_insert_scale_factor": 0.01,
+                "autovacuum_analyze_threshold": 1000,
+                "autovacuum_analyze_scale_factor": 0.02,
+            }
+        },
     )
 
     webhook_endpoint_id: Mapped[UUID] = mapped_column(

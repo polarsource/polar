@@ -623,6 +623,9 @@ class TestRun:
         assert "when this coupon was applied" in (outcome.message or "")
         _assert_left_alone(adapter, pending_record)
 
+    # Freeze a 30-day month. The default period is 30 days, so a 31-day month
+    # puts its start and end on different days and one fewer renewal is discounted.
+    @freeze_time("2026-06-15")
     async def test_applies_kept_coupon_start_not_the_first_coupon(
         self,
         mocker: MockerFixture,
@@ -696,6 +699,9 @@ class TestRun:
             ),
         ],
     )
+    # Freeze a 30-day month. The default period is 30 days, so a 31-day month
+    # puts its start and end on different days and one fewer renewal is discounted.
+    @freeze_time("2026-06-15")
     async def test_discounts_the_renewals_the_source_still_would(
         self,
         mocker: MockerFixture,

@@ -260,7 +260,7 @@ it("reloads evicted customers and closes owned connections", async () => {
 });
 
 it("ships the Outpost entrypoint for both ESM and CommonJS", async () => {
-  const esm = await import("@polar-sh/sdk/outpost");
+  const esm = await import(import.meta.resolve("@polar-sh/sdk/outpost"));
   const cjs = createRequire(import.meta.url)("@polar-sh/sdk/outpost");
   expect(esm.Outpost).toBeTypeOf("function");
   expect(cjs.Outpost).toBeTypeOf("function");

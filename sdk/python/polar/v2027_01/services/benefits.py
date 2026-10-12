@@ -55,7 +55,6 @@ class BenefitsSync(SyncServiceBase):
         organization_id: str | builtins.list[str] | None = None,
         type: BenefitType | builtins.list[BenefitType] | None = None,
         id: str | builtins.list[str] | None = None,
-        external_id: str | builtins.list[str] | None = None,
         exclude_id: str | builtins.list[str] | None = None,
         query: str | None = None,
         page: int = 1,
@@ -74,7 +73,6 @@ class BenefitsSync(SyncServiceBase):
             organization_id: Filter by organization ID.
             type: Filter by benefit type.
             id: Filter by benefit IDs.
-            external_id: Filter by benefit external ID.
             exclude_id: Exclude benefits with these IDs.
             query: Filter by description.
             page: Page number, defaults to 1.
@@ -99,7 +97,6 @@ class BenefitsSync(SyncServiceBase):
                 "organization_id": organization_id,
                 "type": type,
                 "id": id,
-                "external_id": external_id,
                 "exclude_id": exclude_id,
                 "query": query,
                 "page": page,
@@ -122,7 +119,6 @@ class BenefitsSync(SyncServiceBase):
         organization_id: str | builtins.list[str] | None = None,
         type: BenefitType | builtins.list[BenefitType] | None = None,
         id: str | builtins.list[str] | None = None,
-        external_id: str | builtins.list[str] | None = None,
         exclude_id: str | builtins.list[str] | None = None,
         query: str | None = None,
         page: int = 1,
@@ -141,7 +137,6 @@ class BenefitsSync(SyncServiceBase):
             organization_id: Filter by organization ID.
             type: Filter by benefit type.
             id: Filter by benefit IDs.
-            external_id: Filter by benefit external ID.
             exclude_id: Exclude benefits with these IDs.
             query: Filter by description.
             page: Page number, defaults to 1.
@@ -166,7 +161,6 @@ class BenefitsSync(SyncServiceBase):
                 organization_id=organization_id,
                 type=type,
                 id=id,
-                external_id=external_id,
                 exclude_id=exclude_id,
                 query=query,
                 page=page,
@@ -727,7 +721,6 @@ class BenefitsAsync(AsyncServiceBase):
         organization_id: str | builtins.list[str] | None = None,
         type: BenefitType | builtins.list[BenefitType] | None = None,
         id: str | builtins.list[str] | None = None,
-        external_id: str | builtins.list[str] | None = None,
         exclude_id: str | builtins.list[str] | None = None,
         query: str | None = None,
         page: int = 1,
@@ -746,7 +739,6 @@ class BenefitsAsync(AsyncServiceBase):
             organization_id: Filter by organization ID.
             type: Filter by benefit type.
             id: Filter by benefit IDs.
-            external_id: Filter by benefit external ID.
             exclude_id: Exclude benefits with these IDs.
             query: Filter by description.
             page: Page number, defaults to 1.
@@ -771,7 +763,6 @@ class BenefitsAsync(AsyncServiceBase):
                 "organization_id": organization_id,
                 "type": type,
                 "id": id,
-                "external_id": external_id,
                 "exclude_id": exclude_id,
                 "query": query,
                 "page": page,
@@ -794,7 +785,6 @@ class BenefitsAsync(AsyncServiceBase):
         organization_id: str | builtins.list[str] | None = None,
         type: BenefitType | builtins.list[BenefitType] | None = None,
         id: str | builtins.list[str] | None = None,
-        external_id: str | builtins.list[str] | None = None,
         exclude_id: str | builtins.list[str] | None = None,
         query: str | None = None,
         page: int = 1,
@@ -813,7 +803,6 @@ class BenefitsAsync(AsyncServiceBase):
             organization_id: Filter by organization ID.
             type: Filter by benefit type.
             id: Filter by benefit IDs.
-            external_id: Filter by benefit external ID.
             exclude_id: Exclude benefits with these IDs.
             query: Filter by description.
             page: Page number, defaults to 1.
@@ -838,7 +827,6 @@ class BenefitsAsync(AsyncServiceBase):
                 organization_id=organization_id,
                 type=type,
                 id=id,
-                external_id=external_id,
                 exclude_id=exclude_id,
                 query=query,
                 page=page,

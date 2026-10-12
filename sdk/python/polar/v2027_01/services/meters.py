@@ -10,7 +10,6 @@ from polar.base import (
     parse_response_json,
 )
 from polar.v2027_01.errors import (
-    AmbiguousExternalMeterID,
     HTTPValidationError,
     ResourceNotFound,
 )
@@ -37,7 +36,6 @@ class MetersSync(SyncServiceBase):
         self,
         *,
         organization_id: str | builtins.list[str] | None = None,
-        external_id: str | builtins.list[str] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
         page: int = 1,
@@ -54,7 +52,6 @@ class MetersSync(SyncServiceBase):
 
         Args:
             organization_id: Filter by organization ID.
-            external_id: Filter by meter external ID.
             query: Filter by name.
             is_archived: Filter on archived meters.
             page: Page number, defaults to 1.
@@ -77,7 +74,6 @@ class MetersSync(SyncServiceBase):
             path_params={},
             query_params={
                 "organization_id": organization_id,
-                "external_id": external_id,
                 "query": query,
                 "is_archived": is_archived,
                 "page": page,
@@ -98,7 +94,6 @@ class MetersSync(SyncServiceBase):
         self,
         *,
         organization_id: str | builtins.list[str] | None = None,
-        external_id: str | builtins.list[str] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
         page: int = 1,
@@ -115,7 +110,6 @@ class MetersSync(SyncServiceBase):
 
         Args:
             organization_id: Filter by organization ID.
-            external_id: Filter by meter external ID.
             query: Filter by name.
             is_archived: Filter on archived meters.
             page: Page number, defaults to 1.
@@ -138,7 +132,6 @@ class MetersSync(SyncServiceBase):
         while True:
             response = self.list(
                 organization_id=organization_id,
-                external_id=external_id,
                 query=query,
                 is_archived=is_archived,
                 page=page,
@@ -188,50 +181,6 @@ class MetersSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
-            422: HTTPValidationError,
-        }
-        return parse_response_json(response, Meter, method_errors)
-
-    def get_external(
-        self,
-        external_id: str,
-        *,
-        request_timeout: RequestTimeout | None = None,
-        request_access_token: str | None = None,
-    ) -> Meter:
-        """
-        Get a meter by external ID.
-
-        **Scopes**: `meters:read` `meters:write`
-
-        Args:
-            external_id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
-            request_access_token: Access token override for this request.
-
-
-        Raises:
-            ResourceNotFound: Meter not found.
-            AmbiguousExternalMeterID: The external ID matches meters in several accessible organizations.
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="GET",
-            url="/v1/meters/external/{external_id}",
-            path_params={
-                "external_id": external_id,
-            },
-            query_params={},
-            request_timeout=request_timeout,
-            request_access_token=request_access_token,
-        )
-        response = self.client.send_request(request)
-        method_errors = {
-            404: ResourceNotFound,
-            409: AmbiguousExternalMeterID,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Meter, method_errors)
@@ -396,7 +345,6 @@ class MetersAsync(AsyncServiceBase):
         self,
         *,
         organization_id: str | builtins.list[str] | None = None,
-        external_id: str | builtins.list[str] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
         page: int = 1,
@@ -413,7 +361,6 @@ class MetersAsync(AsyncServiceBase):
 
         Args:
             organization_id: Filter by organization ID.
-            external_id: Filter by meter external ID.
             query: Filter by name.
             is_archived: Filter on archived meters.
             page: Page number, defaults to 1.
@@ -436,7 +383,6 @@ class MetersAsync(AsyncServiceBase):
             path_params={},
             query_params={
                 "organization_id": organization_id,
-                "external_id": external_id,
                 "query": query,
                 "is_archived": is_archived,
                 "page": page,
@@ -457,7 +403,6 @@ class MetersAsync(AsyncServiceBase):
         self,
         *,
         organization_id: str | builtins.list[str] | None = None,
-        external_id: str | builtins.list[str] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
         page: int = 1,
@@ -474,7 +419,6 @@ class MetersAsync(AsyncServiceBase):
 
         Args:
             organization_id: Filter by organization ID.
-            external_id: Filter by meter external ID.
             query: Filter by name.
             is_archived: Filter on archived meters.
             page: Page number, defaults to 1.
@@ -497,7 +441,6 @@ class MetersAsync(AsyncServiceBase):
         while True:
             response = await self.list(
                 organization_id=organization_id,
-                external_id=external_id,
                 query=query,
                 is_archived=is_archived,
                 page=page,
@@ -548,50 +491,6 @@ class MetersAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
-            422: HTTPValidationError,
-        }
-        return parse_response_json(response, Meter, method_errors)
-
-    async def get_external(
-        self,
-        external_id: str,
-        *,
-        request_timeout: RequestTimeout | None = None,
-        request_access_token: str | None = None,
-    ) -> Meter:
-        """
-        Get a meter by external ID.
-
-        **Scopes**: `meters:read` `meters:write`
-
-        Args:
-            external_id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
-            request_access_token: Access token override for this request.
-
-
-        Raises:
-            ResourceNotFound: Meter not found.
-            AmbiguousExternalMeterID: The external ID matches meters in several accessible organizations.
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="GET",
-            url="/v1/meters/external/{external_id}",
-            path_params={
-                "external_id": external_id,
-            },
-            query_params={},
-            request_timeout=request_timeout,
-            request_access_token=request_access_token,
-        )
-        response = await self.client.send_request(request)
-        method_errors = {
-            404: ResourceNotFound,
-            409: AmbiguousExternalMeterID,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Meter, method_errors)

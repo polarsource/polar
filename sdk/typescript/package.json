@@ -1,6 +1,6 @@
 {
   "name": "@polar-sh/sdk",
-  "version": "1.0.3-alpha.2",
+  "version": "0.0.0",
   "description": "Polar SDK — A billing platform for the intelligence era",
   "keywords": [
     "api",
@@ -34,6 +34,16 @@
       "require": {
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
+      }
+    },
+    "./outpost": {
+      "import": {
+        "types": "./dist/outpost/index.d.mts",
+        "default": "./dist/outpost/index.mjs"
+      },
+      "require": {
+        "types": "./dist/outpost/index.d.cts",
+        "default": "./dist/outpost/index.cjs"
       }
     },
     "./2026-04": {
@@ -198,12 +208,27 @@
   },
   "devDependencies": {
     "@types/node": "^24.13.6",
+    "@types/ws": "^8.18.1",
+    "ioredis": "^5.11.0",
     "oxfmt": "^0.56.0",
     "oxlint": "^1.71.0",
     "standardwebhooks": "^1.0.0",
     "tsdown": "^0.22.3",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.9",
+    "ws": "^8.21.0"
+  },
+  "peerDependencies": {
+    "ioredis": "^5.11.0",
+    "ws": "^8.21.0"
+  },
+  "peerDependenciesMeta": {
+    "ioredis": {
+      "optional": true
+    },
+    "ws": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=24"

@@ -27,7 +27,6 @@ export const listCustomerMeters = (client: ClientBase) => {
       customer_id?: string | string[] | null;
       external_customer_id?: string | string[] | null;
       meter_id?: string | string[] | null;
-      external_meter_id?: string | string[] | null;
       page?: number;
       limit?: number;
       sorting?: CustomerMeterSortProperty[] | null;
@@ -40,7 +39,6 @@ export const listCustomerMeters = (client: ClientBase) => {
       customer_id: query?.customer_id,
       external_customer_id: query?.external_customer_id,
       meter_id: query?.meter_id,
-      external_meter_id: query?.external_meter_id,
       page: query?.page ?? 1,
       limit: query?.limit ?? 10,
       sorting: query?.sorting ?? ["-modified_at"],
@@ -78,7 +76,6 @@ export const iterListCustomerMeters = (client: ClientBase) => {
       customer_id?: string | string[] | null;
       external_customer_id?: string | string[] | null;
       meter_id?: string | string[] | null;
-      external_meter_id?: string | string[] | null;
       page?: number;
       limit?: number;
       sorting?: CustomerMeterSortProperty[] | null;

@@ -27,6 +27,7 @@ from polar.v2027_01.literals import (
     Reason,
     RecurringInterval,
     Role,
+    SeatTierType,
     SubscriptionProrationBehavior,
     SubType,
     TaxBehaviorOption,
@@ -65,9 +66,6 @@ class AttachedCustomFieldCreate(typing.TypedDict):
 
 class BenefitCustomCreate(typing.TypedDict):
     """Schema to create a benefit of type `custom`."""
-
-    external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -109,9 +107,6 @@ class BenefitCustomProperties(typing.TypedDict):
 
 
 class BenefitCustomUpdate(typing.TypedDict):
-    external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
-
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -137,9 +132,6 @@ You can store up to **50 key-value pairs**."""
 
 
 class BenefitDiscordCreate(typing.TypedDict):
-    external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
-
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -181,9 +173,6 @@ class BenefitDiscordCreateProperties(typing.TypedDict):
 
 
 class BenefitDiscordUpdate(typing.TypedDict):
-    external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
-
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -206,9 +195,6 @@ You can store up to **50 key-value pairs**."""
 
 
 class BenefitDownloadablesCreate(typing.TypedDict):
-    external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
-
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -243,9 +229,6 @@ class BenefitDownloadablesCreateProperties(typing.TypedDict):
 
 
 class BenefitDownloadablesUpdate(typing.TypedDict):
-    external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
-
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -269,9 +252,6 @@ You can store up to **50 key-value pairs**."""
 
 class BenefitFeatureFlagCreate(typing.TypedDict):
     """Schema to create a benefit of type `feature_flag`."""
-
-    external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -311,9 +291,6 @@ class BenefitFeatureFlagProperties(typing.TypedDict):
 
 
 class BenefitFeatureFlagUpdate(typing.TypedDict):
-    external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
-
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -339,9 +316,6 @@ You can store up to **50 key-value pairs**."""
 
 
 class BenefitGitHubRepositoryCreate(typing.TypedDict):
-    external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
-
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -383,9 +357,6 @@ class BenefitGitHubRepositoryCreateProperties(typing.TypedDict):
 
 
 class BenefitGitHubRepositoryUpdate(typing.TypedDict):
-    external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
-
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -420,9 +391,6 @@ class BenefitLicenseKeyExpirationProperties(typing.TypedDict):
 
 
 class BenefitLicenseKeysCreate(typing.TypedDict):
-    external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
-
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -461,9 +429,6 @@ class BenefitLicenseKeysCreateProperties(typing.TypedDict):
 
 
 class BenefitLicenseKeysUpdate(typing.TypedDict):
-    external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
-
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -490,9 +455,6 @@ You can store up to **50 key-value pairs**."""
 
 class BenefitMeterCreditCreate(typing.TypedDict):
     """Schema to create a benefit of type `meter_unit`."""
-
-    external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -532,9 +494,6 @@ class BenefitMeterCreditCreateProperties(typing.TypedDict):
 
 
 class BenefitMeterCreditUpdate(typing.TypedDict):
-    external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
-
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -560,9 +519,6 @@ You can store up to **50 key-value pairs**."""
 
 
 class BenefitSlackSharedChannelCreate(typing.TypedDict):
-    external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
-
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -606,9 +562,6 @@ class BenefitSlackSharedChannelCreateProperties(typing.TypedDict):
 
 
 class BenefitSlackSharedChannelUpdate(typing.TypedDict):
-    external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
-
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -2368,9 +2321,6 @@ class MemberUpdate(typing.TypedDict):
 
 
 class MeterCreate(typing.TypedDict):
-    external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
-
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -2407,9 +2357,6 @@ You can store up to **50 key-value pairs**."""
 
 
 class MeterUpdate(typing.TypedDict):
-    external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
-
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -2744,6 +2691,9 @@ class OrganizationFeatureSettingsUpdate(typing.TypedDict):
     Other feature settings are managed by Polar staff: they're ignored if
     provided and keep their current value."""
 
+    member_model_enabled: typing.NotRequired[bool]
+    """If this organization has the Member model enabled"""
+
     checkout_localization_enabled: typing.NotRequired[bool]
     """If this organization has checkout localization enabled"""
 
@@ -2829,9 +2779,6 @@ class ProductBenefitsUpdate(typing.TypedDict):
 
 
 class ProductCreateOneTime(typing.TypedDict):
-    external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
-
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -2881,9 +2828,6 @@ You can store up to **50 key-value pairs**."""
 
 
 class ProductCreateRecurring(typing.TypedDict):
-    external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
-
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -3453,11 +3397,35 @@ class ProductPriceSeatBasedCreate(typing.TypedDict):
     tax_behavior: typing.NotRequired[TaxBehaviorOption | None]
     """The tax behavior of the price. If not set, it will default to the organization's default tax behavior."""
 
-    tiers: TiersInput
-    """Tiered pricing based on the purchased seat quantity."""
+    seat_tiers: ProductPriceSeatTiersInput
+    """Tiered pricing based on seat quantity"""
 
-    minimum_units: typing.NotRequired[int | None]
-    """The minimum purchasable seat quantity (inclusive). Defaults to 1 when not set."""
+
+class ProductPriceSeatTier(typing.TypedDict):
+    """A pricing tier for seat-based pricing."""
+
+    min_seats: int
+    """Minimum number of seats (inclusive)"""
+
+    max_seats: typing.NotRequired[int | None]
+    """Maximum number of seats (inclusive). None for unlimited."""
+
+    price_per_seat: int
+    """Price per seat in cents for this tier"""
+
+
+class ProductPriceSeatTiersInput(typing.TypedDict):
+    """List of pricing tiers for seat-based pricing.
+
+    The minimum and maximum seat limits are derived from the tiers:
+    - minimum_seats = first tier's min_seats
+    - maximum_seats = last tier's max_seats (None for unlimited)"""
+
+    seat_tier_type: typing.NotRequired[SeatTierType]
+    """How tiers are applied. 'volume' prices all seats at the matching tier's rate. 'graduated' prices each tier's range independently."""
+
+    tiers: list[ProductPriceSeatTier]
+    """List of pricing tiers"""
 
 
 class ProductPriceUnitBasedCreate(typing.TypedDict):
@@ -3484,9 +3452,6 @@ class ProductPriceUnitBasedCreate(typing.TypedDict):
 
 class ProductUpdate(typing.TypedDict):
     """Schema to update a product."""
-
-    external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -3698,9 +3663,6 @@ You can store up to **50 key-value pairs**."""
     product_id: str
     """The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow."""
 
-    currency: typing.NotRequired[PresentmentCurrency | None]
-    """The currency of the subscription. The product must have a free price in this currency. If not set, the organization's default currency is used."""
-
     customer_id: str
     """The ID of the customer to create the subscription for."""
 
@@ -3723,9 +3685,6 @@ You can store up to **50 key-value pairs**."""
 
     product_id: str
     """The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow."""
-
-    currency: typing.NotRequired[PresentmentCurrency | None]
-    """The currency of the subscription. The product must have a free price in this currency. If not set, the organization's default currency is used."""
 
     external_customer_id: str
     """The ID of the customer in your system to create the subscription for. It must already exist in Polar."""

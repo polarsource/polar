@@ -7894,6 +7894,10 @@ class TestUpdateTrial:
                 session, ctx, subscription, trial_end=new_trial_end
             )
 
+        assert subscription_update.applies_at == new_trial_end
+        assert subscription_update.new_cycle_start is None
+        assert subscription_update.new_cycle_end is None
+
         async with SubscriptionUpdateContext(
             session, subscription, subscription_service
         ) as ctx:
@@ -7931,10 +7935,6 @@ class TestUpdateTrial:
                 product_id=yearly_product.id,
                 proration_behavior=SubscriptionProrationBehavior.next_period,
             )
-
-        pending_update = subscription.pending_update
-        assert pending_update is not None
-        session.expire(pending_update, ["product", "subscription"])
 
         new_trial_end = subscription.trial_end + timedelta(days=30)
         async with SubscriptionUpdateContext(

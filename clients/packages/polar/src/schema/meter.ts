@@ -229,7 +229,7 @@ export class MeterBuilder<
     return this.refine({ meterUnit })
   }
 
-  /** Copies onto a plain `MeterBuilder`, so a bound meter loses `on()`. */
+  /** Returns a plain `MeterBuilder`, which has no `on()`. */
   protected refine<Refined extends string = Names, Output = Metadata>(
     patch: object,
   ): MeterBuilder<Refined, Output> {

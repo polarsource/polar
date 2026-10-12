@@ -26,6 +26,7 @@ from polar.product.guard import (
     is_unit_price,
 )
 from polar.product.repository import ProductPriceRepository, ProductRepository
+from polar.reducer.service import reducer as reducer_service
 
 from .repository import BillingEntryRepository
 
@@ -85,7 +86,10 @@ class BillingEntryService:
         await repository.lock_pending_by_subscription(subscription.id)
 
         item_entries_map: dict[OrderItem, BillingEntrySelector] = {}
+        meter_ids: set[uuid.UUID] = set()
         async for line_item, selector in line_items:
+            if isinstance(line_item, MeteredLineItem):
+                meter_ids.add(line_item.price.meter_id)
             order_item = OrderItem(
                 id=uuid.uuid4(),
                 label=line_item.label,
@@ -118,6 +122,12 @@ class BillingEntryService:
                 )
             else:
                 await repository.update_order_item_id(selector, order_item.id)
+
+        start = subscription.trial_end or subscription.started_at
+        if meter_ids and start is not None:
+            await reducer_service.seal(
+                session, subscription.customer, meter_ids, start=start, cutoff=cutoff
+            )
 
     def create_order_items_from_pending(
         self,

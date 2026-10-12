@@ -89,6 +89,7 @@ async def checkout_expired(checkout_id: Annotated[uuid.UUID, LoggableField]) -> 
     cron_trigger=CronTrigger.from_crontab("0 1 * * *"),
     priority=TaskPriority.LOW,
     max_retries=0,
+    time_limit=600_000,
 )
 async def anonymize_expired() -> None:
     older_than = utc_now() - settings.EXPIRED_CHECKOUT_RETENTION_PERIOD

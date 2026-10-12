@@ -12,8 +12,6 @@ export type EventName =
   | 'api.call'
   | 'credit.granted'
 
-export type Traffic = 'off' | 'slow' | 'fast'
-
 export interface SimEvent {
   id: string
   /** Position in the ledger, from 1. */
@@ -39,12 +37,10 @@ export interface SimState {
   rates: Record<EventName, number>
   /** Credits each grant adds. */
   grant: number
-  traffic: Traffic
 }
 
 export const RATE_CHOICES = [3, 10, 15]
 export const GRANT_CHOICES = [5_000, 10_000, 25_000]
-export const TRAFFIC_CHOICES: Traffic[] = ['off', 'slow', 'fast']
 
 const KEEP = 64
 const ACTORS = ['run_7f2', 'run_91c', 'agent_ada', 'run_b03', 'key_live_4']
@@ -69,7 +65,6 @@ const fresh = (): SimState => ({
     'credit.granted': 0,
   },
   grant: 10_000,
-  traffic: 'slow',
 })
 
 let state = fresh()
@@ -143,7 +138,6 @@ export function reset() {
     ...fresh(),
     rates: state.rates,
     grant: state.grant,
-    traffic: state.traffic,
   })
   seed()
 }
@@ -154,7 +148,6 @@ export const setRate = (perMillion: number) =>
     rates: { ...state.rates, 'tokens.out': perMillion / 1_000_000 },
   })
 export const setGrant = (grant: number) => set({ ...state, grant })
-export const setTraffic = (traffic: Traffic) => set({ ...state, traffic })
 
 export function useSim<T>(select: (s: SimState) => T): T {
   return useSyncExternalStore(

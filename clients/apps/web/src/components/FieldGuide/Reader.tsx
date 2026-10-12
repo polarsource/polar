@@ -15,7 +15,7 @@ import { KeyRow } from './Keys'
 import { Ruler } from './Ruler'
 import { Ticker } from './Ticker'
 import { pieces } from './pages'
-import { emit, reset, setTraffic, TRAFFIC_CHOICES, useSim } from './simulation'
+import { emit, reset } from './simulation'
 import { READER_CSS } from './styles'
 
 const ids = pieces.map((p) => p.id)
@@ -30,7 +30,6 @@ export default function FieldGuideReader() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [current, setCurrent] = useState(ids[0])
   const [keys, setKeys] = useState(true)
-  const traffic = useSim((s) => s.traffic)
 
   const plate = useCallback(
     (id: string) =>
@@ -116,21 +115,15 @@ export default function FieldGuideReader() {
       else if (k === 'e' || k === 'E') emit()
       else if (k === 'r' || k === 'R') reset()
       else if (k === 'h' || k === 'H') setKeys((v) => !v)
-      else if (k === 't' || k === 'T')
-        setTraffic(
-          TRAFFIC_CHOICES[
-            (TRAFFIC_CHOICES.indexOf(traffic) + 1) % TRAFFIC_CHOICES.length
-          ],
-        )
       else return
       e.preventDefault()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [current, goPage, goChapter, traffic])
+  }, [current, goPage, goChapter])
 
   return (
-    <main className="flex h-dvh flex-col overflow-hidden bg-[#141414] font-mono text-[13px] text-[#d8d8d8]">
+    <main className="flex h-dvh flex-col overflow-hidden bg-[#141414] font-sans text-[13px] text-[#d8d8d8]">
       <style>{READER_CSS}</style>
       <header className="grid h-12 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-6 px-7">
         <Link href="/" aria-label="Polar" className="flex text-white">

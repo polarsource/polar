@@ -4,11 +4,9 @@ import type { Control } from './content'
 import {
   GRANT_CHOICES,
   RATE_CHOICES,
-  TRAFFIC_CHOICES,
   num,
   setGrant,
   setRate,
-  setTraffic,
   useSim,
 } from './simulation'
 
@@ -29,8 +27,8 @@ function Choice<T extends string | number>({
   onChange: (v: T) => void
 }) {
   return (
-    <div className="flex flex-col gap-1 text-[13px]">
-      <span className="font-medium">{label}</span>
+    <div className="flex flex-col gap-1 text-[17px] font-[450]">
+      <span className="font-medium tracking-[-0.01em]">{label}</span>
       {note ? <span className="text-[#7b7b7b]">{note}</span> : null}
       <div className="flex flex-wrap gap-x-6 gap-y-1">
         {options.map((o) => (
@@ -56,17 +54,6 @@ function Choice<T extends string | number>({
 /** The control a chapter puts on the page, wired to the stream under the manual. */
 export function Controls({ kind }: { kind: Control }) {
   const sim = useSim((s) => s)
-  if (kind === 'traffic')
-    return (
-      <Choice
-        label="Choose traffic"
-        note="How fast events arrive on the ledger."
-        options={TRAFFIC_CHOICES}
-        value={sim.traffic}
-        format={(t) => t.toUpperCase()}
-        onChange={setTraffic}
-      />
-    )
   if (kind === 'rate')
     return (
       <Choice

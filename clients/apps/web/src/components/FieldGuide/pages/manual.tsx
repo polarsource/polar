@@ -60,9 +60,10 @@ export const manual: Piece[] = [
     2,
     () => {
       const x0 = 120,
-        x1 = 420,
         fy = 300,
         xm = 350
+      // Where the strands look like one line: the curves run flat well before they end.
+      const fold = x0 + (xm - x0) * 0.86
       const n = 14
       const gauge: [number, number] = [600, fy]
       return sheet(
@@ -101,7 +102,7 @@ export const manual: Piece[] = [
               stroke={LINE}
               strokeWidth={HAIR}
             />
-            <circle cx={x1} cy={fy} r={4.5} fill={LINE} />
+            <circle cx={fold} cy={fy} r={4.5} fill={LINE} />
             {/* the meter: a half dial of five ticks, a needle, a pivot */}
             <path
               d={`M${gauge[0] - 30} ${gauge[1]} A 30 30 0 0 1 ${gauge[0] + 30} ${gauge[1]}`}
@@ -125,9 +126,9 @@ export const manual: Piece[] = [
             })}
             <LiveMeter x0={x0} xm={xm} fy={fy} n={n} gauge={gauge} />
             <Callout at={[x0, 190]} to={[x0, 160]} route="v">
-              EVENT STREAM · ONE STRAND EACH
+              EVENT STREAM
             </Callout>
-            <Callout at={[x1, fy]} to={[x1, 400]} route="v">
+            <Callout at={[fold, fy]} to={[fold, 400]} route="v">
               THE FOLD
             </Callout>
             <Callout
@@ -468,6 +469,7 @@ export const manual: Piece[] = [
         x1 = 344,
         fy = 212,
         xm = 268
+      const fold = x0 + (xm - x0) * 0.86
       const n = 9
       return sheet(
         960,
@@ -506,7 +508,7 @@ export const manual: Piece[] = [
                 stroke={LINE}
                 strokeWidth={HAIR}
               />
-              <circle cx={x1} cy={fy} r={4.5} fill={LINE} />
+              <circle cx={fold} cy={fy} r={4.5} fill={LINE} />
               <Callout at={[x0, 164]} to={[x0, 128]} route="v">
                 EVENTS · IN ORDER
               </Callout>
@@ -559,7 +561,7 @@ export const manual: Piece[] = [
   page(
     'm-event',
     'Anatomy of an event',
-    'An event drawn as a frame, the way a protocol specification draws a packet: a ruler, the fields in order, and the properties at the end. Chapter 1.',
+    'An event drawn as a frame, the way a protocol specification draws a packet: a ruler, the fields in order, and the metadata at the end. Chapter 1.',
     960,
     540,
     2,
@@ -613,36 +615,16 @@ export const manual: Piece[] = [
                 </text>
               ))}
               <LiveEventFields x={x} top={top} rh={rh} cw={cw} />
-              {/* the open field continues */}
-              <line
-                x1={x}
-                x2={x + w}
-                y1={top + rh * 5 + 10}
-                y2={top + rh * 5 + 10}
-                stroke={DIM}
-                strokeWidth={HAIR}
-                {...DOTTED}
-              />
-              <Callout
-                at={[x + w, top + rh * 1.5]}
-                to={[x + w + 24, top + rh * 1.5]}
-              >
-                ORDER
-              </Callout>
-              <Callout
-                at={[x + w, top + rh * 4.5]}
-                to={[x + w + 24, top + rh * 4.5]}
-              >
-                MEASUREMENT
-              </Callout>
-              <Callout
-                at={[x, top + rh * 5 + 10]}
-                to={[x, top + rh * 5 + 32]}
-                route="v"
-                dot={false}
-              >
-                ANY SHAPE, ANY LENGTH
-              </Callout>
+              {/* the sentence the chapter opens with, field by field */}
+              {(['WHEN', 'WHO', 'WHAT', 'HOW MUCH'] as const).map((word, i) => (
+                <Callout
+                  key={word}
+                  at={[x + w, top + rh * (i + 1.5)]}
+                  to={[x + w + 24, top + rh * (i + 1.5)]}
+                >
+                  {word}
+                </Callout>
+              ))}
             </g>
           </Figure>
           <Body
@@ -651,7 +633,7 @@ export const manual: Piece[] = [
             width={220}
             size={11.5}
             text={[
-              'An event is a fact: at this time, this customer, through this actor, did this thing, this much. Its id and timestamp give it a place in the ledger; its properties carry the measurement, in any shape, and they are what the meters fold over.',
+              'An event is a fact: at this time, this customer, through this actor, did this thing, this much. Its id and timestamp give it a place in the ledger; its metadata carries the measurement, in any shape, and it is what the meters fold over.',
             ]}
           />
         </>,
@@ -824,9 +806,9 @@ export const manual: Piece[] = [
     540,
     2,
     () => {
-      const bx = 92,
+      const bx = 76,
         by = 186,
-        bw = 64,
+        bw = 80,
         bh = 32
       const bus = bx + bw + 28
       const rows: [string, boolean][] = [
@@ -982,14 +964,6 @@ export const manual: Piece[] = [
                   </g>
                 )
               })}
-              <Callout
-                at={[bus, ry(2) + 22]}
-                to={[bus, ry(2) + 44]}
-                route="v"
-                dot={false}
-              >
-                ONE STATE LINE
-              </Callout>
               <Callout
                 at={[sw + 14, ry(0) - 4]}
                 to={[sw + 14, ry(0) - 30]}
@@ -1187,7 +1161,7 @@ export const manual: Piece[] = [
               route="v"
               dot={false}
             >
-              EVENTS ARRIVE · EACH ONE FOLDED IN
+              EVENTS ARRIVE
             </Callout>
           </Figure>
           <Body
@@ -1205,23 +1179,24 @@ export const manual: Piece[] = [
     },
   ),
 
-  // 07 The ledger: one strip of numbered rows. The past is set, the head is now, the lines below are still empty.
+  // 07 The ledger: one strip of numbered rows. The past is set, the head is now, at the bottom.
   page(
     'm-ledger',
     'The ledger',
-    'The ledger as a strip: numbered rows from the first event down, the head in ink, and empty ruled lines beneath it for what comes next. Chapter 1.',
+    'The ledger as a strip: numbered rows from the first event down, the head in ink at the bottom. Chapter 1.',
     960,
     540,
     2,
     () => {
       const x = 96,
-        w = 160,
+        w = 176,
         top = 160,
         rh = 16
-      const past = 9,
-        future = 4
+      const past = 12
       const rowY = (i: number) => top + i * rh
       const head = rowY(past)
+      // The callouts' anchors stand a little clear of the rows' right edge.
+      const mark = x + w + 10
       return sheet(
         960,
         540,
@@ -1236,29 +1211,15 @@ export const manual: Piece[] = [
           />
           <Figure x={40} y={156} w={620} h={300} dy={26} n="001b">
             <g transform="translate(138 22)">
-              <LiveLedger
-                x={x}
-                w={w}
-                top={top}
-                rh={rh}
-                past={past}
-                future={future}
-              />
-              <Callout at={[x + w, rowY(0)]} to={[x + w + 28, rowY(0)]}>
+              <LiveLedger x={x} w={w} top={top} rh={rh} past={past} />
+              <Callout at={[mark, rowY(0)]} to={[mark + 28, rowY(0)]}>
                 FIRST EVENT
               </Callout>
-              <Callout at={[x + w, rowY(4)]} to={[x + w + 28, rowY(4)]}>
+              <Callout at={[mark, rowY(4)]} to={[mark + 28, rowY(4)]}>
                 SET · NEVER CHANGED
               </Callout>
-              <Callout at={[x + w, head]} to={[x + w + 28, head]}>
+              <Callout at={[mark, head]} to={[mark + 28, head]}>
                 HEAD · NOW
-              </Callout>
-              <Callout
-                at={[x + w, rowY(past + 2) + 8]}
-                to={[x + w + 28, rowY(past + 2) + 8]}
-                dot={false}
-              >
-                APPENDED HERE
               </Callout>
             </g>
           </Figure>
@@ -1290,7 +1251,7 @@ export const manual: Piece[] = [
         L1 = 232,
         L2 = 304
       const agents = [cx - 70, cx + 70]
-      const actors = (ax: number) => [ax - 30, ax, ax + 30]
+      const actors = (ax: number) => [ax - 40, ax, ax + 40]
       const node = (
         x: number,
         y: number,
@@ -1394,7 +1355,7 @@ export const manual: Piece[] = [
               {node(agents[1], L1, 'AGENT', 'mid')}
               {agents.flatMap((ax, i) =>
                 actors(ax).map((tx, j) =>
-                  node(tx, L2, 'actor', i === 0 && j === 1 ? 'ink' : 'mid', 26),
+                  node(tx, L2, 'actor', i === 0 && j === 1 ? 'ink' : 'mid', 32),
                 ),
               )}
               <line

@@ -170,6 +170,14 @@ def _generate_product_debit_proration_billing_entries(
     return billing_entries
 
 
+def next_cycle_bounds(start: datetime, product: Product) -> tuple[datetime, datetime]:
+    assert is_recurring_product(product)
+    end = product.recurring_interval.get_next_period(
+        start, start.day, product.recurring_interval_count
+    )
+    return start, end
+
+
 def _generate_product_subscription_update(
     subscription_update: SubscriptionUpdate,
 ) -> tuple[SubscriptionUpdate, list[BillingEntry]]:
@@ -190,9 +198,8 @@ def _generate_product_subscription_update(
         subscription_update.is_interval_changed()
         or subscription_update.proration_behavior == SubscriptionProrationBehavior.reset
     ):
-        new_cycle_start = subscription_update.applies_at
-        new_cycle_end = new_product.recurring_interval.get_next_period(
-            new_cycle_start, new_cycle_start.day, new_product.recurring_interval_count
+        new_cycle_start, new_cycle_end = next_cycle_bounds(
+            subscription_update.applies_at, new_product
         )
     else:
         # Don't change the cycle if we're just changing to a different product with the same interval or if the proration behavior is not reset

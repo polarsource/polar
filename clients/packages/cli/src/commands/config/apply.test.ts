@@ -178,13 +178,28 @@ describe('polar config apply', () => {
     expect(failed).toBe(false)
     expect(applied).toBe(1)
     expect(output).toContain(
-      '+ tool-calls\n      events       all events\n      aggregation  count',
+      '  │ + tool-calls\n  │     events       all events\n  │     aggregation  count',
     )
     expect(output).toContain(
       'polar.json applied to Acme (sandbox): 2 entries (1 created, 0 updated, 1 unchanged)',
     )
-    expect(output).toMatch(/Applying config \d+ms/)
+    expect(output).toMatch(
+      /╰─\n\n {2}Applying 1 change \(\d+ms\)\n {2}polar\.json applied to Acme/,
+    )
   })
+
+  test.each(['-y', '--aladåb'])(
+    'also skips the question with %s',
+    async (flag) => {
+      const { failed, applied } = await run(
+        { entries: [created], issues: [] },
+        { status: 'applied', entries: [created] },
+        [flag],
+      )
+      expect(failed).toBe(false)
+      expect(applied).toBe(1)
+    },
+  )
 
   test('asks before applying and stops when declined', async () => {
     const { output, terminal, applied, exit } = await run(

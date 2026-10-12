@@ -2,7 +2,8 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from sqlalchemy import ColumnElement, and_, or_, select
+from sqlalchemy import Column, ColumnElement, and_, or_, select
+from sqlalchemy.sql.visitors import iterate
 
 from polar.checkout.repository import expired_pending_anonymization
 from polar.config import settings
@@ -168,11 +169,16 @@ class ExpiredRecordsNotDeletedInvariant(Invariant):
         cutoff = utc_now() - self.CLEANUP_INTERVAL - self.LEEWAY
         overdue: list[str] = []
         for cleanup_task in CLEANUP_TASKS:
-            statement = (
-                select(cleanup_task.model.id)
-                .where(cleanup_task.deletable_clause(cutoff))
-                .limit(1)
-            )
+            model = cleanup_task.model
+            clause = cleanup_task.deletable_clause(cutoff)
+            statement = select(model.id).where(clause).limit(1)
+            # Steer created_at-bounded queries to their (partial) created_at index;
+            # without it the planner may pick a seq scan over the whole table.
+            if any(
+                isinstance(element, Column) and element.key == "created_at"
+                for element in iterate(clause)
+            ):
+                statement = statement.order_by(model.created_at)
             try:
                 result = await self.session.execute(statement)
             except Exception as e:

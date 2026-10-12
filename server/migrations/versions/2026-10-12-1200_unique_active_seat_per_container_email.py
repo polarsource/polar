@@ -25,6 +25,27 @@ INDEXES = {
 
 
 def upgrade() -> None:
+    # Revoke duplicate active seats, keeping the oldest per container and email.
+    # Benefit grants are left alone: duplicates share the same member, who keeps
+    # the remaining seat.
+    op.execute(
+        """
+        UPDATE customer_seats
+        SET status = 'revoked', revoked_at = now(), modified_at = now(),
+            invitation_token = NULL, customer_id = NULL, member_id = NULL, email = NULL
+        WHERE id IN (
+            SELECT id FROM (
+                SELECT id, row_number() OVER (
+                    PARTITION BY subscription_id, order_id, lower(email)
+                    ORDER BY created_at, id
+                ) AS rank
+                FROM customer_seats
+                WHERE status != 'revoked' AND email IS NOT NULL
+            ) ranked
+            WHERE rank > 1
+        )
+        """
+    )
     with op.get_context().autocommit_block():
         for name, column in INDEXES.items():
             # Drop any INVALID leftover from an interrupted concurrent build first.

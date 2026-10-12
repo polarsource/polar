@@ -40,7 +40,8 @@ export default defineConfig({
             tier().max(10).amount(usd(10), eur(9)),
             tier().amount(usd(8), eur(7)),
           )
-          .min(2),
+          .min(2)
+          .label('server', 'servers'),
       )
       .recurring('monthly'),
     usage: product('Usage')

@@ -250,6 +250,27 @@ test('the minimum quantity cannot exceed the maximum', () => {
   expect(decode(unbounded)).toEqual(unbounded)
 })
 
+test('unit prices take a unit label', () => {
+  const base = units().flat().amount(usd(5))
+  // @ts-expect-error seats have no unit label
+  seats().flat().amount(usd(5)).label('seat', 'seats')
+  const [labeled] = priceConfigs(
+    base.label('device', 'devices').min(2),
+    ['usd'],
+    'Price',
+  )
+  expect(labeled).toEqual({
+    amount_type: 'unit_based',
+    price_currency: 'usd',
+    tiers: { type: 'volume', tiers: [{ unit_amount: '500' }] },
+    minimum_units: 2,
+    unit_label: { en: { '=1': 'device', other: 'devices' } },
+  })
+  expect(decode(labeled)).toEqual(labeled)
+  const [blank] = priceConfigs(base.label('device', ' '), ['usd'], 'Price')
+  expect(() => decode(blank)).toThrow('Unit labels must not be blank.')
+})
+
 test('flat metered prices need a rate above zero', () => {
   const [zero] = priceConfigs(
     metered('calls').flat().amount(usd(0)),

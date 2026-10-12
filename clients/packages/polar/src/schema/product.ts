@@ -15,7 +15,7 @@ import {
   units,
 } from './price'
 import type { PriceDefinition } from './price'
-import { Visibility, visible } from './visibility'
+import { Visibility, withVisibility } from './visibility'
 
 const IntervalUnit = Schema.Literals(['day', 'week', 'month', 'year'])
 
@@ -129,7 +129,7 @@ class ProductBuilder<
   Benefit extends string,
   P extends Prices<Meter> | undefined,
   Billing extends Recurring | OneTime | undefined,
-> extends visible(Builder) {
+> extends withVisibility(Builder) {
   readonly trialPeriod: Trial | undefined = undefined
   readonly benefits: ReadonlyArray<Benefit> = []
   readonly [metadataKey]: Metadata | undefined = undefined

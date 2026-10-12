@@ -1,7 +1,7 @@
 import { Schema } from 'effect'
 import { Builder } from './builder'
 import { Metadata, metadataKey } from './metadata'
-import { Visibility, visible, type Visible } from './visibility'
+import { Visibility, withVisibility, type HasVisibility } from './visibility'
 
 const benefitFields = {
   external_id: Schema.String.check(Schema.isMinLength(1)),
@@ -39,7 +39,7 @@ export type BenefitDefinition<Meter extends string = string> =
       readonly name: string | undefined
       readonly type: 'feature_flag'
       readonly [metadataKey]?: Metadata | undefined
-    } & Visible)
+    } & HasVisibility)
   | ({
       readonly name: string | undefined
       readonly type: 'meter_credit'
@@ -49,11 +49,11 @@ export type BenefitDefinition<Meter extends string = string> =
         readonly rollover: boolean
       }
       readonly [metadataKey]?: Metadata | undefined
-    } & Visible)
+    } & HasVisibility)
 
 class FlagDefinition<
   Values extends Metadata | undefined = undefined,
-> extends visible(Builder) {
+> extends withVisibility(Builder) {
   readonly type = 'feature_flag'
   readonly [metadataKey]: Values
 
@@ -76,7 +76,7 @@ export const flag = (name?: string): FlagDefinition =>
 class CreditsDefinition<
   Meter extends string,
   Values extends Metadata | undefined = undefined,
-> extends visible(Builder) {
+> extends withVisibility(Builder) {
   readonly type = 'meter_credit'
   readonly [metadataKey]: Values
 

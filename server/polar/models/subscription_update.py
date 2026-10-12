@@ -112,10 +112,9 @@ class SubscriptionUpdate(RecordModel):
         if self.product is None:
             return False
         return (
-            self.product.recurring_interval
-            != self.subscription.product.recurring_interval
+            self.product.recurring_interval != self.subscription.recurring_interval
             or self.product.recurring_interval_count
-            != self.subscription.product.recurring_interval_count
+            != self.subscription.recurring_interval_count
         )
 
     def apply_update(self) -> Subscription:

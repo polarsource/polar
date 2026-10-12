@@ -97,7 +97,7 @@ export const forwardTarget = (input: string): URL | undefined => {
   }
 }
 
-export type TargetStatus = 'answering' | 'refused' | 'unknownHost' | 'unknown'
+type TargetStatus = 'answering' | 'refused' | 'unknownHost' | 'unknown'
 
 const statusOfError = (code: string | undefined): TargetStatus =>
   code === 'ECONNREFUSED'

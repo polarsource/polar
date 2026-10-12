@@ -56,6 +56,7 @@ const SECTIONS = {
   meter: 'meters',
   benefit: 'benefits',
   product: 'products',
+  discount: 'discounts',
   webhook: 'webhooks',
 } as const satisfies Record<typeof ConfigResource.Type, string>
 
@@ -70,7 +71,7 @@ export const entries = (results: ReadonlyArray<typeof EntryResult.Type>) =>
     }),
   )
 
-// Benefits, products and webhooks sections need their own scope on top of the meters one
+// Benefits, products, discounts and webhooks sections need their own scope on top of the meters one
 export const requiredScopes = (
   config: LoadedConfig,
   access: 'read' | 'write',
@@ -79,7 +80,7 @@ export const requiredScopes = (
     typeof config.input === 'object' && config.input !== null
       ? config.input
       : {}
-  return ['meters', 'benefits', 'products', 'webhooks']
+  return ['meters', 'benefits', 'products', 'discounts', 'webhooks']
     .filter((section) => section === 'meters' || section in input)
     .map((section) => `${section}:${access}`)
 }

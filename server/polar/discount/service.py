@@ -34,7 +34,7 @@ from polar.models import (
     User,
 )
 from polar.models.checkout import Checkout
-from polar.models.discount import DiscountFixed
+from polar.models.discount import DiscountFixed, DiscountType
 from polar.models.discount_redemption import DiscountRedemption
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.resolver import get_payload_organization
@@ -46,6 +46,14 @@ from .schemas import DiscountCreate, DiscountFixedCreate, DiscountUpdate
 from .sorting import DiscountSortProperty
 
 log = structlog.get_logger()
+
+DISCOUNT_LOCKED_FIELDS: dict[DiscountType, tuple[str, ...]] = {
+    DiscountType.fixed: ("amount", "currency", "amounts", "duration_in_months"),
+    DiscountType.percentage: ("basis_points", "duration_in_months"),
+}
+DISCOUNT_LOCKED_FIELD_MESSAGE = (
+    "This field cannot be changed because the discount has already been redeemed."
+)
 
 
 class DiscountError(PolarError): ...
@@ -322,12 +330,7 @@ class DiscountService(ResourceServiceReader[Discount]):
                 )
 
         if discount.redemptions_count > 0:
-            forbidden_fields = (
-                {"amount", "currency", "amounts", "duration_in_months"}
-                if isinstance(discount, DiscountFixed)
-                else {"basis_points", "duration_in_months"}
-            )
-            for field in forbidden_fields:
+            for field in DISCOUNT_LOCKED_FIELDS[discount.type]:
                 if field in discount_update.model_fields_set:
                     discount_update_value = getattr(discount_update, field)
                     if discount_update_value != getattr(discount, field, None):
@@ -336,10 +339,7 @@ class DiscountService(ResourceServiceReader[Discount]):
                                 {
                                     "type": "value_error",
                                     "loc": ("body", field),
-                                    "msg": (
-                                        "This field cannot be changed because "
-                                        "the discount has already been redeemed."
-                                    ),
+                                    "msg": DISCOUNT_LOCKED_FIELD_MESSAGE,
                                     "input": getattr(discount, field),
                                 }
                             ]

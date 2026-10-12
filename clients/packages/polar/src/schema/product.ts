@@ -1,4 +1,5 @@
 import { Schema } from 'effect'
+import { Metadata, metadataKey } from './metadata'
 import type { Currency } from './money'
 import {
   fixed,
@@ -76,6 +77,9 @@ export const ProductConfig = Schema.Struct({
   ),
   prices: Schema.Array(PriceConfig).check(Schema.isMinLength(1)),
   benefits: Schema.Array(Schema.String),
+  metadata: Schema.optionalKey(Metadata),
+  description: Schema.optionalKey(Schema.String),
+  visibility: Schema.optionalKey(Schema.Literals(['private', 'public'])),
 }).check(
   Schema.makeFilter(({ prices }) =>
     compositionIssues(prices).map((issue) => ({ path: ['prices'], issue })),
@@ -124,13 +128,20 @@ class ProductBuilder<
   P extends Prices<Meter> | undefined,
   Billing extends Recurring | OneTime | undefined,
 > {
+  readonly [metadataKey]: Metadata | undefined
+
   constructor(
     readonly name: string | undefined,
     readonly priceList: P,
     readonly billing: Billing,
     readonly trialPeriod: Trial | undefined = undefined,
     readonly benefits: ReadonlyArray<Benefit> = [],
-  ) {}
+    metadata: Metadata | undefined = undefined,
+    readonly descriptionText: string | undefined = undefined,
+    readonly isPrivate: boolean = false,
+  ) {
+    this[metadataKey] = metadata
+  }
 
   prices(
     ...prices: Prices<Meter>
@@ -141,6 +152,9 @@ class ProductBuilder<
       this.billing,
       this.trialPeriod,
       this.benefits,
+      this[metadataKey],
+      this.descriptionText,
+      this.isPrivate,
     )
   }
 
@@ -169,6 +183,9 @@ class ProductBuilder<
       billing,
       this.trialPeriod,
       this.benefits,
+      this[metadataKey],
+      this.descriptionText,
+      this.isPrivate,
     )
   }
 
@@ -179,6 +196,9 @@ class ProductBuilder<
       { recurring_interval: null, recurring_interval_count: null },
       undefined,
       this.benefits,
+      this[metadataKey],
+      this.descriptionText,
+      this.isPrivate,
     )
   }
 
@@ -193,6 +213,9 @@ class ProductBuilder<
       this.billing,
       { trial_interval: unitOf(interval), trial_interval_count: count },
       this.benefits,
+      this[metadataKey],
+      this.descriptionText,
+      this.isPrivate,
     )
   }
 
@@ -205,6 +228,48 @@ class ProductBuilder<
       this.billing,
       this.trialPeriod,
       benefits,
+      this[metadataKey],
+      this.descriptionText,
+      this.isPrivate,
+    )
+  }
+
+  metadata(metadata: Metadata): ProductBuilder<Meter, Benefit, P, Billing> {
+    return new ProductBuilder(
+      this.name,
+      this.priceList,
+      this.billing,
+      this.trialPeriod,
+      this.benefits,
+      { ...metadata },
+      this.descriptionText,
+      this.isPrivate,
+    )
+  }
+
+  description(description: string): ProductBuilder<Meter, Benefit, P, Billing> {
+    return new ProductBuilder(
+      this.name,
+      this.priceList,
+      this.billing,
+      this.trialPeriod,
+      this.benefits,
+      this[metadataKey],
+      description,
+      this.isPrivate,
+    )
+  }
+
+  private(): ProductBuilder<Meter, Benefit, P, Billing> {
+    return new ProductBuilder(
+      this.name,
+      this.priceList,
+      this.billing,
+      this.trialPeriod,
+      this.benefits,
+      this[metadataKey],
+      this.descriptionText,
+      true,
     )
   }
 }

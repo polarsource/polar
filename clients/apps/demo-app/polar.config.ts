@@ -17,7 +17,7 @@ export default defineConfig({
     tool_call: meter().on(events.tool_call).unit('custom', 'tool call').count(),
   }),
   benefits: ({ flag, credits }) => ({
-    custom_servers: flag('Custom servers'),
+    custom_servers: flag('Custom servers').metadata({ tag: 'primary' }),
     tool_calls: credits('Included tool calls').meter('tool_call').units(1000),
   }),
   products: ({ product, fixed, seats, units, tier, meter }) => ({
@@ -40,7 +40,8 @@ export default defineConfig({
             tier().max(10).amount(usd(10), eur(9)),
             tier().amount(usd(8), eur(7)),
           )
-          .min(2),
+          .min(2)
+          .label('server', 'servers'),
       )
       .recurring('monthly'),
     usage: product('Usage')

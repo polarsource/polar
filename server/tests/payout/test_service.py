@@ -37,6 +37,7 @@ from polar.payout.service import (
     PayoutHeld,
     PayoutIntervalLimitReached,
     PayoutNotCancelable,
+    PayoutNotHeld,
     PayoutNotManual,
     PayoutNotPending,
     PayoutNotSucceeded,
@@ -1665,6 +1666,81 @@ class TestReleaseHeldPayouts:
         await payout_service.release_held_payouts(session, account.id)
 
         enqueue_job_mock.assert_not_called()
+
+
+@pytest.mark.anyio
+class TestReleaseHeldPayout:
+    async def test_releases_only_the_given_payout(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        account: Account,
+        user: User,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        await save_fixture(organization)
+        enqueue_job_mock = mocker.patch("polar.payout.service.enqueue_job")
+
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        held = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.held,
+            attempts=[],
+        )
+        other_held = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.held,
+            attempts=[],
+        )
+
+        released = await payout_service.release_held_payout(session, held)
+
+        assert released.status == PayoutStatus.pending
+        enqueue_job_mock.assert_called_once_with("payout.transfer", payout_id=held.id)
+
+        repository = PayoutRepository.from_session(session)
+        refreshed_other = await repository.get_by_id(other_held.id)
+        assert refreshed_other is not None
+        assert refreshed_other.status == PayoutStatus.held
+
+        await session.refresh(organization, attribute_names=["status"])
+        assert organization.status == OrganizationStatus.REVIEW
+
+    async def test_second_release_is_rejected(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        account: Account,
+        user: User,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.payout.service.enqueue_job")
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        held = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.held,
+            attempts=[],
+        )
+
+        await payout_service.release_held_payout(session, held)
+
+        with pytest.raises(PayoutNotHeld):
+            await payout_service.release_held_payout(session, held)
+
+        enqueue_job_mock.assert_called_once_with("payout.transfer", payout_id=held.id)
 
 
 @pytest.mark.anyio

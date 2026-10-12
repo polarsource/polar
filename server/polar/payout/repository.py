@@ -118,6 +118,25 @@ class PayoutRepository(
             statement = statement.where(Payout.payout_account_id == payout_account_id)
         return await self.get_all(statement)
 
+    async def release_held(self, payout_id: UUID) -> UUID | None:
+        """Move one held payout back to `pending`.
+
+        A conditional UPDATE so a concurrent release or cancel can't pay it twice.
+        """
+        statement = (
+            update(Payout)
+            .where(
+                Payout.id == payout_id,
+                Payout.status == PayoutStatus.held,
+                Payout.deleted_at.is_(None),
+            )
+            .values(status=PayoutStatus.pending)
+            .returning(Payout.id)
+        )
+        result = await self.session.execute(statement)
+        row = result.first()
+        return None if row is None else row[0]
+
     async def release_held_by_account(self, account_id: UUID) -> Sequence[UUID]:
         """Move every held payout for an account back to `pending`.
 

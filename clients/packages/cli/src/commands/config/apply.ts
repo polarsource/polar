@@ -17,10 +17,7 @@ import { Organizations } from '@/services/organizations'
 import { withProgress } from '@/utils/progress'
 import * as ui from '@/utils/ui'
 
-export const applied = (
-  config: LoadedConfig,
-  entries: ReadonlyArray<AppliedEntry>,
-) =>
+const applied = (config: LoadedConfig, entries: ReadonlyArray<AppliedEntry>) =>
   entries.every((entry) => entry.action === 'unchanged')
     ? ui.success(`${config.file} is up to date, nothing to apply`)
     : ui.success(

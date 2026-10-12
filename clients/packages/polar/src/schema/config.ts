@@ -1,6 +1,7 @@
 import { Schema } from 'effect'
-import { runtimeConfig, type RuntimeBenefitConfig } from './runtime'
+import { runtimeConfig } from './runtime'
 import { BenefitConfig, flag, credits } from './benefit'
+import { metadataKey, type Metadata, type MetadataShape } from './metadata'
 import type { BenefitDefinition, BenefitHelpers } from './benefit'
 import {
   createEventReferences,
@@ -108,6 +109,21 @@ type BenefitKey<Benefits extends BenefitEntries> =
     ? Key & string
     : keyof Benefits & string
 
+type BenefitAt<Benefits extends BenefitEntries, Key extends string> =
+  Benefits extends ReadonlyArray<infer Entry>
+    ? Extract<Entry, readonly [Key, BenefitDefinition]>[1]
+    : Benefits[Key & keyof Benefits]
+
+type WithMetadata<Benefit, Values> = Benefit extends unknown
+  ? Omit<Benefit, 'metadata'> & { readonly metadata: Values }
+  : never
+
+type ConnectedBenefit<Definition> = Definition extends {
+  readonly [metadataKey]: infer Values extends Metadata
+}
+  ? WithMetadata<BenefitConfig, MetadataShape<Values>>
+  : BenefitConfig
+
 type DeclaredEvents<Events extends EventDefinitions | undefined> =
   Events extends EventDefinitions ? Events : Record<never, never>
 
@@ -127,9 +143,11 @@ type ConnectedConfig<
   Webhooks extends WebhookEntries,
 > = {
   readonly meters: Readonly<Record<MeterKey<Meters>, MeterConfig>>
-  readonly benefits: Readonly<
-    Record<BenefitKey<Benefits>, BenefitConfig & RuntimeBenefitConfig>
-  >
+  readonly benefits: {
+    readonly [Key in BenefitKey<Benefits>]: ConnectedBenefit<
+      BenefitAt<Benefits, Key>
+    >
+  }
   readonly webhooks: Webhooks
 } & (Events extends EventDefinitions
   ? { readonly events: Extract<Events, EventSchemas> }
@@ -236,19 +254,22 @@ export const defineConfig = <
       return { ...definition, external_id, name: name ?? external_id }
     }),
     ...(benefits !== undefined && {
-      benefits: benefitEntries.map(([external_id, { name, ...definition }]) => {
-        validateBenefitNaming({ external_id, name })
-        if (definition.type === 'meter_credit') {
-          assertKnown(`Benefit "${external_id}"`, 'meter', meterIds, [
-            definition.properties.meter,
-          ])
-        }
-        return {
-          ...definition,
-          external_id,
-          description: name ?? external_id,
-        }
-      }),
+      benefits: benefitEntries.map(
+        ([external_id, { name, [metadataKey]: metadata, ...definition }]) => {
+          validateBenefitNaming({ external_id, name })
+          if (definition.type === 'meter_credit') {
+            assertKnown(`Benefit "${external_id}"`, 'meter', meterIds, [
+              definition.properties.meter,
+            ])
+          }
+          return {
+            ...definition,
+            external_id,
+            description: name ?? external_id,
+            ...(metadata !== undefined && { metadata }),
+          }
+        },
+      ),
     }),
     ...(products !== undefined && {
       products: toEntries<ProductDefinition>(products).map(
@@ -274,6 +295,13 @@ export const defineConfig = <
             ...definition.trialPeriod,
             prices: productPrices(external_id, definition),
             benefits: definition.benefits,
+            ...(definition[metadataKey] !== undefined && {
+              metadata: definition[metadataKey],
+            }),
+            ...(definition.descriptionText !== undefined && {
+              description: definition.descriptionText,
+            }),
+            ...(definition.isPrivate && { visibility: 'private' as const }),
           }
         },
       ),

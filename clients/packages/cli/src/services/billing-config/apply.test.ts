@@ -113,6 +113,10 @@ describe('apply', () => {
             type: 'missing',
             loc: ['body', 'meters', 0, 'name'],
             msg: 'Field required',
+            input: {
+              external_id: 'tool-calls',
+              filter: { conjunction: 'qwe', clauses: [] },
+            },
           },
         ],
       },

@@ -207,12 +207,14 @@ const cases: [string, PolarConfig][] = [
               .grants(['custom_servers']),
             starter: product('Starter')
               .prices(
-                units().graduated(
-                  tier().included(10),
-                  tier().max(20).free(),
-                  tier().max(50).amount(api.usd(0.05)),
-                  tier().free(),
-                ),
+                units()
+                  .graduated(
+                    tier().included(10),
+                    tier().max(20).free(),
+                    tier().max(50).amount(api.usd(0.05)),
+                    tier().free(),
+                  )
+                  .label('seat', 'seats'),
                 meter('tokens').volume(
                   tier().max(5).amount(api.usd(0)),
                   tier().amount(api.usd(0)),
@@ -221,12 +223,48 @@ const cases: [string, PolarConfig][] = [
               .recurring('monthly'),
             devices: product('Devices')
               .prices(
-                units().flat().min(2).amount(api.currency('nok')(50)).max(10),
+                units()
+                  .flat()
+                  .min(2)
+                  .amount(api.currency('nok')(50))
+                  .max(10)
+                  .label('device', 'devices'),
               )
               .recurring('yearly')
-              .trial(14, 'days'),
+              .trial(14, 'days')
+              .description('Billed per device, "yearly".\nCancel anytime.')
+              .private(),
           }
         },
+      })
+      .toJSON(),
+  ],
+  [
+    'metadata on every resource',
+    api
+      .defineConfig({
+        meters: ({ meter }) => ({
+          calls: meter('Calls')
+            .where(api.eq('name', 'tool_call'))
+            .unit('token')
+            .metadata({ team: 'search', '"\\\n` ${notCode}': -0 })
+            .count(),
+        }),
+        benefits: ({ flag, credits }) => ({
+          custom_servers: flag('Custom servers').metadata({ limit: 5 }),
+          tool_calls: credits('Tool calls')
+            .meter('calls')
+            .units(100)
+            .rollover()
+            .metadata({ visible: true, ratio: 0.5 }),
+        }),
+        products: ({ product, free }) => ({
+          pro: product('Pro')
+            .prices(free())
+            .recurring('monthly')
+            .grants(['custom_servers'])
+            .metadata({ ['__proto__']: 'pro', constructor: 'x' }),
+        }),
       })
       .toJSON(),
   ],
@@ -463,4 +501,11 @@ test('groups interleaved currencies into one builder call per price', async () =
   )
   expect(source).toContain('fixed().amount(usd(1), eur(0.9))')
   expect(source).toContain('.amount(usd(0.1), eur(0.09))')
+})
+
+test('leaves empty metadata out of the generated code', async () => {
+  const source = await Effect.runPromise(
+    generateConfig({ meters: [{ ...meter, metadata: {} }] }),
+  )
+  expect(source).not.toContain('.metadata(')
 })

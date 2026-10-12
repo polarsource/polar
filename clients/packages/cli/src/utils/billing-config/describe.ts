@@ -98,7 +98,7 @@ export class Rendered {
   }
 }
 
-export interface PriceGroup {
+interface PriceGroup {
   readonly label: string
   readonly text: Rendered
 }

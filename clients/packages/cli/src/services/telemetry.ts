@@ -14,10 +14,10 @@ import { HttpClient, HttpClientRequest } from 'effect/http'
 import { UsedEnvironments } from '@/services/api'
 import { VERSION } from '@/version'
 
-export const OPT_OUT_VARIABLE = 'POLAR_CLI_TELEMETRY_OPTOUT'
-export const ENDPOINT_VARIABLE = 'POLAR_CLI_TELEMETRY_URL'
-export const PROJECT_KEY_VARIABLE = 'POLAR_CLI_POSTHOG_KEY'
-export const FORCE_VARIABLE = 'POLAR_CLI_TELEMETRY_FORCE'
+const OPT_OUT_VARIABLE = 'POLAR_CLI_TELEMETRY_OPTOUT'
+const ENDPOINT_VARIABLE = 'POLAR_CLI_TELEMETRY_URL'
+const PROJECT_KEY_VARIABLE = 'POLAR_CLI_POSTHOG_KEY'
+const FORCE_VARIABLE = 'POLAR_CLI_TELEMETRY_FORCE'
 export const SENDER_COMMAND = '__telemetry'
 const ENDPOINT = 'https://us.i.posthog.com/capture/'
 const PROJECT_KEY = 'phc_H2ajVAY4cy0uQpcgN5fzpv8JC3yP8VZOjx2EXiFBbgz'
@@ -294,21 +294,6 @@ export const send = (event: TelemetryEvent) =>
     ).pipe(HttpClientRequest.bodyJson(event))
     yield* client.execute(request)
   }).pipe(Effect.scoped, Effect.timeout(SEND_TIMEOUT), Effect.ignoreCause)
-
-export const httpSender = Layer.effect(
-  Sender,
-  Effect.gen(function* () {
-    const client = yield* HttpClient.HttpClient
-    const env = yield* Environment
-    return Sender.of({
-      dispatch: (event) =>
-        send(event).pipe(
-          Effect.provideService(HttpClient.HttpClient, client),
-          Effect.provideService(Environment, env),
-        ),
-    })
-  }),
-)
 
 export const detachedSender = Layer.succeed(
   Sender,

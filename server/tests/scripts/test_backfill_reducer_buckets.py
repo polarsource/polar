@@ -235,6 +235,7 @@ class TestBackfillBucket:
             ]
             assert buckets[0].sealed_at == order.created_at
             assert buckets[1].sealed_at is None
+            assert {b.bucket_end for b in buckets} == {end}
         await create_billing_entry(
             save_fixture,
             type=BillingEntryType.metered,
@@ -485,6 +486,7 @@ class TestBackfillBucket:
                 reducer=reducer,
                 external_customer_id=customer.external_id,
                 bucket_start=start,
+                bucket_end=end,
                 generation=0,
                 count=100,
             )
@@ -494,6 +496,7 @@ class TestBackfillBucket:
             reducer=reducer,
             customer=customer_second,
             bucket_start=start,
+            bucket_end=end,
             generation=1,
             count=50,
         )
@@ -502,6 +505,7 @@ class TestBackfillBucket:
             reducer=reducer,
             customer=customer,
             bucket_start=end,
+            bucket_end=end + timedelta(minutes=5),
             generation=1,
             count=25,
         )

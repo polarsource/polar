@@ -127,6 +127,7 @@ class ReducerBucketService:
             await repository.add_contribution(
                 reducer,
                 bucket_start,
+                bucket_start + REDUCER_BUCKET_SIZE,
                 customer_id,
                 external_customer_id,
                 count=len(values),
@@ -174,6 +175,7 @@ class ReducerBucketService:
                 customer_id=customer_id,
                 external_customer_id=external_customer_id,
                 bucket_start=bucket_start,
+                bucket_end=bucket_start + REDUCER_BUCKET_SIZE,
                 **statistics,
                 generation=1 if previous is None else previous.generation + 1,
             ),

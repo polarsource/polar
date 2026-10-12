@@ -11,7 +11,7 @@ export const DEFAULT_CONFIG_FILES = [
   'polar.json',
 ] as const
 
-export const IssueSeverity = Schema.Literals(['error', 'warning'])
+const IssueSeverity = Schema.Literals(['error', 'warning'])
 
 const ServerPath = Schema.Array(Schema.Union([Schema.String, Schema.Finite]))
 
@@ -30,16 +30,21 @@ export const ValidationErrors = Schema.Struct({
   detail: Schema.Array(ServerError),
 })
 
-export const EntryAction = Schema.Literals(['created', 'updated', 'unchanged'])
+const EntryAction = Schema.Literals(['created', 'updated', 'unchanged'])
 
-export const FieldChange = Schema.Struct({
+const FieldChange = Schema.Struct({
   field: Schema.String,
   before: Schema.optional(Schema.Unknown),
   after: Schema.optional(Schema.Unknown),
 })
-export type FieldChange = typeof FieldChange.Type
+type FieldChange = typeof FieldChange.Type
 
-export const ConfigResource = Schema.Literals(['meter', 'benefit', 'product'])
+export const ConfigResource = Schema.Literals([
+  'meter',
+  'benefit',
+  'product',
+  'discount',
+])
 
 export const EntryResult = Schema.Struct({
   resource: ConfigResource,
@@ -130,7 +135,7 @@ export const ConfigExport = Schema.Struct({
   skipped: Schema.Array(SkippedResource),
 })
 
-export const PulledEntry = Schema.Struct({
+const PulledEntry = Schema.Struct({
   section: Schema.String,
   id: Schema.String,
 })

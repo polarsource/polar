@@ -250,6 +250,13 @@ class PayoutNotPending(PayoutError):
         super().__init__(message, 409)
 
 
+class PayoutNotHeld(PayoutError):
+    def __init__(self, payout: Payout) -> None:
+        self.payout = payout
+        message = f"Payout {payout.id} is not held."
+        super().__init__(message, 409)
+
+
 class PayoutNotCancelable(PayoutError):
     def __init__(self, payout: Payout) -> None:
         self.payout = payout
@@ -461,7 +468,8 @@ class PayoutService:
                     update_dict={"account_amount": -transaction.account_amount},
                 )
 
-            # A held payout's transfer is deferred until release_held_payouts.
+            # A held payout's transfer waits until the org is approved or an
+            # admin releases this payout on its own.
             enqueue_job("payout.created", payout_id=payout.id)
             if not held:
                 enqueue_job("payout.transfer", payout_id=payout.id)
@@ -870,6 +878,22 @@ class PayoutService:
         return await repository.update(
             payout, update_dict={"status": PayoutStatus.canceled}
         )
+
+    async def release_held_payout(
+        self, session: AsyncSession, payout: Payout
+    ) -> Payout:
+        """Release one held payout without changing the organization's status.
+
+        Other held payouts on the account stay held.
+        """
+        repository = PayoutRepository.from_session(session)
+        released_id = await repository.release_held(payout.id)
+        if released_id is None:
+            raise PayoutNotHeld(payout)
+
+        enqueue_job("payout.transfer", payout_id=payout.id)
+        await session.refresh(payout, attribute_names=["status"])
+        return payout
 
     async def release_held_payouts(
         self, session: AsyncSession, account_id: uuid.UUID

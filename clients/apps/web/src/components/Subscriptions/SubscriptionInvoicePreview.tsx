@@ -146,6 +146,8 @@ const SubscriptionInvoicePreview = ({
           netAmount={chargePreview.net_amount}
           taxAmount={chargePreview.tax_amount}
           totalAmount={chargePreview.total_amount}
+          appliedBalanceAmount={chargePreview.applied_balance_amount}
+          dueAmount={chargePreview.due_amount}
         />
         {note && <Text color="muted">{note}</Text>}
       </OrderSection>

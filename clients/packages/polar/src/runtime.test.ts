@@ -146,3 +146,58 @@ test('connected configs validate and ingest typed events and track the meters th
     { name: 'llm.completion', metadata: { model: 'claude', inputTokens: 10 } },
   ])
 })
+
+test('access types granted metadata from the benefit declared in the config', async () => {
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
+    Response.json({
+      items: [{ benefit: { metadata: { limit: 5, tier: 'pro' } } }],
+    }),
+  )
+  const entries = defineConfig({
+    meters: ({ meter }) => ({ calls: meter('Calls').count() }),
+    benefits: ({ flag, credits }) => ({
+      custom_servers: flag('Custom servers').metadata({
+        limit: 5,
+        tier: 'pro',
+      }),
+      tool_calls: credits('Tool calls')
+        .meter('calls')
+        .units(100)
+        .metadata({ visible: true })
+        .rollover(),
+      plain: flag('Plain flag'),
+    }),
+  })
+  const tuples = defineConfig({
+    meters: () => ({}),
+    benefits: ({ flag }) => [
+      ['custom_servers', flag('Custom servers').metadata({ limit: 5 })],
+    ],
+  })
+  const options = { accessToken: 'test', environment: 'sandbox' } as const
+  const customer = RuntimeSDK(entries, options).actor({ customerId: 'c' })
+
+  const access = await customer.access('custom_servers')
+  expect(access).toEqual({ granted: true, metadata: { limit: 5, tier: 'pro' } })
+  if (access.granted) {
+    expectTypeOf(access.metadata).toEqualTypeOf<{
+      readonly limit: number
+      readonly tier: string
+    }>()
+  }
+  expectTypeOf(customer.access<'tool_calls'>)
+    .returns.resolves.extract<{ granted: true }>()
+    .toEqualTypeOf<{ granted: true; metadata: { readonly visible: boolean } }>()
+  expectTypeOf(customer.access<'plain'>)
+    .returns.resolves.extract<{ granted: true }>()
+    .toEqualTypeOf<{
+      granted: true
+      metadata: { [k: string]: string | number | boolean }
+    }>()
+  expectTypeOf(
+    RuntimeSDK(tuples, options).actor({ customerId: 'c' })
+      .access<'custom_servers'>,
+  )
+    .returns.resolves.extract<{ granted: true }>()
+    .toEqualTypeOf<{ granted: true; metadata: { readonly limit: number } }>()
+})

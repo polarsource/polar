@@ -7,6 +7,10 @@
     },
     "packages/client": {
       "ignore": ["src/v1.ts"]
+    },
+    "packages/cli": {
+      "entry": ["lint/polar.js", "scripts/npm-postinstall.mjs"],
+      "ignoreDependencies": ["@effect/tsgo"]
     }
   }
 }

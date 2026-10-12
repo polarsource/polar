@@ -1,12 +1,12 @@
 type Row = Record<string, unknown>
 
-export interface Unmatched {
+interface Unmatched {
   field: string
   parent: string
   available: string[]
 }
 
-export type Selection =
+type Selection =
   | { _tag: 'Selected'; value: unknown; unmatched: Unmatched[] }
   | { _tag: 'UnknownFields'; unknown: string[]; available: string[] }
 

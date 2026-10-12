@@ -1396,11 +1396,14 @@ class TestUpdateEmail:
             recurring_interval=SubscriptionRecurringInterval.month,
             prices=[("seat", 1000, "usd")],
         )
-        subscription = await create_subscription_with_seats(
+        pending_subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=customer, seats=5
+        )
+        claimed_subscription = await create_subscription_with_seats(
             save_fixture, product=product, customer=customer, seats=5
         )
         pending_seat = CustomerSeat(
-            subscription_id=subscription.id,
+            subscription_id=pending_subscription.id,
             customer_id=customer.id,
             member_id=member.id,
             email="member@example.com",
@@ -1408,7 +1411,7 @@ class TestUpdateEmail:
         )
         await save_fixture(pending_seat)
         claimed_seat = CustomerSeat(
-            subscription_id=subscription.id,
+            subscription_id=claimed_subscription.id,
             customer_id=customer.id,
             member_id=member.id,
             email="member@example.com",

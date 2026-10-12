@@ -12,6 +12,7 @@ from polar.auth.scope import Scope
 from polar.authz.service import assert_organization_permission
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.service import benefit as benefit_service
+from polar.discount.service import discount as discount_service
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
@@ -26,7 +27,7 @@ from polar.webhook.repository import WebhookEndpointRepository
 from polar.webhook.schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from polar.webhook.service import webhook as webhook_service
 
-from . import benefits, products, validation
+from . import benefits, discounts, products, validation
 from .schemas import (
     MAXIMUM_METERS,
     Config,
@@ -46,6 +47,7 @@ from .schemas import (
 )
 from .validation import (
     BenefitChange,
+    DiscountChange,
     MeterChange,
     ProductChange,
     ResourceChange,
@@ -61,6 +63,7 @@ _WEBHOOK_EXTERNAL_ID_INDEX = "ix_webhook_endpoints_organization_id_external_id"
 _SECTION_SCOPES = {
     "benefits": (Scope.benefits_read, Scope.benefits_write),
     "products": (Scope.products_read, Scope.products_write),
+    "discounts": (Scope.discounts_read, Scope.discounts_write),
     "webhooks": (Scope.webhooks_read, Scope.webhooks_write),
 }
 
@@ -189,7 +192,7 @@ class DeclarativeConfigService:
         benefit_results, benefit_ids = await self._apply_benefits(
             session, redis, auth_subject, organization, changes.benefits, meter_ids
         )
-        product_results = await self._apply_products(
+        product_results, product_ids = await self._apply_products(
             session,
             auth_subject,
             organization,
@@ -197,12 +200,16 @@ class DeclarativeConfigService:
             meter_ids,
             benefit_ids,
         )
+        discount_results = await self._apply_discounts(
+            session, auth_subject, organization, changes.discounts, product_ids
+        )
         return ConfigApplyResult(
             changes=[
                 *webhook_results,
                 *meter_results,
                 *benefit_results,
                 *product_results,
+                *discount_results,
             ]
         )
 
@@ -226,6 +233,7 @@ class DeclarativeConfigService:
                 *self._plan_changes(ConfigResource.meter, changes.meters),
                 *self._plan_changes(ConfigResource.benefit, changes.benefits),
                 *self._plan_changes(ConfigResource.product, changes.products),
+                *self._plan_changes(ConfigResource.discount, changes.discounts),
             ],
             issues=issues,
         )
@@ -465,7 +473,7 @@ class DeclarativeConfigService:
         changes: Sequence[ProductChange],
         meter_ids: dict[str, UUID],
         benefit_ids: dict[str, UUID],
-    ) -> list[ConfigAppliedResult]:
+    ) -> tuple[list[ConfigAppliedResult], dict[str, UUID]]:
         repository = ProductRepository.from_session(session)
         external_ids = {
             str(id): external_id
@@ -473,6 +481,7 @@ class DeclarativeConfigService:
             for external_id, id in ids.items()
         }
         results: list[ConfigAppliedResult] = []
+        product_ids: dict[str, UUID] = {}
         for change in changes:
             config = change.config
             product = change.existing
@@ -518,10 +527,52 @@ class DeclarativeConfigService:
                     )
             except PolarRequestValidationError as e:
                 raise products.product_error(e, change.index, external_ids) from e
+            product_ids[config.external_id] = product.id
             results.append(
                 ConfigAppliedResult(
                     resource=ConfigResource.product,
                     external_id=config.external_id,
+                    action=change.action,
+                    secret=None,
+                )
+            )
+        return results, product_ids
+
+    async def _apply_discounts(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        changes: Sequence[DiscountChange],
+        product_ids: dict[str, UUID],
+    ) -> list[ConfigAppliedResult]:
+        external_ids = {str(id): external_id for external_id, id in product_ids.items()}
+        results: list[ConfigAppliedResult] = []
+        for change in changes:
+            try:
+                if change.existing is None:
+                    await discount_service.create(
+                        session,
+                        discounts.discount_create(
+                            change.config,
+                            None if is_organization(auth_subject) else organization.id,
+                            product_ids,
+                        ),
+                        auth_subject,
+                    )
+                elif change.update_dict:
+                    await discount_service.update(
+                        session,
+                        change.existing,
+                        discounts.discount_update(change, product_ids),
+                        auth_subject,
+                    )
+            except PolarRequestValidationError as e:
+                raise discounts.discount_error(e, change.index, external_ids) from e
+            results.append(
+                ConfigAppliedResult(
+                    resource=ConfigResource.discount,
+                    external_id=change.config.external_id,
                     action=change.action,
                     secret=None,
                 )

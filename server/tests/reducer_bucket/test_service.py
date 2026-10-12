@@ -108,9 +108,12 @@ class TestRollup:
         assert cast(bytes | None, await redis.get(previous)) == b"1"
         assert await redis.exists(outdated) == 0
         assert [
-            (bucket.bucket_start, bucket.count, bucket.generation)
+            (bucket.bucket_start, bucket.bucket_end, bucket.count, bucket.generation)
             for bucket in await get_buckets(session)
-        ] == [(outdated_start, 1, 1), (previous_start, 1, 1)]
+        ] == [
+            (outdated_start, previous_start, 1, 1),
+            (previous_start, BUCKET_START, 1, 1),
+        ]
         # Only the current bucket waits for a sync, once it closes at 12:10.
         enqueue_job.assert_called_once_with(
             "reducer_bucket.sync",
@@ -407,6 +410,7 @@ class TestSync:
         [bucket] = await get_buckets(session)
         assert bucket.reducer_id == sum_reducer.id
         assert bucket.bucket_start == BUCKET_START
+        assert bucket.bucket_end == BUCKET_START + REDUCER_BUCKET_SIZE
         assert bucket.external_customer_id == "external"
         assert (bucket.count, bucket.sum, bucket.min, bucket.max) == (
             2,

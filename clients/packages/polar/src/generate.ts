@@ -1,6 +1,7 @@
 import { Effect } from 'effect'
 import { validateConfig } from './schema/config'
 import type { BenefitConfig } from './schema/benefit'
+import type { Metadata } from './schema/metadata'
 import type { MeterConfig, MeterFilter } from './schema/meter'
 import { majorAmount, scaleRate } from './schema/money'
 import type { Currency, Scale } from './schema/money'
@@ -12,6 +13,15 @@ const literal = (value: string | number | boolean): string =>
 
 const key = (value: string): string =>
   value === '__proto__' ? `[${literal(value)}]` : literal(value)
+
+const renderMetadata = (metadata: Metadata | undefined): string[] =>
+  metadata === undefined || Object.keys(metadata).length === 0
+    ? []
+    : [
+        `.metadata({ ${Object.entries(metadata)
+          .map(([name, value]) => `${key(name)}: ${literal(value)}`)
+          .join(', ')} })`,
+      ]
 
 const renderCondition = (
   condition: MeterFilter['clauses'][number],
@@ -48,6 +58,8 @@ const renderMeter = (meter: MeterConfig, imports: Set<string>): string => {
     lines.push('.unit("token")')
   }
 
+  lines.push(...renderMetadata(meter.metadata))
+
   const aggregation = meter.aggregation
   lines.push(
     aggregation.func === 'count'
@@ -64,7 +76,7 @@ const renderBenefit = (
   const name = literal(benefit.description)
   if (benefit.type === 'feature_flag') {
     helpers.add('flag')
-    return `flag(${name})`
+    return [`flag(${name})`, ...renderMetadata(benefit.metadata)].join('\n')
   }
   helpers.add('credits')
   const { meter, units, rollover } = benefit.properties
@@ -73,6 +85,7 @@ const renderBenefit = (
     `.meter(${literal(meter)})`,
     `.units(${literal(units)})`,
     ...(rollover ? ['.rollover()'] : []),
+    ...renderMetadata(benefit.metadata),
   ].join('\n')
 }
 
@@ -133,6 +146,7 @@ const structureOf = (price: PriceConfig): string =>
     'tiers' in price ? price.tiers.type : null,
     tiersOf(price).map(({ bound }) => bound ?? null),
     'minimum_units' in price ? (price.minimum_units ?? null) : null,
+    'unit_label' in price ? (price.unit_label ?? null) : null,
   ])
 
 const groupPrices = (
@@ -270,6 +284,13 @@ const renderPrice = (
       if (first.minimum_units !== undefined) {
         lines.push(`.min(${literal(first.minimum_units)})`)
       }
+      if (
+        first.amount_type === 'unit_based' &&
+        first.unit_label !== undefined
+      ) {
+        const { '=1': singular, other: plural } = first.unit_label.en
+        lines.push(`.label(${literal(singular)}, ${literal(plural)})`)
+      }
       return lines.join('\n')
     }
     case 'metered_unit':
@@ -341,6 +362,11 @@ const renderProduct =
       ...(product.benefits.length === 0
         ? []
         : [`.grants([${product.benefits.map(literal).join(', ')}])`]),
+      ...renderMetadata(product.metadata),
+      ...(product.description === undefined
+        ? []
+        : [`.description(${literal(product.description)})`]),
+      ...(product.visibility === 'private' ? ['.private()'] : []),
     ].join('\n')
   }
 

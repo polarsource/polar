@@ -13,6 +13,7 @@ import type {
   MemberIdentifier,
 } from '../internal/api/utils'
 import type { EventInput, EventMetadata, EventSchema } from '../schema/event'
+import type { Metadata } from '../schema/metadata'
 import type { EventConfig, RuntimeSDKConfig } from '../schema/runtime'
 import type { models, Polar } from '../sdk'
 
@@ -21,14 +22,22 @@ export type MeterBalance = {
   pristine: boolean
 }
 
-export type BenefitAccess =
-  | { granted: true; metadata: models.MetadataOutputType }
+export type BenefitAccess<Values = models.MetadataOutputType> =
+  | { granted: true; metadata: Values }
   | { granted: false }
 
 type BenefitName<Config extends RuntimeSDKConfig> = keyof NonNullable<
   Config['benefits']
 > &
   string
+type BenefitMetadata<
+  Config extends RuntimeSDKConfig,
+  Name extends BenefitName<Config>,
+> = NonNullable<Config['benefits']>[Name] extends {
+  readonly metadata: infer Values extends Metadata
+}
+  ? Values
+  : models.MetadataOutputType
 type MeterName<Config extends RuntimeSDKConfig> = keyof NonNullable<
   Config['meters']
 > &
@@ -89,7 +98,9 @@ type ActorIdentifier = ActorCustomerIdentifier & ActorMemberIdentifier
 export type Actor<Config extends RuntimeSDKConfig> = (
   identifier: ActorIdentifier,
 ) => {
-  access: (name: BenefitName<Config>) => Promise<BenefitAccess>
+  access: <Name extends BenefitName<Config>>(
+    name: Name,
+  ) => Promise<BenefitAccess<BenefitMetadata<Config, Name>>>
   balance: (name: MeterName<Config>) => Promise<MeterBalance>
   track: <Name extends EventName<Config>>(
     name: Name,
@@ -150,9 +161,16 @@ export const createActor = <Config extends RuntimeSDKConfig>(
       }
       deployedBenefits.add(name)
 
+      // Deploying the config sets the benefit's metadata to the declared keys.
       return grant === undefined
         ? { granted: false }
-        : { granted: true, metadata: grant.benefit.metadata }
+        : {
+            granted: true,
+            metadata: grant.benefit.metadata as BenefitMetadata<
+              Config,
+              typeof name
+            >,
+          }
     },
 
     async balance(name) {

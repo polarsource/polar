@@ -158,14 +158,11 @@ export const exchange = (
     }
   }).pipe(Effect.scoped)
 
-export type CallbackResult =
+type CallbackResult =
   | { outcome: 'success'; code: string }
   | { outcome: Exclude<CallbackOutcome, 'success'>; message: string }
 
-export const parseCallback = (
-  url: URL,
-  expectedState: string,
-): CallbackResult => {
+const parseCallback = (url: URL, expectedState: string): CallbackResult => {
   if (url.searchParams.get('state') !== expectedState) {
     return { outcome: 'invalid', message: 'Invalid OAuth callback state.' }
   }

@@ -62,6 +62,9 @@ class ReducerBucket(RecordModel):
     bucket_start: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False
     )
+    bucket_end: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
     count: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
     sum: Mapped[Decimal] = mapped_column(Numeric, nullable=False, default=Decimal(0))
     min: Mapped[Decimal | None] = mapped_column(Numeric, nullable=True)

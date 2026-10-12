@@ -6076,14 +6076,16 @@ export interface paths {
      * Apply Config
      * @description Apply a declarative config document to the organization.
      *
-     *     Meters, benefits, products and webhook endpoints are matched by
+     *     Meters, benefits, products, discounts and webhook endpoints are matched by
      *     `external_id`: missing ones are created, changed ones are updated, and ones
-     *     not listed are left untouched. Everything is applied in one transaction.
+     *     not listed are left untouched.
+     *     Everything is applied in one transaction.
      *     The signing `secret` of each created webhook endpoint is returned once.
      *
      *     A `benefits` section also requires the `benefits:write` scope, a
-     *     `products` section the `products:write` scope, and a `webhooks` section
-     *     the `webhooks:write` scope.
+     *     `products` section the `products:write` scope, a `discounts` section
+     *     the `discounts:write` scope, and a `webhooks` section the
+     *     `webhooks:write` scope.
      *
      *     **Scopes**: `meters:write`
      */
@@ -6111,7 +6113,8 @@ export interface paths {
      *     apply fail, `warning` issues don't.
      *
      *     A `benefits` section also requires the `benefits:read` or `benefits:write`
-     *     scope, a `products` section `products:read` or `products:write`, and a
+     *     scope, a `products` section `products:read` or `products:write`, a
+     *     `discounts` section `discounts:read` or `discounts:write`, and a
      *     `webhooks` section `webhooks:read` or `webhooks:write`.
      *
      *     **Scopes**: `meters:read` `meters:write`
@@ -16018,6 +16021,11 @@ export interface components {
        */
       products?: components['schemas']['ConfigProduct'][]
       /**
+       * Discounts
+       * @description Discounts to create or update, matched by `external_id`. Existing discounts that aren't listed are left untouched.
+       */
+      discounts?: components['schemas']['ConfigDiscount'][]
+      /**
        * Webhooks
        * @description Webhook endpoints to create or update, matched by `external_id`. Existing endpoints that aren't listed are left untouched.
        */
@@ -16187,6 +16195,178 @@ export interface components {
        */
       diff: components['schemas']['ConfigFieldChange'][]
     }
+    ConfigDiscount:
+      | components['schemas']['ConfigDiscountPercentage']
+      | components['schemas']['ConfigDiscountFixed']
+    /** ConfigDiscountFixed */
+    ConfigDiscountFixed: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * External Id
+       * @description Your identifier for the discount, used to match it.
+       */
+      external_id: string
+      /**
+       * Name
+       * @description Name of the discount. Will be displayed to the customer when the discount is applied.
+       */
+      name: string
+      /**
+       * Code
+       * @description Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API.
+       */
+      code?: string | null
+      /** @description For subscriptions, determines if the discount should be applied once on the first invoice, forever, or for a certain number of months determined by `duration_in_months`. */
+      duration: components['schemas']['DiscountDuration']
+      /**
+       * Duration In Months
+       * @description Number of months the discount should be applied.
+       *
+       *     Required when `duration` is `repeating`. Must be omitted otherwise.
+       *
+       *     For this to work on yearly pricing, you should multiply this by 12.
+       *     For example, to apply the discount for 2 years, set this to 24.
+       */
+      duration_in_months?: number | null
+      /**
+       * Starts At
+       * @description Optional timestamp after which the discount is redeemable.
+       */
+      starts_at?: string | null
+      /**
+       * Ends At
+       * @description Optional timestamp after which the discount is no longer redeemable.
+       */
+      ends_at?: string | null
+      /**
+       * Max Redemptions
+       * @description Optional maximum number of times the discount can be redeemed.
+       */
+      max_redemptions?: number | null
+      /**
+       * Max Redemptions Per Customer
+       * @description Optional maximum number of times the discount can be redeemed by a single customer.
+       */
+      max_redemptions_per_customer?: number | null
+      /**
+       * Products
+       * @description The products the discount applies to. Leave it empty to apply the discount to every product.
+       */
+      products?: string[]
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'fixed'
+      /**
+       * Amounts
+       * @description Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies.
+       */
+      amounts: {
+        [key: string]: number
+      }
+    }
+    /** ConfigDiscountPercentage */
+    ConfigDiscountPercentage: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * External Id
+       * @description Your identifier for the discount, used to match it.
+       */
+      external_id: string
+      /**
+       * Name
+       * @description Name of the discount. Will be displayed to the customer when the discount is applied.
+       */
+      name: string
+      /**
+       * Code
+       * @description Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API.
+       */
+      code?: string | null
+      /** @description For subscriptions, determines if the discount should be applied once on the first invoice, forever, or for a certain number of months determined by `duration_in_months`. */
+      duration: components['schemas']['DiscountDuration']
+      /**
+       * Duration In Months
+       * @description Number of months the discount should be applied.
+       *
+       *     Required when `duration` is `repeating`. Must be omitted otherwise.
+       *
+       *     For this to work on yearly pricing, you should multiply this by 12.
+       *     For example, to apply the discount for 2 years, set this to 24.
+       */
+      duration_in_months?: number | null
+      /**
+       * Starts At
+       * @description Optional timestamp after which the discount is redeemable.
+       */
+      starts_at?: string | null
+      /**
+       * Ends At
+       * @description Optional timestamp after which the discount is no longer redeemable.
+       */
+      ends_at?: string | null
+      /**
+       * Max Redemptions
+       * @description Optional maximum number of times the discount can be redeemed.
+       */
+      max_redemptions?: number | null
+      /**
+       * Max Redemptions Per Customer
+       * @description Optional maximum number of times the discount can be redeemed by a single customer.
+       */
+      max_redemptions_per_customer?: number | null
+      /**
+       * Products
+       * @description The products the discount applies to. Leave it empty to apply the discount to every product.
+       */
+      products?: string[]
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'percentage'
+      /**
+       * Basis Points
+       * @description Discount percentage in basis points.
+       *
+       *     A basis point is 1/100th of a percent.
+       *     For example, to create a 25.5% discount, set this to 2550.
+       */
+      basis_points: number
+    }
     /** ConfigExport */
     ConfigExport: {
       /** @description The current config, in the same shape plan and apply accept. */
@@ -16299,7 +16479,10 @@ export interface components {
      * @enum {string}
      */
     ConfigIssueType:
+      | 'discount_locked'
+      | 'duplicate_code'
       | 'duplicate_external_id'
+      | 'duration_changed'
       | 'interval_changed'
       | 'meter_locked'
       | 'not_supported'
@@ -16588,7 +16771,7 @@ export interface components {
      * ConfigResource
      * @enum {string}
      */
-    ConfigResource: 'meter' | 'benefit' | 'product' | 'webhook'
+    ConfigResource: 'meter' | 'benefit' | 'product' | 'discount' | 'webhook'
     /** ConfigSkippedMeter */
     ConfigSkippedMeter: {
       /** @description The type of resource. */
@@ -62644,7 +62827,7 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
-      /** @description Not allowed to manage this organization, missing the `benefits:write`, `products:write` or `webhooks:write` scope for a `benefits`, `products` or `webhooks` section, or config as code isn't enabled for it. */
+      /** @description Not allowed to manage this organization, missing the `benefits:write`, `products:write`, `discounts:write` or `webhooks:write` scope for that section, or config as code isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown
@@ -62711,7 +62894,7 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
-      /** @description Not allowed to read this organization's products, missing a benefits, products or webhooks scope for those sections, or config as code isn't enabled for it. */
+      /** @description Not allowed to read this organization's products, missing a benefits, products, discounts or webhooks scope for those sections, or config as code isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown
@@ -71375,13 +71558,22 @@ export const configBenefitFeatureFlagTypeValues: ReadonlyArray<
 export const configBenefitMeterCreditTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigBenefitMeterCredit']['type']
 > = ['meter_credit']
+export const configDiscountFixedTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigDiscountFixed']['type']
+> = ['fixed']
+export const configDiscountPercentageTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigDiscountPercentage']['type']
+> = ['percentage']
 export const configIssueSeverityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueSeverity']
 > = ['error', 'warning']
 export const configIssueTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueType']
 > = [
+  'discount_locked',
+  'duplicate_code',
   'duplicate_external_id',
+  'duration_changed',
   'interval_changed',
   'meter_locked',
   'not_supported',
@@ -71406,7 +71598,7 @@ export const configProductPriceUnitBasedAmount_typeValues: ReadonlyArray<
 > = ['unit_based']
 export const configResourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigResource']
-> = ['meter', 'benefit', 'product', 'webhook']
+> = ['meter', 'benefit', 'product', 'discount', 'webhook']
 export const configSkippedReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigSkippedReason']
 > = ['missing_external_id', 'archived', 'invalid', 'over_limit']

@@ -96,7 +96,16 @@ describe('pull', () => {
     expect(source).toContain("from '@polar-sh/polar'")
     expect(source).toContain('meter("Tool Calls")')
     expect(source).toContain('.unit("custom", "call")')
-    expect(source).not.toContain('billing')
+    expect(source).toContain('.metadata({ "team": "billing" })')
+  })
+
+  test('leaves empty metadata out of the TypeScript config', async () => {
+    api.routes[`GET ${exportUrl}`] = exported({ meters: [meter] })
+
+    await run('polar.config.ts')
+
+    const source = await readFile(join(directory, 'polar.config.ts'), 'utf8')
+    expect(source).not.toContain('.metadata(')
   })
 
   test('writes the document untouched as JSON and passes skipped resources through', async () => {

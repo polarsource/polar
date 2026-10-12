@@ -13,7 +13,7 @@ const previews = [config].map((command) =>
   command.pipe(Command.withDescription(`${command.description} (preview)`)),
 )
 
-export interface ProgramOptions {
+interface ProgramOptions {
   readonly preview: boolean
 }
 

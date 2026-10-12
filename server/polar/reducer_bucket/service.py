@@ -25,6 +25,8 @@ log: Logger = structlog.get_logger()
 
 REDUCER_BUCKET_SIZE = timedelta(minutes=5)
 
+type Contributions = dict[redis_store.BucketId, list[tuple[datetime, float]]]
+
 
 def get_reducer_bucket_start(timestamp: datetime) -> datetime:
     size = int(REDUCER_BUCKET_SIZE.total_seconds())
@@ -55,7 +57,7 @@ class ReducerBucketService:
         oldest_active_bucket_start = current_bucket_start - REDUCER_BUCKET_SIZE
         contributions = _reduce_events_to_bucket_contributions(reducers, events)
         contributions_to_active_buckets = {
-            bucket_id: values
+            bucket_id: [value for _, value in values]
             for bucket_id, values in contributions.items()
             if bucket_id[1] >= oldest_active_bucket_start
         }
@@ -101,38 +103,47 @@ class ReducerBucketService:
             )
 
     async def add_to_closed_buckets(
-        self,
-        session: AsyncSession,
-        contributions: dict[redis_store.BucketId, list[float]],
+        self, session: AsyncSession, contributions: Contributions
     ) -> None:
         repository = ReducerBucketRepository.from_session(session)
         # Sorted, so concurrent requests take the bucket locks in the same order.
         for bucket_id in sorted(
             contributions,
-            key=lambda bucket_id: redis_store.get_reducer_bucket_key(
-                bucket_id[0].id, *bucket_id[1:]
-            ),
+            key=lambda b: redis_store.get_reducer_bucket_key(b[0].id, b[1], b[2], b[3]),
         ):
             reducer, bucket_start, customer_id, external_customer_id = bucket_id
-            values = contributions[bucket_id]
             # Shared with sync, which recomputes the bucket from its events.
             await repository.lock_buckets(
                 reducer, bucket_start, customer_id, external_customer_id
             )
-            statistics = (
-                {"total": sum(values), "minimum": min(values), "maximum": max(values)}
-                if isinstance(reducer.aggregation, PropertyAggregation)
-                else {}
-            )
-            await repository.add_contribution(
-                reducer,
-                bucket_start,
-                bucket_start + REDUCER_BUCKET_SIZE,
-                customer_id,
-                external_customer_id,
-                count=len(values),
-                **statistics,
-            )
+            for start, end in await self._get_intervals(
+                repository, reducer, bucket_start, customer_id, external_customer_id
+            ):
+                values = [
+                    value
+                    for timestamp, value in contributions[bucket_id]
+                    if start <= timestamp < end
+                ]
+                if not values:
+                    continue
+                statistics = (
+                    {
+                        "total": sum(values),
+                        "minimum": min(values),
+                        "maximum": max(values),
+                    }
+                    if isinstance(reducer.aggregation, PropertyAggregation)
+                    else {}
+                )
+                await repository.add_contribution(
+                    reducer,
+                    start,
+                    end,
+                    customer_id,
+                    external_customer_id,
+                    count=len(values),
+                    **statistics,
+                )
 
     async def sync(
         self,
@@ -151,43 +162,75 @@ class ReducerBucketService:
         await repository.lock_buckets(
             reducer, bucket_start, customer_id, external_customer_id
         )
-        count, total, minimum, maximum = await repository.aggregate_events(
+        await self._sync_bucket(
+            repository, reducer, bucket_start, customer_id, external_customer_id
+        )
+
+    async def _get_intervals(
+        self,
+        repository: ReducerBucketRepository,
+        reducer: Reducer,
+        bucket_start: datetime,
+        customer_id: uuid.UUID | None,
+        external_customer_id: str | None,
+    ) -> list[tuple[datetime, datetime]]:
+        """The persisted [start, end) intervals the bucket was split into."""
+        buckets = await repository.get_all_starting_within(
             reducer,
             bucket_start,
             bucket_start + REDUCER_BUCKET_SIZE,
             customer_id,
             external_customer_id,
         )
-        if count == 0:
-            return
-        statistics = {"count": count, "sum": total, "min": minimum, "max": maximum}
-        previous = await repository.get_latest(
-            reducer, bucket_start, customer_id, external_customer_id
-        )
-        # Sealed buckets were billed: events since go to a new generation.
-        if previous is not None and previous.sealed_at is None:
-            await repository.update(previous, update_dict=statistics)
-            return
-        await repository.create(
-            ReducerBucket(
-                organization_id=reducer.organization_id,
-                reducer=reducer,
-                customer_id=customer_id,
-                external_customer_id=external_customer_id,
-                bucket_start=bucket_start,
-                bucket_end=bucket_start + REDUCER_BUCKET_SIZE,
-                **statistics,
-                generation=1 if previous is None else previous.generation + 1,
-            ),
-            flush=True,
-        )
+        return sorted(
+            {(bucket.bucket_start, bucket.bucket_end) for bucket in buckets}
+        ) or [(bucket_start, bucket_start + REDUCER_BUCKET_SIZE)]
+
+    async def _sync_bucket(
+        self,
+        repository: ReducerBucketRepository,
+        reducer: Reducer,
+        bucket_start: datetime,
+        customer_id: uuid.UUID | None,
+        external_customer_id: str | None,
+    ) -> None:
+        for start, end in await self._get_intervals(
+            repository, reducer, bucket_start, customer_id, external_customer_id
+        ):
+            count, total, minimum, maximum = await repository.aggregate_events(
+                reducer, start, end, customer_id, external_customer_id
+            )
+            if count == 0:
+                continue
+            statistics = {"count": count, "sum": total, "min": minimum, "max": maximum}
+            previous = await repository.get_latest(
+                reducer, start, customer_id, external_customer_id
+            )
+            # Sealed buckets were billed: events since go to a new generation.
+            if previous is not None and previous.sealed_at is None:
+                await repository.update(previous, update_dict=statistics)
+                continue
+            await repository.create(
+                ReducerBucket(
+                    organization_id=reducer.organization_id,
+                    reducer=reducer,
+                    customer_id=customer_id,
+                    external_customer_id=external_customer_id,
+                    bucket_start=start,
+                    bucket_end=end,
+                    **statistics,
+                    generation=1 if previous is None else previous.generation + 1,
+                ),
+                flush=True,
+            )
 
 
 def _reduce_events_to_bucket_contributions(
     reducers: Sequence[Reducer], events: Sequence[Event]
-) -> dict[redis_store.BucketId, list[float]]:
-    """The values each event adds to the buckets of the reducers it matches."""
-    contributions: dict[redis_store.BucketId, list[float]] = defaultdict(list)
+) -> Contributions:
+    """The timestamped values each event adds to the buckets of the reducers it
+    matches."""
+    contributions: Contributions = defaultdict(list)
     for event in events:
         for reducer in reducers:
             if not reducer.filter.matches(event):
@@ -205,7 +248,7 @@ def _reduce_events_to_bucket_contributions(
                 event.customer_id,
                 event.external_customer_id,
             )
-            contributions[bucket_id].append(value)
+            contributions[bucket_id].append((event.timestamp, value))
     return contributions
 
 

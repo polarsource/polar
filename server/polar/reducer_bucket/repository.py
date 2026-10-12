@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import datetime
 from typing import Any
 from uuid import UUID
@@ -94,6 +95,23 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         )
         result = await self.session.execute(statement)
         return result.one()
+
+    async def get_all_starting_within(
+        self,
+        reducer: Reducer,
+        start: datetime,
+        end: datetime,
+        customer_id: UUID | None,
+        external_customer_id: str | None,
+    ) -> Sequence[ReducerBucket]:
+        statement = self.get_base_statement().where(
+            ReducerBucket.organization_id == reducer.organization_id,
+            ReducerBucket.reducer_id == reducer.id,
+            ReducerBucket.bucket_start >= start,
+            ReducerBucket.bucket_start < end,
+            _is_customer(ReducerBucket, customer_id, external_customer_id),
+        )
+        return await self.get_all(statement)
 
     async def get_latest(
         self,

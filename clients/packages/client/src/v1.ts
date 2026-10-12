@@ -16093,7 +16093,7 @@ export interface components {
        */
       description: string
       /**
-       * @description The visibility of the benefit in the customer portal.
+       * @description The visibility of the benefit.
        * @default public
        */
       visibility: components['schemas']['BenefitVisibility']
@@ -16133,7 +16133,7 @@ export interface components {
        */
       description: string
       /**
-       * @description The visibility of the benefit in the customer portal.
+       * @description The visibility of the benefit.
        * @default public
        */
       visibility: components['schemas']['BenefitVisibility']

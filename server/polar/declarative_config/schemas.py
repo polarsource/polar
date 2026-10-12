@@ -113,7 +113,7 @@ class ConfigBenefitBase(MetadataInputMixin, Schema):
     )
     visibility: BenefitVisibility = Field(
         default=Visibility.public,
-        description="The visibility of the benefit in the customer portal.",
+        description="The visibility of the benefit.",
     )
 
 

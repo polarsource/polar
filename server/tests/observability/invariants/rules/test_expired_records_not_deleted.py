@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
+from typing import Any
 
 import pytest
+from pytest_mock import MockerFixture
 
 from polar.config import settings
 from polar.kit.utils import utc_now
@@ -296,6 +298,40 @@ class TestCheck:
         assert exc_info.value.context["cleanup_tasks"] == [
             cleanup_task.actor_name for cleanup_task in CLEANUP_TASKS
         ]
+
+    async def test_reports_overdue_when_webhook_event_query_fails(
+        self, session: AsyncSession, save_fixture: SaveFixture, mocker: MockerFixture
+    ) -> None:
+        await save_fixture(
+            AuthenticationSession(
+                token_hash="a" * 64,
+                expires_at=int((utc_now() - OVERDUE).timestamp()),
+                step=0,
+                authentication_method_references=[],
+                used_factors=[],
+                context=None,
+                identity_id=None,
+            )
+        )
+
+        execute = session.execute
+        timeout = TimeoutError()
+
+        async def execute_or_time_out(statement: Any, *args: Any, **kwargs: Any) -> Any:
+            if WebhookEvent.__table__ in statement.get_final_froms():
+                raise timeout
+            return await execute(statement, *args, **kwargs)
+
+        mocker.patch.object(session, "execute", side_effect=execute_or_time_out)
+
+        invariant = ExpiredRecordsNotDeletedInvariant(session)
+        with pytest.raises(ExpiredRecordsNotDeletedInvariantError) as exc_info:
+            await invariant.check()
+
+        assert exc_info.value.context["cleanup_tasks"] == [
+            "authentication_session.delete_expired"
+        ]
+        assert exc_info.value.__cause__ is timeout
 
     async def test_ignores_records_their_task_keeps(
         self,

@@ -1,0 +1,40 @@
+diff --git a/dist/index.js b/dist/index.js
+index 97791997015e491a6e03c9ff646b1acbff70724c..16093978940f31b3c2e0947caf971b764f0ca454 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -299,11 +299,13 @@ var MenuContentImpl = /* @__PURE__ */ React.forwardRef(
+       const values = items.map((item) => item.textValue);
+       const nextMatch = getNextMatch(values, search, currentMatch);
+       const newItem = items.find((item) => item.textValue === nextMatch)?.ref.current;
+-      (/* @__PURE__ */ __name((function updateSearch(value) {
++      function updateSearch(value) {
+         searchRef.current = value;
+         window.clearTimeout(timerRef.current);
+         if (value !== "") timerRef.current = window.setTimeout(() => updateSearch(""), 1e3);
+-      }), "updateSearch"))(search);
++      }
++      __name(updateSearch, "updateSearch");
++      updateSearch(search);
+       if (newItem) {
+         setTimeout(() => newItem.focus());
+       }
+diff --git a/dist/index.mjs b/dist/index.mjs
+index 00c5fe1b371ca0a434a514a4f5b7f0ba269ff346..10ac48bd44116ba4ce0f131020b7d13a3a65cb0e 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -238,11 +238,13 @@ var MenuContentImpl = /* @__PURE__ */ React.forwardRef(
+       const values = items.map((item) => item.textValue);
+       const nextMatch = getNextMatch(values, search, currentMatch);
+       const newItem = items.find((item) => item.textValue === nextMatch)?.ref.current;
+-      (/* @__PURE__ */ __name((function updateSearch(value) {
++      function updateSearch(value) {
+         searchRef.current = value;
+         window.clearTimeout(timerRef.current);
+         if (value !== "") timerRef.current = window.setTimeout(() => updateSearch(""), 1e3);
+-      }), "updateSearch"))(search);
++      }
++      __name(updateSearch, "updateSearch");
++      updateSearch(search);
+       if (newItem) {
+         setTimeout(() => newItem.focus());
+       }

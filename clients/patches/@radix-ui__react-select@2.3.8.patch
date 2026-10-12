@@ -1,0 +1,40 @@
+diff --git a/dist/index.js b/dist/index.js
+index eeb641a912d232bc0a6bae32b46ed09cd55db34a..a5f5ae95d9340541d9ee96ed507dbb08147e38ad 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -1235,11 +1235,13 @@ function useTypeaheadSearch(onSearchChange) {
+     (key) => {
+       const search = searchRef.current + key;
+       handleSearchChange(search);
+-      (/* @__PURE__ */ __name((function updateSearch(value) {
++      function updateSearch(value) {
+         searchRef.current = value;
+         window.clearTimeout(timerRef.current);
+         if (value !== "") timerRef.current = window.setTimeout(() => updateSearch(""), 1e3);
+-      }), "updateSearch"))(search);
++      }
++      __name(updateSearch, "updateSearch");
++      updateSearch(search);
+     },
+     [handleSearchChange]
+   );
+diff --git a/dist/index.mjs b/dist/index.mjs
+index c646929cab85075584766e8ca76d3307abf8d3b2..50a39960ac75215387b6dc8b8782ec2b1eb5158d 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -1165,11 +1165,13 @@ function useTypeaheadSearch(onSearchChange) {
+     (key) => {
+       const search = searchRef.current + key;
+       handleSearchChange(search);
+-      (/* @__PURE__ */ __name((function updateSearch(value) {
++      function updateSearch(value) {
+         searchRef.current = value;
+         window.clearTimeout(timerRef.current);
+         if (value !== "") timerRef.current = window.setTimeout(() => updateSearch(""), 1e3);
+-      }), "updateSearch"))(search);
++      }
++      __name(updateSearch, "updateSearch");
++      updateSearch(search);
+     },
+     [handleSearchChange]
+   );

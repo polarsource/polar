@@ -105,3 +105,6 @@ packageExtensions:
   posthog-js:
     peerDependencies:
       react: '*'
+patchedDependencies:
+  '@radix-ui/react-menu@2.1.25': patches/@radix-ui__react-menu@2.1.25.patch
+  '@radix-ui/react-select@2.3.8': patches/@radix-ui__react-select@2.3.8.patch

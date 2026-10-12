@@ -88,6 +88,7 @@ jobs:
       - name: Generate and test SDKs
         working-directory: ./sdk/generator
         run: |
+          sudo apt-get update && sudo apt-get install -y redis-server
           just openapi
           just generate-all
 

@@ -14,6 +14,10 @@
     ".": {
       "import": { "types": "./dist/index.d.mts", "default": "./dist/index.mjs" },
       "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
+    },
+    "./outpost": {
+      "import": { "types": "./dist/outpost/index.d.mts", "default": "./dist/outpost/index.mjs" },
+      "require": { "types": "./dist/outpost/index.d.cts", "default": "./dist/outpost/index.cjs" }
     }
 {% for version in ir.versions %}
     ,
@@ -46,6 +50,9 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "ioredis": "^5.11.0",
+    "ws": "^8.21.0",
+    "@types/ws": "^8.18.1",
     "@types/node": "^24.13.6",
     "oxfmt": "^0.56.0",
     "oxlint": "^1.71.0",
@@ -53,6 +60,14 @@
     "tsdown": "^0.22.3",
     "typescript": "^6.0.3",
     "vitest": "^4.1.9"
+  },
+  "peerDependencies": {
+    "ioredis": "^5.11.0",
+    "ws": "^8.21.0"
+  },
+  "peerDependenciesMeta": {
+    "ioredis": { "optional": true },
+    "ws": { "optional": true }
   },
   "packageManager": "pnpm@12.8.0",
   "keywords": [

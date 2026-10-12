@@ -477,3 +477,71 @@ test('defineConfig rejects amounts with more decimals than the currency', () => 
     }),
   ).toThrow()
 })
+
+test('webhooks serialize with their format, events and pinned API version', () => {
+  const config = defineConfig({
+    meters: () => ({}),
+    webhooks: ({ endpoint, slack, discord }) => ({
+      app: endpoint('https://app.test/api/polar/webhooks')
+        .on('order.paid', 'subscription.canceled')
+        .handle(async () => () => {}),
+      sales: slack('https://hooks.slack.com/services/T0/B0/token').on(
+        'order.paid',
+      ),
+      ops: discord('https://discord.com/api/webhooks/1/token').on(
+        'subscription.revoked',
+      ),
+    }),
+  })
+  expect(config.toJSON().webhooks).toEqual([
+    {
+      external_id: 'app',
+      url: 'https://app.test/api/polar/webhooks',
+      format: 'raw',
+      events: ['order.paid', 'subscription.canceled'],
+      api_version: '2027-01',
+    },
+    {
+      external_id: 'sales',
+      url: 'https://hooks.slack.com/services/T0/B0/token',
+      format: 'slack',
+      events: ['order.paid'],
+      api_version: '2027-01',
+    },
+    {
+      external_id: 'ops',
+      url: 'https://discord.com/api/webhooks/1/token',
+      format: 'discord',
+      events: ['subscription.revoked'],
+      api_version: '2027-01',
+    },
+  ])
+})
+
+test('webhooks with handlers must each read a different secret', () => {
+  const handler = async () => () => {}
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      webhooks: ({ endpoint }) => ({
+        app: endpoint('https://app.test/a').on('order.paid').handle(handler),
+        billing: endpoint('https://app.test/b')
+          .on('order.paid')
+          .handle(handler),
+      }),
+    }),
+  ).toThrow('more than one reads POLAR_WEBHOOK_SECRET')
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      webhooks: ({ endpoint }) => ({
+        app: endpoint('https://app.test/a').on('order.paid').handle(handler),
+        billing: endpoint('https://app.test/b')
+          .on('order.paid')
+          .secret('BILLING_WEBHOOK_SECRET')
+          .handle(handler),
+        unhandled: endpoint('https://app.test/c').on('order.paid'),
+      }),
+    }),
+  ).not.toThrow()
+})

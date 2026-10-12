@@ -258,6 +258,82 @@ describe('formatTree', () => {
     )
   })
 
+  test('shows only the host of a created Slack webhook and its new signing secret', () => {
+    const slackUrl = 'https://hooks.slack.com/services/T0/B0/token'
+    const output = stripAnsi(
+      formatTree(
+        {
+          webhooks: [
+            {
+              external_id: 'sales',
+              url: slackUrl,
+              format: 'slack',
+              events: ['order.paid', 'subscription.canceled'],
+              api_version: '2027-01',
+            },
+          ],
+        },
+        [
+          {
+            ...entry('webhooks', 'sales', 'created', [
+              { field: 'url', before: null, after: slackUrl },
+              { field: 'format', before: null, after: 'slack' },
+            ]),
+            secret: 'polar_whs_abc',
+          },
+        ],
+      ),
+    )
+    expect(output).toBe(
+      [
+        '  webhooks',
+        '  + sales',
+        '      url     https://hooks.slack.com/***',
+        '      format  slack',
+        '      events  order.paid, subscription.canceled',
+        '      secret  polar_whs_abc',
+        "      Set it as your webhook signing secret (e.g. POLAR_WEBHOOK_SECRET); it won't be shown again.",
+      ].join('\n'),
+    )
+  })
+
+  test('redacts both sides of an updated webhook url by their own format', () => {
+    const after = 'https://app:pw@app.test/hook?token=new'
+    const output = stripAnsi(
+      formatTree(
+        {
+          webhooks: [
+            {
+              external_id: 'app',
+              url: after,
+              format: 'raw',
+              events: ['order.paid'],
+              api_version: '2027-01',
+            },
+          ],
+        },
+        [
+          entry('webhooks', 'app', 'updated', [
+            {
+              field: 'url',
+              before: 'https://hooks.slack.com/services/T0/B0/token',
+              after,
+            },
+            { field: 'format', before: 'slack', after: 'raw' },
+          ]),
+        ],
+      ),
+    )
+    expect(output).toBe(
+      [
+        '  webhooks',
+        '  ~ app',
+        '      url     https://hooks.slack.com/*** → https://***@app.test/hook?token=***',
+        '      format  "slack" → "raw"',
+      ].join('\n'),
+    )
+  })
+
   test('falls back to ids when the config has no matching entry', () => {
     const output = stripAnsi(
       formatTree(undefined, [

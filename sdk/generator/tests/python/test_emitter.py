@@ -48,6 +48,11 @@ def test_emit_input_model_with_fields_and_additional_properties(
 
     PythonEmitter(APIIR(versions=[api]), "2026-10").emit(tmp_path)
 
+    assert (tmp_path / "polar" / "outpost" / "reducer.py").is_file()
+    assert (tmp_path / "polar" / "outpost" / "client.py").is_file()
+    for module in ("client", "event", "reducer"):
+        assert (tmp_path / "tests" / "outpost" / f"test_{module}.py").is_file()
+
     inputs = (tmp_path / "polar" / "v2026_04" / "inputs.py").read_text()
     assert "import typing_extensions" in inputs
     assert (

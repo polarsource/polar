@@ -1,0 +1,86 @@
+---
+title: "SDK local reduction"
+description: "Reduce events in server SDKs, share aggregates through Redis, and read from local memory."
+---
+
+<Info>
+
+**Status**: Draft proposal
+
+**Created**: 2026-10-12
+
+**Last Updated**: 2026-10-12
+</Info>
+
+## Summary
+
+Replace the Outpost sidecar with local reduction in the Python and JavaScript server SDKs. Each process computes time-bucket aggregates, shares them through Redis, and keeps an in-memory copy for reads.
+
+Event ingestion to Polar remains separate. Events are transient inputs: retain only bucket aggregates, never event payloads, IDs, or individual contributions.
+
+This removes the sidecar deployment and the network hop for warmed reads. The tradeoff is background synchronization in each SDK, a mandatory shared Redis deployment, and equivalent reducer behavior across languages. The initial target is long-lived server processes.
+
+## Architecture
+
+- **SDK processes** reduce events and serve reads from memory.
+- **Redis** owns shared aggregate state and distributes updates through Pub/Sub.
+- **Each SDK client** owns a Polar WebSocket to receive configuration and snapshots and request the customers it needs. No leader election or shared customer-interest registry is required initially.
+- **Polar** owns historical usage and credits.
+
+Snapshot application remains idempotent because multiple clients can receive the same update. One connection per client keeps startup and warmup simple, at the cost of more connections and repeated requests on Polar. A shared leader can be considered later if that cost becomes significant.
+
+## Local writes and reads
+
+1. The SDK reduces an event into its matching time buckets.
+2. Redis atomically updates locally owned buckets and publishes the resulting state.
+3. The writer updates its memory before returning success.
+4. Other clients receive the update and refresh their memory.
+
+A successful call means **reduced in Redis and visible on the writer**. Other clients converge asynchronously. It says nothing about ingestion to Polar.
+
+Warmed reads require no network request. Startup loads state from Redis; reconnect and periodic checks repair missed notifications. Version metadata prevents old messages from replacing newer state. Reads expose whether the cache is stale or incomplete.
+
+## Bucket handoff
+
+Polar and local reduction own disjoint time ranges:
+
+| State | Meaning |
+|---|---|
+| `cold_until` | Bucket-aligned boundary between Polar-owned history and local buckets |
+| `cold` | Polar's aggregate usage before that boundary |
+| `buckets` | Local aggregates at or after that boundary |
+| `credited` | Credits supplied by Polar |
+
+For count and sum, consumed usage is historical usage plus local buckets. Min and max use the corresponding extremum across those same ranges.
+
+When Polar advances the boundary, Redis atomically replaces historical usage and removes local buckets before the new boundary. Newer buckets remain untouched. Local writes check ownership in the same atomic operation; events targeting Polar-owned buckets wait for subsequent Polar snapshots.
+
+For example:
+
+| | Before handoff | After handoff |
+|---|---|---|
+| Polar history | 100 before 12:00 | 107 before 12:05 |
+| Local buckets | 7 at 12:00; 4 at 12:05 | 4 at 12:05 |
+| Total | **111** | **111** |
+
+Never add a Polar snapshot to local usage for the same bucket. No event list or per-event reconciliation is needed. Historical corrections and credit changes may arrive without advancing the boundary.
+
+## Limits and open questions
+
+- **Historical handoff is provisional.** A bucket ending does not prove Polar has processed all its events. Delayed or failed ingestion can cause usage to change at handoff; later snapshots can correct history. Agree the boundary delay and correction semantics with Polar.
+- **No local deduplication.** Repeated additive reductions count twice. A timed-out write may already have committed, so automatic retries are unsafe.
+- **Bootstrap can be incomplete.** After first initialization or Redis state loss, recent activity absent from Redis cannot be reconstructed from historical snapshots alone. Expose that gap until Polar takes ownership.
+- **Local balances do not enforce strict fleet-wide quotas.** Multiple clients may act on the same cached balance.
+- **Configuration changes need a boundary.** Existing bucket aggregates cannot be recomputed under new filters without events; seamless changes remain unresolved.
+- **Retention must be bounded.** Keep local buckets until handoff and stop admitting new buckets at capacity rather than silently discard usage.
+
+The inspected Outpost backend does not yet provide the bucket snapshot contract expected by the sidecar. That external contract is still needed. This draft does not include implementation, ingestion changes, or measured latency guarantees.
+
+## Security considerations
+
+- **Data in and out** — Events enter the local reducer transiently; aggregate state goes to Redis, and configuration and snapshots arrive from Polar.
+- **Who can access it** — Trusted application servers, with scoped Polar credentials and private, authenticated Redis access.
+- **Data we store** — Bucket aggregates, historical usage, credits, and synchronization metadata. No events; no raw payloads in logs.
+- **Risks** — Shared Redis access can expose or alter usage; state loss, duplicate reductions, and stale caches can affect decisions. Expose readiness and completeness, bound retained state, and document provisional values.
+
+Record these risks with an owner and treatment plan in Freda's risk register before merging the RFC.

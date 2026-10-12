@@ -5,7 +5,7 @@ import { Output } from '@/utils/output'
 
 type Json<P> = Schema.Codec<P, unknown>
 
-export interface OutputSpec<I, A, P, E, R, F> {
+interface OutputSpec<I, A, P, E, R, F> {
   readonly result: Json<P>
   readonly run: (input: I) => Effect.Effect<A, E, R>
   readonly render: (result: A, input: I) => ReadonlyArray<string>

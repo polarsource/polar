@@ -22,7 +22,7 @@ const count = (
   severity: ConfigIssue['severity'],
 ) => issues.filter((issue) => issue.severity === severity).length
 
-export const summary = (issues: ReadonlyArray<ConfigIssue>) =>
+const summary = (issues: ReadonlyArray<ConfigIssue>) =>
   `${ui.INDENT}Found ${plural(count(issues, 'error'), 'error')} and ${plural(count(issues, 'warning'), 'warning')}.`
 
 const render = (config: LoadedConfig, result: PlanResult) => [

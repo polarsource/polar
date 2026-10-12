@@ -14,7 +14,6 @@ log: Logger = structlog.get_logger()
 
 REDUCER_BUCKET_TTL = timedelta(days=1)
 
-type CustomerIdentity = tuple[uuid.UUID | None, str | None]
 type BucketId = tuple[Reducer, datetime, uuid.UUID | None, str | None]
 
 
@@ -34,12 +33,12 @@ def get_reducer_bucket_key(
 
 
 async def add_to_buckets(
-    redis: Redis, values_by_bucket: Mapping[BucketId, Sequence[float]]
+    redis: Redis, contributions: Mapping[BucketId, Sequence[float]]
 ) -> None:
     """Adds the values to their buckets, skipping unique aggregations."""
     ttl = int(REDUCER_BUCKET_TTL.total_seconds())
     async with redis.pipeline(transaction=False) as pipe:
-        for bucket_id, values in values_by_bucket.items():
+        for bucket_id, values in contributions.items():
             reducer, bucket_start, customer_id, external_customer_id = bucket_id
             key = get_reducer_bucket_key(
                 reducer.id, bucket_start, customer_id, external_customer_id
@@ -66,35 +65,3 @@ async def add_to_buckets(
                     continue
             await pipe.expire(key, ttl, nx=True)
         await pipe.execute()
-
-
-async def get_bucket_values(
-    redis: Redis,
-    reducer: Reducer,
-    bucket_start: datetime,
-    identities: Sequence[CustomerIdentity],
-) -> list[list[float | None]]:
-    """Each identity's bucket values, by aggregation: [count], [sum],
-    [count, sum] for avg, [min] or [max]. None where the bucket is missing."""
-    async with redis.pipeline(transaction=False) as pipe:
-        for customer_id, external_customer_id in identities:
-            key = get_reducer_bucket_key(
-                reducer.id, bucket_start, customer_id, external_customer_id
-            )
-            match reducer.aggregation.func:
-                case AggregationFunction.cnt | AggregationFunction.sum:
-                    await pipe.get(key)
-                case AggregationFunction.avg:
-                    await pipe.hmget(key, ["count", "sum"])
-                case AggregationFunction.min:
-                    await pipe.zscore(key, "min")
-                case AggregationFunction.max:
-                    await pipe.zscore(key, "max")
-        results = await pipe.execute()
-    return [
-        [
-            float(value) if value is not None else None
-            for value in (result if isinstance(result, list) else [result])
-        ]
-        for result in results
-    ]

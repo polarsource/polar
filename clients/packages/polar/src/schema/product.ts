@@ -78,6 +78,8 @@ export const ProductConfig = Schema.Struct({
   prices: Schema.Array(PriceConfig).check(Schema.isMinLength(1)),
   benefits: Schema.Array(Schema.String),
   metadata: Schema.optionalKey(Metadata),
+  description: Schema.optionalKey(Schema.String),
+  visibility: Schema.optionalKey(Schema.Literals(['private', 'public'])),
 }).check(
   Schema.makeFilter(({ prices }) =>
     compositionIssues(prices).map((issue) => ({ path: ['prices'], issue })),
@@ -135,6 +137,8 @@ class ProductBuilder<
     readonly trialPeriod: Trial | undefined = undefined,
     readonly benefits: ReadonlyArray<Benefit> = [],
     metadata: Metadata | undefined = undefined,
+    readonly descriptionText: string | undefined = undefined,
+    readonly isPrivate: boolean = false,
   ) {
     this[metadataKey] = metadata
   }
@@ -149,6 +153,8 @@ class ProductBuilder<
       this.trialPeriod,
       this.benefits,
       this[metadataKey],
+      this.descriptionText,
+      this.isPrivate,
     )
   }
 
@@ -178,6 +184,8 @@ class ProductBuilder<
       this.trialPeriod,
       this.benefits,
       this[metadataKey],
+      this.descriptionText,
+      this.isPrivate,
     )
   }
 
@@ -189,6 +197,8 @@ class ProductBuilder<
       undefined,
       this.benefits,
       this[metadataKey],
+      this.descriptionText,
+      this.isPrivate,
     )
   }
 
@@ -204,6 +214,8 @@ class ProductBuilder<
       { trial_interval: unitOf(interval), trial_interval_count: count },
       this.benefits,
       this[metadataKey],
+      this.descriptionText,
+      this.isPrivate,
     )
   }
 
@@ -217,6 +229,8 @@ class ProductBuilder<
       this.trialPeriod,
       benefits,
       this[metadataKey],
+      this.descriptionText,
+      this.isPrivate,
     )
   }
 
@@ -228,6 +242,34 @@ class ProductBuilder<
       this.trialPeriod,
       this.benefits,
       { ...metadata },
+      this.descriptionText,
+      this.isPrivate,
+    )
+  }
+
+  description(description: string): ProductBuilder<Meter, Benefit, P, Billing> {
+    return new ProductBuilder(
+      this.name,
+      this.priceList,
+      this.billing,
+      this.trialPeriod,
+      this.benefits,
+      this[metadataKey],
+      description,
+      this.isPrivate,
+    )
+  }
+
+  private(): ProductBuilder<Meter, Benefit, P, Billing> {
+    return new ProductBuilder(
+      this.name,
+      this.priceList,
+      this.billing,
+      this.trialPeriod,
+      this.benefits,
+      this[metadataKey],
+      this.descriptionText,
+      true,
     )
   }
 }

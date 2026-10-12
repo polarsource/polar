@@ -95,7 +95,7 @@ describe('polar config plan', () => {
     const { output, failed } = await run({ entries, issues: [] })
     expect(failed).toBe(false)
     expect(output).toContain(
-      'polar.json can be applied: 1 to create, 0 to update, 0 unchanged',
+      'polar.json can be applied to Acme (sandbox): 1 to create, 0 to update, 0 unchanged',
     )
     expect(output).toContain('Run polar config apply to make these changes.')
   })

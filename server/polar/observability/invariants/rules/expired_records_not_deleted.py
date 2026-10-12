@@ -113,14 +113,6 @@ CLEANUP_TASKS: tuple[CleanupTask, ...] = (
         ),
     ),
     CleanupTask(
-        "webhook_event.archive",
-        WebhookEvent,
-        lambda cutoff: and_(
-            WebhookEvent.payload.is_not(None),
-            WebhookEvent.created_at < cutoff - settings.WEBHOOK_EVENT_RETENTION_PERIOD,
-        ),
-    ),
-    CleanupTask(
         "checkout.anonymize_expired",
         Checkout,
         lambda cutoff: and_(
@@ -136,6 +128,16 @@ CLEANUP_TASKS: tuple[CleanupTask, ...] = (
             WebhookDelivery.response.is_not(None),
             WebhookDelivery.created_at
             < cutoff - settings.WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD,
+        ),
+    ),
+    # Last: this query is slow on the large webhook_events table and can time out,
+    # which must not prevent the other cleanup tasks from being checked.
+    CleanupTask(
+        "webhook_event.archive",
+        WebhookEvent,
+        lambda cutoff: and_(
+            WebhookEvent.payload.is_not(None),
+            WebhookEvent.created_at < cutoff - settings.WEBHOOK_EVENT_RETENTION_PERIOD,
         ),
     ),
 )
@@ -171,7 +173,13 @@ class ExpiredRecordsNotDeletedInvariant(Invariant):
                 .where(cleanup_task.deletable_clause(cutoff))
                 .limit(1)
             )
-            result = await self.session.execute(statement)
+            try:
+                result = await self.session.execute(statement)
+            except Exception as e:
+                # Still report what was found so far rather than losing it
+                if overdue:
+                    raise ExpiredRecordsNotDeletedInvariantError(overdue) from e
+                raise
             if result.scalar_one_or_none() is not None:
                 overdue.append(cleanup_task.actor_name)
 

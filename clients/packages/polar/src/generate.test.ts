@@ -231,7 +231,9 @@ const cases: [string, PolarConfig][] = [
                   .label('device', 'devices'),
               )
               .recurring('yearly')
-              .trial(14, 'days'),
+              .trial(14, 'days')
+              .description('Billed per device, "yearly".\nCancel anytime.')
+              .private(),
           }
         },
       })

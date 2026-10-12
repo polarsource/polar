@@ -39,7 +39,7 @@ export const keyValue = (rows: ReadonlyArray<readonly [string, string]>) => {
 }
 
 export const blank = ''
-export const clearLine = '\r\x1b[2K'
+const clearLine = '\r\x1b[2K'
 export const clearLines = (rows: number) =>
   rows > 0 ? clearLine + `\x1b[1A${clearLine}`.repeat(rows - 1) : ''
 
@@ -83,7 +83,7 @@ export const pushTitle = (title: string) =>
 
 export const popTitle = '\x1b]0;\x07\x1b[23;0t'
 
-export interface CodeFrameOptions {
+interface CodeFrameOptions {
   readonly file: string
   readonly location: SourceLocation
   readonly label: string

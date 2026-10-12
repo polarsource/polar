@@ -33,7 +33,7 @@ export class BillingConfig extends Context.Service<
   }
 >()('BillingConfig') {}
 
-export const make = Effect.gen(function* () {
+const make = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem
   const clients = {
     sandbox: yield* authenticatedClient('sandbox'),

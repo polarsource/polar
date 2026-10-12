@@ -5,9 +5,13 @@ import { Output } from '@/utils/output'
 
 type Json<P> = Schema.Codec<P, unknown>
 
-export interface OutputSpec<I, A, P, E, R, F> {
+export interface Say {
+  readonly say: (lines: ReadonlyArray<string>) => Effect.Effect<void>
+}
+
+interface OutputSpec<I, A, P, E, R, F> {
   readonly result: Json<P>
-  readonly run: (input: I) => Effect.Effect<A, E, R>
+  readonly run: (input: I, io: Say) => Effect.Effect<A, E, R>
   readonly render: (result: A, input: I) => ReadonlyArray<string>
   readonly json?: (result: A) => P
   readonly failed?: (result: A) => F | undefined
@@ -35,7 +39,9 @@ export const output =
       Command.withHandler((input: I) =>
         Effect.gen(function* () {
           const { json } = yield* Output
-          const result = yield* spec.run(input)
+          const say: Say['say'] = (lines) =>
+            json ? Effect.void : Console.log(lines.join('\n'))
+          const result = yield* spec.run(input, { say })
           if (json) {
             const value = spec.json
               ? spec.json(result)

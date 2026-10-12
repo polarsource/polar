@@ -10,6 +10,10 @@ from polar.benefit.strategies.meter_credit.properties import (
     BenefitMeterCreditProperties,
 )
 from polar.discount.repository import DiscountRepository
+from polar.discount.service import (
+    DISCOUNT_LOCKED_FIELD_MESSAGE,
+    DISCOUNT_LOCKED_FIELDS,
+)
 from polar.event.system import SystemEvent
 from polar.event_type.repository import EventTypeRepository
 from polar.meter.filter import Filter, FilterOperator
@@ -643,7 +647,6 @@ _DISCOUNT_FIELDS = (
     "max_redemptions",
     "max_redemptions_per_customer",
 )
-_DISCOUNT_VALUE_FIELDS = ("basis_points", "amounts")
 
 
 def _get_discount_update_dict(
@@ -743,17 +746,14 @@ def immutable_discount_fields(changes: Sequence[DiscountChange]) -> list[ConfigI
             )
         if discount.redemptions_count == 0:
             continue
-        for field in (*_DISCOUNT_VALUE_FIELDS, "duration_in_months"):
+        for field in DISCOUNT_LOCKED_FIELDS[discount.type]:
             if field in change.update_dict:
                 issues.append(
                     ConfigIssue(
                         severity=ConfigIssueSeverity.error,
                         type=ConfigIssueType.discount_locked,
                         loc=_loc(ConfigResource.discount, change.index, field),
-                        msg=(
-                            "This field can't be changed because "
-                            "the discount has already been redeemed."
-                        ),
+                        msg=DISCOUNT_LOCKED_FIELD_MESSAGE,
                         input=change.update_dict[field],
                     )
                 )

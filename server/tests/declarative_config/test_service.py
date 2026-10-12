@@ -1606,6 +1606,7 @@ class TestPlan:
                             "prices": [*PRO_PRODUCT["prices"], METERED_TIERS_PRICE],
                         }
                     ],
+                    "discounts": [LAUNCH_DISCOUNT],
                 }
             ),
         )
@@ -1619,6 +1620,7 @@ class TestPlan:
             (["body", "products", 0, "prices", 1, "meter"], "sdk-tool-calls"),
             (["body", "products", 0, "prices", 2, "meter"], "sdk-tool-calls"),
             (["body", "products", 0, "benefits", 1], "beta"),
+            (["body", "discounts", 0, "products", 0], "pack"),
         ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -1718,6 +1720,14 @@ class TestPlan:
         )
         discount.redemptions_count = 1
         await save_fixture(discount)
+        await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            external_id="partner",
+        )
 
         plan = await declarative_config_service.plan(
             session,
@@ -1731,7 +1741,8 @@ class TestPlan:
                             "basis_points": 2500,
                             "duration": "repeating",
                             "duration_in_months": 3,
-                        }
+                        },
+                        {**LAUNCH_DISCOUNT, "external_id": "partner", "code": None},
                     ],
                 }
             ),
@@ -1747,38 +1758,8 @@ class TestPlan:
                 ConfigIssueType.discount_locked,
                 ["body", "discounts", 0, "duration_in_months"],
             ),
+            (ConfigIssueType.type_changed, ["body", "discounts", 1, "type"]),
         ]
-
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_discount_type_changed(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        auth_subject: AuthSubject[Organization],
-        organization: Organization,
-    ) -> None:
-        await create_discount(
-            save_fixture,
-            type=DiscountType.fixed,
-            amounts={"usd": 1000},
-            duration=DiscountDuration.once,
-            organization=organization,
-            external_id="launch",
-        )
-
-        plan = await declarative_config_service.plan(
-            session,
-            auth_subject,
-            Config.model_validate(
-                {"products": [PACK_PRODUCT], "discounts": [LAUNCH_DISCOUNT]}
-            ),
-        )
-
-        assert [
-            issue.loc
-            for issue in plan.issues
-            if issue.type == ConfigIssueType.type_changed
-        ] == [["body", "discounts", 0, "type"]]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_discount_duplicate_codes(
@@ -1825,19 +1806,3 @@ class TestPlan:
                 "Another discount in this config has the same code.",
             ),
         ]
-
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_discount_unknown_product(
-        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
-    ) -> None:
-        plan = await declarative_config_service.plan(
-            session,
-            auth_subject,
-            Config.model_validate({"discounts": [LAUNCH_DISCOUNT]}),
-        )
-
-        assert [
-            (issue.loc, issue.input)
-            for issue in plan.issues
-            if issue.type == ConfigIssueType.unknown_reference
-        ] == [(["body", "discounts", 0, "products", 0], "pack")]

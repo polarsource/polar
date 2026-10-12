@@ -145,6 +145,25 @@ test('dates must be valid and the discount must start before it ends', () => {
     ),
   ).toThrow('a timestamp with a time zone')
   expect(() =>
+    discountConfig(
+      'typo',
+      discount().percent(5).once().startsAt('2024-02-30T00:00:00Z'),
+    ),
+  ).toThrow('got 2024-02-30T00:00:00Z')
+  expect(() =>
+    discountConfig('typo', discount().percent(5).once().endsAt('2023-02-29')),
+  ).toThrow('got 2023-02-29')
+  expect(() =>
+    decode({
+      external_id: 'typo',
+      name: 'Typo',
+      type: 'percentage',
+      basis_points: 500,
+      duration: 'once',
+      starts_at: '2024-02-30T00:00:00Z',
+    }),
+  ).toThrow('2024-02-30T00:00:00Z is not a valid date.')
+  expect(() =>
     decode(
       discountConfig(
         'backwards',

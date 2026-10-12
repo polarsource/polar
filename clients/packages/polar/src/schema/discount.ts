@@ -20,12 +20,20 @@ const Code = Schema.String.check(
   }),
 )
 
+const DATE = /^\d{4}-\d{2}-\d{2}$/
+const DATE_TIME =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/
+
+const isCalendarDay = (value: string): boolean => {
+  const day = value.slice(0, 10)
+  const date = new Date(day)
+  return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(day)
+}
+
 const Timestamp = Schema.String.check(
-  Schema.isPattern(
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/,
-  ),
+  Schema.isPattern(DATE_TIME),
   Schema.makeFilter((timestamp) =>
-    Number.isNaN(Date.parse(timestamp))
+    Number.isNaN(Date.parse(timestamp)) || !isCalendarDay(timestamp)
       ? `${timestamp} is not a valid date.`
       : undefined,
   ),
@@ -275,15 +283,13 @@ export const discount = <Product extends string = string>(
 ): DiscountBuilder<Product, undefined, undefined> =>
   new DiscountBuilder(name, undefined, undefined)
 
-const DATE = /^\d{4}-\d{2}-\d{2}$/
-const DATE_TIME =
-  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/
-
 const timestamp = (value: unknown, where: string): string => {
   const date =
     value instanceof Date
       ? value
-      : typeof value === 'string' && (DATE.test(value) || DATE_TIME.test(value))
+      : typeof value === 'string' &&
+          (DATE.test(value) || DATE_TIME.test(value)) &&
+          isCalendarDay(value)
         ? new Date(value)
         : undefined
   if (date === undefined || Number.isNaN(date.getTime())) {

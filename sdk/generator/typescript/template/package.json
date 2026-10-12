@@ -42,6 +42,7 @@
   },
   "scripts": {
     "build": "tsdown",
+    "prepare": "pnpm build",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "lint": "oxlint",

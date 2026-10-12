@@ -64,7 +64,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         *,
         options: Options = (),
     ) -> CustomerSeat | None:
-        """Get seat by container and email (for member_model_enabled path)."""
+        """Get the active (non-revoked) seat by container and email."""
         if isinstance(container, Subscription):
             return await self.get_by_subscription_and_email(
                 container.id, email, options=options
@@ -81,13 +81,16 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         *,
         options: Options = (),
     ) -> CustomerSeat | None:
-        """Get seat by subscription ID and email."""
+        """Get the active (non-revoked) seat by subscription ID and email."""
         statement = (
             select(CustomerSeat)
             .where(
                 CustomerSeat.subscription_id == subscription_id,
+                CustomerSeat.status != SeatStatus.revoked,
                 func.lower(CustomerSeat.email) == email.lower(),
             )
+            .order_by(CustomerSeat.created_at.desc())
+            .limit(1)
             .options(*options)
         )
         return await self.get_one_or_none(statement)
@@ -99,13 +102,16 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         *,
         options: Options = (),
     ) -> CustomerSeat | None:
-        """Get seat by order ID and email."""
+        """Get the active (non-revoked) seat by order ID and email."""
         statement = (
             select(CustomerSeat)
             .where(
                 CustomerSeat.order_id == order_id,
+                CustomerSeat.status != SeatStatus.revoked,
                 func.lower(CustomerSeat.email) == email.lower(),
             )
+            .order_by(CustomerSeat.created_at.desc())
+            .limit(1)
             .options(*options)
         )
         return await self.get_one_or_none(statement)

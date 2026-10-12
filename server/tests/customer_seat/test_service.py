@@ -7,6 +7,7 @@ import pytest
 
 from polar.auth.models import AuthSubject
 from polar.customer.repository import CustomerRepository
+from polar.customer_seat.repository import CustomerSeatRepository
 from polar.customer_seat.service import (
     InvalidInvitationToken,
     InvalidSeatAssignmentRequest,
@@ -1293,6 +1294,47 @@ class TestAssignSeat:
         with pytest.raises(SeatAlreadyAssigned):
             await seat_service.assign_seat(
                 session, subscription, external_member_id="ext_dup"
+            )
+
+    @pytest.mark.anyio
+    async def test_assign_seat_ignores_revoked_seat_with_same_email(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_with_seats: Subscription,
+    ) -> None:
+        """A stale revoked row carrying the email must not break the lookup."""
+        organization = subscription_with_seats.product.organization
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="dup@example.com",
+        )
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription_with_seats,
+            status=SeatStatus.revoked,
+            revoked_at=utc_now(),
+            email="dup@example.com",
+        )
+        active = await create_customer_seat(
+            save_fixture,
+            subscription=subscription_with_seats,
+            status=SeatStatus.claimed,
+            claimed_at=utc_now(),
+            email="dup@example.com",
+        )
+
+        repository = CustomerSeatRepository.from_session(session)
+        seat = await repository.get_by_subscription_and_email(
+            subscription_with_seats.id, "DUP@example.com"
+        )
+        assert seat is not None
+        assert seat.id == active.id
+
+        with pytest.raises(SeatAlreadyAssigned):
+            await seat_service.assign_seat(
+                session, subscription_with_seats, email="dup@example.com"
             )
 
     @pytest.mark.anyio

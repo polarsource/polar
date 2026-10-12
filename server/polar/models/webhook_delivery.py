@@ -22,12 +22,12 @@ class WebhookDelivery(RecordModel):
         ),
         {
             "postgresql_with": {
-                "autovacuum_vacuum_threshold": 1000,
-                "autovacuum_vacuum_scale_factor": 0.01,
-                "autovacuum_vacuum_insert_threshold": 1000,
-                "autovacuum_vacuum_insert_scale_factor": 0.01,
-                "autovacuum_analyze_threshold": 1000,
-                "autovacuum_analyze_scale_factor": 0.02,
+                "autovacuum_vacuum_threshold": 100000,
+                "autovacuum_vacuum_scale_factor": 0,
+                "autovacuum_vacuum_insert_threshold": 200000,
+                "autovacuum_vacuum_insert_scale_factor": 0,
+                "autovacuum_analyze_threshold": 250000,
+                "autovacuum_analyze_scale_factor": 0,
             }
         },
     )

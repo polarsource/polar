@@ -19,32 +19,32 @@ def upgrade() -> None:
     op.execute("SET LOCAL lock_timeout = '5s'")
     op.execute("""
         ALTER TABLE webhook_events SET (
-            autovacuum_vacuum_threshold = 1000,
-            autovacuum_vacuum_scale_factor = 0.01,
-            autovacuum_vacuum_insert_threshold = 1000,
-            autovacuum_vacuum_insert_scale_factor = 0.01,
-            autovacuum_analyze_threshold = 1000,
-            autovacuum_analyze_scale_factor = 0.02
+            autovacuum_vacuum_threshold = 100000,
+            autovacuum_vacuum_scale_factor = 0,
+            autovacuum_vacuum_insert_threshold = 200000,
+            autovacuum_vacuum_insert_scale_factor = 0,
+            autovacuum_analyze_threshold = 250000,
+            autovacuum_analyze_scale_factor = 0
         )
     """)
     op.execute("""
         ALTER TABLE webhook_deliveries SET (
-            autovacuum_vacuum_threshold = 1000,
-            autovacuum_vacuum_scale_factor = 0.01,
-            autovacuum_vacuum_insert_threshold = 1000,
-            autovacuum_vacuum_insert_scale_factor = 0.01,
-            autovacuum_analyze_threshold = 1000,
-            autovacuum_analyze_scale_factor = 0.02
+            autovacuum_vacuum_threshold = 100000,
+            autovacuum_vacuum_scale_factor = 0,
+            autovacuum_vacuum_insert_threshold = 200000,
+            autovacuum_vacuum_insert_scale_factor = 0,
+            autovacuum_analyze_threshold = 250000,
+            autovacuum_analyze_scale_factor = 0
         )
     """)
     op.execute("""
         ALTER TABLE checkouts SET (
             autovacuum_vacuum_threshold = 1000,
-            autovacuum_vacuum_scale_factor = 0.02,
+            autovacuum_vacuum_scale_factor = 0.01,
             autovacuum_vacuum_insert_threshold = 1000,
-            autovacuum_vacuum_insert_scale_factor = 0.02,
+            autovacuum_vacuum_insert_scale_factor = 0.01,
             autovacuum_analyze_threshold = 1000,
-            autovacuum_analyze_scale_factor = 0.04
+            autovacuum_analyze_scale_factor = 0.02
         )
     """)
 

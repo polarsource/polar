@@ -20,6 +20,7 @@ from .service import (
     ConfigInvalid,
     ConfigMeterConflict,
     ConfigProductConflict,
+    ConfigWebhookConflict,
 )
 from .service import declarative_config as declarative_config_service
 
@@ -77,8 +78,9 @@ async def export(
         403: {
             "description": (
                 "Not allowed to manage this organization, "
-                "missing the `benefits:write` or `products:write` scope "
-                "for a `benefits` or `products` section, "
+                "missing the `benefits:write`, `products:write` or "
+                "`webhooks:write` scope for a `benefits`, `products` or "
+                "`webhooks` section, "
                 "or config as code isn't enabled for it."
             ),
             "model": NotPermitted.schema() | ConfigAsCodeNotEnabled.schema(),
@@ -91,7 +93,8 @@ async def export(
             "model": ConfigInvalid.schema()
             | ConfigMeterConflict.schema()
             | ConfigBenefitConflict.schema()
-            | ConfigProductConflict.schema(),
+            | ConfigProductConflict.schema()
+            | ConfigWebhookConflict.schema(),
         },
     },
 )
@@ -104,12 +107,14 @@ async def apply(
     """
     Apply a declarative config document to the organization.
 
-    Meters, benefits and products are matched by `external_id`: missing ones are
-    created, changed ones are updated, and ones not listed are left untouched.
-    Everything is applied in one transaction.
+    Meters, benefits, products and webhook endpoints are matched by
+    `external_id`: missing ones are created, changed ones are updated, and ones
+    not listed are left untouched. Everything is applied in one transaction.
+    The signing `secret` of each created webhook endpoint is returned once.
 
-    A `benefits` section also requires the `benefits:write` scope, and a
-    `products` section the `products:write` scope.
+    A `benefits` section also requires the `benefits:write` scope, a
+    `products` section the `products:write` scope, and a `webhooks` section
+    the `webhooks:write` scope.
     """
     return await declarative_config_service.apply(session, redis, auth_subject, config)
 
@@ -124,7 +129,8 @@ async def apply(
         403: {
             "description": (
                 "Not allowed to read this organization's products, "
-                "missing a benefits or products scope for those sections, "
+                "missing a benefits, products or webhooks scope "
+                "for those sections, "
                 "or config as code isn't enabled for it."
             ),
             "model": NotPermitted.schema() | ConfigAsCodeNotEnabled.schema(),
@@ -143,6 +149,7 @@ async def plan(
     apply fail, `warning` issues don't.
 
     A `benefits` section also requires the `benefits:read` or `benefits:write`
-    scope, and a `products` section `products:read` or `products:write`.
+    scope, a `products` section `products:read` or `products:write`, and a
+    `webhooks` section `webhooks:read` or `webhooks:write`.
     """
     return await declarative_config_service.plan(session, auth_subject, config)

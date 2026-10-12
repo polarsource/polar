@@ -22,6 +22,9 @@ from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
 from polar.redis import Redis
+from polar.webhook.repository import WebhookEndpointRepository
+from polar.webhook.schemas import WebhookEndpointCreate, WebhookEndpointUpdate
+from polar.webhook.service import webhook as webhook_service
 
 from . import benefits, products, validation
 from .schemas import (
@@ -41,16 +44,24 @@ from .schemas import (
     ConfigSkippedMeter,
     ConfigSkippedReason,
 )
-from .validation import BenefitChange, MeterChange, ProductChange, ResourceChange
+from .validation import (
+    BenefitChange,
+    MeterChange,
+    ProductChange,
+    ResourceChange,
+    WebhookChange,
+)
 
 _METER_EXTERNAL_ID_INDEX = "ix_meters_organization_id_external_id"
 _BENEFIT_EXTERNAL_ID_INDEX = "ix_benefits_organization_id_external_id"
 _PRODUCT_EXTERNAL_ID_INDEX = "ix_products_organization_id_external_id"
+_WEBHOOK_EXTERNAL_ID_INDEX = "ix_webhook_endpoints_organization_id_external_id"
 
 
 _SECTION_SCOPES = {
     "benefits": (Scope.benefits_read, Scope.benefits_write),
     "products": (Scope.products_read, Scope.products_write),
+    "webhooks": (Scope.webhooks_read, Scope.webhooks_write),
 }
 
 
@@ -101,6 +112,15 @@ class ConfigProductConflict(PolarError):
         )
 
 
+class ConfigWebhookConflict(PolarError):
+    def __init__(self) -> None:
+        super().__init__(
+            "A webhook endpoint in this config was created by a concurrent request. "
+            "Retry.",
+            409,
+        )
+
+
 class ConfigInvalid(PolarError):
     def __init__(self, errors: list[ConfigIssue]) -> None:
         super().__init__("The config can't be applied.", 409)
@@ -142,6 +162,9 @@ class DeclarativeConfigService:
         if errors:
             raise ConfigInvalid(errors)
 
+        webhook_results = await self._apply_webhooks(
+            session, auth_subject, organization, changes.webhooks
+        )
         meter_results, meter_ids = await self._apply_meters(
             session, organization, changes.meters
         )
@@ -157,7 +180,12 @@ class DeclarativeConfigService:
             benefit_ids,
         )
         return ConfigApplyResult(
-            changes=[*meter_results, *benefit_results, *product_results]
+            changes=[
+                *webhook_results,
+                *meter_results,
+                *benefit_results,
+                *product_results,
+            ]
         )
 
     async def plan(
@@ -175,6 +203,7 @@ class DeclarativeConfigService:
         )
         return ConfigPlan(
             changes=[
+                *self._plan_changes(ConfigResource.webhook, changes.webhooks),
                 *self._plan_changes(ConfigResource.meter, changes.meters),
                 *self._plan_changes(ConfigResource.benefit, changes.benefits),
                 *self._plan_changes(ConfigResource.product, changes.products),
@@ -264,6 +293,60 @@ class DeclarativeConfigService:
         if not organization.is_config_as_code_enabled:
             raise ConfigAsCodeNotEnabled()
         return organization
+
+    async def _apply_webhooks(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        changes: Sequence[WebhookChange],
+    ) -> list[ConfigResult]:
+        repository = WebhookEndpointRepository.from_session(session)
+        results: list[ConfigResult] = []
+        for change in changes:
+            config = change.config
+            endpoint = change.existing
+            secret: str | None = None
+            if endpoint is None:
+                try:
+                    async with session.begin_nested():
+                        endpoint = await webhook_service.create_endpoint(
+                            session,
+                            auth_subject,
+                            WebhookEndpointCreate(
+                                url=config.url,
+                                format=config.format,
+                                events=config.events,
+                                api_version=config.api_version,
+                                organization_id=None
+                                if is_organization(auth_subject)
+                                else organization.id,
+                            ),
+                        )
+                        await repository.update(
+                            endpoint, update_dict={"external_id": config.external_id}
+                        )
+                except IntegrityError as e:
+                    if _constraint_name(e) != _WEBHOOK_EXTERNAL_ID_INDEX:
+                        raise
+                    raise ConfigWebhookConflict() from e
+                secret = endpoint.secret
+            elif change.update_dict:
+                await webhook_service.update_endpoint(
+                    session,
+                    auth_subject,
+                    endpoint=endpoint,
+                    update_schema=WebhookEndpointUpdate(**change.update_dict),
+                )
+            results.append(
+                ConfigResult(
+                    resource=ConfigResource.webhook,
+                    external_id=config.external_id,
+                    action=change.action,
+                    secret=secret,
+                )
+            )
+        return results
 
     async def _apply_meters(
         self,

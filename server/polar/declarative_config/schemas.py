@@ -31,10 +31,17 @@ from polar.product.schemas import (
     ProductPriceUnitBasedCreate,
 )
 from polar.product.tiers import TiersInput
+from polar.webhook.schemas import (
+    AvailableAPIVersion,
+    EndpointEvents,
+    EndpointFormat,
+    EndpointURL,
+)
 
 MAXIMUM_METERS = 100
 MAXIMUM_BENEFITS = 100
 MAXIMUM_PRODUCTS = 100
+MAXIMUM_WEBHOOK_ENDPOINTS = 25
 
 
 class ConfigMeter(MeterCreateBase):
@@ -253,6 +260,22 @@ class ConfigProduct(MetadataInputMixin, Schema):
         return self
 
 
+class ConfigWebhookEndpoint(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    external_id: str = Field(
+        ...,
+        min_length=1,
+        description="Your identifier for the webhook endpoint, used to match it.",
+    )
+    url: EndpointURL
+    format: EndpointFormat
+    events: EndpointEvents = Field(min_length=1)
+    api_version: AvailableAPIVersion = Field(
+        description="The API version that'll be used in event payloads."
+    )
+
+
 class Config(Schema):
     model_config = ConfigDict(extra="forbid")
 
@@ -281,6 +304,14 @@ class Config(Schema):
         description=(
             "Products to create or update, matched by `external_id`. "
             "Existing products that aren't listed are left untouched."
+        ),
+    )
+    webhooks: list[ConfigWebhookEndpoint] = Field(
+        default_factory=list,
+        max_length=MAXIMUM_WEBHOOK_ENDPOINTS,
+        description=(
+            "Webhook endpoints to create or update, matched by `external_id`. "
+            "Existing endpoints that aren't listed are left untouched."
         ),
     )
     organization_id: OrganizationID | None = Field(
@@ -329,12 +360,20 @@ class ConfigResource(StrEnum):
     meter = "meter"
     benefit = "benefit"
     product = "product"
+    webhook = "webhook"
 
 
 class ConfigResult(Schema):
     resource: ConfigResource = Field(description="The type of resource.")
     external_id: str = Field(description="The resource's `external_id`.")
     action: ConfigAction = Field(description="What applying the config does.")
+    secret: str | None = Field(
+        default=None,
+        description=(
+            "The signing secret of a webhook endpoint created by apply. "
+            "Only returned once, on creation."
+        ),
+    )
 
 
 class ConfigApplyResult(Schema):

@@ -16,9 +16,7 @@ import {
   Callout,
   Figure,
   PageHead,
-  PageFoot,
   Body,
-  Grain,
   Anchor,
   Hatch,
 } from '../kit'
@@ -36,14 +34,13 @@ const page = (
   render: () => ReactNode,
 ): Piece => ({ id, title, kind: 'manual', note, w, h, cols, render })
 const sheet = (w: number, h: number, title: string, children: ReactNode) => (
-  <Sheet w={w} h={h} surface="night" unsigned title={title}>
+  <Sheet w={w} h={h} surface="night" unsigned title={title} pad={40}>
     {children}
-    <Grain w={w} h={h} id={`grain-${title.replace(/\W/g, '')}`} />
   </Sheet>
 )
 const D = (t: string, w?: number): TermTok => ({ t, tone: 'dim', w })
 
-/** A portrait page: head, one figure, a paragraph, a folio. */
+/** A page with one paragraph: head, the figure centred, the paragraph right, a folio. */
 const portrait = (
   id: string,
   crumb: string,
@@ -55,18 +52,17 @@ const portrait = (
   figure: ReactNode,
   text: string[],
 ) =>
-  page(id, title, note, 400, 566, 1, () =>
+  page(id, title, note, 960, 540, 2, () =>
     sheet(
-      400,
-      566,
+      960,
+      540,
       title,
       <>
-        <PageHead crumb={crumb} w={400} title={title} sub={sub} />
-        <Figure x={28} y={132} w={344} h={300} dy={28} n={n}>
-          {figure}
+        <PageHead crumb={crumb} w={960} pad={40} title={title} sub={sub} />
+        <Figure x={40} y={156} w={620} h={300} dy={26} n={n}>
+          <g transform="translate(138 22)">{figure}</g>
         </Figure>
-        <Body x={28} y={462} text={text} />
-        <PageFoot w={400} h={566} page={folio} />
+        <Body x={700} y={176} width={220} size={11.5} text={text} />
       </>,
     ),
   )
@@ -93,8 +89,7 @@ const landscape = (
         <Figure x={40} y={156} w={620} h={300} dy={26} n={n}>
           {figure}
         </Figure>
-        <Sections x={700} y={176} width={220} size={9.5} items={items} />
-        <PageFoot w={960} h={540} pad={40} page={folio} />
+        <Sections x={700} y={176} width={220} size={11} items={items} />
       </>,
     ),
   )
@@ -102,7 +97,7 @@ const landscape = (
 // ---------------------------------------------------------------- 01 Billing as code · Environments
 
 const environments = (() => {
-  const { line } = term(70, 150, 7, 11.6)
+  const { line } = term(70, 150, 8, 11.6)
   const rows: TermTok[][] = [
     [{ t: '$ ' }, { t: 'polar env list' }],
     [],
@@ -195,7 +190,7 @@ const ingestion = (() => {
   const slot = (k: number) => x0 + ((x1 - x0) * (k + 0.5)) / 6
   const fig = (
     <>
-      <text x={x0} y={TOP - 26} fontSize={7} fill={DIM} style={MONO}>
+      <text x={x0} y={TOP - 26} fontSize={8} fill={DIM} style={MONO}>
         ARRIVED · BY WALL CLOCK
       </text>
       <line x1={x0} x2={x1} y1={TOP} y2={TOP} stroke={MID} strokeWidth={HAIR} />
@@ -205,7 +200,7 @@ const ingestion = (() => {
           <text
             x={x0 + (x1 - x0) * t}
             y={TOP - 8}
-            fontSize={6.5}
+            fontSize={7.5}
             fill={order[i] === 0 || order[i] === 3 ? LINE : DIM}
             textAnchor="middle"
             style={MONO}
@@ -230,7 +225,7 @@ const ingestion = (() => {
           />
         )
       })}
-      <text x={x0} y={BOT + 42} fontSize={7} fill={DIM} style={MONO}>
+      <text x={x0} y={BOT + 42} fontSize={8} fill={DIM} style={MONO}>
         LEDGER · BY EVENT TIME
       </text>
       {Array.from({ length: 6 }, (_, k) => (
@@ -247,7 +242,7 @@ const ingestion = (() => {
           <text
             x={slot(k)}
             y={BOT - 1}
-            fontSize={6.5}
+            fontSize={7.5}
             fill={k === 0 || k === 3 ? LINE : DIM}
             textAnchor="middle"
             style={MONO}
@@ -284,7 +279,7 @@ const ingestion = (() => {
 // ---------------------------------------------------------------- 02 Events · Replay
 
 const replay = (() => {
-  const { line } = term(70, 150, 7, 11.6)
+  const { line } = term(70, 150, 8, 11.6)
   const rows: TermTok[][] = [
     [
       { t: '$ ' },
@@ -397,7 +392,7 @@ const tiers = (() => {
             <text
               x={x0 + ((x1 - x0) * (a + b)) / 2}
               y={yy - 6}
-              fontSize={6.5}
+              fontSize={7.5}
               fill={DIM}
               textAnchor="middle"
               style={MONO}
@@ -413,7 +408,7 @@ const tiers = (() => {
           key={i}
           x={x0 + (x1 - x0) * t}
           y={y0 + h + 14}
-          fontSize={6}
+          fontSize={7}
           fill={DIM}
           textAnchor="middle"
           style={MONO}
@@ -424,7 +419,7 @@ const tiers = (() => {
       <text
         x={x1}
         y={y0 + h + 28}
-        fontSize={6.5}
+        fontSize={7.5}
         fill={DIM}
         textAnchor="end"
         style={MONO}
@@ -434,7 +429,7 @@ const tiers = (() => {
       <text
         x={x0 - 6}
         y={y0 + 4}
-        fontSize={6.5}
+        fontSize={7.5}
         fill={DIM}
         textAnchor="end"
         style={MONO}
@@ -483,7 +478,7 @@ const reconciliation = (() => {
           <text
             x={x0 - 8}
             y={Number(y) + 2.5}
-            fontSize={6.5}
+            fontSize={7.5}
             fill={DIM}
             textAnchor="end"
             style={MONO}
@@ -572,7 +567,7 @@ const grants = (() => {
           <text
             x={x0 + (x1 - x0) * t}
             y={y + 14}
-            fontSize={6}
+            fontSize={7}
             fill={DIM}
             textAnchor="middle"
             style={MONO}
@@ -609,7 +604,7 @@ const grants = (() => {
           <text
             x={x0 + (x1 - x0) * Number(a) + 6}
             y={Number(yy) - 5}
-            fontSize={6}
+            fontSize={7}
             fill={DIM}
             style={MONO}
           >
@@ -624,7 +619,7 @@ const grants = (() => {
       <text
         x={x0 + (x1 - x0) * 0.6}
         y={y - 106}
-        fontSize={6}
+        fontSize={7}
         fill={DIM}
         textAnchor="middle"
         style={MONO}
@@ -660,7 +655,7 @@ const grants = (() => {
 // ---------------------------------------------------------------- 04 Credits · Crossing zero
 
 const zero = (() => {
-  const { line } = term(70, 150, 7, 11.6)
+  const { line } = term(70, 150, 8, 11.6)
   const rows: TermTok[][] = [
     [D('   TIME        EVENT                   Δ        BALANCE')],
     [{ t: '   10-12 09:41 tokens.out  314 × 1   -314      1,250' }],
@@ -856,7 +851,7 @@ const proration = (() => {
           <text
             x={x0 + (x1 - x0) * t}
             y={y + 18}
-            fontSize={6}
+            fontSize={7}
             fill={DIM}
             textAnchor="middle"
             style={MONO}
@@ -894,7 +889,7 @@ const proration = (() => {
       <text
         x={x0 + ((x1 - x0) * sw) / 2}
         y={y - 26}
-        fontSize={6.5}
+        fontSize={7.5}
         fill={DIM}
         textAnchor="middle"
         style={MONO}
@@ -904,7 +899,7 @@ const proration = (() => {
       <text
         x={x0 + (x1 - x0) * sw + ((x1 - x0) * (1 - sw)) / 2}
         y={y - 41}
-        fontSize={6.5}
+        fontSize={7.5}
         fill={LINE}
         textAnchor="middle"
         style={MONO}
@@ -975,7 +970,7 @@ const benefits = (() => {
       <text
         x={x0 + 40}
         y={y0 + 10}
-        fontSize={6}
+        fontSize={7}
         fill={DIM}
         textAnchor="middle"
         style={MONO}
@@ -985,7 +980,7 @@ const benefits = (() => {
       <text
         x={x0 + 40}
         y={y0 + 19}
-        fontSize={6.5}
+        fontSize={7.5}
         fill={LINE}
         textAnchor="middle"
         style={MONO}
@@ -1033,7 +1028,7 @@ const benefits = (() => {
             <text
               x={x}
               y={y0 + 77}
-              fontSize={6.5}
+              fontSize={7.5}
               fill={on ? LINE : DIM}
               textAnchor="middle"
               style={MONO}
@@ -1043,7 +1038,7 @@ const benefits = (() => {
             <text
               x={x}
               y={y0 + 98}
-              fontSize={5.5}
+              fontSize={6.5}
               fill={DIM}
               textAnchor="middle"
               style={MONO}
@@ -1089,7 +1084,7 @@ const benefits = (() => {
 // ---------------------------------------------------------------- 07 Agents · Keys and sessions
 
 const keys = (() => {
-  const { line } = term(70, 150, 7, 11.6)
+  const { line } = term(70, 150, 8, 11.6)
   const rows: TermTok[][] = [
     [
       { t: '$ ' },
@@ -1150,7 +1145,7 @@ const keys = (() => {
 // ---------------------------------------------------------------- 07 Agents · Just ask
 
 const ask = (() => {
-  const { line } = term(70, 150, 7, 11.6)
+  const { line } = term(70, 150, 8, 11.6)
   const rows: TermTok[][] = [
     [D('you')],
     [{ t: 'Which customers ran out of credits this week?' }],
@@ -1209,7 +1204,7 @@ const ask = (() => {
 // ---------------------------------------------------------------- Appendix · The event catalogue
 
 const catalogue = (() => {
-  const { line } = term(70, 146, 6.5, 10.4)
+  const { line } = term(70, 146, 7.5, 10.4)
   const groups: [string, string[]][] = [
     ['CHECKOUT', ['checkout.created', 'checkout.updated', 'order.paid']],
     [
@@ -1292,7 +1287,7 @@ const catalogue = (() => {
 // ---------------------------------------------------------------- Appendix · The API, one call
 
 const api = (() => {
-  const { line } = term(70, 150, 7, 11.6)
+  const { line } = term(70, 150, 8, 11.6)
   const rows: TermTok[][] = [
     [{ t: 'GET ' }, { t: '/v1/customers/acme/state' }],
     [],
@@ -1381,7 +1376,7 @@ const glossary = (() => {
         const x = 60 + col * 300
         return (
           <g key={t}>
-            <text x={x} y={y} fontSize={9} fill={LINE} style={TITLE}>
+            <text x={x} y={y} fontSize={10.5} fill={LINE} style={TITLE}>
               {t}
             </text>
             {(() => {
@@ -1401,7 +1396,7 @@ const glossary = (() => {
                   key={k}
                   x={x}
                   y={y + 12 + k * 10}
-                  fontSize={7.5}
+                  fontSize={8.5}
                   fill={DIM}
                   style={TEXT}
                 >
@@ -1437,7 +1432,6 @@ const glossary = (() => {
           <Figure x={40} y={156} w={880} h={300} dy={26} n="A03">
             {fig}
           </Figure>
-          <PageFoot w={960} h={540} pad={40} page="68" />
         </>,
       ),
   )

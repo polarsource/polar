@@ -1,216 +1,164 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
+import LogoIcon from '@/components/Brand/logos/LogoIcon'
 import Link from 'next/link'
-import { pieces, type Piece } from './pages'
+import { Chapter } from './Chapter'
+import { CHAPTERS } from './content'
+import { KeyRow } from './Keys'
+import { Ruler } from './Ruler'
+import { Ticker } from './Ticker'
+import { pieces } from './pages'
+import { emit, reset, setTraffic, TRAFFIC_CHOICES, useSim } from './simulation'
+import { READER_CSS } from './styles'
+
+const ids = pieces.map((p) => p.id)
+const byId = new Map(pieces.map((p) => [p.id, p]))
 
 /**
- * The field guide as a reader: its pages in a row, read by scrolling sideways. The wheel and the arrow keys move
- * through it, each page snaps into place, and a click opens the page large. `?page=m-meter` starts on a page.
+ * The field guide as one long page, read down. A rule on the left marks every chapter and page and lights the one
+ * in view; the keys in the foot turn pages, jump to chapters and drive the events the figures
+ * run on. `?page=m-meter` starts on a page.
  */
 export default function FieldGuideReader() {
-  const railRef = useRef<HTMLDivElement>(null)
-  const [current, setCurrent] = useState(0)
-  const [open, setOpen] = useState<string | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [current, setCurrent] = useState(ids[0])
+  const [keys, setKeys] = useState(true)
+  const traffic = useSim((s) => s.traffic)
 
-  // Which page is nearest the middle of the rail.
+  const plate = useCallback(
+    (id: string) =>
+      scrollRef.current?.querySelector<HTMLElement>(`[data-plate="${id}"]`),
+    [],
+  )
+  const goPage = useCallback(
+    (id: string, smooth = true) =>
+      plate(id)?.scrollIntoView({
+        block: 'center',
+        behavior: smooth ? 'smooth' : 'auto',
+      }),
+    [plate],
+  )
+  const goChapter = useCallback((i: number) => {
+    scrollRef.current
+      ?.querySelector(`[data-chapter="${CHAPTERS[i].n}"]`)
+      ?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  }, [])
+
+  // Which plate is nearest the middle of the window.
   const measure = useCallback(() => {
-    const rail = railRef.current
-    if (!rail) return
-    const mid = rail.scrollLeft + rail.clientWidth / 2
-    let best = 0,
+    const root = scrollRef.current
+    if (!root) return
+    const mid = root.getBoundingClientRect().top + root.clientHeight / 2
+    let best = current,
       dist = Infinity
-    Array.from(rail.children).forEach((el, i) => {
-      const c =
-        (el as HTMLElement).offsetLeft + (el as HTMLElement).offsetWidth / 2
-      const d = Math.abs(c - mid)
+    root.querySelectorAll<HTMLElement>('[data-plate]').forEach((el) => {
+      const r = el.getBoundingClientRect()
+      const d = Math.abs(r.top + r.height / 2 - mid)
       if (d < dist) {
         dist = d
-        best = i
+        best = el.dataset.plate!
       }
     })
-    setCurrent(best)
-  }, [])
+    if (best !== current) setCurrent(best)
+  }, [current])
 
-  const goTo = useCallback((i: number, smooth = true) => {
-    const rail = railRef.current
-    if (!rail) return
-    const el = rail.children[Math.max(0, Math.min(pieces.length - 1, i))] as
-      | HTMLElement
-      | undefined
-    if (!el) return
-    rail.scrollTo({
-      left: el.offsetLeft - (rail.clientWidth - el.offsetWidth) / 2,
-      behavior: smooth ? 'smooth' : 'auto',
-    })
-  }, [])
-
-  useEffect(() => {
+  // The book shows once every page is cut to its height and the page the address names is in place, so nothing
+  // moves after the first paint. The address is read once; it then follows the reader.
+  const [ready, setReady] = useState(false)
+  const started = useRef(false)
+  useLayoutEffect(() => {
+    if (started.current) return
+    started.current = true
     const id = new URLSearchParams(window.location.search).get('page')
-    const i = pieces.findIndex((p) => p.id === id)
-    if (i >= 0) goTo(i, false)
-    else goTo(0, false)
-  }, [goTo])
-
-  // The wheel scrolls sideways; the keys turn pages.
+    if (id && byId.has(id)) goPage(id, false)
+    setReady(true)
+  }, [goPage])
   useEffect(() => {
-    const rail = railRef.current!
-    const onWheel = (e: WheelEvent) => {
-      if (open) return
-      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-        e.preventDefault()
-        rail.scrollLeft += e.deltaY
-      }
+    const url = new URL(window.location.href)
+    if (current === ids[0]) url.searchParams.delete('page')
+    else url.searchParams.set('page', current)
+    window.history.replaceState(null, '', url)
+  }, [current])
+
+  useEffect(() => {
+    const root = scrollRef.current!
+    let raf = 0
+    const onScroll = () => {
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(measure)
+    }
+    root.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      root.removeEventListener('scroll', onScroll)
+      cancelAnimationFrame(raf)
+    }
+  }, [measure])
+
+  useEffect(() => {
+    const turn = (d: number) => {
+      const i = ids.indexOf(current)
+      goPage(ids[(i + d + ids.length) % ids.length])
     }
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(null)
-      else if (e.key === 'ArrowRight') {
-        if (open) setOpen(pieces[(current + 1) % pieces.length].id)
-        else goTo(current + 1)
-      } else if (e.key === 'ArrowLeft') {
-        if (open)
-          setOpen(pieces[(current - 1 + pieces.length) % pieces.length].id)
-        else goTo(current - 1)
-      } else if (e.key === 'Enter' && !open) setOpen(pieces[current].id)
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      if ((e.target as HTMLElement | null)?.closest('input, textarea')) return
+      const k = e.key
+      if (k === 'ArrowRight') turn(1)
+      else if (k === 'ArrowLeft') turn(-1)
+      else if (/^[0-8]$/.test(k)) goChapter(Number(k))
+      else if (k === 'e' || k === 'E') emit()
+      else if (k === 'r' || k === 'R') reset()
+      else if (k === 'h' || k === 'H') setKeys((v) => !v)
+      else if (k === 't' || k === 'T')
+        setTraffic(
+          TRAFFIC_CHOICES[
+            (TRAFFIC_CHOICES.indexOf(traffic) + 1) % TRAFFIC_CHOICES.length
+          ],
+        )
+      else return
+      e.preventDefault()
     }
-    rail.addEventListener('wheel', onWheel, { passive: false })
-    rail.addEventListener('scroll', measure, { passive: true })
     window.addEventListener('keydown', onKey)
-    return () => {
-      rail.removeEventListener('wheel', onWheel)
-      rail.removeEventListener('scroll', measure)
-      window.removeEventListener('keydown', onKey)
-    }
-  }, [open, current, goTo, measure])
-
-  // The lightbox follows the rail, and the rail follows the lightbox.
-  useEffect(() => {
-    if (!open) return
-    const i = pieces.findIndex((p) => p.id === open)
-    if (i >= 0 && i !== current) goTo(i, false)
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [open, current, goTo])
-
-  const page = pieces[current]
-  const lit = open ? pieces.find((p) => p.id === open) : null
-  const no = useMemo(() => (i: number) => String(i).padStart(2, '0'), [])
+    return () => window.removeEventListener('keydown', onKey)
+  }, [current, goPage, goChapter, traffic])
 
   return (
-    <main className="flex h-dvh flex-col overflow-hidden bg-[#141414]">
-      <header className="flex h-14 shrink-0 items-center justify-between px-6">
-        <Link
-          href="/"
-          className="text-[#7b7b7b] transition-colors hover:text-[#d8d8d8]"
-        >
-          Polar
+    <main className="flex h-dvh flex-col overflow-hidden bg-[#141414] font-mono text-[13px] text-[#d8d8d8]">
+      <style>{READER_CSS}</style>
+      <header className="grid h-12 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-6 px-7">
+        <Link href="/" aria-label="Polar" className="flex text-white">
+          <LogoIcon size={24} />
         </Link>
-        <nav className="flex gap-6 text-sm text-[#7b7b7b]">
-          <span className="text-[#d8d8d8]">Field Guide</span>
-        </nav>
+        <span className="hidden text-center text-[#7b7b7b] md:block">
+          Billing for the Intelligence Era · The Manual
+        </span>
+        <div className="flex justify-end">
+          <Ticker />
+        </div>
       </header>
-
-      <div
-        ref={railRef}
-        className="flex min-h-0 flex-1 snap-x snap-mandatory [scrollbar-width:none] items-center gap-12 overflow-x-auto overflow-y-hidden px-[50vw] py-2 [&::-webkit-scrollbar]:hidden"
-      >
-        {pieces.map((p, i) => (
-          <Page
-            key={p.id}
-            piece={p}
-            active={i === current}
-            onOpen={() => (i === current ? setOpen(p.id) : goTo(i))}
-          />
-        ))}
-      </div>
-
-      <footer className="grid h-14 shrink-0 grid-cols-[1fr_auto_1fr] items-center px-6 text-sm">
-        <div className="flex items-baseline gap-3">
-          <span className="font-mono text-xs text-[#7b7b7b]">
-            {current === 0 ? 'COVER' : no(current)}
-          </span>
-          <span>{page.title}</span>
-        </div>
-        <span className="hidden font-mono text-xs text-[#7b7b7b] md:block">
-          scroll or ← → to turn the page · enter to open
-        </span>
-        <span className="text-right font-mono text-xs text-[#7b7b7b]">
-          {no(current)} / {no(pieces.length - 1)}
-        </span>
-      </footer>
-
-      {lit ? (
+      <div className="flex min-h-0 flex-1">
+        <aside className="hidden w-16 shrink-0 items-center pl-7 md:flex">
+          <Ruler current={current} onChapter={goChapter} onPage={goPage} />
+        </aside>
         <div
-          className="fixed inset-0 z-50 flex flex-col bg-[#090909]/95 backdrop-blur-sm"
-          onClick={() => setOpen(null)}
+          ref={scrollRef}
+          className={`min-h-0 flex-1 [scrollbar-width:thin] overflow-y-auto px-7 md:pr-[88px] md:pl-6 ${ready ? '' : 'invisible'}`}
         >
-          <div className="grid h-16 shrink-0 grid-cols-[1fr_auto_1fr] items-center px-6 text-sm">
-            <span className="font-mono text-xs text-[#7b7b7b]">
-              {no(current)} / {no(pieces.length - 1)}
-            </span>
-            <span className="font-mono text-xs text-[#7b7b7b]">
-              esc to close · ← → to turn the page
-            </span>
-            <button
-              type="button"
-              className="text-right text-[#7b7b7b] transition-colors hover:text-[#d8d8d8]"
-              onClick={() => setOpen(null)}
-            >
-              Close
-            </button>
-          </div>
-          <div
-            className="flex min-h-0 flex-1 items-center justify-center px-6 md:px-20"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              className="shadow-[0_0_0_1px_#1c1c1c]"
-              style={{
-                width: '100%',
-                maxWidth: `calc((100dvh - 200px) * ${lit.w / lit.h})`,
-                aspectRatio: `${lit.w} / ${lit.h}`,
-              }}
-            >
-              {lit.render()}
-            </div>
-          </div>
-          <div
-            className="flex h-24 shrink-0 items-start justify-center px-6 text-sm"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <p className="max-w-xl text-center">
-              <span>{lit.title}</span>
-              <span className="mt-1 block text-[#7b7b7b]">{lit.note}</span>
-            </p>
+          <div className="mx-auto w-full max-w-7xl">
+            {CHAPTERS.map((c) => (
+              <Chapter key={c.n} chapter={c} />
+            ))}
           </div>
         </div>
-      ) : null}
-    </main>
-  )
-}
-
-function Page({
-  piece,
-  onOpen,
-}: {
-  piece: Piece
-  active?: boolean
-  onOpen: () => void
-}) {
-  return (
-    <figure
-      className="m-0 shrink-0 cursor-pointer snap-center"
-      style={{
-        height: 'min(80dvh, 900px)',
-        aspectRatio: `${piece.w} / ${piece.h}`,
-      }}
-      onClick={onOpen}
-    >
-      <div className="h-full w-full shadow-[0_0_0_1px_#222] [&>svg]:h-full [&>svg]:w-full">
-        {piece.render()}
       </div>
-    </figure>
+      {keys ? <KeyRow /> : null}
+    </main>
   )
 }

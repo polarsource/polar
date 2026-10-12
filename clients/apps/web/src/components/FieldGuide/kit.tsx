@@ -216,7 +216,7 @@ export function Callout({
       <text
         x={to[0] + (side === 'right' ? 5 : -5)}
         y={to[1] + 2.5}
-        fontSize={7.5}
+        fontSize={8.5}
         fill={color}
         textAnchor={side === 'right' ? 'start' : 'end'}
         style={MONO}
@@ -278,7 +278,7 @@ export function Dimension({
       <text
         x={mx}
         y={my + 2}
-        fontSize={7}
+        fontSize={8}
         fill={DIM}
         stroke="none"
         textAnchor={horizontal ? 'middle' : nx * side < 0 ? 'end' : 'start'}
@@ -328,7 +328,7 @@ export function Figure({
         <path d={`M${x + w} ${y + h - c}V${y + h}H${x + w - c}`} />
         <path d={`M${x + c} ${y + h}H${x}V${y + h - c}`} />
       </g>
-      <text x={x + 10} y={y + h - 10} fontSize={7} fill={DIM} style={LIGHT}>
+      <text x={x + 10} y={y + h - 10} fontSize={8} fill={DIM} style={LIGHT}>
         FIG. {n}
       </text>
       <g transform={dy ? `translate(0 ${dy})` : undefined}>{children}</g>
@@ -357,7 +357,7 @@ export function PageHead({
   w = 400,
   pad = 28,
   crumb,
-  meta = 'A FIELD GUIDE',
+  meta = 'THE MANUAL',
   title,
   sub,
   ink = NIGHT_INK,
@@ -370,18 +370,18 @@ export function PageHead({
   sub?: string
   ink?: Ink
 }) {
-  const lines = sub ? wrap(sub, 12, w - pad * 2) : []
+  const lines = sub ? wrap(sub, 14, w - pad * 2) : []
   return (
     <g>
       {crumb ? (
         <>
-          <text x={pad} y={pad + 16} fontSize={7.5} fill={ink.dim} style={MONO}>
+          <text x={pad} y={pad + 16} fontSize={8.5} fill={ink.dim} style={MONO}>
             {crumb}
           </text>
           <text
             x={w - pad}
             y={pad + 16}
-            fontSize={7.5}
+            fontSize={8.5}
             fill={ink.dim}
             textAnchor="end"
             style={MONO}
@@ -399,15 +399,15 @@ export function PageHead({
           />
         </>
       ) : null}
-      <text x={pad} y={pad + 66} fontSize={20} fill={ink.ink} style={TITLE}>
+      <text x={pad} y={pad + 66} fontSize={24} fill={ink.ink} style={TITLE}>
         {title}
       </text>
       {lines.map((l, i) => (
         <text
           key={i}
           x={pad}
-          y={pad + 85 + i * 15}
-          fontSize={12}
+          y={pad + 87 + i * 17}
+          fontSize={14}
           fill={ink.dim}
           style={TEXT}
         >
@@ -441,7 +441,7 @@ export function Body({
   y,
   width = 344,
   text,
-  size = 9,
+  size = 10.5,
   ink = NIGHT_INK,
   lh = 1.5,
 }: {
@@ -478,7 +478,7 @@ export function Sections({
   x,
   y,
   width = 220,
-  size = 10,
+  size = 11.5,
   lh = 1.5,
   items,
   ink = NIGHT_INK,
@@ -499,7 +499,7 @@ export function Sections({
         key={`h${i}`}
         x={x}
         y={yy}
-        fontSize={7.5}
+        fontSize={8.5}
         fill={ink.dim}
         style={MONO}
       >
@@ -546,7 +546,7 @@ export function PageFoot({
   ink?: Ink
 }) {
   return (
-    <Label x={w - pad} y={h - pad - 8} ink={ink} size={7.5} anchor="end">
+    <Label x={w - pad} y={h - pad - 8} ink={ink} size={8.5} anchor="end">
       {page}
     </Label>
   )
@@ -617,7 +617,7 @@ export interface TermTok {
  * A transcript set as typography: mono text on a character grid, `>>` markers in the gutter, thin bars beside
  * blocks, boxed sections, and inverted lines (Night on Snow) for what changed. `X`, `Y0` place the grid's origin.
  */
-export function term(X: number, Y0: number, FS = 6.5, LH = 11.5) {
+export function term(X: number, Y0: number, FS = 7.5, LH = 11.5) {
   // Geist Mono's advance is 0.6 em; its cap height sits at 0.71 em, so the middle of a capital is 0.355 em above the baseline.
   const CW = FS * 0.6
   const PAD = 2.5

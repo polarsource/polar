@@ -1,22 +1,20 @@
 import { MONO } from '../sheet'
-import { LINE, DIM, MID, RULE, HAIR, DOTTED } from '../kit'
+import { LINE, DIM, MID, RULE, HAIR } from '../kit'
 import { num, useSim } from '../simulation'
 
-/** The ledger page, running: the last rows of the real ledger, the head in ink, the next lines still empty. */
+/** The ledger page, running: the last rows of the real ledger, the head in ink at the bottom. */
 export function LiveLedger({
   x,
   w,
   top,
   rh,
   past,
-  future,
 }: {
   x: number
   w: number
   top: number
   rh: number
   past: number
-  future: number
 }) {
   const sim = useSim((s) => s)
   const rows = sim.events.slice(-(past + 1))
@@ -52,7 +50,7 @@ export function LiveLedger({
               {e.name}
             </text>
             <text
-              x={x + 58}
+              x={x + 74}
               y={y + 3}
               fontSize={7.5}
               fill={head ? LINE : MID}
@@ -81,18 +79,6 @@ export function LiveLedger({
           </g>
         )
       })}
-      {Array.from({ length: future }, (_, i) => (
-        <line
-          key={i}
-          x1={x}
-          x2={x + w}
-          y1={rowY(past + 1 + i) + 8}
-          y2={rowY(past + 1 + i) + 8}
-          stroke={RULE}
-          strokeWidth={HAIR}
-          {...DOTTED}
-        />
-      ))}
     </g>
   )
 }

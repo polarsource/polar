@@ -3,15 +3,13 @@
 import { useEffect } from 'react'
 import { emit, num, seed, useSim } from './simulation'
 
-const PACE = { off: null, slow: [900, 1500], fast: [140, 260] } as const
+/** Milliseconds between events: a floor, and the spread above it. */
+const PACE = [260, 420]
 
-/** Keeps events arriving at the chosen pace while the tab is in view. */
+/** Keeps events arriving while the tab is in view. */
 function useTrafficDriver() {
-  const traffic = useSim((s) => s.traffic)
   useEffect(() => {
     seed()
-    const pace = PACE[traffic]
-    if (!pace) return
     let timer = 0
     const next = () => {
       timer = window.setTimeout(
@@ -19,12 +17,12 @@ function useTrafficDriver() {
           if (!document.hidden) emit()
           next()
         },
-        pace[0] + Math.random() * pace[1],
+        PACE[0] + Math.random() * PACE[1],
       )
     }
     next()
     return () => window.clearTimeout(timer)
-  }, [traffic])
+  }, [])
 }
 
 /** The stream under the manual: the latest event, and a way to emit one by hand. */

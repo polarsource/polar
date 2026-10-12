@@ -2,7 +2,7 @@ import { MONO } from '../sheet'
 import { LINE, DIM, MID, BG, HAIR, DOTTED } from '../kit'
 import { useSim, type SimEvent } from '../simulation'
 
-const properties = (e: SimEvent) => {
+const metadata = (e: SimEvent) => {
   switch (e.name) {
     case 'tokens.in':
     case 'tokens.out':
@@ -44,9 +44,7 @@ export function LiveEventFields({
     },
     { cells: [{ span: 32, name: 'NAME', value: e.name }] },
     {
-      cells: [
-        { span: 32, name: 'PROPERTIES', value: properties(e), open: true },
-      ],
+      cells: [{ span: 32, name: 'METADATA', value: metadata(e), open: true }],
     },
   ]
   return (

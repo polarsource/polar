@@ -14,7 +14,7 @@ export function Chapter({ chapter }: { chapter: ChapterContent }) {
   const plate = (id: string, i: number) => {
     const p = byId.get(id)
     if (!p) return null
-    return <Plate key={id} piece={p} pace={home && i === 0 ? 2.4 : 1} />
+    return <Plate key={id} piece={p} pace={home && i === 0 ? 2.4 : 1.3} />
   }
   return (
     <section
@@ -23,15 +23,17 @@ export function Chapter({ chapter }: { chapter: ChapterContent }) {
     >
       {home ? plate(chapter.ids[0], 0) : null}
       {home ? null : (
-        <div className="flex max-w-[520px] flex-col gap-5">
-          <h1 className="m-0 text-[22px] leading-[1.3] font-medium">
+        <div className="flex max-w-[600px] flex-col gap-5">
+          <h1 className="m-0 text-[35px] leading-[1.15] font-medium tracking-[-0.01em] text-[#d8d8d8]">
             {chapter.n} {chapter.title}
           </h1>
           {chapter.intro ? (
-            <p className="m-0 text-[13px] leading-[1.5]">{chapter.intro}</p>
+            <p className="m-0 text-[20px] leading-[1.35] font-[450] text-[#7b7b7b]">
+              {chapter.intro}
+            </p>
           ) : null}
           {chapter.tip ? (
-            <p className="m-0 text-[13px] leading-[1.5] text-[#7b7b7b]">
+            <p className="m-0 text-[17px] leading-[1.45] font-[450] text-[#7b7b7b]">
               Tip: {chapter.tip[0]} <Key>{chapter.tip[1]}</Key> {chapter.tip[2]}
             </p>
           ) : null}

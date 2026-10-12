@@ -31,17 +31,19 @@ export function Plate({
     const el = ref.current
     if (!el) return
     let cancel: (() => void) | undefined
+    // A page draws once at least this much of it is in view.
+    const seen = 0.4
     const io = new IntersectionObserver(
       ([entry]) => {
         const svg = el.querySelector('svg')
-        if (entry.intersectionRatio < 0.2 || !svg) return
+        if (entry.intersectionRatio < seen || !svg) return
         io.disconnect()
         // Shown and drawn in the same task, so the first paint is the first stroke, not the finished page.
         // Hidden by opacity, not visibility: the grain's filter paints through visibility: hidden.
         cancel = construct(svg, pace)
         el.style.opacity = '1'
       },
-      { threshold: 0.2 },
+      { threshold: seen },
     )
     io.observe(el)
     return () => {

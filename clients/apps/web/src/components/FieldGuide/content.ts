@@ -2,7 +2,7 @@
  * The manual as chapters: a number, a name for the row at the top, a title, a paragraph, a tip, the control the
  * chapter puts on the page, and the plates it shows. Read in order, or jumped to by number.
  */
-export type Control = 'traffic' | 'rate' | 'grant'
+export type Control = 'rate' | 'grant'
 
 export interface Chapter {
   n: string
@@ -41,8 +41,6 @@ export const CHAPTERS: Chapter[] = [
     title: 'Events',
     intro:
       'An event is a fact: at this time, this customer, through this actor, did this thing, this much. The ledger only grows, and everything else is derived from it.',
-    tip: ['Press', 'T', 'to change how fast events arrive.'],
-    control: 'traffic',
     ids: ['m-event', 'm-ledger', 'm-ingest', 'm-replay'],
   },
   {

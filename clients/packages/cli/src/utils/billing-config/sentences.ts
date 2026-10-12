@@ -10,6 +10,7 @@ import {
   unitScale,
 } from '@/utils/billing-config/describe'
 import * as ui from '@/utils/ui'
+import { redactUrl } from '@/utils/url'
 
 const fields = (pairs: ReadonlyArray<readonly [string, string]>) => {
   const width = Math.max(...pairs.map(([label]) => label.length))
@@ -129,12 +130,20 @@ export const benefitSentence = (input: unknown) => {
   ])
 }
 
+// Slack and Discord carry their credential in the path, so only the host is shown.
+export const webhookUrl = (url: unknown, format: unknown) => {
+  const shown = redactUrl(name(url))
+  if (format === 'raw') return shown
+  const parsed = URL.parse(shown)
+  return parsed ? `${parsed.origin}/***` : shown
+}
+
 export const webhookSentence = (input: unknown) => {
   const webhook = record(input)
   if (webhook === undefined) return undefined
   const events = Array.isArray(webhook['events']) ? webhook['events'] : []
   return fields([
-    ['url', name(webhook['url'])],
+    ['url', webhookUrl(webhook['url'], webhook['format'])],
     ...(webhook['format'] !== 'raw'
       ? [['format', name(webhook['format'])] as const]
       : []),

@@ -73,7 +73,7 @@ const createSubscription = (
       : null,
   }) as unknown as schemas['CustomerSubscription']
 
-const mockChargePreview = (baseAmount: number) => {
+const mockChargePreview = (baseAmount: number, appliedBalanceAmount = 0) => {
   const preview: schemas['SubscriptionChargePreview'] = {
     base_amount: baseAmount,
     metered_amount: 0,
@@ -84,8 +84,8 @@ const mockChargePreview = (baseAmount: number) => {
     net_amount: baseAmount,
     tax_amount: 0,
     total_amount: baseAmount,
-    applied_balance_amount: 0,
-    due_amount: baseAmount,
+    applied_balance_amount: appliedBalanceAmount,
+    due_amount: baseAmount + appliedBalanceAmount,
   }
 
   vi.mocked(useCustomerSubscriptionChargePreview).mockReturnValue({
@@ -132,6 +132,36 @@ describe('CurrentPeriodOverview', () => {
       formatCurrency('compact')(2499, 'usd'),
     )
     expect(container.textContent).not.toContain('Pay what you want')
+  })
+
+  it('subtracts available customer credit from the amount due', () => {
+    mockChargePreview(1000, -500)
+    const subscription = createSubscription(createFixedPrice(1000), null, 1000)
+    const { container } = render(
+      <CurrentPeriodOverview
+        subscription={subscription}
+        products={[createProduct('product-1', createFixedPrice(1000))]}
+        api={{} as Client}
+      />,
+    )
+
+    const text = container.textContent ?? ''
+    expect(text).toMatch(/Applied balance\s*-\$5/)
+    expect(text).toMatch(/To be paid\s*\$5(?!\d)/)
+  })
+
+  it('hides the balance rows when no credit applies', () => {
+    const subscription = createSubscription(createFixedPrice(5000), null, 5000)
+    const { container } = render(
+      <CurrentPeriodOverview
+        subscription={subscription}
+        products={[createProduct('product-1', createFixedPrice(5000))]}
+        api={{} as Client}
+      />,
+    )
+
+    expect(container.textContent).not.toContain('Applied balance')
+    expect(container.textContent).not.toContain('To be paid')
   })
 
   it('shows the locked total for the current seat-based product', () => {

@@ -8,7 +8,7 @@ const repository = {
   directory: 'clients/packages/cli',
 }
 
-export interface Target {
+interface Target {
   readonly bun: string
   readonly os: 'darwin' | 'linux' | 'win32'
   readonly arch: 'arm64' | 'x64'
@@ -32,7 +32,7 @@ export const findTarget = (bunTarget: string | undefined): Target => {
   return target
 }
 
-export const platformName = (target: Target) =>
+const platformName = (target: Target) =>
   `${target.os === 'win32' ? 'windows' : target.os}-${target.arch}`
 
 export const platformPackageName = (target: Target) =>

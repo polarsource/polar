@@ -47,7 +47,7 @@ const keyed = (items: ReadonlyArray<unknown>) => {
   return { entries, repeated }
 }
 
-export interface Difference {
+interface Difference {
   readonly section: string
   readonly id: string
 }

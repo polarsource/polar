@@ -60,7 +60,7 @@ export const apiUrl = (environment: PolarEnvironment, path: string) =>
 export const withOrganization = (organizationId: string) =>
   HttpClientRequest.setHeader('Polar-Organization', organizationId)
 
-export interface ApiFailure {
+interface ApiFailure {
   message: string
   hint?: string
 }

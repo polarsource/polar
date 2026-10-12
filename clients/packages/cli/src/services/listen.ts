@@ -84,7 +84,7 @@ const describeForwardFailure = (error: unknown) => {
   )
 }
 
-export interface StartListeningOptions {
+interface StartListeningOptions {
   organization: ActiveOrganization
   forwardUrl: string
   onEvent: (event: ListenEvent) => Effect.Effect<void>

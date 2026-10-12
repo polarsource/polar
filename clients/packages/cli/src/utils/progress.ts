@@ -3,14 +3,14 @@ import yoctoSpinner from 'yocto-spinner'
 import { isJson } from '@/utils/output'
 import * as ui from '@/utils/ui'
 
-export interface Progress {
+interface Progress {
   readonly start: (text: string) => Effect.Effect<void>
   readonly finish: (detail?: string) => Effect.Effect<void>
 }
 
 const FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 
-export const formatDuration = (duration: Duration.Duration) =>
+const formatDuration = (duration: Duration.Duration) =>
   `${Math.round(Duration.toMillis(duration) / 1000)}s`
 
 const line = (mark: string, text: string, detail?: string) =>

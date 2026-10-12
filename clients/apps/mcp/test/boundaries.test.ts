@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { Effect } from 'effect'
+import { FetchHttpClient } from 'effect/http'
+import { Docs } from '../src/docs'
 import { PolarApiOutbound, type PolarApiOutboundProps } from '../src/outbound'
 import { makeToolRunner } from '../src/results'
 import { request, rpc } from './client'
@@ -164,4 +166,48 @@ test('cancelling an MCP tool interrupts its effect and runs finalizers', async (
   controller.abort()
   await expect(pending).rejects.toThrow()
   expect(finalized).toBe(true)
+})
+
+test('docs search falls back to the hosted docs MCP server without a search key', async () => {
+  fetchMock.mockResolvedValueOnce(
+    new Response(
+      `event: message\ndata: ${JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        result: {
+          content: [
+            { type: 'text', text: 'Title: Checkout Links' },
+            { type: 'text', text: 'Title: Checkout API' },
+          ],
+        },
+      })}\n\n`,
+      { headers: { 'Content-Type': 'text/event-stream' } },
+    ),
+  )
+  const text = await Effect.runPromise(
+    Effect.gen(function* () {
+      const docs = yield* Docs
+      return yield* docs.search('checkout')
+    }).pipe(
+      Effect.provide(Docs.layer(undefined)),
+      Effect.provide(FetchHttpClient.layer),
+    ),
+  )
+  expect(text).toBe('Title: Checkout Links\n\n---\n\nTitle: Checkout API')
+  const [input, init] = fetchMock.mock.calls[0]
+  expect(input instanceof Request ? input.url : String(input)).toBe(
+    'https://polar.sh/docs/mcp',
+  )
+  expect(new Headers(init?.headers).get('Accept')).toBe(
+    'application/json, text/event-stream',
+  )
+  expect(new Headers(init?.headers).has('Authorization')).toBe(false)
+  expect(
+    JSON.parse(new TextDecoder().decode(init?.body as Uint8Array)),
+  ).toEqual({
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'tools/call',
+    params: { name: 'search_polar', arguments: { query: 'checkout' } },
+  })
 })

@@ -47,6 +47,10 @@ export const refreshMiddleware: Middleware = {
     // openapi-fetch rejects anything that is not an instance of the global
     // Response, and expo/fetch returns its own implementation.
     if (retried instanceof Response) return retried
-    return new Response(await retried.arrayBuffer(), retried)
+    const body =
+      retried.status === 204 || retried.status === 205 || retried.status === 304
+        ? null
+        : await retried.arrayBuffer()
+    return new Response(body, retried)
   },
 }

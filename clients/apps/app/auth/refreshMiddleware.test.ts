@@ -330,6 +330,31 @@ describe('onResponse (reactive refresh)', () => {
     expect(await result?.json()).toEqual({ id: 'org' })
   })
 
+  it('on 401, returns a bodiless global Response when the retry is a 204 from another Response implementation', async () => {
+    configureFresh()
+    mockRefreshAsync.mockResolvedValueOnce(
+      buildTokenResponse({ accessToken: 'AT_NEW' }),
+    )
+    const expoFetchResponse = {
+      status: 204,
+      statusText: 'No Content',
+      headers: new Headers(),
+      arrayBuffer: async () => new ArrayBuffer(0),
+    } as unknown as Response
+    middlewareOptions.fetch.mockResolvedValueOnce(expoFetchResponse)
+
+    const request = buildRequest('http://127.0.0.1:8000/v1/orgs', {
+      authToken: 'AT_OLD',
+    })
+    const response = new Response('{}', { status: 401 })
+
+    const result = await callOnResponse(request, response)
+
+    expect(result).toBeInstanceOf(Response)
+    expect(result?.status).toBe(204)
+    expect(result?.body).toBeNull()
+  })
+
   it('does not retry when refresh itself fails', async () => {
     configureFresh()
     mockRefreshAsync.mockRejectedValueOnce(new Error('rt revoked'))

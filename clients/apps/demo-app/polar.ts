@@ -29,7 +29,9 @@ const findPlan = async (externalId: 'free' | 'pro') => {
     (product) => product.external_id === externalId,
   )
   if (!plan) {
-    throw new Error(`The ${externalId} plan is not deployed in this environment.`)
+    throw new Error(
+      `The ${externalId} plan is not deployed in this environment.`,
+    )
   }
   return plan
 }
@@ -41,7 +43,9 @@ const formatUsdPrice = (product: Product) => {
     (price) => price.amount_type === 'fixed' && price.price_currency === 'usd',
   )
   if (price?.amount_type !== 'fixed') {
-    throw new Error(`The ${product.external_id} product has no fixed USD price.`)
+    throw new Error(
+      `The ${product.external_id} product has no fixed USD price.`,
+    )
   }
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -62,7 +66,9 @@ const isTopUp = (externalId: string | null): externalId is TopUp =>
 const creditedUnits = (product: Product) =>
   product.benefits.reduce(
     (units, benefit) =>
-      benefit.type === 'meter_credit' ? units + benefit.properties.units : units,
+      benefit.type === 'meter_credit'
+        ? units + benefit.properties.units
+        : units,
     0,
   )
 

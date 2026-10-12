@@ -25,7 +25,10 @@ body {
   padding: 16px;
   background: var(--gray-200);
   color: var(--gray-1200);
-  font: 15px/1.5 ui-sans-serif, system-ui, sans-serif;
+  font:
+    15px/1.5 ui-sans-serif,
+    system-ui,
+    sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -61,7 +64,9 @@ p {
   padding: 28px;
   border-radius: 20px;
   background: var(--gray-100);
-  box-shadow: var(--ring), 0 12px 32px -12px #0000001f;
+  box-shadow:
+    var(--ring),
+    0 12px 32px -12px #0000001f;
 }
 
 input {
@@ -78,7 +83,9 @@ input {
 
 input:focus {
   outline: none;
-  box-shadow: 0 0 0 1px var(--accent), 0 0 0 4px #3619cc26;
+  box-shadow:
+    0 0 0 1px var(--accent),
+    0 0 0 4px #3619cc26;
 }
 
 button {
@@ -168,7 +175,9 @@ button:disabled {
   height: min(480px, calc(100dvh - 96px));
   border-radius: 20px;
   background: var(--gray-100);
-  box-shadow: var(--ring), 0 12px 32px -12px #0000001f;
+  box-shadow:
+    var(--ring),
+    0 12px 32px -12px #0000001f;
   overflow: hidden;
 }
 
@@ -232,7 +241,9 @@ dialog {
   border-radius: 20px;
   background: var(--gray-100);
   color: inherit;
-  box-shadow: var(--ring), 0 24px 48px -12px #0000003d;
+  box-shadow:
+    var(--ring),
+    0 24px 48px -12px #0000003d;
   transition:
     opacity 0.2s,
     transform 0.2s cubic-bezier(0.23, 1, 0.32, 1),
@@ -341,7 +352,9 @@ dialog .actions .ghost:hover:not(:disabled) {
 }
 
 .pack:has(:checked) {
-  box-shadow: 0 0 0 1px var(--accent), 0 0 0 4px #3619cc26;
+  box-shadow:
+    0 0 0 1px var(--accent),
+    0 0 0 4px #3619cc26;
 }
 
 .pack input {
@@ -475,14 +488,22 @@ dialog .actions .ghost:hover:not(:disabled) {
 .file figcaption {
   padding: 0 20px 8px;
   color: #8b949e;
-  font: 12px ui-monospace, SFMono-Regular, Menlo, monospace;
+  font:
+    12px ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
 }
 
 .file pre {
   margin: 0;
   overflow-x: auto;
   background: none !important;
-  font: 13px/1.65 ui-monospace, SFMono-Regular, Menlo, monospace;
+  font:
+    13px/1.65 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
 }
 
 .file code {
@@ -523,7 +544,11 @@ dialog .actions .ghost:hover:not(:disabled) {
 .outcome pre {
   margin: 0;
   color: #7ee787;
-  font: 13px/1.65 ui-monospace, SFMono-Regular, Menlo, monospace;
+  font:
+    13px/1.65 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
   white-space: pre-wrap;
   animation: fade-in 0.2s ease-out;
 }

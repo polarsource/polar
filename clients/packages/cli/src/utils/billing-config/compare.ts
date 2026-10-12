@@ -8,7 +8,7 @@ export const externalIdOf = (item: unknown) => {
   return entry._tag === 'Some' ? entry.value.external_id : undefined
 }
 
-const normalize = (item: unknown): unknown => {
+export const normalize = (item: unknown): unknown => {
   if (Array.isArray(item)) return item.map(normalize)
   if (typeof item !== 'object' || item === null) return item
   return Object.fromEntries(
@@ -19,7 +19,7 @@ const normalize = (item: unknown): unknown => {
   )
 }
 
-export const compact = (item: unknown): unknown => {
+const compact = (item: unknown): unknown => {
   const normalized = normalize(item)
   if (typeof normalized !== 'object' || normalized === null) return normalized
   if (Array.isArray(normalized)) return normalized

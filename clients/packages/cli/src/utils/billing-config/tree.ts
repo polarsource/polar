@@ -8,12 +8,18 @@ import {
   meterUnit,
   productMeters,
   productSentence,
+  webhookSentence,
 } from '@/utils/billing-config/sentences'
 import * as ui from '@/utils/ui'
 
-type Section = 'meters' | 'benefits' | 'products'
+type Section = 'meters' | 'benefits' | 'products' | 'webhooks'
 
-const SECTIONS: ReadonlyArray<Section> = ['meters', 'benefits', 'products']
+const SECTIONS: ReadonlyArray<Section> = [
+  'meters',
+  'benefits',
+  'products',
+  'webhooks',
+]
 
 type Sentence = ReadonlyArray<string>
 
@@ -21,6 +27,7 @@ const SENTENCES: Record<Section, (input: unknown) => Sentence | undefined> = {
   meters: meterSentence,
   benefits: benefitSentence,
   products: productSentence,
+  webhooks: webhookSentence,
 }
 
 const COVERED: Record<Section, ReadonlySet<string>> = {
@@ -34,6 +41,7 @@ const COVERED: Record<Section, ReadonlySet<string>> = {
     'prices',
     'benefits',
   ]),
+  webhooks: new Set(['url', 'format', 'events', 'api_version']),
 }
 
 const TOP = ui.INDENT
@@ -113,6 +121,15 @@ const rows = (indent: string, entry: AppliedEntry, section: Section) =>
     entry.action,
   )
 
+// The signing secret is only returned by the apply that creates the endpoint.
+const secret = (indent: string, entry: AppliedEntry) =>
+  entry.secret === undefined
+    ? []
+    : [
+        `${indent}${ui.dim('secret')}  ${ui.bold(ui.printable(entry.secret))}`,
+        `${indent}${ui.dim("Set it as your webhook signing secret (e.g. POLAR_WEBHOOK_SECRET); it won't be shown again.")}`,
+      ]
+
 const GRANT_MARKS: Record<Grant['status'], string> = {
   added: ui.green('+'),
   removed: ui.red('-'),
@@ -135,6 +152,7 @@ export const formatTree = (
     meters: documents(input, 'meters'),
     benefits: documents(input, 'benefits'),
     products: documents(input, 'products'),
+    webhooks: documents(input, 'webhooks'),
   }
 
   const product = (entry: AppliedEntry) => {
@@ -177,6 +195,7 @@ export const formatTree = (
       `${TOP}${own.head}`,
       ...own.body.map((line) => `${NESTED}${line}`),
       ...rows(NESTED, entry, section),
+      ...secret(NESTED, entry),
     ]
   }
 

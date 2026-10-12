@@ -25,7 +25,7 @@ export type BenefitAccess =
   | { granted: true; metadata: models.MetadataOutputType }
   | { granted: false }
 
-type BenefitName<Config extends RuntimeSDKConfig> = keyof NonNullable<
+export type BenefitName<Config extends RuntimeSDKConfig> = keyof NonNullable<
   Config['benefits']
 > &
   string

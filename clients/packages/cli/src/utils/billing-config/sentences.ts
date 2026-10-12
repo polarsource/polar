@@ -129,6 +129,19 @@ export const benefitSentence = (input: unknown) => {
   ])
 }
 
+export const webhookSentence = (input: unknown) => {
+  const webhook = record(input)
+  if (webhook === undefined) return undefined
+  const events = Array.isArray(webhook['events']) ? webhook['events'] : []
+  return fields([
+    ['url', name(webhook['url'])],
+    ...(webhook['format'] !== 'raw'
+      ? [['format', name(webhook['format'])] as const]
+      : []),
+    ['events', events.map((event) => name(event)).join(', ')],
+  ])
+}
+
 export const meterSentence = (input: unknown) => {
   const meter = record(input)
   if (meter === undefined) return undefined

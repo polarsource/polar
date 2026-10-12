@@ -39,13 +39,19 @@ export const FieldChange = Schema.Struct({
 })
 export type FieldChange = typeof FieldChange.Type
 
-export const ConfigResource = Schema.Literals(['meter', 'benefit', 'product'])
+export const ConfigResource = Schema.Literals([
+  'meter',
+  'benefit',
+  'product',
+  'webhook',
+])
 
 export const EntryResult = Schema.Struct({
   resource: ConfigResource,
   external_id: Schema.String,
   action: EntryAction,
   diff: Schema.optional(Schema.Array(FieldChange)),
+  secret: Schema.optional(Schema.NullOr(Schema.String)),
 })
 
 export const ApplyResponse = Schema.Struct({
@@ -57,6 +63,7 @@ export const AppliedEntry = Schema.Struct({
   id: Schema.String,
   action: EntryAction,
   diff: Schema.Array(FieldChange),
+  secret: Schema.optionalKey(Schema.String),
 })
 export type AppliedEntry = typeof AppliedEntry.Type
 

@@ -9,10 +9,11 @@ import {
 } from '@/schemas/BillingConfig'
 import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
-import { TO_DO, tally } from '@/utils/billing-config/entries'
+import { planSummary } from '@/utils/billing-config/entries'
 import {
   changes,
   errors,
+  found,
   summary,
   target,
   unchanged,
@@ -27,17 +28,15 @@ const render = (
   organization: ActiveOrganization,
   result: PlanResult,
 ) => [
-  ...changes(config, result),
+  ...changes(config, organization, result),
   ui.blank,
   ...(result.issues.length > 0
     ? [summary(result.issues)]
     : unchanged(result.entries)
       ? [ui.success(`${target(organization)} is up to date, nothing to apply`)]
       : [
-          ui.success(
-            `${config.file} can be applied to ${target(organization)}: ${tally(result.entries, TO_DO)}`,
-          ),
-          `${ui.INDENT}${ui.INDENT}${ui.dim('Run')} ${ui.command('polar config apply')} ${ui.dim('to make these changes.')}`,
+          planSummary(result.entries),
+          `${ui.INDENT}${ui.dim('Run')} ${ui.command('polar config apply')} ${ui.dim('to apply it.')}`,
         ]),
 ]
 
@@ -68,27 +67,30 @@ export const plan = Command.make('plan', { file, org }).pipe(
     run: ({ file, org }) =>
       Effect.gen(function* () {
         const billing = yield* BillingConfig
-        return yield* withProgress((progress) =>
-          Effect.gen(function* () {
-            yield* progress.start('Reading config')
-            const config = yield* billing.load(Option.getOrUndefined(file))
-            yield* progress.finish(config.file)
-            yield* progress.start('Resolving organization')
-            const organization = yield* (yield* Organizations).resolve(
-              Option.getOrUndefined(org),
-            )
-            yield* progress.finish(
-              `${organization.name} (${organization.environment})`,
-            )
-            yield* progress.start('Checking config')
-            const [elapsed, result] = yield* Effect.timed(
-              billing.plan(config, organization),
-            )
-            yield* progress.finish(
-              `${Math.round(Duration.toMillis(elapsed))}ms`,
-            )
-            return { config, organization, result }
-          }),
+        return yield* withProgress(
+          (progress) =>
+            Effect.gen(function* () {
+              yield* progress.start('Reading')
+              const config = yield* billing.load(Option.getOrUndefined(file))
+              yield* progress.finish(config.file)
+              yield* progress.start('Found')
+              yield* progress.finish(found(config))
+              yield* progress.start('Comparing')
+              const [elapsed, { organization, result }] = yield* Effect.timed(
+                Effect.gen(function* () {
+                  const organization = yield* (yield* Organizations).resolve(
+                    Option.getOrUndefined(org),
+                  )
+                  const result = yield* billing.plan(config, organization)
+                  return { organization, result }
+                }),
+              )
+              yield* progress.finish(
+                `${Math.round(Duration.toMillis(elapsed))}ms`,
+              )
+              return { config, organization, result }
+            }),
+          'columns',
         )
       }),
     render: ({ config, organization, result }) =>

@@ -744,3 +744,60 @@ class TestSeal:
             (BUCKET_START, CUTOFF, 2, 1, Decimal(2), False),
             (CUTOFF, NEXT_BUCKET_START, 1, 2, Decimal(7), False),
         ]
+
+    @pytest.mark.parametrize(
+        ("aggregation", "expected"),
+        [
+            (CountAggregation(), Decimal(2)),
+            (
+                PropertyAggregation(func=AggregationFunction.sum, property="tokens"),
+                Decimal(6),
+            ),
+            (
+                PropertyAggregation(func=AggregationFunction.avg, property="tokens"),
+                Decimal(3),
+            ),
+            (
+                PropertyAggregation(func=AggregationFunction.min, property="tokens"),
+                Decimal(2),
+            ),
+            (
+                PropertyAggregation(func=AggregationFunction.max, property="tokens"),
+                Decimal(4),
+            ),
+        ],
+        ids=["count", "sum", "avg", "min", "max"],
+    )
+    async def test_returns_sealed_quantity(
+        self,
+        aggregation: Aggregation,
+        expected: Decimal,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        external_customer: Customer,
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture, organization=organization, aggregation=aggregation
+        )
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        for timestamp, tokens in (
+            (BUCKET_START - timedelta(minutes=4), 2),
+            (CLOSED, 4),
+        ):
+            await create_tokens_event(
+                save_fixture,
+                organization,
+                tokens,
+                timestamp=timestamp,
+                ingested_at=INGESTED_AT,
+            )
+
+        quantities = await reducer_bucket_service.seal(
+            session, [reducer], external_customer, start=START, cutoff=NEXT_BUCKET_START
+        )
+
+        assert quantities == {reducer.id: expected}
+        assert len(await get_buckets(session)) == 2

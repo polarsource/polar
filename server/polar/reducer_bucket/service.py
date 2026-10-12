@@ -2,6 +2,7 @@ import uuid
 from collections import defaultdict
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 
 import structlog
 from redis.exceptions import RedisError
@@ -9,6 +10,7 @@ from redis.exceptions import RedisError
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.meter.aggregation import (
+    AggregationFunction,
     PropertyAggregation,
     UniqueAggregation,
 )
@@ -176,9 +178,10 @@ class ReducerBucketService:
         *,
         start: datetime,
         cutoff: datetime,
-    ) -> None:
+    ) -> dict[uuid.UUID, Decimal]:
+        quantities: dict[uuid.UUID, Decimal] = {}
         if start >= cutoff:
-            return
+            return quantities
         repository = ReducerBucketRepository.from_session(session)
         identities: list[tuple[uuid.UUID | None, str | None]] = [(customer.id, None)]
         if customer.external_id is not None:
@@ -219,9 +222,11 @@ class ReducerBucketService:
                     await self._split(
                         repository, reducer, at, customer_id, external_customer_id
                     )
-            await repository.seal(
+            sealed = await repository.seal(
                 reducer, identities, start=start, end=cutoff, sealed_at=utc_now()
             )
+            quantities[reducer.id] = _get_quantity(reducer.aggregation.func, sealed)
+        return quantities
 
     async def _get_intervals(
         self,
@@ -345,6 +350,29 @@ class ReducerBucketService:
                 ),
                 flush=True,
             )
+
+
+def _get_quantity(
+    function: AggregationFunction,
+    buckets: Sequence[tuple[int, Decimal, Decimal | None, Decimal | None]],
+) -> Decimal:
+    count = sum(bucket[0] for bucket in buckets)
+    total = sum((bucket[1] for bucket in buckets), Decimal(0))
+    minimums = [bucket[2] for bucket in buckets if bucket[2] is not None]
+    maximums = [bucket[3] for bucket in buckets if bucket[3] is not None]
+    match function:
+        case AggregationFunction.cnt:
+            return Decimal(count)
+        case AggregationFunction.sum:
+            return total
+        case AggregationFunction.avg:
+            return total / count if count else Decimal(0)
+        case AggregationFunction.min:
+            return min(minimums, default=Decimal(0))
+        case AggregationFunction.max:
+            return max(maximums, default=Decimal(0))
+        case AggregationFunction.unique:
+            raise ValueError("Unique aggregations have no reducer buckets")
 
 
 def _reduce_events_to_bucket_contributions(

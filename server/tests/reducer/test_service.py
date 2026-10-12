@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from decimal import Decimal
 
 import pytest
 from pytest_mock import MockerFixture
@@ -27,12 +28,16 @@ class TestSeal:
         reducer = await create_reducer(
             save_fixture, organization=organization, meters=[meter]
         )
-        seal = mocker.patch("polar.reducer.service.reducer_bucket_service.seal")
+        seal = mocker.patch(
+            "polar.reducer.service.reducer_bucket_service.seal",
+            return_value={reducer.id: Decimal(3)},
+        )
 
-        await reducer_service.seal(
+        quantities = await reducer_service.seal(
             session, customer, [meter.id], start=START, cutoff=CUTOFF
         )
 
+        assert quantities == {meter.id: Decimal(3)}
         seal.assert_called_once_with(
             session, [reducer], customer, start=START, cutoff=CUTOFF
         )
@@ -52,8 +57,9 @@ class TestSeal:
             side_effect=RuntimeError,
         )
 
-        await reducer_service.seal(
+        quantities = await reducer_service.seal(
             session, customer, [meter.id], start=START, cutoff=CUTOFF
         )
 
+        assert quantities == {}
         assert await session.get(Meter, meter.id) is not None

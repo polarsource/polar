@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from datetime import datetime
+from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
@@ -215,7 +216,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         start: datetime,
         end: datetime,
         sealed_at: datetime,
-    ) -> None:
+    ) -> Sequence[tuple[int, Decimal, Decimal | None, Decimal | None]]:
         open_ids = (
             select(ReducerBucket.id)
             .where(
@@ -237,8 +238,15 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             .order_by(ReducerBucket.bucket_start)
             .with_for_update()
         )
-        await self.session.execute(
+        result = await self.session.execute(
             update(ReducerBucket)
             .where(ReducerBucket.id.in_(open_ids))
             .values(sealed_at=sealed_at, modified_at=sealed_at)
+            .returning(
+                ReducerBucket.count,
+                ReducerBucket.sum,
+                ReducerBucket.min,
+                ReducerBucket.max,
+            )
         )
+        return result.tuples().all()

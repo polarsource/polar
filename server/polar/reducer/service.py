@@ -1,5 +1,6 @@
 from collections.abc import Iterable
 from datetime import datetime
+from decimal import Decimal
 from uuid import UUID
 
 import structlog
@@ -24,19 +25,21 @@ class ReducerService:
         *,
         start: datetime,
         cutoff: datetime,
-    ) -> None:
+    ) -> dict[UUID, Decimal]:
         meter_ids = sorted(meter_ids)
         try:
             async with session.begin_nested():
                 repository = ReducerRepository.from_session(session)
                 reducers: dict[UUID, Reducer] = {}
+                meter_reducers: dict[UUID, UUID] = {}
                 for meter_id in meter_ids:
                     reducer = await repository.get_by_meter_id(meter_id)
                     if reducer is not None and not isinstance(
                         reducer.aggregation, UniqueAggregation
                     ):
                         reducers[reducer.id] = reducer
-                await reducer_bucket_service.seal(
+                        meter_reducers[meter_id] = reducer.id
+                quantities = await reducer_bucket_service.seal(
                     session,
                     list(reducers.values()),
                     customer,
@@ -50,6 +53,12 @@ class ReducerService:
                 meter_ids=meter_ids,
                 cutoff=cutoff.isoformat(),
             )
+            return {}
+        return {
+            meter_id: quantities[reducer_id]
+            for meter_id, reducer_id in meter_reducers.items()
+            if reducer_id in quantities
+        }
 
     async def sync_meter(self, session: AsyncSession, meter: Meter) -> Reducer:
         repository = ReducerRepository.from_session(session)

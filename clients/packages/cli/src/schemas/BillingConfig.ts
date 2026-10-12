@@ -39,7 +39,12 @@ export const FieldChange = Schema.Struct({
 })
 export type FieldChange = typeof FieldChange.Type
 
-export const ConfigResource = Schema.Literals(['meter', 'benefit', 'product'])
+export const ConfigResource = Schema.Literals([
+  'meter',
+  'benefit',
+  'product',
+  'discount',
+])
 
 export const EntryResult = Schema.Struct({
   resource: ConfigResource,

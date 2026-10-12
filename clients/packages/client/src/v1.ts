@@ -6076,12 +6076,14 @@ export interface paths {
      * Apply Config
      * @description Apply a declarative config document to the organization.
      *
-     *     Meters, benefits and products are matched by `external_id`: missing ones are
-     *     created, changed ones are updated, and ones not listed are left untouched.
-     *     Everything is applied in one transaction.
+     *     Meters, benefits, products and webhook endpoints are matched by
+     *     `external_id`: missing ones are created, changed ones are updated, and ones
+     *     not listed are left untouched. Everything is applied in one transaction.
+     *     The signing `secret` of each created webhook endpoint is returned once.
      *
-     *     A `benefits` section also requires the `benefits:write` scope, and a
-     *     `products` section the `products:write` scope.
+     *     A `benefits` section also requires the `benefits:write` scope, a
+     *     `products` section the `products:write` scope, and a `webhooks` section
+     *     the `webhooks:write` scope.
      *
      *     **Scopes**: `meters:write`
      */
@@ -6109,7 +6111,8 @@ export interface paths {
      *     apply fail, `warning` issues don't.
      *
      *     A `benefits` section also requires the `benefits:read` or `benefits:write`
-     *     scope, and a `products` section `products:read` or `products:write`.
+     *     scope, a `products` section `products:read` or `products:write`, and a
+     *     `webhooks` section `webhooks:read` or `webhooks:write`.
      *
      *     **Scopes**: `meters:read` `meters:write`
      */
@@ -16015,6 +16018,11 @@ export interface components {
        */
       products?: components['schemas']['ConfigProduct'][]
       /**
+       * Webhooks
+       * @description Webhook endpoints to create or update, matched by `external_id`. Existing endpoints that aren't listed are left untouched.
+       */
+      webhooks?: components['schemas']['ConfigWebhookEndpoint'][]
+      /**
        * Organization Id
        * @description The ID of the organization to apply the config to. **Required unless you use an organization token.**
        */
@@ -16025,10 +16033,27 @@ export interface components {
      * @enum {string}
      */
     ConfigAction: 'created' | 'updated' | 'unchanged'
+    /** ConfigAppliedResult */
+    ConfigAppliedResult: {
+      /** @description The type of resource. */
+      resource: components['schemas']['ConfigResource']
+      /**
+       * External Id
+       * @description The resource's `external_id`.
+       */
+      external_id: string
+      /** @description What applying the config does. */
+      action: components['schemas']['ConfigAction']
+      /**
+       * Secret
+       * @description The signing secret of a webhook endpoint created by apply. Only returned once, on creation; `null` otherwise.
+       */
+      secret: string | null
+    }
     /** ConfigApplyResult */
     ConfigApplyResult: {
       /** Changes */
-      changes: components['schemas']['ConfigResult'][]
+      changes: components['schemas']['ConfigAppliedResult'][]
     }
     /** ConfigAsCodeNotEnabled */
     ConfigAsCodeNotEnabled: {
@@ -16563,19 +16588,7 @@ export interface components {
      * ConfigResource
      * @enum {string}
      */
-    ConfigResource: 'meter' | 'benefit' | 'product'
-    /** ConfigResult */
-    ConfigResult: {
-      /** @description The type of resource. */
-      resource: components['schemas']['ConfigResource']
-      /**
-       * External Id
-       * @description The resource's `external_id`.
-       */
-      external_id: string
-      /** @description What applying the config does. */
-      action: components['schemas']['ConfigAction']
-    }
+    ConfigResource: 'meter' | 'benefit' | 'product' | 'webhook'
     /** ConfigSkippedMeter */
     ConfigSkippedMeter: {
       /** @description The type of resource. */
@@ -16603,6 +16616,45 @@ export interface components {
       | 'archived'
       | 'invalid'
       | 'over_limit'
+    /** ConfigWebhookConflict */
+    ConfigWebhookConflict: {
+      /**
+       * Error
+       * @example ConfigWebhookConflict
+       * @constant
+       */
+      error: 'ConfigWebhookConflict'
+      /** Detail */
+      detail: string
+    }
+    /** ConfigWebhookEndpoint */
+    ConfigWebhookEndpoint: {
+      /**
+       * External Id
+       * @description Your identifier for the webhook endpoint, used to match it.
+       */
+      external_id: string
+      /**
+       * Url
+       * Format: uri
+       * @description The URL where the webhook events will be sent.
+       * @example https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0
+       */
+      url: string
+      /** @description The format of the webhook payload. */
+      format: components['schemas']['WebhookFormat']
+      /**
+       * Events
+       * @description The events that will trigger the webhook.
+       */
+      events: components['schemas']['WebhookEventType'][]
+      /**
+       * Api Version
+       * @description The API version that'll be used in event payloads.
+       * @enum {string}
+       */
+      api_version: '2026-04' | '2026-10' | '2027-01'
+    }
     /** CostMetadata */
     'CostMetadata-Input': {
       /**
@@ -62592,7 +62644,7 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
-      /** @description Not allowed to manage this organization, missing the `benefits:write` or `products:write` scope for a `benefits` or `products` section, or config as code isn't enabled for it. */
+      /** @description Not allowed to manage this organization, missing the `benefits:write`, `products:write` or `webhooks:write` scope for a `benefits`, `products` or `webhooks` section, or config as code isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown
@@ -62614,6 +62666,7 @@ export interface operations {
             | components['schemas']['ConfigMeterConflict']
             | components['schemas']['ConfigBenefitConflict']
             | components['schemas']['ConfigProductConflict']
+            | components['schemas']['ConfigWebhookConflict']
         }
       }
       /** @description Validation Error */
@@ -62658,7 +62711,7 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
-      /** @description Not allowed to read this organization's products, missing a benefits or products scope for those sections, or config as code isn't enabled for it. */
+      /** @description Not allowed to read this organization's products, missing a benefits, products or webhooks scope for those sections, or config as code isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown
@@ -71353,10 +71406,13 @@ export const configProductPriceUnitBasedAmount_typeValues: ReadonlyArray<
 > = ['unit_based']
 export const configResourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigResource']
-> = ['meter', 'benefit', 'product']
+> = ['meter', 'benefit', 'product', 'webhook']
 export const configSkippedReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigSkippedReason']
 > = ['missing_external_id', 'archived', 'invalid', 'over_limit']
+export const configWebhookEndpointApi_versionValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigWebhookEndpoint']['api_version']
+> = ['2026-04', '2026-10', '2027-01']
 export const countAggregationFuncValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CountAggregation']['func']
 > = ['count']

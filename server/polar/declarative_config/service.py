@@ -30,6 +30,7 @@ from . import benefits, products, validation
 from .schemas import (
     MAXIMUM_METERS,
     Config,
+    ConfigAppliedResult,
     ConfigApplyResult,
     ConfigChange,
     ConfigExport,
@@ -40,7 +41,6 @@ from .schemas import (
     ConfigMeter,
     ConfigPlan,
     ConfigResource,
-    ConfigResult,
     ConfigSkippedMeter,
     ConfigSkippedReason,
 )
@@ -74,6 +74,23 @@ def _assert_section_scopes(
         required = {write_scope} if write else {read_scope, write_scope}
         if not auth_subject.scopes & required:
             raise InsufficientScopeError({str(scope) for scope in required})
+
+
+# Webhook endpoints are managed with `organization_manage`, which product
+# permissions don't imply.
+async def _assert_webhooks_permission(
+    session: AsyncReadSession,
+    auth_subject: AuthSubject[User | Organization],
+    config: Config,
+    organization: Organization,
+) -> None:
+    if "webhooks" in config.model_fields_set:
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            organization.id,
+            OrganizationPermission.organization_manage,
+        )
 
 
 def _constraint_name(error: IntegrityError) -> str | None:
@@ -153,6 +170,7 @@ class DeclarativeConfigService:
         organization = await self._get_organization(
             session, auth_subject, config, OrganizationPermission.products_manage
         )
+        await _assert_webhooks_permission(session, auth_subject, config, organization)
         changes, issues = await validation.check(
             session, organization, config, for_update=True
         )
@@ -198,6 +216,7 @@ class DeclarativeConfigService:
         organization = await self._get_organization(
             session, auth_subject, config, OrganizationPermission.products_read
         )
+        await _assert_webhooks_permission(session, auth_subject, config, organization)
         changes, issues = await validation.check(
             session, organization, config, for_update=False
         )
@@ -300,9 +319,9 @@ class DeclarativeConfigService:
         auth_subject: AuthSubject[User | Organization],
         organization: Organization,
         changes: Sequence[WebhookChange],
-    ) -> list[ConfigResult]:
+    ) -> list[ConfigAppliedResult]:
         repository = WebhookEndpointRepository.from_session(session)
-        results: list[ConfigResult] = []
+        results: list[ConfigAppliedResult] = []
         for change in changes:
             config = change.config
             endpoint = change.existing
@@ -339,7 +358,7 @@ class DeclarativeConfigService:
                     update_schema=WebhookEndpointUpdate(**change.update_dict),
                 )
             results.append(
-                ConfigResult(
+                ConfigAppliedResult(
                     resource=ConfigResource.webhook,
                     external_id=config.external_id,
                     action=change.action,
@@ -353,9 +372,9 @@ class DeclarativeConfigService:
         session: AsyncSession,
         organization: Organization,
         changes: Sequence[MeterChange],
-    ) -> tuple[list[ConfigResult], dict[str, UUID]]:
+    ) -> tuple[list[ConfigAppliedResult], dict[str, UUID]]:
         repository = MeterRepository.from_session(session)
-        results: list[ConfigResult] = []
+        results: list[ConfigAppliedResult] = []
         meter_ids: dict[str, UUID] = {}
         for change in changes:
             meter = change.existing
@@ -373,10 +392,11 @@ class DeclarativeConfigService:
                 await repository.update(meter, update_dict=change.update_dict)
             meter_ids[change.config.external_id] = meter.id
             results.append(
-                ConfigResult(
+                ConfigAppliedResult(
                     resource=ConfigResource.meter,
                     external_id=change.config.external_id,
                     action=change.action,
+                    secret=None,
                 )
             )
         return results, meter_ids
@@ -389,9 +409,9 @@ class DeclarativeConfigService:
         organization: Organization,
         changes: Sequence[BenefitChange],
         meter_ids: dict[str, UUID],
-    ) -> tuple[list[ConfigResult], dict[str, UUID]]:
+    ) -> tuple[list[ConfigAppliedResult], dict[str, UUID]]:
         repository = BenefitRepository.from_session(session)
-        results: list[ConfigResult] = []
+        results: list[ConfigAppliedResult] = []
         benefit_ids: dict[str, UUID] = {}
         for change in changes:
             benefit = change.existing
@@ -428,10 +448,11 @@ class DeclarativeConfigService:
                 )
             benefit_ids[change.config.external_id] = benefit.id
             results.append(
-                ConfigResult(
+                ConfigAppliedResult(
                     resource=ConfigResource.benefit,
                     external_id=change.config.external_id,
                     action=change.action,
+                    secret=None,
                 )
             )
         return results, benefit_ids
@@ -444,14 +465,14 @@ class DeclarativeConfigService:
         changes: Sequence[ProductChange],
         meter_ids: dict[str, UUID],
         benefit_ids: dict[str, UUID],
-    ) -> list[ConfigResult]:
+    ) -> list[ConfigAppliedResult]:
         repository = ProductRepository.from_session(session)
         external_ids = {
             str(id): external_id
             for ids in (meter_ids, benefit_ids)
             for external_id, id in ids.items()
         }
-        results: list[ConfigResult] = []
+        results: list[ConfigAppliedResult] = []
         for change in changes:
             config = change.config
             product = change.existing
@@ -498,10 +519,11 @@ class DeclarativeConfigService:
             except PolarRequestValidationError as e:
                 raise products.product_error(e, change.index, external_ids) from e
             results.append(
-                ConfigResult(
+                ConfigAppliedResult(
                     resource=ConfigResource.product,
                     external_id=config.external_id,
                     action=change.action,
+                    secret=None,
                 )
             )
         return results

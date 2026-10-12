@@ -367,17 +367,19 @@ class ConfigResult(Schema):
     resource: ConfigResource = Field(description="The type of resource.")
     external_id: str = Field(description="The resource's `external_id`.")
     action: ConfigAction = Field(description="What applying the config does.")
+
+
+class ConfigAppliedResult(ConfigResult):
     secret: str | None = Field(
-        default=None,
         description=(
             "The signing secret of a webhook endpoint created by apply. "
-            "Only returned once, on creation."
+            "Only returned once, on creation; `null` otherwise."
         ),
     )
 
 
 class ConfigApplyResult(Schema):
-    changes: list[ConfigResult]
+    changes: list[ConfigAppliedResult]
 
 
 class ConfigFieldChange(Schema):

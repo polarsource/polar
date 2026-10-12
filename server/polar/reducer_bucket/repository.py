@@ -2,10 +2,12 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, Row, and_, func, literal, null, or_, select
+from sqlalchemy import ColumnElement, Row, and_, case, func, literal, null, or_, select
+from sqlalchemy.dialects.postgresql import insert
 
 from polar.kit.db.locking import pg_advisory_xact_lock
 from polar.kit.repository import RepositoryBase
+from polar.kit.utils import utc_now
 from polar.meter.aggregation import PropertyAggregation
 from polar.models import Event, Reducer, ReducerBucket
 from polar.models.event import EventSource
@@ -113,3 +115,60 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             .limit(1)
         )
         return await self.get_one_or_none(statement)
+
+    async def add_contribution(
+        self,
+        reducer: Reducer,
+        bucket_start: datetime,
+        customer_id: UUID | None,
+        external_customer_id: str | None,
+        *,
+        count: int,
+        total: float = 0,
+        minimum: float | None = None,
+        maximum: float | None = None,
+    ) -> None:
+        """Adds to the customer identity's latest bucket, or to the next generation
+        once it's sealed."""
+        generation = (
+            select(
+                case(
+                    (ReducerBucket.sealed_at.is_(None), ReducerBucket.generation),
+                    else_=ReducerBucket.generation + 1,
+                )
+            )
+            .where(
+                ReducerBucket.organization_id == reducer.organization_id,
+                ReducerBucket.reducer_id == reducer.id,
+                ReducerBucket.bucket_start == bucket_start,
+                _is_customer(ReducerBucket, customer_id, external_customer_id),
+            )
+            .order_by(ReducerBucket.generation.desc())
+            .limit(1)
+            .scalar_subquery()
+        )
+        insert_statement = insert(ReducerBucket).values(
+            organization_id=reducer.organization_id,
+            reducer_id=reducer.id,
+            customer_id=customer_id,
+            external_customer_id=external_customer_id,
+            bucket_start=bucket_start,
+            count=count,
+            sum=total,
+            min=minimum,
+            max=maximum,
+            generation=func.coalesce(generation, 1),
+        )
+        excluded = insert_statement.excluded
+        await self.session.execute(
+            insert_statement.on_conflict_do_update(
+                constraint="reducer_buckets_identity_generation_key",
+                set_={
+                    "count": ReducerBucket.count + excluded["count"],
+                    "sum": ReducerBucket.sum + excluded["sum"],
+                    "min": func.least(ReducerBucket.min, excluded["min"]),
+                    "max": func.greatest(ReducerBucket.max, excluded["max"]),
+                    "modified_at": utc_now(),
+                },
+            )
+        )

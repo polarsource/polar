@@ -202,6 +202,44 @@ describe('formatTree', () => {
     )
   })
 
+  test('shows a created benefit as private only when it is', () => {
+    const output = stripAnsi(
+      formatTree(
+        {
+          ...input,
+          benefits: [
+            {
+              external_id: 'beta',
+              description: 'Beta',
+              type: 'feature_flag',
+              visibility: 'private',
+            },
+            { ...credits('tool_calls', 1000), visibility: 'public' },
+          ],
+        },
+        [
+          entry('benefits', 'beta', 'created', [
+            { field: 'visibility', before: null, after: 'private' },
+          ]),
+          entry('benefits', 'tool_calls', 'created', [
+            { field: 'visibility', before: null, after: 'public' },
+          ]),
+        ],
+      ),
+    )
+    expect(output).toBe(
+      [
+        '  benefits',
+        '  + beta',
+        '      type        feature flag',
+        '      visibility  private',
+        '  + tool_calls',
+        '      meter    tool_call',
+        '      credits  1,000',
+      ].join('\n'),
+    )
+  })
+
   test('lists the meters a created product charges for as nodes', () => {
     const metered = (price_currency: string, unit_amount: string) => ({
       amount_type: 'metered_unit',

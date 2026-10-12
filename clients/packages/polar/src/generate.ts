@@ -24,14 +24,8 @@ const renderMetadata = (metadata: Metadata | undefined): string[] =>
           .join(', ')} })`,
       ]
 
-// Mirrors the server: feature flags default to private, everything else to public.
-const renderVisibility = (
-  visibility: Visibility | undefined,
-  fallback: Visibility,
-): string[] =>
-  visibility === undefined || visibility === fallback
-    ? []
-    : [`.${visibility}()`]
+const renderVisibility = (visibility: Visibility | undefined): string[] =>
+  visibility === 'private' ? ['.private()'] : []
 
 const renderCondition = (
   condition: MeterFilter['clauses'][number],
@@ -89,7 +83,7 @@ const renderBenefit = (
     return [
       `flag(${name})`,
       ...renderMetadata(benefit.metadata),
-      ...renderVisibility(benefit.visibility, 'private'),
+      ...renderVisibility(benefit.visibility),
     ].join('\n')
   }
   helpers.add('credits')
@@ -100,7 +94,7 @@ const renderBenefit = (
     `.units(${literal(units)})`,
     ...(rollover ? ['.rollover()'] : []),
     ...renderMetadata(benefit.metadata),
-    ...renderVisibility(benefit.visibility, 'public'),
+    ...renderVisibility(benefit.visibility),
   ].join('\n')
 }
 
@@ -381,7 +375,7 @@ const renderProduct =
       ...(product.description === undefined
         ? []
         : [`.description(${literal(product.description)})`]),
-      ...renderVisibility(product.visibility, 'public'),
+      ...renderVisibility(product.visibility),
     ].join('\n')
   }
 

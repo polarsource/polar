@@ -243,7 +243,7 @@ export const defineConfig = <
             external_id,
             description: name ?? external_id,
             ...(metadata !== undefined && { metadata }),
-            ...(visibility !== undefined && { visibility }),
+            ...(visibility === 'private' && { visibility }),
           }
         },
       ),
@@ -278,7 +278,7 @@ export const defineConfig = <
             ...(definition.descriptionText !== undefined && {
               description: definition.descriptionText,
             }),
-            ...(definition[visibilityKey] !== undefined && {
+            ...(definition[visibilityKey] === 'private' && {
               visibility: definition[visibilityKey],
             }),
           }

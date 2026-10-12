@@ -14,20 +14,17 @@ export type Visible = {
 }
 
 export interface VisibleBuilder {
-  readonly [visibilityKey]: Visibility | undefined
+  readonly [visibilityKey]: Visibility
   private(): this
   public(): this
 }
 
-/**
- * Adds `.private()` and `.public()` to a builder. Left unset, the server
- * applies its own default for the resource.
- */
+/** Adds `.private()` and `.public()` to a builder. Builders start public. */
 export const visible = <Base extends Mixin<Builder>>(
   base: Base,
 ): Base & Mixin<VisibleBuilder> => {
   abstract class WithVisibility extends base implements VisibleBuilder {
-    readonly [visibilityKey]: Visibility | undefined = undefined
+    readonly [visibilityKey]: Visibility = 'public'
 
     private(): this {
       return this.with({ [visibilityKey]: 'private' })

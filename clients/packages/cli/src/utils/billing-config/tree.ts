@@ -32,7 +32,7 @@ const SENTENCES: Record<Section, (input: unknown) => Sentence | undefined> = {
 
 const COVERED: Record<Section, ReadonlySet<string>> = {
   meters: new Set(['name', 'filter', 'aggregation', 'unit', 'custom_label']),
-  benefits: new Set(['description', 'type', 'properties']),
+  benefits: new Set(['description', 'type', 'properties', 'visibility']),
   products: new Set([
     'name',
     'visibility',

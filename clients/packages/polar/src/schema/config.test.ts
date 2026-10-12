@@ -447,25 +447,27 @@ test('product description and visibility are only sent when set', () => {
   expect(pro).not.toHaveProperty('visibility')
 })
 
-test('benefit visibility is only sent when set', () => {
+test('benefits are public unless made private', () => {
   const config = defineConfig({
     meters: ({ meter }) => ({ calls: meter('Calls').count() }),
     benefits: ({ flag, credits }) => ({
-      beta: flag('Beta').public().metadata({ tier: 'pro' }),
+      beta: flag('Beta').private().metadata({ tier: 'pro' }),
       calls: credits('Calls').meter('calls').units(10).private().rollover(),
-      hidden: flag('Hidden'),
+      open: flag('Open'),
+      reset: flag('Reset').private().public(),
     }),
   })
-  const [beta, calls, hidden] = config.toJSON().benefits ?? []
+  const [beta, calls, open, reset] = config.toJSON().benefits ?? []
   expect(beta).toMatchObject({
-    visibility: 'public',
+    visibility: 'private',
     metadata: { tier: 'pro' },
   })
   expect(calls).toMatchObject({
     visibility: 'private',
     properties: { rollover: true },
   })
-  expect(hidden).not.toHaveProperty('visibility')
+  expect(open).not.toHaveProperty('visibility')
+  expect(reset).not.toHaveProperty('visibility')
 })
 
 test('products only reference declared meters and benefits', () => {

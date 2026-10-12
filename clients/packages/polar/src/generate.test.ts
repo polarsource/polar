@@ -269,12 +269,12 @@ const cases: [string, PolarConfig][] = [
       .toJSON(),
   ],
   [
-    'visibility that differs from the default',
+    'private resources',
     api
       .defineConfig({
         meters: ({ meter }) => ({ calls: meter('Calls').count() }),
         benefits: ({ flag, credits }) => ({
-          beta: flag('Beta').public(),
+          beta: flag('Beta').private(),
           calls: credits('Calls').meter('calls').units(10).private(),
         }),
         products: ({ product, free }) => ({

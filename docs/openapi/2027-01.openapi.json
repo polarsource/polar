@@ -55438,6 +55438,21 @@
             "title": "Id",
             "description": "The ID of the object."
           },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
           },
@@ -55528,21 +55543,6 @@
               "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
             ]
           },
-          "external_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Id",
-            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
-            "examples": [
-              "ext_1337"
-            ]
-          },
           "products": {
             "items": {
               "$ref": "#/components/schemas/DiscountProduct"
@@ -55561,6 +55561,7 @@
           "created_at",
           "modified_at",
           "id",
+          "external_id",
           "metadata",
           "name",
           "code",
@@ -55570,7 +55571,6 @@
           "max_redemptions_per_customer",
           "redemptions_count",
           "organization_id",
-          "external_id",
           "products"
         ],
         "title": "DiscountFixedOnceForeverDuration",
@@ -55645,6 +55645,21 @@
             "title": "Id",
             "description": "The ID of the object."
           },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
           },
@@ -55746,6 +55761,7 @@
           "created_at",
           "modified_at",
           "id",
+          "external_id",
           "metadata",
           "name",
           "code",
@@ -55831,6 +55847,21 @@
             "title": "Id",
             "description": "The ID of the object."
           },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
           },
@@ -55921,21 +55952,6 @@
               "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
             ]
           },
-          "external_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Id",
-            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
-            "examples": [
-              "ext_1337"
-            ]
-          },
           "products": {
             "items": {
               "$ref": "#/components/schemas/DiscountProduct"
@@ -55955,6 +55971,7 @@
           "created_at",
           "modified_at",
           "id",
+          "external_id",
           "metadata",
           "name",
           "code",
@@ -55964,7 +55981,6 @@
           "max_redemptions_per_customer",
           "redemptions_count",
           "organization_id",
-          "external_id",
           "products"
         ],
         "title": "DiscountFixedRepeatDuration",
@@ -56043,6 +56059,21 @@
             "title": "Id",
             "description": "The ID of the object."
           },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
           },
@@ -56145,6 +56176,7 @@
           "created_at",
           "modified_at",
           "id",
+          "external_id",
           "metadata",
           "name",
           "code",
@@ -56401,6 +56433,21 @@
             "title": "Id",
             "description": "The ID of the object."
           },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
           },
@@ -56491,21 +56538,6 @@
               "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
             ]
           },
-          "external_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Id",
-            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
-            "examples": [
-              "ext_1337"
-            ]
-          },
           "products": {
             "items": {
               "$ref": "#/components/schemas/DiscountProduct"
@@ -56522,6 +56554,7 @@
           "created_at",
           "modified_at",
           "id",
+          "external_id",
           "metadata",
           "name",
           "code",
@@ -56531,7 +56564,6 @@
           "max_redemptions_per_customer",
           "redemptions_count",
           "organization_id",
-          "external_id",
           "products"
         ],
         "title": "DiscountPercentageOnceForeverDuration",
@@ -56584,6 +56616,21 @@
             "title": "Id",
             "description": "The ID of the object."
           },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
           },
@@ -56683,6 +56730,7 @@
           "created_at",
           "modified_at",
           "id",
+          "external_id",
           "metadata",
           "name",
           "code",
@@ -56746,6 +56794,21 @@
             "title": "Id",
             "description": "The ID of the object."
           },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
           },
@@ -56836,21 +56899,6 @@
               "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
             ]
           },
-          "external_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Id",
-            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
-            "examples": [
-              "ext_1337"
-            ]
-          },
           "products": {
             "items": {
               "$ref": "#/components/schemas/DiscountProduct"
@@ -56868,6 +56916,7 @@
           "created_at",
           "modified_at",
           "id",
+          "external_id",
           "metadata",
           "name",
           "code",
@@ -56877,7 +56926,6 @@
           "max_redemptions_per_customer",
           "redemptions_count",
           "organization_id",
-          "external_id",
           "products"
         ],
         "title": "DiscountPercentageRepeatDuration",
@@ -56934,6 +56982,21 @@
             "title": "Id",
             "description": "The ID of the object."
           },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
           },
@@ -57034,6 +57097,7 @@
           "created_at",
           "modified_at",
           "id",
+          "external_id",
           "metadata",
           "name",
           "code",

@@ -323,7 +323,9 @@ class DiscountProduct(ProductBase, MetadataOutputMixin):
     """A product that a discount can be applied to."""
 
 
-class DiscountBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
+class DiscountBase(
+    MetadataOutputMixin, ExternalIDOutputMixin, IDSchema, TimestampedSchema
+):
     name: str = Field(
         description=(
             "Name of the discount. "
@@ -425,7 +427,7 @@ class DiscountPercentageRepeatDurationBase(
 ): ...
 
 
-class DiscountFullBase(ExternalIDOutputMixin, DiscountBase):
+class DiscountFullBase(DiscountBase):
     products: list[DiscountProduct]
 
 

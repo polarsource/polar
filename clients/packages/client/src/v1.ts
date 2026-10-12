@@ -21913,6 +21913,12 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
@@ -21956,12 +21962,6 @@ export interface components {
        * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
-      /**
-       * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-       * @example ext_1337
-       */
-      external_id: string | null
       /** Products */
       products: components['schemas']['DiscountProduct'][]
     }
@@ -22010,6 +22010,12 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
@@ -22105,6 +22111,12 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
@@ -22148,12 +22160,6 @@ export interface components {
        * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
-      /**
-       * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-       * @example ext_1337
-       */
-      external_id: string | null
       /** Products */
       products: components['schemas']['DiscountProduct'][]
     }
@@ -22204,6 +22210,12 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
@@ -22370,6 +22382,12 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
@@ -22413,12 +22431,6 @@ export interface components {
        * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
-      /**
-       * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-       * @example ext_1337
-       */
-      external_id: string | null
       /** Products */
       products: components['schemas']['DiscountProduct'][]
     }
@@ -22450,6 +22462,12 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
@@ -22528,6 +22546,12 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
@@ -22571,12 +22595,6 @@ export interface components {
        * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
-      /**
-       * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-       * @example ext_1337
-       */
-      external_id: string | null
       /** Products */
       products: components['schemas']['DiscountProduct'][]
     }
@@ -22610,6 +22628,12 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
+      /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Name

@@ -25,6 +25,7 @@ from polar.models import (
     ProductPriceMeteredTiers,
     ProductPriceMeteredUnit,
     ProductPriceSeatUnit,
+    ProductPriceUnit,
 )
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
@@ -497,6 +498,16 @@ def price_config(
             **config,
             "tiers": price.tiers.model_dump(),
             "minimum_units": price.get_minimum_seats(),
+        }
+
+    if isinstance(price, ProductPriceUnit):
+        if price.tiers is None or price.get_maximum_units() != price.tiers.last_bound:
+            return None
+        return {
+            **config,
+            "tiers": price.tiers.model_dump(),
+            "minimum_units": price.get_minimum_purchasable_units(),
+            "unit_label": price.unit_label,
         }
 
     return None

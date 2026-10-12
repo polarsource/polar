@@ -12,6 +12,8 @@ import pytest
 from fakeredis import FakeAsyncRedis, FakeServer
 from httpx_ws.transport import ASGIWebSocketTransport
 from redis.asyncio import Redis
+from redis.asyncio.client import PubSub
+from redis.exceptions import ConnectionError as RedisConnectionError
 
 from polar import PolarDeserializationError, PolarError
 from polar.outpost.client import APPLY_SNAPSHOT_SCRIPT, Outpost, connect_websocket
@@ -148,9 +150,13 @@ async def test_ingest_accepts_raw_sdk_payload(
     assert result.inserted == 2
     field = f"bucket:tokens:{BUCKET}"
     assert await redis.hget("outpost:state:external:alice", field) == b"3"
-    assert list((await redis.hgetall("outpost:state:customer:alice")).values()) == [
-        b"5"
-    ]
+    assert [
+        value
+        for field, value in (
+            await redis.hgetall("outpost:state:customer:alice")
+        ).items()
+        if isinstance(field, bytes) and field.startswith(b"bucket:")
+    ] == [b"5"]
 
 
 @pytest.mark.anyio
@@ -180,6 +186,7 @@ async def test_customer_meter_reads_cold_and_shared_buckets(
         Outpost(url, client=polar_client) as writer,
         Outpost(url, client=polar_client) as reader,
     ):
+        await reader.actor(external_customer_id="alice")
         for value in (-2, 4):
             await writer.ingest(
                 events=[
@@ -191,9 +198,18 @@ async def test_customer_meter_reads_cold_and_shared_buckets(
                     }
                 ]
             )
-        meter = await reader.customer_meter(
+        own_meter = await writer.customer_meter(
             external_customer_id="alice", meter_id="meter"
         )
+        assert own_meter is not None and own_meter.consumed_units == expected
+        with anyio.fail_after(1):
+            while True:
+                meter = await reader.customer_meter(
+                    external_customer_id="alice", meter_id="meter"
+                )
+                if meter is not None and meter.consumed_units == expected:
+                    break
+                await anyio.lowlevel.checkpoint()
     assert meter is not None
     assert meter.consumed_units == expected
     assert meter.credited_units == 20
@@ -358,6 +374,7 @@ async def test_snapshot_arrives_over_websocket(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
+    websocket_requests: list[dict[str, typing.Any]],
 ) -> None:
     url, redis = redis_connection
     key = "outpost:state:external:alice"
@@ -370,20 +387,31 @@ async def test_snapshot_arrives_over_websocket(
             f"bucket:tokens:{BUCKET + 300}": 4,
         },
     )
-    snapshots["external:alice"] = {
-        "external_customer_id": "alice",
-        "cold_until": BUCKET + 300,
-        "cold": {"tokens": 107},
-        "credited": {"meter": 200},
-    }
-    async with Outpost(url, client=polar_client) as outpost:
-        await outpost.actor(external_customer_id="alice")
+    async with (
+        Outpost(url, client=polar_client) as owner,
+        Outpost(url, client=polar_client) as reader,
+    ):
+        await reader.actor(external_customer_id="alice")
         with anyio.fail_after(1):
-            while await redis.hget(key, "cold_until") != str(BUCKET + 300).encode():
+            while not any(
+                message["type"] == "snapshot" for message in websocket_requests
+            ):
                 await anyio.lowlevel.checkpoint()
-        meter = await outpost.customer_meter(
-            external_customer_id="alice", meter_id="meter"
-        )
+        snapshots["external:alice"] = {
+            "external_customer_id": "alice",
+            "cold_until": BUCKET + 300,
+            "cold": {"tokens": 107},
+            "credited": {"meter": 200},
+        }
+        await owner.actor(external_customer_id="alice")
+        with anyio.fail_after(1):
+            while True:
+                meter = await reader.customer_meter(
+                    external_customer_id="alice", meter_id="meter"
+                )
+                if meter is not None and meter.balance == 89:
+                    break
+                await anyio.lowlevel.checkpoint()
     assert meter is not None
     assert meter.consumed_units == 111
     assert meter.balance == 89
@@ -398,10 +426,11 @@ async def test_duplicate_and_older_snapshots(
     _, redis = redis_connection
     apply_snapshot = redis.register_script(APPLY_SNAPSHOT_SCRIPT)
     key = "outpost:state:external:alice"
-    args = [BUCKET, "cold:tokens", 10, "credited:meter", 20]
+    prefix = ["external:alice", "outpost:0:updates", "epoch"]
+    args = [*prefix, BUCKET, "cold:tokens", 10, "credited:meter", 20]
     await apply_snapshot(keys=[key], args=args)
     await apply_snapshot(keys=[key], args=args)
-    await apply_snapshot(keys=[key], args=[BUCKET - 300, "cold:tokens", 999])
+    await apply_snapshot(keys=[key], args=[*prefix, BUCKET - 300, "cold:tokens", 999])
     assert await redis.hget(key, "cold:tokens") == b"10"
     assert await redis.hget(key, "credited:meter") == b"20"
 
@@ -424,6 +453,203 @@ async def test_failed_configuration_closes_connections(
     assert not polar_client.is_closed
     with pytest.raises(RuntimeError, match="async with"):
         await outpost.actor(external_customer_id="alice")
+
+
+@pytest.mark.anyio
+async def test_warmed_reads_do_not_use_redis(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, redis = redis_connection
+    await redis.hset(
+        "outpost:state:external:alice",
+        mapping={"cold_until": BUCKET, "cold:tokens": 10},
+    )
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.ingest(
+            events=[
+                {
+                    "name": "call",
+                    "external_customer_id": "alice",
+                    "timestamp": TIMESTAMP,
+                    "metadata": {"tokens": 3},
+                }
+            ]
+        )
+
+        async def unexpected_command(
+            *args: typing.Any, **kwargs: typing.Any
+        ) -> typing.Any:
+            pytest.fail("A warmed meter read must not issue Redis commands")
+
+        assert outpost._redis is not None
+        monkeypatch.setattr(outpost._redis, "execute_command", unexpected_command)
+        meter = await outpost.customer_meter(
+            external_customer_id="alice", meter_id="meter"
+        )
+        assert meter is not None and meter.consumed_units == 13
+
+
+@pytest.mark.anyio
+async def test_old_messages_and_redis_reset_do_not_roll_back_cache(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, redis = redis_connection
+    key = "outpost:state:external:alice"
+    await redis.hset(
+        key,
+        mapping={
+            "cold_until": BUCKET,
+            "cold:tokens": 10,
+            "epoch": "first",
+            "revision": 2**53 + 1,
+        },
+    )
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        received = anyio.Event()
+        original = outpost._receive_state
+
+        async def receive_state(customer: str, state: dict[str, str]) -> None:
+            await original(customer, state)
+            if state.get("cold:tokens") == "1":
+                received.set()
+
+        monkeypatch.setattr(outpost, "_receive_state", receive_state)
+        old = {
+            "customer": "external:alice",
+            "state": [
+                "cold_until",
+                str(BUCKET),
+                "cold:tokens",
+                "1",
+                "epoch",
+                "first",
+                "revision",
+                str(2**53 + 1),
+            ],
+        }
+        await outpost.ingest(
+            events=[
+                {
+                    "name": "call",
+                    "external_customer_id": "alice",
+                    "timestamp": TIMESTAMP,
+                    "metadata": {"tokens": 3},
+                }
+            ]
+        )
+        await redis.publish("outpost:0:updates", json.dumps(old))
+        with anyio.fail_after(1):
+            await received.wait()
+        meter = await outpost.customer_meter(
+            external_customer_id="alice", meter_id="meter"
+        )
+        assert meter is not None and meter.consumed_units == 13
+
+        await redis.delete(key)
+        await redis.hset(key, mapping={"cold_until": BUCKET, "cold:tokens": 20})
+        await outpost.ingest(
+            events=[
+                {
+                    "name": "call",
+                    "external_customer_id": "alice",
+                    "timestamp": TIMESTAMP,
+                    "metadata": {"tokens": 2},
+                }
+            ]
+        )
+        received = anyio.Event()
+        await redis.publish("outpost:0:updates", json.dumps(old))
+        with anyio.fail_after(1):
+            await received.wait()
+        meter = await outpost.customer_meter(
+            external_customer_id="alice", meter_id="meter"
+        )
+        assert meter is not None and meter.consumed_units == 22
+
+
+@pytest.mark.anyio
+async def test_background_refresh_repairs_missed_notification(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, redis = redis_connection
+    monkeypatch.setattr("polar.outpost.client.SYNC_INTERVAL", 0.01)
+    key = "outpost:state:external:alice"
+    await redis.hset(key, mapping={"cold_until": BUCKET, "cold:tokens": 1})
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        await redis.hset(key, "cold:tokens", 2)
+        await redis.hincrby(key, "revision", 1)
+        with anyio.fail_after(2):
+            while True:
+                meter = await outpost.customer_meter(
+                    external_customer_id="alice", meter_id="meter"
+                )
+                if meter is not None and meter.consumed_units == 2:
+                    break
+                await anyio.lowlevel.checkpoint()
+
+
+@pytest.mark.anyio
+async def test_pubsub_reconnect_reloads_state(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, redis = redis_connection
+    original = PubSub.get_message
+    disconnect = False
+
+    async def get_message(
+        self: PubSub, *args: typing.Any, **kwargs: typing.Any
+    ) -> typing.Any:
+        nonlocal disconnect
+        if disconnect:
+            disconnect = False
+            raise RedisConnectionError("Subscription disconnected")
+        return await original(self, *args, **kwargs)
+
+    monkeypatch.setattr(PubSub, "get_message", get_message)
+    key = "outpost:state:external:alice"
+    await redis.hset(key, mapping={"cold_until": BUCKET, "cold:tokens": 1})
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        disconnect = True
+        await redis.hset(key, "cold:tokens", 2)
+        with anyio.fail_after(4):
+            while outpost._synced.is_set():
+                await anyio.lowlevel.checkpoint()
+            meter = await outpost.customer_meter(
+                external_customer_id="alice", meter_id="meter"
+            )
+        assert meter is not None and meter.consumed_units == 2
+
+
+@pytest.mark.anyio
+async def test_evicted_customer_is_reloaded(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, redis = redis_connection
+    monkeypatch.setattr("polar.outpost.client.CACHE_SIZE", 2)
+    key = "outpost:state:external:alice"
+    await redis.hset(key, mapping={"cold_until": BUCKET, "cold:tokens": 1})
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        await outpost.actor(external_customer_id="bob")
+        await outpost.actor(external_customer_id="carol")
+        await redis.hset(key, "cold:tokens", 2)
+        meter = await outpost.customer_meter(
+            external_customer_id="alice", meter_id="meter"
+        )
+        assert meter is not None and meter.consumed_units == 2
 
 
 @pytest.mark.anyio

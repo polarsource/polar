@@ -1,24 +1,40 @@
-import { defineConfig, eur, perThousand, usd } from '@polar-sh/polar'
+import { defineConfig, eq, eur, or, perThousand, usd } from '@polar-sh/polar'
 import { z } from 'zod'
 
 export default defineConfig({
   events: {
     tool_call: z.object({
       tool: z.string(),
-      // Could split meter into meter per server, billed differently
       server: z.enum(['builtin', 'custom']),
-      // Could filter the meter to only bill for successful calls
       success: z.boolean(),
-      // Could sum to a compute-time meter to bill by duration
       duration_ms: z.int(),
+    }),
+    llm_completion: z.object({
+      model: z.string(),
+      tokens: z.int(),
     }),
   },
   meters: ({ meter, events }) => ({
     tool_call: meter().on(events.tool_call).unit('custom', 'tool call').count(),
+    tokens: meter('Tokens')
+      .metadata({ team: 'ai' })
+      .on(events.llm_completion)
+      .where(
+        or(
+          eq(events.llm_completion.model, 'gpt-5'),
+          eq(events.llm_completion.model, 'claude-opus'),
+        ),
+      )
+      .unit('token')
+      .sum('tokens'),
   }),
   benefits: ({ flag, credits }) => ({
     custom_servers: flag('Custom servers').metadata({ tag: 'primary' }),
     tool_calls: credits('Included tool calls').meter('tool_call').units(1000),
+    topup_credits: credits('500 extra tool calls')
+      .meter('tool_call')
+      .units(500)
+      .rollover(),
   }),
   products: ({ product, fixed, seats, units, tier, meter }) => ({
     team: product('Team')
@@ -60,20 +76,19 @@ export default defineConfig({
     pro: product('Pro')
       .prices(
         fixed().amount(usd(99.99), eur(99.99)),
-        // seats()
-        //   .graduated(
-        //     tier().max(5).amount(usd(20), eur(18)),
-        //     tier().max(10).amount(usd(18), eur(16)),
-        //     tier().amount(usd(15), eur(14)),
-        //   )
-        //   .min(1),
         meter('tool_call')
           .flat()
           .amount(perThousand(usd(1)), perThousand(eur(0.9)))
           .cap(usd(100), eur(90)),
       )
       .recurring('monthly')
-      // .trial(14, 'days')
+      .description('For teams running agents in production')
+      .metadata({ tier: 'pro' })
       .grants(['custom_servers', 'tool_calls']),
+    topup: product('500 tool calls')
+      .prices(fixed().amount(usd(19), eur(17)))
+      .once()
+      .private()
+      .grants(['topup_credits']),
   }),
 })

@@ -750,6 +750,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.1
+      '@typescript/native':
+        specifier: 'catalog:'
+        version: typescript@7.0.2
 
   apps/orbit:
     dependencies:

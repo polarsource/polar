@@ -3416,6 +3416,7 @@ class TestUpdate:
             products=[product],
             customer=prior_customer,
             discount=discount,
+            status=CheckoutStatus.confirmed,
         )
         prior_checkout.customer_email = "customer@example.com"
         await save_fixture(prior_checkout)
@@ -6162,6 +6163,7 @@ class TestConfirm:
             products=[product],
             customer=existing_customer,
             discount=discount,
+            status=CheckoutStatus.confirmed,
         )
         prior_checkout.customer_email = "customer@example.com"
         await save_fixture(prior_checkout)
@@ -6234,6 +6236,7 @@ class TestConfirm:
             products=[product],
             customer=prior_customer,
             discount=discount,
+            status=CheckoutStatus.confirmed,
         )
         prior_checkout.customer_email = "other@example.com"
         await save_fixture(prior_checkout)

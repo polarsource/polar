@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import (
     ColumnElement,
     ColumnExpressionArgument,
+    and_,
     distinct,
     func,
     or_,
@@ -23,6 +24,7 @@ from polar.models import (
     Refund,
     Subscription,
 )
+from polar.models.checkout import CheckoutStatus
 from polar.models.order import OrderStatus
 from polar.models.payment import PaymentStatus
 from polar.models.refund import RefundReason, RefundStatus
@@ -123,8 +125,9 @@ class DiscountRedemptionRepository(
         present when a charge occurred).
 
         A redemption whose orders are all fully refunded doesn't count, unless the
-        refund was issued to head off a chargeback. The global ``max_redemptions``
-        budget is unaffected.
+        refund was issued to head off a chargeback. A redemption with no order
+        counts only while its checkout is still confirmed, or when it is tied to
+        a subscription. The global ``max_redemptions`` budget is unaffected.
 
         The current, in-progress redemption is excluded via ``exclude_checkout_id``.
         """
@@ -187,7 +190,13 @@ class DiscountRedemptionRepository(
                 DiscountRedemption.checkout_id.is_distinct_from(exclude_checkout_id),
                 or_(*clauses),
                 or_(
-                    ~redemption_orders.exists(),
+                    and_(
+                        ~redemption_orders.exists(),
+                        or_(
+                            Checkout.status == CheckoutStatus.confirmed,
+                            DiscountRedemption.subscription_id.is_not(None),
+                        ),
+                    ),
                     redemption_orders.where(
                         Order.status.in_(OrderStatus.paid_statuses())
                     ).exists(),

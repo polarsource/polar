@@ -25,6 +25,7 @@ from polar.models import (
     Product,
     UserOrganization,
 )
+from polar.models.checkout import CheckoutStatus
 from polar.models.discount import (
     DiscountDuration,
     DiscountFixed,
@@ -1082,7 +1083,10 @@ class TestCheckPerCustomerLimitReached:
             save_fixture, organization=organization, email="customer@example.com"
         )
         prior_checkout = await create_checkout(
-            save_fixture, products=[product], customer=customer
+            save_fixture,
+            products=[product],
+            customer=customer,
+            status=CheckoutStatus.confirmed,
         )
         await create_discount_redemption(
             save_fixture, discount=discount, checkout=prior_checkout
@@ -1117,7 +1121,10 @@ class TestCheckPerCustomerLimitReached:
             save_fixture, organization=organization, email="customer@example.com"
         )
         prior_checkout = await create_checkout(
-            save_fixture, products=[product], customer=customer
+            save_fixture,
+            products=[product],
+            customer=customer,
+            status=CheckoutStatus.confirmed,
         )
         await create_discount_redemption(
             save_fixture, discount=discount, checkout=prior_checkout
@@ -1153,7 +1160,10 @@ class TestCheckPerCustomerLimitReached:
             save_fixture, organization=organization, email="someone-else@example.com"
         )
         prior_checkout = await create_checkout(
-            save_fixture, products=[product], customer=prior_customer
+            save_fixture,
+            products=[product],
+            customer=prior_customer,
+            status=CheckoutStatus.confirmed,
         )
         prior_checkout.customer_email = "customer@example.com"
         await save_fixture(prior_checkout)
@@ -1201,7 +1211,10 @@ class TestCheckPerCustomerLimitReached:
             save_fixture, organization=organization, email="other@example.com"
         )
         prior_checkout = await create_checkout(
-            save_fixture, products=[product], customer=prior_customer
+            save_fixture,
+            products=[product],
+            customer=prior_customer,
+            status=CheckoutStatus.confirmed,
         )
         prior_checkout.customer_email = "other@example.com"
         await save_fixture(prior_checkout)
@@ -1252,7 +1265,10 @@ class TestCheckPerCustomerLimitReached:
             save_fixture, organization=organization, email="other@example.com"
         )
         prior_checkout = await create_checkout(
-            save_fixture, products=[product], customer=prior_customer
+            save_fixture,
+            products=[product],
+            customer=prior_customer,
+            status=CheckoutStatus.confirmed,
         )
         prior_checkout.customer_email = "other@example.com"
         await save_fixture(prior_checkout)
@@ -1567,6 +1583,72 @@ class TestCheckPerCustomerLimitReached:
                 session, discount, checkout=current_checkout
             )
             is False
+        )
+
+    async def test_orderless_redemption_counts_only_while_checkout_is_confirmed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            max_redemptions=3,
+            max_redemptions_per_customer=1,
+        )
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+
+        for status in (
+            CheckoutStatus.open,
+            CheckoutStatus.expired,
+            CheckoutStatus.failed,
+        ):
+            checkout = await create_checkout(
+                save_fixture,
+                products=[product],
+                customer=customer,
+                status=status,
+            )
+            await create_discount_redemption(
+                save_fixture, discount=discount, checkout=checkout
+            )
+
+        current_checkout = await create_checkout(
+            save_fixture, products=[product], customer=customer
+        )
+
+        assert (
+            await discount_service.check_per_customer_limit_reached(
+                session, discount, checkout=current_checkout, customer=customer
+            )
+            is False
+        )
+        assert (
+            await discount_service.is_redeemable_discount(session, discount)
+        ) is False
+
+        confirmed_checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            customer=customer,
+            status=CheckoutStatus.confirmed,
+        )
+        await create_discount_redemption(
+            save_fixture, discount=discount, checkout=confirmed_checkout
+        )
+
+        assert (
+            await discount_service.check_per_customer_limit_reached(
+                session, discount, checkout=current_checkout, customer=customer
+            )
+            is True
         )
 
 

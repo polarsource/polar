@@ -33,10 +33,6 @@ export type DeclaredMetadata<Values extends Metadata> = {
   readonly [declaredMetadata]: Values
 }
 
-/** Rejects a second `.metadata()`, whose values would replace the first. */
-type NoDeclaredMetadata<Builder> =
-  Builder extends DeclaredMetadata<Metadata> ? never : Builder
-
 export type HasMetadata = {
   readonly [metadataKey]?: Metadata | undefined
 }
@@ -44,7 +40,6 @@ export type HasMetadata = {
 export interface MetadataBuilder {
   readonly [metadataKey]: Metadata | undefined
   metadata<const Values extends Metadata>(
-    this: NoDeclaredMetadata<this>,
     metadata: Values,
   ): this & DeclaredMetadata<Values>
 }
@@ -57,9 +52,11 @@ export const withMetadata = <Base extends Mixin<Builder>>(
     readonly [metadataKey]: Metadata | undefined = undefined
 
     metadata<const Values extends Metadata>(
-      this: NoDeclaredMetadata<this>,
       metadata: Values,
     ): this & DeclaredMetadata<Values> {
+      if (this[metadataKey] !== undefined) {
+        throw new Error('metadata() can only be called once per builder.')
+      }
       return this.with<this & DeclaredMetadata<Values>>({
         [metadataKey]: { ...metadata },
       })

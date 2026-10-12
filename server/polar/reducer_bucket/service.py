@@ -12,7 +12,7 @@ from polar.meter.aggregation import (
     PropertyAggregation,
     UniqueAggregation,
 )
-from polar.models import Event, Reducer, ReducerBucket
+from polar.models import Customer, Event, Reducer, ReducerBucket
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from polar.reducer.repository import ReducerRepository
@@ -24,6 +24,7 @@ from .repository import ReducerBucketRepository
 log: Logger = structlog.get_logger()
 
 REDUCER_BUCKET_SIZE = timedelta(minutes=5)
+SEAL_SYNC_LOOKBACK = timedelta(minutes=15)
 
 type Contributions = dict[redis_store.BucketId, list[tuple[datetime, float]]]
 
@@ -135,7 +136,7 @@ class ReducerBucketService:
                     if isinstance(reducer.aggregation, PropertyAggregation)
                     else {}
                 )
-                await repository.add_contribution(
+                while not await repository.add_contribution(
                     reducer,
                     start,
                     end,
@@ -143,7 +144,8 @@ class ReducerBucketService:
                     external_customer_id,
                     count=len(values),
                     **statistics,
-                )
+                ):
+                    pass
 
     async def sync(
         self,
@@ -165,6 +167,61 @@ class ReducerBucketService:
         await self._sync_bucket(
             repository, reducer, bucket_start, customer_id, external_customer_id
         )
+
+    async def seal(
+        self,
+        session: AsyncSession,
+        reducers: Sequence[Reducer],
+        customer: Customer,
+        *,
+        start: datetime,
+        cutoff: datetime,
+    ) -> None:
+        if start >= cutoff:
+            return
+        repository = ReducerBucketRepository.from_session(session)
+        identities: list[tuple[uuid.UUID | None, str | None]] = [(customer.id, None)]
+        if customer.external_id is not None:
+            identities += [
+                (None, customer.external_id),
+                (customer.id, customer.external_id),
+            ]
+
+        synced_from = get_reducer_bucket_start(
+            max(start, utc_now() - SEAL_SYNC_LOOKBACK)
+        )
+        bucket_starts = {
+            get_reducer_bucket_start(start),
+            get_reducer_bucket_start(cutoff),
+        }
+        bucket_start = synced_from
+        while bucket_start < cutoff:
+            bucket_starts.add(bucket_start)
+            bucket_start += REDUCER_BUCKET_SIZE
+        bucket_ids = sorted(
+            (
+                (reducer, bucket_start, customer_id, external_customer_id)
+                for reducer in reducers
+                for bucket_start in bucket_starts
+                for customer_id, external_customer_id in identities
+            ),
+            key=lambda b: redis_store.get_reducer_bucket_key(b[0].id, b[1], b[2], b[3]),
+        )
+        for bucket_id in bucket_ids:
+            await repository.lock_buckets(*bucket_id)
+        for bucket_id in bucket_ids:
+            if bucket_id[1] >= synced_from:
+                await self._sync_bucket(repository, *bucket_id)
+
+        for reducer in sorted(reducers, key=lambda reducer: str(reducer.id)):
+            for customer_id, external_customer_id in identities:
+                for at in (start, cutoff):
+                    await self._split(
+                        repository, reducer, at, customer_id, external_customer_id
+                    )
+            await repository.seal(
+                reducer, identities, start=start, end=cutoff, sealed_at=utc_now()
+            )
 
     async def _get_intervals(
         self,
@@ -197,15 +254,15 @@ class ReducerBucketService:
         for start, end in await self._get_intervals(
             repository, reducer, bucket_start, customer_id, external_customer_id
         ):
+            previous = await repository.get_latest_for_update(
+                reducer, start, customer_id, external_customer_id
+            )
             count, total, minimum, maximum = await repository.aggregate_events(
                 reducer, start, end, customer_id, external_customer_id
             )
             if count == 0:
                 continue
             statistics = {"count": count, "sum": total, "min": minimum, "max": maximum}
-            previous = await repository.get_latest(
-                reducer, start, customer_id, external_customer_id
-            )
             # Sealed buckets were billed: events since go to a new generation.
             if previous is not None and previous.sealed_at is None:
                 await repository.update(previous, update_dict=statistics)
@@ -220,6 +277,71 @@ class ReducerBucketService:
                     bucket_end=end,
                     **statistics,
                     generation=1 if previous is None else previous.generation + 1,
+                ),
+                flush=True,
+            )
+
+    async def _split(
+        self,
+        repository: ReducerBucketRepository,
+        reducer: Reducer,
+        at: datetime,
+        customer_id: uuid.UUID | None,
+        external_customer_id: str | None,
+    ) -> None:
+        start, end = next(
+            (start, end)
+            for start, end in await self._get_intervals(
+                repository,
+                reducer,
+                get_reducer_bucket_start(at),
+                customer_id,
+                external_customer_id,
+            )
+            if start <= at < end
+        )
+        if start == at:
+            return
+        previous = await repository.get_latest_for_update(
+            reducer, start, customer_id, external_customer_id
+        )
+        if previous is not None and (
+            previous.sealed_at is not None or previous.generation > 1
+        ):
+            log.warning(
+                "Skipping split of sealed reducer bucket",
+                reducer_id=reducer.id,
+                bucket_start=start.isoformat(),
+                at=at.isoformat(),
+            )
+            return
+
+        sides = []
+        for interval_start, interval_end in ((start, at), (at, end)):
+            count, total, minimum, maximum = await repository.aggregate_events(
+                reducer, interval_start, interval_end, customer_id, external_customer_id
+            )
+            statistics = {"count": count, "sum": total, "min": minimum, "max": maximum}
+            sides.append((interval_start, interval_end, statistics))
+        if previous is None and all(
+            statistics["count"] == 0 for *_, statistics in sides
+        ):
+            return
+        for interval_start, interval_end, statistics in sides:
+            if interval_start == start and previous is not None:
+                await repository.update(
+                    previous, update_dict={"bucket_end": at, **statistics}
+                )
+                continue
+            await repository.create(
+                ReducerBucket(
+                    organization_id=reducer.organization_id,
+                    reducer=reducer,
+                    customer_id=customer_id,
+                    external_customer_id=external_customer_id,
+                    bucket_start=interval_start,
+                    bucket_end=interval_end,
+                    **statistics,
                 ),
                 flush=True,
             )

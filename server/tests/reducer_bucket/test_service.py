@@ -14,7 +14,7 @@ from polar.meter.aggregation import (
     PropertyAggregation,
     UniqueAggregation,
 )
-from polar.models import Event, Organization, Reducer, ReducerBucket
+from polar.models import Customer, Event, Organization, Reducer, ReducerBucket
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from polar.redis import Redis
@@ -28,6 +28,7 @@ from polar.reducer_bucket.service import reducer_bucket as reducer_bucket_servic
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
+    create_customer,
     create_event,
     create_meter,
     create_reducer,
@@ -480,3 +481,266 @@ class TestSync:
         assert (second.generation, second.count, second.sum) == (2, 2, Decimal(9))
         assert (second.min, second.max) == (Decimal(4), Decimal(5))
         assert second.sealed_at is None
+
+
+CUTOFF = datetime(2026, 10, 7, 12, 7, tzinfo=UTC)
+START = datetime(2026, 10, 7, 10, tzinfo=UTC)
+INGESTED_AT = BILLED_AT - timedelta(minutes=1)
+
+
+@pytest.fixture
+async def max_reducer(save_fixture: SaveFixture, organization: Organization) -> Reducer:
+    meter = await create_meter(
+        save_fixture,
+        id=uuid.uuid4(),
+        organization=organization,
+        aggregation=PropertyAggregation(
+            func=AggregationFunction.max, property="tokens"
+        ),
+    )
+    return await create_reducer(save_fixture, organization=organization, meters=[meter])
+
+
+@pytest.fixture
+async def external_customer(
+    save_fixture: SaveFixture, organization: Organization
+) -> Customer:
+    return await create_customer(
+        save_fixture, organization=organization, external_id="external"
+    )
+
+
+async def get_intervals(
+    session: AsyncSession,
+) -> list[tuple[datetime, datetime, int, int, Decimal | None, bool]]:
+    return [
+        (
+            bucket.bucket_start,
+            bucket.bucket_end,
+            bucket.generation,
+            bucket.count,
+            bucket.max,
+            bucket.sealed_at is not None,
+        )
+        for bucket in await get_buckets(session)
+    ]
+
+
+@pytest.mark.anyio
+class TestSeal:
+    @pytest.fixture(autouse=True)
+    def now(self, mocker: MockerFixture) -> None:
+        mocker.patch("polar.reducer_bucket.service.utc_now", return_value=BILLED_AT)
+        mocker.patch("polar.reducer_bucket.service.enqueue_job")
+
+    async def test_splits_at_cutoff(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        max_reducer: Reducer,
+        external_customer: Customer,
+        organization: Organization,
+    ) -> None:
+        for timestamp, tokens in (
+            (CLOSED, 5),
+            (CLOSED, 2),
+            (CUTOFF - timedelta(microseconds=1), 1),
+            (CUTOFF, 3),
+        ):
+            await create_tokens_event(
+                save_fixture,
+                organization,
+                tokens,
+                timestamp=timestamp,
+                ingested_at=INGESTED_AT,
+            )
+
+        await reducer_bucket_service.seal(
+            session, [max_reducer], external_customer, start=START, cutoff=CUTOFF
+        )
+
+        assert await get_intervals(session) == [
+            (BUCKET_START, CUTOFF, 1, 3, Decimal(5), True),
+            (CUTOFF, NEXT_BUCKET_START, 1, 1, Decimal(3), False),
+        ]
+
+    async def test_seals_whole_buckets_up_to_a_boundary(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        max_reducer: Reducer,
+        external_customer: Customer,
+        organization: Organization,
+    ) -> None:
+        old = datetime(2026, 10, 7, 11, tzinfo=UTC)
+        await create_tokens_event(
+            save_fixture, organization, 4, timestamp=old, ingested_at=INGESTED_AT
+        )
+        await reducer_bucket_service.sync(
+            session, max_reducer.id, old, None, "external"
+        )
+        await create_tokens_event(
+            save_fixture, organization, 5, ingested_at=INGESTED_AT
+        )
+        await create_event(
+            save_fixture,
+            organization=organization,
+            timestamp=CLOSED,
+            external_customer_id="other",
+            metadata={"tokens": 6},
+        )
+        await reducer_bucket_service.sync(
+            session, max_reducer.id, BUCKET_START, None, "other"
+        )
+
+        await reducer_bucket_service.seal(
+            session,
+            [max_reducer],
+            external_customer,
+            start=START,
+            cutoff=NEXT_BUCKET_START,
+        )
+
+        buckets = sorted(
+            await get_buckets(session),
+            key=lambda bucket: (bucket.external_customer_id, bucket.bucket_start),
+        )
+        assert [
+            (bucket.external_customer_id, bucket.bucket_start, bucket.max)
+            for bucket in buckets
+        ] == [
+            ("external", old, Decimal(4)),
+            ("external", BUCKET_START, Decimal(5)),
+            ("other", BUCKET_START, Decimal(6)),
+        ]
+        assert [bucket.sealed_at for bucket in buckets] == [BILLED_AT, BILLED_AT, None]
+        assert {bucket.bucket_end - bucket.bucket_start for bucket in buckets} == {
+            REDUCER_BUCKET_SIZE
+        }
+
+    async def test_persists_empty_remainder(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        max_reducer: Reducer,
+        external_customer: Customer,
+        organization: Organization,
+    ) -> None:
+        await create_tokens_event(
+            save_fixture, organization, 5, ingested_at=INGESTED_AT
+        )
+
+        await reducer_bucket_service.seal(
+            session, [max_reducer], external_customer, start=START, cutoff=CUTOFF
+        )
+
+        assert await get_intervals(session) == [
+            (BUCKET_START, CUTOFF, 1, 1, Decimal(5), True),
+            (CUTOFF, NEXT_BUCKET_START, 1, 0, None, False),
+        ]
+
+    async def test_leaves_usage_before_start_open(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        max_reducer: Reducer,
+        external_customer: Customer,
+        organization: Organization,
+    ) -> None:
+        for timestamp, tokens in ((CLOSED, 5), (CUTOFF, 3)):
+            await create_tokens_event(
+                save_fixture,
+                organization,
+                tokens,
+                timestamp=timestamp,
+                ingested_at=INGESTED_AT,
+            )
+
+        await reducer_bucket_service.seal(
+            session,
+            [max_reducer],
+            external_customer,
+            start=CUTOFF,
+            cutoff=NEXT_BUCKET_START,
+        )
+
+        assert await get_intervals(session) == [
+            (BUCKET_START, CUTOFF, 1, 1, Decimal(5), False),
+            (CUTOFF, NEXT_BUCKET_START, 1, 1, Decimal(3), True),
+        ]
+
+    async def test_splits_repeatedly(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        max_reducer: Reducer,
+        external_customer: Customer,
+        organization: Organization,
+    ) -> None:
+        later_cutoff = CUTOFF + timedelta(minutes=1)
+        for timestamp, tokens in ((CLOSED, 5), (CUTOFF, 3), (later_cutoff, 4)):
+            await create_tokens_event(
+                save_fixture,
+                organization,
+                tokens,
+                timestamp=timestamp,
+                ingested_at=INGESTED_AT,
+            )
+
+        for cutoff in (CUTOFF, later_cutoff):
+            await reducer_bucket_service.seal(
+                session, [max_reducer], external_customer, start=START, cutoff=cutoff
+            )
+
+        assert await get_intervals(session) == [
+            (BUCKET_START, CUTOFF, 1, 1, Decimal(5), True),
+            (CUTOFF, later_cutoff, 1, 1, Decimal(3), True),
+            (later_cutoff, NEXT_BUCKET_START, 1, 1, Decimal(4), False),
+        ]
+
+    async def test_routes_later_events_to_split_intervals(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        max_reducer: Reducer,
+        external_customer: Customer,
+        organization: Organization,
+    ) -> None:
+        for timestamp, tokens in ((CLOSED, 5), (CUTOFF, 3)):
+            await create_tokens_event(
+                save_fixture,
+                organization,
+                tokens,
+                timestamp=timestamp,
+                ingested_at=INGESTED_AT,
+            )
+        await reducer_bucket_service.seal(
+            session, [max_reducer], external_customer, start=START, cutoff=CUTOFF
+        )
+
+        await reducer_bucket_service.rollup(
+            session,
+            redis,
+            organization.id,
+            [
+                build_event(organization, timestamp=CLOSED, metadata={"tokens": 2}),
+                build_event(organization, timestamp=CUTOFF, metadata={"tokens": 6}),
+            ],
+        )
+        await create_tokens_event(
+            save_fixture,
+            organization,
+            7,
+            timestamp=CUTOFF,
+            ingested_at=BILLED_AT + timedelta(minutes=1),
+        )
+        await reducer_bucket_service.sync(
+            session, max_reducer.id, BUCKET_START, None, "external"
+        )
+
+        assert await get_intervals(session) == [
+            (BUCKET_START, CUTOFF, 1, 1, Decimal(5), True),
+            (BUCKET_START, CUTOFF, 2, 1, Decimal(2), False),
+            (CUTOFF, NEXT_BUCKET_START, 1, 2, Decimal(7), False),
+        ]

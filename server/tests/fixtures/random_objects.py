@@ -892,6 +892,7 @@ async def create_discount(
     max_redemptions: int | None = None,
     max_redemptions_per_customer: int | None = None,
     products: list[Product] | None = None,
+    external_id: str | None = None,
 ) -> DiscountFixed: ...
 @typing.overload
 async def create_discount(
@@ -909,6 +910,7 @@ async def create_discount(
     max_redemptions: int | None = None,
     max_redemptions_per_customer: int | None = None,
     products: list[Product] | None = None,
+    external_id: str | None = None,
 ) -> DiscountPercentage: ...
 async def create_discount(
     save_fixture: SaveFixture,
@@ -926,6 +928,7 @@ async def create_discount(
     max_redemptions: int | None = None,
     max_redemptions_per_customer: int | None = None,
     products: list[Product] | None = None,
+    external_id: str | None = None,
 ) -> Discount:
     model = type.get_model()
     custom_field = model(
@@ -941,6 +944,7 @@ async def create_discount(
         max_redemptions=max_redemptions,
         max_redemptions_per_customer=max_redemptions_per_customer,
         redemptions_count=0,
+        external_id=external_id,
     )
     if isinstance(custom_field, DiscountFixed):
         assert amounts is not None

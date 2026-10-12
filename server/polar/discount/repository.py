@@ -50,6 +50,16 @@ class DiscountRepository(RepositoryBase[Discount], RepositoryIDMixin[Discount, U
         )
         return await self.get_one_or_none(statement)
 
+    async def get_by_external_id_and_organization(
+        self, external_id: str, organization_id: UUID
+    ) -> Discount | None:
+        statement = select(Discount).where(
+            Discount.external_id == external_id,
+            Discount.organization_id == organization_id,
+            ~Discount.is_deleted,
+        )
+        return await self.get_one_or_none(statement)
+
 
 class DiscountRedemptionRepository(
     RepositoryBase[DiscountRedemption], RepositoryIDMixin[DiscountRedemption, UUID]

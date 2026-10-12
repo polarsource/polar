@@ -17,7 +17,7 @@ export interface Ink {
   faint: string
 }
 
-const NIGHT = '#090909'
+const NIGHT = '#141414'
 const SNOW = '#d8d8d8'
 const MIST = '#7b7b7b'
 const ETHER = '#3619CC'
@@ -66,6 +66,8 @@ export interface SheetProps {
   ink?: Ink
   children?: ReactNode
   title?: string
+  /** The page's inner margin; given, the sheet is cropped to it, so the page sits flat on whatever holds it. */
+  pad?: number
 }
 
 export function Sheet({
@@ -75,13 +77,23 @@ export function Sheet({
   ink: custom,
   children,
   title,
+  pad,
 }: SheetProps) {
   const ink = custom ?? INK[surface]
+  // Cropped to the margin so the page sits flush with the text beside it; what is drawn on the margin line
+  // itself still shows, as the sheet overflows.
+  const viewBox = pad
+    ? `${pad} ${pad} ${w - pad * 2} ${h - pad * 2}`
+    : `0 0 ${w} ${h}`
   return (
     <svg
-      viewBox={`0 0 ${w} ${h}`}
+      viewBox={viewBox}
       width="100%"
-      style={{ display: 'block', background: ink.bg }}
+      style={{
+        display: 'block',
+        overflow: 'visible',
+        background: pad ? undefined : ink.bg,
+      }}
       role="img"
       aria-label={title}
     >
@@ -95,7 +107,7 @@ export function Label({
   y,
   children,
   ink,
-  size = 10,
+  size = 11.5,
   anchor = 'start',
   dim = true,
   color,
@@ -129,7 +141,7 @@ export function Code({
   y,
   lines,
   ink,
-  size = 11,
+  size = 13,
   lh = 1.7,
 }: {
   x: number

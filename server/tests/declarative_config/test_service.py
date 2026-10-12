@@ -106,6 +106,24 @@ PRO_PRODUCT = {
 }
 
 
+TEAM_PRODUCT = {
+    "external_id": "team",
+    "name": "Team",
+    "description": "Description",
+    "recurring_interval": "month",
+    "prices": [
+        {
+            "amount_type": "seat_based",
+            "tax_behavior": "exclusive",
+            "tiers": {
+                "type": "volume",
+                "tiers": [{"bound": None, "unit_amount": "1000.0"}],
+            },
+        }
+    ],
+}
+
+
 @pytest.mark.anyio
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 class TestApply:
@@ -873,7 +891,7 @@ class TestPlan:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            prices=[(500, None, None, "usd")],
             external_id="team",
         )
 
@@ -911,7 +929,7 @@ class TestPlan:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(1000, "usd"), ("seat", 500, "usd")],
+            prices=[(1000, "usd"), (500, None, None, "usd")],
             external_id="team",
         )
 
@@ -940,7 +958,111 @@ class TestPlan:
         assert product.name == "Team"
         assert [price.amount_type for price in product.prices] == [
             ProductPriceAmountType.fixed,
-            ProductPriceAmountType.seat_based,
+            ProductPriceAmountType.custom,
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_product_seat_based_price_unchanged(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            name="Team",
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+            external_id="team",
+        )
+
+        plan = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate({"products": [TEAM_PRODUCT]})
+        )
+
+        assert plan.issues == []
+        assert plan.changes[0].action == ConfigAction.unchanged
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_product_seat_based_price_changed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            name="Team",
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+            external_id="team",
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "products": [
+                        {
+                            **TEAM_PRODUCT,
+                            "prices": [
+                                {
+                                    "amount_type": "seat_based",
+                                    "tiers": {
+                                        "type": "volume",
+                                        "tiers": [{"bound": None, "unit_amount": 800}],
+                                    },
+                                }
+                            ],
+                        }
+                    ]
+                }
+            ),
+        )
+
+        assert plan.changes[0].action == ConfigAction.updated
+        assert [change.field for change in plan.changes[0].diff] == ["prices"]
+
+    @pytest.mark.parametrize(
+        "update",
+        [
+            pytest.param({"maximum_units": 5}, id="maximum_units"),
+            pytest.param({"tiers": None}, id="no_tiers"),
+        ],
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_product_seat_based_price_unsupported(
+        self,
+        update: dict[str, Any],
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            name="Team",
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+            external_id="team",
+        )
+        price = product.prices[0]
+        for name, value in update.items():
+            setattr(price, name, value)
+        await save_fixture(price)
+
+        plan = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate({"products": [TEAM_PRODUCT]})
+        )
+
+        assert [(issue.severity, issue.loc) for issue in plan.issues] == [
+            (ConfigIssueSeverity.error, ["body", "products", 0, "prices"])
         ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")

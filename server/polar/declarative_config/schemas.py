@@ -27,6 +27,7 @@ from polar.product.schemas import (
     ProductName,
     ProductPriceCreateBase,
     ProductPriceFixedCreate,
+    ProductPriceSeatBasedCreate,
 )
 
 MAXIMUM_METERS = 100
@@ -112,6 +113,16 @@ ConfigBenefit = Annotated[
 ]
 
 
+class ConfigProductPriceSeatBased(ProductPriceSeatBasedCreate):
+    model_config = ConfigDict(extra="forbid")
+
+    minimum_units: int = Field(
+        default=1,
+        ge=1,
+        description="The minimum purchasable seat quantity (inclusive).",
+    )
+
+
 class ConfigProductPriceFixed(ProductPriceFixedCreate):
     model_config = ConfigDict(extra="forbid")
 
@@ -144,7 +155,9 @@ class ConfigProductPriceMeteredUnit(ProductPriceCreateBase):
 
 
 ConfigProductPrice = Annotated[
-    ConfigProductPriceFixed | ConfigProductPriceMeteredUnit,
+    ConfigProductPriceFixed
+    | ConfigProductPriceMeteredUnit
+    | ConfigProductPriceSeatBased,
     Discriminator("amount_type"),
     SetSchemaReference("ConfigProductPrice"),
 ]

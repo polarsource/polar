@@ -11,11 +11,17 @@ from polar.product.schemas import (
     ProductPriceCreate,
     ProductPriceFixedCreate,
     ProductPriceMeteredUnitCreate,
+    ProductPriceSeatBasedCreate,
     ProductPriceUpdate,
     ProductUpdate,
 )
 
-from .schemas import ConfigProduct, ConfigProductPrice, ConfigProductPriceMeteredUnit
+from .schemas import (
+    ConfigProduct,
+    ConfigProductPrice,
+    ConfigProductPriceMeteredUnit,
+    ConfigProductPriceSeatBased,
+)
 from .validation import PriceKey, ProductChange, price_config, price_key
 
 _PRICE_INPUT_FIELDS = {
@@ -25,6 +31,8 @@ _PRICE_INPUT_FIELDS = {
     "price_amount",
     "unit_amount",
     "cap_amount",
+    "tiers",
+    "minimum_units",
 }
 
 
@@ -54,12 +62,20 @@ def product_error(
 def price_create(
     price: ConfigProductPrice,
     meter_ids: dict[str, UUID],
-) -> ProductPriceFixedCreate | ProductPriceMeteredUnitCreate:
+) -> (
+    ProductPriceFixedCreate
+    | ProductPriceMeteredUnitCreate
+    | ProductPriceSeatBasedCreate
+):
     if isinstance(price, ConfigProductPriceMeteredUnit):
         return ProductPriceMeteredUnitCreate(
             **price.model_dump(exclude={"meter"}),
             meter_id=meter_ids[price.meter],
         )
+
+    if isinstance(price, ConfigProductPriceSeatBased):
+        return ProductPriceSeatBasedCreate(**price.model_dump())
+
     return ProductPriceFixedCreate(**price.model_dump())
 
 

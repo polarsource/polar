@@ -1,3 +1,4 @@
+import json
 from collections.abc import Sequence
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
@@ -22,6 +23,7 @@ from polar.models import (
     ProductPrice,
     ProductPriceFixed,
     ProductPriceMeteredUnit,
+    ProductPriceSeatUnit,
 )
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
@@ -209,9 +211,8 @@ def unsupported_prices(changes: Sequence[ProductChange]) -> list[ConfigIssue]:
                 type=ConfigIssueType.not_supported,
                 loc=_loc(ConfigResource.product, change.index, "prices"),
                 msg=(
-                    "This product has prices config can't manage yet: custom or "
-                    "seat-based prices, or metered prices on meters not in this "
-                    "config. "
+                    "This product has prices config can't manage yet: custom "
+                    "prices, or metered prices on meters not in this config. "
                     + (
                         "Its prices can't be changed from config."
                         if changed
@@ -471,19 +472,32 @@ def price_config(
             "unit_amount": price.unit_amount,
             "cap_amount": price.cap_amount,
         }
+
+    if isinstance(price, ProductPriceSeatUnit):
+        if price.tiers is None or price.get_maximum_seats() != price.tiers.last_bound:
+            return None
+        return {
+            **config,
+            "tiers": price.tiers.model_dump(),
+            "minimum_units": price.get_minimum_seats(),
+        }
+
     return None
 
 
 type PriceKey = tuple[tuple[str, str], ...]
 
 
-def price_key(price: dict[str, Any]) -> PriceKey:
-    return tuple(
-        sorted(
-            (key, str(value.normalize() if isinstance(value, Decimal) else value))
-            for key, value in price.items()
-        )
+def _comparable(value: Any) -> str:
+    return json.dumps(
+        value,
+        sort_keys=True,
+        default=lambda v: str(v.normalize()) if isinstance(v, Decimal) else str(v),
     )
+
+
+def price_key(price: dict[str, Any]) -> PriceKey:
+    return tuple(sorted((key, _comparable(value)) for key, value in price.items()))
 
 
 def _get_product_update_dict(

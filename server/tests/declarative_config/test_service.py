@@ -28,13 +28,19 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
 from polar.meter.unit import MeterUnit
-from polar.models import Organization, User, UserOrganization
+from polar.models import (
+    Organization,
+    ProductPriceMeteredTiers,
+    User,
+    UserOrganization,
+)
 from polar.models.benefit import BenefitType
 from polar.models.product_price import ProductPriceAmountType
 from polar.models.user_organization import OrganizationRole
 from polar.oauth2.exceptions import InsufficientScopeError
 from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
+from polar.product.tiers import Tiers
 from polar.redis import Redis
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -44,6 +50,7 @@ from tests.fixtures.random_objects import (
     create_event,
     create_meter,
     create_product,
+    create_product_price_metered_tiers,
 )
 
 TOOL_CALLS_METER = {
@@ -121,6 +128,28 @@ TEAM_PRODUCT = {
             },
         }
     ],
+}
+
+
+METERED_TIERS_PRICE = {
+    "amount_type": "metered_tiers",
+    "meter": "sdk-tool-calls",
+    "tiers": {
+        "type": "graduated",
+        "tiers": [
+            {"bound": 1000, "unit_amount": "0"},
+            {"bound": None, "unit_amount": "0.5"},
+        ],
+    },
+}
+
+
+USAGE_PRODUCT = {
+    "external_id": "usage",
+    "name": "Usage",
+    "description": "Description",
+    "recurring_interval": "month",
+    "prices": [METERED_TIERS_PRICE],
 }
 
 
@@ -705,6 +734,44 @@ class TestApply:
         assert error["loc"] == ("body", "products", 0, "prices", 1, "meter")
         assert error["input"] == "sdk-tool-calls"
 
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_create_and_update_metered_tiers_price(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.meter.service.enqueue_job")
+        config = {"meters": [TOOL_CALLS_METER], "products": [USAGE_PRODUCT]}
+
+        await declarative_config_service.apply(
+            session, redis, auth_subject, Config.model_validate(config)
+        )
+        [meter] = await MeterRepository.from_session(session).get_all_by_external_ids(
+            organization.id, ["sdk-tool-calls"]
+        )
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["usage"])
+        [price] = product.prices
+        updated = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {**config, "products": [{**USAGE_PRODUCT, "name": "Usage Plus"}]}
+            ),
+        )
+
+        assert isinstance(price, ProductPriceMeteredTiers)
+        assert price.meter_id == meter.id
+        assert updated.changes[1].action == ConfigAction.updated
+        await session.refresh(product)
+        assert product.name == "Usage Plus"
+        assert [price.id for price in product.prices] == [price.id]
+
 
 @pytest.mark.anyio
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
@@ -1065,6 +1132,80 @@ class TestPlan:
             (ConfigIssueSeverity.error, ["body", "products", 0, "prices"])
         ]
 
+    @pytest.mark.parametrize(
+        ("price", "action", "diff"),
+        [
+            pytest.param(
+                METERED_TIERS_PRICE, ConfigAction.unchanged, [], id="unchanged"
+            ),
+            pytest.param(
+                {
+                    **METERED_TIERS_PRICE,
+                    "tiers": {
+                        "type": "graduated",
+                        "tiers": [
+                            {"bound": 1000, "unit_amount": "0"},
+                            {"bound": None, "unit_amount": "0.4"},
+                        ],
+                    },
+                },
+                ConfigAction.updated,
+                ["prices"],
+                id="tier_rate",
+            ),
+        ],
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_product_metered_tiers_price(
+        self,
+        price: dict[str, Any],
+        action: ConfigAction,
+        diff: list[str],
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture, organization=organization, external_id="sdk-tool-calls"
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            name="Usage",
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[],
+            external_id="usage",
+        )
+        existing_price = await create_product_price_metered_tiers(
+            save_fixture,
+            product=product,
+            meter=meter,
+            tiers=Tiers.model_validate(METERED_TIERS_PRICE["tiers"]),
+        )
+        product.prices.append(existing_price)
+        product.all_prices.append(existing_price)
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "meters": [TOOL_CALLS_METER],
+                    "products": [{**USAGE_PRODUCT, "prices": [price]}],
+                }
+            ),
+        )
+
+        assert [issue for issue in plan.issues if issue.loc[1] == "products"] == []
+        [product_change] = [
+            change
+            for change in plan.changes
+            if change.resource == ConfigResource.product
+        ]
+        assert product_change.action == action
+        assert [change.field for change in product_change.diff] == diff
+
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_product_metered_price_on_unlisted_meter(
         self,
@@ -1162,7 +1303,16 @@ class TestPlan:
             session,
             auth_subject,
             Config.model_validate(
-                {"meters": [], "benefits": [CREDITS_BENEFIT], "products": [PRO_PRODUCT]}
+                {
+                    "meters": [],
+                    "benefits": [CREDITS_BENEFIT],
+                    "products": [
+                        {
+                            **PRO_PRODUCT,
+                            "prices": [*PRO_PRODUCT["prices"], METERED_TIERS_PRICE],
+                        }
+                    ],
+                }
             ),
         )
 
@@ -1173,6 +1323,7 @@ class TestPlan:
         ] == [
             (["body", "benefits", 0, "properties", "meter"], "sdk-tool-calls"),
             (["body", "products", 0, "prices", 1, "meter"], "sdk-tool-calls"),
+            (["body", "products", 0, "prices", 2, "meter"], "sdk-tool-calls"),
             (["body", "products", 0, "benefits", 1], "beta"),
         ]
 

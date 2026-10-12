@@ -29,6 +29,7 @@ from polar.product.schemas import (
     ProductPriceFixedCreate,
     ProductPriceSeatBasedCreate,
 )
+from polar.product.tiers import TiersInput
 
 MAXIMUM_METERS = 100
 MAXIMUM_BENEFITS = 100
@@ -123,6 +124,26 @@ class ConfigProductPriceSeatBased(ProductPriceSeatBasedCreate):
     )
 
 
+class ConfigProductPriceMeteredTiers(ProductPriceCreateBase):
+    model_config = ConfigDict(extra="forbid")
+
+    amount_type: Literal[ProductPriceAmountType.metered_tiers]
+    meter: MeterReference
+    tiers: TiersInput
+    cap_amount: Int32 | None = Field(
+        default=None, ge=0, description="Optional maximum charge in cents."
+    )
+
+    @model_validator(mode="after")
+    def validate_last_tier_unbounded(self) -> Self:
+        if self.tiers.last_bound is not None:
+            raise ValueError(
+                "The last tier must be unbounded (bound set to null), "
+                "since usage has no upper limit"
+            )
+        return self
+
+
 class ConfigProductPriceFixed(ProductPriceFixedCreate):
     model_config = ConfigDict(extra="forbid")
 
@@ -157,7 +178,8 @@ class ConfigProductPriceMeteredUnit(ProductPriceCreateBase):
 ConfigProductPrice = Annotated[
     ConfigProductPriceFixed
     | ConfigProductPriceMeteredUnit
-    | ConfigProductPriceSeatBased,
+    | ConfigProductPriceSeatBased
+    | ConfigProductPriceMeteredTiers,
     Discriminator("amount_type"),
     SetSchemaReference("ConfigProductPrice"),
 ]
@@ -205,7 +227,10 @@ class ConfigProduct(MetadataInputMixin, Schema):
                     "One-time products can't have a recurring interval count."
                 )
             if any(
-                isinstance(price, ConfigProductPriceMeteredUnit)
+                isinstance(
+                    price,
+                    (ConfigProductPriceMeteredUnit, ConfigProductPriceMeteredTiers),
+                )
                 for price in self.prices
             ):
                 raise ValueError(

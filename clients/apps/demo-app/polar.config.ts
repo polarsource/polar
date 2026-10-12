@@ -33,6 +33,19 @@ export default defineConfig({
       )
       .recurring('monthly')
       .grants(['custom_servers']),
+    usage: product('Usage')
+      .prices(
+        meter('tool_call')
+          .graduated(
+            tier().included(1000),
+            tier()
+              .max(10000)
+              .amount(perThousand(usd(2)), perThousand(eur(1.8))),
+            tier().amount(perThousand(usd(1)), perThousand(eur(0.9))),
+          )
+          .cap(usd(200), eur(180)),
+      )
+      .recurring('monthly'),
     pro: product('Pro')
       .prices(
         fixed().amount(usd(99.99), eur(99.99)),

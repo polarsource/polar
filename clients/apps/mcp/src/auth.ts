@@ -1,14 +1,9 @@
-import { Cache, Context, Effect, Exit, Layer } from 'effect'
+import { Clock, Context, Effect, Layer } from 'effect'
 import { HttpClient, type HttpClientError } from 'effect/http'
 
 const OAUTH_ACCESS_TOKEN_PREFIX = 'polar_at_'
-const VALIDATION_TTL = '60 seconds'
+const VALIDATION_TTL_MILLIS = 60_000
 const MAX_CACHED_TOKENS = 1_000
-
-interface TokenValidation {
-  readonly apiUrl: string
-  readonly token: string
-}
 
 export class Auth extends Context.Service<
   Auth,
@@ -23,21 +18,9 @@ export class Auth extends Context.Service<
     Auth,
     Effect.gen(function* () {
       const client = yield* HttpClient.HttpClient
-      const validations = yield* Cache.makeWith(
-        ({ apiUrl, token }: TokenValidation) =>
-          client
-            .get(`${apiUrl}/v1/oauth2/userinfo`, {
-              headers: { Authorization: `Bearer ${token}` },
-            })
-            .pipe(Effect.map((response) => response.status)),
-        {
-          capacity: MAX_CACHED_TOKENS,
-          timeToLive: (exit) =>
-            Exit.isSuccess(exit) && exit.value >= 200 && exit.value < 300
-              ? VALIDATION_TTL
-              : 0,
-        },
-      )
+      // Only settled validations are shared: workerd cancels a request that
+      // waits on a lookup still in flight in another request as hung.
+      const validUntil = new Map<string, number>()
 
       const isTokenValid = Effect.fn('Auth.isTokenValid')(function* (
         apiUrl: string,
@@ -46,7 +29,22 @@ export class Auth extends Context.Service<
         if (!token.startsWith(OAUTH_ACCESS_TOKEN_PREFIX)) {
           return true
         }
-        return (yield* Cache.get(validations, { apiUrl, token })) !== 401
+        const key = `${apiUrl} ${token}`
+        const now = yield* Clock.currentTimeMillis
+        if ((validUntil.get(key) ?? 0) > now) {
+          return true
+        }
+        const { status } = yield* client.get(`${apiUrl}/v1/oauth2/userinfo`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (status >= 200 && status < 300) {
+          validUntil.delete(key)
+          if (validUntil.size >= MAX_CACHED_TOKENS) {
+            validUntil.delete(validUntil.keys().next().value!)
+          }
+          validUntil.set(key, now + VALIDATION_TTL_MILLIS)
+        }
+        return status !== 401
       })
 
       return Auth.of({ isTokenValid })

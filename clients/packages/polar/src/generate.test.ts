@@ -269,6 +269,21 @@ const cases: [string, PolarConfig][] = [
       .toJSON(),
   ],
   [
+    'visibility that differs from the default',
+    api
+      .defineConfig({
+        meters: ({ meter }) => ({ calls: meter('Calls').count() }),
+        benefits: ({ flag, credits }) => ({
+          beta: flag('Beta').public(),
+          calls: credits('Calls').meter('calls').units(10).private(),
+        }),
+        products: ({ product, free }) => ({
+          pro: product('Pro').prices(free()).recurring('monthly').private(),
+        }),
+      })
+      .toJSON(),
+  ],
+  [
     'special IDs and strings',
     {
       meters: ['__proto__', 'constructor', '"\\\n` ${notCode}'].map(

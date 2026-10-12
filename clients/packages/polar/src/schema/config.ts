@@ -15,6 +15,7 @@ import type { MeterDefinition } from './meter'
 import { fixed, free, metered, seats, tier, units } from './price'
 import { product, ProductConfig, productPrices } from './product'
 import type { ProductDefinition, ProductHelpers } from './product'
+import { visibilityKey } from './visibility'
 
 export const PolarConfig = Schema.Struct({
   meters: Schema.Array(MeterConfig),
@@ -222,7 +223,15 @@ export const defineConfig = <
     }),
     ...(benefits !== undefined && {
       benefits: benefitEntries.map(
-        ([external_id, { name, [metadataKey]: metadata, ...definition }]) => {
+        ([
+          external_id,
+          {
+            name,
+            [metadataKey]: metadata,
+            [visibilityKey]: visibility,
+            ...definition
+          },
+        ]) => {
           validateBenefitNaming({ external_id, name })
           if (definition.type === 'meter_credit') {
             assertKnown(`Benefit "${external_id}"`, 'meter', meterIds, [
@@ -234,6 +243,7 @@ export const defineConfig = <
             external_id,
             description: name ?? external_id,
             ...(metadata !== undefined && { metadata }),
+            ...(visibility !== undefined && { visibility }),
           }
         },
       ),
@@ -268,7 +278,9 @@ export const defineConfig = <
             ...(definition.descriptionText !== undefined && {
               description: definition.descriptionText,
             }),
-            ...(definition.isPrivate && { visibility: 'private' as const }),
+            ...(definition[visibilityKey] !== undefined && {
+              visibility: definition[visibilityKey],
+            }),
           }
         },
       ),

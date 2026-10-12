@@ -1,5 +1,7 @@
 import { Schema } from 'effect'
+import { Builder } from './builder'
 import { Metadata, metadataKey } from './metadata'
+import { Visibility, visible, type Visible } from './visibility'
 
 const benefitFields = {
   external_id: Schema.String.check(Schema.isMinLength(1)),
@@ -8,6 +10,7 @@ const benefitFields = {
     Schema.isMaxLength(42),
   ),
   metadata: Schema.optionalKey(Metadata),
+  visibility: Schema.optionalKey(Visibility),
 }
 
 export const BenefitConfig = Schema.Union([
@@ -32,12 +35,12 @@ export const BenefitConfig = Schema.Union([
 export type BenefitConfig = typeof BenefitConfig.Type
 
 export type BenefitDefinition<Meter extends string = string> =
-  | {
+  | ({
       readonly name: string | undefined
       readonly type: 'feature_flag'
       readonly [metadataKey]?: Metadata | undefined
-    }
-  | {
+    } & Visible)
+  | ({
       readonly name: string | undefined
       readonly type: 'meter_credit'
       readonly properties: {
@@ -46,9 +49,11 @@ export type BenefitDefinition<Meter extends string = string> =
         readonly rollover: boolean
       }
       readonly [metadataKey]?: Metadata | undefined
-    }
+    } & Visible)
 
-class FlagDefinition<Values extends Metadata | undefined = undefined> {
+class FlagDefinition<
+  Values extends Metadata | undefined = undefined,
+> extends visible(Builder) {
   readonly type = 'feature_flag'
   readonly [metadataKey]: Values
 
@@ -56,11 +61,12 @@ class FlagDefinition<Values extends Metadata | undefined = undefined> {
     readonly name: string | undefined,
     metadata: Values,
   ) {
+    super()
     this[metadataKey] = metadata
   }
 
   metadata<const Next extends Metadata>(metadata: Next): FlagDefinition<Next> {
-    return new FlagDefinition(this.name, { ...metadata })
+    return this.with<FlagDefinition<Next>>({ [metadataKey]: { ...metadata } })
   }
 }
 
@@ -70,7 +76,7 @@ export const flag = (name?: string): FlagDefinition =>
 class CreditsDefinition<
   Meter extends string,
   Values extends Metadata | undefined = undefined,
-> {
+> extends visible(Builder) {
   readonly type = 'meter_credit'
   readonly [metadataKey]: Values
 
@@ -83,21 +89,20 @@ class CreditsDefinition<
     },
     metadata: Values,
   ) {
+    super()
     this[metadataKey] = metadata
   }
 
-  rollover(): CreditsDefinition<Meter, Values> {
-    return new CreditsDefinition(
-      this.name,
-      { ...this.properties, rollover: true },
-      this[metadataKey],
-    )
+  rollover(): this {
+    return this.with({ properties: { ...this.properties, rollover: true } })
   }
 
   metadata<const Next extends Metadata>(
     metadata: Next,
   ): CreditsDefinition<Meter, Next> {
-    return new CreditsDefinition(this.name, this.properties, { ...metadata })
+    return this.with<CreditsDefinition<Meter, Next>>({
+      [metadataKey]: { ...metadata },
+    })
   }
 }
 

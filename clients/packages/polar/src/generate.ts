@@ -7,6 +7,7 @@ import { majorAmount, scaleRate } from './schema/money'
 import type { Currency, Scale } from './schema/money'
 import type { PriceConfig } from './schema/price'
 import type { ProductConfig } from './schema/product'
+import type { Visibility } from './schema/visibility'
 
 const literal = (value: string | number | boolean): string =>
   Object.is(value, -0) ? '-0' : JSON.stringify(value)
@@ -22,6 +23,15 @@ const renderMetadata = (metadata: Metadata | undefined): string[] =>
           .map(([name, value]) => `${key(name)}: ${literal(value)}`)
           .join(', ')} })`,
       ]
+
+// Mirrors the server: feature flags default to private, everything else to public.
+const renderVisibility = (
+  visibility: Visibility | undefined,
+  fallback: Visibility,
+): string[] =>
+  visibility === undefined || visibility === fallback
+    ? []
+    : [`.${visibility}()`]
 
 const renderCondition = (
   condition: MeterFilter['clauses'][number],
@@ -76,7 +86,11 @@ const renderBenefit = (
   const name = literal(benefit.description)
   if (benefit.type === 'feature_flag') {
     helpers.add('flag')
-    return [`flag(${name})`, ...renderMetadata(benefit.metadata)].join('\n')
+    return [
+      `flag(${name})`,
+      ...renderMetadata(benefit.metadata),
+      ...renderVisibility(benefit.visibility, 'private'),
+    ].join('\n')
   }
   helpers.add('credits')
   const { meter, units, rollover } = benefit.properties
@@ -86,6 +100,7 @@ const renderBenefit = (
     `.units(${literal(units)})`,
     ...(rollover ? ['.rollover()'] : []),
     ...renderMetadata(benefit.metadata),
+    ...renderVisibility(benefit.visibility, 'public'),
   ].join('\n')
 }
 
@@ -366,7 +381,7 @@ const renderProduct =
       ...(product.description === undefined
         ? []
         : [`.description(${literal(product.description)})`]),
-      ...(product.visibility === 'private' ? ['.private()'] : []),
+      ...renderVisibility(product.visibility, 'public'),
     ].join('\n')
   }
 

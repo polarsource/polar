@@ -2,6 +2,7 @@ import { Schema } from 'effect'
 import { expect, expectTypeOf, test } from 'vitest'
 import { z } from 'zod'
 import { RuntimeSDK } from '../runtime'
+import { credits, flag } from './benefit'
 import { defineConfig } from './config'
 import { eq, gte } from './meter'
 import { eur, perThousand, usd } from './money'
@@ -559,6 +560,20 @@ test('meters, benefits and products serialize their metadata', () => {
     { visible: true },
   ])
   expect(json.products?.[0]?.metadata).toEqual({ plan: 'pro', rank: 2 })
+})
+
+test('benefit metadata can only be declared once', () => {
+  const beta = flag('Beta').metadata({ a: 1 }).private()
+  // @ts-expect-error a second call would replace the declared values
+  beta.metadata({ b: true })
+
+  const toolCalls = credits('Tool calls')
+    .meter('calls')
+    .units(100)
+    .metadata({ a: 1 })
+    .rollover()
+  // @ts-expect-error a second call would replace the declared values
+  toolCalls.metadata({ b: true })
 })
 
 test('metadata follows the API limits', () => {

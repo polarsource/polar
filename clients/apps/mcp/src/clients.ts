@@ -9,16 +9,12 @@ interface ClientInfo {
 
 const CODE_MODE_PARAM = 'codemode'
 
-// Clients that bring their own tool search get one tool per operation;
-// anything else gets the search and execute code mode tools. Clients with their
-// own code mode, such as opencode v2, opt out with `?codemode=false`. Names are
-// matched against `clientInfo.name` and the User-Agent product token.
-const OPERATION_TOOL_CLIENTS = new Set([
-  'claude-code',
-  'codex-mcp-client',
-  'cursor-vscode',
-  'Cursor',
-])
+// Cursor brings its own tool search and gets one tool per operation; anything
+// else gets the search and execute code mode tools, which cost Claude Code and
+// Codex the fewest tokens in our benchmarks. Clients with their own code mode,
+// such as opencode v2, opt out with `?codemode=false`. Names are matched
+// against `clientInfo.name` and the User-Agent product token.
+const OPERATION_TOOL_CLIENTS = new Set(['cursor-vscode', 'Cursor'])
 
 const decodeClientMessage = Schema.decodeUnknownOption(
   Schema.Struct({

@@ -89,7 +89,7 @@ test('code mode is the default; client hints and explicit overrides select opera
   expect(defaultTools[0].inputSchema.properties.code.type).toBe('string')
   expect(defaultTools[0].inputSchema.required).toEqual(['code'])
   const operations = (
-    await rpc('tools/list', {}, '', { 'User-Agent': 'claude-code/1.0' })
+    await rpc('tools/list', {}, '', { 'User-Agent': 'Cursor/1.0' })
   ).result.tools
   expect(operations.map((tool: { name: string }) => tool.name)).toEqual([
     ...tools.map((tool) => tool.name),
@@ -102,14 +102,18 @@ test('code mode is the default; client hints and explicit overrides select opera
       })
     ).result.tools,
   ).toHaveLength(4)
-  const meta = {
-    _meta: { [CLIENT_INFO_META_KEY]: { name: 'codex-mcp-client' } },
-  }
-  expect((await rpc('tools/list', meta)).result.tools).toHaveLength(
-    tools.length + DOCS_TOOLS.length,
-  )
   expect(
-    (await rpc('tools/list', meta, '?codemode=true')).result.tools,
+    (await rpc('tools/list', {}, '', { 'User-Agent': 'claude-code/1.0' }))
+      .result.tools,
+  ).toHaveLength(4)
+  const clientMeta = (name: string) => ({
+    _meta: { [CLIENT_INFO_META_KEY]: { name } },
+  })
+  expect(
+    (await rpc('tools/list', clientMeta('cursor-vscode'))).result.tools,
+  ).toHaveLength(tools.length + DOCS_TOOLS.length)
+  expect(
+    (await rpc('tools/list', clientMeta('codex-mcp-client'))).result.tools,
   ).toHaveLength(4)
   const readOnly = (
     await rpc('tools/list', {}, '?codemode=false&readonly=true')

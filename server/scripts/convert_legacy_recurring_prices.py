@@ -159,6 +159,7 @@ def _last_succeeded_checkout_at() -> ColumnElement[Any]:
         select(func.max(Checkout.created_at))
         .join(price, price.id == Checkout.product_price_id)
         .where(
+            Checkout.organization_id == Product.organization_id,
             price.product_id == Product.id,
             Checkout.status == CheckoutStatus.succeeded,
         )
@@ -172,6 +173,7 @@ def _has_confirmed_checkout() -> ColumnElement[bool]:
         select(Checkout.id)
         .join(price, price.id == Checkout.product_price_id)
         .where(
+            Checkout.organization_id == Product.organization_id,
             price.product_id == Product.id,
             Checkout.status == CheckoutStatus.confirmed,
         )
@@ -202,6 +204,7 @@ def _chosen_interval() -> ColumnElement[str]:
         select(price.recurring_interval)
         .join(Checkout, Checkout.product_price_id == price.id)
         .where(
+            Checkout.organization_id == Product.organization_id,
             price.product_id == Product.id,
             price.type == ProductPriceType.recurring,
             Checkout.status == CheckoutStatus.succeeded,

@@ -27,6 +27,7 @@ from polar.declarative_config.service import (
 from polar.discount.repository import DiscountRepository
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import NotPermitted, PolarRequestValidationError
+from polar.kit.visibility import Visibility
 from polar.meter.repository import MeterRepository
 from polar.meter.unit import MeterUnit
 from polar.models import (
@@ -501,6 +502,8 @@ class TestApply:
             "rollover": False,
         }
         assert benefits["beta"].type == BenefitType.feature_flag
+        assert benefits["tool-call-credits"].visibility == Visibility.public
+        assert benefits["beta"].visibility == Visibility.public
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_update_benefit(
@@ -538,6 +541,39 @@ class TestApply:
         assert result.changes[1].action == ConfigAction.updated
         assert dict(benefit.properties)["units"] == 1000
         assert rerun.changes[1].action == ConfigAction.unchanged
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_benefit_visibility(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        private = Config.model_validate(
+            {"meters": [], "benefits": [{**BETA_BENEFIT, "visibility": "private"}]}
+        )
+        default = Config.model_validate({"meters": [], "benefits": [BETA_BENEFIT]})
+
+        await declarative_config_service.apply(session, redis, auth_subject, private)
+        [benefit] = await BenefitRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["beta"])
+        created_visibility = benefit.visibility
+
+        plan = await declarative_config_service.plan(session, auth_subject, default)
+        await declarative_config_service.apply(session, redis, auth_subject, default)
+        rerun = await declarative_config_service.apply(
+            session, redis, auth_subject, default
+        )
+
+        assert [
+            (change.field, change.before, change.after)
+            for change in plan.changes[0].diff
+        ] == [("visibility", Visibility.private, Visibility.public)]
+        assert created_visibility == Visibility.private
+        assert benefit.visibility == Visibility.public
+        assert rerun.changes[0].action == ConfigAction.unchanged
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_concurrent_benefit_create(

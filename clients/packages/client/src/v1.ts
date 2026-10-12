@@ -16093,6 +16093,11 @@ export interface components {
        */
       description: string
       /**
+       * @description The visibility of the benefit.
+       * @default public
+       */
+      visibility: components['schemas']['BenefitVisibility']
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
@@ -16127,6 +16132,11 @@ export interface components {
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
       description: string
+      /**
+       * @description The visibility of the benefit.
+       * @default public
+       */
+      visibility: components['schemas']['BenefitVisibility']
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}

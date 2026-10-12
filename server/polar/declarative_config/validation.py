@@ -422,6 +422,8 @@ def _get_benefit_update_dict(
     update_dict: dict[str, Any] = {}
     if benefit.description != benefit_config.description:
         update_dict["description"] = benefit_config.description
+    if benefit.visibility != benefit_config.visibility:
+        update_dict["visibility"] = benefit_config.visibility
     config_properties = _config_benefit_properties(benefit_config)
     if properties != config_properties:
         update_dict["properties"] = config_properties

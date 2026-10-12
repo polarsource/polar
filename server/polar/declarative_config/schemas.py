@@ -34,7 +34,7 @@ from polar.meter.aggregation import Aggregation
 from polar.meter.filter import Filter
 from polar.meter.schemas import NAME_DESCRIPTION, MeterCreateBase
 from polar.meter.unit import MeterUnit
-from polar.models.benefit import BenefitType
+from polar.models.benefit import BenefitType, BenefitVisibility
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.product import ProductVisibility
 from polar.models.product_price import ProductPriceAmountType
@@ -110,6 +110,10 @@ class ConfigBenefitBase(MetadataInputMixin, Schema):
             "The description of the benefit. "
             "Will be displayed on products having this benefit."
         ),
+    )
+    visibility: BenefitVisibility = Field(
+        default=Visibility.public,
+        description="The visibility of the benefit.",
     )
 
 

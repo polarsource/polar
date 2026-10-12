@@ -9,7 +9,12 @@ import {
   type PropertyReference,
   type SharedEventOutput,
 } from './event'
-import { Metadata as MeterMetadata } from './metadata'
+import { Builder } from './builder'
+import {
+  Metadata as MeterMetadata,
+  metadataKey,
+  withMetadata,
+} from './metadata'
 
 export const MeterFilterClause = Schema.Struct({
   property: Schema.String,
@@ -181,17 +186,20 @@ type Property<Metadata, Type> = unknown extends Metadata
   ? string
   : PropertyOf<Metadata, Type>
 
-export class MeterBuilder<Names extends string = string, Metadata = unknown> {
-  constructor(
-    protected readonly name: string | undefined = undefined,
-    private readonly meterFilter: MeterFilter = {
-      conjunction: 'and',
-      clauses: [],
-    },
-    protected readonly meterUnit: Unit = { unit: 'scalar' },
-    private readonly events: readonly string[] = [],
-    protected readonly meterMetadata: MeterMetadata | undefined = undefined,
-  ) {}
+export class MeterBuilder<
+  Names extends string = string,
+  Metadata = unknown,
+> extends withMetadata(Builder) {
+  protected readonly meterFilter: MeterFilter = {
+    conjunction: 'and',
+    clauses: [],
+  }
+  protected readonly meterUnit: Unit = { unit: 'scalar' }
+  protected readonly events: readonly string[] = []
+
+  constructor(protected readonly name: string | undefined = undefined) {
+    super()
+  }
 
   where(input: ConditionInput<Names>): MeterBuilder<Names, Metadata> {
     const condition = expand(toCondition(input), this.events)
@@ -208,39 +216,24 @@ export class MeterBuilder<Names extends string = string, Metadata = unknown> {
               ...(filter.conjunction === 'and' ? filter.clauses : [filter]),
             ],
           }
-    return new MeterBuilder(
-      this.name,
-      structuredClone(combined),
-      this.meterUnit,
-      this.events,
-      this.meterMetadata,
-    )
+    return this.refine({ meterFilter: structuredClone(combined) })
   }
 
   unit(
     ...args: [unit: 'scalar' | 'token'] | [unit: 'custom', label: string]
   ): MeterBuilder<Names, Metadata> {
-    const unit: Unit =
+    const meterUnit: Unit =
       args[0] === 'custom'
         ? { unit: 'custom', custom_label: args[1] }
         : { unit: args[0] }
-    return new MeterBuilder(
-      this.name,
-      this.meterFilter,
-      unit,
-      this.events,
-      this.meterMetadata,
-    )
+    return this.refine({ meterUnit })
   }
 
-  metadata(metadata: MeterMetadata): MeterBuilder<Names, Metadata> {
-    return new MeterBuilder(
-      this.name,
-      this.meterFilter,
-      this.meterUnit,
-      this.events,
-      { ...metadata },
-    )
+  /** Copies onto a plain `MeterBuilder`, so a bound meter loses `on()`. */
+  protected refine<Refined extends string = Names, Output = Metadata>(
+    patch: object,
+  ): MeterBuilder<Refined, Output> {
+    return Object.assign(new MeterBuilder<Refined, Output>(), this, patch)
   }
 
   count() {
@@ -273,8 +266,8 @@ export class MeterBuilder<Names extends string = string, Metadata = unknown> {
       filter: structuredClone(this.meterFilter),
       aggregation,
       ...this.meterUnit,
-      ...(this.meterMetadata !== undefined && {
-        metadata: { ...this.meterMetadata },
+      ...(this[metadataKey] !== undefined && {
+        metadata: { ...this[metadataKey] },
       }),
     }
   }
@@ -285,12 +278,6 @@ export type MeterDefinition = ReturnType<MeterBuilder['count']>
 export class UnboundMeter<
   Events extends EventDefinitions,
 > extends MeterBuilder {
-  override metadata(metadata: MeterMetadata): UnboundMeter<Events> {
-    return new UnboundMeter(this.name, undefined, this.meterUnit, [], {
-      ...metadata,
-    })
-  }
-
   on<const Name extends keyof Events & string>(
     ...events: [EventReference<Name>, ...EventReference<Name>[]]
   ): MeterBuilder<Name, SharedEventOutput<Events, Name>> {
@@ -300,13 +287,10 @@ export class UnboundMeter<
     }
     const names = references.map((reference) => reference[eventKey] as Name)
     const clauses = names.map((name) => eq('name', name))
-    return new MeterBuilder(
-      this.name,
-      clauses.length === 1 ? and(...clauses) : or(...clauses),
-      this.meterUnit,
-      names,
-      this.meterMetadata,
-    )
+    return this.refine<Name, SharedEventOutput<Events, Name>>({
+      meterFilter: clauses.length === 1 ? and(...clauses) : or(...clauses),
+      events: names,
+    })
   }
 }
 

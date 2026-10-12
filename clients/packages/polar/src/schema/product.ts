@@ -1,6 +1,6 @@
 import { Schema } from 'effect'
 import { Builder } from './builder'
-import { Metadata, metadataKey } from './metadata'
+import { Metadata, withMetadata } from './metadata'
 import type { Currency } from './money'
 import {
   fixed,
@@ -129,10 +129,9 @@ class ProductBuilder<
   Benefit extends string,
   P extends Prices<Meter> | undefined,
   Billing extends Recurring | OneTime | undefined,
-> extends withVisibility(Builder) {
+> extends withMetadata(withVisibility(Builder)) {
   readonly trialPeriod: Trial | undefined = undefined
   readonly benefits: ReadonlyArray<Benefit> = []
-  readonly [metadataKey]: Metadata | undefined = undefined
   readonly descriptionText: string | undefined = undefined
 
   constructor(
@@ -199,10 +198,6 @@ class ProductBuilder<
 
   grants(benefits: ReadonlyArray<Benefit>): this {
     return this.with({ benefits })
-  }
-
-  metadata(metadata: Metadata): this {
-    return this.with({ [metadataKey]: { ...metadata } })
   }
 
   description(description: string): this {

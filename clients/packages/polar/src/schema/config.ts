@@ -1,7 +1,11 @@
 import { Schema } from 'effect'
 import { runtimeConfig } from './runtime'
 import { BenefitConfig, flag, credits } from './benefit'
-import { metadataKey, type Metadata, type MetadataShape } from './metadata'
+import {
+  metadataKey,
+  type DeclaredMetadata,
+  type MetadataShape,
+} from './metadata'
 import type { BenefitDefinition, BenefitHelpers } from './benefit'
 import {
   createEventReferences,
@@ -112,11 +116,10 @@ type WithMetadata<Benefit, Values> = Benefit extends unknown
   ? Omit<Benefit, 'metadata'> & { readonly metadata: Values }
   : never
 
-type ConnectedBenefit<Definition> = Definition extends {
-  readonly [metadataKey]: infer Values extends Metadata
-}
-  ? WithMetadata<BenefitConfig, MetadataShape<Values>>
-  : BenefitConfig
+type ConnectedBenefit<Definition> =
+  Definition extends DeclaredMetadata<infer Values>
+    ? WithMetadata<BenefitConfig, MetadataShape<Values>>
+    : BenefitConfig
 
 type DeclaredEvents<Events extends EventDefinitions | undefined> =
   Events extends EventDefinitions ? Events : Record<never, never>

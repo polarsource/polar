@@ -75,7 +75,7 @@ test('operation writes preserve path parameters and JSON body, and read-only too
     arguments: { id, body: { name: 'Updated' } },
   }
   const result = await rpc('tools/call', params, '?codemode=false')
-  expect(result.result.content[0].text).toBe('{\n  "name": "Updated"\n}')
+  expect(result.result.content[0].text).toBe('{"name":"Updated"}')
   const [input, init] = fetchMock.mock.calls[0]
   expect(new URL(input instanceof Request ? input.url : input).href).toBe(
     `https://api.polar.test/v1/products/${id}`,

@@ -51,7 +51,7 @@ export default class Sandbox extends WorkerEntrypoint {
   async evaluate() {
     try {
       const result = await (${code})()
-      return { result: JSON.stringify(result, null, 2) ?? String(result) }
+      return { result: JSON.stringify(result) ?? String(result) }
     } catch (error) {
       return { error: error instanceof Error ? error.message : String(error) }
     }

@@ -185,6 +185,21 @@ test('sandbox failures become tool errors and long errors and results are trunca
   )
 })
 
+test('operation results keep full structured content when the text is truncated', async () => {
+  const items = Array.from({ length: 1_000 }, (_, index) => ({
+    id: `order-${index}`,
+    description: 'Monthly Pro',
+  }))
+  fetchMock.mockResolvedValueOnce(Response.json({ items }))
+  const { result } = await rpc(
+    'tools/call',
+    { name: 'orders_list', arguments: {} },
+    '?codemode=false',
+  )
+  expect(result.content[0].text).toContain('--- TRUNCATED ---')
+  expect(result.structuredContent).toEqual({ items })
+})
+
 test('operation tools preserve query serialization, credentials, JSON results and errors', async () => {
   fetchMock.mockResolvedValueOnce(Response.json({ items: [{ id: 'product' }] }))
   const result = await rpc(
@@ -201,8 +216,11 @@ test('operation tools preserve query serialization, credentials, JSON results an
     '?codemode=false',
   )
   expect(result.result.content[0].text).toBe(
-    JSON.stringify({ items: [{ id: 'product' }] }, null, 2),
+    JSON.stringify({ items: [{ id: 'product' }] }),
   )
+  expect(result.result.structuredContent).toEqual({
+    items: [{ id: 'product' }],
+  })
   const [input, init] = fetchMock.mock.calls[0]
   const url = new URL(input instanceof Request ? input.url : input)
   expect(url.pathname).toBe('/v1/products/')

@@ -93,11 +93,16 @@ export const registerOperationTools = Effect.fn('registerOperationTools')(
             message: `Polar API ${response.status}: ${text}`,
           })
         }
-        return yield* Effect.try({
-          try: () =>
-            text ? JSON.stringify(JSON.parse(text), null, 2) : 'No content',
+        if (!text) {
+          return 'No content'
+        }
+        const json: unknown = yield* Effect.try({
+          try: () => JSON.parse(text),
           catch: ToolError.fromCause,
         })
+        return json !== null && typeof json === 'object' && !Array.isArray(json)
+          ? { text, structuredContent: json as Record<string, unknown> }
+          : text
       },
       Effect.catchTags({
         HttpBodyError: (error) => Effect.fail(ToolError.fromCause(error)),

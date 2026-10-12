@@ -19,9 +19,20 @@ const truncate = (text: string) =>
     ? text
     : `${text.slice(0, MAX_RESULT_CHARS)}\n\n--- TRUNCATED ---\nThe result was ${text.length} characters (limit ${MAX_RESULT_CHARS}). Return fewer fields or items.`
 
-const toolResult = (text: string) => ({
-  content: [{ type: 'text' as const, text: truncate(text) }],
-})
+// Clients with their own code mode read structured content in their scripts,
+// so it is never truncated; the text is what other clients show the model.
+export interface StructuredResult {
+  readonly text: string
+  readonly structuredContent: Record<string, unknown>
+}
+
+const toolResult = (result: string | StructuredResult) =>
+  typeof result === 'string'
+    ? { content: [{ type: 'text' as const, text: truncate(result) }] }
+    : {
+        content: [{ type: 'text' as const, text: truncate(result.text) }],
+        structuredContent: result.structuredContent,
+      }
 
 const toolError = (error: ToolError) => ({
   content: [
@@ -35,7 +46,10 @@ const toolError = (error: ToolError) => ({
 
 export const makeToolRunner = Effect.gen(function* () {
   const run = Effect.runPromiseWith(yield* Effect.context<never>())
-  return (effect: Effect.Effect<string, ToolError>, signal: AbortSignal) =>
+  return (
+    effect: Effect.Effect<string | StructuredResult, ToolError>,
+    signal: AbortSignal,
+  ) =>
     run(
       effect.pipe(
         Effect.match({ onSuccess: toolResult, onFailure: toolError }),

@@ -3,11 +3,28 @@ from enum import StrEnum
 from typing import Annotated, Any, Literal, Self
 
 from annotated_types import Gt
-from pydantic import UUID4, ConfigDict, Discriminator, Field, model_validator
+from pydantic import (
+    UUID4,
+    AwareDatetime,
+    ConfigDict,
+    Discriminator,
+    Field,
+    model_validator,
+)
 
 from polar.benefit.strategies.base.schemas import (
     BENEFIT_DESCRIPTION_MAX_LENGTH,
     BENEFIT_DESCRIPTION_MIN_LENGTH,
+)
+from polar.discount.schemas import (
+    Amounts,
+    BasisPoints,
+    Code,
+    Duration,
+    DurationInMonthsOptional,
+    MaxRedemptions,
+    MaxRedemptionsPerCustomer,
+    Name,
 )
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
@@ -18,6 +35,7 @@ from polar.meter.filter import Filter
 from polar.meter.schemas import NAME_DESCRIPTION, MeterCreateBase
 from polar.meter.unit import MeterUnit
 from polar.models.benefit import BenefitType
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.product import ProductVisibility
 from polar.models.product_price import ProductPriceAmountType
 from polar.organization.schemas import OrganizationID
@@ -35,6 +53,7 @@ from polar.product.tiers import TiersInput
 MAXIMUM_METERS = 100
 MAXIMUM_BENEFITS = 100
 MAXIMUM_PRODUCTS = 100
+MAXIMUM_DISCOUNTS = 100
 
 
 class ConfigMeter(MeterCreateBase):
@@ -55,6 +74,14 @@ MeterReference = Annotated[
     Field(
         min_length=1,
         description="The `external_id` of a meter declared in the same config.",
+    ),
+]
+
+ProductReference = Annotated[
+    str,
+    Field(
+        min_length=1,
+        description="The `external_id` of a product declared in the same config.",
     ),
 ]
 
@@ -253,6 +280,76 @@ class ConfigProduct(MetadataInputMixin, Schema):
         return self
 
 
+class ConfigDiscountBase(MetadataInputMixin, Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    external_id: str = Field(
+        ...,
+        min_length=1,
+        description="Your identifier for the discount, used to match it.",
+    )
+    name: Name
+    code: Code = None
+    duration: Duration
+    duration_in_months: DurationInMonthsOptional = None
+    starts_at: AwareDatetime | None = Field(
+        default=None,
+        description="Optional timestamp after which the discount is redeemable.",
+    )
+    ends_at: AwareDatetime | None = Field(
+        default=None,
+        description=(
+            "Optional timestamp after which the discount is no longer redeemable."
+        ),
+    )
+    max_redemptions: MaxRedemptions = None
+    max_redemptions_per_customer: MaxRedemptionsPerCustomer = None
+    products: list[ProductReference] = Field(
+        default_factory=list,
+        description=(
+            "The products the discount applies to. "
+            "Leave it empty to apply the discount to every product."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def validate_discount(self) -> Self:
+        repeating = self.duration == DiscountDuration.repeating
+        if repeating and self.duration_in_months is None:
+            raise ValueError(
+                "`duration_in_months` is required when `duration` is `repeating`."
+            )
+        if not repeating and self.duration_in_months is not None:
+            raise ValueError(
+                "`duration_in_months` must be omitted when "
+                "`duration` is not `repeating`."
+            )
+        if (
+            self.starts_at is not None
+            and self.ends_at is not None
+            and self.starts_at >= self.ends_at
+        ):
+            raise ValueError("starts_at must be before ends_at")
+        return self
+
+
+class ConfigDiscountPercentage(ConfigDiscountBase):
+    type: Literal[DiscountType.percentage]
+    basis_points: BasisPoints
+
+
+class ConfigDiscountFixed(ConfigDiscountBase):
+    type: Literal[DiscountType.fixed]
+    amounts: Amounts
+
+
+ConfigDiscount = Annotated[
+    ConfigDiscountPercentage | ConfigDiscountFixed,
+    Discriminator("type"),
+    SetSchemaReference("ConfigDiscount"),
+]
+
+
 class Config(Schema):
     model_config = ConfigDict(extra="forbid")
 
@@ -283,6 +380,14 @@ class Config(Schema):
             "Existing products that aren't listed are left untouched."
         ),
     )
+    discounts: list[ConfigDiscount] = Field(
+        default_factory=list,
+        max_length=MAXIMUM_DISCOUNTS,
+        description=(
+            "Discounts to create or update, matched by `external_id`. "
+            "Existing discounts that aren't listed are left untouched."
+        ),
+    )
     organization_id: OrganizationID | None = Field(
         default=None,
         description=(
@@ -298,7 +403,10 @@ class ConfigIssueSeverity(StrEnum):
 
 
 class ConfigIssueType(StrEnum):
+    discount_locked = "discount_locked"
+    duplicate_code = "duplicate_code"
     duplicate_external_id = "duplicate_external_id"
+    duration_changed = "duration_changed"
     interval_changed = "interval_changed"
     meter_locked = "meter_locked"
     not_supported = "not_supported"
@@ -329,6 +437,7 @@ class ConfigResource(StrEnum):
     meter = "meter"
     benefit = "benefit"
     product = "product"
+    discount = "discount"
 
 
 class ConfigResult(Schema):

@@ -155,7 +155,7 @@ export const ensureFreePlan = async (email: string, externalId: string) => {
 
 export const purchaseTopUp = async (externalId: string, topUp: TopUp) => {
   // Server actions accept any input, so don't trust the client's pack
-  if (!isTopUp(topUp)) throw new Error(`Unknown top-up ${topUp}`)
+  if (!isTopUp(topUp)) throw new Error(`Unknown top-up ${String(topUp)}`)
   if (!(await isPro(externalId))) {
     return { error: 'Top-ups are only available on the Pro plan.' }
   }

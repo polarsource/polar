@@ -19,7 +19,9 @@ export const getExternalCustomerId = async () =>
   (await cookies()).get(COOKIE)?.value
 
 export async function login(formData: FormData) {
-  const email = String(formData.get('email')).trim().toLowerCase()
+  const rawEmail = formData.get('email')
+  if (typeof rawEmail !== 'string') throw new Error('Missing email')
+  const email = rawEmail.trim().toLowerCase()
   const externalId = createHash('sha256').update(email).digest('hex')
 
   await ensureFreePlan(email, externalId)

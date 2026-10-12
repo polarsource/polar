@@ -27,14 +27,11 @@ vi.mock('@/components/Orders/InvoicePreview', () => ({
   InvoicePreview: ({
     appliedBalanceAmount,
     dueAmount,
-    totalAmount,
   }: {
     appliedBalanceAmount?: number | null
     dueAmount?: number | null
-    totalAmount: number
   }) => (
     <div>
-      <span>Total {totalAmount}</span>
       <span>Applied balance {appliedBalanceAmount}</span>
       <span>To be paid {dueAmount}</span>
     </div>
@@ -58,9 +55,7 @@ const subscription = {
   current_period_end: '2026-10-27T00:00:00Z',
 } as unknown as schemas['Subscription']
 
-const preview = (
-  appliedBalanceAmount: number,
-): schemas['SubscriptionChargePreview'] => ({
+const chargePreview: schemas['SubscriptionChargePreview'] = {
   base_amount: 1000,
   metered_amount: 0,
   proration_amount: 0,
@@ -70,14 +65,14 @@ const preview = (
   net_amount: 1000,
   tax_amount: 0,
   total_amount: 1000,
-  applied_balance_amount: appliedBalanceAmount,
-  due_amount: 1000 + appliedBalanceAmount,
-})
+  applied_balance_amount: -500,
+  due_amount: 500,
+}
 
 describe('SubscriptionInvoicePreview', () => {
   beforeEach(() => {
     vi.mocked(useSubscriptionChargePreview).mockReturnValue({
-      data: preview(-500),
+      data: chargePreview,
     } as unknown as ReturnType<typeof useSubscriptionChargePreview>)
   })
 

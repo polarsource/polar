@@ -7,6 +7,8 @@ import {
 } from '@/utils/product'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { useMemo } from 'react'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 import AmountLabel from '../Shared/AmountLabel'
@@ -285,26 +287,28 @@ export const CurrentPeriodOverview = ({
 
         {subscriptionPreview &&
           subscriptionPreview.applied_balance_amount !== 0 && (
-            <>
-              <div className="dark:text-polar-500 mt-1 flex items-center justify-between text-gray-500">
-                <span>Applied balance</span>
-                <span>
+            <Box flexDirection="column" rowGap="xs" marginTop="xs">
+              <Box justifyContent="between" alignItems="center">
+                <Text variant="body" color="muted">
+                  Applied balance
+                </Text>
+                <Text as="span" variant="body" color="muted" tabularNums>
                   {formatCurrency('compact')(
                     subscriptionPreview.applied_balance_amount,
                     subscription.currency,
                   )}
-                </span>
-              </div>
-              <div className="mt-1 flex items-center justify-between">
-                <span className="font-medium">To be paid</span>
-                <span className="text-lg font-medium">
+                </Text>
+              </Box>
+              <Box justifyContent="between" alignItems="center">
+                <Text variant="body">To be paid</Text>
+                <Text as="span" variant="body" tabularNums>
                   {formatCurrency('compact')(
                     subscriptionPreview.due_amount,
                     subscription.currency,
                   )}
-                </span>
-              </div>
-            </>
+                </Text>
+              </Box>
+            </Box>
           )}
 
         {isCancelingAtPeriodEnd && (

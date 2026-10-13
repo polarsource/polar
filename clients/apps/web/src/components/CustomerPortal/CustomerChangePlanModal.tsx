@@ -5,7 +5,7 @@ import {
   useCustomerPaymentMethods,
   useCustomerUpdateSubscription,
 } from '@/hooks/queries/customerPortal'
-import { hasLegacyRecurringPrices, isFreePrice } from '@/utils/product'
+import { isFreePrice } from '@/utils/product'
 import { formatTrialEnd, useTrialChangeOutcome } from '@/utils/trial-change'
 import { Client, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
@@ -59,8 +59,7 @@ const CustomerChangePlanModal = ({
 }) => {
   const router = useRouter()
   const products = useMemo(
-    () =>
-      _products.filter((p) => p.is_recurring && !hasLegacyRecurringPrices(p)),
+    () => _products.filter((p) => p.is_recurring),
     [_products],
   )
 

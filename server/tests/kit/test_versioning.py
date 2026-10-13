@@ -1,12 +1,20 @@
 import dataclasses
-from typing import Annotated
+from typing import Annotated, Any, Literal
 
 import pytest
 from fastapi import Depends, FastAPI, Request
 from fastapi.openapi.utils import get_openapi
 from fastapi.routing import iter_route_contexts
 from fastapi.testclient import TestClient
-from pydantic import BaseModel, ConfigDict, Field, PlainSerializer, computed_field
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Discriminator,
+    Field,
+    PlainSerializer,
+    Tag,
+    computed_field,
+)
 
 from polar.kit.versioning import (
     APIVersion,
@@ -61,6 +69,25 @@ class OutputOnlyCoupon(BaseModel):
 
 class LegacyOrder(BaseModel):
     coupon: Annotated[OutputOnlyCoupon | None, Version(up_to=CURRENT_VERSION)]
+
+
+class CurrentOnlyPrice(BaseModel):
+    kind: Literal["current"] = "current"
+
+
+class SharedPrice(BaseModel):
+    kind: Literal["shared"] = "shared"
+
+
+VersionedPrice = Annotated[
+    Annotated[CurrentOnlyPrice, Tag("current"), Version(up_to=CURRENT_VERSION)]
+    | Annotated[SharedPrice, Tag("shared")],
+    Discriminator(lambda v: v["kind"] if isinstance(v, dict) else v.kind),
+]
+
+
+class VersionedCatalog(BaseModel):
+    prices: list[VersionedPrice]
 
 
 def test_api_version_is_ordered_hashable_and_immutable() -> None:
@@ -203,6 +230,29 @@ def test_prune_version_omitted_output_only_schemas(
     schema = prune_version_omitted_schemas(schema, api_version)
 
     assert ("OutputOnlyCoupon" in schema["components"]["schemas"]) is included
+
+
+@pytest.mark.parametrize(
+    ("api_version", "included"), [(CURRENT_VERSION, True), (NEXT_VERSION, False)]
+)
+def test_prune_version_omitted_union_members(
+    api_version: APIVersion, included: bool
+) -> None:
+    app = FastAPI()
+
+    @app.get("/catalog")
+    def get_catalog() -> VersionedCatalog:
+        return VersionedCatalog(prices=[SharedPrice()])
+
+    with api_version_context(api_version):
+        schema = get_openapi(title="Test", version="1", routes=app.routes)
+    schema = prune_version_omitted_schemas(schema, api_version)
+
+    schemas: dict[str, Any] = schema["components"]["schemas"]
+    assert ("CurrentOnlyPrice" in schemas) is included
+    assert "SharedPrice" in schemas
+    members = schemas["VersionedCatalog"]["properties"]["prices"]["items"]["oneOf"]
+    assert len(members) == (2 if included else 1)
 
 
 def test_versioned_routes() -> None:

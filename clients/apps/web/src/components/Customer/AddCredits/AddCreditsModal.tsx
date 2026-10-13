@@ -87,21 +87,17 @@ export const AddCreditsModal = ({
     if (error) {
       if (isValidationError(error.detail)) {
         setValidationErrors(error.detail, form.setError)
-      } else if (
+        return
+      }
+      const alreadyAdded =
         'error' in error &&
         error.error === 'CustomerMeterCreditExternalIDConflict'
-      ) {
-        toast({
-          title: 'Credits Not Added',
-          description:
-            'These credits may already have been added. Refresh the page to check the balance.',
-        })
-      } else {
-        toast({
-          title: 'Credits Not Added',
-          description: extractApiErrorMessage(error),
-        })
-      }
+      toast({
+        title: 'Credits Not Added',
+        description: alreadyAdded
+          ? 'These credits may already have been added. Refresh the page to check the balance.'
+          : extractApiErrorMessage(error),
+      })
       return
     }
 

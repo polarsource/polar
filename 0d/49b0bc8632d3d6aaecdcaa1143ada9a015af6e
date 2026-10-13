@@ -1,0 +1,27 @@
+docs/openapi/2026-04.openapi.json
+  ai_agent 1579-1581,4050-4052,5248-5250,7310-7312,11909-11911,12019-12021,24424-24426,55136,61074,63236,74624,74957,76647,78101,78849,79067,82683
+docs/openapi/2027-01.openapi.json
+  ai_agent 1579-1581,4150-4152,5372-5374,7434-7436,12033-12035,12143-12145,24731-24733,62043,64277,75686,76019,77727,79203,79951,80169,83868
+sdk/cli-commands/src/benefits/create.ts
+  ai_agent 101-105
+sdk/cli-commands/src/customer_seats/revoke_seat.ts
+  ai_agent 29
+docs/openapi/2026-10.openapi.json
+  ai_agent 1579-1581,4050-4052,5248-5250,7310-7312,11909-11911,12019-12021,24424-24426,60996,63184,74572,74905,76621,78075,78823,79041,82686
+sdk/cli-commands/src/customer_seats/resend_invitation.ts
+  ai_agent 28-30
+sdk/cli-commands/src/customer_seats/get_claim_info.ts
+  ai_agent 47-51
+sdk/cli-commands/src/customer_seats/assign_seat.ts
+  ai_agent 93
+sdk/cli-commands/src/customer_seats/claim_seat.ts
+  ai_agent 64-66
+sdk/cli-commands/src/customer_seats/list_seats.ts
+  ai_agent 42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "0d49b0bc8632d3d6aaecdcaa1143ada9a015af6e",
+  "prompts": {}
+}

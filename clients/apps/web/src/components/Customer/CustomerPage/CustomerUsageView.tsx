@@ -1,5 +1,9 @@
 'use client'
 
+import {
+  addCreditsColumn,
+  useAddCreditsModal,
+} from '@/components/Customer/AddCredits/AddCreditsButton'
 import { estimateMeteredCost } from '@/components/Products/ProductForm/Pricing/utils'
 import { isMeteredPrice, MeteredPrice } from '@/utils/product'
 import { useCustomerMeters } from '@/hooks/queries/customerMeters'
@@ -62,6 +66,7 @@ export const CustomerUsageView = ({
   organization: schemas['Organization']
 }) => {
   const router = useRouter()
+  const addCredits = useAddCreditsModal({ organization, customer })
   const { dateRange, interval } = useCustomerMetricsParams(customer)
   const { data: customerMetersData, isLoading } = useCustomerMeters(
     customer.organization_id,
@@ -175,6 +180,7 @@ export const CustomerUsageView = ({
               <DataTableColumnHeader column={column} title="Meter" />
             ),
             accessorKey: 'meter.name',
+            size: 200,
             cell: ({ row }) => (
               <div className="flex items-center gap-x-2">
                 <span
@@ -195,6 +201,7 @@ export const CustomerUsageView = ({
               <DataTableColumnHeader column={column} title="Consumed" />
             ),
             accessorKey: 'consumed_units',
+            size: 110,
             cell: ({ row }) => (
               <FormattedUnits value={row.original.consumed_units} />
             ),
@@ -204,6 +211,7 @@ export const CustomerUsageView = ({
               <DataTableColumnHeader column={column} title="Credited" />
             ),
             accessorKey: 'credited_units',
+            size: 110,
             cell: ({ row }) => (
               <FormattedUnits value={row.original.credited_units} />
             ),
@@ -213,6 +221,7 @@ export const CustomerUsageView = ({
               <DataTableColumnHeader column={column} title="Balance" />
             ),
             accessorKey: 'balance',
+            size: 110,
             cell: ({ row }) => {
               const { balance } = row.original
               return (
@@ -227,6 +236,7 @@ export const CustomerUsageView = ({
               <DataTableColumnHeader column={column} title="Overages" />
             ),
             accessorKey: 'overages',
+            size: 110,
             cell: ({ row }) => {
               const { overages } = row.original
               return overages ? (
@@ -238,8 +248,12 @@ export const CustomerUsageView = ({
               )
             },
           },
+          ...(addCredits.canAddCredits
+            ? [addCreditsColumn<MeterRow>(addCredits.showForMeter)]
+            : []),
         ]}
       />
+      {addCredits.modal}
     </Box>
   )
 }

@@ -9,6 +9,7 @@ Tests are organized by lifecycle phase:
 """
 
 from collections.abc import Iterator
+from datetime import timedelta
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -94,6 +95,12 @@ def _patch_worker_middlewares(
     )
     mocker.patch.object(RedisMiddleware, "get", return_value=redis)
     mocker.patch.object(HTTPXMiddleware, "get", return_value=MagicMock())
+
+
+@pytest.fixture(autouse=True)
+def _disable_subscription_order_grace_period(mocker: MockerFixture) -> None:
+    # The task drain never runs delayed messages, so a deferred order would be lost.
+    mocker.patch("polar.order.tasks.SUBSCRIPTION_ORDER_GRACE_PERIOD", timedelta(0))
 
 
 @pytest.fixture(autouse=True)

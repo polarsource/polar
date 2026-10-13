@@ -12,7 +12,6 @@ import {
   useUpdateSubscription,
 } from '@/hooks/polar/subscriptions'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
-import { hasLegacyRecurringPrices } from '@/utils/price'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { schemas } from '@polar-sh/client'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
@@ -49,15 +48,7 @@ export default function Index() {
     is_archived: false,
   })
 
-  const products = useMemo(
-    () =>
-      allProducts
-        ? allProducts.items.filter(
-            (product) => !hasLegacyRecurringPrices(product),
-          )
-        : [],
-    [allProducts],
-  )
+  const products = useMemo(() => allProducts?.items ?? [], [allProducts])
 
   const selectedProductId = watch('product_id')
   const selectedProduct = useMemo(

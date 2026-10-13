@@ -515,6 +515,15 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
     def get_eager_options(self) -> Options:
         return (joinedload(Event.customer), joinedload(Event.event_types))
 
+    async def get_by_organization_and_external_id(
+        self, organization_id: UUID, external_id: str
+    ) -> Event | None:
+        statement = self.get_base_statement().where(
+            Event.organization_id == organization_id,
+            Event.external_id == external_id,
+        )
+        return await self.get_one_or_none(statement)
+
     async def get_by_id_with_eager(self, id: UUID) -> Event | None:
         statement = (
             self.get_base_statement()

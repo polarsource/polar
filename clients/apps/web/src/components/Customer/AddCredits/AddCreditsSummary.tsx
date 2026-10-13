@@ -20,41 +20,29 @@ const SummaryRow = ({
   </Box>
 )
 
-const SummaryCard = ({ children }: { children: ReactNode }) => (
-  <Box
-    flexDirection="column"
-    rowGap="s"
-    padding="l"
-    borderRadius="l"
-    backgroundColor="background-card"
-  >
-    {children}
-  </Box>
-)
-
 export const AddCreditsSummary = ({
   option,
   units,
 }: {
   option?: MeterCreditOption
-  units: number | null
+  units: number
 }) => {
-  const currentBalance = (
-    <SummaryRow
-      label="Current balance"
-      value={option ? <FormattedUnits value={option.balance} /> : '—'}
-    />
-  )
-
-  if (!option || !units) {
-    return <SummaryCard>{currentBalance}</SummaryCard>
-  }
-
-  const { balanceAfter, overage } = getCreditPreview(option, units)
+  const preview = option ? getCreditPreview(option, units) : null
+  const balanceValue = (value: number) =>
+    option ? <FormattedUnits value={value} /> : '—'
 
   return (
-    <SummaryCard>
-      {currentBalance}
+    <Box
+      flexDirection="column"
+      rowGap="s"
+      padding="l"
+      borderRadius="l"
+      backgroundColor="background-card"
+    >
+      <SummaryRow
+        label="Current balance"
+        value={balanceValue(option?.balance ?? 0)}
+      />
       <SummaryRow
         label="Credits added"
         value={
@@ -74,16 +62,16 @@ export const AddCreditsSummary = ({
         <SummaryRow
           strong
           label="New balance"
-          value={<FormattedUnits value={balanceAfter} />}
+          value={balanceValue(preview?.balanceAfter ?? 0)}
         />
-        {overage && (
+        {preview?.overage && (
           <SummaryRow
             strong
             label="Overage this period"
-            value={`${formatCurrency('compact')(overage.before, overage.currency)} → ${formatCurrency('compact')(overage.after, overage.currency)}`}
+            value={`${formatCurrency('compact')(preview.overage.before, preview.overage.currency)} → ${formatCurrency('compact')(preview.overage.after, preview.overage.currency)}`}
           />
         )}
       </Box>
-    </SummaryCard>
+    </Box>
   )
 }

@@ -171,7 +171,7 @@ export const AddCreditsModal = ({
             )}
           />
           {(option || (isLoading && meterId)) && (
-            <AddCreditsSummary option={option} units={units} />
+            <AddCreditsSummary option={option} units={units ?? 0} />
           )}
           <Box flexDirection="column" rowGap="l">
             <Text>
@@ -186,7 +186,7 @@ export const AddCreditsModal = ({
                 disabled={!option || !units}
                 loading={creditCustomerMeter.isPending}
               >
-                {units ? `Add ${formatCredits(units)}` : 'Add credits'}
+                Add credits
               </Button>
             </Box>
           </Box>

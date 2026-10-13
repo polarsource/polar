@@ -3,7 +3,6 @@ import type { schemas } from '@polar-sh/client'
 interface ProductCheckoutMixin {
   product_id: string
   product: schemas['CheckoutProduct']
-  product_price_id: string
   product_price: schemas['ProductPrice']
   prices: { [k: string]: schemas['ProductPrice'][] }
 }

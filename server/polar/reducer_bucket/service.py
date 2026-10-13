@@ -109,9 +109,11 @@ class ReducerBucketService:
         self, session: AsyncSession, contributions: Contributions
     ) -> None:
         repository = ReducerBucketRepository.from_session(session)
-        # All taken before writing any row, so a seal can't deadlock with us.
-        await self._lock_buckets(repository, contributions)
-        for bucket_id in contributions:
+        # Locks are all taken before writing any row, and rows are written in
+        # chronological order like seal locks them, so a seal can't deadlock with us.
+        bucket_ids = sorted(contributions, key=_get_bucket_key)
+        await self._lock_buckets(repository, bucket_ids)
+        for bucket_id in bucket_ids:
             reducer, bucket_start, customer_id, external_customer_id = bucket_id
             for start, end in await self._get_intervals(
                 repository, reducer, bucket_start, customer_id, external_customer_id
@@ -280,10 +282,7 @@ class ReducerBucketService:
     ) -> None:
         """Locks the buckets in one global order, so transactions locking several
         can't deadlock each other."""
-        for bucket_id in sorted(
-            bucket_ids,
-            key=lambda b: redis_store.get_reducer_bucket_key(b[0].id, b[1], b[2], b[3]),
-        ):
+        for bucket_id in sorted(bucket_ids, key=_get_bucket_key):
             await repository.lock_buckets(*bucket_id)
 
     async def _get_intervals(
@@ -426,6 +425,13 @@ class ReducerBucketService:
             flush=True,
         )
         return True
+
+
+def _get_bucket_key(bucket_id: redis_store.BucketId) -> str:
+    reducer, bucket_start, customer_id, external_customer_id = bucket_id
+    return redis_store.get_reducer_bucket_key(
+        reducer.id, bucket_start, customer_id, external_customer_id
+    )
 
 
 def _get_quantity(

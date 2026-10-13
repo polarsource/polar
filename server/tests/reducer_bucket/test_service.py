@@ -582,6 +582,9 @@ class TestSeal:
         await create_tokens_event(
             save_fixture, organization, 5, ingested_at=INGESTED_AT
         )
+        await reducer_bucket_service.sync(
+            session, max_reducer.id, BUCKET_START, None, "external"
+        )
         await create_event(
             save_fixture,
             organization=organization,
@@ -793,6 +796,10 @@ class TestSeal:
                 tokens,
                 timestamp=timestamp,
                 ingested_at=INGESTED_AT,
+            )
+        for bucket_start in (BUCKET_START - REDUCER_BUCKET_SIZE, BUCKET_START):
+            await reducer_bucket_service.sync(
+                session, reducer.id, bucket_start, None, "external"
             )
 
         quantities = await reducer_bucket_service.seal(

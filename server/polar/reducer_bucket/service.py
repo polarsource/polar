@@ -26,7 +26,6 @@ from .repository import ReducerBucketRepository
 log: Logger = structlog.get_logger()
 
 REDUCER_BUCKET_SIZE = timedelta(minutes=5)
-SEAL_SYNC_LOOKBACK = timedelta(minutes=15)
 
 type Contributions = dict[redis_store.BucketId, list[tuple[datetime, float]]]
 
@@ -190,7 +189,7 @@ class ReducerBucketService:
                 (customer.id, customer.external_id),
             ]
 
-        await self._lock_and_sync_buckets(
+        await self._lock_buckets(
             repository, reducers, identities, start=start, cutoff=cutoff
         )
 
@@ -206,7 +205,7 @@ class ReducerBucketService:
             quantities[reducer.id] = _get_quantity(reducer.aggregation.func, sealed)
         return quantities
 
-    async def _lock_and_sync_buckets(
+    async def _lock_buckets(
         self,
         repository: ReducerBucketRepository,
         reducers: Sequence[Reducer],
@@ -215,31 +214,20 @@ class ReducerBucketService:
         start: datetime,
         cutoff: datetime,
     ) -> None:
-        synced_from = get_reducer_bucket_start(
-            max(start, utc_now() - SEAL_SYNC_LOOKBACK)
-        )
-        bucket_starts = {
-            get_reducer_bucket_start(start),
-            get_reducer_bucket_start(cutoff),
-        }
-        bucket_start = synced_from
-        while bucket_start < cutoff:
-            bucket_starts.add(bucket_start)
-            bucket_start += REDUCER_BUCKET_SIZE
         bucket_ids = sorted(
             (
                 (reducer, bucket_start, customer_id, external_customer_id)
                 for reducer in reducers
-                for bucket_start in bucket_starts
+                for bucket_start in {
+                    get_reducer_bucket_start(start),
+                    get_reducer_bucket_start(cutoff),
+                }
                 for customer_id, external_customer_id in identities
             ),
             key=lambda b: redis_store.get_reducer_bucket_key(b[0].id, b[1], b[2], b[3]),
         )
         for bucket_id in bucket_ids:
             await repository.lock_buckets(*bucket_id)
-        for bucket_id in bucket_ids:
-            if bucket_id[1] >= synced_from:
-                await self._sync_bucket(repository, *bucket_id)
 
     async def _get_intervals(
         self,

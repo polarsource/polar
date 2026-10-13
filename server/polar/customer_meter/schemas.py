@@ -1,7 +1,7 @@
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import Path
-from pydantic import UUID4, Field
+from pydantic import UUID4, Field, model_validator
 
 from polar.customer.schemas.customer import CustomerResponse as Customer
 from polar.kit.schemas import (
@@ -67,6 +67,19 @@ class CustomerMeterCreditsCreateBase(Schema):
             "Retrying with the same `external_id` doesn't grant the credit twice."
         ),
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _single_customer_selector(cls, data: Any) -> Any:
+        if (
+            isinstance(data, dict)
+            and "customer_id" in data
+            and "external_customer_id" in data
+        ):
+            raise ValueError(
+                "Provide either customer_id or external_customer_id, not both."
+            )
+        return data
 
 
 class CustomerMeterCreditsCustomerIDCreate(CustomerMeterCreditsCreateBase):

@@ -195,6 +195,27 @@ class TestCreditCustomerMeter:
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth
+    async def test_both_customer_selectors(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        response = await client.post(
+            "/v1/customer-meters/credits",
+            json={
+                "customer_id": str(customer.id),
+                "external_customer_id": "usr_1337",
+                "meter_id": str(meter.id),
+                "units": 100,
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
     async def test_meter_not_found(
         self,
         client: AsyncClient,

@@ -26,7 +26,6 @@ import { formatCurrency } from '@polar-sh/currency'
 import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { endOfMonth, startOfMonth, subMonths } from 'date-fns'
-import { Button } from '@polar-sh/orbit'
 import {
   Card,
   CardContent,
@@ -36,7 +35,8 @@ import Link from 'next/link'
 import { parseAsIsoDateTime, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useInViewport } from '@/hooks/utils'
 import { useCallback, useEffect, useMemo } from 'react'
-import { Avatar } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 
 interface CustomerMeterPageProps {
   organization: schemas['Organization']
@@ -171,70 +171,54 @@ const CustomerMeterPage = ({
     <MasterDetailLayoutContent
       header={
         <>
-          <div className="flex flex-row items-center gap-4">
+          <Box alignItems="center" columnGap="l" minWidth={0}>
             <Link
               href={`/dashboard/${organization.slug}/customers/${customer.id}`}
               className="dark:text-polar-500 shrink-0 text-gray-400 transition-colors hover:text-gray-900 dark:hover:text-white"
             >
               <ArrowBackOutlined fontSize="small" />
             </Link>
-            <div className="flex flex-row items-center gap-x-4">
-              <p className="truncate text-lg font-medium">{meter.name}</p>
-              {subscription && (
-                <span className="dark:text-polar-500 text-lg text-gray-500">
-                  {subscription.product.name}
-                </span>
-              )}
+            <Box flexDirection="column" minWidth={0}>
+              <Link
+                href={`/dashboard/${organization.slug}/products/meters/${meter.id}`}
+                className="truncate hover:underline"
+              >
+                <Text variant="heading-xxs" as="h1">
+                  {meter.name}
+                </Text>
+              </Link>
+              <Text color="muted">
+                {customer.name || customer.email}
+                {subscription && ` · ${subscription.product.name}`}
+              </Text>
+            </Box>
+          </Box>
+          <div className="flex flex-row items-center gap-2">
+            <div>
+              <IntervalPicker
+                interval={interval}
+                onChange={setInterval}
+                startDate={startDate}
+                endDate={endDate}
+              />
             </div>
-          </div>
-          <div className="flex flex-row gap-6">
+            <DateRangePicker
+              date={{ from: startDate, to: endDate }}
+              onDateChange={onDateChange}
+              additionalIntervals={
+                billingPeriodInterval ? [billingPeriodInterval] : undefined
+              }
+            />
             <AddCreditsButton
               organization={organization}
               customer={customer}
               meterId={meter.id}
             />
-            <Link
-              href={`/dashboard/${organization.slug}/products/meters/${meter.id}`}
-            >
-              <Button>View Meter</Button>
-            </Link>
-            <div className="flex flex-row gap-2">
-              <div>
-                <IntervalPicker
-                  interval={interval}
-                  onChange={setInterval}
-                  startDate={startDate}
-                  endDate={endDate}
-                />
-              </div>
-              <DateRangePicker
-                date={{ from: startDate, to: endDate }}
-                onDateChange={onDateChange}
-                additionalIntervals={
-                  billingPeriodInterval ? [billingPeriodInterval] : undefined
-                }
-              />
-            </div>
           </div>
         </>
       }
     >
       <div className="flex flex-col gap-y-8">
-        <div className="flex flex-row items-center gap-6">
-          <Avatar
-            avatar_url={customer.avatar_url}
-            name={customer.name || customer.email || 'Customer'}
-            className="h-16 w-16"
-          />
-          <div className="flex flex-col">
-            <p className="text-lg">
-              {(customer.name?.length ?? 0) > 0 ? customer.name : '—'}
-            </p>
-            <div className="dark:text-polar-500 flex flex-row items-center text-base text-gray-500">
-              <span>{customer.email ?? '—'}</span>
-            </div>
-          </div>
-        </div>
         {customerMeter && (
           <div className="flex flex-row flex-wrap gap-4">
             {subscription?.current_period_end && (

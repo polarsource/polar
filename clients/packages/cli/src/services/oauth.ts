@@ -3,7 +3,7 @@ import { createServer } from 'node:http'
 import { Context, DateTime, Effect, Layer, Redacted, Schema } from 'effect'
 import { HttpClient, HttpClientRequest, HttpClientResponse } from 'effect/http'
 import open from 'open'
-import { apiUrl } from '@/services/api'
+import { apiOverride, apiUrl, dashboardOverride } from '@/services/api'
 import {
   AuthError,
   loginCommand,
@@ -12,11 +12,29 @@ import {
 } from '@/schemas/Auth'
 import { callbackPage, type CallbackOutcome } from '@/utils/callback-page'
 
-const SANDBOX_CLIENT_ID = 'polar_ci_AHVAKf9SDOaffma2auRGMXR3H8jg9QBgOfW7s1hYgW9'
-const PRODUCTION_CLIENT_ID = 'polar_ci_gBnJ_Yv_uSGm5mtoPa2cCA'
+const CLIENT_IDS = {
+  production: 'polar_ci_gBnJ_Yv_uSGm5mtoPa2cCA',
+  sandbox: 'polar_ci_AHVAKf9SDOaffma2auRGMXR3H8jg9QBgOfW7s1hYgW9',
+  local: 'polar_ci_local_cli',
+} as const
 
-const SANDBOX_AUTHORIZATION_URL = 'https://sandbox.polar.sh/oauth2/authorize'
-const PRODUCTION_AUTHORIZATION_URL = 'https://polar.sh/oauth2/authorize'
+const DASHBOARD_ORIGINS = {
+  production: 'https://polar.sh',
+  sandbox: 'https://sandbox.polar.sh',
+  local: 'http://127.0.0.1:3000',
+} as const
+
+export const authorizationUrl = (environment: PolarEnvironment) =>
+  Effect.gen(function* () {
+    const dashboard = yield* dashboardOverride
+    if (dashboard) return new URL('/oauth2/authorize', dashboard)
+    if (yield* apiOverride)
+      return yield* new AuthError({
+        message:
+          'POLAR_API_URL is set, so login needs POLAR_DASHBOARD_URL too. Point it at the matching dashboard, e.g. http://127.0.0.1:3000.',
+      })
+    return new URL('/oauth2/authorize', DASHBOARD_ORIGINS[environment])
+  })
 
 const config = {
   scopes: [
@@ -114,10 +132,7 @@ export const exchange = (
   previous?: Session,
 ) =>
   Effect.gen(function* () {
-    params.set(
-      'client_id',
-      environment === 'production' ? PRODUCTION_CLIENT_ID : SANDBOX_CLIENT_ID,
-    )
+    params.set('client_id', CLIENT_IDS[environment])
     const client = HttpClient.withScope(yield* HttpClient.HttpClient)
     const request = HttpClientRequest.post(
       yield* apiUrl(environment, '/oauth2/token'),
@@ -195,14 +210,9 @@ const login = (
   Effect.gen(function* () {
     const state = randomBytes(32).toString('hex')
     const verifier = randomBytes(48).toString('base64url')
-    const authorization = new URL(
-      environment === 'production'
-        ? PRODUCTION_AUTHORIZATION_URL
-        : SANDBOX_AUTHORIZATION_URL,
-    )
+    const authorization = yield* authorizationUrl(environment)
     authorization.search = new URLSearchParams({
-      client_id:
-        environment === 'production' ? PRODUCTION_CLIENT_ID : SANDBOX_CLIENT_ID,
+      client_id: CLIENT_IDS[environment],
       redirect_uri: config.redirectUrl,
       response_type: 'code',
       scope: config.scopes.join(' '),

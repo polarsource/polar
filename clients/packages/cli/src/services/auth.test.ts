@@ -225,7 +225,7 @@ describe('token override', () => {
     expect(await Effect.runPromise(auth.environments)).toEqual(['sandbox'])
     environment = 'staging'
     await expect(Effect.runPromise(auth.environments)).rejects.toThrow(
-      'POLAR_ENVIRONMENT must be "sandbox" or "production"',
+      'POLAR_ENVIRONMENT must be "sandbox", "production" or "local"',
     )
     expect(credentials.state.reads).toBe(0)
   })

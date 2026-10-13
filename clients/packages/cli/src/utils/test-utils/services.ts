@@ -276,7 +276,10 @@ export const fakePolar = (client: unknown) => {
           })
           return fn(
             sdk,
-            createPolarCore({ accessToken: 'test-token', environment }),
+            createPolarCore({
+              accessToken: 'test-token',
+              baseUrl: 'https://api.polar.test',
+            }),
           )
         },
         catch: (error) =>

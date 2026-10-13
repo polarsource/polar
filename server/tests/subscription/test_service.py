@@ -2921,7 +2921,9 @@ class TestCycle:
         subscription.current_meter_period_end = subscription.current_period_end
         await save_fixture(subscription)
 
-        settle_mock = mocker.patch.object(subscription_service, "_settle_meter_cycle")
+        settle_mock = mocker.patch.object(
+            subscription_service, "_enqueue_meter_cycle_order"
+        )
 
         async with SubscriptionUpdateContext(
             session, subscription, subscription_service
@@ -3187,7 +3189,9 @@ class TestCycleMeters:
         subscription.current_meter_period_end = now - timedelta(days=62)
         await save_fixture(subscription)
 
-        settle_mock = mocker.patch.object(subscription_service, "_settle_meter_cycle")
+        settle_mock = mocker.patch.object(
+            subscription_service, "_enqueue_meter_cycle_order"
+        )
         reset_mock = mocker.patch.object(subscription_service, "reset_meters")
 
         with pytest.raises(SubscriptionMeterCycleLag):
@@ -3252,7 +3256,9 @@ class TestCycleMeters:
         subscription.status = SubscriptionStatus.past_due
         await save_fixture(subscription)
 
-        settle_mock = mocker.patch.object(subscription_service, "_settle_meter_cycle")
+        settle_mock = mocker.patch.object(
+            subscription_service, "_enqueue_meter_cycle_order"
+        )
         reset_mock = mocker.patch.object(subscription_service, "reset_meters")
 
         updated = await subscription_service.cycle_meters(session, subscription)
@@ -8221,7 +8227,9 @@ class TestMarkActive:
         subscription.past_due_at = utc_now()
         await save_fixture(subscription)
 
-        settle_mock = mocker.patch.object(subscription_service, "_settle_meter_cycle")
+        settle_mock = mocker.patch.object(
+            subscription_service, "_enqueue_meter_cycle_order"
+        )
         reset_mock = mocker.patch.object(subscription_service, "reset_meters")
 
         updated = await subscription_service.mark_active(session, subscription)
@@ -8246,7 +8254,9 @@ class TestMarkActive:
         subscription.past_due_at = utc_now()
         await save_fixture(subscription)
 
-        settle_mock = mocker.patch.object(subscription_service, "_settle_meter_cycle")
+        settle_mock = mocker.patch.object(
+            subscription_service, "_enqueue_meter_cycle_order"
+        )
         reset_mock = mocker.patch.object(subscription_service, "reset_meters")
 
         updated = await subscription_service.mark_active(session, subscription)

@@ -1450,3 +1450,58 @@ class TestCreateOrderItemsFromPending:
         for entry in old_entries:
             await session.refresh(entry)
             assert entry.order_item_id is None
+
+    async def test_price_snapshot_bills_switched_away_price(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        organization: Organization,
+    ) -> None:
+        product_old = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None, "usd")],
+        )
+        old_price = product_old.prices[0]
+        subscription = await create_active_subscription(
+            save_fixture, customer=customer, product=product_old
+        )
+        old_entries = [
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=old_price,
+                subscription=subscription,
+                tokens=tokens,
+            )
+            for tokens in (100, 200)
+        ]
+        product_new = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(50), None, "usd")],
+        )
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(product_new.prices[0])
+        ]
+        await save_fixture(subscription)
+
+        async with billing_entry_service.create_metered_order_items_from_pending(
+            session, subscription, price_ids=[old_price.id]
+        ) as order_items:
+            assert len(order_items) == 1
+            order_item = order_items[0]
+            assert order_item.product_price == old_price
+            assert order_item.amount == 300_00
+
+            await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
+
+        for entry in old_entries:
+            await session.refresh(entry)
+            assert entry.order_item_id == order_item.id

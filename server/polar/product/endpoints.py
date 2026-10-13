@@ -121,7 +121,10 @@ async def list(
     name="list",
     summary="List Products",
     response_model=ListResource[ProductSchema],
-    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
+    openapi_extra={
+        "x-tool-description": "List all products in your organization.",
+        "parameters": [get_metadata_query_openapi_schema()],
+    },
 )
 @version(starting_from=V2027_01)
 async def list_v2027_01(
@@ -233,6 +236,9 @@ async def create(
     status_code=201,
     summary="Create Product",
     responses={201: {"description": "Product created."}},
+    openapi_extra={
+        "x-tool-description": "Create a new product with pricing and benefits (entitlements).",
+    },
 )
 @version(starting_from=V2027_01)
 async def create_v2027_01(
@@ -287,6 +293,9 @@ async def update(
             "model": NotPermitted.schema(),
         },
         404: ProductNotFound,
+    },
+    openapi_extra={
+        "x-tool-description": "Update an existing product's details, pricing, or settings.",
     },
 )
 @version(starting_from=V2027_01)

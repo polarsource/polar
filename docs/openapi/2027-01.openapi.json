@@ -5127,7 +5127,7 @@
         },
         "x-tool-name": "products_create",
         "x-tool-title": "Create Product",
-        "x-tool-description": "Create a product.",
+        "x-tool-description": "Create a new product with pricing and benefits (entitlements).",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -5356,7 +5356,7 @@
         },
         "x-tool-name": "products_update",
         "x-tool-title": "Update Product",
-        "x-tool-description": "Update a product.",
+        "x-tool-description": "Update an existing product's details, pricing, or settings.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -24461,6 +24461,13 @@
             }
           }
         },
+        "x-tool-name": "meters_get_external",
+        "x-tool-title": "Get Meter by External ID",
+        "x-tool-description": "Get a meter by external ID.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"

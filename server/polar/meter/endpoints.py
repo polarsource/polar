@@ -95,7 +95,13 @@ async def list(
     name="list",
     summary="List Meters",
     response_model=ListResource[MeterSchema],
-    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
+    openapi_extra={
+        "x-tool-description": (
+            "List all usage meters in your organization for tracking consumption-"
+            "based billing and analytics."
+        ),
+        "parameters": [get_metadata_query_openapi_schema()],
+    },
 )
 @version(starting_from=V2027_01)
 async def list_v2027_01(

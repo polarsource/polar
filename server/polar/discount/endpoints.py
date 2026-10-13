@@ -76,6 +76,10 @@ async def list(
     name="list",
     summary="List Discounts",
     response_model=ListResource[DiscountSchema],
+    openapi_extra={
+        "x-tool-title": "List discount codes",
+        "x-tool-description": "List all discount codes and coupons.",
+    },
 )
 @version(starting_from=V2027_01)
 async def list_v2027_01(

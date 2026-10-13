@@ -104,7 +104,10 @@ async def list(
     name="list",
     summary="List Benefits",
     response_model=ListResource[BenefitSchema],
-    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
+    openapi_extra={
+        "x-tool-description": "List all existing benefits.",
+        "parameters": [get_metadata_query_openapi_schema()],
+    },
 )
 @version(starting_from=V2027_01)
 async def list_v2027_01(

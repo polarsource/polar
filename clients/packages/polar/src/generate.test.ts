@@ -269,6 +269,21 @@ const cases: [string, PolarConfig][] = [
       .toJSON(),
   ],
   [
+    'private resources',
+    api
+      .defineConfig({
+        meters: ({ meter }) => ({ calls: meter('Calls').count() }),
+        benefits: ({ flag, credits }) => ({
+          beta: flag('Beta').private(),
+          calls: credits('Calls').meter('calls').units(10).private(),
+        }),
+        products: ({ product, free }) => ({
+          pro: product('Pro').prices(free()).recurring('monthly').private(),
+        }),
+      })
+      .toJSON(),
+  ],
+  [
     'discounts of every kind',
     api
       .defineConfig({

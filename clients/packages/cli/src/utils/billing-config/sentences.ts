@@ -110,6 +110,11 @@ export const benefitSentence = (input: unknown) => {
   const benefit = record(input)
   if (benefit === undefined) return undefined
   const properties = record(benefit['properties'])
+  const visibility =
+    typeof benefit['visibility'] === 'string' &&
+    benefit['visibility'] !== 'public'
+      ? [['visibility', name(benefit['visibility'])] as const]
+      : []
   if (benefit['type'] === 'meter_credit' && properties !== undefined) {
     return fields([
       ['meter', name(properties['meter'])],
@@ -117,6 +122,7 @@ export const benefitSentence = (input: unknown) => {
       ...(properties['rollover'] === true
         ? [['rollover', 'yes'] as const]
         : []),
+      ...visibility,
     ])
   }
   return fields([
@@ -126,6 +132,7 @@ export const benefitSentence = (input: unknown) => {
         ? 'feature flag'
         : name(benefit['type']),
     ],
+    ...visibility,
   ])
 }
 

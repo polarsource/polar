@@ -27,6 +27,7 @@ from polar.declarative_config.service import (
 from polar.discount.repository import DiscountRepository
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import NotPermitted, PolarRequestValidationError
+from polar.kit.trial import TrialInterval
 from polar.kit.visibility import Visibility
 from polar.meter.repository import MeterRepository
 from polar.meter.unit import MeterUnit
@@ -681,6 +682,79 @@ class TestApply:
         ]
         assert product.prices[1].id == metered_price.id
         assert [benefit.description for benefit in product.benefits] == ["Beta access"]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_product_trial(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        product_config = {
+            "external_id": "pro",
+            "name": "Pro",
+            "recurring_interval": "month",
+            "trial_interval": "day",
+            "trial_interval_count": 14,
+            "prices": [{"amount_type": "fixed", "price_amount": 2000}],
+        }
+
+        config = Config.model_validate({"products": [product_config]})
+        plan = await declarative_config_service.plan(session, auth_subject, config)
+        assert [
+            (field.field, field.after)
+            for field in plan.changes[0].diff
+            if field.field.startswith("trial_")
+        ] == [
+            ("trial_interval", TrialInterval.day),
+            ("trial_interval_count", 14),
+        ]
+
+        created = await declarative_config_service.apply(
+            session, redis, auth_subject, config
+        )
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pro"])
+        assert created.changes[0].action == ConfigAction.created
+        assert product.trial_interval == TrialInterval.day
+        assert product.trial_interval_count == 14
+
+        updated = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"products": [{**product_config, "trial_interval_count": 7}]}
+            ),
+        )
+        assert updated.changes[0].action == ConfigAction.updated
+        await session.refresh(product)
+        assert product.trial_interval == TrialInterval.day
+        assert product.trial_interval_count == 7
+
+        cleared = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "products": [
+                        {
+                            "external_id": "pro",
+                            "name": "Pro",
+                            "recurring_interval": "month",
+                            "prices": [{"amount_type": "fixed", "price_amount": 2000}],
+                        }
+                    ]
+                }
+            ),
+        )
+        assert cleared.changes[0].action == ConfigAction.updated
+        await session.refresh(product)
+        assert product.trial_interval is None
+        assert product.trial_interval_count is None
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -1624,6 +1698,90 @@ class TestPlan:
             for issue in plan.issues
             if issue.type == ConfigIssueType.interval_changed
         ] == [["body", "products", 0, field]]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_product_trial_changed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            trial_interval=TrialInterval.day,
+            trial_interval_count=14,
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "products": [
+                        {
+                            "external_id": "pro",
+                            "name": "Product",
+                            "description": "Description",
+                            "recurring_interval": "month",
+                            "trial_interval": "day",
+                            "trial_interval_count": 7,
+                            "prices": [{"amount_type": "fixed", "price_amount": 1000}],
+                        }
+                    ]
+                }
+            ),
+        )
+
+        [change] = plan.changes
+        assert change.action == ConfigAction.updated
+        assert [(field.field, field.before, field.after) for field in change.diff] == [
+            ("trial_interval_count", 14, 7)
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_product_trial_unchanged(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            trial_interval=TrialInterval.day,
+            trial_interval_count=14,
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "products": [
+                        {
+                            "external_id": "pro",
+                            "name": "Product",
+                            "description": "Description",
+                            "recurring_interval": "month",
+                            "trial_interval": "day",
+                            "trial_interval_count": 14,
+                            "prices": [{"amount_type": "fixed", "price_amount": 1000}],
+                        }
+                    ]
+                }
+            ),
+        )
+
+        [change] = plan.changes
+        assert change.action == ConfigAction.unchanged
+        assert change.diff == []
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_unknown_references(

@@ -16549,6 +16549,13 @@ export interface components {
     }
     /** ConfigProduct */
     ConfigProduct: {
+      /** @description The interval unit for the trial period. */
+      trial_interval?: components['schemas']['TrialInterval'] | null
+      /**
+       * Trial Interval Count
+       * @description The number of interval units for the trial period.
+       */
+      trial_interval_count?: number | null
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.

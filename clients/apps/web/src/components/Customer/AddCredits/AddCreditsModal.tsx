@@ -6,6 +6,7 @@ import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
 import {
   Button,
+  Checkbox,
   InlineModalHeader,
   Input,
   Select,
@@ -37,6 +38,7 @@ import { useMeterCreditOptions } from './useMeterCreditOptions'
 interface AddCreditsForm {
   meter_id: string
   units: string
+  rollover: boolean
 }
 
 export const AddCreditsModal = ({
@@ -58,7 +60,7 @@ export const AddCreditsModal = ({
   const creditCustomerMeter = useCreditCustomerMeter()
   const form = useForm<AddCreditsForm>({
     mode: 'onChange',
-    defaultValues: { meter_id: meterId ?? '', units: '' },
+    defaultValues: { meter_id: meterId ?? '', units: '', rollover: true },
   })
 
   const values = useWatch({ control: form.control })
@@ -74,7 +76,7 @@ export const AddCreditsModal = ({
       customer_id: customer.id,
       meter_id: option.meter.id,
       units: submittedUnits,
-      rollover: true,
+      rollover: submitted.rollover,
       external_id: externalId,
     })
 
@@ -152,25 +154,44 @@ export const AddCreditsModal = ({
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="units"
-            rules={{ validate: validateCreditUnits }}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Credits to add</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    inputMode="numeric"
-                    autoComplete="off"
-                    autoFocus={!!meterId}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <Box flexDirection="column" rowGap="m">
+            <FormField
+              control={form.control}
+              name="units"
+              rules={{ validate: validateCreditUnits }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Credits</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      inputMode="numeric"
+                      autoComplete="off"
+                      autoFocus={!!meterId}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="rollover"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Checkbox
+                      label="Keep unused credits after the billing period ends"
+                      checked={field.value}
+                      onCheckedChange={(checked) =>
+                        field.onChange(checked === true)
+                      }
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </Box>
           {(option || (isLoading && meterId)) && (
             <AddCreditsSummary option={option} units={units ?? 0} />
           )}
@@ -184,7 +205,11 @@ export const AddCreditsModal = ({
               <Text as="span" color="default">
                 {customerLabel}
               </Text>
-              . Credits don&apos;t expire and can&apos;t be removed once added.
+              .{' '}
+              {values.rollover
+                ? "Credits don't expire"
+                : 'Unused credits expire at the end of the billing period'}{' '}
+              and can&apos;t be removed once added.
             </Text>
             <Box columnGap="s">
               <Button variant="ghost" onClick={onClose}>

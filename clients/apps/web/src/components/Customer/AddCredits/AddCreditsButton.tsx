@@ -29,9 +29,7 @@ export const AddCreditsButton = ({
 
   return (
     <>
-      <Button variant="secondary" onClick={show}>
-        Add credits
-      </Button>
+      <Button onClick={show}>Add credits</Button>
       <InlineModal
         isShown={isShown}
         hide={hide}

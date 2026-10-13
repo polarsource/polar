@@ -46,7 +46,6 @@ from polar.kit.schemas import (
     IDSchema,
     Int32,
     Schema,
-    SetSchemaReference,
     StripValidator,
     TimestampedSchema,
 )
@@ -391,14 +390,6 @@ class CheckoutProductsCreate(CheckoutCreateBase):
     prices: dict[UUID4, ProductPriceCreateList] | None = Field(
         default=None, description=CHECKOUT_PRICES_DESCRIPTION
     )
-
-
-CheckoutCreate = Annotated[
-    CheckoutProductsCreate
-    | SkipJsonSchema[CheckoutProductCreate]
-    | SkipJsonSchema[CheckoutPriceCreate],
-    SetSchemaReference("CheckoutCreate"),
-]
 
 
 class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):

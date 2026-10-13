@@ -43,9 +43,9 @@ from .repository import CheckoutRepository
 from .schemas import Checkout as CheckoutSchema
 from .schemas import (
     CheckoutConfirm,
-    CheckoutCreate,
     CheckoutEmbedPolicy,
     CheckoutOpened,
+    CheckoutProductsCreate,
     CheckoutPublic,
     CheckoutPublicConfirmed,
     CheckoutUpdate,
@@ -208,7 +208,7 @@ async def create(
 )
 @version(starting_from=V2027_01)
 async def create_v2027_01(
-    checkout_create: CheckoutCreate,
+    checkout_create: CheckoutProductsCreate,
     auth_subject: auth.CheckoutWrite,
     ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),

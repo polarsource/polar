@@ -21,9 +21,9 @@ from polar.checkout.schemas import (
     CheckoutConfirm,
     CheckoutConfirmBase,
     CheckoutConfirmStripe,
-    CheckoutCreate,
     CheckoutPriceCreate,
     CheckoutProductCreate,
+    CheckoutProductsCreate,
     CheckoutUpdate,
     CheckoutUpdatePublic,
     CustomerIPAddress,
@@ -378,7 +378,9 @@ class CheckoutService:
     async def create(
         self,
         session: AsyncSession,
-        checkout_create: CheckoutCreate,
+        checkout_create: CheckoutProductsCreate
+        | CheckoutProductCreate
+        | CheckoutPriceCreate,
         auth_subject: AuthSubject[User | Organization],
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
     ) -> Checkout:

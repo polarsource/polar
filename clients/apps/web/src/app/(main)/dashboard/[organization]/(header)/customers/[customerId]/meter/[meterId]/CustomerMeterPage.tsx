@@ -1,5 +1,6 @@
 'use client'
 
+import { AddCreditsButton } from '@/components/Customer/AddCredits/AddCreditsButton'
 import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import DateRangePicker, {
   DateRangeInterval,
@@ -187,6 +188,11 @@ const CustomerMeterPage = ({
             </div>
           </div>
           <div className="flex flex-row gap-6">
+            <AddCreditsButton
+              organization={organization}
+              customer={customer}
+              meterId={meter.id}
+            />
             <Link
               href={`/dashboard/${organization.slug}/products/meters/${meter.id}`}
             >

@@ -1,5 +1,6 @@
 'use client'
 
+import { useAddCreditsModal } from '@/components/Customer/AddCredits/AddCreditsButton'
 import { EditCustomerModal } from '@/components/Customer/EditCustomerModal'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import IntervalPicker, {
@@ -60,6 +61,7 @@ export const CustomerHeader = ({
     hide: hideDeleteCustomerModal,
     isShown: isDeleteCustomerModalShown,
   } = useModal()
+  const addCredits = useAddCreditsModal({ organization, customer })
   const safeCopy = useSafeCopy(toast)
   const canManageCustomers = useHasPermission(
     organization.id,
@@ -192,6 +194,11 @@ export const CustomerHeader = ({
           <DropdownMenuItem onClick={showEditCustomerModal}>
             Edit Customer
           </DropdownMenuItem>
+          {addCredits.canAddCredits && (
+            <DropdownMenuItem onClick={addCredits.show}>
+              Add Credits
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem destructive onClick={showDeleteCustomerModal}>
             Delete Customer
@@ -208,6 +215,7 @@ export const CustomerHeader = ({
           />
         }
       />
+      {addCredits.modal}
       <ConfirmModal
         isShown={isDeleteCustomerModalShown}
         hide={hideDeleteCustomerModal}

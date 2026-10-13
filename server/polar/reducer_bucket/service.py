@@ -108,16 +108,17 @@ class ReducerBucketService:
         self, session: AsyncSession, contributions: Contributions
     ) -> None:
         repository = ReducerBucketRepository.from_session(session)
-        # Sorted, so concurrent requests take the bucket locks in the same order.
-        for bucket_id in sorted(
+        # Sorted, so concurrent requests take the bucket locks in the same order,
+        # and all taken before writing any row, so a seal can't deadlock with us.
+        bucket_ids = sorted(
             contributions,
             key=lambda b: redis_store.get_reducer_bucket_key(b[0].id, b[1], b[2], b[3]),
-        ):
-            reducer, bucket_start, customer_id, external_customer_id = bucket_id
+        )
+        for bucket_id in bucket_ids:
             # Shared with sync, which recomputes the bucket from its events.
-            await repository.lock_buckets(
-                reducer, bucket_start, customer_id, external_customer_id
-            )
+            await repository.lock_buckets(*bucket_id)
+        for bucket_id in bucket_ids:
+            reducer, bucket_start, customer_id, external_customer_id = bucket_id
             for start, end in await self._get_intervals(
                 repository, reducer, bucket_start, customer_id, external_customer_id
             ):

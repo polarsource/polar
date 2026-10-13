@@ -190,6 +190,31 @@ class ReducerBucketService:
                 (customer.id, customer.external_id),
             ]
 
+        await self._lock_and_sync_buckets(
+            repository, reducers, identities, start=start, cutoff=cutoff
+        )
+
+        for reducer in sorted(reducers, key=lambda reducer: str(reducer.id)):
+            for customer_id, external_customer_id in identities:
+                for at in (start, cutoff):
+                    await self._split(
+                        repository, reducer, at, customer_id, external_customer_id
+                    )
+            sealed = await repository.seal(
+                reducer, identities, start=start, end=cutoff, sealed_at=utc_now()
+            )
+            quantities[reducer.id] = _get_quantity(reducer.aggregation.func, sealed)
+        return quantities
+
+    async def _lock_and_sync_buckets(
+        self,
+        repository: ReducerBucketRepository,
+        reducers: Sequence[Reducer],
+        identities: Sequence[tuple[uuid.UUID | None, str | None]],
+        *,
+        start: datetime,
+        cutoff: datetime,
+    ) -> None:
         synced_from = get_reducer_bucket_start(
             max(start, utc_now() - SEAL_SYNC_LOOKBACK)
         )
@@ -215,18 +240,6 @@ class ReducerBucketService:
         for bucket_id in bucket_ids:
             if bucket_id[1] >= synced_from:
                 await self._sync_bucket(repository, *bucket_id)
-
-        for reducer in sorted(reducers, key=lambda reducer: str(reducer.id)):
-            for customer_id, external_customer_id in identities:
-                for at in (start, cutoff):
-                    await self._split(
-                        repository, reducer, at, customer_id, external_customer_id
-                    )
-            sealed = await repository.seal(
-                reducer, identities, start=start, end=cutoff, sealed_at=utc_now()
-            )
-            quantities[reducer.id] = _get_quantity(reducer.aggregation.func, sealed)
-        return quantities
 
     async def _get_intervals(
         self,

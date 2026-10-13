@@ -156,7 +156,7 @@ export const meterSentence = (input: unknown) => {
   ])
 }
 
-const discountValue = (discount: Record<string, unknown>) => {
+export const discountValue = (discount: Record<string, unknown>) => {
   const amounts = record(discount['amounts'])
   if (discount['type'] === 'fixed' && amounts !== undefined) {
     const off = Object.entries(amounts)
@@ -170,7 +170,7 @@ const discountValue = (discount: Record<string, unknown>) => {
     : name(discount['basis_points'])
 }
 
-const discountDuration = (discount: Record<string, unknown>) => {
+export const discountDuration = (discount: Record<string, unknown>) => {
   const months = discount['duration_in_months']
   if (discount['duration'] !== 'repeating') return name(discount['duration'])
   return months === 1 ? '1 month' : `${count(months)} months`

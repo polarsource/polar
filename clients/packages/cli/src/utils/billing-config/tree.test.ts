@@ -359,4 +359,17 @@ describe('formatTree', () => {
       ].join('\n'),
     )
   })
+
+  test('lists a section it has no sentences for, with every field', () => {
+    const output = stripAnsi(
+      formatTree({}, [
+        entry('checkout_links', 'promo', 'created', [
+          { field: 'label', before: null, after: 'Promo' },
+        ]),
+      ]),
+    )
+    expect(output).toBe(
+      ['  checkout_links', '  + promo', '      label  "Promo"'].join('\n'),
+    )
+  })
 })

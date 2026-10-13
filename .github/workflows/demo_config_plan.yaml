@@ -1,0 +1,58 @@
+name: Demo config plan
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - "clients/apps/demo-app/polar.config.ts"
+      - ".github/workflows/demo_config_plan.yaml"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+defaults:
+  run:
+    working-directory: ./clients
+
+jobs:
+  plan:
+    name: "Demo: Config plan 📋"
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 15
+
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7.0.1
+
+      - uses: pnpm/action-setup@v6.1.0
+        with:
+          package_json_file: clients/package.json
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: "pnpm"
+          cache-dependency-path: "clients/pnpm-lock.yaml"
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: clients/packages/cli/package.json
+
+      - name: 📦 Install dependencies
+        run: pnpm install
+
+      - name: 📋 Plan
+        working-directory: ./clients/apps/demo-app
+        env:
+          POLAR_PREVIEW: "1"
+          POLAR_ENVIRONMENT: sandbox
+          POLAR_ACCESS_TOKEN: ${{ secrets.DEMO_POLAR_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bun ../../packages/cli/src/cli.ts config plan --pr-comment

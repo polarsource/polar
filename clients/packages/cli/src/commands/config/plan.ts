@@ -9,6 +9,8 @@ import {
 } from '@/schemas/BillingConfig'
 import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
+import { commentOnPullRequest } from '@/services/pull-request-comment'
+import { planMarkdown } from '@/utils/billing-config/markdown'
 import { planSummary } from '@/utils/billing-config/entries'
 import {
   changes,
@@ -21,6 +23,7 @@ import {
 import { output } from '@/utils/command'
 import { configFile as file, org } from '@/utils/flags'
 import { withProgress } from '@/utils/progress'
+import { commented, prComment } from '@/utils/pull-request-comment'
 import * as ui from '@/utils/ui'
 
 const render = (
@@ -40,7 +43,7 @@ const render = (
         ]),
 ]
 
-export const plan = Command.make('plan', { file, org }).pipe(
+export const plan = Command.make('plan', { file, org, prComment }).pipe(
   Command.withDescription(
     'Show what applying a billing config file would change, without applying it',
   ),
@@ -61,13 +64,18 @@ export const plan = Command.make('plan', { file, org }).pipe(
       command: 'polar config plan --json',
       description: 'Print the changes and issues as JSON',
     },
+    {
+      command: 'polar config plan --pr-comment',
+      description:
+        'Also post the plan on the pull request being built, in GitHub Actions or Buildkite',
+    },
   ]),
   output({
     result: PlanOutput,
-    run: ({ file, org }) =>
+    run: ({ file, org, prComment }, { say }) =>
       Effect.gen(function* () {
         const billing = yield* BillingConfig
-        return yield* withProgress(
+        const planned = yield* withProgress(
           (progress) =>
             Effect.gen(function* () {
               yield* progress.start('Reading')
@@ -92,6 +100,15 @@ export const plan = Command.make('plan', { file, org }).pipe(
             }),
           'columns',
         )
+        if (prComment) {
+          const { config, organization, result } = planned
+          const posted = yield* commentOnPullRequest(
+            `config plan ${organization.id} ${config.file}`,
+            planMarkdown(config, organization, result),
+          )
+          yield* say([commented(posted)])
+        }
+        return planned
       }),
     render: ({ config, organization, result }) =>
       render(config, organization, result),

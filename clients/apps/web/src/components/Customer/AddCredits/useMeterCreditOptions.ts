@@ -9,7 +9,7 @@ import { MeterCreditOption } from './creditPreview'
 export const useMeterCreditOptions = (
   organizationId: string,
   customer: schemas['Customer'],
-): { options: MeterCreditOption[]; isLoading: boolean } => {
+) => {
   const { data: meters, isLoading } = useMeters(organizationId, {
     is_archived: false,
     sorting: ['name'],
@@ -24,27 +24,30 @@ export const useMeterCreditOptions = (
     active: true,
   })
 
-  const options = useMemo(
-    () =>
-      (meters?.items ?? []).map((meter): MeterCreditOption => {
-        const subscription = subscriptions?.items.find((s) =>
-          s.meters.some((m) => m.meter_id === meter.id),
-        )
-        return {
-          meter,
-          balance:
-            customerMeters?.items.find((cm) => cm.meter_id === meter.id)
-              ?.balance ?? 0,
-          unitPrice:
-            subscription?.product.prices.find(
-              (p): p is MeteredPrice =>
-                isMeteredPrice(p) && p.meter_id === meter.id,
-            ) ?? null,
-          productName: subscription?.product.name ?? null,
-        }
-      }),
-    [meters, customerMeters, subscriptions],
-  )
+  const options = useMemo((): MeterCreditOption[] => {
+    const balanceByMeter = new Map(
+      customerMeters?.items.map((cm) => [cm.meter_id, cm.balance]),
+    )
+    const subscriptionByMeter = new Map(
+      subscriptions?.items.flatMap((subscription) =>
+        subscription.meters.map((m) => [m.meter_id, subscription] as const),
+      ),
+    )
+
+    return (meters?.items ?? []).map((meter) => {
+      const subscription = subscriptionByMeter.get(meter.id)
+      const unitPrice = subscription?.product.prices.find(
+        (price): price is MeteredPrice =>
+          isMeteredPrice(price) && price.meter_id === meter.id,
+      )
+      return {
+        meter,
+        balance: balanceByMeter.get(meter.id) ?? 0,
+        unitPrice: unitPrice ?? null,
+        productName: subscription?.product.name ?? null,
+      }
+    })
+  }, [meters, customerMeters, subscriptions])
 
   return { options, isLoading }
 }

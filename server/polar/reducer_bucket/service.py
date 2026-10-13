@@ -16,6 +16,7 @@ from polar.meter.aggregation import (
     UniqueAggregation,
 )
 from polar.models import Customer, Event, Reducer, ReducerBucket
+from polar.outpost.stream import enqueue as enqueue_outpost_event
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from polar.reducer.repository import ReducerRepository
@@ -143,6 +144,9 @@ class ReducerBucketService:
                     count=len(values),
                     **statistics,
                 )
+            _enqueue_outpost_event(
+                reducer, bucket_start, customer_id, external_customer_id
+            )
 
     async def sync(
         self,
@@ -164,6 +168,7 @@ class ReducerBucketService:
         await self._sync_bucket(
             repository, reducer, bucket_start, customer_id, external_customer_id
         )
+        _enqueue_outpost_event(reducer, bucket_start, customer_id, external_customer_id)
 
     async def seal(
         self,
@@ -425,6 +430,24 @@ class ReducerBucketService:
             flush=True,
         )
         return True
+
+
+def _enqueue_outpost_event(
+    reducer: Reducer,
+    bucket_start: datetime,
+    customer_id: uuid.UUID | None,
+    external_customer_id: str | None,
+) -> None:
+    enqueue_outpost_event(
+        reducer.organization_id,
+        {
+            "type": "reducer_bucket",
+            "reducer_id": reducer.id,
+            "bucket_start": bucket_start.isoformat(),
+            "customer_id": customer_id,
+            "external_customer_id": external_customer_id,
+        },
+    )
 
 
 def _get_bucket_key(bucket_id: redis_store.BucketId) -> str:

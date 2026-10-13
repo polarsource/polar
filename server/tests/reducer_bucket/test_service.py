@@ -127,12 +127,16 @@ class TestRollup:
 
     async def test_adds_to_closed_buckets(
         self,
+        mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
         sum_reducer: Reducer,
         redis: Redis,
         organization: Organization,
     ) -> None:
+        enqueue_outpost_event = mocker.patch(
+            "polar.reducer_bucket.service.enqueue_outpost_event"
+        )
         previous_start = BUCKET_START - REDUCER_BUCKET_SIZE
         for batch in ((3, 4), (2,)):
             await reducer_bucket_service.rollup(
@@ -152,6 +156,17 @@ class TestRollup:
         [bucket] = await get_buckets(session)
         assert (bucket.generation, bucket.count, bucket.sum) == (1, 3, Decimal(9))
         assert (bucket.min, bucket.max) == (Decimal(2), Decimal(4))
+        enqueue_outpost_event.assert_called_with(
+            organization.id,
+            {
+                "type": "reducer_bucket",
+                "reducer_id": sum_reducer.id,
+                "bucket_start": previous_start.isoformat(),
+                "customer_id": None,
+                "external_customer_id": "external",
+            },
+        )
+        assert enqueue_outpost_event.call_count == 2
 
     async def test_adds_to_next_generation_once_billed(
         self,
@@ -380,6 +395,7 @@ class TestSync:
 
     async def test_writes_buckets(
         self,
+        mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
         sum_reducer: Reducer,
@@ -404,10 +420,24 @@ class TestSync:
             metadata={"tokens": 6},
         )
 
+        enqueue_outpost_event = mocker.patch(
+            "polar.reducer_bucket.service.enqueue_outpost_event"
+        )
+
         await reducer_bucket_service.sync(
             session, sum_reducer.id, BUCKET_START, None, "external"
         )
 
+        enqueue_outpost_event.assert_called_once_with(
+            organization.id,
+            {
+                "type": "reducer_bucket",
+                "reducer_id": sum_reducer.id,
+                "bucket_start": BUCKET_START.isoformat(),
+                "customer_id": None,
+                "external_customer_id": "external",
+            },
+        )
         [bucket] = await get_buckets(session)
         assert bucket.reducer_id == sum_reducer.id
         assert bucket.bucket_start == BUCKET_START

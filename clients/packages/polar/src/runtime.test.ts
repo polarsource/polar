@@ -167,6 +167,7 @@ test('access types granted metadata from the benefit declared in the config', as
         .metadata({ visible: true })
         .rollover(),
       plain: flag('Plain flag'),
+      hidden: flag('Hidden flag').metadata({ seats: 3 }).private(),
     }),
   })
   const tuples = defineConfig({
@@ -189,6 +190,9 @@ test('access types granted metadata from the benefit declared in the config', as
   expectTypeOf(customer.access<'tool_calls'>)
     .returns.resolves.extract<{ granted: true }>()
     .toEqualTypeOf<{ granted: true; metadata: { readonly visible: boolean } }>()
+  expectTypeOf(customer.access<'hidden'>)
+    .returns.resolves.extract<{ granted: true }>()
+    .toEqualTypeOf<{ granted: true; metadata: { readonly seats: number } }>()
   expectTypeOf(customer.access<'plain'>)
     .returns.resolves.extract<{ granted: true }>()
     .toEqualTypeOf<{

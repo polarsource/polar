@@ -2,6 +2,7 @@ import { Schema } from 'effect'
 import { expect, expectTypeOf, test } from 'vitest'
 import { z } from 'zod'
 import { RuntimeSDK } from '../runtime'
+import { flag } from './benefit'
 import { defineConfig } from './config'
 import { eq, gte } from './meter'
 import { eur, perThousand, usd } from './money'
@@ -559,6 +560,35 @@ test('meters, benefits and products serialize their metadata', () => {
     { visible: true },
   ])
   expect(json.products?.[0]?.metadata).toEqual({ plan: 'pro', rank: 2 })
+})
+
+test('metadata can only be declared once per builder', () => {
+  expect(() =>
+    defineConfig({
+      meters: ({ meter }) => ({
+        calls: meter('Calls')
+          .metadata({ a: 1 })
+          .where(gte('tokens', 1))
+          .metadata({ b: 2 })
+          .count(),
+      }),
+    }),
+  ).toThrow('metadata() can only be called once per builder.')
+  expect(() =>
+    flag('Beta').metadata({ a: 1 }).private().metadata({ b: true }),
+  ).toThrow('metadata() can only be called once per builder.')
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      products: ({ product, free }) => ({
+        pro: product('Pro')
+          .metadata({ a: 1 })
+          .prices(free())
+          .recurring('monthly')
+          .metadata({ b: true }),
+      }),
+    }),
+  ).toThrow('metadata() can only be called once per builder.')
 })
 
 test('metadata follows the API limits', () => {

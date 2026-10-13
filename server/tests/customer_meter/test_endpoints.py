@@ -175,6 +175,26 @@ class TestCreditCustomerMeter:
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth
+    async def test_external_customer_not_found(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        meter: Meter,
+    ) -> None:
+        response = await client.post(
+            "/v1/customer-meters/credits",
+            json={
+                "external_customer_id": "unknown",
+                "meter_id": str(meter.id),
+                "units": 100,
+            },
+        )
+
+        assert response.status_code == 422
+        assert response.json()["detail"][0]["loc"] == ["body", "external_customer_id"]
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
     async def test_meter_not_found(
         self,
         client: AsyncClient,
@@ -299,6 +319,34 @@ class TestCreditCustomerMeter:
         assert json["balance"] == 100.0
         assert json["customer"]["id"] == str(customer.id)
         assert json["meter"]["id"] == str(meter.id)
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_valid_external_customer_id(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        customer.external_id = "usr_1337"
+        await save_fixture(customer)
+
+        response = await client.post(
+            "/v1/customer-meters/credits",
+            json={
+                "external_customer_id": "usr_1337",
+                "meter_id": str(meter.id),
+                "units": 100,
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        assert json["customer_id"] == str(customer.id)
+        assert json["balance"] == 100.0
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth

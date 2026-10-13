@@ -1,6 +1,7 @@
 from fastapi import Depends, Query
 
 from polar.customer.schemas.customer import CustomerID
+from polar.customer_session.service import AmbiguousExternalCustomerID
 from polar.declarative_config.exceptions import ConfigAsCodeNotEnabled
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -168,10 +169,13 @@ async def get(
         409: {
             "description": (
                 "The external_id is already used by a different event, "
-                "or by a concurrent request."
+                "or by a concurrent request, "
+                "or the external customer ID matches customers "
+                "in several accessible organizations."
             ),
             "model": CustomerMeterCreditExternalIDConflict.schema()
-            | CustomerMeterCreditConcurrentRequest.schema(),
+            | CustomerMeterCreditConcurrentRequest.schema()
+            | AmbiguousExternalCustomerID.schema(),
         },
     },
 )

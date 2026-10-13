@@ -25979,7 +25979,15 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CustomerMeterCreditsCreate"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/CustomerMeterCreditsCustomerIDCreate"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CustomerMeterCreditsCustomerExternalIDCreate"
+                  }
+                ],
+                "title": "Credit Create"
               }
             }
           },
@@ -26015,7 +26023,7 @@
             }
           },
           "409": {
-            "description": "The external_id is already used by a different event, or by a concurrent request.",
+            "description": "The external_id is already used by a different event, or by a concurrent request, or the external customer ID matches customers in several accessible organizations.",
             "content": {
               "application/json": {
                 "schema": {
@@ -26025,6 +26033,9 @@
                     },
                     {
                       "$ref": "#/components/schemas/CustomerMeterCreditConcurrentRequest"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AmbiguousExternalCustomerID"
                     }
                   ],
                   "title": "Response 409 Customer Meters:Credits"
@@ -26069,11 +26080,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_meters.credits(\n    customer_id='992fae2a-2a17-4b7a-8d9e-e287cf90131b',\n    meter_id='d498a884-e2cd-4d3e-8002-f536468a8b22',\n    units=100,\n    rollover=False,\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_meters.credits(\n    meter_id='d498a884-e2cd-4d3e-8002-f536468a8b22',\n    units=100,\n    rollover=False,\n    customer_id='992fae2a-2a17-4b7a-8d9e-e287cf90131b',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerMeters.credits(\n  {\n    \"customer_id\": \"992fae2a-2a17-4b7a-8d9e-e287cf90131b\",\n    \"meter_id\": \"d498a884-e2cd-4d3e-8002-f536468a8b22\",\n    \"units\": 100,\n    \"rollover\": false\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerMeters.credits(\n  {\n    \"meter_id\": \"d498a884-e2cd-4d3e-8002-f536468a8b22\",\n    \"units\": 100,\n    \"rollover\": false,\n    \"customer_id\": \"992fae2a-2a17-4b7a-8d9e-e287cf90131b\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -49925,17 +49936,8 @@
         ],
         "title": "CustomerMeterCreditExternalIDConflict"
       },
-      "CustomerMeterCreditsCreate": {
+      "CustomerMeterCreditsCustomerExternalIDCreate": {
         "properties": {
-          "customer_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Customer Id",
-            "description": "The ID of the customer.",
-            "examples": [
-              "992fae2a-2a17-4b7a-8d9e-e287cf90131b"
-            ]
-          },
           "meter_id": {
             "type": "string",
             "format": "uuid4",
@@ -49973,16 +49975,83 @@
             ],
             "title": "External Id",
             "description": "Your unique identifier for this credit. Retrying with the same `external_id` doesn't grant the credit twice."
+          },
+          "external_customer_id": {
+            "type": "string",
+            "title": "External Customer Id",
+            "description": "The external ID of the customer.",
+            "examples": [
+              "usr_1337"
+            ]
           }
         },
         "type": "object",
         "required": [
-          "customer_id",
           "meter_id",
-          "units"
+          "units",
+          "external_customer_id"
         ],
-        "title": "CustomerMeterCreditsCreate",
-        "description": "Schema to manually grant credits on a customer meter."
+        "title": "CustomerMeterCreditsCustomerExternalIDCreate",
+        "description": "Schema to manually grant credits on a customer meter\nusing an external customer ID."
+      },
+      "CustomerMeterCreditsCustomerIDCreate": {
+        "properties": {
+          "meter_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Meter Id",
+            "description": "The ID of the meter.",
+            "examples": [
+              "d498a884-e2cd-4d3e-8002-f536468a8b22"
+            ]
+          },
+          "units": {
+            "type": "integer",
+            "maximum": 1000000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Units",
+            "description": "The number of units to credit.",
+            "examples": [
+              100
+            ]
+          },
+          "rollover": {
+            "type": "boolean",
+            "title": "Rollover",
+            "description": "Whether unused credits carry over to the next meter period.",
+            "default": false
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "Your unique identifier for this credit. Retrying with the same `external_id` doesn't grant the credit twice."
+          },
+          "customer_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Customer Id",
+            "description": "The ID of the customer.",
+            "examples": [
+              "992fae2a-2a17-4b7a-8d9e-e287cf90131b"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "meter_id",
+          "units",
+          "customer_id"
+        ],
+        "title": "CustomerMeterCreditsCustomerIDCreate",
+        "description": "Schema to manually grant credits on a customer meter using a customer ID."
       },
       "CustomerMeterSortProperty": {
         "type": "string",

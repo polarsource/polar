@@ -1,6 +1,9 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec'
 import { Data, Predicate } from 'effect'
-import { getCustomerMeter } from '../internal/api/customer-meters'
+import {
+  creditCustomerMeter,
+  getCustomerMeter,
+} from '../internal/api/customer-meters'
 import { ingestEvents } from '../internal/api/events'
 import {
   assertBenefitDeployed,
@@ -20,6 +23,13 @@ import type { models, Polar } from '../sdk'
 export type MeterBalance = {
   balance: number
   pristine: boolean
+}
+
+export type GrantOptions = {
+  // Defaults to true, so unused credits carry over to the next meter period
+  rollover?: boolean
+  // Retrying with the same key doesn't grant the credits twice
+  idempotencyKey?: string
 }
 
 export type BenefitAccess<Values = models.MetadataOutputType> =
@@ -110,6 +120,13 @@ export type Actor<Config extends RuntimeSDKConfig> = (
     name: Name,
   ) => Promise<BenefitAccess<BenefitMetadata<Config, Name>>>
   balance: (name: MeterName<Config>) => Promise<MeterBalance>
+  // Credits always go to the customer, even on an actor with a member. The
+  // balance updates asynchronously, like it does for tracked events.
+  grant: (
+    name: MeterName<Config>,
+    units: number,
+    options?: GrantOptions,
+  ) => Promise<void>
   track: {
     // Ingests all events in a single request
     (events: readonly TrackedEvent<Config>[]): Promise<void>
@@ -151,6 +168,18 @@ export const createActor = <Config extends RuntimeSDKConfig>(
     identifier.customerId !== undefined
       ? `customer:${identifier.customerId}:${externalMeterId}`
       : `external_customer:${identifier.externalCustomerId}:${externalMeterId}`
+  const markIngested = (
+    identifier: ActorIdentifier,
+    externalMeterId: string,
+    timestamp: Date,
+  ) => {
+    const key = cacheKey(identifier, externalMeterId)
+    const current = latestIngestedAt.get(key)
+
+    if (current === undefined || timestamp > current) {
+      latestIngestedAt.set(key, timestamp)
+    }
+  }
 
   const validateEvent = async (
     name: string,
@@ -202,12 +231,7 @@ export const createActor = <Config extends RuntimeSDKConfig>(
             matchesMeter(meter, { name, timestamp, metadata: metadata ?? {} }),
           )
         ) {
-          const key = cacheKey(identifier, externalId)
-          const current = latestIngestedAt.get(key)
-
-          if (current === undefined || timestamp > current) {
-            latestIngestedAt.set(key, timestamp)
-          }
+          markIngested(identifier, externalId, timestamp)
         }
       }
     }
@@ -286,6 +310,21 @@ export const createActor = <Config extends RuntimeSDKConfig>(
         balance: customerMeter?.balance ?? 0,
         pristine,
       }
+    },
+
+    async grant(name, units, { rollover = true, idempotencyKey } = {}) {
+      if (config.meters?.[name] === undefined) {
+        throw new Error(`Unknown meter: ${name}`)
+      }
+
+      const event = await creditCustomerMeter(
+        sdk,
+        toCustomerIdentifier(identifier),
+        name,
+        { units, rollover, externalId: idempotencyKey },
+      )
+      deployedMeters.add(name)
+      markIngested(identifier, name, new Date(event.timestamp))
     },
 
     track: ((

@@ -20,9 +20,9 @@ Existing subscriptions are left untouched: they renew on their own
 
 Skipped unless named with `--product-id`: products with both intervals that
 have live subscriptions on both, or sold within the last year. Their merchant
-chooses the interval to keep first. Always skipped: products with a confirmed
-checkout still being handled, since the subscription is built from the
-product's prices when the payment is handled.
+chooses the interval to keep first. Always skipped: products with a checkout
+confirmed within 30 days and still being handled, since the subscription is
+built from the product's prices when the payment is handled.
 
 No webhook or event is emitted.
 
@@ -91,6 +91,7 @@ log = structlog.get_logger()
 configure_script_console_logging()
 
 SOLD_WITHIN = timedelta(days=365)
+CONFIRMED_WITHIN = timedelta(days=30)
 
 LIVE_STATUSES = (
     SubscriptionStatus.active,
@@ -159,6 +160,7 @@ def _last_succeeded_checkout_at() -> ColumnElement[Any]:
         select(func.max(Checkout.created_at))
         .join(price, price.id == Checkout.product_price_id)
         .where(
+            Checkout.organization_id == Product.organization_id,
             price.product_id == Product.id,
             Checkout.status == CheckoutStatus.succeeded,
         )
@@ -172,8 +174,10 @@ def _has_confirmed_checkout() -> ColumnElement[bool]:
         select(Checkout.id)
         .join(price, price.id == Checkout.product_price_id)
         .where(
+            Checkout.organization_id == Product.organization_id,
             price.product_id == Product.id,
             Checkout.status == CheckoutStatus.confirmed,
+            Checkout.created_at > utc_now() - CONFIRMED_WITHIN,
         )
     )
 
@@ -202,6 +206,7 @@ def _chosen_interval() -> ColumnElement[str]:
         select(price.recurring_interval)
         .join(Checkout, Checkout.product_price_id == price.id)
         .where(
+            Checkout.organization_id == Product.organization_id,
             price.product_id == Product.id,
             price.type == ProductPriceType.recurring,
             Checkout.status == CheckoutStatus.succeeded,

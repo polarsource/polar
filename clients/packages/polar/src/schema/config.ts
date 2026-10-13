@@ -10,6 +10,8 @@ import {
   type EventSchemas,
   type ValidEvents,
 } from './event'
+import { discount, DiscountConfig, discountConfig } from './discount'
+import type { DiscountDefinition, DiscountHelpers } from './discount'
 import { meter, MeterConfig } from './meter'
 import type { MeterDefinition } from './meter'
 import { fixed, free, metered, seats, tier, units } from './price'
@@ -21,6 +23,7 @@ export const PolarConfig = Schema.Struct({
   meters: Schema.Array(MeterConfig),
   benefits: Schema.optionalKey(Schema.Array(BenefitConfig)),
   products: Schema.optionalKey(Schema.Array(ProductConfig)),
+  discounts: Schema.optionalKey(Schema.Array(DiscountConfig)),
 })
 
 export type PolarConfig = typeof PolarConfig.Type
@@ -63,7 +66,7 @@ const validateProductNaming = validateNaming('product', 3, 64)
 
 const assertKnown = (
   owner: string,
-  kind: 'meter' | 'benefit',
+  kind: 'meter' | 'benefit' | 'product',
   ids: ReadonlySet<string>,
   references: ReadonlyArray<string>,
 ) => {
@@ -127,6 +130,17 @@ type ProductEntries<
       readonly [externalId: string, product: ProductDefinition<Meter, Benefit>]
     >
 
+type ProductKey<Products extends ProductEntries> =
+  Products extends ReadonlyArray<readonly [infer Key, ProductDefinition]>
+    ? Key & string
+    : keyof Products & string
+
+type DiscountEntries<Product extends string = string> =
+  | Readonly<Record<string, DiscountDefinition<Product>>>
+  | ReadonlyArray<
+      readonly [externalId: string, discount: DiscountDefinition<Product>]
+    >
+
 type ConnectedConfig<
   Meters extends MeterEntries,
   Benefits extends BenefitEntries,
@@ -176,6 +190,7 @@ export const defineConfig = <
     MeterKey<Meters>,
     BenefitKey<Benefits>
   > = never,
+  const Discounts extends DiscountEntries<ProductKey<Products>> = never,
   Events extends EventDefinitions | undefined = undefined,
 >(input: {
   readonly events?: Events &
@@ -188,6 +203,9 @@ export const defineConfig = <
   readonly products?: (
     helpers: ProductHelpers<MeterKey<Meters>, BenefitKey<Benefits>>,
   ) => Products
+  readonly discounts?: (
+    helpers: DiscountHelpers<ProductKey<Products>>,
+  ) => Discounts
 }): Config<Meters, Benefits, Events> => {
   const events = input.events as Events
   const entries = toEntries(
@@ -210,6 +228,10 @@ export const defineConfig = <
     tier,
     meter: metered,
   })
+  const productEntries =
+    products === undefined ? [] : toEntries<ProductDefinition>(products)
+  const productIds = new Set(productEntries.map(([external_id]) => external_id))
+  const discounts = input.discounts?.({ discount })
   const config = Schema.decodeUnknownSync(PolarConfig, {
     errors: 'all',
     onExcessProperty: 'error',
@@ -249,39 +271,50 @@ export const defineConfig = <
       ),
     }),
     ...(products !== undefined && {
-      products: toEntries<ProductDefinition>(products).map(
+      products: productEntries.map(([external_id, definition]) => {
+        const { name } = validateProductNaming({
+          external_id,
+          name: definition.name,
+        })
+        const owner = `Product "${external_id}"`
+        assertKnown(
+          owner,
+          'meter',
+          meterIds,
+          definition.priceList.flatMap((price) =>
+            price.kind === 'metered' ? [price.meter] : [],
+          ),
+        )
+        assertKnown(owner, 'benefit', benefitIds, definition.benefits)
+        return {
+          external_id,
+          name: name ?? external_id,
+          ...definition.billing,
+          ...definition.trialPeriod,
+          prices: productPrices(external_id, definition),
+          benefits: definition.benefits,
+          ...(definition[metadataKey] !== undefined && {
+            metadata: definition[metadataKey],
+          }),
+          ...(definition.descriptionText !== undefined && {
+            description: definition.descriptionText,
+          }),
+          ...(definition[visibilityKey] === 'private' && {
+            visibility: definition[visibilityKey],
+          }),
+        }
+      }),
+    }),
+    ...(discounts !== undefined && {
+      discounts: toEntries<DiscountDefinition>(discounts).map(
         ([external_id, definition]) => {
-          const { name } = validateProductNaming({
-            external_id,
-            name: definition.name,
-          })
-          const owner = `Product "${external_id}"`
           assertKnown(
-            owner,
-            'meter',
-            meterIds,
-            definition.priceList.flatMap((price) =>
-              price.kind === 'metered' ? [price.meter] : [],
-            ),
+            `Discount "${external_id}"`,
+            'product',
+            productIds,
+            definition.limits.products ?? [],
           )
-          assertKnown(owner, 'benefit', benefitIds, definition.benefits)
-          return {
-            external_id,
-            name: name ?? external_id,
-            ...definition.billing,
-            ...definition.trialPeriod,
-            prices: productPrices(external_id, definition),
-            benefits: definition.benefits,
-            ...(definition[metadataKey] !== undefined && {
-              metadata: definition[metadataKey],
-            }),
-            ...(definition.descriptionText !== undefined && {
-              description: definition.descriptionText,
-            }),
-            ...(definition[visibilityKey] === 'private' && {
-              visibility: definition[visibilityKey],
-            }),
-          }
+          return discountConfig(external_id, definition)
         },
       ),
     }),

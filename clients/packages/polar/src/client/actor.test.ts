@@ -183,6 +183,44 @@ describe('actor events', () => {
     })
   })
 
+  it('ingests an array of events in a single request', async () => {
+    const { actor, ingest } = setup()
+    await actor.track([
+      { name: 'tool_call', metadata: { tool: 'search', durationMs: 12 } },
+      { name: 'heartbeat' },
+      { name: 'legacy', metadata: { anything: 1 } },
+    ])
+    expect(ingest).toHaveBeenCalledOnce()
+    expect(ingest.mock.calls[0]?.[0].events).toMatchObject([
+      {
+        name: 'tool_call',
+        metadata: { tool: 'search', durationMs: 12, region: 'eu' },
+      },
+      { name: 'heartbeat', metadata: {} },
+      { name: 'legacy', metadata: { anything: 1 } },
+    ])
+    const typeOnly = () => {
+      // @ts-expect-error metadata is required
+      void actor.track([{ name: 'tool_call' }])
+      void actor.track([
+        // @ts-expect-error durationMs must be a number
+        { name: 'tool_call', metadata: { tool: 'search', durationMs: '1' } },
+      ])
+    }
+    expectTypeOf(typeOnly).toBeFunction()
+  })
+
+  it('rejects the whole array when any event is invalid', async () => {
+    const { actor, ingest } = setup()
+    await expect(
+      actor.track([
+        { name: 'tool_call', metadata: { tool: 'search', durationMs: 12 } },
+        { name: 'tool_call', metadata: { tool: 'search', durationMs: 1.5 } },
+      ]),
+    ).rejects.toBeInstanceOf(EventValidationError)
+    expect(ingest).not.toHaveBeenCalled()
+  })
+
   it('rejects undeclared events at runtime', async () => {
     const { actor, ingest } = setup()
     await expect(actor.track('nope' as 'legacy')).rejects.toThrow(

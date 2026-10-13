@@ -284,6 +284,39 @@ const cases: [string, PolarConfig][] = [
       .toJSON(),
   ],
   [
+    'discounts of every kind',
+    api
+      .defineConfig({
+        meters: () => ({}),
+        products: ({ product, fixed }) => ({
+          pro: product('Pro')
+            .prices(fixed().amount(api.usd(20)))
+            .recurring('monthly'),
+          team: product('Team')
+            .prices(fixed().amount(api.usd(50)))
+            .recurring('yearly'),
+        }),
+        discounts: ({ discount }) => ({
+          launch: discount('Launch 20%')
+            .percent(20)
+            .repeating(3, 'months')
+            .code('LAUNCH20')
+            .products('pro', 'team')
+            .maxRedemptions(500)
+            .ends('2026-12-31'),
+          welcome: discount('Welcome $10')
+            .amount(api.usd(10), api.eur(9.5), api.currency('nok')(100))
+            .once()
+            .perCustomer(1)
+            .starts('2026-01-01T09:30:00.500Z'),
+          partner: discount('Partner').percent(12.34).forever().code('PARTNER'),
+          loyal: discount('Loyal').percent(5).repeating(2, 'years').products(),
+          annual: discount('Annual').percent(100).repeating(1, 'year'),
+        }),
+      })
+      .toJSON(),
+  ],
+  [
     'special IDs and strings',
     {
       meters: ['__proto__', 'constructor', '"\\\n` ${notCode}'].map(
@@ -523,4 +556,46 @@ test('leaves empty metadata out of the generated code', async () => {
     generateConfig({ meters: [{ ...meter, metadata: {} }] }),
   )
   expect(source).not.toContain('.metadata(')
+})
+
+test('renders discounts with their builder calls', async () => {
+  const source = await Effect.runPromise(
+    generateConfig({
+      meters: [],
+      discounts: [
+        {
+          external_id: 'launch',
+          name: 'Launch',
+          type: 'percentage',
+          basis_points: 2550,
+          duration: 'repeating',
+          duration_in_months: 24,
+          code: 'LAUNCH',
+        },
+        {
+          external_id: 'welcome',
+          name: 'Welcome',
+          type: 'fixed',
+          amounts: { usd: 1000, eur: 950 },
+          duration: 'once',
+        },
+      ],
+    }),
+  )
+  expect(source).toContain(
+    [
+      '  discounts: ({ discount }) => ({',
+      '    "launch": discount("Launch")',
+      '      .percent(25.5)',
+      '      .repeating(2, "years")',
+      '      .code("LAUNCH"),',
+      '    "welcome": discount("Welcome")',
+      '      .amount(usd(10), eur(9.5))',
+      '      .once(),',
+      '  }),',
+    ].join('\n'),
+  )
+  expect(source).toContain(
+    "import { defineConfig, usd, eur } from '@polar-sh/polar'",
+  )
 })

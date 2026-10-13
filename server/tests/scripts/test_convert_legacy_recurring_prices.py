@@ -1,8 +1,11 @@
+from datetime import timedelta
+
 import pytest
 from sqlalchemy import select
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.utils import utc_now
 from polar.models import Customer, Organization, Product, ProductPrice, Subscription
 from polar.models.checkout import CheckoutStatus
 from polar.models.product_price import ProductPriceAmountType, ProductPriceType
@@ -238,6 +241,26 @@ class TestConvert:
             year,
             False,
         )
+
+    async def test_converts_despite_stale_confirmed_checkout(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        product, _, year_price = await _legacy_product(save_fixture, organization)
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            price=year_price,
+            status=CheckoutStatus.confirmed,
+        )
+        checkout.created_at = utc_now() - timedelta(days=31)
+        await save_fixture(checkout)
+
+        await _convert(session, Scope())
+
+        assert await _product_interval(session, product) == (month, 1)
 
     async def test_clears_one_time_legacy_price(
         self,

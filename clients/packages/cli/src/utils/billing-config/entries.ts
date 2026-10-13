@@ -87,11 +87,13 @@ const expand = (change: Change): Change[] => {
   const labels = [
     ...new Set([...(before ?? []), ...(after ?? [])].map(({ label }) => label)),
   ]
-  return labels.map((label) => ({
-    field: `${change.field} (${label})`,
-    before: before?.find((group) => group.label === label)?.text,
-    after: after?.find((group) => group.label === label)?.text,
-  }))
+  return labels.flatMap((label) => {
+    const was = before?.find((group) => group.label === label)?.text
+    const is = after?.find((group) => group.label === label)?.text
+    return was?.text === is?.text
+      ? []
+      : [{ field: `${change.field} (${label})`, before: was, after: is }]
+  })
 }
 
 const mergeRecurrence = (diff: ReadonlyArray<Change>): Change[] => {
@@ -132,26 +134,24 @@ const DONE: Labels = {
   unchanged: 'unchanged',
 }
 
-export const TO_DO: Labels = {
-  created: 'to create',
-  updated: 'to update',
-  unchanged: 'unchanged',
-}
-
 const COLORS: Record<Action, Color> = {
   created: ui.green,
   updated: ui.yellow,
   unchanged: ui.dim,
 }
 
-export const tally = (
-  entries: ReadonlyArray<AppliedEntry>,
-  labels: Labels = DONE,
-) =>
+const count = (entries: ReadonlyArray<AppliedEntry>, action: Action) =>
+  entries.filter((entry) => entry.action === action).length
+
+export const tally = (entries: ReadonlyArray<AppliedEntry>) =>
   (['created', 'updated', 'unchanged'] as const)
     .map((action) =>
-      COLORS[action](
-        `${entries.filter((entry) => entry.action === action).length} ${labels[action]}`,
-      ),
+      COLORS[action](`${count(entries, action)} ${DONE[action]}`),
     )
     .join(', ')
+
+export const changeCount = (entries: ReadonlyArray<AppliedEntry>) =>
+  count(entries, 'created') + count(entries, 'updated')
+
+export const planSummary = (entries: ReadonlyArray<AppliedEntry>) =>
+  `${ui.INDENT}${ui.dim('Plan:')} ${COLORS.updated(`${count(entries, 'updated')} to change`)}, ${COLORS.created(`${count(entries, 'created')} to add`)}, ${COLORS.unchanged(`${count(entries, 'unchanged')} unchanged`)}`

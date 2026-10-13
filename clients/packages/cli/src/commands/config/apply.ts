@@ -1,10 +1,11 @@
 import { Duration, Effect, Option, Stdio } from 'effect'
 import { Command, Flag, Prompt } from 'effect/cli'
-import { tally } from '@/utils/billing-config/entries'
+import { changeCount, tally } from '@/utils/billing-config/entries'
 import { formatProblems, plural } from '@/utils/billing-config/problems'
 import {
   changes,
   errors,
+  found,
   target,
   unchanged,
 } from '@/utils/billing-config/review'
@@ -26,6 +27,7 @@ import * as ui from '@/utils/ui'
 
 const yes = Flag.Boolean('yes').pipe(
   Flag.withAlias('y'),
+  Flag.withAlias('aladåb'),
   Flag.withDefault(false),
   Flag.withDescription('Apply without asking for confirmation'),
 )
@@ -37,9 +39,7 @@ const applied = (
 ) =>
   unchanged(entries)
     ? ui.success(`${target(organization)} is up to date, nothing to apply`)
-    : ui.success(
-        `${config.file} applied to ${target(organization)}: ${plural(entries.length, 'entry', 'entries')} (${tally(entries)})`,
-      )
+    : `${ui.INDENT}${config.file} applied to ${target(organization)}: ${plural(entries.length, 'entry', 'entries')} (${tally(entries)})`
 
 const render = (
   config: LoadedConfig,
@@ -53,7 +53,9 @@ const render = (
         ui.blank,
         `${ui.INDENT}Found ${plural(result.issues.length, 'error')}.`,
       ]
-    : [ui.blank, applied(config, organization, result.entries)]
+    : unchanged(result.entries)
+      ? [ui.blank, applied(config, organization, result.entries)]
+      : [applied(config, organization, result.entries)]
 
 const interactive = Effect.gen(function* () {
   const stdio = yield* Stdio.Stdio
@@ -115,51 +117,61 @@ export const apply = Command.make('apply', { file, org, yes }).pipe(
       Effect.gen(function* () {
         const billing = yield* BillingConfig
         const { json } = yield* Output
-        return yield* withProgress((progress) =>
-          Effect.gen(function* () {
-            yield* progress.start('Reading config')
-            const config = yield* billing.load(Option.getOrUndefined(file))
-            yield* progress.finish(config.file)
-            yield* progress.start('Resolving organization')
-            const organization = yield* (yield* Organizations).resolve(
-              Option.getOrUndefined(org),
-            )
-            yield* progress.finish(target(organization))
-            yield* progress.start('Checking config')
-            const plan = yield* billing.plan(config, organization)
-            yield* progress.finish()
-            if (errors(plan.issues) > 0) {
-              return {
-                config,
-                organization,
-                result: { status: 'rejected', issues: plan.issues } as const,
+        const milliseconds = (elapsed: Duration.Duration) =>
+          `${Math.round(Duration.toMillis(elapsed))}ms`
+        return yield* withProgress(
+          (progress) =>
+            Effect.gen(function* () {
+              yield* progress.start('Reading')
+              const config = yield* billing.load(Option.getOrUndefined(file))
+              yield* progress.finish(config.file)
+              yield* progress.start('Found')
+              yield* progress.finish(found(config))
+              yield* progress.start('Comparing')
+              const [planned, { organization, plan }] = yield* Effect.timed(
+                Effect.gen(function* () {
+                  const organization = yield* (yield* Organizations).resolve(
+                    Option.getOrUndefined(org),
+                  )
+                  const plan = yield* billing.plan(config, organization)
+                  return { organization, plan }
+                }),
+              )
+              yield* progress.finish(milliseconds(planned))
+              if (errors(plan.issues) > 0) {
+                return {
+                  config,
+                  organization,
+                  result: { status: 'rejected', issues: plan.issues } as const,
+                }
               }
-            }
-            if (unchanged(plan.entries)) {
-              if (plan.issues.length > 0) {
-                yield* say([ui.blank, formatProblems(config, plan.issues)])
+              if (unchanged(plan.entries)) {
+                if (plan.issues.length > 0) {
+                  yield* say([ui.blank, formatProblems(config, plan.issues)])
+                }
+                return {
+                  config,
+                  organization,
+                  result: { status: 'applied', entries: plan.entries } as const,
+                }
               }
-              return {
-                config,
-                organization,
-                result: { status: 'applied', entries: plan.entries } as const,
+              yield* say(changes(config, organization, plan))
+              if (!(yield* confirm(organization, json, yes, say))) {
+                return yield* new BillingConfigError({
+                  message: 'Apply cancelled, nothing changed',
+                })
               }
-            }
-            yield* say(changes(config, plan))
-            if (!(yield* confirm(organization, json, yes, say))) {
-              return yield* new BillingConfigError({
-                message: 'Apply cancelled, nothing changed',
-              })
-            }
-            yield* progress.start('Applying config')
-            const [elapsed, result] = yield* Effect.timed(
-              billing.apply(config, organization),
-            )
-            yield* progress.finish(
-              `${Math.round(Duration.toMillis(elapsed))}ms`,
-            )
-            return { config, organization, result }
-          }),
+              yield* say([ui.blank])
+              yield* progress.start(
+                `Applying ${plural(changeCount(plan.entries), 'change')}`,
+              )
+              const [elapsed, result] = yield* Effect.timed(
+                billing.apply(config, organization),
+              )
+              yield* progress.finish(`(${milliseconds(elapsed)})`)
+              return { config, organization, result }
+            }),
+          'columns',
         )
       }),
     render: ({ config, organization, result }) =>

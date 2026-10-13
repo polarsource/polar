@@ -118,6 +118,7 @@ test('connected configs validate and ingest typed events and track the meters th
 
   expectTypeOf(customer.track)
     .parameter(0)
+    .extract<string>()
     .toEqualTypeOf<'tool_call' | 'llm.completion'>()
 
   await customer.track('tool_call', { tool: 'fetch', durationMs: 5 })

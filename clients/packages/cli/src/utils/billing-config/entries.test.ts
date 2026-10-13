@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
-import { TO_DO, formatRows, tally } from '@/utils/billing-config/entries'
+import { formatRows, planSummary, tally } from '@/utils/billing-config/entries'
 import { stripAnsi } from '@/utils/test-utils/cli'
+import * as ui from '@/utils/ui'
 
 const fixed = (price_currency: string, price_amount: number) => ({
   amount_type: 'fixed',
@@ -100,6 +101,24 @@ describe('formatRows', () => {
     )
   })
 
+  test('leaves out price groups that did not change', () => {
+    const output = stripAnsi(
+      formatRows(
+        '',
+        [
+          {
+            field: 'prices',
+            before: [fixed('usd', 4900), metered('eur', '0.18')],
+            after: [fixed('usd', 4900), metered('eur', '0.2')],
+          },
+        ],
+        'updated',
+      ).join('\n'),
+    )
+    expect(output).not.toContain('prices (USD)')
+    expect(output).toContain('prices (EUR per tool_call)')
+  })
+
   test('strips control characters from field names', () => {
     const output = stripAnsi(
       formatRows(
@@ -112,16 +131,24 @@ describe('formatRows', () => {
   })
 })
 
-describe('tally', () => {
-  test('counts entries per action with the given labels', () => {
-    const entries = [
-      { section: 'meters', id: 'a', action: 'created' as const, diff: [] },
-      { section: 'meters', id: 'b', action: 'created' as const, diff: [] },
-      { section: 'meters', id: 'c', action: 'unchanged' as const, diff: [] },
-    ]
-    expect(stripAnsi(tally(entries))).toBe('2 created, 0 updated, 1 unchanged')
-    expect(stripAnsi(tally(entries, TO_DO))).toBe(
-      '2 to create, 0 to update, 1 unchanged',
+describe('tally and planSummary', () => {
+  const entries = [
+    { section: 'meters', id: 'a', action: 'created' as const, diff: [] },
+    { section: 'meters', id: 'b', action: 'created' as const, diff: [] },
+    { section: 'meters', id: 'c', action: 'updated' as const, diff: [] },
+    { section: 'meters', id: 'd', action: 'unchanged' as const, diff: [] },
+  ]
+
+  test('counts entries per action', () => {
+    expect(stripAnsi(tally(entries))).toBe('2 created, 1 updated, 1 unchanged')
+  })
+
+  test('summarises a plan with additions in green and changes in yellow', () => {
+    const summary = planSummary(entries)
+    expect(stripAnsi(summary)).toBe(
+      '  Plan: 1 to change, 2 to add, 1 unchanged',
     )
+    expect(summary).toContain(ui.yellow('1 to change'))
+    expect(summary).toContain(ui.green('2 to add'))
   })
 })

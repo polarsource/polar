@@ -1270,9 +1270,6 @@ async def create_subscription(
 
     recurring_interval = product.recurring_interval
     recurring_interval_count = product.recurring_interval_count
-    if product.is_legacy_recurring_price:
-        recurring_interval = product.prices[0].recurring_interval
-        recurring_interval_count = 1
     if not recurring_interval:
         recurring_interval = SubscriptionRecurringInterval.month
     if not recurring_interval_count:

@@ -14,6 +14,7 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
     Uuid,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -34,6 +35,15 @@ class ReducerBucket(RecordModel):
             "organization_id",
             "reducer_id",
             "bucket_start",
+        ),
+        Index(
+            "ix_reducer_buckets_unsealed_identity",
+            "organization_id",
+            "reducer_id",
+            "customer_id",
+            "external_customer_id",
+            "bucket_end",
+            postgresql_where=text("sealed_at IS NULL"),
         ),
         UniqueConstraint(
             "organization_id",

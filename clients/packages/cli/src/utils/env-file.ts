@@ -13,3 +13,8 @@ export const upsertEnv = (content: string, key: string, value: string) => {
   const separator = content === '' || content.endsWith('\n') ? '' : '\n'
   return { content: `${content}${separator}${line}\n`, replaced: false }
 }
+
+export const hasEnv = (content: string, key: string) => {
+  const pattern = assignment(key)
+  return content.split('\n').some((line) => pattern.test(line))
+}

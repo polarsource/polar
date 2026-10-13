@@ -89,9 +89,8 @@ polar auth token [flags]
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--scope` | `string` | Scope to preselect on the token page, e.g. products:read. Repeatable. |
-| `--name` | `string` | Token name. Defaults to the current directory name |
 | `--env-file` | `string` | File to write the token to |
-| `--env-var` | `string` | Variable name to store the token under |
+| `--stdout` | `boolean` | Print the variables as KEY=value lines instead of writing --env-file, to pipe into another command |
 
 **Examples**
 
@@ -103,6 +102,11 @@ polar auth token
 Preselect scopes and write to .env.local
 ```bash
 polar auth token --scope products:read --scope checkouts:write --env-file .env.local
+```
+
+Pipe the variables into a hosting provider without writing them to disk
+```bash
+polar auth token --stdout | fly secrets import
 ```
 
 ## polar auth logout

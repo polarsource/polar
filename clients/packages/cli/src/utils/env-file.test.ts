@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { upsertEnv } from '@/utils/env-file'
+import { hasEnv, upsertEnv } from '@/utils/env-file'
 
 test('creates the variable in an empty file', () => {
   expect(upsertEnv('', 'POLAR_ACCESS_TOKEN', 'polar_oat_1')).toEqual({
@@ -35,4 +35,11 @@ test('leaves variables that share a prefix alone', () => {
     content: 'POLAR_ACCESS_TOKEN_OLD=x\nPOLAR_ACCESS_TOKEN=new\n',
     replaced: false,
   })
+})
+
+test('finds an existing assignment', () => {
+  expect(
+    hasEnv('A=1\nexport POLAR_ENVIRONMENT=sandbox\n', 'POLAR_ENVIRONMENT'),
+  ).toBe(true)
+  expect(hasEnv('POLAR_ENVIRONMENT_X=1\n', 'POLAR_ENVIRONMENT')).toBe(false)
 })

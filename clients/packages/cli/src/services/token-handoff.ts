@@ -6,12 +6,30 @@ import {
   randomBytes,
 } from 'node:crypto'
 import { Context, Effect, Layer, Redacted } from 'effect'
-import type { ActiveOrganization, AuthError } from '@/schemas/Auth'
-import { dashboardOrigin } from '@/services/api'
+import type {
+  ActiveOrganization,
+  AuthError,
+  PolarEnvironment,
+} from '@/schemas/Auth'
+import { apiOrigin, dashboardOrigin } from '@/services/api'
 import { tokenCopy } from '@/utils/callback-page'
 import { awaitCallback, type CallbackResult } from '@/utils/loopback'
 
 const CALLBACK_PATH = '/token/callback'
+
+export const ENVIRONMENT_VARS = ['POLAR_ENVIRONMENT', 'POLAR_API_URL'] as const
+
+export const environmentSettings = (environment: PolarEnvironment) =>
+  Effect.gen(function* () {
+    switch (environment) {
+      case 'production':
+        return []
+      case 'sandbox':
+        return [['POLAR_ENVIRONMENT', 'sandbox'] as const]
+      case 'local':
+        return [['POLAR_API_URL', yield* apiOrigin('local')] as const]
+    }
+  })
 
 export interface TokenRequest {
   organization: Pick<ActiveOrganization, 'slug' | 'environment'>

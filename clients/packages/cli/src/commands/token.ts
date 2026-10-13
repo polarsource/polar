@@ -1,11 +1,15 @@
-import { Effect, FileSystem, Option, Path, Redacted, Schema } from 'effect'
+import { Effect, FileSystem, Path, Redacted, Schema } from 'effect'
 import { Command, Flag } from 'effect/cli'
 import { AuthError, PolarEnvironment } from '@/schemas/Auth'
 import { Organizations } from '@/services/organizations'
-import { TokenHandoff } from '@/services/token-handoff'
+import {
+  ENVIRONMENT_VARS,
+  environmentSettings,
+  TokenHandoff,
+} from '@/services/token-handoff'
 import { output } from '@/utils/command'
-import { upsertEnv } from '@/utils/env-file'
-import { note } from '@/utils/progress'
+import { hasEnv, upsertEnv } from '@/utils/env-file'
+import { note, noteToStderr } from '@/utils/progress'
 import * as ui from '@/utils/ui'
 
 const scope = Flag.String('scope').pipe(
@@ -15,19 +19,16 @@ const scope = Flag.String('scope').pipe(
   Flag.atLeast(0),
 )
 
-const name = Flag.String('name').pipe(
-  Flag.optional,
-  Flag.withDescription('Token name. Defaults to the current directory name'),
-)
-
 const envFile = Flag.String('env-file').pipe(
   Flag.withDefault('.env'),
   Flag.withDescription('File to write the token to'),
 )
 
-const envVar = Flag.String('env-var').pipe(
-  Flag.withDefault('POLAR_ACCESS_TOKEN'),
-  Flag.withDescription('Variable name to store the token under'),
+const stdout = Flag.Boolean('stdout').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription(
+    'Print the variables as KEY=value lines instead of writing --env-file, to pipe into another command',
+  ),
 )
 
 const Target = Schema.Struct({
@@ -35,34 +36,59 @@ const Target = Schema.Struct({
   environment: PolarEnvironment,
 })
 
-const Created = Schema.Struct({
-  organization: Target,
-  envFile: Schema.String,
-  envVar: Schema.String,
+const Written = Schema.Struct({
+  name: Schema.String,
   replaced: Schema.Boolean,
 })
 
-const announceTokenPage = (page: URL) =>
-  note(
-    [
-      ui.blank,
-      ui.step('Opening your browser to create an organization access token...'),
-      ui.step('If it does not open, visit:'),
-      `    ${ui.cyan(page.toString())}`,
-      ui.blank,
-      ui.step('Waiting for the token...'),
-      ui.blank,
-    ].join('\n'),
-  )
+const Saved = Schema.Struct({
+  destination: Schema.Literal('file'),
+  organization: Target,
+  envFile: Schema.String,
+  written: Schema.Array(Written),
+  stale: Schema.Array(Schema.String),
+})
 
-const writeToken = (
+const Printed = Schema.Struct({
+  destination: Schema.Literal('stdout'),
+  organization: Target,
+  variables: Schema.Array(
+    Schema.Struct({ name: Schema.String, value: Schema.String }),
+  ),
+})
+
+const Created = Schema.Union([Saved, Printed])
+type Created = typeof Created.Type
+
+const sdkHints: Record<PolarEnvironment, string | undefined> = {
+  production: undefined,
+  sandbox: 'Pass server: process.env.POLAR_ENVIRONMENT to your Polar SDK',
+  local: 'Pass serverURL: process.env.POLAR_API_URL to your Polar SDK',
+}
+
+const announceTokenPage =
+  (print: (text: string) => Effect.Effect<void>) => (page: URL) =>
+    print(
+      [
+        ui.blank,
+        ui.step(
+          'Opening your browser to create an organization access token...',
+        ),
+        ui.step('If it does not open, visit:'),
+        `    ${ui.cyan(page.toString())}`,
+        ui.blank,
+        ui.step('Waiting for the token...'),
+        ui.blank,
+      ].join('\n'),
+    )
+
+const writeEnv = (
   file: string,
-  variable: string,
-  token: Redacted.Redacted<string>,
+  settings: ReadonlyArray<readonly [string, string]>,
 ) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem
-    const current = yield* fs
+    let content = yield* fs
       .readFileString(file)
       .pipe(
         Effect.catch((error) =>
@@ -71,13 +97,18 @@ const writeToken = (
             : Effect.fail(error),
         ),
       )
-    const { content, replaced } = upsertEnv(
-      current,
-      variable,
-      Redacted.value(token),
-    )
+    const written: Array<typeof Written.Type> = []
+    for (const [name, value] of settings) {
+      const result = upsertEnv(content, name, value)
+      content = result.content
+      written.push({ name, replaced: result.replaced })
+    }
     yield* fs.writeFileString(file, content)
-    return replaced
+    const stale = ENVIRONMENT_VARS.filter(
+      (name) =>
+        hasEnv(content, name) && !settings.some(([key]) => key === name),
+    )
+    return { written, stale }
   }).pipe(
     Effect.mapError(
       () =>
@@ -89,9 +120,8 @@ const writeToken = (
 
 export const token = Command.make('token', {
   scope,
-  name,
   envFile,
-  envVar,
+  stdout,
 }).pipe(
   Command.withDescription(
     'Create an organization access token for your app and save it to an env file',
@@ -107,47 +137,69 @@ export const token = Command.make('token', {
         'polar auth token --scope products:read --scope checkouts:write --env-file .env.local',
       description: 'Preselect scopes and write to .env.local',
     },
+    {
+      command: 'polar auth token --stdout | fly secrets import',
+      description:
+        'Pipe the variables into a hosting provider without writing them to disk',
+    },
   ]),
   output({
     result: Created,
     run: (flags) =>
       Effect.gen(function* () {
-        if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(flags.envVar)) {
-          return yield* new AuthError({
-            message: `${flags.envVar} is not a valid environment variable name.`,
-          })
-        }
         const path = yield* Path.Path
         const { slug, environment } = yield* (yield* Organizations).resolve()
         const organization = { slug, environment }
-        const file = path.resolve(flags.envFile)
         const created = yield* (yield* TokenHandoff).receive(
           {
             organization,
-            name: Option.getOrElse(flags.name, () =>
-              path.basename(process.cwd()),
-            ),
+            name: path.basename(process.cwd()),
             scopes: flags.scope,
           },
-          announceTokenPage,
+          announceTokenPage(flags.stdout ? noteToStderr : note),
         )
-        const replaced = yield* writeToken(file, flags.envVar, created)
-        return { organization, envFile: file, envVar: flags.envVar, replaced }
+        const settings: ReadonlyArray<readonly [string, string]> = [
+          ['POLAR_ACCESS_TOKEN', Redacted.value(created)],
+          ...(yield* environmentSettings(environment)),
+        ]
+        if (flags.stdout) {
+          return {
+            destination: 'stdout',
+            organization,
+            variables: settings.map(([name, value]) => ({ name, value })),
+          } satisfies Created
+        }
+        const file = path.resolve(flags.envFile)
+        const { written, stale } = yield* writeEnv(file, settings)
+        return {
+          destination: 'file',
+          organization,
+          envFile: file,
+          written,
+          stale,
+        } satisfies Created
       }),
-    render: ({
-      organization,
-      envFile,
-      envVar,
-      replaced,
-    }: typeof Created.Type) => [
-      ui.success(
-        `Created an access token for ${ui.bold(organization.slug)} ${ui.dim(organization.environment)}`,
-      ),
-      ui.step(`${replaced ? 'Updated' : 'Added'} ${envVar} in ${envFile}`),
-      ...(organization.environment === 'sandbox'
-        ? [ui.step("Point your Polar SDK at the sandbox: server: 'sandbox'")]
-        : []),
-      ui.blank,
-    ],
+    render: (created: Created) => {
+      if (created.destination === 'stdout') {
+        return created.variables.map(({ name, value }) => `${name}=${value}`)
+      }
+      const { organization, envFile, written, stale } = created
+      const hint = sdkHints[organization.environment]
+      return [
+        ui.success(
+          `Created an access token for ${ui.bold(organization.slug)} ${ui.dim(organization.environment)}`,
+        ),
+        ...written.map(({ name, replaced }) =>
+          ui.step(`${replaced ? 'Updated' : 'Added'} ${name} in ${envFile}`),
+        ),
+        ...stale.map((name) =>
+          ui.warning(
+            `${name} in ${envFile} doesn't match this ${organization.environment} token. Remove it.`,
+          ),
+        ),
+        ...(hint ? [ui.step(hint)] : []),
+        ui.blank,
+      ]
+    },
   }),
 )

@@ -1,10 +1,10 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { Effect, Redacted } from 'effect'
 import { afterEach, beforeEach, expect, test } from 'vitest'
 import { token as tokenCommand } from '@/commands/token'
-import type { ActiveOrganization } from '@/schemas/Auth'
+import type { ActiveOrganization, PolarEnvironment } from '@/schemas/Auth'
 import { Organizations } from '@/services/organizations'
 import { type TokenRequest, TokenHandoff } from '@/services/token-handoff'
 import { runCli } from '@/utils/test-utils/cli'
@@ -30,11 +30,11 @@ const run = (args: string[]) => {
       Effect.provideService(
         TokenHandoff,
         TokenHandoff.of({
-          receive: (request) =>
-            Effect.sync(() => {
-              requests.push(request)
-              return Redacted.make('polar_oat_secret')
-            }),
+          receive: (request, announce) =>
+            announce(new URL('https://polar.sh/dashboard/acme/cli/token')).pipe(
+              Effect.as(Redacted.make('polar_oat_secret')),
+              Effect.tap(() => Effect.sync(() => requests.push(request))),
+            ),
         }),
       ),
     ),
@@ -65,18 +65,16 @@ test('writes the token to the env file without printing it', async () => {
     'products:read',
     '--scope',
     'checkouts:write',
-    '--name',
-    'my-app',
   ])
   await promise
 
   expect(await readFile(file, 'utf8')).toBe(
-    'OTHER=1\nPOLAR_ACCESS_TOKEN=polar_oat_secret\n',
+    'OTHER=1\nPOLAR_ACCESS_TOKEN=polar_oat_secret\nPOLAR_ENVIRONMENT=sandbox\n',
   )
   expect(requests).toEqual([
     {
       organization: { slug: 'acme', environment: 'sandbox' },
-      name: 'my-app',
+      name: basename(process.cwd()),
       scopes: ['products:read', 'checkouts:write'],
     },
   ])
@@ -84,22 +82,70 @@ test('writes the token to the env file without printing it', async () => {
   expect(output()).not.toContain('polar_oat_secret')
 })
 
-test('creates the env file under a custom variable name', async () => {
-  const file = join(dir, '.env.local')
-  const { promise, output } = run([
-    '--env-file',
-    file,
-    '--env-var',
-    'POLAR_OAT',
-  ])
+const selectEnvironment = (environment: PolarEnvironment) => {
+  organizations = fakeOrganizations({
+    items: [{ ...acme, environment }],
+    selected: { id: acme.id, environment },
+  })
+}
+
+test('writes only the token for production', async () => {
+  selectEnvironment('production')
+  const file = join(dir, '.env')
+  const { promise } = run(['--env-file', file])
   await promise
 
-  expect(await readFile(file, 'utf8')).toBe('POLAR_OAT=polar_oat_secret\n')
-  expect(output()).toContain('Added POLAR_OAT')
+  expect(await readFile(file, 'utf8')).toBe(
+    'POLAR_ACCESS_TOKEN=polar_oat_secret\n',
+  )
 })
 
-test('rejects an invalid variable name before creating a token', async () => {
-  const { promise } = run(['--env-file', join(dir, '.env'), '--env-var', 'A=B'])
-  await expect(promise).rejects.toThrow('not a valid environment variable name')
-  expect(requests).toEqual([])
+test('writes the local API URL for a local session', async () => {
+  selectEnvironment('local')
+  const file = join(dir, '.env')
+  const { promise, output } = run(['--env-file', file])
+  await promise
+
+  expect(await readFile(file, 'utf8')).toBe(
+    'POLAR_ACCESS_TOKEN=polar_oat_secret\nPOLAR_API_URL=http://127.0.0.1:8000\n',
+  )
+  expect(output()).toContain('serverURL: process.env.POLAR_API_URL')
+})
+
+test('warns about environment variables left from another environment', async () => {
+  selectEnvironment('production')
+  const file = join(dir, '.env')
+  await writeFile(file, 'POLAR_ENVIRONMENT=sandbox\n')
+  const { promise, output } = run(['--env-file', file])
+  await promise
+
+  expect(await readFile(file, 'utf8')).toBe(
+    'POLAR_ENVIRONMENT=sandbox\nPOLAR_ACCESS_TOKEN=polar_oat_secret\n',
+  )
+  expect(output()).toContain('POLAR_ENVIRONMENT in')
+  expect(output()).toContain("doesn't match this production token")
+})
+
+test('prints only the variables with --stdout and writes no file', async () => {
+  const file = join(dir, '.env')
+  const { promise, output } = run(['--stdout', '--env-file', file])
+  await promise
+
+  expect(output().trim()).toBe(
+    'POLAR_ACCESS_TOKEN=polar_oat_secret\nPOLAR_ENVIRONMENT=sandbox',
+  )
+  await expect(access(file)).rejects.toThrow()
+})
+
+test('includes the variables in JSON output with --stdout', async () => {
+  const { promise, output } = run(['--stdout', '--json'])
+  await promise
+
+  expect(JSON.parse(output())).toMatchObject({
+    destination: 'stdout',
+    variables: [
+      { name: 'POLAR_ACCESS_TOKEN', value: 'polar_oat_secret' },
+      { name: 'POLAR_ENVIRONMENT', value: 'sandbox' },
+    ],
+  })
 })

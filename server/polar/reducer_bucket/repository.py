@@ -1,20 +1,8 @@
-from collections.abc import Sequence
 from datetime import datetime
-from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import (
-    ColumnElement,
-    Row,
-    and_,
-    func,
-    literal,
-    null,
-    or_,
-    select,
-    update,
-)
+from sqlalchemy import ColumnElement, Row, and_, case, func, literal, null, or_, select
 from sqlalchemy.dialects.postgresql import insert
 
 from polar.kit.db.locking import pg_advisory_xact_lock
@@ -107,24 +95,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         result = await self.session.execute(statement)
         return result.one()
 
-    async def get_all_starting_within(
-        self,
-        reducer: Reducer,
-        start: datetime,
-        end: datetime,
-        customer_id: UUID | None,
-        external_customer_id: str | None,
-    ) -> Sequence[ReducerBucket]:
-        statement = self.get_base_statement().where(
-            ReducerBucket.organization_id == reducer.organization_id,
-            ReducerBucket.reducer_id == reducer.id,
-            ReducerBucket.bucket_start >= start,
-            ReducerBucket.bucket_start < end,
-            _is_customer(ReducerBucket, customer_id, external_customer_id),
-        )
-        return await self.get_all(statement)
-
-    async def get_latest_for_update(
+    async def get_latest(
         self,
         reducer: Reducer,
         bucket_start: datetime,
@@ -142,7 +113,6 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             )
             .order_by(ReducerBucket.generation.desc())
             .limit(1)
-            .with_for_update()
         )
         return await self.get_one_or_none(statement)
 
@@ -161,78 +131,47 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
     ) -> None:
         """Adds to the customer identity's latest bucket, or to the next generation
         once it's sealed."""
-        latest = await self.get_latest_for_update(
-            reducer, bucket_start, customer_id, external_customer_id
-        )
-        if latest is not None and latest.sealed_at is None:
-            await self.session.execute(
-                update(ReducerBucket)
-                .where(ReducerBucket.id == latest.id)
-                .values(
-                    count=ReducerBucket.count + count,
-                    sum=ReducerBucket.sum + total,
-                    min=func.least(ReducerBucket.min, minimum),
-                    max=func.greatest(ReducerBucket.max, maximum),
-                    modified_at=utc_now(),
+        generation = (
+            select(
+                case(
+                    (ReducerBucket.sealed_at.is_(None), ReducerBucket.generation),
+                    else_=ReducerBucket.generation + 1,
                 )
                 .execution_options(synchronize_session=False)
             )
-            return
-        await self.session.execute(
-            insert(ReducerBucket).values(
-                organization_id=reducer.organization_id,
-                reducer_id=reducer.id,
-                customer_id=customer_id,
-                external_customer_id=external_customer_id,
-                bucket_start=bucket_start,
-                bucket_end=bucket_end,
-                count=count,
-                sum=total,
-                min=minimum,
-                max=maximum,
-                generation=1 if latest is None else latest.generation + 1,
-            )
-        )
-
-    async def seal(
-        self,
-        reducer: Reducer,
-        identities: Sequence[tuple[UUID | None, str | None]],
-        *,
-        start: datetime,
-        end: datetime,
-        sealed_at: datetime,
-    ) -> Sequence[tuple[int, Decimal, Decimal | None, Decimal | None]]:
-        open_ids = (
-            select(ReducerBucket.id)
             .where(
                 ReducerBucket.organization_id == reducer.organization_id,
                 ReducerBucket.reducer_id == reducer.id,
-                or_(
-                    *(
-                        and_(
-                            ReducerBucket.customer_id == customer_id,
-                            ReducerBucket.external_customer_id == external_customer_id,
-                        )
-                        for customer_id, external_customer_id in identities
-                    )
-                ),
-                ReducerBucket.sealed_at.is_(None),
-                ReducerBucket.bucket_end > start,
-                ReducerBucket.bucket_end <= end,
+                ReducerBucket.bucket_start == bucket_start,
+                _is_customer(ReducerBucket, customer_id, external_customer_id),
             )
-            .order_by(ReducerBucket.bucket_start)
-            .with_for_update()
+            .order_by(ReducerBucket.generation.desc())
+            .limit(1)
+            .scalar_subquery()
         )
-        result = await self.session.execute(
-            update(ReducerBucket)
-            .where(ReducerBucket.id.in_(open_ids))
-            .values(sealed_at=sealed_at, modified_at=sealed_at)
-            .returning(
-                ReducerBucket.count,
-                ReducerBucket.sum,
-                ReducerBucket.min,
-                ReducerBucket.max,
+        insert_statement = insert(ReducerBucket).values(
+            organization_id=reducer.organization_id,
+            reducer_id=reducer.id,
+            customer_id=customer_id,
+            external_customer_id=external_customer_id,
+            bucket_start=bucket_start,
+            bucket_end=bucket_end,
+            count=count,
+            sum=total,
+            min=minimum,
+            max=maximum,
+            generation=func.coalesce(generation, 1),
+        )
+        excluded = insert_statement.excluded
+        await self.session.execute(
+            insert_statement.on_conflict_do_update(
+                constraint="reducer_buckets_identity_generation_key",
+                set_={
+                    "count": ReducerBucket.count + excluded["count"],
+                    "sum": ReducerBucket.sum + excluded["sum"],
+                    "min": func.least(ReducerBucket.min, excluded["min"]),
+                    "max": func.greatest(ReducerBucket.max, excluded["max"]),
+                    "modified_at": utc_now(),
+                },
             )
         )
-        return result.tuples().all()

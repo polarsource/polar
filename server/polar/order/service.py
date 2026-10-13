@@ -1469,12 +1469,14 @@ class OrderService:
         ``product`` overrides the subscription's current product."""
         order_id = uuid.uuid4()
         customer = subscription.customer
+        product = product or subscription.product
 
         amounts = await compute_order_amounts(
             subscription,
             items,
             reference=reference or str(order_id),
             discount=discount,
+            product=product,
         )
         total_amount = amounts.total_amount
 
@@ -1502,7 +1504,7 @@ class OrderService:
             tax_calculation_processor_id=amounts.tax_calculation_processor_id,
             organization=subscription.organization,
             customer=customer,
-            product=product or subscription.product,
+            product=product,
             discount=discount,
             subscription=subscription,
             checkout=None,

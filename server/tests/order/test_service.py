@@ -2717,6 +2717,8 @@ class TestSettleMeterCycleOrder:
         await self._add_metered_usage(
             save_fixture, organization, customer, subscription, units=2
         )
+        product.is_tax_applicable = False
+        await save_fixture(product)
 
         order = await order_service.settle_meter_cycle_order(
             session, subscription, product=product
@@ -2725,6 +2727,9 @@ class TestSettleMeterCycleOrder:
         assert order is not None
         assert order.product == product
         assert subscription.product != product
+        assert subscription.product.is_tax_applicable
+        assert order.tax_amount == 0
+        calculate_tax_mock.assert_not_called()
 
     async def test_sub_minimum_still_creates_order(
         self,

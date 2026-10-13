@@ -159,7 +159,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         total: float = 0,
         minimum: float | None = None,
         maximum: float | None = None,
-    ) -> bool:
+    ) -> None:
         """Adds to the customer identity's latest bucket, or to the next generation
         once it's sealed."""
         generation = (
@@ -193,20 +193,21 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             generation=func.coalesce(generation, 1),
         )
         excluded = insert_statement.excluded
-        result = await self.session.execute(
-            insert_statement.on_conflict_do_update(
-                constraint="reducer_buckets_identity_generation_key",
-                set_={
-                    "count": ReducerBucket.count + excluded["count"],
-                    "sum": ReducerBucket.sum + excluded["sum"],
-                    "min": func.least(ReducerBucket.min, excluded["min"]),
-                    "max": func.greatest(ReducerBucket.max, excluded["max"]),
-                    "modified_at": utc_now(),
-                },
-                where=ReducerBucket.sealed_at.is_(None),
-            ).returning(ReducerBucket.id)
-        )
-        return result.scalar_one_or_none() is not None
+        statement = insert_statement.on_conflict_do_update(
+            constraint="reducer_buckets_identity_generation_key",
+            set_={
+                "count": ReducerBucket.count + excluded["count"],
+                "sum": ReducerBucket.sum + excluded["sum"],
+                "min": func.least(ReducerBucket.min, excluded["min"]),
+                "max": func.greatest(ReducerBucket.max, excluded["max"]),
+                "modified_at": utc_now(),
+            },
+            where=ReducerBucket.sealed_at.is_(None),
+        ).returning(ReducerBucket.id)
+        result = await self.session.execute(statement)
+        # A seal committed after the generation was picked; rerun on the next one.
+        if result.scalar_one_or_none() is None:
+            (await self.session.execute(statement)).scalar_one()
 
     async def seal(
         self,

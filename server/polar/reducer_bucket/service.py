@@ -137,7 +137,7 @@ class ReducerBucketService:
                     if isinstance(reducer.aggregation, PropertyAggregation)
                     else {}
                 )
-                while not await repository.add_contribution(
+                await repository.add_contribution(
                     reducer,
                     start,
                     end,
@@ -145,8 +145,7 @@ class ReducerBucketService:
                     external_customer_id,
                     count=len(values),
                     **statistics,
-                ):
-                    pass
+                )
 
     async def sync(
         self,

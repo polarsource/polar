@@ -13,16 +13,18 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.http import get_ip_address
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import EmptyStrToNone, MultipleQueryFilter, empty_str_to_none
+from polar.kit.versioning import version
 from polar.models import CheckoutLink
 from polar.openapi import APITag, cli_preview
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
+from polar.version import V2027_01
 
-from . import auth, sorting
+from . import auth, legacy_schemas, sorting
 from .schemas import CheckoutLink as CheckoutLinkSchema
-from .schemas import CheckoutLinkCreate, CheckoutLinkUpdate
+from .schemas import CheckoutLinkCreateProducts, CheckoutLinkUpdate
 from .service import checkout_link as checkout_link_service
 
 router = APIRouter(
@@ -120,7 +122,29 @@ async def get(
     openapi_extra={"x-mint": {"content": CHECKOUT_LINK_CREATE_MINTLIFY_CONTENT}},
 )
 async def create(
-    checkout_link_create: CheckoutLinkCreate,
+    checkout_link_create: legacy_schemas.CheckoutLinkCreate,
+    auth_subject: auth.CheckoutLinkWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> CheckoutLink:
+    """Create a checkout link."""
+    return await checkout_link_service.create(
+        session, checkout_link_create, auth_subject
+    )
+
+
+@router.post(
+    "/",
+    name="create",
+    response_model=CheckoutLinkSchema,
+    status_code=201,
+    summary="Create Checkout Link",
+    responses={201: {"description": "Checkout link created."}},
+    tags=[APITag.mcp, APITag.cli],
+    openapi_extra={"x-mint": {"content": CHECKOUT_LINK_CREATE_MINTLIFY_CONTENT}},
+)
+@version(starting_from=V2027_01)
+async def create_v2027_01(
+    checkout_link_create: CheckoutLinkCreateProducts,
     auth_subject: auth.CheckoutLinkWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> CheckoutLink:

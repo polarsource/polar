@@ -33,3 +33,23 @@ export const getCreditPreview = (
     },
   }
 }
+
+export const MAX_CREDIT_UNITS = 1_000_000_000
+
+const stripSeparators = (input: string) => input.replace(/[\s,_]/g, '')
+
+export const validateCreditUnits = (input: string): true | string => {
+  const digits = stripSeparators(input)
+  if (!digits) return 'Enter an amount'
+  if (!/^\d+$/.test(digits)) return 'Enter a whole number'
+  const units = Number(digits)
+  if (units < 1) return 'Enter at least 1 credit'
+  if (units > MAX_CREDIT_UNITS) return 'Enter at most 1,000,000,000 credits'
+  return true
+}
+
+export const parseCreditUnits = (input: string): number | null =>
+  validateCreditUnits(input) === true ? Number(stripSeparators(input)) : null
+
+export const formatCredits = (units: number) =>
+  `${units.toLocaleString('en-US')} ${units === 1 ? 'credit' : 'credits'}`

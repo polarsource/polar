@@ -1,11 +1,8 @@
 'use client'
 
-import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { toast } from '@/components/Toast/use-toast'
-import { useHasPermission } from '@/hooks/permissions'
 import { useCreditCustomerMeter } from '@/hooks/queries/customerMeters'
 import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
-import { permissionDeniedMessage } from '@/utils/permissions'
 import { isValidationError, schemas } from '@polar-sh/client'
 import {
   Button,
@@ -30,13 +27,16 @@ import {
 import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { AddCreditsSummary } from './AddCreditsSummary'
+import {
+  formatCredits,
+  parseCreditUnits,
+  validateCreditUnits,
+} from './creditPreview'
 import { useMeterCreditOptions } from './useMeterCreditOptions'
-
-const MAX_UNITS = 1_000_000_000
 
 interface AddCreditsForm {
   meter_id: string
-  units?: number
+  units: string
 }
 
 export const AddCreditsModal = ({
@@ -50,10 +50,6 @@ export const AddCreditsModal = ({
   meterId?: string
   onClose: () => void
 }) => {
-  const canManageCustomers = useHasPermission(
-    organization.id,
-    'customers:manage',
-  )
   const [externalId] = useState(() => crypto.randomUUID())
   const { options, isLoading } = useMeterCreditOptions(
     organization.id,
@@ -61,19 +57,16 @@ export const AddCreditsModal = ({
   )
   const creditCustomerMeter = useCreditCustomerMeter()
   const form = useForm<AddCreditsForm>({
-    defaultValues: { meter_id: meterId ?? '' },
+    mode: 'onChange',
+    defaultValues: { meter_id: meterId ?? '', units: '' },
   })
 
   const values = useWatch({ control: form.control })
   const option = options.find((o) => o.meter.id === values.meter_id)
-  const units =
-    values.units !== undefined &&
-    Number.isInteger(values.units) &&
-    values.units > 0
-      ? values.units
-      : null
+  const units = parseCreditUnits(values.units ?? '')
 
-  const onSubmit = async ({ units: submittedUnits }: AddCreditsForm) => {
+  const onSubmit = async (submitted: AddCreditsForm) => {
+    const submittedUnits = parseCreditUnits(submitted.units)
     if (!option || !submittedUnits) return
 
     const { error } = await creditCustomerMeter.mutateAsync({
@@ -103,30 +96,13 @@ export const AddCreditsModal = ({
 
     toast({
       title: 'Credits Added',
-      description: `Added ${submittedUnits.toLocaleString('en-US')} credits on ${option.meter.name} for ${customer.name || customer.email || 'this customer'}.`,
+      description: `Added ${formatCredits(submittedUnits)} on ${option.meter.name} for ${customer.name || customer.email || 'this customer'}.`,
     })
     onClose()
   }
 
-  if (!canManageCustomers) {
-    return (
-      <Box flexDirection="column" height="100%">
-        <InlineModalHeader hide={onClose}>
-          <Text variant="heading-xs" as="h2">
-            Add credits
-          </Text>
-        </InlineModalHeader>
-        <Box flex={1} flexDirection="column" alignItems="center" padding="xl">
-          <AccessRestricted
-            message={permissionDeniedMessage('customers:manage')}
-          />
-        </Box>
-      </Box>
-    )
-  }
-
   return (
-    <Box flexDirection="column" height="100%">
+    <Box flexDirection="column" overflowY="auto">
       <InlineModalHeader hide={onClose}>
         <Text variant="heading-xs" as="h2">
           Add credits
@@ -137,102 +113,80 @@ export const AddCreditsModal = ({
           as="form"
           onSubmit={form.handleSubmit(onSubmit)}
           flexDirection="column"
-          flex={1}
+          rowGap="xl"
+          paddingHorizontal="2xl"
+          paddingBottom="3xl"
         >
-          <Box
-            flexDirection="column"
-            rowGap="xl"
-            paddingHorizontal="2xl"
-            flex={1}
-          >
-            <FormField
-              control={form.control}
-              name="meter_id"
-              rules={{ required: 'Select a meter' }}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Meter</FormLabel>
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    disabled={isLoading}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="h-10 w-full">
-                        <SelectValue placeholder="Select a meter" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {options.map(({ meter, productName }) => (
-                        <SelectItem key={meter.id} value={meter.id}>
-                          {meter.name}
-                          {productName && ` · ${productName}`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="units"
-              rules={{
-                required: 'Enter an amount',
-                min: { value: 1, message: 'Enter at least 1 credit' },
-                max: {
-                  value: MAX_UNITS,
-                  message: 'Enter at most 1,000,000,000 credits',
-                },
-                validate: (value) =>
-                  Number.isInteger(value) || 'Enter a whole number',
-              }}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Credits</FormLabel>
+          <FormField
+            control={form.control}
+            name="meter_id"
+            rules={{ required: 'Select a meter' }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Meter</FormLabel>
+                <Select
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  disabled={isLoading}
+                >
                   <FormControl>
-                    <Input
-                      {...field}
-                      type="number"
-                      min={1}
-                      max={MAX_UNITS}
-                      step={1}
-                      placeholder="1000"
-                      value={field.value ?? ''}
-                      onChange={(event) => {
-                        const value = event.currentTarget.valueAsNumber
-                        field.onChange(Number.isNaN(value) ? undefined : value)
-                      }}
-                    />
+                    <SelectTrigger className="h-10 w-full">
+                      <SelectValue
+                        placeholder={
+                          isLoading ? 'Loading meters…' : 'Select a meter'
+                        }
+                      />
+                    </SelectTrigger>
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            {option && <AddCreditsSummary option={option} units={units ?? 0} />}
-          </Box>
-          <Box
-            flexDirection="column"
-            rowGap="m"
-            paddingHorizontal="2xl"
-            paddingVertical="xl"
-          >
-            <Text variant="caption" color="muted">
+                  <SelectContent>
+                    {options.map(({ meter, productName }) => (
+                      <SelectItem key={meter.id} value={meter.id}>
+                        {meter.name}
+                        {productName && ` · ${productName}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="units"
+            rules={{ validate: validateCreditUnits }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Credits to add</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    inputMode="numeric"
+                    autoComplete="off"
+                    autoFocus={!!meterId}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          {(option || (isLoading && meterId)) && (
+            <AddCreditsSummary option={option} units={units} />
+          )}
+          <Box flexDirection="column" rowGap="l">
+            <Text>
               Credits don&apos;t expire and can&apos;t be removed once added.
             </Text>
             <Box columnGap="s">
+              <Button variant="ghost" onClick={onClose}>
+                Cancel
+              </Button>
               <Button
                 type="submit"
                 disabled={!option || !units}
                 loading={creditCustomerMeter.isPending}
               >
-                {units
-                  ? `Add ${units.toLocaleString('en-US')} credits`
-                  : 'Add credits'}
-              </Button>
-              <Button variant="ghost" onClick={onClose}>
-                Cancel
+                {units ? `Add ${formatCredits(units)}` : 'Add credits'}
               </Button>
             </Box>
           </Box>

@@ -10,15 +10,16 @@ export const useMeterCreditOptions = (
   organizationId: string,
   customer: schemas['Customer'],
 ) => {
-  const { data: meters, isLoading } = useMeters(organizationId, {
+  const { data: meters, isLoading: metersLoading } = useMeters(organizationId, {
     is_archived: false,
     sorting: ['name'],
     limit: 100,
   })
-  const { data: customerMeters } = useCustomerMeters(organizationId, {
-    customer_id: customer.id,
-    limit: 100,
-  })
+  const { data: customerMeters, isLoading: customerMetersLoading } =
+    useCustomerMeters(organizationId, {
+      customer_id: customer.id,
+      limit: 100,
+    })
   const { data: subscriptions } = useSubscriptions(organizationId, {
     customer_id: customer.id,
     active: true,
@@ -49,5 +50,5 @@ export const useMeterCreditOptions = (
     })
   }, [meters, customerMeters, subscriptions])
 
-  return { options, isLoading }
+  return { options, isLoading: metersLoading || customerMetersLoading }
 }

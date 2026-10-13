@@ -20,27 +20,41 @@ const SummaryRow = ({
   </Box>
 )
 
+const SummaryCard = ({ children }: { children: ReactNode }) => (
+  <Box
+    flexDirection="column"
+    rowGap="s"
+    padding="l"
+    borderRadius="l"
+    backgroundColor="background-card"
+  >
+    {children}
+  </Box>
+)
+
 export const AddCreditsSummary = ({
   option,
   units,
 }: {
-  option: MeterCreditOption
-  units: number
+  option?: MeterCreditOption
+  units: number | null
 }) => {
+  const currentBalance = (
+    <SummaryRow
+      label="Current balance"
+      value={option ? <FormattedUnits value={option.balance} /> : '—'}
+    />
+  )
+
+  if (!option || !units) {
+    return <SummaryCard>{currentBalance}</SummaryCard>
+  }
+
   const { balanceAfter, overage } = getCreditPreview(option, units)
 
   return (
-    <Box
-      flexDirection="column"
-      rowGap="s"
-      padding="l"
-      borderRadius="l"
-      backgroundColor="background-card"
-    >
-      <SummaryRow
-        label="Current balance"
-        value={<FormattedUnits value={option.balance} />}
-      />
+    <SummaryCard>
+      {currentBalance}
       <SummaryRow
         label="Credits added"
         value={
@@ -70,6 +84,6 @@ export const AddCreditsSummary = ({
           />
         )}
       </Box>
-    </Box>
+    </SummaryCard>
   )
 }

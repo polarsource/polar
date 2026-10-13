@@ -4,6 +4,7 @@ import { AddCreditsModal } from '@/components/Customer/AddCredits/AddCreditsModa
 import { useModal } from '@/components/Modal/useModal'
 import { estimateMeteredCost } from '@/components/Products/ProductForm/Pricing/utils'
 import { isMeteredPrice, MeteredPrice } from '@/utils/product'
+import { useHasPermission } from '@/hooks/permissions'
 import { useCustomerMeters } from '@/hooks/queries/customerMeters'
 import { useMultipleMeterQuantities } from '@/hooks/queries/meters'
 import { useSubscriptions } from '@/hooks/queries/subscriptions'
@@ -70,6 +71,9 @@ export const CustomerUsageView = ({
 }) => {
   const router = useRouter()
   const addCreditsModal = useModal()
+  const canAddCredits =
+    useHasPermission(organization.id, 'customers:manage') &&
+    !!organization.feature_settings?.config_as_code_enabled
   const [creditMeterId, setCreditMeterId] = useState<string>()
   const { dateRange, interval } = useCustomerMetricsParams(customer)
   const { data: customerMetersData, isLoading } = useCustomerMeters(
@@ -252,7 +256,7 @@ export const CustomerUsageView = ({
               )
             },
           },
-          ...(organization.feature_settings?.config_as_code_enabled
+          ...(canAddCredits
             ? [
                 {
                   id: 'add_credits',

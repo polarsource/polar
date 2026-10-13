@@ -37,9 +37,9 @@ const PRESENTATIONS: Record<
   managed_by_another_member: {
     tone: 'neutral',
     icon: UsersIcon,
-    title: 'Payout account managed by another member',
+    title: 'Payout account connected by another member',
     description:
-      'Another member of this organization set up its payout account. To receive payouts on your own account, open Manage payout accounts.',
+      'Only the member who connected it can edit it. You can switch this organization to a payout account of your own.',
   },
   incomplete: {
     tone: 'warning',

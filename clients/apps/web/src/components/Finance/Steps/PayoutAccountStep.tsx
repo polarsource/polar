@@ -102,7 +102,7 @@ export default function PayoutAccountStep({
     if (managedByAnotherMember) {
       return (
         <Button onClick={openManage}>
-          Manage payout accounts
+          Switch payout account
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       )

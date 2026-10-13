@@ -179,7 +179,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
           ) : (
             <Text color="muted">
               {managedByAnotherMember
-                ? 'Managed by another member.'
+                ? 'Connected by another member.'
                 : 'No payout account configured.'}
             </Text>
           )}

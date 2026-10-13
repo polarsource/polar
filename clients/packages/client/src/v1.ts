@@ -13961,12 +13961,6 @@ export interface components {
        */
       product_id: string | null
       /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout.
-       */
-      product_price_id: string | null
-      /**
        * Discount Id
        * @description ID of the discount applied to the checkout.
        */
@@ -14135,12 +14129,6 @@ export interface components {
        * @description ID of the product to checkout. Must be present in the checkout's product list.
        */
       product_id?: string | null
-      /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
-       */
-      product_price_id?: string | null
       /** Amount */
       amount?: number | null
       /**
@@ -14204,12 +14192,6 @@ export interface components {
        * @description ID of the product to checkout. Must be present in the checkout's product list.
        */
       product_id?: string | null
-      /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
-       */
-      product_price_id?: string | null
       /** Amount */
       amount?: number | null
       /**
@@ -14561,180 +14543,6 @@ export interface components {
         | null
       /** Url */
       readonly url: string
-    }
-    CheckoutLinkCreate:
-      | components['schemas']['CheckoutLinkCreateProductPrice']
-      | components['schemas']['CheckoutLinkCreateProduct']
-      | components['schemas']['CheckoutLinkCreateProducts']
-    /**
-     * CheckoutLinkCreateProduct
-     * @description Schema to create a new checkout link from a a single product.
-     *
-     *     **Deprecated**: Use `CheckoutLinkCreateProducts` instead.
-     */
-    CheckoutLinkCreateProduct: {
-      /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /** @description The interval unit for the trial period. */
-      trial_interval?: components['schemas']['TrialInterval'] | null
-      /**
-       * Trial Interval Count
-       * @description The number of interval units for the trial period.
-       */
-      trial_interval_count?: number | null
-      /**
-       * Payment Processor
-       * @description Payment processor to use. Currently only Stripe is supported.
-       * @constant
-       */
-      payment_processor: 'stripe'
-      /**
-       * Label
-       * @description Optional label to distinguish links internally
-       */
-      label?: string | null
-      /**
-       * Allow Discount Codes
-       * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
-       * @default true
-       */
-      allow_discount_codes: boolean
-      /**
-       * Require Billing Address
-       * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.
-       * @default false
-       */
-      require_billing_address: boolean
-      /**
-       * Discount Id
-       * @description ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
-       */
-      discount_id?: string | null
-      /**
-       * Seats
-       * @description Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored.
-       */
-      seats?: number | null
-      /**
-       * Units
-       * @description Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored.
-       */
-      units?: number | null
-      /**
-       * Success Url
-       * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
-       */
-      success_url?: string | null
-      /**
-       * Return Url
-       * @description When set, a back button will be shown in the checkout to return to this URL.
-       */
-      return_url?: string | null
-      /**
-       * Product Id
-       * Format: uuid4
-       */
-      product_id: string
-    }
-    /**
-     * CheckoutLinkCreateProductPrice
-     * @description Schema to create a new checkout link from a a single product price.
-     *
-     *     **Deprecated**: Use `CheckoutLinkCreateProducts` instead.
-     */
-    CheckoutLinkCreateProductPrice: {
-      /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /** @description The interval unit for the trial period. */
-      trial_interval?: components['schemas']['TrialInterval'] | null
-      /**
-       * Trial Interval Count
-       * @description The number of interval units for the trial period.
-       */
-      trial_interval_count?: number | null
-      /**
-       * Payment Processor
-       * @description Payment processor to use. Currently only Stripe is supported.
-       * @constant
-       */
-      payment_processor: 'stripe'
-      /**
-       * Label
-       * @description Optional label to distinguish links internally
-       */
-      label?: string | null
-      /**
-       * Allow Discount Codes
-       * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
-       * @default true
-       */
-      allow_discount_codes: boolean
-      /**
-       * Require Billing Address
-       * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.
-       * @default false
-       */
-      require_billing_address: boolean
-      /**
-       * Discount Id
-       * @description ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
-       */
-      discount_id?: string | null
-      /**
-       * Seats
-       * @description Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored.
-       */
-      seats?: number | null
-      /**
-       * Units
-       * @description Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored.
-       */
-      units?: number | null
-      /**
-       * Success Url
-       * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
-       */
-      success_url?: string | null
-      /**
-       * Return Url
-       * @description When set, a back button will be shown in the checkout to return to this URL.
-       */
-      return_url?: string | null
-      /**
-       * Product Price Id
-       * Format: uuid4
-       */
-      product_price_id: string
     }
     /**
      * CheckoutLinkCreateProducts
@@ -15674,12 +15482,6 @@ export interface components {
        */
       product_id: string | null
       /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout.
-       */
-      product_price_id: string | null
-      /**
        * Discount Id
        * @description ID of the discount applied to the checkout.
        */
@@ -15962,12 +15764,6 @@ export interface components {
        */
       product_id: string | null
       /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout.
-       */
-      product_price_id: string | null
-      /**
        * Discount Id
        * @description ID of the discount applied to the checkout.
        */
@@ -16122,12 +15918,6 @@ export interface components {
        * @description ID of the product to checkout. Must be present in the checkout's product list.
        */
       product_id?: string | null
-      /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
-       */
-      product_price_id?: string | null
       /** Amount */
       amount?: number | null
       /**
@@ -16250,12 +16040,6 @@ export interface components {
        * @description ID of the product to checkout. Must be present in the checkout's product list.
        */
       product_id?: string | null
-      /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
-       */
-      product_price_id?: string | null
       /** Amount */
       amount?: number | null
       /**
@@ -53811,7 +53595,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['CheckoutLinkCreate']
+        'application/json': components['schemas']['CheckoutLinkCreateProducts']
       }
     }
     responses: {

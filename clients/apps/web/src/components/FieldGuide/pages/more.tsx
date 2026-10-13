@@ -381,7 +381,7 @@ const tiers = (() => {
               y1={yy}
               y2={yy}
               stroke={LINE}
-              strokeWidth={1.2}
+              strokeWidth={HAIR}
             />
             {i > 0 ? (
               <Guide
@@ -404,46 +404,47 @@ const tiers = (() => {
         )
       })}
       {[0, 0.33, 0.66, 1].map((t, i) => (
-        <text
-          key={i}
-          x={x0 + (x1 - x0) * t}
-          y={y0 + h + 14}
-          fontSize={7}
-          fill={DIM}
-          textAnchor="middle"
-          style={MONO}
-        >
-          {['0', '1M', '2M', '∞'][i]}
-        </text>
+        <g key={i}>
+          <line
+            x1={x0 + (x1 - x0) * t}
+            x2={x0 + (x1 - x0) * t}
+            y1={y0 + h}
+            y2={y0 + h + 4}
+            stroke={MID}
+            strokeWidth={HAIR}
+          />
+          <text
+            x={x0 + (x1 - x0) * t}
+            y={y0 + h + 15}
+            fontSize={7.5}
+            fill={DIM}
+            textAnchor="middle"
+            style={MONO}
+          >
+            {['0', '1M', '2M', '∞'][i]}
+          </text>
+        </g>
       ))}
       <text
-        x={x1}
-        y={y0 + h + 28}
+        x={(x0 + x1) / 2}
+        y={y0 + h + 32}
         fontSize={7.5}
         fill={DIM}
-        textAnchor="end"
+        textAnchor="middle"
         style={MONO}
       >
         TOKENS
       </text>
       <text
-        x={x0 - 6}
-        y={y0 + 4}
+        x={x0}
+        y={y0 - 10}
         fontSize={7.5}
         fill={DIM}
-        textAnchor="end"
+        textAnchor="middle"
         style={MONO}
       >
         RATE
       </text>
-      <Callout
-        at={[x0 + (x1 - x0) * 0.5, y0 + h - h * 0.65]}
-        to={[x0 + (x1 - x0) * 0.5, y0 + h + 54]}
-        route="v"
-        dot={false}
-      >
-        GRADUATED · A RATE PER TIER
-      </Callout>
     </>
   )
   return portrait(

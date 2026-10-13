@@ -201,20 +201,14 @@ export function Callout({
   const d = straight
     ? `M${pt(at)}L${pt(to)}`
     : `M${pt(at)}L${pt(elbow)}L${pt(to)}`
-  // A short leader is a solid hairline: a few dots read as noise. Long ones are dotted, like the guides.
-  const length = Math.abs(to[0] - at[0]) + Math.abs(to[1] - at[1])
+  // The leader is a dotted guide, like the construction lines. The square sits on the subject, or, for a label
+  // that names a region rather than a point, at the label's end, where the text hangs from it.
   return (
     <g>
-      <path
-        d={d}
-        fill="none"
-        stroke={DIM}
-        strokeWidth={HAIR}
-        {...(length < 28 ? {} : DOTTED)}
-      />
-      {dot ? <Anchor at={at} /> : null}
+      <path d={d} fill="none" stroke={DIM} strokeWidth={HAIR} {...DOTTED} />
+      <Anchor at={dot ? at : to} />
       <text
-        x={to[0] + (side === 'right' ? 5 : -5)}
+        x={to[0] + (side === 'right' ? 8 : -8)}
         y={to[1] + 2.5}
         fontSize={8.5}
         fill={color}

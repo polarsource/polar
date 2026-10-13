@@ -167,11 +167,7 @@ test('dates must be valid and the discount must start before it ends', () => {
     decode(
       discountConfig(
         'backwards',
-        discount()
-          .percent(5)
-          .once()
-          .starts('2026-06-01')
-          .ends('2026-01-01'),
+        discount().percent(5).once().starts('2026-06-01').ends('2026-01-01'),
       ),
     ),
   ).toThrow('ends_at must be after starts_at.')

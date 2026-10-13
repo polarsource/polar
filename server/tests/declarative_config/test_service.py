@@ -28,6 +28,7 @@ from polar.discount.repository import DiscountRepository
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.visibility import Visibility
+from polar.meter.aggregation import UniqueAggregation
 from polar.meter.repository import MeterRepository
 from polar.meter.unit import MeterUnit
 from polar.models import (
@@ -78,6 +79,8 @@ TOOL_CALLS_METER = {
     "custom_label": "call",
     "custom_multiplier": None,
 }
+
+UNIQUE_AGGREGATION = {"func": "unique", "property": "tool"}
 
 FIXTURE_METER = {
     "external_id": "my-meter",
@@ -1102,6 +1105,53 @@ class TestPlan:
             for issue in plan.issues
             if issue.type == ConfigIssueType.type_changed
         ] == [["body", "benefits", 0, "type"]]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_new_meter_unique_aggregation(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {"meters": [{**TOOL_CALLS_METER, "aggregation": UNIQUE_AGGREGATION}]}
+            ),
+        )
+
+        assert [
+            (issue.severity, issue.loc)
+            for issue in plan.issues
+            if issue.type == ConfigIssueType.not_supported
+        ] == [(ConfigIssueSeverity.error, ["body", "meters", 0, "aggregation", "func"])]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_existing_meter_unique_aggregation(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_meter(
+            save_fixture,
+            organization=organization,
+            external_id="sdk-tool-calls",
+            aggregation=UniqueAggregation(property="tool"),
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {"meters": [{**TOOL_CALLS_METER, "aggregation": UNIQUE_AGGREGATION}]}
+            ),
+        )
+
+        assert [
+            issue
+            for issue in plan.issues
+            if issue.type == ConfigIssueType.not_supported
+        ] == []
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_new_resources(

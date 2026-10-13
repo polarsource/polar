@@ -236,6 +236,25 @@ class TestCreate:
 
         assert e.value.errors()[0]["loc"] == ("body", "external_id")
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_unique_aggregation_rejected(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError) as e:
+            await meter_service.create(
+                session,
+                MeterCreate(
+                    name="Meter",
+                    filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+                    aggregation=UniqueAggregation(property="user_id"),
+                ),
+                auth_subject,
+            )
+
+        assert e.value.errors()[0]["loc"] == ("body", "aggregation", "func")
+
 
 @pytest.mark.anyio
 class TestUpdate:
@@ -350,6 +369,55 @@ class TestUpdate:
         assert reducer.aggregation == updated_meter.aggregation
         if original_reducer is not None:
             assert reducer.id == original_reducer.id
+
+    @pytest.mark.auth
+    async def test_unique_aggregation_rejected(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await meter_service.update(
+                session,
+                meter,
+                MeterUpdate(  # pyright: ignore
+                    aggregation=UniqueAggregation(property="user_id")
+                ),
+                auth_subject,
+            )
+
+        assert e.value.errors()[0]["loc"] == ("body", "aggregation", "func")
+
+    @pytest.mark.auth
+    async def test_existing_unique_aggregation_kept(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            aggregation=UniqueAggregation(property="user_id"),
+        )
+
+        updated_meter = await meter_service.update(
+            session,
+            meter,
+            MeterUpdate(  # pyright: ignore
+                aggregation=UniqueAggregation(property="session_id")
+            ),
+            auth_subject,
+        )
+
+        assert updated_meter.aggregation == UniqueAggregation(property="session_id")
 
     @pytest.mark.auth
     async def test_insensitive_update(

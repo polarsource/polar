@@ -19,7 +19,12 @@ from polar.event_type.repository import EventTypeRepository
 from polar.meter.filter import Filter, FilterOperator
 from polar.meter.repository import MeterRepository
 from polar.meter.schemas import MeterCreateBase
-from polar.meter.service import METER_LOCKED_FIELD_MESSAGE, METER_LOCKED_FIELDS
+from polar.meter.service import (
+    METER_DEPRECATED_AGGREGATION_MESSAGE,
+    METER_LOCKED_FIELD_MESSAGE,
+    METER_LOCKED_FIELDS,
+    introduces_deprecated_aggregation,
+)
 from polar.models import (
     Benefit,
     Discount,
@@ -299,6 +304,20 @@ def locked_meter_fields(changes: list[MeterChange]) -> list[ConfigIssue]:
         and change.existing.last_billed_event_id is not None
         for field in METER_LOCKED_FIELDS
         if field in change.update_dict
+    ]
+
+
+def deprecated_meter_aggregations(changes: list[MeterChange]) -> list[ConfigIssue]:
+    return [
+        ConfigIssue(
+            severity=ConfigIssueSeverity.error,
+            type=ConfigIssueType.not_supported,
+            loc=_meter_loc(change.index, "aggregation", "func"),
+            msg=METER_DEPRECATED_AGGREGATION_MESSAGE,
+            input=change.config.aggregation.func,
+        )
+        for change in changes
+        if introduces_deprecated_aggregation(change.config.aggregation, change.existing)
     ]
 
 
@@ -841,6 +860,7 @@ async def check(
         *unique_external_ids(ConfigResource.discount, discounts),
         *unknown_references(config),
         *locked_meter_fields(meters),
+        *deprecated_meter_aggregations(meters),
         *await unknown_events(session, organization, meters),
         *benefit_type_changes(benefits),
         *unsupported_prices(products),

@@ -38,8 +38,8 @@ export const MetersPage = () => {
         <p>
           The matching events then run through an{' '}
           <FeatureHighlight>aggregation</FeatureHighlight>. Count them, sum a
-          property such as total tokens, or take the average, minimum, maximum
-          or number of unique values.
+          property such as total tokens, or take the average, minimum or
+          maximum.
         </p>
         <p>
           The result is a <FeatureHighlight>customer meter</FeatureHighlight>,
@@ -61,9 +61,9 @@ export const MetersPage = () => {
               'Equals, contains, greater than and more, on the event name or any metadata key.',
           },
           {
-            title: 'Six aggregations',
+            title: 'Five aggregations',
             description:
-              'Count, sum, average, minimum, maximum and unique over any property.',
+              'Count, sum, average, minimum and maximum over any property.',
           },
           {
             title: 'Live per customer',
@@ -96,11 +96,6 @@ export const MetersPage = () => {
             title: 'Average, minimum, maximum',
             description:
               'Derived figures such as peak concurrency or average response size.',
-          },
-          {
-            title: 'Unique',
-            description:
-              'Distinct values of a property. Charge per active user, project or document.',
           },
         ]}
       />

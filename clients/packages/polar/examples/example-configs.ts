@@ -88,10 +88,6 @@ export const apiMetricsConfig = defineConfig({
         .where(successful)
         .unit('custom', 'ms')
         .max('durationMs'),
-      activeAccounts: meter('Active Accounts')
-        .on(events['api.request'])
-        .where(successful)
-        .unique('accountId'),
     }
   },
 })

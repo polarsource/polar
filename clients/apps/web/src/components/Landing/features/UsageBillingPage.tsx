@@ -38,8 +38,8 @@ export const UsageBillingPage = () => {
         <p>
           On top of those events sit <FeatureHighlight>meters</FeatureHighlight>
           , which filter and aggregate the stream into a number per customer.
-          Pick how the number is calculated (count, sum, average, min, max, or
-          unique) and the rest is bookkeeping.
+          Pick how the number is calculated (count, sum, average, min, or max)
+          and the rest is bookkeeping.
         </p>
         <p>
           A meter only matters once it&apos;s priced, which is what{' '}
@@ -81,7 +81,7 @@ export const UsageBillingPage = () => {
       />
 
       <FeatureSplit
-        title="Six aggregation functions"
+        title="Five aggregation functions"
         description="The same event stream can power multiple meters. Change pricing without re-instrumenting your application."
         bullets={[
           {
@@ -98,11 +98,6 @@ export const UsageBillingPage = () => {
             title: 'Min, max, average',
             description:
               'Derived metrics like peak concurrency or average response size.',
-          },
-          {
-            title: 'Unique',
-            description:
-              'Count distinct values of a property. Charge per unique user, project, or document.',
           },
         ]}
       />

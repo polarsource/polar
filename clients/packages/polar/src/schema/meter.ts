@@ -263,6 +263,9 @@ export class MeterBuilder<Names extends string = string, Metadata = unknown> {
     return this.aggregate({ func: 'avg', property })
   }
 
+  /**
+   * @deprecated The unique aggregation can't be used on new meters.
+   */
   unique(property: Property<Metadata, ScalarValue>) {
     return this.aggregate({ func: 'unique', property })
   }

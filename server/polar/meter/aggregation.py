@@ -1,7 +1,13 @@
 from enum import StrEnum
 from typing import TYPE_CHECKING, Annotated, Any, Literal
 
-from pydantic import AfterValidator, BaseModel, Discriminator, TypeAdapter
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    Discriminator,
+    TypeAdapter,
+)
 from sqlalchemy import (
     ColumnExpressionArgument,
     Dialect,
@@ -121,6 +127,8 @@ class PropertyAggregation(BaseModel):
 
 
 class UniqueAggregation(BaseModel):
+    model_config = ConfigDict(json_schema_extra={"deprecated": True})
+
     func: Literal[AggregationFunction.unique] = AggregationFunction.unique
     property: Annotated[str, AfterValidator(_strip_metadata_prefix)]
 

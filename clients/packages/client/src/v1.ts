@@ -39876,7 +39876,10 @@ export interface components {
       /** Detail */
       detail: string
     }
-    /** UniqueAggregation */
+    /**
+     * UniqueAggregation
+     * @deprecated
+     */
     UniqueAggregation: {
       /**
        * @description discriminator enum property added by openapi-typescript

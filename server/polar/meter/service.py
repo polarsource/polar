@@ -38,7 +38,7 @@ from polar.kit.metadata import MetadataQuery, apply_metadata_clause, get_metadat
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
-from polar.meter.aggregation import AggregationFunction
+from polar.meter.aggregation import Aggregation, AggregationFunction
 from polar.models import (
     Benefit,
     BillingEntry,
@@ -72,6 +72,29 @@ METER_LOCKED_FIELDS = ("filter", "aggregation")
 METER_LOCKED_FIELD_MESSAGE = (
     "This field can't be updated because the meter is already aggregating events."
 )
+METER_DEPRECATED_AGGREGATION_MESSAGE = (
+    "The unique aggregation is deprecated and can't be used on new meters."
+)
+
+
+def introduces_deprecated_aggregation(
+    aggregation: Aggregation | None, existing: Meter | None = None
+) -> bool:
+    return (
+        aggregation is not None
+        and aggregation.func == AggregationFunction.unique
+        and (
+            existing is None or existing.aggregation.func != AggregationFunction.unique
+        )
+    )
+
+
+_DEPRECATED_AGGREGATION_ERROR: ValidationError = {
+    "type": "value_error",
+    "loc": ("body", "aggregation", "func"),
+    "msg": METER_DEPRECATED_AGGREGATION_MESSAGE,
+    "input": AggregationFunction.unique,
+}
 
 
 class AmbiguousExternalMeterID(PolarError):
@@ -193,6 +216,9 @@ class MeterService:
             OrganizationPermission.products_manage,
         )
 
+        if introduces_deprecated_aggregation(meter_create.aggregation):
+            raise PolarRequestValidationError([_DEPRECATED_AGGREGATION_ERROR])
+
         repository = MeterRepository.from_session(session)
         if (
             meter_create.external_id is not None
@@ -291,6 +317,9 @@ class MeterService:
                     "input": meter_update.external_id,
                 }
             )
+
+        if introduces_deprecated_aggregation(meter_update.aggregation, meter):
+            errors.append(_DEPRECATED_AGGREGATION_ERROR)
 
         if errors:
             raise PolarRequestValidationError(errors)

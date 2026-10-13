@@ -5,10 +5,12 @@ import {
   CheckIcon,
   ClockIcon,
   type LucideIcon,
+  UsersIcon,
 } from 'lucide-react'
 
 export type PayoutAccountState =
   | 'not_connected'
+  | 'managed_by_another_member'
   | schemas['PayoutAccountStatus']
 
 type Tone = 'success' | 'warning' | 'danger' | 'pending' | 'neutral'
@@ -31,6 +33,13 @@ const PRESENTATIONS: Record<
     title: 'Connect payout account',
     description:
       'Connect or create a Stripe account to receive payments from your customers.',
+  },
+  managed_by_another_member: {
+    tone: 'neutral',
+    icon: UsersIcon,
+    title: 'Payout account managed by another member',
+    description:
+      'Another member of this organization set up its payout account. To receive payouts on your own account, open Manage payout accounts.',
   },
   incomplete: {
     tone: 'warning',
@@ -64,7 +73,10 @@ const PRESENTATIONS: Record<
 
 export const getPayoutAccountPresentation = (
   payoutAccount: schemas['PayoutAccount'] | undefined,
+  managedByAnotherMember = false,
 ): PayoutAccountPresentation => {
-  const state: PayoutAccountState = payoutAccount?.status ?? 'not_connected'
+  const state: PayoutAccountState = managedByAnotherMember
+    ? 'managed_by_another_member'
+    : (payoutAccount?.status ?? 'not_connected')
   return { state, ...PRESENTATIONS[state] }
 }

@@ -34,10 +34,13 @@ export default function PayoutAccountStep({
   organization,
 }: PayoutAccountStepProps) {
   const returnPath = payoutOnboardingReturnPath(organization.slug)
-  const { payoutAccount, openCreate, modals } = usePayoutAccountSetup(
-    organization,
-    returnPath,
-  )
+  const {
+    payoutAccount,
+    managedByAnotherMember,
+    openCreate,
+    openManage,
+    modals,
+  } = usePayoutAccountSetup(organization, returnPath)
 
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(false)
 
@@ -86,7 +89,7 @@ export default function PayoutAccountStep({
   }
 
   const { state, tone, icon, title, description } =
-    getPayoutAccountPresentation(payoutAccount)
+    getPayoutAccountPresentation(payoutAccount, managedByAnotherMember)
 
   const startSetupAction = (
     <Button onClick={handleStartAccountSetup}>
@@ -96,6 +99,14 @@ export default function PayoutAccountStep({
   )
 
   const action = () => {
+    if (managedByAnotherMember) {
+      return (
+        <Button onClick={openManage}>
+          Manage payout accounts
+          <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      )
+    }
     if (!payoutAccount) {
       return startSetupAction
     }

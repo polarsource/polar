@@ -31,6 +31,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
 
   const {
     payoutAccount,
+    managedByAnotherMember,
     openCreate,
     openManage,
     modals: payoutAccountModals,
@@ -118,7 +119,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
           <Text variant="heading-xxs" as="h2">
             Payout Account
           </Text>
-          {payoutAccount ? (
+          {payoutAccount || managedByAnotherMember ? (
             <Button
               className="self-start"
               variant="secondary"
@@ -136,7 +137,11 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
           <Text
             variant="heading-s"
             color={payoutAccount ? 'default' : 'disabled'}
-            loading={!payoutAccount && organization.payout_account_id != null}
+            loading={
+              !payoutAccount &&
+              !managedByAnotherMember &&
+              organization.payout_account_id != null
+            }
           >
             {payoutAccount
               ? payoutAccount.type[0].toUpperCase() +
@@ -172,7 +177,11 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
               </Box>
             </Box>
           ) : (
-            <Text color="muted">No payout account configured.</Text>
+            <Text color="muted">
+              {managedByAnotherMember
+                ? 'Managed by another member.'
+                : 'No payout account configured.'}
+            </Text>
           )}
         </WellFooter>
       </Well>

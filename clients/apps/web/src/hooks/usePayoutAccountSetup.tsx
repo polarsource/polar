@@ -3,11 +3,12 @@ import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import ManagePayoutAccountModal from '@/components/Payouts/ManagePayoutAccountModal'
 import { usePayoutAccount } from '@/hooks/queries/payout_accounts'
-import { schemas } from '@polar-sh/client'
+import { NotFoundResponseError, schemas } from '@polar-sh/client'
 import { ReactNode, useCallback } from 'react'
 
 interface UsePayoutAccountSetupResult {
   payoutAccount: schemas['PayoutAccount'] | undefined
+  managedByAnotherMember: boolean
   openCreate: () => void
   openManage: () => void
   modals: ReactNode
@@ -17,9 +18,10 @@ export const usePayoutAccountSetup = (
   organization: schemas['Organization'],
   returnPath: string,
 ): UsePayoutAccountSetupResult => {
-  const { data: payoutAccount } = usePayoutAccount(
+  const { data: payoutAccount, error } = usePayoutAccount(
     organization.payout_account_id ?? undefined,
   )
+  const managedByAnotherMember = error instanceof NotFoundResponseError
   const {
     isShown: isCreateShown,
     show: openCreate,
@@ -68,6 +70,7 @@ export const usePayoutAccountSetup = (
 
   return {
     payoutAccount,
+    managedByAnotherMember,
     openCreate,
     openManage,
     modals,

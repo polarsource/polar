@@ -1,7 +1,13 @@
 import { MeteredPrice } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { describe, expect, it } from 'vitest'
-import { getCreditPreview, MeterCreditOption } from './creditPreview'
+import {
+  formatCredits,
+  getCreditPreview,
+  MeterCreditOption,
+  parseCreditUnits,
+  validateCreditUnits,
+} from './creditPreview'
 
 const meter = (overrides: Partial<schemas['Meter']> = {}) =>
   ({
@@ -60,5 +66,41 @@ describe('getCreditPreview', () => {
     expect(
       getCreditPreview(option({ balance: -500, unitPrice: null }), 100).overage,
     ).toBeNull()
+  })
+})
+
+describe('parseCreditUnits', () => {
+  it('accepts whole numbers with separators', () => {
+    expect(parseCreditUnits('1000')).toBe(1000)
+    expect(parseCreditUnits('1,000,000')).toBe(1_000_000)
+    expect(parseCreditUnits(' 2 500 ')).toBe(2500)
+  })
+
+  it('rejects anything that is not a whole number in range', () => {
+    expect(parseCreditUnits('')).toBeNull()
+    expect(parseCreditUnits('1.5')).toBeNull()
+    expect(parseCreditUnits('1e3')).toBeNull()
+    expect(parseCreditUnits('-5')).toBeNull()
+    expect(parseCreditUnits('0')).toBeNull()
+    expect(parseCreditUnits('1000000001')).toBeNull()
+  })
+})
+
+describe('validateCreditUnits', () => {
+  it('explains why an amount is rejected', () => {
+    expect(validateCreditUnits('')).toBe('Enter an amount')
+    expect(validateCreditUnits('1.5')).toBe('Enter a whole number')
+    expect(validateCreditUnits('0')).toBe('Enter at least 1 credit')
+    expect(validateCreditUnits('2,000,000,000')).toBe(
+      'Enter at most 1,000,000,000 credits',
+    )
+    expect(validateCreditUnits('1,000')).toBe(true)
+  })
+})
+
+describe('formatCredits', () => {
+  it('pluralizes', () => {
+    expect(formatCredits(1)).toBe('1 credit')
+    expect(formatCredits(1000)).toBe('1,000 credits')
   })
 })

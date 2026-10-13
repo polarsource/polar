@@ -1,6 +1,7 @@
 'use client'
 
 import { useModal } from '@/components/Modal/useModal'
+import { useHasPermission } from '@/hooks/permissions'
 import { schemas } from '@polar-sh/client'
 import { Button, InlineModal } from '@polar-sh/orbit'
 import { AddCreditsModal } from './AddCreditsModal'
@@ -15,8 +16,16 @@ export const AddCreditsButton = ({
   meterId: string
 }) => {
   const { show, hide, isShown } = useModal()
+  const canManageCustomers = useHasPermission(
+    organization.id,
+    'customers:manage',
+  )
 
-  if (!organization.feature_settings?.config_as_code_enabled) return null
+  if (
+    !canManageCustomers ||
+    !organization.feature_settings?.config_as_code_enabled
+  )
+    return null
 
   return (
     <>

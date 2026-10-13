@@ -4,8 +4,6 @@ import { ToolError } from './results'
 
 export const DOCS_URL = 'https://polar.sh/docs'
 const SEARCH_URL = 'https://api.mintlify.com/discovery/v1/search/polar'
-const DOCS_MCP_URL = `${DOCS_URL}/mcp`
-const DOCS_MCP_SEARCH_TOOL = 'search_polar'
 const SEARCH_PAGE_SIZE = 8
 
 const SearchResults = Schema.Array(
@@ -16,24 +14,8 @@ const SearchResults = Schema.Array(
   }),
 )
 
-const DocsMcpSearchResponse = Schema.fromJsonString(
-  Schema.Struct({
-    result: Schema.Struct({
-      content: Schema.Array(Schema.Struct({ text: Schema.String })),
-    }),
-  }),
-)
-
 const pagePath = (path: string) =>
   new URL(path, `${DOCS_URL}/`).pathname.replace(/^\/(docs\/)?|\.mdx?$/g, '')
-
-const eventStreamData = (text: string) =>
-  text.startsWith('event:') || text.startsWith('data:')
-    ? (text
-        .split('\n')
-        .find((line) => line.startsWith('data:'))
-        ?.slice(5) ?? '')
-    : text
 
 export class Docs extends Context.Service<
   Docs,
@@ -72,32 +54,14 @@ export class Docs extends Context.Service<
           })
         }, toToolError)
 
-        const searchDocsMcp = Effect.fn('Docs.searchDocsMcp')(function* (
-          query: string,
-        ) {
-          const request = yield* HttpClientRequest.post(DOCS_MCP_URL).pipe(
-            HttpClientRequest.setHeader(
-              'Accept',
-              'application/json, text/event-stream',
-            ),
-            HttpClientRequest.bodyJson({
-              jsonrpc: '2.0',
-              id: 1,
-              method: 'tools/call',
-              params: { name: DOCS_MCP_SEARCH_TOOL, arguments: { query } },
-            }),
-          )
-          const response = yield* client.execute(request)
-          const { result } = yield* Schema.decodeUnknownEffect(
-            DocsMcpSearchResponse,
-          )(eventStreamData(yield* response.text))
-          return result.content.map(({ text }) => text)
-        }, toToolError)
-
         const search = Effect.fn('Docs.search')(function* (query: string) {
-          const results = searchKey
-            ? yield* searchApi(query, searchKey)
-            : yield* searchDocsMcp(query)
+          if (!searchKey) {
+            return yield* new ToolError({
+              message:
+                'Docs search is not configured: set the MINTLIFY_SEARCH_KEY secret',
+            })
+          }
+          const results = yield* searchApi(query, searchKey)
           return results.length === 0
             ? 'No results'
             : results.join('\n\n---\n\n')

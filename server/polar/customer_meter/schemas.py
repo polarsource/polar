@@ -45,12 +45,7 @@ class CustomerMeter(CustomerMeterBase):
     meter: Meter = Field(description="The meter associated with this customer.")
 
 
-class CustomerMeterCreditsCreate(Schema):
-    """Schema to manually grant credits on a customer meter."""
-
-    customer_id: UUID4 = Field(
-        description="The ID of the customer.", examples=[CUSTOMER_ID_EXAMPLE]
-    )
+class CustomerMeterCreditsCreateBase(Schema):
     meter_id: UUID4 = Field(
         description="The ID of the meter.", examples=[METER_ID_EXAMPLE]
     )
@@ -72,3 +67,27 @@ class CustomerMeterCreditsCreate(Schema):
             "Retrying with the same `external_id` doesn't grant the credit twice."
         ),
     )
+
+
+class CustomerMeterCreditsCustomerIDCreate(CustomerMeterCreditsCreateBase):
+    """Schema to manually grant credits on a customer meter using a customer ID."""
+
+    customer_id: UUID4 = Field(
+        description="The ID of the customer.", examples=[CUSTOMER_ID_EXAMPLE]
+    )
+
+
+class CustomerMeterCreditsCustomerExternalIDCreate(CustomerMeterCreditsCreateBase):
+    """
+    Schema to manually grant credits on a customer meter
+    using an external customer ID.
+    """
+
+    external_customer_id: str = Field(
+        description="The external ID of the customer.", examples=["usr_1337"]
+    )
+
+
+CustomerMeterCreditsCreate = (
+    CustomerMeterCreditsCustomerIDCreate | CustomerMeterCreditsCustomerExternalIDCreate
+)

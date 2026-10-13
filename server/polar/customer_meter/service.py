@@ -6,7 +6,7 @@ from typing import Any
 
 import logfire
 from sqlalchemy import Float, Select, func, or_, select, union_all
-from sqlalchemy.exc import DBAPIError, IntegrityError
+from sqlalchemy.exc import DBAPIError, IntegrityError, MultipleResultsFound
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import contains_eager
 
@@ -15,6 +15,7 @@ from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission, get_accessible_org_ids
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
+from polar.customer_session.service import AmbiguousExternalCustomerID
 from polar.declarative_config.exceptions import ConfigAsCodeNotEnabled
 from polar.event.repository import EventRepository
 from polar.event.service import event as event_service
@@ -42,7 +43,7 @@ from polar.postgres import AsyncSession
 from polar.worker import enqueue_job
 
 from .repository import CustomerMeterRepository
-from .schemas import CustomerMeterCreditsCreate
+from .schemas import CustomerMeterCreditsCreate, CustomerMeterCreditsCustomerIDCreate
 from .sorting import CustomerMeterSortProperty
 
 
@@ -238,19 +239,32 @@ class CustomerMeterService:
         org_ids = await get_accessible_org_ids(session, auth_subject)
 
         customer_repository = CustomerRepository.from_session(session)
-        customer = await customer_repository.get_readable_by_id(
-            org_ids,
-            credit_create.customer_id,
-            options=(joinedload(Customer.organization),),
-        )
+        options = (joinedload(Customer.organization),)
+        if isinstance(credit_create, CustomerMeterCreditsCustomerIDCreate):
+            customer_field = "customer_id"
+            customer_value: uuid.UUID | str = credit_create.customer_id
+            customer = await customer_repository.get_readable_by_id(
+                org_ids, credit_create.customer_id, options=options
+            )
+        else:
+            customer_field = "external_customer_id"
+            customer_value = credit_create.external_customer_id
+            try:
+                customer = await customer_repository.get_readable_by_external_id(
+                    org_ids, credit_create.external_customer_id, options=options
+                )
+            except MultipleResultsFound as e:
+                raise AmbiguousExternalCustomerID(
+                    credit_create.external_customer_id
+                ) from e
         if customer is None:
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "customer_id"),
+                        "loc": ("body", customer_field),
                         "msg": "Customer not found",
-                        "input": credit_create.customer_id,
+                        "input": customer_value,
                     }
                 ]
             )

@@ -57,6 +57,15 @@ export POLAR_ACCESS_TOKEN=polar_oat_...
 bun src/cli.ts <command>
 ```
 
+To create a token for an app against the local stack, sign in with
+`auth login --local` (`dev seed` registers its OAuth client). `auth token` then
+opens the local dashboard at `127.0.0.1:3000`:
+
+```bash
+bun src/cli.ts auth login --local
+bun src/cli.ts auth token --env-file /tmp/polar-test.env
+```
+
 ### Generated API commands
 
 The CLI imports its API command tree from the private `@polar-sh/cli-commands`

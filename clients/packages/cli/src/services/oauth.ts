@@ -1,16 +1,20 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { createServer } from 'node:http'
 import { Context, DateTime, Effect, Layer, Redacted, Schema } from 'effect'
 import { HttpClient, HttpClientRequest, HttpClientResponse } from 'effect/http'
-import open from 'open'
-import { apiOverride, apiUrl, dashboardOverride } from '@/services/api'
+import { apiUrl, dashboardOrigin } from '@/services/api'
 import {
   AuthError,
   loginCommand,
   type PolarEnvironment,
   type Session,
 } from '@/schemas/Auth'
-import { callbackPage, type CallbackOutcome } from '@/utils/callback-page'
+import { loginCopy } from '@/utils/callback-page'
+import {
+  awaitCallback,
+  type CallbackResult,
+  LOOPBACK_ORIGIN,
+  validateResult,
+} from '@/utils/loopback'
 
 const CLIENT_IDS = {
   production: 'polar_ci_gBnJ_Yv_uSGm5mtoPa2cCA',
@@ -18,23 +22,13 @@ const CLIENT_IDS = {
   local: 'polar_ci_local_cli',
 } as const
 
-const DASHBOARD_ORIGINS = {
-  production: 'https://polar.sh',
-  sandbox: 'https://sandbox.polar.sh',
-  local: 'http://127.0.0.1:3000',
-} as const
-
 export const authorizationUrl = (environment: PolarEnvironment) =>
-  Effect.gen(function* () {
-    const dashboard = yield* dashboardOverride
-    if (dashboard) return new URL('/oauth2/authorize', dashboard)
-    if (yield* apiOverride)
-      return yield* new AuthError({
-        message:
-          'POLAR_API_URL is set, so login needs POLAR_DASHBOARD_URL too. Point it at the matching dashboard, e.g. http://127.0.0.1:3000.',
-      })
-    return new URL('/oauth2/authorize', DASHBOARD_ORIGINS[environment])
-  })
+  Effect.map(
+    dashboardOrigin(environment),
+    (origin) => new URL('/oauth2/authorize', origin),
+  )
+
+const CALLBACK_PATH = '/oauth/callback'
 
 const config = {
   scopes: [
@@ -101,7 +95,7 @@ const config = {
     'webhooks:read',
     'webhooks:write',
   ],
-  redirectUrl: 'http://127.0.0.1:3333/oauth/callback',
+  redirectUrl: `${LOOPBACK_ORIGIN}${CALLBACK_PATH}`,
 }
 
 export type AnnounceAuthorization = (authorization: URL) => Effect.Effect<void>
@@ -173,11 +167,10 @@ export const exchange = (
     }
   }).pipe(Effect.scoped)
 
-type CallbackResult =
-  | { outcome: 'success'; code: string }
-  | { outcome: Exclude<CallbackOutcome, 'success'>; message: string }
-
-const parseCallback = (url: URL, expectedState: string): CallbackResult => {
+const parseCallback = (
+  url: URL,
+  expectedState: string,
+): CallbackResult<string> => {
   if (url.searchParams.get('state') !== expectedState) {
     return { outcome: 'invalid', message: 'Invalid OAuth callback state.' }
   }
@@ -189,19 +182,15 @@ const parseCallback = (url: URL, expectedState: string): CallbackResult => {
   }
   const code = url.searchParams.get('code')
   return code
-    ? { outcome: 'success', code }
+    ? { outcome: 'success', value: code }
     : {
         outcome: 'invalid',
         message: 'OAuth callback is missing its authorization code.',
       }
 }
 
-export const validateCallback = (url: URL, expectedState: string) => {
-  const result = parseCallback(url, expectedState)
-  return result.outcome === 'success'
-    ? Effect.succeed(result.code)
-    : Effect.fail(new AuthError({ message: result.message }))
-}
+export const validateCallback = (url: URL, expectedState: string) =>
+  validateResult(parseCallback(url, expectedState))
 
 const login = (
   environment: PolarEnvironment,
@@ -222,86 +211,14 @@ const login = (
       sub_type: 'user',
     }).toString()
     yield* announce(authorization)
-    const server = createServer()
-    const code = yield* Effect.callback<string, AuthError>((resume) => {
-      let completed = false
-      const finish = (result: Effect.Effect<string, AuthError>) => {
-        if (!completed) {
-          completed = true
-          resume(result)
-        }
-      }
-      server.on('request', (request, response) => {
-        const url = new URL(request.url ?? '/', config.redirectUrl)
-        if (url.pathname !== '/oauth/callback' || request.method !== 'GET') {
-          response.writeHead(404).end()
-          return
-        }
-        const result = parseCallback(url, state)
-        response
-          .writeHead(result.outcome === 'invalid' ? 400 : 200, {
-            'Content-Type': 'text/html; charset=utf-8',
-          })
-          .end(callbackPage(result.outcome))
-        finish(validateCallback(url, state))
-      })
-      server.on('error', () =>
-        finish(
-          Effect.fail(
-            new AuthError({
-              message:
-                'Cannot start OAuth callback server on 127.0.0.1:3333. Check whether the port is occupied.',
-            }),
-          ),
-        ),
-      )
-      server.listen(3333, '127.0.0.1', () => {
-        void open(authorization.toString())
-          .then((child) => {
-            child.on('error', () =>
-              finish(
-                Effect.fail(
-                  new AuthError({
-                    message: 'Could not open the browser for login.',
-                  }),
-                ),
-              ),
-            )
-            child.on('exit', (code) => {
-              if (code)
-                finish(
-                  Effect.fail(
-                    new AuthError({
-                      message: 'Could not open the browser for login.',
-                    }),
-                  ),
-                )
-            })
-          })
-          .catch(() =>
-            finish(
-              Effect.fail(
-                new AuthError({
-                  message: 'Could not open the browser for login.',
-                }),
-              ),
-            ),
-          )
-      })
-    }).pipe(
-      Effect.ensuring(
-        Effect.sync(() => {
-          server.close()
-          server.closeAllConnections()
-        }),
-      ),
-      Effect.timeout('5 minutes'),
-      Effect.mapError((error) =>
-        error instanceof AuthError
-          ? error
-          : new AuthError({ message: 'OAuth login timed out. Try again.' }),
-      ),
-    )
+    const code = yield* awaitCallback({
+      path: CALLBACK_PATH,
+      target: authorization,
+      parse: (url) => parseCallback(url, state),
+      copy: loginCopy,
+      browserError: 'Could not open the browser for login.',
+      timeoutError: 'OAuth login timed out. Try again.',
+    })
     return yield* exchange(
       environment,
       new URLSearchParams({

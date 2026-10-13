@@ -16,6 +16,7 @@ polar auth <subcommand> [flags]
 - [`polar auth whoami`](#polar-auth-whoami) Show the active organization
 - [`polar auth list`](#polar-auth-list) List the organizations you have access to
 - [`polar auth org`](#polar-auth-org) Choose the active organization
+- [`polar auth token`](#polar-auth-token) Create an organization access token for your app and save it to an env file
 - [`polar auth logout`](#polar-auth-logout) Sign out and remove saved sessions
 
 ## polar auth login
@@ -73,6 +74,35 @@ Choose the active organization
 
 ```bash
 polar auth org [flags]
+```
+
+## polar auth token
+
+Create an organization access token for your app and save it to an env file
+
+```bash
+polar auth token [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--scope` | `string` | Scope to preselect on the token page, e.g. products:read. Repeatable. |
+| `--name` | `string` | Token name. Defaults to the current directory name |
+| `--env-file` | `string` | File to write the token to |
+| `--env-var` | `string` | Variable name to store the token under |
+
+**Examples**
+
+Create a token for the active organization and add it to .env
+```bash
+polar auth token
+```
+
+Preselect scopes and write to .env.local
+```bash
+polar auth token --scope products:read --scope checkouts:write --env-file .env.local
 ```
 
 ## polar auth logout

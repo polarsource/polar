@@ -55,13 +55,25 @@ export const callbackPage = (outcome: CallbackOutcome) => {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="dark">
+<meta name="color-scheme" content="light dark">
 <title>Polar CLI</title>
 <style>
+  :root {
+    --background: #fff; --foreground: #000;
+    --muted: rgba(0, 0, 0, 0.6); --code: rgba(0, 0, 0, 0.85);
+    --code-background: rgba(0, 0, 0, 0.05); --code-border: rgba(0, 0, 0, 0.1);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: #000; --foreground: #fff;
+      --muted: rgba(255, 255, 255, 0.6); --code: rgba(255, 255, 255, 0.85);
+      --code-background: rgba(255, 255, 255, 0.08); --code-border: rgba(255, 255, 255, 0.12);
+    }
+  }
   html, body { height: 100%; margin: 0; }
   body {
     display: flex; align-items: center; justify-content: center;
-    background: #000; color: #fff;
+    background: var(--background); color: var(--foreground);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
@@ -76,12 +88,12 @@ export const callbackPage = (outcome: CallbackOutcome) => {
   }
   @media (prefers-reduced-motion: reduce) { svg { animation: none; } }
   h1 { font-size: 20px; font-weight: 500; margin: 0 0 12px; letter-spacing: -0.01em; }
-  p { font-size: 15px; line-height: 1.6; margin: 0; color: rgba(255, 255, 255, 0.6); }
+  p { font-size: 15px; line-height: 1.6; margin: 0; color: var(--muted); }
   .seconds { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; }
   code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 13px; color: rgba(255, 255, 255, 0.85);
-    background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 13px; color: var(--code);
+    background: var(--code-background); border: 1px solid var(--code-border);
     border-radius: 6px; padding: 1px 6px; white-space: nowrap;
   }
 </style>

@@ -28,6 +28,16 @@ test.each([
   })
 })
 
+test('removes later duplicates so the new value wins', () => {
+  expect(
+    upsertEnv(
+      'POLAR_ACCESS_TOKEN=a\nB=2\nexport POLAR_ACCESS_TOKEN=b\n',
+      'POLAR_ACCESS_TOKEN',
+      'new',
+    ),
+  ).toEqual({ content: 'POLAR_ACCESS_TOKEN=new\nB=2\n', replaced: true })
+})
+
 test('leaves variables that share a prefix alone', () => {
   expect(
     upsertEnv('POLAR_ACCESS_TOKEN_OLD=x\n', 'POLAR_ACCESS_TOKEN', 'new'),

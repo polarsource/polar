@@ -122,6 +122,7 @@ const receive = (request: TokenRequest, announce: AnnounceTokenPage) =>
     yield* announce(page)
     return yield* awaitCallback({
       path: CALLBACK_PATH,
+      state,
       target: page,
       parse: (url) => parseHandoff(url, state, privateKey),
       copy: tokenCopy,

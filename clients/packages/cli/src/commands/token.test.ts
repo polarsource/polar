@@ -1,4 +1,12 @@
-import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import {
+  access,
+  chmod,
+  mkdtemp,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import { Effect, Redacted } from 'effect'
@@ -148,4 +156,22 @@ test('includes the variables in JSON output with --stdout', async () => {
       { name: 'POLAR_ENVIRONMENT', value: 'sandbox' },
     ],
   })
+})
+
+test('creates a new env file readable only by the owner', async () => {
+  const file = join(dir, '.env')
+  const { promise } = run(['--env-file', file])
+  await promise
+
+  expect((await stat(file)).mode & 0o777).toBe(0o600)
+})
+
+test('keeps the permissions of an existing env file', async () => {
+  const file = join(dir, '.env')
+  await writeFile(file, 'A=1\n')
+  await chmod(file, 0o644)
+  const { promise } = run(['--env-file', file])
+  await promise
+
+  expect((await stat(file)).mode & 0o777).toBe(0o644)
 })

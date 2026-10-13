@@ -103,7 +103,7 @@ const writeEnv = (
       content = result.content
       written.push({ name, replaced: result.replaced })
     }
-    yield* fs.writeFileString(file, content)
+    yield* fs.writeFileString(file, content, { mode: 0o600 })
     const stale = ENVIRONMENT_VARS.filter(
       (name) =>
         hasEnv(content, name) && !settings.some(([key]) => key === name),

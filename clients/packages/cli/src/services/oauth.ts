@@ -213,6 +213,7 @@ const login = (
     yield* announce(authorization)
     const code = yield* awaitCallback({
       path: CALLBACK_PATH,
+      state,
       target: authorization,
       parse: (url) => parseCallback(url, state),
       copy: loginCopy,

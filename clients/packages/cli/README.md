@@ -59,9 +59,12 @@ bun src/cli.ts <command>
 
 To create a token for an app against the local stack, sign in with
 `auth login --local` (`dev seed` registers its OAuth client). `auth token` then
-opens the local dashboard at `127.0.0.1:3000`:
+opens the local dashboard at `127.0.0.1:3000`. Unset the variables from the token
+setup above first: `auth login` refuses to run with `POLAR_ACCESS_TOKEN` set, and
+`--local` already points at the local API:
 
 ```bash
+unset POLAR_API_URL POLAR_ACCESS_TOKEN
 bun src/cli.ts auth login --local
 bun src/cli.ts auth token --env-file /tmp/polar-test.env
 ```

@@ -3,12 +3,18 @@ const assignment = (key: string) =>
 
 export const upsertEnv = (content: string, key: string, value: string) => {
   const line = `${key}=${value}`
-  const lines = content.split('\n')
   const pattern = assignment(key)
+  const lines = content.split('\n')
   const index = lines.findIndex((existing) => pattern.test(existing))
   if (index !== -1) {
-    lines[index] = line
-    return { content: lines.join('\n'), replaced: true }
+    const updated = lines.flatMap((existing, position) =>
+      position === index
+        ? [line]
+        : position > index && pattern.test(existing)
+          ? []
+          : [existing],
+    )
+    return { content: updated.join('\n'), replaced: true }
   }
   const separator = content === '' || content.endsWith('\n') ? '' : '\n'
   return { content: `${content}${separator}${line}\n`, replaced: false }

@@ -21,6 +21,7 @@ export const validateResult = <A>(result: CallbackResult<A>) =>
 
 interface CallbackOptions<A> {
   path: string
+  state: string
   target: URL
   parse: (url: URL) => CallbackResult<A>
   copy: CallbackCopy
@@ -30,6 +31,7 @@ interface CallbackOptions<A> {
 
 export const awaitCallback = <A>({
   path,
+  state,
   target,
   parse,
   copy,
@@ -51,6 +53,12 @@ export const awaitCallback = <A>({
       const url = new URL(request.url ?? '/', LOOPBACK_ORIGIN)
       if (url.pathname !== path || request.method !== 'GET') {
         response.writeHead(404).end()
+        return
+      }
+      if (url.searchParams.get('state') !== state) {
+        response
+          .writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' })
+          .end(callbackPage('invalid', copy))
         return
       }
       const result = parse(url)

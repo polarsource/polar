@@ -13,7 +13,7 @@ from polar.kit.versioning import (
     Version,
     add_versioned_routers,
     api_version_context,
-    deprecated_from,
+    deprecated_in,
     prune_version_omitted_schemas,
     routes_for_version,
     version,
@@ -50,9 +50,20 @@ class VersionedOrder(BaseModel):
     discount: Annotated[NextOnlyDiscount | None, Version(starting_from=NEXT_VERSION)]
 
 
-@deprecated_from(NEXT_VERSION)
-class DeprecatedInNextVersion(BaseModel):
+@deprecated_in(up_to=CURRENT_VERSION)
+class DeprecatedInCurrentVersion(BaseModel):
     name: str
+
+
+class CurrentOnlyShipping(BaseModel):
+    carrier: str
+
+
+class VersionedCart(BaseModel):
+    item: (
+        VersionedProduct
+        | Annotated[CurrentOnlyShipping, Version(up_to=CURRENT_VERSION)]
+    )
 
 
 def test_api_version_is_ordered_hashable_and_immutable() -> None:
@@ -132,11 +143,11 @@ def test_versioned_fields_are_included_in_versioned_openapi_schema() -> None:
 
 
 @pytest.mark.parametrize(
-    ("api_version", "deprecated"), [(CURRENT_VERSION, False), (NEXT_VERSION, True)]
+    ("api_version", "deprecated"), [(CURRENT_VERSION, True), (NEXT_VERSION, False)]
 )
-def test_deprecated_from(api_version: APIVersion, deprecated: bool) -> None:
+def test_deprecated_in(api_version: APIVersion, deprecated: bool) -> None:
     with api_version_context(api_version):
-        schema = DeprecatedInNextVersion.model_json_schema()
+        schema = DeprecatedInCurrentVersion.model_json_schema()
 
     assert schema.get("deprecated", False) is deprecated
 
@@ -156,6 +167,25 @@ def test_prune_version_omitted_schemas(api_version: APIVersion, included: bool) 
     schema = prune_version_omitted_schemas(schema, api_version)
 
     assert ("NextOnlyDiscount" in schema["components"]["schemas"]) is included
+
+
+@pytest.mark.parametrize(
+    ("api_version", "included"), [(CURRENT_VERSION, True), (NEXT_VERSION, False)]
+)
+def test_prune_version_omitted_union_members(
+    api_version: APIVersion, included: bool
+) -> None:
+    app = FastAPI()
+
+    @app.get("/cart")
+    def get_cart() -> VersionedCart:
+        return VersionedCart(item=CurrentOnlyShipping(carrier="ups"))
+
+    with api_version_context(api_version):
+        schema = get_openapi(title="Test", version="1", routes=app.routes)
+    schema = prune_version_omitted_schemas(schema, api_version)
+
+    assert ("CurrentOnlyShipping" in schema["components"]["schemas"]) is included
 
 
 def test_versioned_routes() -> None:

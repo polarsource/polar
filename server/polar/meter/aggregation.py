@@ -14,8 +14,8 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 
 from polar.kit.metadata import get_nested_metadata_attr, get_nested_metadata_value
-from polar.kit.versioning import deprecated_from
-from polar.version import V2027_01
+from polar.kit.versioning import Version, deprecated_in
+from polar.version import V2026_10
 
 if TYPE_CHECKING:
     from polar.models import Event
@@ -122,7 +122,7 @@ class PropertyAggregation(BaseModel):
         return None
 
 
-@deprecated_from(V2027_01)
+@deprecated_in(starting_from=V2026_10, up_to=V2026_10)
 class UniqueAggregation(BaseModel):
     func: Literal[AggregationFunction.unique] = AggregationFunction.unique
     property: Annotated[str, AfterValidator(_strip_metadata_prefix)]
@@ -147,7 +147,12 @@ class UniqueAggregation(BaseModel):
 
 
 _Aggregation = CountAggregation | PropertyAggregation | UniqueAggregation
-Aggregation = Annotated[_Aggregation, Discriminator("func")]
+Aggregation = Annotated[
+    CountAggregation
+    | PropertyAggregation
+    | Annotated[UniqueAggregation, Version(up_to=V2026_10)],
+    Discriminator("func"),
+]
 AggregationTypeAdapter: TypeAdapter[Aggregation] = TypeAdapter(Aggregation)
 
 

@@ -16401,7 +16401,6 @@ export interface components {
       aggregation:
         | components['schemas']['CountAggregation']
         | components['schemas']['PropertyAggregation']
-        | components['schemas']['UniqueAggregation']
     }
     /** ConfigFieldChange */
     ConfigFieldChange: {
@@ -16522,7 +16521,6 @@ export interface components {
       aggregation:
         | components['schemas']['CountAggregation']
         | components['schemas']['PropertyAggregation']
-        | components['schemas']['UniqueAggregation']
       /**
        * External Id
        * @description Your identifier for the meter. Used to match the config entry with an existing meter.
@@ -26909,7 +26907,6 @@ export interface components {
       aggregation:
         | components['schemas']['CountAggregation']
         | components['schemas']['PropertyAggregation']
-        | components['schemas']['UniqueAggregation']
       /**
        * Organization Id
        * Format: uuid4
@@ -26976,7 +26973,6 @@ export interface components {
       aggregation:
         | components['schemas']['CountAggregation']
         | components['schemas']['PropertyAggregation']
-        | components['schemas']['UniqueAggregation']
       /**
        * Organization Id
        * @description The ID of the organization owning the meter. **Required unless you use an organization token.**
@@ -27238,7 +27234,6 @@ export interface components {
         | (
             | components['schemas']['CountAggregation']
             | components['schemas']['PropertyAggregation']
-            | components['schemas']['UniqueAggregation']
           )
         | null
       /**
@@ -39875,19 +39870,6 @@ export interface components {
       error: 'Unauthorized'
       /** Detail */
       detail: string
-    }
-    /**
-     * UniqueAggregation
-     * @deprecated
-     */
-    UniqueAggregation: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      func: 'unique'
-      /** Property */
-      property: string
     }
     /** UnsupportedMigrationSource */
     UnsupportedMigrationSource: {
@@ -74879,9 +74861,6 @@ export const transactionTypeValues: ReadonlyArray<
 export const trialIntervalValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TrialInterval']
 > = ['day', 'week', 'month', 'year']
-export const uniqueAggregationFuncValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['UniqueAggregation']['func']
-> = ['unique']
 export const userDeletionBlockedReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['UserDeletionBlockedReason']
 > = ['has_active_organizations']

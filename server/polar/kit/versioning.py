@@ -190,8 +190,12 @@ def Version(
     return field_info
 
 
-def deprecated_from[M: type[BaseModel]](version: APIVersion) -> Callable[[M], M]:
-    version_range = _VersionRange(starting_from=version)
+def deprecated_in[M: type[BaseModel]](
+    *,
+    starting_from: APIVersion | None = None,
+    up_to: APIVersion | None = None,
+) -> Callable[[M], M]:
+    version_range = _VersionRange(starting_from=starting_from, up_to=up_to)
 
     def json_schema_extra(schema: dict[str, typing.Any]) -> None:
         active_version = _ACTIVE_API_VERSION.get()
@@ -213,16 +217,45 @@ def _iter_model_classes(
         yield from _iter_model_classes(subclass)
 
 
+def _is_omitted(metadata: Iterable[typing.Any], version: APIVersion) -> bool:
+    return any(
+        isinstance(item, _VersionRange) and not item.includes(version)
+        for item in metadata
+    )
+
+
+def _iter_omitted_union_members(
+    annotation: typing.Any, version: APIVersion
+) -> Generator[typing.Any]:
+    for arg in typing.get_args(annotation):
+        if typing.get_origin(arg) is typing.Annotated:
+            member, *metadata = typing.get_args(arg)
+            if _is_omitted(
+                (
+                    item
+                    for entry in metadata
+                    for item in (
+                        entry.metadata if isinstance(entry, FieldInfo) else [entry]
+                    )
+                ),
+                version,
+            ):
+                yield member
+                continue
+        yield from _iter_omitted_union_members(arg, version)
+
+
 def _get_omitted_schema_names(version: APIVersion) -> set[str]:
     names: set[str] = set()
     for model in _iter_model_classes():
         for field in model.__pydantic_fields__.values():
-            if any(
-                isinstance(metadata, _VersionRange) and not metadata.includes(version)
-                for metadata in field.metadata
-            ):
+            if _is_omitted(field.metadata, version):
+                omitted = [field.annotation]
+            else:
+                omitted = list(_iter_omitted_union_members(field.annotation, version))
+            for annotation in omitted:
                 schema = TypeAdapter(
-                    types.GenericAlias(list, (field.annotation,))
+                    types.GenericAlias(list, (annotation,))
                 ).json_schema()
                 names.update(schema.get("$defs", {}))
     return names

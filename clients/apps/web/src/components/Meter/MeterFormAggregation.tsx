@@ -22,7 +22,6 @@ import { useFormContext } from 'react-hook-form'
 type AggregationFunction =
   | (typeof enums.countAggregationFuncValues)[number]
   | (typeof enums.propertyAggregationFuncValues)[number]
-  | (typeof enums.uniqueAggregationFuncValues)[number]
 
 const AGGREGATION_LABELS: Record<AggregationFunction, string> = {
   count: 'Count',
@@ -30,7 +29,6 @@ const AGGREGATION_LABELS: Record<AggregationFunction, string> = {
   avg: 'Average',
   min: 'Minimum',
   max: 'Maximum',
-  unique: 'Unique (deprecated)',
 }
 
 const ALL_AGGREGATION_FUNCTIONS: AggregationFunction[] = [
@@ -42,13 +40,9 @@ const ALL_AGGREGATION_FUNCTIONS: AggregationFunction[] = [
 ]
 
 const MeterFormAggregation = () => {
-  const { control, watch, formState } = useFormContext<schemas['MeterCreate']>()
+  const { control, watch } = useFormContext<schemas['MeterCreate']>()
   const func = watch('aggregation.func')
   const needsProperty = func && func !== 'count'
-  const aggregationFunctions: AggregationFunction[] =
-    formState.defaultValues?.aggregation?.func === 'unique'
-      ? [...ALL_AGGREGATION_FUNCTIONS, 'unique']
-      : ALL_AGGREGATION_FUNCTIONS
 
   return (
     <div className="flex flex-col gap-3">
@@ -68,7 +62,7 @@ const MeterFormAggregation = () => {
                   <SelectValue placeholder="Select a function" />
                 </SelectTrigger>
                 <SelectContent>
-                  {aggregationFunctions.map((fn) => (
+                  {ALL_AGGREGATION_FUNCTIONS.map((fn) => (
                     <SelectItem key={fn} value={fn}>
                       {AGGREGATION_LABELS[fn]}
                     </SelectItem>

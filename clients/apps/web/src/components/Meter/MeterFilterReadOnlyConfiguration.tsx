@@ -128,10 +128,7 @@ const FilterGroupDisplay = ({
 
 interface MeterFilterReadOnlyConfigurationProps {
   filter?: schemas['Filter']
-  aggregation:
-    | schemas['CountAggregation']
-    | schemas['PropertyAggregation']
-    | schemas['UniqueAggregation']
+  aggregation: schemas['CountAggregation'] | schemas['PropertyAggregation']
 }
 
 const MeterFilterReadOnlyConfiguration = ({

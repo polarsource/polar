@@ -62933,9 +62933,6 @@
               },
               {
                 "$ref": "#/components/schemas/PropertyAggregation"
-              },
-              {
-                "$ref": "#/components/schemas/UniqueAggregation"
               }
             ],
             "title": "Aggregation",
@@ -62947,8 +62944,7 @@
                 "count": "#/components/schemas/CountAggregation",
                 "max": "#/components/schemas/PropertyAggregation",
                 "min": "#/components/schemas/PropertyAggregation",
-                "sum": "#/components/schemas/PropertyAggregation",
-                "unique": "#/components/schemas/UniqueAggregation"
+                "sum": "#/components/schemas/PropertyAggregation"
               }
             }
           },
@@ -63082,9 +63078,6 @@
               },
               {
                 "$ref": "#/components/schemas/PropertyAggregation"
-              },
-              {
-                "$ref": "#/components/schemas/UniqueAggregation"
               }
             ],
             "title": "Aggregation",
@@ -63096,8 +63089,7 @@
                 "count": "#/components/schemas/CountAggregation",
                 "max": "#/components/schemas/PropertyAggregation",
                 "min": "#/components/schemas/PropertyAggregation",
-                "sum": "#/components/schemas/PropertyAggregation",
-                "unique": "#/components/schemas/UniqueAggregation"
+                "sum": "#/components/schemas/PropertyAggregation"
               }
             }
           },
@@ -63635,9 +63627,6 @@
                   },
                   {
                     "$ref": "#/components/schemas/PropertyAggregation"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UniqueAggregation"
                   }
                 ],
                 "discriminator": {
@@ -63647,8 +63636,7 @@
                     "count": "#/components/schemas/CountAggregation",
                     "max": "#/components/schemas/PropertyAggregation",
                     "min": "#/components/schemas/PropertyAggregation",
-                    "sum": "#/components/schemas/PropertyAggregation",
-                    "unique": "#/components/schemas/UniqueAggregation"
+                    "sum": "#/components/schemas/PropertyAggregation"
                   }
                 }
               },
@@ -81632,26 +81620,6 @@
           "detail"
         ],
         "title": "Unauthorized"
-      },
-      "UniqueAggregation": {
-        "properties": {
-          "func": {
-            "type": "string",
-            "const": "unique",
-            "title": "Func",
-            "default": "unique"
-          },
-          "property": {
-            "type": "string",
-            "title": "Property"
-          }
-        },
-        "type": "object",
-        "required": [
-          "property"
-        ],
-        "title": "UniqueAggregation",
-        "deprecated": true
       },
       "UpdateSubscriptionPlanNotAllowed": {
         "properties": {

@@ -13,6 +13,7 @@ import { permissionDeniedMessage } from '@/utils/permissions'
 import { schemas, unwrap } from '@polar-sh/client'
 import {
   Button,
+  Text,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -166,6 +167,9 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
   return (
     <div className="flex flex-col gap-y-6 p-6 sm:p-8">
       <h3 className="text-xl font-medium">Manage Payout Accounts</h3>
+      <Text color="muted">
+        Make Active sets the payout account for {_organization.name}.
+      </Text>
       {isLoading ? (
         <div className="flex flex-col gap-y-3">
           {[...Array(2)].map((_, i) => (

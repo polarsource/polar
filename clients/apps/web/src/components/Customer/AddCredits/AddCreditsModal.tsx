@@ -1,8 +1,11 @@
 'use client'
 
+import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { toast } from '@/components/Toast/use-toast'
+import { useHasPermission } from '@/hooks/permissions'
 import { useCreditCustomerMeter } from '@/hooks/queries/customerMeters'
 import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
+import { permissionDeniedMessage } from '@/utils/permissions'
 import { isValidationError, schemas } from '@polar-sh/client'
 import {
   Button,
@@ -27,18 +30,14 @@ import {
 import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { AddCreditsSummary } from './AddCreditsSummary'
-import { getMeterUnitLabel, parseCreditUnits } from './creditPreview'
 import { useMeterCreditOptions } from './useMeterCreditOptions'
+
+const MAX_UNITS = 1_000_000_000
 
 interface AddCreditsForm {
   meter_id: string
-  units: string
+  units?: number
 }
-
-const BODY_SCHEMAS = [
-  'CustomerMeterCreditsCustomerIDCreate',
-  'CustomerMeterCreditsCustomerExternalIDCreate',
-]
 
 export const AddCreditsModal = ({
   organization,
@@ -51,6 +50,10 @@ export const AddCreditsModal = ({
   meterId?: string
   onClose: () => void
 }) => {
+  const canManageCustomers = useHasPermission(
+    organization.id,
+    'customers:manage',
+  )
   const [externalId] = useState(() => crypto.randomUUID())
   const { options, isLoading } = useMeterCreditOptions(
     organization.id,
@@ -58,29 +61,32 @@ export const AddCreditsModal = ({
   )
   const creditCustomerMeter = useCreditCustomerMeter()
   const form = useForm<AddCreditsForm>({
-    defaultValues: { meter_id: meterId ?? '', units: '' },
+    defaultValues: { meter_id: meterId ?? '' },
   })
 
   const values = useWatch({ control: form.control })
   const option = options.find((o) => o.meter.id === values.meter_id)
-  const units = parseCreditUnits(values.units ?? '')
-  const customerName = customer.name || customer.email || 'this customer'
+  const units =
+    values.units !== undefined &&
+    Number.isInteger(values.units) &&
+    values.units > 0
+      ? values.units
+      : null
 
-  const onSubmit = async (values: AddCreditsForm) => {
-    const parsedUnits = parseCreditUnits(values.units)
-    if (!option || !parsedUnits) return
+  const onSubmit = async ({ units: submittedUnits }: AddCreditsForm) => {
+    if (!option || !submittedUnits) return
 
     const { error } = await creditCustomerMeter.mutateAsync({
       customer_id: customer.id,
       meter_id: option.meter.id,
-      units: parsedUnits,
+      units: submittedUnits,
       rollover: true,
       external_id: externalId,
     })
 
     if (error) {
       if (isValidationError(error.detail)) {
-        setValidationErrors(error.detail, form.setError, 1, BODY_SCHEMAS)
+        setValidationErrors(error.detail, form.setError)
       } else {
         toast({
           title: 'Credits Not Added',
@@ -92,18 +98,35 @@ export const AddCreditsModal = ({
 
     toast({
       title: 'Credits Added',
-      description: `Added ${parsedUnits.toLocaleString('en-US')} credits on ${option.meter.name} for ${customerName}.`,
+      description: `Added ${submittedUnits.toLocaleString('en-US')} credits on ${option.meter.name} for ${customer.name || customer.email || 'this customer'}.`,
     })
     onClose()
   }
 
+  const header = (
+    <InlineModalHeader hide={onClose}>
+      <Text variant="heading-xs" as="h2">
+        Add credits
+      </Text>
+    </InlineModalHeader>
+  )
+
+  if (!canManageCustomers) {
+    return (
+      <Box flexDirection="column" height="100%">
+        {header}
+        <Box flex={1} flexDirection="column" alignItems="center" padding="xl">
+          <AccessRestricted
+            message={permissionDeniedMessage('customers:manage')}
+          />
+        </Box>
+      </Box>
+    )
+  }
+
   return (
     <Box flexDirection="column" height="100%">
-      <InlineModalHeader hide={onClose}>
-        <Text variant="heading-xs" as="h2">
-          Add credits
-        </Text>
-      </InlineModalHeader>
+      {header}
       <Form {...form}>
         <Box
           as="form"
@@ -117,10 +140,6 @@ export const AddCreditsModal = ({
             paddingHorizontal="2xl"
             flex={1}
           >
-            <Text color="muted">
-              Give {customerName} free usage on a meter. Credits are used before
-              anything is billed.
-            </Text>
             <FormField
               control={form.control}
               name="meter_id"
@@ -155,9 +174,14 @@ export const AddCreditsModal = ({
               control={form.control}
               name="units"
               rules={{
+                required: 'Enter an amount',
+                min: { value: 1, message: 'Enter at least 1 credit' },
+                max: {
+                  value: MAX_UNITS,
+                  message: 'Enter at most 1,000,000,000 credits',
+                },
                 validate: (value) =>
-                  parseCreditUnits(value) !== null ||
-                  'Enter a whole number between 1 and 1,000,000,000',
+                  Number.isInteger(value) || 'Enter a whole number',
               }}
               render={({ field }) => (
                 <FormItem>
@@ -165,13 +189,16 @@ export const AddCreditsModal = ({
                   <FormControl>
                     <Input
                       {...field}
-                      inputMode="numeric"
-                      placeholder="1,000"
-                      postSlot={
-                        <span>
-                          {option ? getMeterUnitLabel(option.meter) : 'units'}
-                        </span>
-                      }
+                      type="number"
+                      min={1}
+                      max={MAX_UNITS}
+                      step={1}
+                      placeholder="1000"
+                      value={field.value ?? ''}
+                      onChange={(event) => {
+                        const value = event.currentTarget.valueAsNumber
+                        field.onChange(Number.isNaN(value) ? undefined : value)
+                      }}
                     />
                   </FormControl>
                   <FormMessage />

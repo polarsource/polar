@@ -1,12 +1,7 @@
 import { MeteredPrice } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { describe, expect, it } from 'vitest'
-import {
-  getCreditPreview,
-  getMeterUnitLabel,
-  MeterCreditOption,
-  parseCreditUnits,
-} from './creditPreview'
+import { getCreditPreview, MeterCreditOption } from './creditPreview'
 
 const meter = (overrides: Partial<schemas['Meter']> = {}) =>
   ({
@@ -65,37 +60,5 @@ describe('getCreditPreview', () => {
     expect(
       getCreditPreview(option({ balance: -500, unitPrice: null }), 100).overage,
     ).toBeNull()
-  })
-})
-
-describe('parseCreditUnits', () => {
-  it.each([
-    ['1000', 1000],
-    ['1,000', 1000],
-    [' 25 000 ', 25000],
-  ])('parses %j', (raw, expected) => {
-    expect(parseCreditUnits(raw)).toBe(expected)
-  })
-
-  it.each(['', '0', '-5', '1.5', 'abc', '1000000001'])('rejects %j', (raw) => {
-    expect(parseCreditUnits(raw)).toBeNull()
-  })
-})
-
-describe('getMeterUnitLabel', () => {
-  it('pluralizes the custom label', () => {
-    expect(
-      getMeterUnitLabel(meter({ unit: 'custom', custom_label: 'request' })),
-    ).toBe('requests')
-  })
-
-  it('keeps a custom label that is already plural', () => {
-    expect(
-      getMeterUnitLabel(meter({ unit: 'custom', custom_label: 'credits' })),
-    ).toBe('credits')
-  })
-
-  it('falls back to units for scalar meters', () => {
-    expect(getMeterUnitLabel(meter())).toBe('units')
   })
 })

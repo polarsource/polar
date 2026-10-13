@@ -37,21 +37,3 @@ export const getCreditPreview = (
     },
   }
 }
-
-export const parseCreditUnits = (raw: string): number | null => {
-  const units = Number(raw.replace(/[,\s]/g, ''))
-  if (!Number.isInteger(units) || units <= 0 || units > 1_000_000_000) {
-    return null
-  }
-  return units
-}
-
-export const getMeterUnitLabel = (meter: schemas['Meter']): string => {
-  if (meter.unit === 'custom' && meter.custom_label) {
-    return meter.custom_label.endsWith('s')
-      ? meter.custom_label
-      : `${meter.custom_label}s`
-  }
-  if (meter.unit === 'token') return 'tokens'
-  return 'units'
-}

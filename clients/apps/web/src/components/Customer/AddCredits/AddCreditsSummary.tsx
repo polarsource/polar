@@ -1,10 +1,9 @@
+import FormattedUnits from '@/components/Meter/FormattedUnits'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { formatCurrency } from '@polar-sh/currency'
+import { ReactNode } from 'react'
 import { getCreditPreview, MeterCreditOption } from './creditPreview'
-
-const formatUnits = (value: number) =>
-  new Intl.NumberFormat('en-US', { maximumFractionDigits: 6 }).format(value)
 
 const SummaryRow = ({
   label,
@@ -12,7 +11,7 @@ const SummaryRow = ({
   strong,
 }: {
   label: string
-  value: string
+  value: ReactNode
   strong?: boolean
 }) => (
   <Box justifyContent="between" alignItems="center" columnGap="l">
@@ -28,9 +27,7 @@ export const AddCreditsSummary = ({
   option: MeterCreditOption
   units: number
 }) => {
-  const preview = getCreditPreview(option, units)
-  const formatMoney = (amount: number, currency: string) =>
-    formatCurrency('compact')(amount, currency)
+  const { balanceAfter, overage } = getCreditPreview(option, units)
 
   return (
     <Box
@@ -40,8 +37,18 @@ export const AddCreditsSummary = ({
       borderRadius="l"
       backgroundColor="background-card"
     >
-      <SummaryRow label="Current balance" value={formatUnits(option.balance)} />
-      <SummaryRow label="Credits added" value={`+${formatUnits(units)}`} />
+      <SummaryRow
+        label="Current balance"
+        value={<FormattedUnits value={option.balance} />}
+      />
+      <SummaryRow
+        label="Credits added"
+        value={
+          <>
+            +<FormattedUnits value={units} />
+          </>
+        }
+      />
       <Box
         flexDirection="column"
         rowGap="s"
@@ -53,13 +60,13 @@ export const AddCreditsSummary = ({
         <SummaryRow
           strong
           label="New balance"
-          value={formatUnits(preview.balanceAfter)}
+          value={<FormattedUnits value={balanceAfter} />}
         />
-        {preview.overage && (
+        {overage && (
           <SummaryRow
             strong
             label="Overage this period"
-            value={`${formatMoney(preview.overage.before, preview.overage.currency)} → ${formatMoney(preview.overage.after, preview.overage.currency)}`}
+            value={`${formatCurrency('compact')(overage.before, overage.currency)} → ${formatCurrency('compact')(overage.after, overage.currency)}`}
           />
         )}
       </Box>

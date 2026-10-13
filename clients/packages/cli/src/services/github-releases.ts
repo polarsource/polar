@@ -60,4 +60,10 @@ export const getLatestRelease = Effect.gen(function* () {
     })
   }
   return latest
-})
+}).pipe(
+  Effect.mapError((cause) =>
+    cause._tag === 'GitHubReleaseError'
+      ? cause
+      : new GitHubReleaseError({ message: cause.message }),
+  ),
+)

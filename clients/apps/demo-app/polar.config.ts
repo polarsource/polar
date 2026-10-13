@@ -14,13 +14,34 @@ export default defineConfig({
     }),
   },
   meters: ({ meter, events }) => ({
-    tool_call: meter().on(events.tool_call).unit('custom', 'tool call').count(),
+    tool_call: meter('Tool calls')
+      .on(events.tool_call)
+      .unit('custom', 'tool calls')
+      .count(),
   }),
   benefits: ({ flag, credits }) => ({
     custom_servers: flag('Custom servers').metadata({ tag: 'primary' }),
     tool_calls: credits('Included tool calls').meter('tool_call').units(1000),
+    free_tool_calls: credits('Free tool calls').meter('tool_call').units(5),
+    // Rollover keeps purchased credits across the Pro billing cycle reset
+    topup_100: credits('100 extra tool calls')
+      .meter('tool_call')
+      .units(100)
+      .rollover(),
+    topup_500: credits('500 extra tool calls')
+      .meter('tool_call')
+      .units(500)
+      .rollover(),
+    topup_1000: credits('1,000 extra tool calls')
+      .meter('tool_call')
+      .units(1000)
+      .rollover(),
   }),
-  products: ({ product, fixed, seats, units, tier, meter }) => ({
+  products: ({ product, free, fixed, seats, units, tier, meter }) => ({
+    free: product('Free')
+      .prices(free())
+      .recurring('monthly')
+      .grants(['free_tool_calls']),
     team: product('Team')
       .prices(
         seats()
@@ -75,5 +96,17 @@ export default defineConfig({
       .recurring('monthly')
       // .trial(14, 'days')
       .grants(['custom_servers', 'tool_calls']),
+    topup_100: product('100 tool calls')
+      .prices(fixed().amount(usd(9)))
+      .once()
+      .grants(['topup_100']),
+    topup_500: product('500 tool calls')
+      .prices(fixed().amount(usd(39)))
+      .once()
+      .grants(['topup_500']),
+    topup_1000: product('1,000 tool calls')
+      .prices(fixed().amount(usd(79)))
+      .once()
+      .grants(['topup_1000']),
   }),
 })

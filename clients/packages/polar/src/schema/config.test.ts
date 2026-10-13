@@ -240,6 +240,7 @@ test('connected configs type and validate track with the declared event schemas'
     .toEqualTypeOf<{ tool: 'search' | 'fetch'; durationMs: number }>()
   expectTypeOf(customer.track)
     .parameter(0)
+    .extract<string>()
     .toEqualTypeOf<'tool_call' | 'llm.completion' | 'llm.embedding'>()
   await expect(
     customer.track('tool_call', { tool: 'search', durationMs: 1.5 }),
@@ -251,7 +252,10 @@ test('connected configs type and validate track with the declared event schemas'
     }),
     { accessToken: 'test' },
   ).actor({ customerId: 'customer-1' })
-  expectTypeOf(untyped.track).parameter(0).toEqualTypeOf<string>()
+  expectTypeOf(untyped.track)
+    .parameter(0)
+    .extract<string>()
+    .toEqualTypeOf<string>()
 })
 
 test('benefits serialize with meter credits linked by meter key', () => {

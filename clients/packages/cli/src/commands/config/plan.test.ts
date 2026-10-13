@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'vitest'
 import { Effect } from 'effect'
+import { FetchHttpClient } from 'effect/http'
 import { plan } from '@/commands/config/plan'
 import type { LoadedConfig, PlanResult } from '@/schemas/BillingConfig'
+import { Environment } from '@/services/api'
 import { Auth } from '@/services/auth'
 import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
@@ -51,8 +53,8 @@ const locked = {
   location: { line: 3, column: 5, length: 1 },
 }
 
-const run = async (result: PlanResult) => {
-  const cli = runCli(plan, ['polar.json'])
+const run = async (result: PlanResult, args: string[] = []) => {
+  const cli = runCli(plan, ['polar.json', ...args])
   const exit = await Effect.runPromiseExit(
     cli.effect.pipe(
       Effect.provideService(
@@ -72,6 +74,8 @@ const run = async (result: PlanResult) => {
           selected: { id: acme.id, environment: acme.environment },
         }).organizations,
       ),
+      Effect.provideService(Environment, {}),
+      Effect.provide(FetchHttpClient.layer),
     ),
   )
   return { output: stripAnsi(cli.output()), failed: exit._tag === 'Failure' }
@@ -122,5 +126,15 @@ describe('polar config plan', () => {
     expect(output).toContain('Error: Cannot change "filter" of meters.0')
     expect(output).toContain('Warning:')
     expect(output).toContain('Found 1 error and 1 warning.')
+  })
+
+  test('skips --pr-comment outside a pull request', async () => {
+    const { output, failed } = await run({ entries, issues: [] }, [
+      '--pr-comment',
+    ])
+    expect(failed).toBe(false)
+    expect(output).toContain(
+      'Not building a pull request, skipped --pr-comment.',
+    )
   })
 })

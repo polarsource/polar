@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from polar.config import settings
 from polar.kit.pagination import ListResource
-from polar.openapi import APITag
+from polar.openapi import TOOL_ANNOTATIONS, TOOL_DESTRUCTIVE, APITag
 
 
 class TransactionalAPIRoute(APIRoute):
@@ -76,6 +76,11 @@ class ToolAPIRoute(APIRoute):
     Each property is derived from the route itself and can be overridden
     individually by setting it in `openapi_extra`.
 
+    `x-tool-annotations` gets `destructive` for `DELETE` routes and routes marked
+    with `polar.openapi.destructive()`. Routes with a request field marked with
+    `destructive_when_equals()` or `destructive_when_one_of()` get it when the
+    OpenAPI schema is generated, see `polar.openapi.add_destructive_tool_annotations`.
+
     It must come *before* `DocumentedAuthSubjectAPIRoute` in the MRO, so the
     description is read before the required scopes are appended to it.
     """
@@ -92,22 +97,33 @@ class ToolAPIRoute(APIRoute):
 
         super().__init__(path, endpoint, **kwargs)
 
+        openapi_extra = dict(self.openapi_extra or {})
+        destructive = openapi_extra.pop(TOOL_DESTRUCTIVE, False)
+        self.openapi_extra = openapi_extra or None
+
         if APITag.mcp not in self.tags and APITag.cli not in self.tags:
             return
 
         annotations: list[str] = []
         for method in sorted(self.methods or set()):
             annotations += self.TOOL_ANNOTATIONS.get(method, [])
+        annotations = openapi_extra.get(TOOL_ANNOTATIONS, annotations)
+        if destructive and "destructive" not in annotations:
+            annotations = ["destructive", *annotations]
 
         defaults = {
             "x-tool-name": self.unique_id.replace(":", "_").replace("-", "_"),
             "x-tool-title": self.summary or self.name.replace("_", " ").title(),
             "x-tool-description": tool_description,
-            "x-tool-annotations": annotations,
+            TOOL_ANNOTATIONS: annotations,
         }
         self.openapi_extra = {
             **{key: value for key, value in defaults.items() if value},
-            **(self.openapi_extra or {}),
+            **{
+                key: value
+                for key, value in openapi_extra.items()
+                if key != TOOL_ANNOTATIONS
+            },
         }
 
 

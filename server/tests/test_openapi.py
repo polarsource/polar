@@ -1,11 +1,25 @@
 import pathlib
+from typing import Any, Literal
 
 import pytest
+from fastapi import APIRouter as _APIRouter
+from fastapi import Query
+from fastapi.openapi.utils import get_openapi
 from httpx import AsyncClient
 from openapi_kit.diff import compare
 from openapi_kit.parser import OpenAPIParser
+from pydantic import Field
 
+from polar.kit.schemas import Schema
 from polar.kit.versioning import APIVersion
+from polar.openapi import (
+    APITag,
+    add_destructive_tool_annotations,
+    destructive,
+    destructive_when_equals,
+    destructive_when_one_of,
+)
+from polar.routing import APIRouter
 from polar.version import V2027_01, VERSIONS
 
 
@@ -54,3 +68,223 @@ async def test_current_openapi_frozen(version: APIVersion, client: AsyncClient) 
     diff = compare(expected, actual)
     assert len(diff.operation_changes) == 0, OPENAPI_FROZEN_MESSAGE
     assert len(diff.schema_changes) == 0, OPENAPI_FROZEN_MESSAGE
+
+
+DESTRUCTIVE_TOOL_OPERATIONS = {
+    "license_keys:rotate",
+    "license_keys:update",
+    "meters:update",
+    "products:update",
+    "refunds:create",
+    "subscriptions:update",
+    "webhooks:update_webhook_endpoint",
+}
+
+NON_DESTRUCTIVE_TOOL_OPERATIONS = {
+    "benefits:create",
+    "benefits:update",
+    "checkout-links:create",
+    "checkout-links:update",
+    "custom-fields:create",
+    "custom-fields:update",
+    "customer-seats:assign_seat",
+    "customer-seats:claim_seat",
+    "customer-seats:resend_invitation",
+    "customers:create",
+    "customers:members:create",
+    "customers:members:create_external",
+    "customers:members:update",
+    "customers:members:update_external",
+    "customers:update",
+    "customers:update_external",
+    "discounts:create",
+    "discounts:update",
+    "event-types:update",
+    "meters:create",
+    "orders:generate_invoice",
+    "orders:update",
+    "products:create",
+    "products:update_benefits",
+    "webhooks:create_webhook_endpoint",
+    "webhooks:redeliver_webhook_event",
+    "webhooks:reset_webhook_endpoint_secret",
+}
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("version", VERSIONS)
+async def test_tool_write_operations_are_classified(
+    version: APIVersion, client: AsyncClient
+) -> None:
+    CLASSIFICATION_MESSAGE = """
+    Every POST, PATCH and PUT operation exposed to the MCP server or the CLI must be
+    classified, because `destructive` drives the CLI confirmation prompt and the MCP
+    `destructiveHint`.
+
+    To fix this, either:
+    - mark the route with `openapi_extra=destructive()`, if it's always destructive;
+    - mark the request fields that make it destructive with `destructive_when_equals()`
+      or `destructive_when_one_of()` (see `polar/openapi.py`);
+    - or add it to `NON_DESTRUCTIVE_TOOL_OPERATIONS` in this test.
+    """.strip()
+
+    response = await client.get(f"{version}/openapi.json")
+    assert response.status_code == 200
+
+    destructive: set[str] = set()
+    non_destructive: set[str] = set()
+    for path_item in response.json()["paths"].values():
+        for method, operation in path_item.items():
+            if method not in {"post", "patch", "put"}:
+                continue
+            if not {APITag.mcp, APITag.cli} & set(operation.get("tags", [])):
+                continue
+            if "destructive" in operation.get("x-tool-annotations", []):
+                destructive.add(operation["operationId"])
+            else:
+                non_destructive.add(operation["operationId"])
+
+    assert destructive == DESTRUCTIVE_TOOL_OPERATIONS, CLASSIFICATION_MESSAGE
+    assert non_destructive == NON_DESTRUCTIVE_TOOL_OPERATIONS, CLASSIFICATION_MESSAGE
+
+
+class WidgetUpdate(Schema):
+    is_archived: bool | None = Field(
+        default=None, json_schema_extra=destructive_when_equals(True)
+    )
+
+
+class WidgetStatusUpdate(Schema):
+    status: Literal["active", "disabled", "revoked"] | None = Field(
+        default=None, json_schema_extra=destructive_when_one_of("disabled", "revoked")
+    )
+
+
+class WidgetRename(Schema):
+    name: str
+
+
+class WidgetCancel(Schema):
+    cancel: bool = Field(json_schema_extra=destructive_when_equals(True))
+
+
+class WidgetCreate(Schema):
+    name: str
+
+
+def get_tool_annotations(router: _APIRouter, method: str, path: str) -> list[str]:
+    schema = add_destructive_tool_annotations(
+        get_openapi(title="Widgets", version="1", routes=router.routes)
+    )
+    operation: dict[str, Any] = schema["paths"][path][method]
+    return operation.get("x-tool-annotations", [])
+
+
+class TestDestructiveToolAnnotations:
+    def test_delete(self) -> None:
+        router = APIRouter(
+            prefix="/widgets", tags=["widgets", APITag.public, APITag.mcp]
+        )
+
+        @router.delete("/{id}")
+        async def delete(id: str) -> None: ...
+
+        assert get_tool_annotations(router, "delete", "/widgets/{id}") == [
+            "destructive",
+            "idempotent",
+        ]
+
+    def test_operation_marked_destructive(self) -> None:
+        router = APIRouter(
+            prefix="/widgets", tags=["widgets", APITag.public, APITag.cli]
+        )
+
+        @router.post("/{id}/rotate", openapi_extra=destructive())
+        async def rotate(id: str) -> None: ...
+
+        schema = get_openapi(title="Widgets", version="1", routes=router.routes)
+        operation = schema["paths"]["/widgets/{id}/rotate"]["post"]
+        assert operation["x-tool-annotations"] == ["destructive"]
+        assert "x-tool-destructive" not in operation
+
+    def test_field_equals(self) -> None:
+        router = APIRouter(
+            prefix="/widgets", tags=["widgets", APITag.public, APITag.mcp]
+        )
+
+        @router.patch("/{id}")
+        async def update(id: str, body: WidgetUpdate) -> None: ...
+
+        assert get_tool_annotations(router, "patch", "/widgets/{id}") == ["destructive"]
+
+    def test_field_one_of(self) -> None:
+        router = APIRouter(
+            prefix="/widgets", tags=["widgets", APITag.public, APITag.mcp]
+        )
+
+        @router.patch("/{id}")
+        async def update(id: str, body: WidgetStatusUpdate) -> None: ...
+
+        assert get_tool_annotations(router, "patch", "/widgets/{id}") == ["destructive"]
+
+    def test_union_body_with_one_annotated_variant(self) -> None:
+        router = APIRouter(
+            prefix="/widgets", tags=["widgets", APITag.public, APITag.mcp]
+        )
+
+        @router.patch("/{id}")
+        async def update(id: str, body: WidgetRename | WidgetCancel) -> None: ...
+
+        assert get_tool_annotations(router, "patch", "/widgets/{id}") == ["destructive"]
+
+    def test_parameter(self) -> None:
+        router = APIRouter(
+            prefix="/widgets", tags=["widgets", APITag.public, APITag.cli]
+        )
+
+        @router.post("/{id}/sync")
+        async def sync(
+            id: str,
+            purge: bool = Query(
+                default=False, json_schema_extra=destructive_when_equals(True)
+            ),
+        ) -> None: ...
+
+        assert get_tool_annotations(router, "post", "/widgets/{id}/sync") == [
+            "destructive"
+        ]
+
+    def test_plain_post(self) -> None:
+        router = APIRouter(
+            prefix="/widgets", tags=["widgets", APITag.public, APITag.mcp]
+        )
+
+        @router.post("/")
+        async def create(body: WidgetCreate) -> None: ...
+
+        assert get_tool_annotations(router, "post", "/widgets/") == []
+
+    def test_explicit_override(self) -> None:
+        router = APIRouter(
+            prefix="/widgets", tags=["widgets", APITag.public, APITag.mcp]
+        )
+
+        @router.delete("/{id}", openapi_extra={"x-tool-annotations": ["idempotent"]})
+        async def delete(id: str) -> None: ...
+
+        @router.patch("/{id}", openapi_extra={"x-tool-annotations": ["idempotent"]})
+        async def update(id: str, body: WidgetUpdate) -> None: ...
+
+        assert get_tool_annotations(router, "delete", "/widgets/{id}") == ["idempotent"]
+        assert get_tool_annotations(router, "patch", "/widgets/{id}") == [
+            "destructive",
+            "idempotent",
+        ]
+
+    def test_without_the_mcp_or_cli_tags(self) -> None:
+        router = APIRouter(prefix="/widgets", tags=["widgets", APITag.public])
+
+        @router.patch("/{id}")
+        async def update(id: str, body: WidgetUpdate) -> None: ...
+
+        assert get_tool_annotations(router, "patch", "/widgets/{id}") == []

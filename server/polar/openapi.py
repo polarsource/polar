@@ -80,19 +80,88 @@ def cli_preview(*fields: tuple[str, str]) -> dict[str, Any]:
     }
 
 
-type CLIConfirmValue = str | bool | int | float | None
+TOOL_ANNOTATIONS = "x-tool-annotations"
+TOOL_DESTRUCTIVE = "x-tool-destructive"
+TOOL_DESTRUCTIVE_WHEN = "x-tool-destructive-when"
+
+type DestructiveValue = str | bool | int | float | None
 
 
-def cli_confirm() -> dict[str, Any]:
-    return {"x-polar-cli-confirm": True}
+def destructive() -> dict[str, Any]:
+    """
+    Mark an operation as destructive, whatever its input.
+
+    `DELETE` operations already are, so this is only needed for other methods.
+    """
+    return {TOOL_DESTRUCTIVE: True}
 
 
-def cli_confirm_equals(value: CLIConfirmValue) -> dict[str, Any]:
-    return {"x-polar-cli-confirm": {"equals": value}}
+def destructive_when_equals(value: DestructiveValue) -> dict[str, Any]:
+    """
+    Mark the operation as destructive when this request field or parameter
+    is set to `value`.
+    """
+    return {TOOL_DESTRUCTIVE_WHEN: {"equals": value}}
 
 
-def cli_confirm_one_of(*values: CLIConfirmValue) -> dict[str, Any]:
-    return {"x-polar-cli-confirm": {"one_of": list(values)}}
+def destructive_when_one_of(*values: DestructiveValue) -> dict[str, Any]:
+    """
+    Mark the operation as destructive when this request field or parameter
+    is set to one of `values`.
+    """
+    return {TOOL_DESTRUCTIVE_WHEN: {"one_of": list(values)}}
+
+
+def _references_destructive_field(
+    node: Any, schemas: dict[str, Any], visited: set[str]
+) -> bool:
+    if isinstance(node, list):
+        return any(
+            _references_destructive_field(item, schemas, visited) for item in node
+        )
+    if not isinstance(node, dict):
+        return False
+    if TOOL_DESTRUCTIVE_WHEN in node:
+        return True
+
+    reference = node.get("$ref")
+    if isinstance(reference, str) and reference.startswith("#/components/schemas/"):
+        name = reference.removeprefix("#/components/schemas/")
+        if name not in visited:
+            visited.add(name)
+            if _references_destructive_field(schemas.get(name), schemas, visited):
+                return True
+
+    return any(
+        _references_destructive_field(value, schemas, visited)
+        for key, value in node.items()
+        if key != "$ref"
+    )
+
+
+def add_destructive_tool_annotations(openapi_schema: dict[str, Any]) -> dict[str, Any]:
+    """
+    Add `destructive` to the `x-tool-annotations` of every MCP or CLI operation
+    with a request field or parameter marked by `destructive_when_equals`
+    or `destructive_when_one_of`.
+    """
+    schemas = openapi_schema.get("components", {}).get("schemas", {})
+    for path_item in openapi_schema.get("paths", {}).values():
+        for operation in path_item.values():
+            if not isinstance(operation, dict):
+                continue
+            if not {APITag.mcp, APITag.cli} & set(operation.get("tags", [])):
+                continue
+
+            annotations: list[str] = operation.get(TOOL_ANNOTATIONS, [])
+            if "destructive" in annotations:
+                continue
+
+            inputs = [operation.get("parameters", []), operation.get("requestBody")]
+            if _references_destructive_field(inputs, schemas, set()):
+                operation[TOOL_ANNOTATIONS] = ["destructive", *annotations]
+
+    return openapi_schema
 
 
 def get_openapi(
@@ -127,11 +196,15 @@ def get_openapi(
     openapi_schema = add_metadata_query_schema(openapi_schema)
     openapi_schema = add_oauth2_form_schemas(openapi_schema)
     openapi_schema = prune_version_omitted_schemas(openapi_schema, version)
+    openapi_schema = add_destructive_tool_annotations(openapi_schema)
 
     return openapi_schema
 
 
 __all__ = [
     "APITag",
+    "destructive",
+    "destructive_when_equals",
+    "destructive_when_one_of",
     "get_openapi",
 ]

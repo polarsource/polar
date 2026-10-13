@@ -10,6 +10,8 @@ from .stream import OutpostEvent, publish
 @actor(actor_name="outpost.publish", priority=TaskPriority.HIGH)
 async def outpost_publish(
     organization_id: typing.Annotated[uuid.UUID, LoggableField],
-    **event: typing.Unpack[OutpostEvent],
+    **event: typing.Any,
 ) -> None:
-    await publish(RedisMiddleware.get(), organization_id, **event)
+    await publish(
+        RedisMiddleware.get(), organization_id, typing.cast(OutpostEvent, event)
+    )

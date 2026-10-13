@@ -22,14 +22,14 @@ type OutpostEvent = CustomerMeterOutpostEvent
 async def publish(
     redis: Redis,
     organization_id: uuid.UUID,
-    **event: typing.Unpack[OutpostEvent],
+    event: OutpostEvent,
 ) -> None:
     await redis.publish(
         f"outpost:{organization_id}", json.dumps(event, default=json_obj_serializer)
     )
 
 
-def enqueue(organization_id: uuid.UUID, **event: typing.Unpack[OutpostEvent]) -> None:
+def enqueue(organization_id: uuid.UUID, event: OutpostEvent) -> None:
     enqueue_job(
         "outpost.publish",
         organization_id=organization_id,

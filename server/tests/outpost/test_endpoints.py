@@ -104,9 +104,11 @@ class TestOutpost:
             await publish(
                 redis,
                 customer_meter.customer.organization_id,
-                type="customer_meter",
-                customer_id=customer_meter.customer_id,
-                meter_id=customer_meter.meter_id,
+                {
+                    "type": "customer_meter",
+                    "customer_id": customer_meter.customer_id,
+                    "meter_id": customer_meter.meter_id,
+                },
             )
 
             response = await websocket.receive_json()

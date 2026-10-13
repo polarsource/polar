@@ -197,9 +197,11 @@ class CustomerMeterService:
 
         enqueue_outpost_event(
             customer.organization_id,
-            type="customer_meter",
-            customer_id=customer.id,
-            meter_id=meter.id,
+            {
+                "type": "customer_meter",
+                "customer_id": customer.id,
+                "meter_id": meter.id,
+            },
         )
 
         return await repository.update(customer_meter), True

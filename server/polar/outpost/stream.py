@@ -17,6 +17,10 @@ class CustomerMeterOutpostEvent(typing.TypedDict):
 
 
 class ReducerBucketOutpostEvent(typing.TypedDict):
+    """A customer's buckets are keyed by the pair (customer_id, external_customer_id):
+    (id, None), (None, external_id) and (id, external_id) are three distinct buckets
+    whose values add up."""
+
     type: typing.Literal["reducer_bucket"]
     reducer_id: uuid.UUID
     bucket_start: str

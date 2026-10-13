@@ -146,11 +146,12 @@ class TestOutpost:
         bucket_start = datetime(2026, 10, 7, 12, 5, tzinfo=UTC)
         split_at = bucket_start + timedelta(minutes=2)
         bucket_end = bucket_start + timedelta(minutes=5)
-        # Two generations before the split, one row after it.
-        for start, end, generation, value in (
-            (bucket_start, split_at, 1, 3),
-            (bucket_start, split_at, 2, 5),
-            (split_at, bucket_end, 1, 4),
+        billed_at = datetime(2026, 10, 7, 12, 20, tzinfo=UTC)
+        for start, end, generation, sealed_at, value in (
+            (bucket_start, split_at, 1, billed_at, 3),
+            (bucket_start, split_at, 2, billed_at, 4),
+            (bucket_start, split_at, 3, None, 5),
+            (split_at, bucket_end, 1, None, 6),
         ):
             await save_fixture(
                 ReducerBucket(
@@ -164,6 +165,7 @@ class TestOutpost:
                     min=Decimal(value),
                     max=Decimal(value),
                     generation=generation,
+                    sealed_at=sealed_at,
                 )
             )
 
@@ -189,9 +191,34 @@ class TestOutpost:
                     "customer_id": None,
                     "external_customer_id": "external",
                     "bucket_start": "2026-10-07T12:05:00Z",
-                    "count": 3,
-                    "sum": 12.0,
-                    "min": 3.0,
-                    "max": 5.0,
+                    "intervals": [
+                        {
+                            "bucket_start": "2026-10-07T12:05:00Z",
+                            "bucket_end": "2026-10-07T12:07:00Z",
+                            "sealed": True,
+                            "count": 2,
+                            "sum": 7.0,
+                            "min": 3.0,
+                            "max": 4.0,
+                        },
+                        {
+                            "bucket_start": "2026-10-07T12:05:00Z",
+                            "bucket_end": "2026-10-07T12:07:00Z",
+                            "sealed": False,
+                            "count": 1,
+                            "sum": 5.0,
+                            "min": 5.0,
+                            "max": 5.0,
+                        },
+                        {
+                            "bucket_start": "2026-10-07T12:07:00Z",
+                            "bucket_end": "2026-10-07T12:10:00Z",
+                            "sealed": False,
+                            "count": 1,
+                            "sum": 6.0,
+                            "min": 6.0,
+                            "max": 6.0,
+                        },
+                    ],
                 },
             }

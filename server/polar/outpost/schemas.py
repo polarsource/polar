@@ -102,15 +102,22 @@ class CustomerMeterOutgoingMessage(OutgoingMessageBase):
     payload: CustomerMeterOutgoingMessagePayload
 
 
+class ReducerBucketInterval(MessageBase):
+    bucket_start: datetime
+    bucket_end: datetime
+    sealed: bool
+    count: int
+    sum: float
+    min: float | None
+    max: float | None
+
+
 class ReducerBucketOutgoingMessagePayload(MessageBase):
     reducer_id: UUID4
     customer_id: UUID4 | None
     external_customer_id: str | None
     bucket_start: datetime
-    count: int
-    sum: float
-    min: float | None
-    max: float | None
+    intervals: list[ReducerBucketInterval]
 
 
 class ReducerBucketOutgoingMessage(OutgoingMessageBase):

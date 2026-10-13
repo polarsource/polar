@@ -23,6 +23,7 @@ from .schemas import (
     OutgoingMessage,
     OutgoingMessageAdapter,
     OutgoingMessageType,
+    ReducerBucketInterval,
     ReducerBucketOutgoingMessage,
     ReducerBucketOutgoingMessagePayload,
 )
@@ -139,7 +140,7 @@ class OutpostService:
     ) -> None:
         bucket_start = datetime.fromisoformat(event["bucket_start"])
         repository = ReducerBucketRepository.from_session(session)
-        count, total, minimum, maximum = await repository.get_totals(
+        intervals = await repository.get_intervals(
             organization.id,
             event["reducer_id"],
             bucket_start,
@@ -154,10 +155,10 @@ class OutpostService:
                 customer_id=event["customer_id"],
                 external_customer_id=event["external_customer_id"],
                 bucket_start=bucket_start,
-                count=count,
-                sum=total,
-                min=minimum,
-                max=maximum,
+                intervals=[
+                    ReducerBucketInterval.model_validate(interval._asdict())
+                    for interval in intervals
+                ],
             ),
         )
         await send_stream.send(message)

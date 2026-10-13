@@ -46,6 +46,7 @@ class ResendClient:
         self.client = httpx.AsyncClient(
             base_url=settings.RESEND_API_BASE_URL,
             headers={"Authorization": f"Bearer {settings.RESEND_API_KEY}"},
+            timeout=httpx.Timeout(30.0, connect=5.0),
         )
 
     async def get_contact(self, identifier: str) -> dict[str, Any]:

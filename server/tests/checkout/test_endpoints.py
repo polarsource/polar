@@ -624,6 +624,25 @@ class TestCreateCheckout:
         assert ad_hoc_price["amount_type"] == "seat_based"
         assert ad_hoc_price["tiers"] == tiers
 
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    @pytest.mark.parametrize("field", ["product_id", "product_price_id"])
+    async def test_single_product_or_price_2027_01(
+        self,
+        field: str,
+        api_prefix: str,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        value = product.id if field == "product_id" else product.prices[0].id
+        response = await client.post(
+            f"{api_prefix}/",
+            json={"payment_processor": "stripe", field: str(value)},
+        )
+
+        assert response.status_code == 422
+
 
 @pytest.mark.anyio
 class TestCreateCheckoutExternalProducts:

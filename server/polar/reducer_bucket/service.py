@@ -1,6 +1,6 @@
 import uuid
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
@@ -108,16 +108,9 @@ class ReducerBucketService:
         self, session: AsyncSession, contributions: Contributions
     ) -> None:
         repository = ReducerBucketRepository.from_session(session)
-        # Sorted, so concurrent requests take the bucket locks in the same order,
-        # and all taken before writing any row, so a seal can't deadlock with us.
-        bucket_ids = sorted(
-            contributions,
-            key=lambda b: redis_store.get_reducer_bucket_key(b[0].id, b[1], b[2], b[3]),
-        )
-        for bucket_id in bucket_ids:
-            # Shared with sync, which recomputes the bucket from its events.
-            await repository.lock_buckets(*bucket_id)
-        for bucket_id in bucket_ids:
+        # All taken before writing any row, so a seal can't deadlock with us.
+        await self._lock_buckets(repository, contributions)
+        for bucket_id in contributions:
             reducer, bucket_start, customer_id, external_customer_id = bucket_id
             for start, end in await self._get_intervals(
                 repository, reducer, bucket_start, customer_id, external_customer_id
@@ -162,8 +155,8 @@ class ReducerBucketService:
         if reducer is None:
             return
         repository = ReducerBucketRepository.from_session(session)
-        await repository.lock_buckets(
-            reducer, bucket_start, customer_id, external_customer_id
+        await self._lock_buckets(
+            repository, [(reducer, bucket_start, customer_id, external_customer_id)]
         )
         await self._sync_bucket(
             repository, reducer, bucket_start, customer_id, external_customer_id
@@ -193,10 +186,15 @@ class ReducerBucketService:
 
         await self._lock_buckets(
             repository,
-            reducers,
-            identities,
-            billable_from=billable_from,
-            cutoff=cutoff,
+            [
+                (reducer, bucket_start, customer_id, external_customer_id)
+                for reducer in reducers
+                for bucket_start in {
+                    get_reducer_bucket_start(billable_from),
+                    get_reducer_bucket_start(cutoff),
+                }
+                for customer_id, external_customer_id in identities
+            ],
         )
 
         for reducer in sorted(reducers, key=lambda reducer: str(reducer.id)):
@@ -247,26 +245,14 @@ class ReducerBucketService:
     async def _lock_buckets(
         self,
         repository: ReducerBucketRepository,
-        reducers: Sequence[Reducer],
-        identities: Sequence[tuple[uuid.UUID | None, str | None]],
-        *,
-        billable_from: datetime,
-        cutoff: datetime,
+        bucket_ids: Iterable[redis_store.BucketId],
     ) -> None:
-        """Locks the buckets of the two slots seal splits."""
-        bucket_ids = sorted(
-            (
-                (reducer, bucket_start, customer_id, external_customer_id)
-                for reducer in reducers
-                for bucket_start in {
-                    get_reducer_bucket_start(billable_from),
-                    get_reducer_bucket_start(cutoff),
-                }
-                for customer_id, external_customer_id in identities
-            ),
+        """Locks the buckets in one global order, so transactions locking several
+        can't deadlock each other."""
+        for bucket_id in sorted(
+            bucket_ids,
             key=lambda b: redis_store.get_reducer_bucket_key(b[0].id, b[1], b[2], b[3]),
-        )
-        for bucket_id in bucket_ids:
+        ):
             await repository.lock_buckets(*bucket_id)
 
     async def _get_intervals(

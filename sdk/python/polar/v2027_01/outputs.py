@@ -4400,6 +4400,13 @@ class CustomerMeter:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class CustomerMeterCreditExternalIDConflict:
+    error: typing.Literal["CustomerMeterCreditExternalIDConflict"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerNotReady:
     error: typing.Literal["CustomerNotReady"]
 

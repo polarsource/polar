@@ -10,8 +10,14 @@ from polar.base import (
     parse_response_json,
 )
 from polar.v2027_01.errors import (
+    CustomerMetersCredits409Error,
     HTTPValidationError,
+    NotPermitted,
     ResourceNotFound,
+)
+from polar.v2027_01.inputs import (
+    CustomerMeterCreditsCustomerExternalIDCreate,
+    CustomerMeterCreditsCustomerIDCreate,
 )
 from polar.v2027_01.literals import (
     CustomerMeterSortProperty,
@@ -19,6 +25,7 @@ from polar.v2027_01.literals import (
 from polar.v2027_01.outputs import (
     CustomerMeter,
     ListResourceCustomerMeter,
+    MeterCreditEvent,
 )
 
 
@@ -185,6 +192,70 @@ class CustomerMetersSync(SyncServiceBase):
         }
         return parse_response_json(response, CustomerMeter, method_errors)
 
+    @typing.overload
+    def credits(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerMeterCreditsCustomerIDCreate],
+    ) -> MeterCreditEvent: ...
+
+    @typing.overload
+    def credits(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerMeterCreditsCustomerExternalIDCreate],
+    ) -> MeterCreditEvent: ...
+
+    def credits(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Any,
+    ) -> MeterCreditEvent:
+        """
+        Manually grant credits on a customer meter.
+
+        Returns the `meter.credited` event. The customer meter balance is updated
+        asynchronously, shortly after the request.
+
+        **Scopes**: `customers:write`
+
+        Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            NotPermitted: You don't have permission to manage customers.
+            CustomerMetersCredits409Error: The external_id is already used by a different event, or the external customer ID matches customers in several accessible organizations.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/customer-meters/credits",
+            path_params={},
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+            body=kwargs,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            403: NotPermitted,
+            409: CustomerMetersCredits409Error,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, MeterCreditEvent, method_errors)
+
 
 class CustomerMetersAsync(AsyncServiceBase):
     async def list(
@@ -349,3 +420,67 @@ class CustomerMetersAsync(AsyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, CustomerMeter, method_errors)
+
+    @typing.overload
+    async def credits(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerMeterCreditsCustomerIDCreate],
+    ) -> MeterCreditEvent: ...
+
+    @typing.overload
+    async def credits(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerMeterCreditsCustomerExternalIDCreate],
+    ) -> MeterCreditEvent: ...
+
+    async def credits(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Any,
+    ) -> MeterCreditEvent:
+        """
+        Manually grant credits on a customer meter.
+
+        Returns the `meter.credited` event. The customer meter balance is updated
+        asynchronously, shortly after the request.
+
+        **Scopes**: `customers:write`
+
+        Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            NotPermitted: You don't have permission to manage customers.
+            CustomerMetersCredits409Error: The external_id is already used by a different event, or the external customer ID matches customers in several accessible organizations.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/customer-meters/credits",
+            path_params={},
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+            body=kwargs,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            403: NotPermitted,
+            409: CustomerMetersCredits409Error,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, MeterCreditEvent, method_errors)

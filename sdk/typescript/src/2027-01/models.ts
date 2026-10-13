@@ -10566,6 +10566,81 @@ export interface CustomerMeter {
 }
 
 /**
+ * CustomerMeterCreditExternalIDConflict
+ */
+export interface CustomerMeterCreditExternalIDConflict {
+  /**
+   * error
+   */
+  error: "CustomerMeterCreditExternalIDConflict";
+  /**
+   * detail
+   */
+  detail: string;
+}
+
+/**
+ * Schema to manually grant credits on a customer meter
+using an external customer ID.
+ */
+export interface CustomerMeterCreditsCustomerExternalIDCreate {
+  /**
+   * The ID of the meter. Required if `external_meter_id` is not provided.
+   */
+  meter_id?: string | null;
+  /**
+   * The external ID of the meter, as set by config as code. Required if `meter_id` is not provided.
+   */
+  external_meter_id?: string | null;
+  /**
+   * The number of units to credit.
+   */
+  units: number;
+  /**
+   * Whether unused credits carry over to the next meter period.
+   */
+  rollover?: boolean;
+  /**
+   * Your unique identifier for this credit. Retrying with the same `external_id` doesn't grant the credit twice.
+   */
+  external_id?: string | null;
+  /**
+   * The external ID of the customer.
+   */
+  external_customer_id: string;
+}
+
+/**
+ * Schema to manually grant credits on a customer meter using a customer ID.
+ */
+export interface CustomerMeterCreditsCustomerIDCreate {
+  /**
+   * The ID of the meter. Required if `external_meter_id` is not provided.
+   */
+  meter_id?: string | null;
+  /**
+   * The external ID of the meter, as set by config as code. Required if `meter_id` is not provided.
+   */
+  external_meter_id?: string | null;
+  /**
+   * The number of units to credit.
+   */
+  units: number;
+  /**
+   * Whether unused credits carry over to the next meter period.
+   */
+  rollover?: boolean;
+  /**
+   * Your unique identifier for this credit. Retrying with the same `external_id` doesn't grant the credit twice.
+   */
+  external_id?: string | null;
+  /**
+   * The ID of the customer.
+   */
+  customer_id: string;
+}
+
+/**
  * CustomerNotReady
  */
 export interface CustomerNotReady {

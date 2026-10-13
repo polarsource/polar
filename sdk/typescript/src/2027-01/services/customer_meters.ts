@@ -1,11 +1,19 @@
 import type { ClientBase, RequestOptions } from "../../base";
 import type {
   CustomerMeter,
+  CustomerMeterCreditsCustomerExternalIDCreate,
+  CustomerMeterCreditsCustomerIDCreate,
   CustomerMeterSortProperty,
   ListResourceCustomerMeter,
+  MeterCreditEvent,
 } from "../models";
 
-import { HTTPValidationError, ResourceNotFound } from "../errors";
+import {
+  CustomerMetersCredits409Error,
+  HTTPValidationError,
+  NotPermitted,
+  ResourceNotFound,
+} from "../errors";
 
 export const listCustomerMeters = (client: ClientBase) => {
   /**
@@ -136,11 +144,52 @@ export const getCustomerMeters = (client: ClientBase) => {
     });
   };
 };
+export const creditsCustomerMeters = (client: ClientBase) => {
+  /**
+   * Manually grant credits on a customer meter.
+   *
+   * Returns the `meter.credited` event. The customer meter balance is updated
+   * asynchronously, shortly after the request.
+   *
+   * **Scopes**: `customers:write`
+   *
+   * @param body - Request body
+   * @param requestOptions - Request options
+   * @returns {MeterCreditEvent}
+   * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
+   * @throws {PolarServerError} When the server returns a 5xx error
+   * @throws {NotPermitted} You don't have permission to manage customers.
+   * @throws {CustomerMetersCredits409Error} The external_id is already used by a different event, or the external customer ID matches customers in several accessible organizations.
+   * @throws {HTTPValidationError} Validation Error
+   */
+  return async (
+    body: CustomerMeterCreditsCustomerIDCreate | CustomerMeterCreditsCustomerExternalIDCreate,
+    requestOptions?: RequestOptions,
+  ): Promise<MeterCreditEvent> => {
+    const pathParams = {};
+    const queryParams = {};
+    const request = client.buildRequest(
+      "POST",
+      "/v1/customer-meters/credits",
+      pathParams,
+      queryParams,
+      body,
+    );
+    const response = await client.sendRequest(request, requestOptions);
+    return client.parseResponse<MeterCreditEvent>(response, "json", {
+      403: NotPermitted,
+      409: CustomerMetersCredits409Error,
+      422: HTTPValidationError,
+    });
+  };
+};
 
 export function createCustomerMetersService(client: ClientBase) {
   return {
     list: listCustomerMeters(client),
     get: getCustomerMeters(client),
+    credits: creditsCustomerMeters(client),
     iterList: iterListCustomerMeters(client),
   };
 }

@@ -1598,6 +1598,51 @@ You can store up to **50 key-value pairs**."""
     """The email address of the customer. This must be unique within the organization."""
 
 
+class CustomerMeterCreditsCustomerExternalIDCreate(typing.TypedDict):
+    """Schema to manually grant credits on a customer meter
+    using an external customer ID."""
+
+    meter_id: typing.NotRequired[str | None]
+    """The ID of the meter. Required if `external_meter_id` is not provided."""
+
+    external_meter_id: typing.NotRequired[str | None]
+    """The external ID of the meter, as set by config as code. Required if `meter_id` is not provided."""
+
+    units: int
+    """The number of units to credit."""
+
+    rollover: typing.NotRequired[bool]
+    """Whether unused credits carry over to the next meter period."""
+
+    external_id: typing.NotRequired[str | None]
+    """Your unique identifier for this credit. Retrying with the same `external_id` doesn't grant the credit twice."""
+
+    external_customer_id: str
+    """The external ID of the customer."""
+
+
+class CustomerMeterCreditsCustomerIDCreate(typing.TypedDict):
+    """Schema to manually grant credits on a customer meter using a customer ID."""
+
+    meter_id: typing.NotRequired[str | None]
+    """The ID of the meter. Required if `external_meter_id` is not provided."""
+
+    external_meter_id: typing.NotRequired[str | None]
+    """The external ID of the meter, as set by config as code. Required if `meter_id` is not provided."""
+
+    units: int
+    """The number of units to credit."""
+
+    rollover: typing.NotRequired[bool]
+    """Whether unused credits carry over to the next meter period."""
+
+    external_id: typing.NotRequired[str | None]
+    """Your unique identifier for this credit. Retrying with the same `external_id` doesn't grant the credit twice."""
+
+    customer_id: str
+    """The ID of the customer."""
+
+
 class CustomerOrderConfirmPayment(typing.TypedDict):
     """Schema to confirm a retry payment using either a saved payment method or a new confirmation token."""
 

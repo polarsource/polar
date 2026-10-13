@@ -34,12 +34,12 @@ class TestSeal:
         )
 
         quantities = await reducer_service.seal(
-            session, customer, [meter.id], start=START, cutoff=CUTOFF
+            session, customer, [meter.id], billable_from=START, cutoff=CUTOFF
         )
 
         assert quantities == {meter.id: Decimal(3)}
         seal.assert_called_once_with(
-            session, [reducer], customer, start=START, cutoff=CUTOFF
+            session, [reducer], customer, billable_from=START, cutoff=CUTOFF
         )
 
     async def test_logs_failures_without_raising(
@@ -58,7 +58,7 @@ class TestSeal:
         )
 
         quantities = await reducer_service.seal(
-            session, customer, [meter.id], start=START, cutoff=CUTOFF
+            session, customer, [meter.id], billable_from=START, cutoff=CUTOFF
         )
 
         assert quantities == {}

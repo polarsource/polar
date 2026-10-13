@@ -23,7 +23,7 @@ class ReducerService:
         customer: Customer,
         meter_ids: Iterable[UUID],
         *,
-        start: datetime,
+        billable_from: datetime,
         cutoff: datetime,
     ) -> dict[UUID, Decimal]:
         meter_ids = sorted(meter_ids)
@@ -43,7 +43,7 @@ class ReducerService:
                     session,
                     list(reducers.values()),
                     customer,
-                    start=start,
+                    billable_from=billable_from,
                     cutoff=cutoff,
                 )
         except Exception:

@@ -128,8 +128,8 @@ class BillingEntryService:
             else:
                 await repository.update_order_item_id(selector, order_item.id)
 
-        start = subscription.trial_end or subscription.started_at
-        if consumed_units and start is not None:
+        billable_from = subscription.trial_end or subscription.started_at
+        if consumed_units and billable_from is not None:
             with logfire.span(
                 "Seal and compare billed usage",
                 subscription_id=str(subscription.id),
@@ -139,7 +139,7 @@ class BillingEntryService:
                     session,
                     subscription.customer,
                     set(consumed_units),
-                    start=start,
+                    billable_from=billable_from,
                     cutoff=cutoff,
                 )
                 span.set_attribute(

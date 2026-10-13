@@ -1549,7 +1549,7 @@ class TestCreateOrderItemsFromPending:
                 session,
                 customer,
                 {meter.id},
-                start=metered_subscription.started_at,
+                billable_from=metered_subscription.started_at,
                 cutoff=cutoff,
             )
         else:

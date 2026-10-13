@@ -560,7 +560,11 @@ class TestSeal:
         )
 
         await reducer_bucket_service.seal(
-            session, [max_reducer], external_customer, start=START, cutoff=CUTOFF
+            session,
+            [max_reducer],
+            external_customer,
+            billable_from=START,
+            cutoff=CUTOFF,
         )
 
         assert await get_intervals(session) == [
@@ -604,7 +608,7 @@ class TestSeal:
             session,
             [max_reducer],
             external_customer,
-            start=START,
+            billable_from=START,
             cutoff=NEXT_BUCKET_START,
         )
 
@@ -642,7 +646,11 @@ class TestSeal:
         )
 
         await reducer_bucket_service.seal(
-            session, [max_reducer], external_customer, start=START, cutoff=CUTOFF
+            session,
+            [max_reducer],
+            external_customer,
+            billable_from=START,
+            cutoff=CUTOFF,
         )
 
         assert await get_intervals(session) == [
@@ -675,7 +683,7 @@ class TestSeal:
             session,
             [max_reducer],
             external_customer,
-            start=CUTOFF,
+            billable_from=CUTOFF,
             cutoff=NEXT_BUCKET_START,
         )
 
@@ -708,7 +716,11 @@ class TestSeal:
 
         for cutoff in (CUTOFF, later_cutoff):
             await reducer_bucket_service.seal(
-                session, [max_reducer], external_customer, start=START, cutoff=cutoff
+                session,
+                [max_reducer],
+                external_customer,
+                billable_from=START,
+                cutoff=cutoff,
             )
 
         assert await get_intervals(session) == [
@@ -739,7 +751,11 @@ class TestSeal:
         )
 
         await reducer_bucket_service.seal(
-            session, [max_reducer], external_customer, start=START, cutoff=CUTOFF
+            session,
+            [max_reducer],
+            external_customer,
+            billable_from=START,
+            cutoff=CUTOFF,
         )
 
         await reducer_bucket_service.rollup(
@@ -823,7 +839,11 @@ class TestSeal:
             )
 
         quantities = await reducer_bucket_service.seal(
-            session, [reducer], external_customer, start=START, cutoff=NEXT_BUCKET_START
+            session,
+            [reducer],
+            external_customer,
+            billable_from=START,
+            cutoff=NEXT_BUCKET_START,
         )
 
         assert quantities == {reducer.id: expected}

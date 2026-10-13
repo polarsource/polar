@@ -175,11 +175,11 @@ class ReducerBucketService:
         reducers: Sequence[Reducer],
         customer: Customer,
         *,
-        start: datetime,
+        billable_from: datetime,
         cutoff: datetime,
     ) -> dict[uuid.UUID, Decimal]:
         quantities: dict[uuid.UUID, Decimal] = {}
-        if start >= cutoff:
+        if billable_from >= cutoff:
             return quantities
         repository = ReducerBucketRepository.from_session(session)
         identities: list[tuple[uuid.UUID | None, str | None]] = [(customer.id, None)]
@@ -190,17 +190,21 @@ class ReducerBucketService:
             ]
 
         await self._lock_buckets(
-            repository, reducers, identities, start=start, cutoff=cutoff
+            repository, reducers, identities, start=billable_from, cutoff=cutoff
         )
 
         for reducer in sorted(reducers, key=lambda reducer: str(reducer.id)):
             for customer_id, external_customer_id in identities:
-                for at in (start, cutoff):
+                for at in (billable_from, cutoff):
                     await self._split(
                         repository, reducer, at, customer_id, external_customer_id
                     )
             sealed = await repository.seal(
-                reducer, identities, start=start, end=cutoff, sealed_at=utc_now()
+                reducer,
+                identities,
+                start=billable_from,
+                end=cutoff,
+                sealed_at=utc_now(),
             )
             quantities[reducer.id] = _get_quantity(reducer.aggregation.func, sealed)
         return quantities

@@ -4,7 +4,7 @@ const SHARED = `Polar API responses are large, and every tool result you read co
 - Page through, filter and aggregate in code, and return only the final figures and the few rows the answer needs. Don't return whole API responses or full objects, and don't fetch samples just to look at them.
 - List responses are { items, pagination: { total_count, max_page } }. Use limit=100 and fetch the remaining pages together.
 - Narrow requests with filters such as organization_id, customer_id and product_id instead of fetching everything.
-- Amounts are integers in cents: net_amount excludes tax, total_amount includes it.`
+- Amounts are integers in the currency's smallest unit (cents for USD, whole yen for zero-decimal currencies such as JPY): net_amount excludes tax, total_amount includes it.`
 
 const BY_MODE: Record<ToolMode, string> = {
   codemode:

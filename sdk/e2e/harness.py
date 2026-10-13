@@ -219,7 +219,7 @@ async def run(
     async with contextlib.AsyncExitStack() as stack:
         redis_url = await stack.enter_async_context(local_redis())
         server, base_url = await stack.enter_async_context(
-            launch("node", str(ROOT / "snapshot_server.ts"))
+            launch(sys.executable, str(ROOT / "snapshot_server.py"))
         )
         await server.request(
             "configure",

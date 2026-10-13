@@ -4,8 +4,8 @@ Python timelines exercise independent Python and TypeScript SDK processes sharin
 a real, isolated Redis. Each test starts its own Redis on a loopback port, disables
 persistence, and tears down every process afterward. No existing Redis is flushed.
 
-Until Polar implements the SDK snapshot protocol, a local WebSocket fixture supplies
-configuration and snapshots. This tests SDK synchronization across processes and
+Until Polar implements the SDK snapshot protocol, a local Starlette/Uvicorn
+WebSocket fixture supplies configuration and snapshots. This tests SDK synchronization across processes and
 languages; it does not establish full Polar E2E correctness. It does not mock SDK
 code or Redis. The TypeScript client imports the built SDK through a declared local
 package link; Python imports its editable local SDK dependency. The harness owns its
@@ -25,8 +25,8 @@ just test
 
 Every scenario runs once with all Python clients and once with all TypeScript clients.
 Use `just test -k python` or `just test -k typescript` to select one SDK.
-Run `just lint` and `just typecheck` for both languages. The Node helpers are strict
-TypeScript files executed directly by Node 24, without a separate harness build.
+Run `just lint` and `just typecheck` for both languages. The Node SDK client is a
+strict TypeScript file executed directly by Node 24, without a separate harness build.
 Async orchestration uses AnyIO, and pytest scenarios use `@pytest.mark.anyio`.
 The pytest backend is asyncio because the Redis client requires it.
 Python clients read stdin pipes through AnyIO readiness notifications, without a

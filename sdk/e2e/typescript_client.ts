@@ -2,7 +2,7 @@ import { createInterface } from "node:readline";
 import { Outpost, type EventInput } from "@polar-sh/sdk/outpost";
 import { createPolarCore } from "@polar-sh/sdk/2026-10";
 
-type Customer = Pick<EventInput, "customer_id" | "external_customer_id">;
+type Customer = Parameters<Outpost["actor"]>[0];
 type Command =
   | { operation: "ingest"; arguments: { events: EventInput[] } }
   | { operation: "read"; arguments: Customer & { meter_id: string } }

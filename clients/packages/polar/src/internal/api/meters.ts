@@ -1,12 +1,12 @@
-import { errors, type Polar } from '../../sdk'
+import { errors, type models, type Polar } from '../../sdk'
 
-export const assertMeterDeployed = async (
+export const getDeployedMeter = async (
   sdk: Polar,
   externalId: string,
-): Promise<void> => {
+): Promise<models.Meter> => {
   try {
     const meter = await sdk.meters.getExternal(externalId)
-    if (meter.archived_at == null) return
+    if (meter.archived_at == null) return meter
   } catch (error) {
     if (error instanceof errors.AmbiguousExternalMeterID) {
       throw new Error(
@@ -18,4 +18,11 @@ export const assertMeterDeployed = async (
   throw new Error(
     `Meter ${JSON.stringify(externalId)} is not deployed in this environment.`,
   )
+}
+
+export const assertMeterDeployed = async (
+  sdk: Polar,
+  externalId: string,
+): Promise<void> => {
+  await getDeployedMeter(sdk, externalId)
 }

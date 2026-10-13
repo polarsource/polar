@@ -6,7 +6,7 @@ import { env } from 'cloudflare:workers'
 import { Effect, Layer, ManagedRuntime } from 'effect'
 import { FetchHttpClient, HttpClient } from 'effect/http'
 import { Auth, getBearerToken, unauthorized } from './auth'
-import { detectClient, toolModeFor } from './clients'
+import { toolModeFor } from './clients'
 import { Docs } from './docs'
 import { createServer } from './server'
 import { Sandbox } from './sandbox'
@@ -94,7 +94,7 @@ const handle = Effect.fn('handle')(function* (request: Request) {
 
   const readOnly = url.searchParams.get('readonly') === 'true'
   const body = yield* readJsonBody(request)
-  const toolMode = toolModeFor(url, detectClient(request, body))
+  const toolMode = toolModeFor(url)
   const context = yield* Effect.context<
     Sandbox | Docs | HttpClient.HttpClient
   >()

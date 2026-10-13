@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
-import { CLIENT_INFO_META_KEY } from '@modelcontextprotocol/server'
 import { request, rpc } from './client'
 import tools from '../src/generated/tools.json'
 import { evaluate, exports, get } from './workers'
@@ -79,7 +78,7 @@ test('OAuth validates per environment, caches for 60 seconds, and does not cache
   expect(fetchMock).toHaveBeenCalledTimes(6)
 })
 
-test('code mode is the default; client hints and explicit overrides select operation mode', async () => {
+test('code mode is the default for every client; ?codemode=false selects operation mode', async () => {
   const defaultTools = (await rpc('tools/list')).result.tools
   expect(defaultTools.map((tool: { name: string }) => tool.name)).toEqual([
     'search',
@@ -88,33 +87,21 @@ test('code mode is the default; client hints and explicit overrides select opera
   ])
   expect(defaultTools[0].inputSchema.properties.code.type).toBe('string')
   expect(defaultTools[0].inputSchema.required).toEqual(['code'])
-  const operations = (
-    await rpc('tools/list', {}, '', { 'User-Agent': 'Cursor/1.0' })
-  ).result.tools
+  for (const userAgent of ['Cursor/1.0', 'claude-code/1.0', 'undici']) {
+    expect(
+      (await rpc('tools/list', {}, '', { 'User-Agent': userAgent })).result
+        .tools,
+    ).toHaveLength(4)
+  }
+  expect(
+    (await rpc('tools/list', {}, '?codemode=true')).result.tools,
+  ).toHaveLength(4)
+  const operations = (await rpc('tools/list', {}, '?codemode=false')).result
+    .tools
   expect(operations.map((tool: { name: string }) => tool.name)).toEqual([
     ...tools.map((tool) => tool.name),
     ...DOCS_TOOLS,
   ])
-  expect(
-    (
-      await rpc('tools/list', {}, '?codemode=true', {
-        'User-Agent': 'Cursor/1.0',
-      })
-    ).result.tools,
-  ).toHaveLength(4)
-  expect(
-    (await rpc('tools/list', {}, '', { 'User-Agent': 'claude-code/1.0' }))
-      .result.tools,
-  ).toHaveLength(4)
-  const clientMeta = (name: string) => ({
-    _meta: { [CLIENT_INFO_META_KEY]: { name } },
-  })
-  expect(
-    (await rpc('tools/list', clientMeta('cursor-vscode'))).result.tools,
-  ).toHaveLength(tools.length + DOCS_TOOLS.length)
-  expect(
-    (await rpc('tools/list', clientMeta('codex-mcp-client'))).result.tools,
-  ).toHaveLength(4)
   const readOnly = (
     await rpc('tools/list', {}, '?codemode=false&readonly=true')
   ).result.tools

@@ -30,6 +30,7 @@ from polar.notifications.notification import NotificationType
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.order.tasks import (
+    SUBSCRIPTION_ORDER_GRACE_PERIOD,
     OrderDoesNotExist,
     create_subscription_order,
     enqueue_stale_payment_locks,
@@ -84,6 +85,44 @@ class TestCreateSubscriptionOrder:
             OrderBillingReasonInternal.subscription_cycle,
             cutoff=cutoff,
         )
+
+    async def test_defers_until_grace_period_elapsed(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+        cutoff = utc_now() - timedelta(minutes=5)
+        create_order_mock = mocker.patch.object(
+            order_service, "create_subscription_order", new=AsyncMock()
+        )
+        enqueue_job_mock = mocker.patch("polar.order.tasks.enqueue_job")
+
+        await create_subscription_order(
+            subscription.id,
+            OrderBillingReasonInternal.subscription_cycle,
+            cutoff.isoformat(),
+        )
+
+        create_order_mock.assert_not_awaited()
+        enqueue_job_mock.assert_called_once_with(
+            "order.create_subscription_order",
+            subscription.id,
+            OrderBillingReasonInternal.subscription_cycle,
+            cutoff=cutoff.isoformat(),
+            delay=ANY,
+        )
+        delay = enqueue_job_mock.call_args.kwargs["delay"]
+        expected = SUBSCRIPTION_ORDER_GRACE_PERIOD - timedelta(minutes=5)
+        assert 0 < delay <= expected.total_seconds() * 1000
 
 
 @pytest.mark.anyio

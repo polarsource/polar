@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Annotated
 
 import stripe as stripe_lib
@@ -8,6 +8,7 @@ from dramatiq import Retry
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.exceptions import PolarTaskError
+from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Order, Product
 from polar.models.order import OrderBillingReasonInternal
@@ -39,6 +40,10 @@ from .service import order as order_service
 log: Logger = structlog.get_logger()
 
 MAX_RETRIES = 10
+
+# Lets late usage events land and reducer buckets covering the period end
+# close and sync to Postgres before the order is billed.
+SUBSCRIPTION_ORDER_GRACE_PERIOD = timedelta(minutes=15)
 
 
 class OrderTaskError(PolarTaskError): ...
@@ -105,6 +110,24 @@ async def create_subscription_order(
                 if cutoff is not None
                 else subscription.current_period_start
             )
+            remaining_grace_period = (
+                billing_cutoff + SUBSCRIPTION_ORDER_GRACE_PERIOD - utc_now()
+            )
+            if remaining_grace_period > timedelta(0):
+                log.info(
+                    "Deferring subscription order until grace period elapses",
+                    subscription_id=subscription_id,
+                    cutoff=billing_cutoff,
+                    delay=remaining_grace_period,
+                )
+                enqueue_job(
+                    "order.create_subscription_order",
+                    subscription_id,
+                    order_reason,
+                    cutoff=billing_cutoff.isoformat(),
+                    delay=int(remaining_grace_period.total_seconds() * 1000),
+                )
+                return
 
         try:
             await order_service.create_subscription_order(

@@ -17,7 +17,6 @@ from polar.kit.schemas import (
     Int32,
     MergeJSONSchema,
     Schema,
-    SetSchemaReference,
     TimestampedSchema,
 )
 from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
@@ -138,14 +137,6 @@ class CheckoutLinkCreateProducts(CheckoutLinkCreateBase):
         description="List of products that will be available to select at checkout.",
         min_length=1,
     )
-
-
-CheckoutLinkCreate = Annotated[
-    CheckoutLinkCreateProductPrice
-    | CheckoutLinkCreateProduct
-    | CheckoutLinkCreateProducts,
-    SetSchemaReference("CheckoutLinkCreate"),
-]
 
 
 class CheckoutLinkUpdate(MetadataInputMixin, TrialConfigurationInputMixin):

@@ -211,7 +211,7 @@ export const AddCreditsModal = ({
                 : 'Unused credits expire at the end of the billing period'}{' '}
               and can&apos;t be removed once added.
             </Text>
-            <Box columnGap="s">
+            <Box columnGap="s" justifyContent="end">
               <Button variant="ghost" onClick={onClose}>
                 Cancel
               </Button>

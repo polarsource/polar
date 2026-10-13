@@ -36,7 +36,6 @@ from polar.v2026_04.inputs import (
 from polar.v2026_04.literals import SubscriptionProrationBehavior
 from polar.v2026_04.outputs import (
     CustomerBenefitGrantSlackSharedChannel,
-    LegacyRecurringProductPriceFixed,
     ProductPriceFixed,
 )
 from polar.v2026_04.webhooks import (
@@ -987,7 +986,7 @@ class PolarSelfService:
 
     def _product_fixed_price_amount(self, product: "Product") -> int:
         for price in product.prices:
-            if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
+            if isinstance(price, ProductPriceFixed):
                 return price.price_amount
         return 0
 

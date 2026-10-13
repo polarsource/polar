@@ -1,7 +1,8 @@
 from fastapi import Depends, Query
 
 from polar.customer.schemas.customer import CustomerID
-from polar.exceptions import ResourceNotFound
+from polar.declarative_config.exceptions import ConfigAsCodeNotEnabled
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.versioning import version
@@ -15,7 +16,11 @@ from polar.version import V2027_01
 
 from . import auth, sorting
 from .schemas import CustomerMeter as CustomerMeterSchema
-from .schemas import CustomerMeterID
+from .schemas import CustomerMeterCreditsCreate, CustomerMeterID
+from .service import (
+    CustomerMeterCreditConcurrentRequest,
+    CustomerMeterCreditExternalIDConflict,
+)
 from .service import customer_meter as customer_meter_service
 
 router = APIRouter(
@@ -144,3 +149,38 @@ async def get(
         raise ResourceNotFound()
 
     return customer_meter
+
+
+@router.post(
+    "/credits",
+    summary="Credit Customer Meter",
+    response_model=CustomerMeterSchema,
+    status_code=201,
+    responses={
+        201: {"description": "Credits granted."},
+        403: {
+            "description": (
+                "You don't have permission to manage customers, "
+                "or config as code is not enabled for this organization."
+            ),
+            "model": NotPermitted.schema() | ConfigAsCodeNotEnabled.schema(),
+        },
+        409: {
+            "description": (
+                "The external_id is already used by a different event, "
+                "or by a concurrent request."
+            ),
+            "model": CustomerMeterCreditExternalIDConflict.schema()
+            | CustomerMeterCreditConcurrentRequest.schema(),
+        },
+    },
+    tags=[APITag.private],
+)
+@version(starting_from=V2027_01)
+async def credits(
+    credit_create: CustomerMeterCreditsCreate,
+    auth_subject: auth.CustomerMeterWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> CustomerMeter:
+    """Manually grant credits on a customer meter."""
+    return await customer_meter_service.credit(session, auth_subject, credit_create)

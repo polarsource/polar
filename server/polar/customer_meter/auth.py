@@ -13,6 +13,18 @@ _CustomerMeterRead = Authenticator(
     },
     allowed_subjects={User, Organization},
 )
+
+_CustomerMeterWrite = Authenticator(
+    required_scopes={
+        Scope.customers_write,
+    },
+    allowed_subjects={User, Organization},
+)
+
 CustomerMeterRead = Annotated[
     AuthSubject[User | Organization], Depends(_CustomerMeterRead)
+]
+
+CustomerMeterWrite = Annotated[
+    AuthSubject[User | Organization], Depends(_CustomerMeterWrite)
 ]

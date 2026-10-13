@@ -134,7 +134,7 @@ class TestRollup:
         organization: Organization,
     ) -> None:
         previous_start = BUCKET_START - REDUCER_BUCKET_SIZE
-        for batch in ((3, 4), (2,)):
+        for batch in ((0.1, 0.2), (0.3,)):
             await reducer_bucket_service.rollup(
                 session,
                 redis,
@@ -150,8 +150,8 @@ class TestRollup:
             )
 
         [bucket] = await get_buckets(session)
-        assert (bucket.generation, bucket.count, bucket.sum) == (1, 3, Decimal(9))
-        assert (bucket.min, bucket.max) == (Decimal(2), Decimal(4))
+        assert (bucket.generation, bucket.count, bucket.sum) == (1, 3, Decimal("0.6"))
+        assert (bucket.min, bucket.max) == (Decimal("0.1"), Decimal("0.3"))
 
     async def test_adds_float_values_to_open_bucket(
         self,
@@ -238,17 +238,17 @@ class TestRollup:
             (
                 PropertyAggregation(func=AggregationFunction.sum, property="tokens"),
                 lambda redis, key: redis.get(key),
-                b"17",
+                b"18",
             ),
             (
                 PropertyAggregation(func=AggregationFunction.avg, property="tokens"),
                 lambda redis, key: redis.hmget(key, ["count", "sum"]),
-                [b"6", b"17"],
+                [b"6", b"18"],
             ),
             (
                 PropertyAggregation(func=AggregationFunction.min, property="tokens"),
                 lambda redis, key: redis.zscore(key, "min"),
-                1.0,
+                1.5,
             ),
             (
                 PropertyAggregation(func=AggregationFunction.max, property="tokens"),
@@ -275,7 +275,7 @@ class TestRollup:
             save_fixture, organization=organization, meters=[meter]
         )
 
-        for batch in ((1, 2, 3), (5, 4, 2)):
+        for batch in ((1.5, 2, 3), (5, 4.5, 2)):
             events = [
                 build_event(organization, metadata={"tokens": tokens})
                 for tokens in batch

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "generate": "node scripts/generate-spec.ts",
+    "prepare": "cf workers types",
     "dev": "pnpm generate && cf dev",
     "build": "pnpm generate && cf build",
     "typecheck": "pnpm generate && cf workers types && tsc",

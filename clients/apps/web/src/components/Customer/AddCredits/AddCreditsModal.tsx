@@ -64,6 +64,7 @@ export const AddCreditsModal = ({
   const values = useWatch({ control: form.control })
   const option = options.find((o) => o.meter.id === values.meter_id)
   const units = parseCreditUnits(values.units ?? '')
+  const customerLabel = customer.name || customer.email || 'this customer'
 
   const onSubmit = async (submitted: AddCreditsForm) => {
     const submittedUnits = parseCreditUnits(submitted.units)
@@ -96,7 +97,7 @@ export const AddCreditsModal = ({
 
     toast({
       title: 'Credits Added',
-      description: `Added ${formatCredits(submittedUnits)} on ${option.meter.name} for ${customer.name || customer.email || 'this customer'}.`,
+      description: `Added ${formatCredits(submittedUnits)} on ${option.meter.name} for ${customerLabel}.`,
     })
     onClose()
   }
@@ -174,8 +175,16 @@ export const AddCreditsModal = ({
             <AddCreditsSummary option={option} units={units ?? 0} />
           )}
           <Box flexDirection="column" rowGap="l">
-            <Text>
-              Credits don&apos;t expire and can&apos;t be removed once added.
+            <Text color="muted">
+              Grant{' '}
+              <Text as="span" color="default">
+                {formatCredits(units ?? 0)}
+              </Text>{' '}
+              to{' '}
+              <Text as="span" color="default">
+                {customerLabel}
+              </Text>
+              . Credits don&apos;t expire and can&apos;t be removed once added.
             </Text>
             <Box columnGap="s">
               <Button variant="ghost" onClick={onClose}>

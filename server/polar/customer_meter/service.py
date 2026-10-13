@@ -269,9 +269,21 @@ class CustomerMeterService:
             )
 
         meter_repository = MeterRepository.from_session(session)
-        meter = await meter_repository.get_readable_by_id(
-            credit_create.meter_id, org_ids
-        )
+        meter: Meter | None
+        if credit_create.meter_id is not None:
+            meter_field = "meter_id"
+            meter_value: uuid.UUID | str = credit_create.meter_id
+            meter = await meter_repository.get_readable_by_id(
+                credit_create.meter_id, org_ids
+            )
+        else:
+            assert credit_create.external_meter_id is not None
+            meter_field = "external_meter_id"
+            meter_value = credit_create.external_meter_id
+            meters = await meter_repository.get_all_by_external_ids(
+                customer.organization_id, [credit_create.external_meter_id]
+            )
+            meter = meters[0] if meters else None
 
         if (
             meter is None
@@ -282,9 +294,9 @@ class CustomerMeterService:
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "meter_id"),
+                        "loc": ("body", meter_field),
                         "msg": "Meter not found",
-                        "input": credit_create.meter_id,
+                        "input": meter_value,
                     }
                 ]
             )

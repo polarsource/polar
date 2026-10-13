@@ -26069,11 +26069,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_meters.credits(\n    meter_id='d498a884-e2cd-4d3e-8002-f536468a8b22',\n    units=100,\n    rollover=False,\n    customer_id='992fae2a-2a17-4b7a-8d9e-e287cf90131b',\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_meters.credits(\n    meter_id='d498a884-e2cd-4d3e-8002-f536468a8b22',\n    external_meter_id='tool_call',\n    units=100,\n    rollover=False,\n    customer_id='992fae2a-2a17-4b7a-8d9e-e287cf90131b',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerMeters.credits(\n  {\n    \"meter_id\": \"d498a884-e2cd-4d3e-8002-f536468a8b22\",\n    \"units\": 100,\n    \"rollover\": false,\n    \"customer_id\": \"992fae2a-2a17-4b7a-8d9e-e287cf90131b\"\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerMeters.credits(\n  {\n    \"meter_id\": \"d498a884-e2cd-4d3e-8002-f536468a8b22\",\n    \"external_meter_id\": \"tool_call\",\n    \"units\": 100,\n    \"rollover\": false,\n    \"customer_id\": \"992fae2a-2a17-4b7a-8d9e-e287cf90131b\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -49884,12 +49884,35 @@
       "CustomerMeterCreditsCustomerExternalIDCreate": {
         "properties": {
           "meter_id": {
-            "type": "string",
-            "format": "uuid4",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Meter Id",
-            "description": "The ID of the meter.",
+            "description": "The ID of the meter. Required if `external_meter_id` is not provided.",
             "examples": [
               "d498a884-e2cd-4d3e-8002-f536468a8b22"
+            ]
+          },
+          "external_meter_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Meter Id",
+            "description": "The external ID of the meter, as set by config as code. Required if `meter_id` is not provided.",
+            "examples": [
+              "tool_call"
             ]
           },
           "units": {
@@ -49932,7 +49955,6 @@
         },
         "type": "object",
         "required": [
-          "meter_id",
           "units",
           "external_customer_id"
         ],
@@ -49942,12 +49964,35 @@
       "CustomerMeterCreditsCustomerIDCreate": {
         "properties": {
           "meter_id": {
-            "type": "string",
-            "format": "uuid4",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Meter Id",
-            "description": "The ID of the meter.",
+            "description": "The ID of the meter. Required if `external_meter_id` is not provided.",
             "examples": [
               "d498a884-e2cd-4d3e-8002-f536468a8b22"
+            ]
+          },
+          "external_meter_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Meter Id",
+            "description": "The external ID of the meter, as set by config as code. Required if `meter_id` is not provided.",
+            "examples": [
+              "tool_call"
             ]
           },
           "units": {
@@ -49991,7 +50036,6 @@
         },
         "type": "object",
         "required": [
-          "meter_id",
           "units",
           "customer_id"
         ],

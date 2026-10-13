@@ -13,9 +13,9 @@ from polar.postgres import (
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
-from .exceptions import ConfigAsCodeNotEnabled
 from .schemas import Config, ConfigApplyResult, ConfigExport, ConfigPlan
 from .service import (
+    ConfigAsCodeNotEnabled,
     ConfigBenefitConflict,
     ConfigInvalid,
     ConfigMeterConflict,

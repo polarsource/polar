@@ -246,6 +246,7 @@ class PythonEmitter(EmitterBase):
         self.env.filters["service_name"] = service_name
         self.env.filters["format_default"] = format_default_value
         self.env.filters["format_default_dataclass"] = format_default_value_dataclass
+        self.env.filters["format_version"] = self.get_version_string
 
     def _emit_service(
         self, service: Service, api: APIVersion, output_path: pathlib.Path

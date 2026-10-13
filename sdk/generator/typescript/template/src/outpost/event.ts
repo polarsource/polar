@@ -1,10 +1,15 @@
-export interface EventInput {
-  name: string;
-  timestamp?: string;
-  customer_id?: string;
-  external_customer_id?: string;
-  metadata?: Record<string, unknown>;
-}
+{% for api in ir.versions %}
+import type {
+  EventCreateCustomer as EventCreateCustomer{{ api.version | replace('-', '_') }},
+  EventCreateExternalCustomer as EventCreateExternalCustomer{{ api.version | replace('-', '_') }},
+} from "../{{ api.version }}/models";
+{% endfor %}
+
+export type EventInput =
+{% for api in ir.versions %}
+  | EventCreateCustomer{{ api.version | replace('-', '_') }}
+  | EventCreateExternalCustomer{{ api.version | replace('-', '_') }}{% if loop.last %};{% endif %}
+{% endfor %}
 
 export interface Event {
   name: string;
@@ -14,32 +19,24 @@ export interface Event {
 }
 
 export const customerKey = (
-  input: Pick<EventInput, "customer_id" | "external_customer_id">,
+  input: { customer_id?: string; external_customer_id?: string },
 ): string => {
   if ((input.customer_id === undefined) === (input.external_customer_id === undefined)) {
     throw new TypeError("Provide exactly one customer_id or external_customer_id");
   }
   const identifier = input.customer_id ?? input.external_customer_id;
-  if (typeof identifier !== "string") throw new TypeError("Customer identifier must be a string");
   return `${input.customer_id !== undefined ? "customer" : "external"}:${identifier}`;
 };
 
 export const parseEvent = (input: EventInput): Event => {
-  if (typeof input.name !== "string") throw new TypeError("Event name must be a string");
   if (
     input.timestamp !== undefined &&
-    (typeof input.timestamp !== "string" || !/(Z|[+-]\d{2}:?\d{2})$/i.test(input.timestamp))
+    !/(Z|[+-]\d{2}:?\d{2})$/i.test(input.timestamp)
   ) {
     throw new TypeError("Event timestamps must include a timezone");
   }
   const timestamp = input.timestamp === undefined ? Date.now() : Date.parse(input.timestamp);
   if (!Number.isFinite(timestamp)) throw new TypeError("Invalid event timestamp");
-  if (
-    input.metadata !== undefined &&
-    (input.metadata === null || typeof input.metadata !== "object" || Array.isArray(input.metadata))
-  ) {
-    throw new TypeError("Event metadata must be an object");
-  }
   return {
     name: input.name,
     customer: customerKey(input),

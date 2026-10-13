@@ -3,19 +3,25 @@ import dataclasses
 import datetime
 import typing
 
+import typing_extensions
 
-class EventInput(typing.Protocol):
-    def __iter__(self) -> collections.abc.Iterator[str]: ...
+{% for api in ir.versions %}
+from polar.{{ api | format_version }}.inputs import EventCreateCustomer as EventCreateCustomer{{ api | format_version }}, EventCreateExternalCustomer as EventCreateExternalCustomer{{ api | format_version }}
+{% endfor %}
 
-    def __getitem__(self, key: str, /) -> object: ...
-
+EventInput: typing.TypeAlias = typing.Union[
+    {% for api in ir.versions %}
+    EventCreateCustomer{{ api | format_version }},
+    EventCreateExternalCustomer{{ api | format_version }},
+    {% endfor %}
+]
 
 @dataclasses.dataclass
 class Event:
     name: str
     external_customer_id: str
     timestamp: datetime.datetime
-    metadata: dict[str, typing.Any] = dataclasses.field(default_factory=dict)
+    metadata: typing_extensions.Mapping[typing.Any, typing.Any] = dataclasses.field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if self.timestamp.utcoffset() is None:

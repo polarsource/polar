@@ -1,14 +1,16 @@
 import { describe, expect, it } from "vitest";
 
 import { customerKey, parseEvent, getProperty } from "./event";
-import { getBucketStart, getMatcher, parseReducers, reduce, type Reducer } from "./reducer";
+import { getBucketStart, getMatcher, reduce, type Reducer } from "./reducer";
 
-const event = parseEvent({
-  name: "api_call",
-  external_customer_id: "alice",
-  timestamp: "2026-10-12T12:00:00Z",
+const event = {
+  ...parseEvent({
+    name: "api_call",
+    external_customer_id: "alice",
+    timestamp: "2026-10-12T12:00:00Z",
+  }),
   metadata: { tokens: 3, nested: { flag: true } },
-});
+};
 const reducer = (func: "count" | "sum" | "min" | "max"): Reducer => ({
   id: "tokens",
   filter: { conjunction: "and", clauses: [] },
@@ -74,14 +76,11 @@ describe("reduction", () => {
     expect(getProperty(event, "timestamp")).toBe(event.timestamp);
   });
 
-  it("rejects invalid events/configuration and non-finite reductions", () => {
+  it("rejects ambiguous customers, timezone-free timestamps, and non-finite reductions", () => {
     expect(() =>
       parseEvent({ name: "api", external_customer_id: "a", timestamp: "2026-10-12T12:00:00" }),
     ).toThrow();
     expect(() => customerKey({ customer_id: "a", external_customer_id: "a" })).toThrow();
-    expect(() =>
-      parseReducers({ reducers: [{ ...reducer("sum"), aggregation: { func: "median" } }] }),
-    ).toThrow();
     expect(reduce([reducer("sum")], [{ ...event, metadata: { tokens: true } }], 0)).toEqual([]);
     expect(() =>
       reduce([reducer("sum")], [{ ...event, metadata: { tokens: Infinity } }], 0),

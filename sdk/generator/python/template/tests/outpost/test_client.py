@@ -15,10 +15,11 @@ from redis.asyncio import Redis
 from redis.asyncio.client import PubSub
 from redis.exceptions import ConnectionError as RedisConnectionError
 
-from polar import PolarDeserializationError, PolarError
-from polar.outpost.client import APPLY_SNAPSHOT_SCRIPT, Outpost, connect_websocket
+from polar.outpost.client import APPLY_SNAPSHOT_SCRIPT, Outpost, connect_websocket, PolarOutpostError
 from polar.outpost.reducer import get_bucket_start
-from polar.v{{ ir.versions[0].version | replace("-", "_") | replace(".", "_") }}.inputs import EventsIngest
+from polar.outpost import EventInput
+from polar.{{ ir.versions[0] | format_version }}.inputs import EventsIngest
+
 
 TIMESTAMP = "2026-10-12T12:00:00Z"
 BUCKET = get_bucket_start(datetime.datetime.fromisoformat(TIMESTAMP))
@@ -279,32 +280,11 @@ async def test_actor_is_idempotent_and_missing_snapshot_is_not_zero(
             )
             is None
         )
-        with pytest.raises(PolarError, match="snapshot is not ready"):
+        with pytest.raises(PolarOutpostError, match="snapshot is not ready"):
             await outpost.customer_meter(external_customer_id="alice", meter_id="meter")
     assert [
         message for message in websocket_requests if message["type"] == "snapshot"
     ] == [{"type": "snapshot", "payload": {"external_customer_id": "alice"}}]
-
-
-@pytest.mark.anyio
-async def test_invalid_batch_does_not_write_partial_usage(
-    redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
-) -> None:
-    url, redis = redis_connection
-    async with Outpost(url, client=polar_client) as outpost:
-        with pytest.raises(ValueError, match="exactly one"):
-            await outpost.ingest(
-                events=[
-                    {
-                        "name": "call",
-                        "external_customer_id": "bob",
-                        "metadata": {"tokens": 1},
-                    },
-                    {"name": "call"},
-                ]
-            )
-    assert not await redis.exists("outpost:state:external:bob")
 
 
 @pytest.mark.anyio
@@ -313,7 +293,7 @@ async def test_repeated_reduction_and_concurrent_writers(
     polar_client: httpx.AsyncClient,
 ) -> None:
     url, redis = redis_connection
-    event = {
+    event: EventInput = {
         "name": "call",
         "external_customer_id": "alice",
         "timestamp": TIMESTAMP,
@@ -342,24 +322,18 @@ async def test_startup_does_not_wait_for_configuration(
     url, redis = redis_connection
     gate = anyio.Event()
     configuration_gates.append(gate)
+    event: EventInput = {
+        "name": "call",
+        "external_customer_id": "alice",
+        "timestamp": TIMESTAMP,
+        "metadata": {"tokens": 3},
+    }
     with anyio.fail_after(1):
         async with (
             Outpost(url, client=polar_client) as outpost,
             anyio.create_task_group() as tasks,
         ):
-            tasks.start_soon(
-                functools.partial(
-                    outpost.ingest,
-                    events=[
-                        {
-                            "name": "call",
-                            "external_customer_id": "alice",
-                            "timestamp": TIMESTAMP,
-                            "metadata": {"tokens": 3},
-                        }
-                    ],
-                )
-            )
+            tasks.start_soon(functools.partial(outpost.ingest, events=[event]))
             await anyio.lowlevel.checkpoint()
             assert not await redis.exists("outpost:state:external:alice")
             gate.set()
@@ -433,26 +407,6 @@ async def test_duplicate_and_older_snapshots(
     await apply_snapshot(keys=[key], args=[*prefix, BUCKET - 300, "cold:tokens", 999])
     assert await redis.hget(key, "cold:tokens") == b"10"
     assert await redis.hget(key, "credited:meter") == b"20"
-
-
-@pytest.mark.anyio
-async def test_failed_configuration_closes_connections(
-    redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
-    configuration: dict[str, typing.Any],
-) -> None:
-    url, _ = redis_connection
-    configuration.clear()
-    outpost = Outpost(url, client=polar_client)
-    with pytest.raises(ExceptionGroup) as exc:
-        async with outpost:
-            await outpost.ingest(
-                events=[{"name": "call", "external_customer_id": "alice"}]
-            )
-    assert exc.value.subgroup(PolarDeserializationError) is not None
-    assert not polar_client.is_closed
-    with pytest.raises(RuntimeError, match="async with"):
-        await outpost.actor(external_customer_id="alice")
 
 
 @pytest.mark.anyio

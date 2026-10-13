@@ -265,14 +265,3 @@ it("ships the Outpost entrypoint for both ESM and CommonJS", async () => {
   expect(esm.Outpost).toBeTypeOf("function");
   expect(cjs.Outpost).toBeTypeOf("function");
 });
-
-it("fails pending operations on malformed configuration and allows cleanup", async () => {
-  delayConfiguration = true;
-  const outpost = await start();
-  const result = ingest(outpost, 3);
-  for (const ws of connections)
-    ws.send(JSON.stringify({ type: "configuration", payload: { reducers: [{}] } }));
-  await expect(result).rejects.toThrow("configuration");
-  await outpost.close();
-  expect(outpost["cache"].size).toBe(0);
-});

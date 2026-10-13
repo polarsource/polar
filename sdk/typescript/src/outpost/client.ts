@@ -5,28 +5,40 @@ import WebSocket from "ws";
 
 import { ClientBase, PolarError } from "../base";
 import { customerKey, parseEvent, type EventInput } from "./event";
-import { parseReducers, reduce, getBucketStart, type Reducer } from "./reducer";
+import { reduce, getBucketStart, type Reducer } from "./reducer";
 import { READ_STATE_SCRIPT, WRITE_BUCKET_SCRIPT, APPLY_SNAPSHOT_SCRIPT } from "./scripts";
 
 const CACHE_SIZE = 1024;
 const SYNC_INTERVAL = 30_000;
 const TIMEOUT = 5_000;
 type State = Record<string, string>;
-type Customer = Pick<EventInput, "customer_id" | "external_customer_id">;
+type Customer = Parameters<typeof customerKey>[0];
+interface Snapshot extends Customer {
+  cold_until: number;
+  cold: Record<string, number>;
+  credited: Record<string, number>;
+}
+type Message =
+  | { type: "configuration"; payload: { reducers: Reducer[] } }
+  | { type: "snapshot"; payload: Snapshot };
+interface StateUpdate {
+  customer: string;
+  state: string[];
+}
 interface LocalState {
   state?: State;
   pending: Promise<unknown>;
 }
 interface OutpostRedis extends Redis {
-  outpostReadState(key: string, ...args: (string | number)[]): Promise<unknown>;
-  outpostWriteBucket(key: string, ...args: (string | number)[]): Promise<unknown>;
-  outpostApplySnapshot(key: string, ...args: (string | number)[]): Promise<unknown>;
+  outpostReadState(key: string, ...args: (string | number)[]): Promise<string[]>;
+  outpostWriteBucket(key: string, ...args: (string | number)[]): Promise<string[]>;
+  outpostApplySnapshot(key: string, ...args: (string | number)[]): Promise<string[]>;
 }
 
 const generateEpoch = (): string => randomUUID().replaceAll("-", "");
 const number = (value: string): number => {
-  const parsed: unknown = JSON.parse(value);
-  if (typeof parsed !== "number" || !Number.isFinite(parsed))
+  const parsed: number = JSON.parse(value);
+  if (!Number.isFinite(parsed))
     throw new TypeError("Stored aggregation values must be finite numbers");
   return parsed;
 };
@@ -55,24 +67,10 @@ const locked = <T>(local: LocalState, action: () => Promise<T>): Promise<T> => {
   local.pending = result.catch(() => {});
   return result;
 };
-const decodeState = (value: unknown): State => {
-  if (
-    !Array.isArray(value) ||
-    value.length % 2 !== 0 ||
-    !value.every((item) => typeof item === "string")
-  )
-    throw new TypeError("Invalid Outpost state");
+const decodeState = (value: string[]): State => {
   const pairs: [string, string][] = [];
   for (let i = 0; i < value.length; i += 2) pairs.push([value[i], value[i + 1]]);
-  const state = Object.fromEntries(pairs);
-  if (typeof state.epoch !== "string" || !/^\d+$/.test(state.revision))
-    throw new TypeError("Invalid Outpost state version");
-  return state;
-};
-const object = (value: unknown): Record<string, unknown> => {
-  if (value === null || typeof value !== "object" || Array.isArray(value))
-    throw new TypeError("Invalid Outpost message");
-  return value as Record<string, unknown>;
+  return Object.fromEntries(pairs);
 };
 
 export interface OutpostOptions {
@@ -362,8 +360,7 @@ export class Outpost {
   }
 
   private async receiveRedis(data: string): Promise<void> {
-    const update = object(JSON.parse(data));
-    if (typeof update.customer !== "string") throw new TypeError("Invalid Outpost customer");
+    const update: StateUpdate = JSON.parse(data);
     await this.receiveState(update.customer, decodeState(update.state));
   }
 
@@ -423,21 +420,18 @@ export class Outpost {
   }
 
   private async receiveWebsocket(data: string): Promise<void> {
-    const message = object(JSON.parse(data));
+    const message: Message = JSON.parse(data);
     if (message.type === "configuration") {
-      this.reducers = parseReducers(message.payload);
+      this.reducers = message.payload.reducers;
       this.configured.resolve();
     } else if (message.type === "snapshot") {
-      const snapshot = object(message.payload);
-      const customer = customerKey(snapshot as Customer);
-      if (typeof snapshot.cold_until !== "number" || !Number.isSafeInteger(snapshot.cold_until))
-        throw new TypeError("Invalid snapshot boundary");
+      const snapshot = message.payload;
+      const customer = customerKey(snapshot);
       const epoch = generateEpoch();
       const args: (string | number)[] = [customer, this.channel, epoch, snapshot.cold_until];
-      for (const group of ["cold", "credited"]) {
-        for (const [id, value] of Object.entries(object(snapshot[group]))) {
-          if (typeof value !== "number" || !Number.isFinite(value))
-            throw new TypeError("Snapshot values must be finite");
+      for (const group of ["cold", "credited"] as const) {
+        for (const [id, value] of Object.entries(snapshot[group])) {
+          if (!Number.isFinite(value)) throw new TypeError("Snapshot values must be finite");
           args.push(`${group}:${id}`, value);
         }
       }

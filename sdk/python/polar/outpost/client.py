@@ -19,13 +19,16 @@ from redis.commands.core import AsyncScript
 from redis.exceptions import ConnectionError as RedisConnectionError
 from redis.exceptions import TimeoutError as RedisTimeoutError
 
-from polar.base import PolarError, deserialize
+from polar.base import PolarError
 from polar.outpost.event import Event, EventInput
 from polar.outpost.reducer import Reducer, get_bucket_start, get_matcher, reduce
 
 
+class PolarOutpostError(PolarError): ...
+
+
 def _number(value: str | bytes) -> int | float:
-    number = deserialize(json.loads(value), int | float)
+    number: int | float = json.loads(value)
     if isinstance(number, float) and not math.isfinite(number):
         raise ValueError("Stored aggregation values must be finite")
     return number
@@ -133,14 +136,6 @@ class StateUpdate(typing.TypedDict):
 class LocalState:
     state: dict[str, str] | None = None
     lock: anyio.Lock = dataclasses.field(default_factory=anyio.Lock)
-
-
-class EventPayload(typing.TypedDict):
-    name: str
-    timestamp: typing.NotRequired[str]
-    customer_id: typing.NotRequired[str]
-    external_customer_id: typing.NotRequired[str]
-    metadata: typing.NotRequired[dict[str, typing.Any]]
 
 
 class Configuration(typing.TypedDict):
@@ -314,7 +309,7 @@ class Outpost:
         local = await self._warm_customer(customer)
         state = local.state
         if state is None or "cold_until" not in state:
-            raise PolarError("Customer snapshot is not ready")
+            raise PolarOutpostError("Customer snapshot is not ready")
         cutoff = int(state["cold_until"])
         reducer_id = reducer["id"]
         values = [
@@ -458,9 +453,7 @@ class Outpost:
                             ignore_subscribe_messages=True, timeout=1
                         )
                         if message is not None:
-                            update = deserialize(
-                                json.loads(message["data"]), StateUpdate
-                            )
+                            update: StateUpdate = json.loads(message["data"])
                             await self._receive_state(
                                 update["customer"],
                                 dict(
@@ -485,12 +478,10 @@ class Outpost:
         while True:
             message = await websocket.receive_json()
             if message["type"] == "configuration":
-                self._reducers = deserialize(message["payload"], Configuration)[
-                    "reducers"
-                ]
+                self._reducers = message["payload"]["reducers"]
                 self._configured.set()
             elif message["type"] == "snapshot":
-                snapshot = deserialize(message["payload"], Snapshot)
+                snapshot = message["payload"]
                 customer = self._customer_key(
                     snapshot.get("customer_id"), snapshot.get("external_customer_id")
                 )
@@ -518,18 +509,19 @@ class Outpost:
                 await self._receive_state(customer, self._decode_state(state))
 
     def _parse_event(self, event: EventInput) -> Event:
-        payload = deserialize({key: event[key] for key in event}, EventPayload)
         customer = self._customer_key(
-            payload.get("customer_id"), payload.get("external_customer_id")
+            event.get("customer_id"), event.get("external_customer_id")
         )
-        timestamp = payload.get("timestamp")
+        raw_timestamp = event.get("timestamp")
+        if raw_timestamp is not None:
+            timestamp = datetime.datetime.fromisoformat(raw_timestamp)
+        else:
+            timestamp = datetime.datetime.now(datetime.UTC)
         return Event(
-            name=payload["name"],
+            name=event["name"],
             external_customer_id=customer,
-            timestamp=datetime.datetime.fromisoformat(timestamp)
-            if timestamp is not None
-            else datetime.datetime.now(datetime.UTC),
-            metadata=payload.get("metadata", {}),
+            timestamp=timestamp,
+            metadata=event.get("metadata", {}),
         )
 
     def _customer_key(

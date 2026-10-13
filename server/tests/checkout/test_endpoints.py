@@ -236,6 +236,20 @@ class TestGet:
         assert "product" in json
         assert "product_price" in json
 
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_read}))
+    async def test_no_product_price_id_2027_01(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        checkout_open: Checkout,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(f"{api_prefix}/{checkout_open.id}")
+
+        assert response.status_code == 200
+        assert "product_price_id" not in response.json()
+
 
 @pytest.mark.anyio
 class TestCreateCheckout:
@@ -1174,6 +1188,17 @@ class TestClientGet:
         json = response.json()
         assert json["id"] == str(checkout_open.id)
         assert "metadata" not in json
+
+    @pytest.mark.api_version(V2027_01)
+    async def test_no_product_price_id_2027_01(
+        self, api_prefix: str, client: AsyncClient, checkout_open: Checkout
+    ) -> None:
+        response = await client.get(
+            f"{api_prefix}/client/{checkout_open.client_secret}"
+        )
+
+        assert response.status_code == 200
+        assert "product_price_id" not in response.json()
 
     async def test_excludes_non_public_benefits(
         self,

@@ -115,6 +115,21 @@ class TestGetCheckoutLink:
         assert str(public_benefit.id) in benefit_ids
         assert str(private_benefit.id) not in benefit_ids
 
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_no_single_product_fields_2027_01(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        checkout_link: CheckoutLink,
+    ) -> None:
+        response = await client.get(f"/v1/checkout-links/{checkout_link.id}")
+
+        assert response.status_code == 200
+        json = response.json()
+        for field in ("product_id", "product_price_id", "product", "product_price"):
+            assert field not in json
+
 
 @pytest.mark.anyio
 class TestCreateCheckoutLink:

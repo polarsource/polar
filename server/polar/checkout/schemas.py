@@ -687,7 +687,7 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
         description="ID of the organization owning the checkout session."
     )
     product_id: UUID4 | None = Field(description="ID of the product to checkout.")
-    product_price_id: UUID4 | None = Field(
+    product_price_id: Annotated[UUID4 | None, Version(up_to=V2026_10)] = Field(
         description="ID of the product price to checkout.", deprecated=True
     )
     discount_id: UUID4 | None = Field(

@@ -26,4 +26,4 @@ export const command = Command.make(
           client.customerSeats.revokeSeat(config.path.seat_id),
       })
     }),
-).pipe(Command.withDescription('**Scopes**: `customer_seats:write`'))
+).pipe(Command.withDescription('Revoke a customer seat.'))

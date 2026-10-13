@@ -1576,6 +1576,9 @@
         ],
         "x-speakeasy-group": "subscriptions",
         "x-speakeasy-name-override": "update",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-codeSamples": [
           {
             "lang": "python",
@@ -4144,6 +4147,9 @@
         ],
         "x-speakeasy-group": "webhooks",
         "x-speakeasy-name-override": "update_webhook_endpoint",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-codeSamples": [
           {
             "lang": "python",
@@ -5363,6 +5369,9 @@
         ],
         "x-speakeasy-group": "products",
         "x-speakeasy-name-override": "update",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-codeSamples": [
           {
             "lang": "python",
@@ -7422,6 +7431,9 @@
         ],
         "x-speakeasy-group": "refunds",
         "x-speakeasy-name-override": "create",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-codeSamples": [
           {
             "lang": "python",
@@ -12018,6 +12030,9 @@
         ],
         "x-speakeasy-group": "license_keys",
         "x-speakeasy-name-override": "update",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-codeSamples": [
           {
             "lang": "python",
@@ -12125,11 +12140,13 @@
         "x-tool-name": "license_keys_rotate",
         "x-tool-title": "Rotate License Key",
         "x-tool-description": "Rotate a license key.\n\nGenerates a new key string for the same license key record. The previous\nkey string immediately stops validating. Status, usage, limits, expiry,\nand activations are preserved.",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
         ],
-        "x-polar-cli-confirm": true,
         "x-speakeasy-group": "license_keys",
         "x-speakeasy-name-override": "rotate",
         "x-codeSamples": [
@@ -24711,6 +24728,9 @@
         ],
         "x-speakeasy-group": "meters",
         "x-speakeasy-name-override": "update",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-codeSamples": [
           {
             "lang": "python",
@@ -62020,7 +62040,7 @@
                 "type": "null"
               }
             ],
-            "x-polar-cli-confirm": {
+            "x-tool-destructive-when": {
               "one_of": [
                 "revoked",
                 "disabled"
@@ -64254,7 +64274,7 @@
             ],
             "title": "Is Archived",
             "description": "Whether the meter is archived. Archived meters are no longer used for billing.",
-            "x-polar-cli-confirm": {
+            "x-tool-destructive-when": {
               "equals": true
             }
           }
@@ -75663,7 +75683,7 @@
             ],
             "title": "Is Archived",
             "description": "Whether the product is archived. If `true`, the product won't be available for purchase anymore. Existing customers will still have access to their benefits, and subscriptions will continue normally.",
-            "x-polar-cli-confirm": {
+            "x-tool-destructive-when": {
               "equals": true
             }
           },
@@ -75996,7 +76016,7 @@
             "title": "Revoke Benefits",
             "description": "Should this refund trigger the associated customer benefits to be revoked?\n\n**Note:**\nOnly allowed in case the `order` is a one-time purchase.\nSubscriptions automatically revoke customer benefits once the\nsubscription itself is revoked, i.e fully canceled.",
             "default": false,
-            "x-polar-cli-confirm": {
+            "x-tool-destructive-when": {
               "equals": true
             }
           }
@@ -77704,7 +77724,7 @@
             "type": "boolean",
             "title": "Cancel At Period End",
             "description": "Cancel an active subscription once the current period ends.\n\nOr uncancel a subscription currently set to be revoked at period end.",
-            "x-polar-cli-confirm": {
+            "x-tool-destructive-when": {
               "equals": true
             }
           }
@@ -79180,7 +79200,7 @@
             "type": "boolean",
             "title": "Pause At Period End",
             "description": "Pause an active subscription at the end of the current period.\n\nOr cancel a scheduled pause on a subscription set to be paused at\nperiod end.",
-            "x-polar-cli-confirm": {
+            "x-tool-destructive-when": {
               "equals": true
             }
           },
@@ -79928,7 +79948,7 @@
             "const": true,
             "title": "Resume",
             "description": "Resume a paused subscription immediately, starting a new billing period and charging the customer.",
-            "x-polar-cli-confirm": {
+            "x-tool-destructive-when": {
               "equals": true
             }
           }
@@ -80146,7 +80166,7 @@
             "const": true,
             "title": "Revoke",
             "description": "Cancel and revoke an active subscription immediately",
-            "x-polar-cli-confirm": {
+            "x-tool-destructive-when": {
               "equals": true
             }
           }
@@ -83845,7 +83865,7 @@
             ],
             "title": "Enabled",
             "description": "Whether the webhook endpoint is enabled.",
-            "x-polar-cli-confirm": {
+            "x-tool-destructive-when": {
               "equals": false
             }
           }

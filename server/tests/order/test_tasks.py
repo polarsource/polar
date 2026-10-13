@@ -87,8 +87,17 @@ class TestCreateSubscriptionOrder:
             cutoff=cutoff,
         )
 
+    @pytest.mark.parametrize(
+        "order_reason",
+        [
+            OrderBillingReasonInternal.subscription_cycle,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+            OrderBillingReasonInternal.subscription_cancel,
+        ],
+    )
     async def test_defers_until_grace_period_elapsed(
         self,
+        order_reason: OrderBillingReasonInternal,
         save_fixture: SaveFixture,
         product: Product,
         organization: Organization,
@@ -108,16 +117,14 @@ class TestCreateSubscriptionOrder:
         enqueue_job_mock = mocker.patch("polar.order.tasks.enqueue_job")
 
         await create_subscription_order(
-            subscription.id,
-            OrderBillingReasonInternal.subscription_cycle,
-            cutoff.isoformat(),
+            subscription.id, order_reason, cutoff.isoformat()
         )
 
         create_order_mock.assert_not_awaited()
         enqueue_job_mock.assert_called_once_with(
             "order.create_subscription_order",
             subscription.id,
-            OrderBillingReasonInternal.subscription_cycle,
+            order_reason,
             cutoff=cutoff.isoformat(),
             delay=ANY,
         )

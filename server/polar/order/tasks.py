@@ -125,6 +125,7 @@ async def create_subscription_order(
         if order_reason in {
             OrderBillingReasonInternal.subscription_cycle,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
+            OrderBillingReasonInternal.subscription_cancel,
         }:
             billing_cutoff = (
                 datetime.fromisoformat(cutoff)

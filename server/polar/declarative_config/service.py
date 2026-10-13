@@ -25,7 +25,6 @@ from polar.product.service import product as product_service
 from polar.redis import Redis
 
 from . import benefits, discounts, products, validation
-from .exceptions import ConfigAsCodeNotEnabled
 from .schemas import (
     MAXIMUM_METERS,
     Config,
@@ -82,6 +81,11 @@ def _constraint_name(error: IntegrityError) -> str | None:
 @dataclass
 class _OrganizationTarget:
     organization_id: UUID | None
+
+
+class ConfigAsCodeNotEnabled(PolarError):
+    def __init__(self) -> None:
+        super().__init__("Config as code is not enabled for this organization.", 403)
 
 
 class ConfigMeterConflict(PolarError):

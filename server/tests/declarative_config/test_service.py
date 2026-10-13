@@ -7,7 +7,6 @@ from pytest_mock import MockerFixture
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.benefit.repository import BenefitRepository
-from polar.declarative_config.exceptions import ConfigAsCodeNotEnabled
 from polar.declarative_config.schemas import (
     Config,
     ConfigAction,
@@ -16,6 +15,7 @@ from polar.declarative_config.schemas import (
     ConfigResource,
 )
 from polar.declarative_config.service import (
+    ConfigAsCodeNotEnabled,
     ConfigBenefitConflict,
     ConfigInvalid,
     ConfigMeterConflict,

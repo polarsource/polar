@@ -72,11 +72,10 @@ class ProductPrice(RecordModel):
     __tablename__ = "product_prices"
 
     # Legacy: recurring is now set on product
-    type: Mapped[Any] = mapped_column(String, nullable=True, index=True, default=None)
+    type: Mapped[Any] = mapped_column(String, nullable=True, default=None)
     recurring_interval: Mapped[Any] = mapped_column(
         StringEnum(SubscriptionRecurringInterval),
         nullable=True,
-        index=True,
         default=None,
     )
 

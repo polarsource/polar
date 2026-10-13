@@ -4,6 +4,7 @@ from collections.abc import Iterable, Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
+import logfire
 import structlog
 from redis.exceptions import RedisError
 
@@ -199,47 +200,77 @@ class ReducerBucketService:
 
         for reducer in sorted(reducers, key=lambda reducer: str(reducer.id)):
             for customer_id, external_customer_id in identities:
-                first_start, first_end = await self._get_interval_containing(
-                    repository,
+                with logfire.span(
+                    "Split reducer buckets",
+                    reducer_id=str(reducer.id),
+                    customer_id=str(customer.id),
+                    bucket_customer_id=customer_id is not None,
+                    bucket_external_customer_id=external_customer_id is not None,
+                    billable_from=billable_from,
+                    cutoff=cutoff,
+                ) as span:
+                    first_start, first_end = await self._get_interval_containing(
+                        repository,
+                        reducer,
+                        customer_id,
+                        external_customer_id,
+                        billable_from,
+                    )
+                    # The earliest bucket has a start which is different from
+                    # billable_from, so we need to split it.
+                    split_billable_from = False
+                    if first_start != billable_from:
+                        split_billable_from = await self._split(
+                            repository,
+                            reducer,
+                            customer_id,
+                            external_customer_id,
+                            (first_start, first_end),
+                            split_at=billable_from,
+                        )
+                    last_start, last_end = await self._get_interval_containing(
+                        repository, reducer, customer_id, external_customer_id, cutoff
+                    )
+                    # The last bucket in the series has an ending which is
+                    # different from cutoff, so we need to split it.
+                    split_cutoff = False
+                    if last_start != cutoff:
+                        split_cutoff = await self._split(
+                            repository,
+                            reducer,
+                            customer_id,
+                            external_customer_id,
+                            (last_start, last_end),
+                            split_at=cutoff,
+                        )
+                    span.set_attribute(
+                        "first_interval",
+                        [first_start.isoformat(), first_end.isoformat()],
+                    )
+                    span.set_attribute(
+                        "last_interval", [last_start.isoformat(), last_end.isoformat()]
+                    )
+                    span.set_attribute("split_billable_from", split_billable_from)
+                    span.set_attribute("split_cutoff", split_cutoff)
+            with logfire.span(
+                "Seal reducer buckets",
+                reducer_id=str(reducer.id),
+                customer_id=str(customer.id),
+                billable_from=billable_from,
+                cutoff=cutoff,
+            ) as span:
+                # Seal all buckets in [billable_from, cutoff) interval.
+                sealed = await repository.seal(
                     reducer,
-                    customer_id,
-                    external_customer_id,
-                    billable_from,
+                    identities,
+                    start=billable_from,
+                    end=cutoff,
+                    sealed_at=utc_now(),
                 )
-                # The earliest bucket has a start which is different from billable_from,
-                # so we need to split it.
-                if first_start != billable_from:
-                    await self._split(
-                        repository,
-                        reducer,
-                        customer_id,
-                        external_customer_id,
-                        (first_start, first_end),
-                        split_at=billable_from,
-                    )
-                last_start, last_end = await self._get_interval_containing(
-                    repository, reducer, customer_id, external_customer_id, cutoff
-                )
-                # The last bucket in the series has an ending which is different from cutoff,
-                # so we need to split it.
-                if last_start != cutoff:
-                    await self._split(
-                        repository,
-                        reducer,
-                        customer_id,
-                        external_customer_id,
-                        (last_start, last_end),
-                        split_at=cutoff,
-                    )
-            # Seal all buckets in [billable_from, cutoff) interval.
-            sealed = await repository.seal(
-                reducer,
-                identities,
-                start=billable_from,
-                end=cutoff,
-                sealed_at=utc_now(),
-            )
-            quantities[reducer.id] = _get_quantity(reducer.aggregation.func, sealed)
+                quantity = _get_quantity(reducer.aggregation.func, sealed)
+                span.set_attribute("sealed_buckets", len(sealed))
+                span.set_attribute("quantity", str(quantity))
+            quantities[reducer.id] = quantity
         return quantities
 
     async def _lock_buckets(
@@ -340,7 +371,7 @@ class ReducerBucketService:
         interval: tuple[datetime, datetime],
         *,
         split_at: datetime,
-    ) -> None:
+    ) -> bool:
         """Makes `split_at` a bucket boundary, so a seal can include the usage on
         one side of it only: `interval`, which contains it, becomes
         [interval_start, split_at) and [split_at, interval_end)."""
@@ -349,7 +380,7 @@ class ReducerBucketService:
             reducer, interval_start, customer_id, external_customer_id
         )
         if bucket is None:
-            return  # No usage in the interval.
+            return False  # No usage in the interval.
         # An earlier seal billed past `split_at`. Billed rows can't change.
         if bucket.sealed_at is not None:
             log.warning(
@@ -358,7 +389,7 @@ class ReducerBucketService:
                 bucket_start=interval_start.isoformat(),
                 split_at=split_at.isoformat(),
             )
-            return
+            return False
         # Same, but late events arrived after that seal and opened a new generation.
         # Splitting it would leave its generations covering different intervals.
         if bucket.generation > 1:
@@ -369,7 +400,7 @@ class ReducerBucketService:
                 split_at=split_at.isoformat(),
                 generation=bucket.generation,
             )
-            return
+            return False
 
         before = (
             await repository.aggregate_events(
@@ -394,6 +425,7 @@ class ReducerBucketService:
             ),
             flush=True,
         )
+        return True
 
 
 def _get_quantity(

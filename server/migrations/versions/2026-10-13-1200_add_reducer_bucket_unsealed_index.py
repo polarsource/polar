@@ -19,33 +19,41 @@ INDEX_NAME = "ix_reducer_buckets_unsealed_identity"
 
 def upgrade() -> None:
     with op.get_context().autocommit_block():
-        op.drop_index(
-            INDEX_NAME,
-            table_name="reducer_buckets",
-            if_exists=True,
-            postgresql_concurrently=True,
-        )
-        op.create_index(
-            INDEX_NAME,
-            "reducer_buckets",
-            [
-                "organization_id",
-                "reducer_id",
-                "customer_id",
-                "external_customer_id",
-                "bucket_end",
-            ],
-            unique=False,
-            postgresql_where=sa.text("sealed_at IS NULL"),
-            postgresql_concurrently=True,
-        )
+        op.execute("SET lock_timeout = '5min'")
+        try:
+            op.drop_index(
+                INDEX_NAME,
+                table_name="reducer_buckets",
+                if_exists=True,
+                postgresql_concurrently=True,
+            )
+            op.create_index(
+                INDEX_NAME,
+                "reducer_buckets",
+                [
+                    "organization_id",
+                    "reducer_id",
+                    "customer_id",
+                    "external_customer_id",
+                    "bucket_end",
+                ],
+                unique=False,
+                postgresql_where=sa.text("sealed_at IS NULL"),
+                postgresql_concurrently=True,
+            )
+        finally:
+            op.execute("RESET lock_timeout")
 
 
 def downgrade() -> None:
     with op.get_context().autocommit_block():
-        op.drop_index(
-            INDEX_NAME,
-            table_name="reducer_buckets",
-            if_exists=True,
-            postgresql_concurrently=True,
-        )
+        op.execute("SET lock_timeout = '5min'")
+        try:
+            op.drop_index(
+                INDEX_NAME,
+                table_name="reducer_buckets",
+                if_exists=True,
+                postgresql_concurrently=True,
+            )
+        finally:
+            op.execute("RESET lock_timeout")

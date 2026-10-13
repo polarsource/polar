@@ -727,6 +727,52 @@ class TestSeal:
             (BUCKET_START, NEXT_BUCKET_START, 1, 1, Decimal(5), True),
         ]
 
+    async def test_skips_split_of_bucket_with_sealed_generation(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        max_reducer: Reducer,
+        external_customer: Customer,
+        organization: Organization,
+    ) -> None:
+        await create_tokens_event(
+            save_fixture, organization, 5, timestamp=CUTOFF, ingested_at=INGESTED_AT
+        )
+        await reducer_bucket_service.sync(
+            session, max_reducer.id, BUCKET_START, None, "external"
+        )
+        await reducer_bucket_service.seal(
+            session,
+            [max_reducer],
+            external_customer,
+            billable_from=START,
+            cutoff=NEXT_BUCKET_START,
+        )
+        await create_tokens_event(
+            save_fixture,
+            organization,
+            7,
+            timestamp=CUTOFF,
+            ingested_at=BILLED_AT + timedelta(minutes=1),
+        )
+        await reducer_bucket_service.sync(
+            session, max_reducer.id, BUCKET_START, None, "external"
+        )
+
+        quantities = await reducer_bucket_service.seal(
+            session,
+            [max_reducer],
+            external_customer,
+            billable_from=START,
+            cutoff=CUTOFF,
+        )
+
+        assert quantities == {max_reducer.id: Decimal(0)}
+        assert await get_intervals(session) == [
+            (BUCKET_START, NEXT_BUCKET_START, 1, 1, Decimal(5), True),
+            (BUCKET_START, NEXT_BUCKET_START, 2, 1, Decimal(7), False),
+        ]
+
     async def test_splits_repeatedly(
         self,
         save_fixture: SaveFixture,

@@ -178,6 +178,8 @@ class ReducerBucketService:
         billable_from: datetime,
         cutoff: datetime,
     ) -> dict[uuid.UUID, Decimal]:
+        """Seals the customer's unsealed usage ending in (billable_from, cutoff] and
+        returns its quantity per reducer."""
         quantities: dict[uuid.UUID, Decimal] = {}
         if billable_from >= cutoff:
             return quantities
@@ -190,15 +192,48 @@ class ReducerBucketService:
             ]
 
         await self._lock_buckets(
-            repository, reducers, identities, start=billable_from, cutoff=cutoff
+            repository,
+            reducers,
+            identities,
+            billable_from=billable_from,
+            cutoff=cutoff,
         )
 
         for reducer in sorted(reducers, key=lambda reducer: str(reducer.id)):
             for customer_id, external_customer_id in identities:
-                for at in (billable_from, cutoff):
+                first_start, first_end = await self._get_interval_containing(
+                    repository,
+                    reducer,
+                    customer_id,
+                    external_customer_id,
+                    billable_from,
+                )
+                # The earliest bucket has a start which is different from billable_from,
+                # so we need to split it.
+                if first_start != billable_from:
                     await self._split(
-                        repository, reducer, at, customer_id, external_customer_id
+                        repository,
+                        reducer,
+                        customer_id,
+                        external_customer_id,
+                        (first_start, first_end),
+                        split_at=billable_from,
                     )
+                last_start, last_end = await self._get_interval_containing(
+                    repository, reducer, customer_id, external_customer_id, cutoff
+                )
+                # The last bucket in the series has an ending which is different from cutoff,
+                # so we need to split it.
+                if last_start != cutoff:
+                    await self._split(
+                        repository,
+                        reducer,
+                        customer_id,
+                        external_customer_id,
+                        (last_start, last_end),
+                        split_at=cutoff,
+                    )
+            # Seal all buckets in [billable_from, cutoff) interval.
             sealed = await repository.seal(
                 reducer,
                 identities,
@@ -215,15 +250,16 @@ class ReducerBucketService:
         reducers: Sequence[Reducer],
         identities: Sequence[tuple[uuid.UUID | None, str | None]],
         *,
-        start: datetime,
+        billable_from: datetime,
         cutoff: datetime,
     ) -> None:
+        """Locks the buckets of the two slots seal splits."""
         bucket_ids = sorted(
             (
                 (reducer, bucket_start, customer_id, external_customer_id)
                 for reducer in reducers
                 for bucket_start in {
-                    get_reducer_bucket_start(start),
+                    get_reducer_bucket_start(billable_from),
                     get_reducer_bucket_start(cutoff),
                 }
                 for customer_id, external_customer_id in identities
@@ -241,7 +277,8 @@ class ReducerBucketService:
         customer_id: uuid.UUID | None,
         external_customer_id: str | None,
     ) -> list[tuple[datetime, datetime]]:
-        """The persisted [start, end) intervals the bucket was split into."""
+        """The [start, end) intervals the slot's rows divide it into, or the whole
+        slot if it has none."""
         buckets = await repository.get_all_starting_within(
             reducer,
             bucket_start,
@@ -291,65 +328,83 @@ class ReducerBucketService:
                 flush=True,
             )
 
+    async def _get_interval_containing(
+        self,
+        repository: ReducerBucketRepository,
+        reducer: Reducer,
+        customer_id: uuid.UUID | None,
+        external_customer_id: str | None,
+        at: datetime,
+    ) -> tuple[datetime, datetime]:
+        intervals = await self._get_intervals(
+            repository,
+            reducer,
+            get_reducer_bucket_start(at),
+            customer_id,
+            external_customer_id,
+        )
+        return next((start, end) for start, end in intervals if start <= at < end)
+
     async def _split(
         self,
         repository: ReducerBucketRepository,
         reducer: Reducer,
-        at: datetime,
         customer_id: uuid.UUID | None,
         external_customer_id: str | None,
+        interval: tuple[datetime, datetime],
+        *,
+        split_at: datetime,
     ) -> None:
-        """Splits the interval containing `at` into [start, at) and [at, end)."""
-        start, end = next(
-            (start, end)
-            for start, end in await self._get_intervals(
-                repository,
-                reducer,
-                get_reducer_bucket_start(at),
-                customer_id,
-                external_customer_id,
-            )
-            if start <= at < end
-        )
-        already_split = start == at
-        if already_split:
-            return
-
+        """Makes `split_at` a bucket boundary, so a seal can include the usage on
+        one side of it only: `interval`, which contains it, becomes
+        [interval_start, split_at) and [split_at, interval_end)."""
+        interval_start, interval_end = interval
         bucket = await repository.get_latest_for_update(
-            reducer, start, customer_id, external_customer_id
+            reducer, interval_start, customer_id, external_customer_id
         )
         if bucket is None:
-            return
-        if bucket.sealed_at is not None or bucket.generation > 1:
+            return  # No usage in the interval.
+        # An earlier seal billed past `split_at`. Billed rows can't change.
+        if bucket.sealed_at is not None:
             log.warning(
-                "Skipping split of sealed reducer bucket",
+                "Skipping split of a sealed reducer bucket",
                 reducer_id=reducer.id,
-                bucket_start=start.isoformat(),
-                at=at.isoformat(),
+                bucket_start=interval_start.isoformat(),
+                split_at=split_at.isoformat(),
+            )
+            return
+        # Same, but late events arrived after that seal and opened a new generation.
+        # Splitting it would leave its generations covering different intervals.
+        if bucket.generation > 1:
+            log.warning(
+                "Skipping split of a reducer bucket with a sealed generation",
+                reducer_id=reducer.id,
+                bucket_start=interval_start.isoformat(),
+                split_at=split_at.isoformat(),
+                generation=bucket.generation,
             )
             return
 
-        left = (
+        before = (
             await repository.aggregate_events(
-                reducer, start, at, customer_id, external_customer_id
+                reducer, interval_start, split_at, customer_id, external_customer_id
             )
         )._asdict()
-        right = (
+        after = (
             await repository.aggregate_events(
-                reducer, at, end, customer_id, external_customer_id
+                reducer, split_at, interval_end, customer_id, external_customer_id
             )
         )._asdict()
-
-        await repository.update(bucket, update_dict={"bucket_end": at, **left})
+        await repository.update(bucket, update_dict={"bucket_end": split_at, **before})
         await repository.create(
             ReducerBucket(
                 organization_id=reducer.organization_id,
                 reducer=reducer,
                 customer_id=customer_id,
                 external_customer_id=external_customer_id,
-                bucket_start=at,
-                bucket_end=end,
-                **right,
+                bucket_start=split_at,
+                bucket_end=interval_end,
+                **after,
             ),
             flush=True,
         )

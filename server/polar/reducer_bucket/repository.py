@@ -8,7 +8,6 @@ from sqlalchemy import (
     ColumnElement,
     Row,
     and_,
-    case,
     func,
     literal,
     null,
@@ -162,52 +161,37 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
     ) -> None:
         """Adds to the customer identity's latest bucket, or to the next generation
         once it's sealed."""
-        generation = (
-            select(
-                case(
-                    (ReducerBucket.sealed_at.is_(None), ReducerBucket.generation),
-                    else_=ReducerBucket.generation + 1,
+        latest = await self.get_latest_for_update(
+            reducer, bucket_start, customer_id, external_customer_id
+        )
+        if latest is not None and latest.sealed_at is None:
+            await self.session.execute(
+                update(ReducerBucket)
+                .where(ReducerBucket.id == latest.id)
+                .values(
+                    count=ReducerBucket.count + count,
+                    sum=ReducerBucket.sum + total,
+                    min=func.least(ReducerBucket.min, minimum),
+                    max=func.greatest(ReducerBucket.max, maximum),
+                    modified_at=utc_now(),
                 )
             )
-            .where(
-                ReducerBucket.organization_id == reducer.organization_id,
-                ReducerBucket.reducer_id == reducer.id,
-                ReducerBucket.bucket_start == bucket_start,
-                _is_customer(ReducerBucket, customer_id, external_customer_id),
+            return
+        await self.session.execute(
+            insert(ReducerBucket).values(
+                organization_id=reducer.organization_id,
+                reducer_id=reducer.id,
+                customer_id=customer_id,
+                external_customer_id=external_customer_id,
+                bucket_start=bucket_start,
+                bucket_end=bucket_end,
+                count=count,
+                sum=total,
+                min=minimum,
+                max=maximum,
+                generation=1 if latest is None else latest.generation + 1,
             )
-            .order_by(ReducerBucket.generation.desc())
-            .limit(1)
-            .scalar_subquery()
         )
-        insert_statement = insert(ReducerBucket).values(
-            organization_id=reducer.organization_id,
-            reducer_id=reducer.id,
-            customer_id=customer_id,
-            external_customer_id=external_customer_id,
-            bucket_start=bucket_start,
-            bucket_end=bucket_end,
-            count=count,
-            sum=total,
-            min=minimum,
-            max=maximum,
-            generation=func.coalesce(generation, 1),
-        )
-        excluded = insert_statement.excluded
-        statement = insert_statement.on_conflict_do_update(
-            constraint="reducer_buckets_identity_generation_key",
-            set_={
-                "count": ReducerBucket.count + excluded["count"],
-                "sum": ReducerBucket.sum + excluded["sum"],
-                "min": func.least(ReducerBucket.min, excluded["min"]),
-                "max": func.greatest(ReducerBucket.max, excluded["max"]),
-                "modified_at": utc_now(),
-            },
-            where=ReducerBucket.sealed_at.is_(None),
-        ).returning(ReducerBucket.id)
-        result = await self.session.execute(statement)
-        # A seal committed after the generation was picked; rerun on the next one.
-        if result.scalar_one_or_none() is None:
-            (await self.session.execute(statement)).scalar_one()
 
     async def seal(
         self,

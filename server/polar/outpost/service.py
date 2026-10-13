@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import structlog
 from anyio.streams.memory import MemoryObjectSendStream
 from pydantic import ValidationError
@@ -8,6 +10,8 @@ from polar.kit.db.postgres import AsyncReadSession
 from polar.logging import Logger
 from polar.models import Organization, Reducer
 from polar.reducer.repository import ReducerRepository
+from polar.reducer_bucket.repository import ReducerBucketRepository
+from polar.reducer_bucket.service import REDUCER_BUCKET_SIZE
 
 from .schemas import (
     CustomerMeterIncomingMessageCustomerPayload,
@@ -19,8 +23,10 @@ from .schemas import (
     OutgoingMessage,
     OutgoingMessageAdapter,
     OutgoingMessageType,
+    ReducerBucketOutgoingMessage,
+    ReducerBucketOutgoingMessagePayload,
 )
-from .stream import OutpostEvent
+from .stream import OutpostEvent, ReducerBucketOutpostEvent
 
 log: Logger = structlog.get_logger(__name__)
 
@@ -68,6 +74,10 @@ class OutpostService:
                         customer_id=event["customer_id"], meter_id=event["meter_id"]
                     ),
                     send_stream,
+                )
+            case "reducer_bucket":
+                return await self._send_reducer_bucket(
+                    session, organization, event, send_stream
                 )
 
     async def _send_configuration(
@@ -117,6 +127,38 @@ class OutpostService:
         message = CustomerMeterOutgoingMessage(
             type=OutgoingMessageType.customer_meter,
             payload=CustomerMeterOutgoingMessagePayload.model_validate(customer_meter),
+        )
+        await send_stream.send(message)
+
+    async def _send_reducer_bucket(
+        self,
+        session: AsyncReadSession,
+        organization: Organization,
+        event: ReducerBucketOutpostEvent,
+        send_stream: MemoryObjectSendStream[OutgoingMessage],
+    ) -> None:
+        bucket_start = datetime.fromisoformat(event["bucket_start"])
+        repository = ReducerBucketRepository.from_session(session)
+        count, total, minimum, maximum = await repository.get_totals(
+            organization.id,
+            event["reducer_id"],
+            bucket_start,
+            bucket_start + REDUCER_BUCKET_SIZE,
+            event["customer_id"],
+            event["external_customer_id"],
+        )
+        message = ReducerBucketOutgoingMessage(
+            type=OutgoingMessageType.reducer_bucket,
+            payload=ReducerBucketOutgoingMessagePayload(
+                reducer_id=event["reducer_id"],
+                customer_id=event["customer_id"],
+                external_customer_id=event["external_customer_id"],
+                bucket_start=bucket_start,
+                count=count,
+                sum=total,
+                min=minimum,
+                max=maximum,
+            ),
         )
         await send_stream.send(message)
 

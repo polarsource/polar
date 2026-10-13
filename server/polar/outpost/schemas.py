@@ -1,4 +1,5 @@
 import typing
+from datetime import datetime
 from enum import StrEnum
 
 from pydantic import UUID4, BaseModel, ConfigDict, Discriminator, TypeAdapter
@@ -64,6 +65,7 @@ IncomingMessageAdapter: TypeAdapter[IncomingMessage] = TypeAdapter(IncomingMessa
 class OutgoingMessageType(StrEnum):
     configuration = "configuration"
     customer_meter = "customer_meter"
+    reducer_bucket = "reducer_bucket"
 
 
 class OutgoingMessageBase(MessageBase):
@@ -100,8 +102,27 @@ class CustomerMeterOutgoingMessage(OutgoingMessageBase):
     payload: CustomerMeterOutgoingMessagePayload
 
 
+class ReducerBucketOutgoingMessagePayload(MessageBase):
+    reducer_id: UUID4
+    customer_id: UUID4 | None
+    external_customer_id: str | None
+    bucket_start: datetime
+    count: int
+    sum: float
+    min: float | None
+    max: float | None
+
+
+class ReducerBucketOutgoingMessage(OutgoingMessageBase):
+    type: typing.Literal[OutgoingMessageType.reducer_bucket]
+    payload: ReducerBucketOutgoingMessagePayload
+
+
 type OutgoingMessage = typing.Annotated[
-    ConfigurationOutgoingMessage | CustomerMeterOutgoingMessage, Discriminator("type")
+    ConfigurationOutgoingMessage
+    | CustomerMeterOutgoingMessage
+    | ReducerBucketOutgoingMessage,
+    Discriminator("type"),
 ]
 
 OutgoingMessageAdapter: TypeAdapter[OutgoingMessage] = TypeAdapter(OutgoingMessage)

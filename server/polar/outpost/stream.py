@@ -16,7 +16,15 @@ class CustomerMeterOutpostEvent(typing.TypedDict):
     meter_id: uuid.UUID
 
 
-type OutpostEvent = CustomerMeterOutpostEvent
+class ReducerBucketOutpostEvent(typing.TypedDict):
+    type: typing.Literal["reducer_bucket"]
+    reducer_id: uuid.UUID
+    bucket_start: str
+    customer_id: uuid.UUID | None
+    external_customer_id: str | None
+
+
+type OutpostEvent = CustomerMeterOutpostEvent | ReducerBucketOutpostEvent
 
 
 async def publish(

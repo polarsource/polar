@@ -1,10 +1,17 @@
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import httpx
 import httpx_ws
 import pytest
 
-from polar.models import Customer, CustomerMeter, Meter, Organization
+from polar.models import (
+    Customer,
+    CustomerMeter,
+    Meter,
+    Organization,
+    ReducerBucket,
+)
 from polar.outpost.stream import publish
 from polar.redis import Redis
 from tests.fixtures import AuthSubjectFixture, SaveFixture
@@ -123,3 +130,68 @@ class TestOutpost:
             assert response["payload"]["consumed_units"] == 90.0
             assert response["payload"]["credited_units"] == 100
             assert response["payload"]["balance"] == 10.0
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_event_reducer_bucket(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx.AsyncClient,
+        redis: Redis,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        bucket_start = datetime(2026, 10, 7, 12, 5, tzinfo=UTC)
+        split_at = bucket_start + timedelta(minutes=2)
+        bucket_end = bucket_start + timedelta(minutes=5)
+        # Two generations before the split, one row after it.
+        for start, end, generation, value in (
+            (bucket_start, split_at, 1, 3),
+            (bucket_start, split_at, 2, 5),
+            (split_at, bucket_end, 1, 4),
+        ):
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    external_customer_id="external",
+                    bucket_start=start,
+                    bucket_end=end,
+                    count=1,
+                    sum=Decimal(value),
+                    min=Decimal(value),
+                    max=Decimal(value),
+                    generation=generation,
+                )
+            )
+
+        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await publish(
+                redis,
+                organization.id,
+                {
+                    "type": "reducer_bucket",
+                    "reducer_id": reducer.id,
+                    "bucket_start": bucket_start.isoformat(),
+                    "customer_id": None,
+                    "external_customer_id": "external",
+                },
+            )
+
+            response = await websocket.receive_json()
+
+            assert response == {
+                "type": "reducer_bucket",
+                "payload": {
+                    "reducer_id": str(reducer.id),
+                    "customer_id": None,
+                    "external_customer_id": "external",
+                    "bucket_start": "2026-10-07T12:05:00Z",
+                    "count": 3,
+                    "sum": 12.0,
+                    "min": 3.0,
+                    "max": 5.0,
+                },
+            }

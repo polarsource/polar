@@ -146,6 +146,32 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         )
         return await self.get_one_or_none(statement)
 
+    async def get_totals(
+        self,
+        organization_id: UUID,
+        reducer_id: UUID,
+        bucket_start: datetime,
+        bucket_end: datetime,
+        customer_id: UUID | None,
+        external_customer_id: str | None,
+    ) -> Row[Any]:
+        """count, sum, min and max of the customer identity's rows starting in the
+        slot, across all their generations."""
+        statement = select(
+            func.coalesce(func.sum(ReducerBucket.count), 0).label("count"),
+            func.coalesce(func.sum(ReducerBucket.sum), 0).label("sum"),
+            func.min(ReducerBucket.min).label("min"),
+            func.max(ReducerBucket.max).label("max"),
+        ).where(
+            ReducerBucket.organization_id == organization_id,
+            ReducerBucket.reducer_id == reducer_id,
+            ReducerBucket.bucket_start >= bucket_start,
+            ReducerBucket.bucket_start < bucket_end,
+            _is_customer(ReducerBucket, customer_id, external_customer_id),
+        )
+        result = await self.session.execute(statement)
+        return result.one()
+
     async def add_contribution(
         self,
         reducer: Reducer,

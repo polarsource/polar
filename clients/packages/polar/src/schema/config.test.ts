@@ -579,7 +579,7 @@ test('discounts serialize after products and link products by key', () => {
         .code('LAUNCH20')
         .products('pro', 'team')
         .maxRedemptions(500)
-        .endsAt('2026-12-31'),
+        .ends('2026-12-31'),
       welcome: discount('Welcome $10')
         .amount(usd(10), eur(9))
         .once()

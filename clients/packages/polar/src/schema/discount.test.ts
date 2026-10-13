@@ -35,7 +35,7 @@ test('percent discounts serialize to basis points', () => {
         .code('LAUNCH20')
         .products('pro', 'team')
         .maxRedemptions(500)
-        .endsAt('2026-12-31'),
+        .ends('2026-12-31'),
     ),
   ).toEqual({
     external_id: 'launch',
@@ -65,7 +65,7 @@ test('fixed discounts serialize amounts per currency in minor units', () => {
         .amount(usd(10), eur(9.5), jpy(1500))
         .once()
         .perCustomer(1)
-        .startsAt(new Date('2026-01-01T12:30:00.250Z')),
+        .starts(new Date('2026-01-01T12:30:00.250Z')),
     ),
   ).toEqual({
     external_id: 'welcome',
@@ -136,22 +136,22 @@ test('discounts reject repeated currencies and products', () => {
 
 test('dates must be valid and the discount must start before it ends', () => {
   expect(() =>
-    discountConfig('bad', discount().percent(5).once().endsAt('soon')),
+    discountConfig('bad', discount().percent(5).once().ends('soon')),
   ).toThrow('The end date of Discount "bad" must be a Date')
   expect(() =>
     discountConfig(
       'local',
-      discount().percent(5).once().startsAt('2026-01-01T10:00'),
+      discount().percent(5).once().starts('2026-01-01T10:00'),
     ),
   ).toThrow('a timestamp with a time zone')
   expect(() =>
     discountConfig(
       'typo',
-      discount().percent(5).once().startsAt('2024-02-30T00:00:00Z'),
+      discount().percent(5).once().starts('2024-02-30T00:00:00Z'),
     ),
   ).toThrow('got 2024-02-30T00:00:00Z')
   expect(() =>
-    discountConfig('typo', discount().percent(5).once().endsAt('2023-02-29')),
+    discountConfig('typo', discount().percent(5).once().ends('2023-02-29')),
   ).toThrow('got 2023-02-29')
   expect(() =>
     decode({
@@ -170,8 +170,8 @@ test('dates must be valid and the discount must start before it ends', () => {
         discount()
           .percent(5)
           .once()
-          .startsAt('2026-06-01')
-          .endsAt('2026-01-01'),
+          .starts('2026-06-01')
+          .ends('2026-01-01'),
       ),
     ),
   ).toThrow('ends_at must be after starts_at.')

@@ -403,8 +403,8 @@ const renderDiscount =
         : [`.products(${discount.products.map(literal).join(', ')})`]),
       ...optional('maxRedemptions', discount.max_redemptions),
       ...optional('perCustomer', discount.max_redemptions_per_customer),
-      ...optional('startsAt', discount.starts_at),
-      ...optional('endsAt', discount.ends_at),
+      ...optional('starts', discount.starts_at),
+      ...optional('ends', discount.ends_at),
     ].join('\n')
   }
 

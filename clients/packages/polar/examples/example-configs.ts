@@ -264,7 +264,7 @@ export const pricingConfig = defineConfig({
       .code('LAUNCH20')
       .products('team')
       .maxRedemptions(500)
-      .endsAt('2026-12-31'),
+      .ends('2026-12-31'),
     welcome: discount('Welcome $10')
       .amount(usd(10), eur(9))
       .once()

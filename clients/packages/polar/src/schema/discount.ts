@@ -257,12 +257,12 @@ class DiscountBuilder<
   }
 
   /** A `Date`, a date such as `'2026-12-31'` or a timestamp with a time zone. */
-  startsAt(date: Instant): DiscountBuilder<Product, Value, D> {
+  starts(date: Instant): DiscountBuilder<Product, Value, D> {
     return this.with({ starts_at: date })
   }
 
   /** A `Date`, a date such as `'2026-12-31'` or a timestamp with a time zone. */
-  endsAt(date: Instant): DiscountBuilder<Product, Value, D> {
+  ends(date: Instant): DiscountBuilder<Product, Value, D> {
     return this.with({ ends_at: date })
   }
 

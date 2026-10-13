@@ -288,12 +288,12 @@ const cases: [string, PolarConfig][] = [
             .code('LAUNCH20')
             .products('pro', 'team')
             .maxRedemptions(500)
-            .endsAt('2026-12-31'),
+            .ends('2026-12-31'),
           welcome: discount('Welcome $10')
             .amount(api.usd(10), api.eur(9.5), api.currency('nok')(100))
             .once()
             .perCustomer(1)
-            .startsAt('2026-01-01T09:30:00.500Z'),
+            .starts('2026-01-01T09:30:00.500Z'),
           partner: discount('Partner').percent(12.34).forever().code('PARTNER'),
           loyal: discount('Loyal').percent(5).repeating(2, 'years').products(),
           annual: discount('Annual').percent(100).repeating(1, 'year'),

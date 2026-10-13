@@ -208,7 +208,7 @@ test('sandbox failures become tool errors and long errors and results are trunca
   )
 })
 
-test('operation results keep full structured content when the text is truncated', async () => {
+test('operation results are not truncated and the text is the serialized structured content', async () => {
   const items = Array.from({ length: 1_000 }, (_, index) => ({
     id: `order-${index}`,
     description: 'Monthly Pro',
@@ -219,7 +219,7 @@ test('operation results keep full structured content when the text is truncated'
     { name: 'orders_list', arguments: {} },
     '?codemode=false',
   )
-  expect(result.content[0].text).toContain('--- TRUNCATED ---')
+  expect(result.content[0].text).toBe(JSON.stringify({ items }))
   expect(result.structuredContent).toEqual({ items })
 })
 

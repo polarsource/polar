@@ -102,7 +102,7 @@ export const registerOperationTools = Effect.fn('registerOperationTools')(
         })
         return json !== null && typeof json === 'object' && !Array.isArray(json)
           ? { text, structuredContent: json as Record<string, unknown> }
-          : text
+          : { text }
       },
       Effect.catchTags({
         HttpBodyError: (error) => Effect.fail(ToolError.fromCause(error)),

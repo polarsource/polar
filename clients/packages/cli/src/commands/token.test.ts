@@ -7,6 +7,7 @@ import {
   stat,
   writeFile,
 } from 'node:fs/promises'
+import { execFileSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import { Effect, Redacted } from 'effect'
@@ -174,4 +175,48 @@ test('keeps the permissions of an existing env file', async () => {
   await promise
 
   expect((await stat(file)).mode & 0o777).toBe(0o644)
+})
+
+test.each([
+  [['.env.local'], '.env.local'],
+  [[], '.env'],
+])(
+  'writes to the default env file when %j exists',
+  async (existing, expected) => {
+    for (const file of existing) await writeFile(join(dir, file), '')
+    const cwd = process.cwd()
+    process.chdir(dir)
+    try {
+      const { promise } = run([])
+      await promise
+    } finally {
+      process.chdir(cwd)
+    }
+
+    expect(await readFile(join(dir, expected), 'utf8')).toContain(
+      'POLAR_ACCESS_TOKEN=polar_oat_secret',
+    )
+  },
+)
+
+test.each([
+  ['', true],
+  ['.env\n', false],
+])(
+  'warns when git does not ignore the env file (.gitignore %j)',
+  async (gitignore, warned) => {
+    execFileSync('git', ['init', '--quiet', dir])
+    await writeFile(join(dir, '.gitignore'), gitignore)
+    const { promise, output } = run(['--env-file', join(dir, '.env')])
+    await promise
+
+    expect(output().includes('is not ignored by git')).toBe(warned)
+  },
+)
+
+test('does not warn outside a git repository', async () => {
+  const { promise, output } = run(['--env-file', join(dir, '.env')])
+  await promise
+
+  expect(output()).not.toContain('is not ignored by git')
 })

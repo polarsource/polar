@@ -89,12 +89,12 @@ polar auth token [flags]
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--scope` | `string` | Scope to preselect on the token page, e.g. products:read. Repeatable. |
-| `--env-file` | `string` | File to write the token to |
+| `--env-file` | `string` | File to write the token to. Defaults to .env.local if it exists, otherwise .env |
 | `--stdout` | `boolean` | Print the variables as KEY=value lines instead of writing --env-file, to pipe into another command |
 
 **Examples**
 
-Create a token for the active organization and add it to .env
+Create a token for the active organization and add it to .env.local or .env
 ```bash
 polar auth token
 ```

@@ -1,14 +1,10 @@
-import { Effect, FileSystem, Path, Redacted, Schema } from 'effect'
+import { Effect, Option, Path, Redacted, Schema } from 'effect'
 import { Command, Flag } from 'effect/cli'
-import { AuthError, PolarEnvironment } from '@/schemas/Auth'
+import { PolarEnvironment } from '@/schemas/Auth'
 import { Organizations } from '@/services/organizations'
-import {
-  ENVIRONMENT_VARS,
-  environmentSettings,
-  TokenHandoff,
-} from '@/services/token-handoff'
+import { defaultEnvFile, isExposedToGit, writeEnv } from '@/services/env-file'
+import { environmentSettings, TokenHandoff } from '@/services/token-handoff'
 import { output } from '@/utils/command'
-import { hasEnv, upsertEnv } from '@/utils/env-file'
 import { note, noteToStderr } from '@/utils/progress'
 import * as ui from '@/utils/ui'
 
@@ -20,8 +16,10 @@ const scope = Flag.String('scope').pipe(
 )
 
 const envFile = Flag.String('env-file').pipe(
-  Flag.withDefault('.env'),
-  Flag.withDescription('File to write the token to'),
+  Flag.optional,
+  Flag.withDescription(
+    'File to write the token to. Defaults to .env.local if it exists, otherwise .env',
+  ),
 )
 
 const stdout = Flag.Boolean('stdout').pipe(
@@ -47,6 +45,7 @@ const Saved = Schema.Struct({
   envFile: Schema.String,
   written: Schema.Array(Written),
   stale: Schema.Array(Schema.String),
+  exposedToGit: Schema.Boolean,
 })
 
 const Printed = Schema.Struct({
@@ -82,42 +81,6 @@ const announceTokenPage =
       ].join('\n'),
     )
 
-const writeEnv = (
-  file: string,
-  settings: ReadonlyArray<readonly [string, string]>,
-) =>
-  Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem
-    let content = yield* fs
-      .readFileString(file)
-      .pipe(
-        Effect.catch((error) =>
-          error.reason._tag === 'NotFound'
-            ? Effect.succeed('')
-            : Effect.fail(error),
-        ),
-      )
-    const written: Array<typeof Written.Type> = []
-    for (const [name, value] of settings) {
-      const result = upsertEnv(content, name, value)
-      content = result.content
-      written.push({ name, replaced: result.replaced })
-    }
-    yield* fs.writeFileString(file, content, { mode: 0o600 })
-    const stale = ENVIRONMENT_VARS.filter(
-      (name) =>
-        hasEnv(content, name) && !settings.some(([key]) => key === name),
-    )
-    return { written, stale }
-  }).pipe(
-    Effect.mapError(
-      () =>
-        new AuthError({
-          message: `Unable to write the token to ${file}. Check its permissions. The token was created; revoke it from the dashboard if you can't recover it.`,
-        }),
-    ),
-  )
-
 export const token = Command.make('token', {
   scope,
   envFile,
@@ -130,7 +93,7 @@ export const token = Command.make('token', {
     {
       command: 'polar auth token',
       description:
-        'Create a token for the active organization and add it to .env',
+        'Create a token for the active organization and add it to .env.local or .env',
     },
     {
       command:
@@ -169,7 +132,9 @@ export const token = Command.make('token', {
             variables: settings.map(([name, value]) => ({ name, value })),
           } satisfies Created
         }
-        const file = path.resolve(flags.envFile)
+        const file = Option.isSome(flags.envFile)
+          ? path.resolve(flags.envFile.value)
+          : yield* defaultEnvFile
         const { written, stale } = yield* writeEnv(file, settings)
         return {
           destination: 'file',
@@ -177,13 +142,14 @@ export const token = Command.make('token', {
           envFile: file,
           written,
           stale,
+          exposedToGit: yield* isExposedToGit(file),
         } satisfies Created
       }),
     render: (created: Created) => {
       if (created.destination === 'stdout') {
         return created.variables.map(({ name, value }) => `${name}=${value}`)
       }
-      const { organization, envFile, written, stale } = created
+      const { organization, envFile, written, stale, exposedToGit } = created
       const hint = sdkHints[organization.environment]
       return [
         ui.success(
@@ -197,6 +163,13 @@ export const token = Command.make('token', {
             `${name} in ${envFile} doesn't match this ${organization.environment} token. Remove it.`,
           ),
         ),
+        ...(exposedToGit
+          ? [
+              ui.warning(
+                `${envFile} is not ignored by git. Add it to .gitignore before you commit.`,
+              ),
+            ]
+          : []),
         ...(hint ? [ui.step(hint)] : []),
         ui.blank,
       ]

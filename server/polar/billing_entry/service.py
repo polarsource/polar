@@ -92,7 +92,10 @@ class BillingEntryService:
         item_entries_map: dict[OrderItem, BillingEntrySelector] = {}
         consumed_units: dict[uuid.UUID, Decimal] = defaultdict(Decimal)
         async for line_item, selector in line_items:
-            if isinstance(line_item, MeteredLineItem):
+            if (
+                isinstance(line_item, MeteredLineItem)
+                and line_item.price.meter.aggregation.func != AggregationFunction.unique
+            ):
                 consumed_units[line_item.price.meter_id] += Decimal(
                     str(line_item.consumed_units)
                 )

@@ -25371,6 +25371,120 @@
         ]
       }
     },
+    "/v1/customer-meters/credits": {
+      "post": {
+        "tags": [
+          "customer_meters",
+          "public",
+          "mcp",
+          "cli"
+        ],
+        "summary": "Credit Customer Meter",
+        "description": "Manually grant credits on a customer meter.\n\n**Scopes**: `customers:write`",
+        "operationId": "customer_meters:credits",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerMeterCreditsCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Credits granted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerMeter"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "You don't have permission to manage customers, or config as code is not enabled for this organization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/NotPermitted"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConfigAsCodeNotEnabled"
+                    }
+                  ],
+                  "title": "Response 403 Customer Meters:Credits"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The external_id is already used by a different event, or by a concurrent request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/CustomerMeterCreditExternalIDConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/CustomerMeterCreditConcurrentRequest"
+                    }
+                  ],
+                  "title": "Response 409 Customer Meters:Credits"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "oidc": [
+              "customers:write"
+            ]
+          },
+          {
+            "pat": [
+              "customers:write"
+            ]
+          },
+          {
+            "oat": [
+              "customers:write"
+            ]
+          }
+        ],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "customer_meters",
+        "x-speakeasy-name-override": "credits",
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_meters.credits(\n    customer_id='992fae2a-2a17-4b7a-8d9e-e287cf90131b',\n    meter_id='d498a884-e2cd-4d3e-8002-f536468a8b22',\n    units=100,\n    rollover=False,\n)\nprint(response)\n"
+          },
+          {
+            "lang": "typescript",
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerMeters.credits(\n  {\n    \"customer_id\": \"992fae2a-2a17-4b7a-8d9e-e287cf90131b\",\n    \"meter_id\": \"d498a884-e2cd-4d3e-8002-f536468a8b22\",\n    \"units\": 100,\n    \"rollover\": false\n  },\n);\nconsole.log(response);\n"
+          }
+        ]
+      }
+    },
     "/v1/payments/": {
       "get": {
         "tags": [
@@ -44371,6 +44485,28 @@
         "title": "CheckoutUpdatePublic",
         "description": "Update an existing checkout session using the client secret."
       },
+      "ConfigAsCodeNotEnabled": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "ConfigAsCodeNotEnabled",
+            "title": "Error",
+            "examples": [
+              "ConfigAsCodeNotEnabled"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "ConfigAsCodeNotEnabled"
+      },
       "CostMetadata-Input": {
         "properties": {
           "amount": {
@@ -49137,6 +49273,109 @@
         ],
         "title": "CustomerMeter",
         "description": "An active customer meter, with current consumed and credited units."
+      },
+      "CustomerMeterCreditConcurrentRequest": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "CustomerMeterCreditConcurrentRequest",
+            "title": "Error",
+            "examples": [
+              "CustomerMeterCreditConcurrentRequest"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "CustomerMeterCreditConcurrentRequest"
+      },
+      "CustomerMeterCreditExternalIDConflict": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "CustomerMeterCreditExternalIDConflict",
+            "title": "Error",
+            "examples": [
+              "CustomerMeterCreditExternalIDConflict"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "CustomerMeterCreditExternalIDConflict"
+      },
+      "CustomerMeterCreditsCreate": {
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Customer Id",
+            "description": "The ID of the customer.",
+            "examples": [
+              "992fae2a-2a17-4b7a-8d9e-e287cf90131b"
+            ]
+          },
+          "meter_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Meter Id",
+            "description": "The ID of the meter.",
+            "examples": [
+              "d498a884-e2cd-4d3e-8002-f536468a8b22"
+            ]
+          },
+          "units": {
+            "type": "integer",
+            "maximum": 1000000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Units",
+            "description": "The number of units to credit.",
+            "examples": [
+              100
+            ]
+          },
+          "rollover": {
+            "type": "boolean",
+            "title": "Rollover",
+            "description": "Whether unused credits carry over to the next meter period.",
+            "default": false
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "Your unique identifier for this credit. Retrying with the same `external_id` doesn't grant the credit twice."
+          }
+        },
+        "type": "object",
+        "required": [
+          "customer_id",
+          "meter_id",
+          "units"
+        ],
+        "title": "CustomerMeterCreditsCreate",
+        "description": "Schema to manually grant credits on a customer meter."
       },
       "CustomerMeterSortProperty": {
         "type": "string",

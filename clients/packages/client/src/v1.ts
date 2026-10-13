@@ -6206,6 +6206,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/customer-meters/credits': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Credit Customer Meter
+     * @description Manually grant credits on a customer meter.
+     *
+     *     **Scopes**: `customers:write`
+     */
+    post: operations['customer_meters:credits']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/payments/': {
     parameters: {
       query?: never
@@ -19159,6 +19181,65 @@ export interface components {
       customer: components['schemas']['Customer']
       /** @description The meter associated with this customer. */
       meter: components['schemas']['Meter']
+    }
+    /** CustomerMeterCreditConcurrentRequest */
+    CustomerMeterCreditConcurrentRequest: {
+      /**
+       * Error
+       * @example CustomerMeterCreditConcurrentRequest
+       * @constant
+       */
+      error: 'CustomerMeterCreditConcurrentRequest'
+      /** Detail */
+      detail: string
+    }
+    /** CustomerMeterCreditExternalIDConflict */
+    CustomerMeterCreditExternalIDConflict: {
+      /**
+       * Error
+       * @example CustomerMeterCreditExternalIDConflict
+       * @constant
+       */
+      error: 'CustomerMeterCreditExternalIDConflict'
+      /** Detail */
+      detail: string
+    }
+    /**
+     * CustomerMeterCreditsCreate
+     * @description Schema to manually grant credits on a customer meter.
+     */
+    CustomerMeterCreditsCreate: {
+      /**
+       * Customer Id
+       * Format: uuid4
+       * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+       */
+      customer_id: string
+      /**
+       * Meter Id
+       * Format: uuid4
+       * @description The ID of the meter.
+       * @example d498a884-e2cd-4d3e-8002-f536468a8b22
+       */
+      meter_id: string
+      /**
+       * Units
+       * @description The number of units to credit.
+       * @example 100
+       */
+      units: number
+      /**
+       * Rollover
+       * @description Whether unused credits carry over to the next meter period.
+       * @default false
+       */
+      rollover: boolean
+      /**
+       * External Id
+       * @description Your unique identifier for this credit. Retrying with the same `external_id` doesn't grant the credit twice.
+       */
+      external_id?: string | null
     }
     /**
      * CustomerMeterSortProperty
@@ -63102,6 +63183,61 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_meters:credits': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerMeterCreditsCreate']
+      }
+    }
+    responses: {
+      /** @description Credits granted. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerMeter']
+        }
+      }
+      /** @description You don't have permission to manage customers, or config as code is not enabled for this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['NotPermitted']
+            | components['schemas']['ConfigAsCodeNotEnabled']
+        }
+      }
+      /** @description The external_id is already used by a different event, or by a concurrent request. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['CustomerMeterCreditExternalIDConflict']
+            | components['schemas']['CustomerMeterCreditConcurrentRequest']
         }
       }
       /** @description Validation Error */

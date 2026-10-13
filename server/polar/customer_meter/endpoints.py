@@ -174,7 +174,6 @@ async def get(
             | CustomerMeterCreditConcurrentRequest.schema(),
         },
     },
-    tags=[APITag.private],
 )
 @version(starting_from=V2027_01)
 async def credits(

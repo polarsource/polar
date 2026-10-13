@@ -36,6 +36,7 @@ afterAll(() => rmSync(EVENT))
 const github = (
   existing: ReadonlyArray<{ id: number; body: string }> = [],
   status = 200,
+  deleted = 204,
 ) => {
   const requests: Recorded[] = []
   const server = Bun.serve({
@@ -45,9 +46,13 @@ const github = (
         method: request.method,
         path: new URL(request.url).pathname,
         auth: request.headers.get('authorization'),
-        body: request.method === 'GET' ? undefined : await request.json(),
+        body: ['POST', 'PATCH'].includes(request.method)
+          ? await request.json()
+          : undefined,
       })
       if (status !== 200) return Response.json({}, { status })
+      if (request.method === 'DELETE')
+        return new Response(null, { status: deleted })
       return request.method === 'GET'
         ? Response.json(existing.map((item) => ({ ...item, html_url: '' })))
         : Response.json({ id: 9, html_url: 'https://github.com/c/9' })
@@ -57,7 +62,7 @@ const github = (
   return { requests, api: `http://localhost:${server.port}` }
 }
 
-const run = (env: Record<string, string>, body = 'x') =>
+const post = (env: Record<string, string>, body: string | undefined) =>
   Effect.runPromiseExit(
     commentOnPullRequest('config plan org-1', body).pipe(
       Effect.provideService(Environment, env),
@@ -65,6 +70,8 @@ const run = (env: Record<string, string>, body = 'x') =>
       Effect.provide(BunServices.layer),
     ),
   )
+
+const run = (env: Record<string, string>, body = 'x') => post(env, body)
 
 const actions = (api: string) => ({
   GITHUB_REF: 'refs/pull/12/merge',
@@ -134,6 +141,29 @@ describe('commentOnPullRequest', () => {
         '<sub>[CI run](https://github.com/acme/app/actions/runs/42) · Updated on every push</sub>',
       ),
     })
+  })
+
+  test('removes its comment once the plan has nothing to say', async () => {
+    const { requests, api } = github([{ id: 7, body: `${MARKER}\nold plan` }])
+    const exit = await post(actions(api), undefined)
+    expect(exit).toEqual(Exit.succeed({ action: 'deleted', number: '12' }))
+    expect(requests.at(-1)).toMatchObject({
+      method: 'DELETE',
+      path: '/repos/acme/app/issues/comments/7',
+    })
+  })
+
+  test('treats a comment that is already gone as removed', async () => {
+    const { api } = github([{ id: 7, body: `${MARKER}\nold plan` }], 200, 404)
+    const exit = await post(actions(api), undefined)
+    expect(exit).toEqual(Exit.succeed({ action: 'deleted', number: '12' }))
+  })
+
+  test('posts nothing when the plan has nothing to say', async () => {
+    const { requests, api } = github([{ id: 3, body: 'Looks good' }])
+    const exit = await post(actions(api), undefined)
+    expect(exit).toEqual(Exit.succeed({ action: 'unneeded', number: '12' }))
+    expect(requests.map(({ method }) => method)).toEqual(['GET'])
   })
 
   test('skips outside a pull request', async () => {

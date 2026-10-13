@@ -67,7 +67,7 @@ describe('planMarkdown', () => {
         '## Polar billing plan updated',
         '',
         '> [!NOTE]',
-        "> This pull request changes billing for **Acme\\_Inc** in sandbox. Review every change below before it's applied.",
+        "> Applying the config in this pull request changes billing for **Acme\\_Inc** in sandbox. Review every change below before it's applied.",
         '',
         '| Organization | Environment | Config | Changes |',
         '| --- | --- | --- | --- |',
@@ -97,13 +97,21 @@ describe('planMarkdown', () => {
     )
   })
 
-  test('notes when nothing changes', () => {
-    const output = planMarkdown(config, acme, {
-      entries: [entries[1]!],
-      issues: [],
-    })
-    expect(output).toContain("> [!NOTE]\n> This pull request doesn't change")
-    expect(output).not.toContain('####')
+  test('has nothing to say when the plan changes nothing and has no errors', () => {
+    expect(
+      planMarkdown(config, acme, {
+        entries: [entries[1]!],
+        issues: [
+          {
+            severity: 'warning',
+            code: 'unknown_event',
+            path: 'meters',
+            message: 'No events yet',
+            location: { line: 2, column: 3, length: 8 },
+          },
+        ],
+      }),
+    ).toBeUndefined()
   })
 
   test('cautions and ends with the problems when the config has errors', () => {

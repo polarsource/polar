@@ -4,6 +4,7 @@ import { Environment } from '@/services/api'
 
 export type CommentResult =
   | { readonly action: 'skipped' }
+  | { readonly action: 'deleted' | 'unneeded'; readonly number: string }
   | {
       readonly action: 'created' | 'updated'
       readonly number: string
@@ -91,7 +92,7 @@ const Comment = Schema.Struct({
   html_url: Schema.String,
 })
 
-export const commentOnPullRequest = (key: string, body: string) =>
+export const commentOnPullRequest = (key: string, body: string | undefined) =>
   Effect.gen(function* () {
     const env = yield* Environment
     const pullRequest = gitHubActions(env) ?? buildkite(env)
@@ -106,11 +107,10 @@ export const commentOnPullRequest = (key: string, body: string) =>
       })
     }
     const issues = `${env['GITHUB_API_URL'] ?? 'https://api.github.com'}/repos/${pullRequest.repository}/issues`
-    const client = (yield* HttpClient.HttpClient).pipe(
+    const github = (yield* HttpClient.HttpClient).pipe(
       HttpClient.mapRequest(HttpClientRequest.bearerToken(token)),
-      HttpClient.filterStatusOk,
     )
-    const commit = pullRequest.commit ?? (yield* headCommit(pullRequest.event))
+    const client = github.pipe(HttpClient.filterStatusOk)
     const marker = `<!-- polar-cli ${encodeURIComponent(key)} -->`
     let existing: number | undefined
     for (let page = 1; existing === undefined; page++) {
@@ -123,6 +123,22 @@ export const commentOnPullRequest = (key: string, body: string) =>
       existing = comments.find(({ body }) => body?.startsWith(marker))?.id
       if (!response.headers['link']?.includes('rel="next"')) break
     }
+    if (body === undefined) {
+      if (existing !== undefined) {
+        yield* github
+          .pipe(
+            HttpClient.filterStatus(
+              (status) => (status >= 200 && status < 300) || status === 404,
+            ),
+          )
+          .execute(HttpClientRequest.delete(`${issues}/comments/${existing}`))
+      }
+      return {
+        action: existing === undefined ? 'unneeded' : 'deleted',
+        number: pullRequest.number,
+      } satisfies CommentResult
+    }
+    const commit = pullRequest.commit ?? (yield* headCommit(pullRequest.event))
     const request =
       existing === undefined
         ? HttpClientRequest.post(`${issues}/${pullRequest.number}/comments`)

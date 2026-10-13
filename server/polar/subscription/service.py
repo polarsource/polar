@@ -1500,16 +1500,21 @@ class SubscriptionService:
                 ),
             )
 
-    async def _settle_meter_cycle(
-        self, session: AsyncSession, subscription: Subscription
+    def _enqueue_meter_cycle_order(
+        self, subscription: Subscription, cutoff: datetime
     ) -> None:
         """
-        Settle a meter period's usage into a meter-cycle order. The order import
-        is local because the order service imports this one at module load.
+        Enqueue a meter-cycle order for usage before ``cutoff``.
+        Snapshots the current product and prices so a product switch in
+        the meantime still bills the old product's usage.
         """
-        from polar.order.service import order as order_service
-
-        await order_service.settle_meter_cycle_order(session, subscription)
+        enqueue_job(
+            "order.create_meter_cycle_order",
+            subscription.id,
+            cutoff.isoformat(),
+            [spp.product_price_id for spp in subscription.subscription_product_prices],
+            subscription.product_id,
+        )
 
     def check_meter_cycle_lag(self, subscription: Subscription) -> None:
         """Raise ``SubscriptionMeterCycleLag`` when the meter clock is more
@@ -1601,8 +1606,9 @@ class SubscriptionService:
         # when the billing period hasn't advanced.
         self._clear_expired_discount(subscription, period_start=boundary)
 
-        # Settle before reset: settlement reads the window that reset closes.
-        await self._settle_meter_cycle(session, subscription)
+        # Settlement stops at the boundary, so it excludes the reset and re-grant below.
+        self._enqueue_meter_cycle_order(subscription, boundary)
+
         await self.reset_meters(session, subscription)
         enqueue_job(
             "benefit.enqueue_benefit_grant_cycles", subscription_id=subscription.id
@@ -2096,7 +2102,7 @@ class SubscriptionService:
                     not was_trialing
                     and subscription.current_meter_period_end is not None
                 ):
-                    await self._settle_meter_cycle(session, subscription)
+                    self._enqueue_meter_cycle_order(subscription, utc_now())
 
                 interval_changed = subscription_update.is_interval_changed()
                 ctx.set_previous_product(previous_product)
@@ -3051,7 +3057,7 @@ class SubscriptionService:
             # Settle the final meter period before ending, so usage up to now isn't
             # lost when the subscription closes.
             if subscription.current_meter_period_end is not None:
-                await self._settle_meter_cycle(session, subscription)
+                self._enqueue_meter_cycle_order(subscription, now)
             subscription.ends_at = now
             subscription.ended_at = now
             subscription.status = SubscriptionStatus.canceled
@@ -4580,7 +4586,7 @@ class SubscriptionService:
         )
 
         # Meter cycle was frozen while past_due, so usage accrued unsettled: bill it
-        # now and reset so the credits re-granted below start from a clean window.
+        # and reset so the credits re-granted below start from a clean window.
         if (
             previous_status == SubscriptionStatus.past_due
             and subscription.meter_interval is not None
@@ -4590,7 +4596,7 @@ class SubscriptionService:
             )
             assert loaded is not None
             subscription = loaded
-            await self._settle_meter_cycle(session, subscription)
+            self._enqueue_meter_cycle_order(subscription, utc_now())
             await self.reset_meters(session, subscription)
 
         await self._after_subscription_updated(

@@ -2692,6 +2692,40 @@ class TestSettleMeterCycleOrder:
         )
         assert order.subtotal_amount == 60
 
+    async def test_records_given_product(
+        self,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        payment_method: PaymentMethod,
+        product: Product,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        subscription = await self._metered_subscription(
+            save_fixture,
+            organization,
+            customer,
+            unit_amount=Decimal(30),
+            payment_method=payment_method,
+        )
+        await self._add_metered_usage(
+            save_fixture, organization, customer, subscription, units=2
+        )
+
+        order = await order_service.settle_meter_cycle_order(
+            session, subscription, product=product
+        )
+
+        assert order is not None
+        assert order.product == product
+        assert subscription.product != product
+
     async def test_sub_minimum_still_creates_order(
         self,
         calculate_tax_mock: MagicMock,

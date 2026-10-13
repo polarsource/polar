@@ -1461,10 +1461,12 @@ class OrderService:
         lock_balance: bool,
         discount: Discount | None,
         reference: str | None = None,
+        product: Product | None = None,
     ) -> Order:
         """Build the subscription order for ``items`` without persisting: no invoice
         number, no side effects. ``lock_balance`` locks the wallet balance (the
-        persist path must; a preview must not); ``reference`` keys the tax calc."""
+        persist path must; a preview must not); ``reference`` keys the tax calc;
+        ``product`` overrides the subscription's current product."""
         order_id = uuid.uuid4()
         customer = subscription.customer
 
@@ -1500,7 +1502,7 @@ class OrderService:
             tax_calculation_processor_id=amounts.tax_calculation_processor_id,
             organization=subscription.organization,
             customer=customer,
-            product=subscription.product,
+            product=product or subscription.product,
             discount=discount,
             subscription=subscription,
             checkout=None,
@@ -1517,6 +1519,7 @@ class OrderService:
         billing_reason: OrderBillingReasonInternal,
         *,
         payment_mode: PaymentMode = PaymentMode.background,
+        product: Product | None = None,
     ) -> Order:
         """Build, persist and dispatch a subscription order from ``items``: invoice
         number, balance impact, optional meter reset, then payment."""
@@ -1540,6 +1543,7 @@ class OrderService:
             billing_reason,
             lock_balance=True,
             discount=discount,
+            product=product,
         )
         balance_change = (
             order.applied_balance_amount
@@ -1626,9 +1630,13 @@ class OrderService:
         self,
         session: AsyncSession,
         subscription: Subscription,
+        *,
+        cutoff: datetime | None = None,
+        price_ids: Sequence[uuid.UUID] | None = None,
+        product: Product | None = None,
     ) -> Order | None:
         async with billing_entry_service.create_metered_order_items_from_pending(
-            session, subscription
+            session, subscription, cutoff=cutoff, price_ids=price_ids
         ) as items:
             if len(items) == 0:
                 return None
@@ -1637,6 +1645,7 @@ class OrderService:
                 subscription,
                 list(items),
                 OrderBillingReasonInternal.subscription_meter_cycle,
+                product=product,
             )
 
     async def create_trial_order(

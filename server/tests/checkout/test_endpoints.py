@@ -1097,6 +1097,25 @@ class TestUpdateCheckout:
         assert json["discount"] is not None
         assert json["discount"]["id"] == str(discount.id)
 
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    async def test_product_price_id_ignored_2027_01(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        checkout_open: Checkout,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.patch(
+            f"{api_prefix}/{checkout_open.id}",
+            json={
+                "product_id": str(checkout_open.product_id),
+                "product_price_id": str(uuid.uuid4()),
+            },
+        )
+
+        assert response.status_code == 200
+
 
 @pytest.mark.anyio
 class TestClientGet:
@@ -1274,6 +1293,23 @@ class TestClientUpdate:
         assert json["discount"] is not None
         assert json["discount"]["code"] == "TESTDISCOUNT50"
 
+    @pytest.mark.api_version(V2027_01)
+    async def test_product_price_id_ignored_2027_01(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        checkout_open: Checkout,
+    ) -> None:
+        response = await client.patch(
+            f"{api_prefix}/client/{checkout_open.client_secret}",
+            json={
+                "product_id": str(checkout_open.product_id),
+                "product_price_id": str(uuid.uuid4()),
+            },
+        )
+
+        assert response.status_code == 200
+
 
 @pytest.mark.anyio
 class TestClientConfirm:
@@ -1390,6 +1426,34 @@ class TestClientConfirm:
         json = response.json()
         assert json["discount"] is not None
         assert json["discount"]["code"] == "TESTDISCOUNT50"
+
+    @pytest.mark.api_version(V2027_01)
+    async def test_product_price_id_ignored_2027_01(
+        self,
+        api_prefix: str,
+        stripe_service_mock: MagicMock,
+        client: AsyncClient,
+        checkout_open: Checkout,
+    ) -> None:
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
+        )
+        response = await client.post(
+            f"{api_prefix}/client/{checkout_open.client_secret}/confirm",
+            json={
+                "customer_name": "Customer Name",
+                "customer_email": "customer@example.com",
+                "customer_billing_address": {"country": "FR"},
+                "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                "product_id": str(checkout_open.product_id),
+                "product_price_id": str(uuid.uuid4()),
+            },
+        )
+
+        assert response.status_code == 200
 
 
 @pytest.mark.anyio

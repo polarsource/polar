@@ -17,6 +17,7 @@ from polar.auth.models import Agent, Anonymous, AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_resource_permission, get_accessible_org_ids
 from polar.checkout.guard import has_product_checkout
+from polar.checkout.legacy_schemas import CheckoutProductPriceUpdateMixin
 from polar.checkout.schemas import (
     CheckoutConfirm,
     CheckoutConfirmBase,
@@ -2359,7 +2360,10 @@ class CheckoutService:
 
             checkout.product = product
 
-            if checkout_update.product_price_id is not None:
+            if (
+                isinstance(checkout_update, CheckoutProductPriceUpdateMixin)
+                and checkout_update.product_price_id is not None
+            ):
                 try:
                     price = next(
                         p

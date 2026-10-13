@@ -6219,6 +6219,9 @@ export interface paths {
      * Credit Customer Meter
      * @description Manually grant credits on a customer meter.
      *
+     *     Returns the `meter.credited` event. The customer meter balance is updated
+     *     asynchronously, shortly after the request.
+     *
      *     **Scopes**: `customers:write`
      */
     post: operations['customer_meters:credits']
@@ -19181,17 +19184,6 @@ export interface components {
       customer: components['schemas']['Customer']
       /** @description The meter associated with this customer. */
       meter: components['schemas']['Meter']
-    }
-    /** CustomerMeterCreditConcurrentRequest */
-    CustomerMeterCreditConcurrentRequest: {
-      /**
-       * Error
-       * @example CustomerMeterCreditConcurrentRequest
-       * @constant
-       */
-      error: 'CustomerMeterCreditConcurrentRequest'
-      /** Detail */
-      detail: string
     }
     /** CustomerMeterCreditExternalIDConflict */
     CustomerMeterCreditExternalIDConflict: {
@@ -63248,27 +63240,25 @@ export interface operations {
       }
     }
     responses: {
-      /** @description Credits granted. */
+      /** @description Credit recorded. The customer meter balance is updated asynchronously. */
       201: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CustomerMeter']
+          'application/json': components['schemas']['MeterCreditEvent']
         }
       }
-      /** @description You don't have permission to manage customers, or config as code is not enabled for this organization. */
+      /** @description You don't have permission to manage customers. */
       403: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['NotPermitted']
-            | components['schemas']['ConfigAsCodeNotEnabled']
+          'application/json': components['schemas']['NotPermitted']
         }
       }
-      /** @description The external_id is already used by a different event, or by a concurrent request, or the external customer ID matches customers in several accessible organizations. */
+      /** @description The external_id is already used by a different event, or the external customer ID matches customers in several accessible organizations. */
       409: {
         headers: {
           [name: string]: unknown
@@ -63276,7 +63266,6 @@ export interface operations {
         content: {
           'application/json':
             | components['schemas']['CustomerMeterCreditExternalIDConflict']
-            | components['schemas']['CustomerMeterCreditConcurrentRequest']
             | components['schemas']['AmbiguousExternalCustomerID']
         }
       }

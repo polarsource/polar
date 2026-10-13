@@ -4,6 +4,8 @@ from decimal import Decimal
 import pytest
 from httpx import AsyncClient
 
+from polar.customer_meter.repository import CustomerMeterRepository
+from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.event.system import SystemEvent
 from polar.kit.utils import utc_now
 from polar.models import (
@@ -14,6 +16,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.postgres import AsyncSession
 from polar.version import V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -40,17 +43,6 @@ async def customer_meter_organization_second(
     )
     await save_fixture(customer_meter)
     return customer_meter
-
-
-@pytest.fixture
-async def config_as_code_enabled(
-    save_fixture: SaveFixture, organization: Organization
-) -> None:
-    organization.feature_settings = {
-        **organization.feature_settings,
-        "config_as_code_enabled": True,
-    }
-    await save_fixture(organization)
 
 
 @pytest.fixture
@@ -288,34 +280,13 @@ class TestCreditCustomerMeter:
         assert response.json()["detail"][0]["loc"] == ["body", "meter_id"]
 
     @pytest.mark.api_version(V2027_01)
-    @pytest.mark.auth
-    async def test_config_as_code_not_enabled(
-        self,
-        client: AsyncClient,
-        user_organization: UserOrganization,
-        customer: Customer,
-        meter: Meter,
-    ) -> None:
-        response = await client.post(
-            "/v1/customer-meters/credits",
-            json={
-                "customer_id": str(customer.id),
-                "meter_id": str(meter.id),
-                "units": 100,
-            },
-        )
-
-        assert response.status_code == 403
-        assert response.json()["error"] == "ConfigAsCodeNotEnabled"
-
-    @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
-    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_valid(
         self,
+        session: AsyncSession,
         client: AsyncClient,
         user_organization: UserOrganization,
         customer: Customer,
@@ -333,17 +304,59 @@ class TestCreditCustomerMeter:
 
         assert response.status_code == 201
         json = response.json()
+        assert json["source"] == "system"
+        assert json["name"] == SystemEvent.meter_credited
         assert json["customer_id"] == str(customer.id)
-        assert json["meter_id"] == str(meter.id)
-        assert json["credited_units"] == 100
-        assert json["consumed_units"] == 0.0
-        assert json["balance"] == 100.0
         assert json["customer"]["id"] == str(customer.id)
-        assert json["meter"]["id"] == str(meter.id)
+        assert json["metadata"] == {
+            "meter_id": str(meter.id),
+            "units": 100,
+            "rollover": True,
+        }
+
+        await customer_meter_service.update_customer(session, customer)
+        repository = CustomerMeterRepository.from_session(session)
+        customer_meter = await repository.get_by_customer_and_meter(
+            customer.id, meter.id
+        )
+        assert customer_meter is not None
+        assert customer_meter.activated_at is not None
+        assert customer_meter.balance == 100
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth
-    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_activates_existing_customer_meter(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        customer_meter = CustomerMeter(customer=customer, meter=meter)
+        await save_fixture(customer_meter)
+
+        response = await client.post(
+            "/v1/customer-meters/credits",
+            json={
+                "customer_id": str(customer.id),
+                "meter_id": str(meter.id),
+                "units": 100,
+            },
+        )
+
+        assert response.status_code == 201
+
+        await customer_meter_service.update_customer(session, customer)
+        repository = CustomerMeterRepository.from_session(session)
+        updated = await repository.get_by_customer_and_meter(customer.id, meter.id)
+        assert updated is not None
+        assert updated.activated_at is not None
+        assert updated.balance == 100
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
     async def test_valid_external_customer_id(
         self,
         save_fixture: SaveFixture,
@@ -365,13 +378,10 @@ class TestCreditCustomerMeter:
         )
 
         assert response.status_code == 201
-        json = response.json()
-        assert json["customer_id"] == str(customer.id)
-        assert json["balance"] == 100.0
+        assert response.json()["customer_id"] == str(customer.id)
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth
-    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_external_id_replay(
         self,
         client: AsyncClient,
@@ -392,12 +402,9 @@ class TestCreditCustomerMeter:
         assert first.status_code == 201
         assert second.status_code == 201
         assert second.json()["id"] == first.json()["id"]
-        assert second.json()["credited_units"] == 100
-        assert second.json()["balance"] == 100.0
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth
-    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_external_id_conflict(
         self,
         client: AsyncClient,
@@ -423,7 +430,6 @@ class TestCreditCustomerMeter:
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth
-    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_external_id_used_by_user_event(
         self,
         save_fixture: SaveFixture,

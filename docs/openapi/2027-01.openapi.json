@@ -25380,7 +25380,7 @@
           "cli"
         ],
         "summary": "Credit Customer Meter",
-        "description": "Manually grant credits on a customer meter.\n\n**Scopes**: `customers:write`",
+        "description": "Manually grant credits on a customer meter.\n\nReturns the `meter.credited` event. The customer meter balance is updated\nasynchronously, shortly after the request.\n\n**Scopes**: `customers:write`",
         "operationId": "customer_meters:credits",
         "requestBody": {
           "content": {
@@ -25402,44 +25402,33 @@
         },
         "responses": {
           "201": {
-            "description": "Credits granted.",
+            "description": "Credit recorded. The customer meter balance is updated asynchronously.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CustomerMeter"
+                  "$ref": "#/components/schemas/MeterCreditEvent"
                 }
               }
             }
           },
           "403": {
-            "description": "You don't have permission to manage customers, or config as code is not enabled for this organization.",
+            "description": "You don't have permission to manage customers.",
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/NotPermitted"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ConfigAsCodeNotEnabled"
-                    }
-                  ],
-                  "title": "Response 403 Customer Meters:Credits"
+                  "$ref": "#/components/schemas/NotPermitted"
                 }
               }
             }
           },
           "409": {
-            "description": "The external_id is already used by a different event, or by a concurrent request, or the external customer ID matches customers in several accessible organizations.",
+            "description": "The external_id is already used by a different event, or the external customer ID matches customers in several accessible organizations.",
             "content": {
               "application/json": {
                 "schema": {
                   "anyOf": [
                     {
                       "$ref": "#/components/schemas/CustomerMeterCreditExternalIDConflict"
-                    },
-                    {
-                      "$ref": "#/components/schemas/CustomerMeterCreditConcurrentRequest"
                     },
                     {
                       "$ref": "#/components/schemas/AmbiguousExternalCustomerID"
@@ -44496,28 +44485,6 @@
         "title": "CheckoutUpdatePublic",
         "description": "Update an existing checkout session using the client secret."
       },
-      "ConfigAsCodeNotEnabled": {
-        "properties": {
-          "error": {
-            "type": "string",
-            "const": "ConfigAsCodeNotEnabled",
-            "title": "Error",
-            "examples": [
-              "ConfigAsCodeNotEnabled"
-            ]
-          },
-          "detail": {
-            "type": "string",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "required": [
-          "error",
-          "detail"
-        ],
-        "title": "ConfigAsCodeNotEnabled"
-      },
       "CostMetadata-Input": {
         "properties": {
           "amount": {
@@ -49284,28 +49251,6 @@
         ],
         "title": "CustomerMeter",
         "description": "An active customer meter, with current consumed and credited units."
-      },
-      "CustomerMeterCreditConcurrentRequest": {
-        "properties": {
-          "error": {
-            "type": "string",
-            "const": "CustomerMeterCreditConcurrentRequest",
-            "title": "Error",
-            "examples": [
-              "CustomerMeterCreditConcurrentRequest"
-            ]
-          },
-          "detail": {
-            "type": "string",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "required": [
-          "error",
-          "detail"
-        ],
-        "title": "CustomerMeterCreditConcurrentRequest"
       },
       "CustomerMeterCreditExternalIDConflict": {
         "properties": {

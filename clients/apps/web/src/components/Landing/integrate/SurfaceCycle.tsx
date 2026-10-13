@@ -50,7 +50,7 @@ const SURFACES: Surface[] = [
     name: 'CLI',
     avatar: '%',
     header: 'zsh',
-    code: '% polar listen http://localhost:3000/webhooks',
+    code: '% polar webhook listen 3000/webhooks',
     running: 'Connecting',
     done: 'Connected',
     result: 'Forwarding to localhost:3000',

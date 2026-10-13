@@ -16,5 +16,5 @@ test('groups events by resource with aligned descriptions', () => {
   expect(output).toContain('    checkout.expired  A checkout expired.')
   expect(output).toContain('\n\n  order\n')
   expect(output).toContain('    order.paid        An order was paid.')
-  expect(output).toContain('polar trigger <event>')
+  expect(output).toContain('polar webhook trigger <event>')
 })

@@ -8700,10 +8700,7 @@ export interface components {
       /** Recurring Interval Count */
       recurring_interval_count: number | null
       /** Prices */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
     }
     AggregateField: string
     /**
@@ -14062,21 +14059,13 @@ export interface components {
        * @deprecated
        * @description Price of the selected product.
        */
-      product_price:
-        | (
-            | components['schemas']['LegacyRecurringProductPrice']
-            | components['schemas']['ProductPrice']
-          )
-        | null
+      product_price: components['schemas']['ProductPrice'] | null
       /**
        * Prices
        * @description Mapping of product IDs to their list of prices.
        */
       prices: {
-        [key: string]: (
-          | components['schemas']['LegacyRecurringProductPrice']
-          | components['schemas']['ProductPrice']
-        )[]
+        [key: string]: components['schemas']['ProductPrice'][]
       } | null
       /** Discount */
       discount:
@@ -14704,10 +14693,7 @@ export interface components {
        * Prices
        * @description List of prices for this product.
        */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
       /**
        * Benefits
        * @description List of benefits granted by the product.
@@ -14937,10 +14923,7 @@ export interface components {
        * Prices
        * @description List of prices for this product.
        */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
       /**
        * Benefits
        * @description List of benefits granted by the product.
@@ -15570,21 +15553,13 @@ export interface components {
        * @deprecated
        * @description Price of the selected product.
        */
-      product_price:
-        | (
-            | components['schemas']['LegacyRecurringProductPrice']
-            | components['schemas']['ProductPrice']
-          )
-        | null
+      product_price: components['schemas']['ProductPrice'] | null
       /**
        * Prices
        * @description Mapping of product IDs to their list of prices.
        */
       prices: {
-        [key: string]: (
-          | components['schemas']['LegacyRecurringProductPrice']
-          | components['schemas']['ProductPrice']
-        )[]
+        [key: string]: components['schemas']['ProductPrice'][]
       } | null
       /** Discount */
       discount:
@@ -15852,21 +15827,13 @@ export interface components {
        * @deprecated
        * @description Price of the selected product.
        */
-      product_price:
-        | (
-            | components['schemas']['LegacyRecurringProductPrice']
-            | components['schemas']['ProductPrice']
-          )
-        | null
+      product_price: components['schemas']['ProductPrice'] | null
       /**
        * Prices
        * @description Mapping of product IDs to their list of prices.
        */
       prices: {
-        [key: string]: (
-          | components['schemas']['LegacyRecurringProductPrice']
-          | components['schemas']['ProductPrice']
-        )[]
+        [key: string]: components['schemas']['ProductPrice'][]
       } | null
       /** Discount */
       discount:
@@ -19906,10 +19873,7 @@ export interface components {
        * Prices
        * @description List of prices for this product.
        */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
       /**
        * Benefits
        * @description List of benefits granted by the product.
@@ -20578,10 +20542,7 @@ export interface components {
        * Prices
        * @description List of available prices for this product.
        */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
       /**
        * Benefits
        * @description List of benefits granted by the product.
@@ -21652,10 +21613,7 @@ export interface components {
        * Prices
        * @description List of enabled prices for the subscription.
        */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
       /**
        * Meters
        * @description List of meters associated with the subscription.
@@ -21885,10 +21843,7 @@ export interface components {
        * Prices
        * @description List of prices for this product.
        */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
       /**
        * Benefits
        * @description List of benefits granted by the product.
@@ -25161,157 +25116,6 @@ export interface components {
       error: 'LastSSOConnectionRequired'
       /** Detail */
       detail: string
-    }
-    LegacyRecurringProductPrice:
-      | components['schemas']['LegacyRecurringProductPriceFixed']
-      | components['schemas']['LegacyRecurringProductPriceCustom']
-    /**
-     * LegacyRecurringProductPriceCustom
-     * @description A pay-what-you-want recurring price for a product, i.e. a subscription.
-     *
-     *     **Deprecated**: The recurring interval should be set on the product itself.
-     */
-    LegacyRecurringProductPriceCustom: {
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.000000Z
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the price.
-       */
-      id: string
-      /** @description The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session. */
-      source: components['schemas']['ProductPriceSource']
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      amount_type: 'custom'
-      /**
-       * Price Currency
-       * @description The currency in which the customer will be charged.
-       */
-      price_currency: string
-      /** @description The tax behavior of the price. If null, it defaults to the organization's default tax behavior. */
-      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
-      /**
-       * Is Archived
-       * @description Whether the price is archived and no longer available.
-       */
-      is_archived: boolean
-      /**
-       * Product Id
-       * Format: uuid4
-       * @description The ID of the product owning the price.
-       */
-      product_id: string
-      /**
-       * Type
-       * @description The type of the price.
-       * @constant
-       */
-      type: 'recurring'
-      /** @description The recurring interval of the price. */
-      recurring_interval: components['schemas']['RecurringInterval']
-      /**
-       * Minimum Amount
-       * @description The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'.
-       */
-      minimum_amount: number
-      /**
-       * Maximum Amount
-       * @description The maximum amount the customer can pay.
-       */
-      maximum_amount: number | null
-      /**
-       * Preset Amount
-       * @description The initial amount shown to the customer.
-       */
-      preset_amount: number | null
-      /**
-       * Legacy
-       * @constant
-       */
-      readonly legacy: true
-    }
-    /**
-     * LegacyRecurringProductPriceFixed
-     * @description A recurring price for a product, i.e. a subscription.
-     *
-     *     **Deprecated**: The recurring interval should be set on the product itself.
-     */
-    LegacyRecurringProductPriceFixed: {
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.000000Z
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the price.
-       */
-      id: string
-      /** @description The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session. */
-      source: components['schemas']['ProductPriceSource']
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      amount_type: 'fixed'
-      /**
-       * Price Currency
-       * @description The currency in which the customer will be charged.
-       */
-      price_currency: string
-      /** @description The tax behavior of the price. If null, it defaults to the organization's default tax behavior. */
-      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
-      /**
-       * Is Archived
-       * @description Whether the price is archived and no longer available.
-       */
-      is_archived: boolean
-      /**
-       * Product Id
-       * Format: uuid4
-       * @description The ID of the product owning the price.
-       */
-      product_id: string
-      /**
-       * Type
-       * @description The type of the price.
-       * @constant
-       */
-      type: 'recurring'
-      /** @description The recurring interval of the price. */
-      recurring_interval: components['schemas']['RecurringInterval']
-      /**
-       * Price Amount
-       * @description The price in cents.
-       */
-      price_amount: number
-      /**
-       * Legacy
-       * @constant
-       */
-      readonly legacy: true
     }
     /** LicenseKeyActivate */
     LicenseKeyActivate: {
@@ -34055,10 +33859,7 @@ export interface components {
        * Prices
        * @description List of prices for this product.
        */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
       /**
        * Benefits
        * @description List of benefits granted by the product.
@@ -35253,11 +35054,6 @@ export interface components {
      * @enum {string}
      */
     ProductPriceSource: 'catalog' | 'ad_hoc'
-    /**
-     * ProductPriceType
-     * @enum {string}
-     */
-    ProductPriceType: 'one_time' | 'recurring'
     /**
      * ProductPriceUnitBased
      * @description A unit-based price for a product: the buyer picks a quantity of units,
@@ -36999,10 +36795,7 @@ export interface components {
        * Prices
        * @description List of enabled prices for the subscription.
        */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
       /**
        * Meters
        * @description List of meters associated with the subscription.
@@ -73496,12 +73289,6 @@ export const insightSeverityValues: ReadonlyArray<
 export const introspectTokenResponseToken_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['IntrospectTokenResponse']['token_type']
 > = ['access_token', 'refresh_token']
-export const legacyRecurringProductPriceCustomAmount_typeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['LegacyRecurringProductPriceCustom']['amount_type']
-> = ['custom']
-export const legacyRecurringProductPriceFixedAmount_typeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['LegacyRecurringProductPriceFixed']['amount_type']
-> = ['fixed']
 export const licenseKeyStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['LicenseKeyStatus']
 > = ['granted', 'revoked', 'disabled']
@@ -75377,9 +75164,6 @@ export const productPriceSeatBasedCreateAmount_typeValues: ReadonlyArray<
 export const productPriceSourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ProductPriceSource']
 > = ['catalog', 'ad_hoc']
-export const productPriceTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ProductPriceType']
-> = ['one_time', 'recurring']
 export const productPriceUnitBasedAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ProductPriceUnitBased']['amount_type']
 > = ['unit_based']

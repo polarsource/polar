@@ -117,9 +117,7 @@ async def get(
     summary="Create Checkout Link",
     responses={201: {"description": "Checkout link created."}},
     tags=[APITag.mcp, APITag.cli],
-    openapi_extra={
-        "x-mint": {"content": CHECKOUT_LINK_CREATE_MINTLIFY_CONTENT},
-    },
+    openapi_extra={"x-mint": {"content": CHECKOUT_LINK_CREATE_MINTLIFY_CONTENT}},
 )
 async def create(
     checkout_link_create: CheckoutLinkCreate,

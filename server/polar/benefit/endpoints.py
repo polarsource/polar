@@ -51,10 +51,7 @@ BenefitNotFound = {
     "/",
     summary="List Benefits",
     response_model=ListResource[BenefitSchema],
-    openapi_extra={
-        "x-tool-description": "List all existing benefits.",
-        "parameters": [get_metadata_query_openapi_schema()],
-    },
+    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
 )
 async def list(
     auth_subject: auth.BenefitsRead,
@@ -104,10 +101,7 @@ async def list(
     name="list",
     summary="List Benefits",
     response_model=ListResource[BenefitSchema],
-    openapi_extra={
-        "x-tool-description": "List all existing benefits.",
-        "parameters": [get_metadata_query_openapi_schema()],
-    },
+    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
 )
 @version(starting_from=V2027_01)
 async def list_v2027_01(
@@ -209,9 +203,6 @@ async def files(
     summary="List Benefit Grants",
     response_model=ListResource[BenefitGrant],
     responses={404: BenefitNotFound},
-    openapi_extra={
-        "x-tool-title": "List grants for benefit",
-    },
 )
 async def grants(
     id: BenefitID,
@@ -265,12 +256,6 @@ async def grants(
     response_model=BenefitSchema,
     status_code=201,
     responses={201: {"description": "Benefit created."}},
-    openapi_extra={
-        "x-tool-description": (
-            "Create a new benefit (entitlement) like license keys, file downloads, or"
-            " Discord access."
-        ),
-    },
 )
 async def create(
     auth_subject: auth.BenefitsWrite,
@@ -295,9 +280,6 @@ async def create(
     responses={
         200: {"description": "Benefit updated."},
         404: BenefitNotFound,
-    },
-    openapi_extra={
-        "x-tool-description": "Update an existing benefit's configuration.",
     },
 )
 async def update(
@@ -331,12 +313,6 @@ async def update(
             "model": NotPermitted.schema(),
         },
         404: BenefitNotFound,
-    },
-    openapi_extra={
-        "x-tool-description": (
-            "Delete a benefit. Caution: all associated grants will be revoked and "
-            "users will lose access."
-        ),
     },
 )
 async def delete(

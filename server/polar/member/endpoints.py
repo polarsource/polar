@@ -221,9 +221,6 @@ async def list_external(
         403: NotPermittedToAddMembers,
         404: CustomerNotFound,
     },
-    openapi_extra={
-        "x-tool-title": "Create customer member",
-    },
 )
 async def create(
     id: CustomerID,
@@ -261,9 +258,6 @@ async def create(
         404: CustomerNotFound,
         409: AmbiguousExternalCustomer,
     },
-    openapi_extra={
-        "x-tool-title": "Create customer member by external ID",
-    },
 )
 async def create_external(
     external_id: ExternalCustomerID,
@@ -288,10 +282,7 @@ async def create_external(
 @customer_members_router.get(
     "/{id}/members/{member_id}",
     summary="Get Member",
-    openapi_extra={
-        **cli_preview(*MEMBER_PREVIEW_FIELDS),
-        "x-tool-title": "Get customer member",
-    },
+    openapi_extra=cli_preview(*MEMBER_PREVIEW_FIELDS),
     response_model=Member,
     responses={
         200: {"description": "Member retrieved."},
@@ -315,10 +306,7 @@ async def get(
 @customer_members_router.get(
     "/external/{external_id}/members/{member_external_id}",
     summary="Get Member by External ID",
-    openapi_extra={
-        **cli_preview(*MEMBER_PREVIEW_FIELDS),
-        "x-tool-title": "Get customer member by external ID",
-    },
+    openapi_extra=cli_preview(*MEMBER_PREVIEW_FIELDS),
     response_model=Member,
     responses={
         200: {"description": "Member retrieved."},
@@ -352,10 +340,6 @@ async def get_external(
     responses={
         200: {"description": "Member updated."},
         404: MemberNotFound,
-    },
-    openapi_extra={
-        "x-tool-title": "Update customer member",
-        "x-tool-description": "Update the name, email, or role of a customer member.",
     },
 )
 async def update(
@@ -395,9 +379,6 @@ async def update(
         404: MemberNotFound,
         409: AmbiguousExternalCustomer,
     },
-    openapi_extra={
-        "x-tool-title": "Update customer member by external ID",
-    },
 )
 async def update_external(
     external_id: ExternalCustomerID,
@@ -436,9 +417,6 @@ async def update_external(
         204: {"description": "Member deleted."},
         404: MemberNotFound,
     },
-    openapi_extra={
-        "x-tool-title": "Delete customer member",
-    },
 )
 async def delete(
     id: CustomerID,
@@ -462,9 +440,6 @@ async def delete(
         204: {"description": "Member deleted."},
         404: MemberNotFound,
         409: AmbiguousExternalCustomer,
-    },
-    openapi_extra={
-        "x-tool-title": "Delete customer member by external ID",
     },
 )
 async def delete_external(

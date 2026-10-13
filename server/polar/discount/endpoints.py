@@ -35,15 +35,7 @@ DiscountNotFound = {
 }
 
 
-@router.get(
-    "/",
-    summary="List Discounts",
-    response_model=ListResource[DiscountSchema],
-    openapi_extra={
-        "x-tool-title": "List discount codes",
-        "x-tool-description": "List all discount codes and coupons.",
-    },
-)
+@router.get("/", summary="List Discounts", response_model=ListResource[DiscountSchema])
 async def list(
     auth_subject: auth.DiscountRead,
     pagination: PaginationParamsQuery,
@@ -76,10 +68,6 @@ async def list(
     name="list",
     summary="List Discounts",
     response_model=ListResource[DiscountSchema],
-    openapi_extra={
-        "x-tool-title": "List discount codes",
-        "x-tool-description": "List all discount codes and coupons.",
-    },
 )
 @version(starting_from=V2027_01)
 async def list_v2027_01(
@@ -116,16 +104,13 @@ async def list_v2027_01(
 @router.get(
     "/{id}",
     summary="Get Discount",
-    openapi_extra={
-        **cli_preview(
-            ("id", "ID"),
-            ("name", "Name"),
-            ("code", "Code"),
-            ("type", "Type"),
-            ("duration", "Duration"),
-        ),
-        "x-tool-description": "Retrieve a specific discount by ID.",
-    },
+    openapi_extra=cli_preview(
+        ("id", "ID"),
+        ("name", "Name"),
+        ("code", "Code"),
+        ("type", "Type"),
+        ("duration", "Duration"),
+    ),
     response_model=DiscountSchema,
     responses={404: DiscountNotFound},
 )
@@ -149,10 +134,6 @@ async def get(
     status_code=201,
     summary="Create Discount",
     responses={201: {"description": "Discount created."}},
-    openapi_extra={
-        "x-tool-title": "Create discount code",
-        "x-tool-description": "Create a new discount code for products or subscriptions.",
-    },
 )
 async def create(
     auth_subject: auth.DiscountWrite,
@@ -175,9 +156,6 @@ async def create(
     responses={
         200: {"description": "Discount updated."},
         404: DiscountNotFound,
-    },
-    openapi_extra={
-        "x-tool-description": "Update an existing discount's settings or validity.",
     },
 )
 async def update(

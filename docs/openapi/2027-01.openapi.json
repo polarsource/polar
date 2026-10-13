@@ -927,7 +927,7 @@
         },
         "x-tool-name": "subscriptions_list",
         "x-tool-title": "List Subscriptions",
-        "x-tool-description": "List active subscriptions.",
+        "x-tool-description": "List subscriptions.",
         "x-tool-annotations": [
           "read_only",
           "idempotent"
@@ -1384,7 +1384,7 @@
           }
         },
         "x-tool-name": "subscriptions_get",
-        "x-tool-title": "Get subscription details",
+        "x-tool-title": "Get Subscription",
         "x-tool-description": "Get a subscription by ID.",
         "x-tool-annotations": [
           "read_only",
@@ -2500,7 +2500,7 @@
         },
         "x-tool-name": "benefits_list",
         "x-tool-title": "List Benefits",
-        "x-tool-description": "List all existing benefits.",
+        "x-tool-description": "List benefits.",
         "x-tool-annotations": [
           "read_only",
           "idempotent"
@@ -2609,7 +2609,7 @@
         },
         "x-tool-name": "benefits_create",
         "x-tool-title": "Create Benefit",
-        "x-tool-description": "Create a new benefit (entitlement) like license keys, file downloads, or Discord access.",
+        "x-tool-description": "Create a benefit.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -2856,7 +2856,7 @@
         },
         "x-tool-name": "benefits_update",
         "x-tool-title": "Update Benefit",
-        "x-tool-description": "Update an existing benefit's configuration.",
+        "x-tool-description": "Update a benefit.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -2951,7 +2951,7 @@
         },
         "x-tool-name": "benefits_delete",
         "x-tool-title": "Delete Benefit",
-        "x-tool-description": "Delete a benefit. Caution: all associated grants will be revoked and users will lose access.",
+        "x-tool-description": "Delete a benefit.\n\n> [!WARNING]\n> Every grants associated with the benefit will be revoked.\n> Users will lose access to the benefit.",
         "x-tool-annotations": [
           "destructive",
           "idempotent"
@@ -3301,7 +3301,7 @@
           }
         },
         "x-tool-name": "benefits_grants",
-        "x-tool-title": "List grants for benefit",
+        "x-tool-title": "List Benefit Grants",
         "x-tool-description": "List the individual grants for a benefit.\n\nIt's especially useful to check if a user has been granted a benefit.",
         "x-tool-annotations": [
           "read_only",
@@ -5019,7 +5019,7 @@
         },
         "x-tool-name": "products_list",
         "x-tool-title": "List Products",
-        "x-tool-description": "List all products in your organization.",
+        "x-tool-description": "List products.",
         "x-tool-annotations": [
           "read_only",
           "idempotent"
@@ -5127,7 +5127,7 @@
         },
         "x-tool-name": "products_create",
         "x-tool-title": "Create Product",
-        "x-tool-description": "Create a new product with pricing and benefits (entitlements).",
+        "x-tool-description": "Create a product.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -5224,7 +5224,7 @@
         },
         "x-tool-name": "products_get",
         "x-tool-title": "Get Product",
-        "x-tool-description": "Retrieve a specific product by ID.",
+        "x-tool-description": "Get a product by ID.",
         "x-tool-annotations": [
           "read_only",
           "idempotent"
@@ -5356,7 +5356,7 @@
         },
         "x-tool-name": "products_update",
         "x-tool-title": "Update Product",
-        "x-tool-description": "Update an existing product's details, pricing, or settings.",
+        "x-tool-description": "Update a product.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -5579,7 +5579,7 @@
         },
         "x-tool-name": "products_update_benefits",
         "x-tool-title": "Update Product Benefits",
-        "x-tool-description": "Update which benefits are granted when a product is purchased.",
+        "x-tool-description": "Update benefits granted by a product.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -12240,7 +12240,7 @@
           }
         },
         "x-tool-name": "license_keys_get_activation",
-        "x-tool-title": "Get license key activation",
+        "x-tool-title": "Get Activation",
         "x-tool-description": "Get a license key activation.",
         "x-tool-annotations": [
           "read_only",
@@ -13955,8 +13955,8 @@
           }
         },
         "x-tool-name": "discounts_list",
-        "x-tool-title": "List discount codes",
-        "x-tool-description": "List all discount codes and coupons.",
+        "x-tool-title": "List Discounts",
+        "x-tool-description": "List discounts.",
         "x-tool-annotations": [
           "read_only",
           "idempotent"
@@ -14064,8 +14064,8 @@
           }
         },
         "x-tool-name": "discounts_create",
-        "x-tool-title": "Create discount code",
-        "x-tool-description": "Create a new discount code for products or subscriptions.",
+        "x-tool-title": "Create Discount",
+        "x-tool-description": "Create a discount.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -14164,7 +14164,7 @@
         },
         "x-tool-name": "discounts_get",
         "x-tool-title": "Get Discount",
-        "x-tool-description": "Retrieve a specific discount by ID.",
+        "x-tool-description": "Get a discount by ID.",
         "x-tool-annotations": [
           "read_only",
           "idempotent"
@@ -14296,7 +14296,7 @@
         },
         "x-tool-name": "discounts_update",
         "x-tool-title": "Update Discount",
-        "x-tool-description": "Update an existing discount's settings or validity.",
+        "x-tool-description": "Update a discount.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -14718,7 +14718,7 @@
         },
         "x-tool-name": "customers_create",
         "x-tool-title": "Create Customer",
-        "x-tool-description": "Create a new customer record with email, name, metadata, and optional external_id for reconciliation.",
+        "x-tool-description": "Create a customer.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -16293,7 +16293,7 @@
           }
         },
         "x-tool-name": "customers_members_create",
-        "x-tool-title": "Create customer member",
+        "x-tool-title": "Create Member",
         "x-tool-description": "Create a new member for a customer.\n\nOnly B2B customers with the member management feature enabled can add members.\nThe authenticated user or organization must have access to the customer's organization.",
         "x-polar-allowed-subjects": [
           "Organization",
@@ -16621,7 +16621,7 @@
           }
         },
         "x-tool-name": "customers_members_create_external",
-        "x-tool-title": "Create customer member by external ID",
+        "x-tool-title": "Create Member by Customer External ID",
         "x-tool-description": "Create a new member for a customer identified by its external ID.",
         "x-polar-allowed-subjects": [
           "Organization",
@@ -16730,7 +16730,7 @@
           }
         },
         "x-tool-name": "customers_members_get",
-        "x-tool-title": "Get customer member",
+        "x-tool-title": "Get Member",
         "x-tool-description": "Get a member of a customer by its ID.",
         "x-tool-annotations": [
           "read_only",
@@ -16872,8 +16872,8 @@
           }
         },
         "x-tool-name": "customers_members_update",
-        "x-tool-title": "Update customer member",
-        "x-tool-description": "Update the name, email, or role of a customer member.",
+        "x-tool-title": "Update Member",
+        "x-tool-description": "Update a member of a customer.\n\nOnly name, email and role can be updated.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -16969,7 +16969,7 @@
           }
         },
         "x-tool-name": "customers_members_delete",
-        "x-tool-title": "Delete customer member",
+        "x-tool-title": "Delete Member",
         "x-tool-description": "Delete a member of a customer.",
         "x-tool-annotations": [
           "destructive",
@@ -17092,7 +17092,7 @@
           }
         },
         "x-tool-name": "customers_members_get_external",
-        "x-tool-title": "Get customer member by external ID",
+        "x-tool-title": "Get Member by External ID",
         "x-tool-description": "Get a member by external ID for a customer identified by its external ID.",
         "x-tool-annotations": [
           "read_only",
@@ -17244,7 +17244,7 @@
           }
         },
         "x-tool-name": "customers_members_update_external",
-        "x-tool-title": "Update customer member by external ID",
+        "x-tool-title": "Update Member by External ID",
         "x-tool-description": "Update a member by external ID for a customer identified by its external ID.",
         "x-polar-allowed-subjects": [
           "Organization",
@@ -17351,7 +17351,7 @@
           }
         },
         "x-tool-name": "customers_members_delete_external",
-        "x-tool-title": "Delete customer member by external ID",
+        "x-tool-title": "Delete Member by External ID",
         "x-tool-description": "Delete a member by external ID for a customer identified by its external ID.",
         "x-tool-annotations": [
           "destructive",
@@ -24250,7 +24250,7 @@
         },
         "x-tool-name": "meters_list",
         "x-tool-title": "List Meters",
-        "x-tool-description": "List all usage meters in your organization for tracking consumption-based billing and analytics.",
+        "x-tool-description": "List meters.",
         "x-tool-annotations": [
           "read_only",
           "idempotent"
@@ -24358,7 +24358,7 @@
         },
         "x-tool-name": "meters_create",
         "x-tool-title": "Create Meter",
-        "x-tool-description": "Create a new usage meter to track customer consumption for usage-based pricing models.",
+        "x-tool-description": "Create a meter.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -24581,7 +24581,7 @@
         },
         "x-tool-name": "meters_get",
         "x-tool-title": "Get Meter",
-        "x-tool-description": "Retrieve a specific meter by ID.",
+        "x-tool-description": "Get a meter by ID.",
         "x-tool-annotations": [
           "read_only",
           "idempotent"
@@ -24704,7 +24704,7 @@
         },
         "x-tool-name": "meters_update",
         "x-tool-title": "Update Meter",
-        "x-tool-description": "Update an existing meter's configuration.",
+        "x-tool-description": "Update a meter.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"

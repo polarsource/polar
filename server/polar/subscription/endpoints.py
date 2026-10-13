@@ -71,10 +71,7 @@ SubscriptionNotFound = {
     response_model=ListResource[SubscriptionSchema],
     summary="List Subscriptions",
     tags=[APITag.mcp, APITag.cli],
-    openapi_extra={
-        "x-tool-description": "List active subscriptions.",
-        "parameters": [get_metadata_query_openapi_schema()],
-    },
+    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
 )
 async def list(
     auth_subject: auth.SubscriptionsRead,
@@ -231,15 +228,12 @@ async def export(
 @router.get(
     "/{id}",
     summary="Get Subscription",
-    openapi_extra={
-        **cli_preview(
-            ("id", "ID"),
-            ("status", "Status"),
-            ("customer_id", "Customer ID"),
-            ("product_id", "Product ID"),
-        ),
-        "x-tool-title": "Get subscription details",
-    },
+    openapi_extra=cli_preview(
+        ("id", "ID"),
+        ("status", "Status"),
+        ("customer_id", "Customer ID"),
+        ("product_id", "Product ID"),
+    ),
     response_model=SubscriptionSchema,
     tags=[APITag.mcp, APITag.cli],
     responses={404: SubscriptionNotFound},

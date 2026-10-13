@@ -51,13 +51,7 @@ AmbiguousExternalMeter = {
     "/",
     summary="List Meters",
     response_model=ListResource[MeterSchema],
-    openapi_extra={
-        "x-tool-description": (
-            "List all usage meters in your organization for tracking consumption-"
-            "based billing and analytics."
-        ),
-        "parameters": [get_metadata_query_openapi_schema()],
-    },
+    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
 )
 async def list(
     auth_subject: auth.MeterRead,
@@ -95,13 +89,7 @@ async def list(
     name="list",
     summary="List Meters",
     response_model=ListResource[MeterSchema],
-    openapi_extra={
-        "x-tool-description": (
-            "List all usage meters in your organization for tracking consumption-"
-            "based billing and analytics."
-        ),
-        "parameters": [get_metadata_query_openapi_schema()],
-    },
+    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
 )
 @version(starting_from=V2027_01)
 async def list_v2027_01(
@@ -164,10 +152,7 @@ async def get_external(
 @router.get(
     "/{id}",
     summary="Get Meter",
-    openapi_extra={
-        **cli_preview(("id", "ID"), ("name", "Name"), ("unit", "Unit")),
-        "x-tool-description": "Retrieve a specific meter by ID.",
-    },
+    openapi_extra=cli_preview(("id", "ID"), ("name", "Name"), ("unit", "Unit")),
     response_model=MeterSchema,
     responses={404: MeterNotFound},
 )
@@ -266,12 +251,6 @@ async def quantities(
     status_code=201,
     summary="Create Meter",
     responses={201: {"description": "Meter created."}},
-    openapi_extra={
-        "x-tool-description": (
-            "Create a new usage meter to track customer consumption for usage-based "
-            "pricing models."
-        ),
-    },
 )
 async def create(
     meter_create: MeterCreate,
@@ -289,9 +268,6 @@ async def create(
     responses={
         200: {"description": "Meter updated."},
         404: MeterNotFound,
-    },
-    openapi_extra={
-        "x-tool-description": "Update an existing meter's configuration.",
     },
 )
 async def update(

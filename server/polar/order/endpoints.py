@@ -95,9 +95,7 @@ GET_INVOICE_MINTLIFY_CONTENT = dedent(
     summary="List Orders",
     response_model=ListResource[OrderSchema],
     tags=[APITag.mcp, APITag.cli],
-    openapi_extra={
-        "parameters": [get_metadata_query_openapi_schema()],
-    },
+    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
 )
 async def list(
     auth_subject: auth.OrdersRead,
@@ -361,9 +359,7 @@ async def finalize(
             "model": MissingInvoiceBillingDetails.schema(),
         },
     },
-    openapi_extra={
-        "x-mint": {"content": GENERATE_INVOICE_MINTLIFY_CONTENT},
-    },
+    openapi_extra={"x-mint": {"content": GENERATE_INVOICE_MINTLIFY_CONTENT}},
 )
 async def generate_invoice(
     id: OrderID,
@@ -389,9 +385,7 @@ async def generate_invoice(
     response_model=OrderInvoice,
     tags=[APITag.mcp, APITag.cli],
     responses={404: OrderNotFound},
-    openapi_extra={
-        "x-mint": {"content": GET_INVOICE_MINTLIFY_CONTENT},
-    },
+    openapi_extra={"x-mint": {"content": GET_INVOICE_MINTLIFY_CONTENT}},
 )
 async def invoice(
     id: OrderID,

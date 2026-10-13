@@ -191,9 +191,6 @@ async def rotate(
         401: UnauthorizedResponse,
         404: ActivationNotFoundResponse,
     },
-    openapi_extra={
-        "x-tool-title": "Get license key activation",
-    },
 )
 async def get_activation(
     auth_subject: auth.LicenseKeysRead,

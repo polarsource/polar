@@ -28,11 +28,7 @@ PaymentNotFound = {
 }
 
 
-@router.get(
-    "/",
-    summary="List Payments",
-    response_model=ListResource[PaymentSchema],
-)
+@router.get("/", summary="List Payments", response_model=ListResource[PaymentSchema])
 async def list(
     auth_subject: auth.PaymentRead,
     pagination: PaginationParamsQuery,

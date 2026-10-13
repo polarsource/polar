@@ -1,10 +1,14 @@
 import contextlib
 import dataclasses
+import math
 import uuid
+from collections import defaultdict
 from collections.abc import AsyncGenerator, AsyncIterable, Sequence
 from datetime import datetime
+from decimal import Decimal
 from typing import cast
 
+import logfire
 import structlog
 from babel.dates import format_date
 from sqlalchemy.util.typing import Literal
@@ -26,6 +30,7 @@ from polar.product.guard import (
     is_unit_price,
 )
 from polar.product.repository import ProductPriceRepository, ProductRepository
+from polar.reducer.service import reducer as reducer_service
 
 from .repository import BillingEntryRepository
 
@@ -85,7 +90,15 @@ class BillingEntryService:
         await repository.lock_pending_by_subscription(subscription.id)
 
         item_entries_map: dict[OrderItem, BillingEntrySelector] = {}
+        consumed_units: dict[uuid.UUID, Decimal] = defaultdict(Decimal)
         async for line_item, selector in line_items:
+            if (
+                isinstance(line_item, MeteredLineItem)
+                and line_item.price.meter.aggregation.func != AggregationFunction.unique
+            ):
+                consumed_units[line_item.price.meter_id] += Decimal(
+                    str(line_item.consumed_units)
+                )
             order_item = OrderItem(
                 id=uuid.uuid4(),
                 label=line_item.label,
@@ -118,6 +131,39 @@ class BillingEntryService:
                 )
             else:
                 await repository.update_order_item_id(selector, order_item.id)
+
+        billable_from = subscription.trial_end or subscription.started_at
+        if consumed_units and billable_from is not None:
+            with logfire.span(
+                "Seal and compare billed usage",
+                subscription_id=str(subscription.id),
+                cutoff=cutoff,
+            ) as span:
+                quantities = await reducer_service.seal(
+                    session,
+                    subscription.customer,
+                    set(consumed_units),
+                    billable_from=billable_from,
+                    cutoff=cutoff,
+                )
+                span.set_attribute(
+                    "quantities",
+                    {
+                        str(meter_id): {
+                            "legacy": str(units),
+                            "reducer": str(quantities.get(meter_id)),
+                        }
+                        for meter_id, units in consumed_units.items()
+                    },
+                )
+                span.set_attribute(
+                    "match",
+                    all(
+                        meter_id in quantities
+                        and math.isclose(quantities[meter_id], units)
+                        for meter_id, units in consumed_units.items()
+                    ),
+                )
 
     def create_order_items_from_pending(
         self,

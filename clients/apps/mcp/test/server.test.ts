@@ -124,6 +124,25 @@ test('code mode is the default; client hints and explicit overrides select opera
   ])
 })
 
+test('initialize returns instructions for the tool mode', async () => {
+  const initialize = (query: string) =>
+    rpc(
+      'initialize',
+      {
+        protocolVersion: '2025-11-25',
+        capabilities: {},
+        clientInfo: { name: 'test', version: '1.0' },
+      },
+      query,
+    )
+  const codeMode = (await initialize('')).result.instructions
+  expect(codeMode).toContain('aggregate in code')
+  expect(codeMode).toContain('`execute`')
+  const operations = (await initialize('?codemode=false')).result.instructions
+  expect(operations).toContain('aggregate in code')
+  expect(operations).not.toContain('`execute`')
+})
+
 test('search and execute preserve sandbox isolation, outbound credentials, and limits', async () => {
   const code = 'async () => 42'
   expect(

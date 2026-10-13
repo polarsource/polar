@@ -105,6 +105,9 @@ jobs:
       - name: "🧪 Test: CLI"
         run: pnpm --filter @polar-sh/cli test
 
+      - name: "🧪 Demo config uses every config feature"
+        run: pnpm --filter demo-app coverage
+
       - name: "📚 CLI docs are up to date"
         run: pnpm --filter @polar-sh/cli docs:check
 

@@ -1,11 +1,16 @@
 {
   "name": "demo-app",
   "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "coverage": "bun coverage.ts"
+  },
   "dependencies": {
     "@polar-sh/polar": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@types/node": "catalog:"
+    "@types/node": "catalog:",
+    "@typescript/native": "catalog:"
   }
 }

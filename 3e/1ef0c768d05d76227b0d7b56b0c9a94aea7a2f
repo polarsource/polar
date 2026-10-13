@@ -1,0 +1,22 @@
+server/polar/webhook/repository.py
+  s_fd3304141c7309::t_5d81e7e5f58a9b 216-230
+server/migrations/versions/2026-10-09-1200_add_external_id_to_webhook_endpoints.py
+  s_fd3304141c7309::t_adafa57a2bf4c4 1-67
+server/polar/declarative_config/validation.py
+  s_fd3304141c7309::t_e092894ac9ef3b 29,34,50,98,103,484-495,497-515,530-533,614-680,698-700,711,722
+server/polar/declarative_config/service.py
+  s_fd3304141c7309::t_1934a9e7cfaafa 25-27,47-53,58,64,115-123,165-167,183-188,206,297-349
+server/polar/declarative_config/endpoints.py
+  s_fd3304141c7309::t_1934a9e7cfaafa 23,81-83,96-97,110-113,115-117,132-133,152-153
+server/tests/declarative_config/test_endpoints.py
+  s_fd3304141c7309::t_0da30231a32b41 79
+server/polar/declarative_config/schemas.py
+  s_fd3304141c7309::t_fac79a25e89c02 309-314
+  s_fd3304141c7309::t_cd46659df72706 34-39,44,125-164,263-278,363,370-376
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "3e1ef0c768d05d76227b0d7b56b0c9a94aea7a2f",
+  "prompts": {}
+}

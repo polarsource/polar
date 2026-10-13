@@ -10,7 +10,7 @@ import typing
 
 import anyio
 from anyio.streams.buffered import BufferedByteReceiveStream
-from polar.outpost.client import Configuration, EventPayload, Snapshot
+from polar.outpost.client import Configuration, EventInput, Snapshot
 from redis.asyncio import Redis
 from redis.exceptions import ConnectionError as RedisConnectionError
 
@@ -34,7 +34,7 @@ class ExternalCustomerMeterRequest(ExternalCustomerID):
 
 
 class IngestArguments(typing.TypedDict):
-    events: list[EventPayload]
+    events: list[EventInput]
 
 
 class MeterValues(typing.TypedDict, total=False):

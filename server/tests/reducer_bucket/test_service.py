@@ -153,6 +153,32 @@ class TestRollup:
         assert (bucket.generation, bucket.count, bucket.sum) == (1, 3, Decimal(9))
         assert (bucket.min, bucket.max) == (Decimal(2), Decimal(4))
 
+    async def test_adds_float_values_to_open_bucket(
+        self,
+        session: AsyncSession,
+        sum_reducer: Reducer,
+        redis: Redis,
+        organization: Organization,
+    ) -> None:
+        previous_start = BUCKET_START - REDUCER_BUCKET_SIZE
+        for tokens in (1.5, 2.5):
+            await reducer_bucket_service.rollup(
+                session,
+                redis,
+                organization.id,
+                [
+                    build_event(
+                        organization,
+                        timestamp=previous_start,
+                        metadata={"tokens": tokens},
+                    )
+                ],
+            )
+
+        [bucket] = await get_buckets(session)
+        await session.refresh(bucket)
+        assert (bucket.count, bucket.sum) == (2, Decimal(4))
+
     async def test_adds_to_next_generation_once_billed(
         self,
         save_fixture: SaveFixture,

@@ -175,6 +175,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
                     max=func.greatest(ReducerBucket.max, maximum),
                     modified_at=utc_now(),
                 )
+                .execution_options(synchronize_session=False)
             )
             return
         await self.session.execute(

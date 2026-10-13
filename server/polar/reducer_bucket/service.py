@@ -295,6 +295,7 @@ class ReducerBucketService:
         customer_id: uuid.UUID | None,
         external_customer_id: str | None,
     ) -> None:
+        """Splits the interval containing `at` into [start, at) and [at, end)."""
         start, end = next(
             (start, end)
             for start, end in await self._get_intervals(
@@ -306,14 +307,16 @@ class ReducerBucketService:
             )
             if start <= at < end
         )
-        if start == at:
+        already_split = start == at
+        if already_split:
             return
-        previous = await repository.get_latest_for_update(
+
+        bucket = await repository.get_latest_for_update(
             reducer, start, customer_id, external_customer_id
         )
-        if previous is not None and (
-            previous.sealed_at is not None or previous.generation > 1
-        ):
+        if bucket is None:
+            return
+        if bucket.sealed_at is not None or bucket.generation > 1:
             log.warning(
                 "Skipping split of sealed reducer bucket",
                 reducer_id=reducer.id,
@@ -322,35 +325,30 @@ class ReducerBucketService:
             )
             return
 
-        sides = []
-        for interval_start, interval_end in ((start, at), (at, end)):
-            count, total, minimum, maximum = await repository.aggregate_events(
-                reducer, interval_start, interval_end, customer_id, external_customer_id
+        left = (
+            await repository.aggregate_events(
+                reducer, start, at, customer_id, external_customer_id
             )
-            statistics = {"count": count, "sum": total, "min": minimum, "max": maximum}
-            sides.append((interval_start, interval_end, statistics))
-        if previous is None and all(
-            statistics["count"] == 0 for *_, statistics in sides
-        ):
-            return
-        for interval_start, interval_end, statistics in sides:
-            if interval_start == start and previous is not None:
-                await repository.update(
-                    previous, update_dict={"bucket_end": at, **statistics}
-                )
-                continue
-            await repository.create(
-                ReducerBucket(
-                    organization_id=reducer.organization_id,
-                    reducer=reducer,
-                    customer_id=customer_id,
-                    external_customer_id=external_customer_id,
-                    bucket_start=interval_start,
-                    bucket_end=interval_end,
-                    **statistics,
-                ),
-                flush=True,
+        )._asdict()
+        right = (
+            await repository.aggregate_events(
+                reducer, at, end, customer_id, external_customer_id
             )
+        )._asdict()
+
+        await repository.update(bucket, update_dict={"bucket_end": at, **left})
+        await repository.create(
+            ReducerBucket(
+                organization_id=reducer.organization_id,
+                reducer=reducer,
+                customer_id=customer_id,
+                external_customer_id=external_customer_id,
+                bucket_start=at,
+                bucket_end=end,
+                **right,
+            ),
+            flush=True,
+        )
 
 
 def _get_quantity(

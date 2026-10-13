@@ -555,6 +555,10 @@ class TestSeal:
                 ingested_at=INGESTED_AT,
             )
 
+        await reducer_bucket_service.sync(
+            session, max_reducer.id, BUCKET_START, None, "external"
+        )
+
         await reducer_bucket_service.seal(
             session, [max_reducer], external_customer, start=START, cutoff=CUTOFF
         )
@@ -633,6 +637,10 @@ class TestSeal:
             save_fixture, organization, 5, ingested_at=INGESTED_AT
         )
 
+        await reducer_bucket_service.sync(
+            session, max_reducer.id, BUCKET_START, None, "external"
+        )
+
         await reducer_bucket_service.seal(
             session, [max_reducer], external_customer, start=START, cutoff=CUTOFF
         )
@@ -658,6 +666,10 @@ class TestSeal:
                 timestamp=timestamp,
                 ingested_at=INGESTED_AT,
             )
+
+        await reducer_bucket_service.sync(
+            session, max_reducer.id, BUCKET_START, None, "external"
+        )
 
         await reducer_bucket_service.seal(
             session,
@@ -690,6 +702,10 @@ class TestSeal:
                 ingested_at=INGESTED_AT,
             )
 
+        await reducer_bucket_service.sync(
+            session, max_reducer.id, BUCKET_START, None, "external"
+        )
+
         for cutoff in (CUTOFF, later_cutoff):
             await reducer_bucket_service.seal(
                 session, [max_reducer], external_customer, start=START, cutoff=cutoff
@@ -718,6 +734,10 @@ class TestSeal:
                 timestamp=timestamp,
                 ingested_at=INGESTED_AT,
             )
+        await reducer_bucket_service.sync(
+            session, max_reducer.id, BUCKET_START, None, "external"
+        )
+
         await reducer_bucket_service.seal(
             session, [max_reducer], external_customer, start=START, cutoff=CUTOFF
         )

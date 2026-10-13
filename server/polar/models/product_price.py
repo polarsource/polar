@@ -13,7 +13,6 @@ from sqlalchemy import (
     String,
     Uuid,
     event,
-    type_coerce,
 )
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -124,15 +123,6 @@ class ProductPrice(RecordModel):
         return relationship(
             "CheckoutProduct", lazy="raise_on_sql", back_populates="ad_hoc_prices"
         )
-
-    @hybrid_property
-    def is_recurring(self) -> bool:
-        return self.type == ProductPriceType.recurring
-
-    @is_recurring.inplace.expression
-    @classmethod
-    def _is_recurring_expression(cls) -> ColumnElement[bool]:
-        return type_coerce(cls.type == ProductPriceType.recurring, Boolean)
 
     @hybrid_property
     def is_static(self) -> bool:

@@ -113,6 +113,8 @@ def product_create(
         **fields,
         recurring_interval=config.recurring_interval,
         recurring_interval_count=config.recurring_interval_count or 1,
+        trial_interval=config.trial_interval,
+        trial_interval_count=config.trial_interval_count,
         prices=prices,
         organization_id=organization_id,
     )
@@ -129,6 +131,9 @@ def product_update(
         for name, value in change.update_dict.items()
         if name not in {"prices", "benefits"}
     }
+    if {"trial_interval", "trial_interval_count"} & update.keys():
+        update["trial_interval"] = change.config.trial_interval
+        update["trial_interval_count"] = change.config.trial_interval_count
     if "prices" in change.update_dict:
         existing_prices: dict[PriceKey, ProductPrice] = {}
         for price in product.prices:

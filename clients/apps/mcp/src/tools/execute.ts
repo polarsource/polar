@@ -95,7 +95,7 @@ export const registerExecuteTool = Effect.fn('registerExecuteTool')(function* (
       annotations: {
         readOnlyHint: props.readOnly,
         destructiveHint: !props.readOnly,
-        openWorldHint: true,
+        openWorldHint: false,
       },
     },
     ({ code }, context) =>

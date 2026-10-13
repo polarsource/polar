@@ -28,7 +28,7 @@ const operationTools = (generatedTools as unknown as OperationTool[]).map(
     annotations: {
       readOnlyHint: tool.method === 'GET',
       destructiveHint: tool.method === 'DELETE',
-      openWorldHint: true,
+      openWorldHint: false,
     },
   }),
 )

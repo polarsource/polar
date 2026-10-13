@@ -2,7 +2,7 @@
  * The manual as chapters: a number, a name for the row at the top, a title, a paragraph, a tip, the control the
  * chapter puts on the page, and the plates it shows. Read in order, or jumped to by number.
  */
-export type Control = 'rate' | 'grant'
+export type Control = 'rate'
 
 export interface Chapter {
   n: string
@@ -64,7 +64,6 @@ export const CHAPTERS: Chapter[] = [
     intro:
       'Credits are a balance derived from two kinds of event: grants, which add, and usage, which takes away at the meter’s rate. When the balance would cross zero, a grant lands first.',
     tip: ['Press', 'R', 'to start the ledger again from an empty balance.'],
-    control: 'grant',
     ids: ['m-credits', 'm-grants', 'm-zero'],
   },
   {

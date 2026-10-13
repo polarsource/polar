@@ -164,9 +164,9 @@ export const manual: Piece[] = [
     2,
     () => {
       const fx = 44,
-        fy = 160,
+        fy = 170,
         fw = 212,
-        fh = 330,
+        fh = 250,
         R = fx + fw
       const lines = [
         { t: 'export default defineConfig({' },
@@ -223,11 +223,11 @@ export const manual: Piece[] = [
               />
               <Code
                 x={fx + 12}
-                y={fy + 18}
+                y={fy + 16}
                 lines={lines}
                 ink={NIGHT_INK}
-                size={8}
-                lh={1.6}
+                size={7.5}
+                lh={1.35}
               />
               <Guide a={[R, fy + 130]} b={[R + 44, fy + 130]} />
               <path
@@ -326,7 +326,12 @@ export const manual: Piece[] = [
                   </g>
                 )
               })}
-              <Callout at={[fx + 24, fy]} to={[fx + 24, fy - 18]} route="v">
+              <Callout
+                at={[fx + 24, fy]}
+                to={[fx + 24, fy - 26]}
+                route="v"
+                dot={false}
+              >
                 polar.config.ts · IN GIT
               </Callout>
             </g>
@@ -965,7 +970,7 @@ export const manual: Piece[] = [
                 )
               })}
               <Callout
-                at={[sw + 14, ry(0) - 4]}
+                at={[sw + 14, ry(0) - 6]}
                 to={[sw + 14, ry(0) - 30]}
                 route="v"
                 dot={false}
@@ -1012,32 +1017,13 @@ export const manual: Piece[] = [
         path += `H${t(e)}V${stateAt(e)}`
       })
       path += `H${x1}`
+      // The check reaches down to the state on hand: a quiet dotted guide that stops short of both lanes.
       const check = (ms: number) => {
-        const x = t(ms),
-          y1 = stateAt(ms)
+        const x = t(ms)
         return (
           <g key={ms}>
-            <line
-              x1={x}
-              x2={x}
-              y1={CHECK}
-              y2={y1}
-              stroke={LINE}
-              strokeWidth={HAIR}
-            />
-            <path
-              d={`M${x - 3} ${y1 - 5}l3 5l3 -5`}
-              fill="none"
-              stroke={LINE}
-              strokeWidth={HAIR}
-            />
-            <path
-              d={`M${x - 3} ${CHECK + 5}l3 -5l3 5`}
-              fill="none"
-              stroke={LINE}
-              strokeWidth={HAIR}
-            />
-            <circle cx={x} cy={CHECK} r={2.4} fill={LINE} />
+            <Guide a={[x, CHECK + 7]} b={[x, stateAt(ms) - 5]} />
+            <Anchor at={[x, CHECK]} />
           </g>
         )
       }
@@ -1144,25 +1130,6 @@ export const manual: Piece[] = [
               stroke={MID}
               strokeWidth={HAIR}
             />
-            <Callout at={[t(0), CHECK]} to={[t(0), CHECK - 32]} route="v">
-              CHECK · ANSWERED FROM v0 · 0 ms
-            </Callout>
-            <Callout
-              at={[t(400), CHECK]}
-              to={[t(400), CHECK - 32]}
-              route="v"
-              side="left"
-            >
-              CHECK · ANSWERED FROM v3 · 0 ms
-            </Callout>
-            <Callout
-              at={[t(240), STREAM]}
-              to={[t(240), STREAM + 18]}
-              route="v"
-              dot={false}
-            >
-              EVENTS ARRIVE
-            </Callout>
           </Figure>
           <Body
             x={700}

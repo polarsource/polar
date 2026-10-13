@@ -1,14 +1,7 @@
 'use client'
 
 import type { Control } from './content'
-import {
-  GRANT_CHOICES,
-  RATE_CHOICES,
-  num,
-  setGrant,
-  setRate,
-  useSim,
-} from './simulation'
+import { RATE_CHOICES, setRate, useSim } from './simulation'
 
 /** A row of choices set as text, the chosen one inverted. */
 function Choice<T extends string | number>({
@@ -53,26 +46,16 @@ function Choice<T extends string | number>({
 
 /** The control a chapter puts on the page, wired to the stream under the manual. */
 export function Controls({ kind }: { kind: Control }) {
-  const sim = useSim((s) => s)
-  if (kind === 'rate')
-    return (
-      <Choice
-        label="Choose the rate for tokens.out"
-        note="USD per million tokens. Every reading below is priced at it."
-        options={RATE_CHOICES}
-        value={Math.round(sim.rates['tokens.out'] * 1_000_000)}
-        format={(r) => `$${r}`}
-        onChange={setRate}
-      />
-    )
+  const rate = useSim((s) => s.rates['tokens.out'])
+  if (kind !== 'rate') return null
   return (
     <Choice
-      label="Choose the grant"
-      note="Credits added each time the balance would cross zero."
-      options={GRANT_CHOICES}
-      value={sim.grant}
-      format={num}
-      onChange={setGrant}
+      label="Choose the rate for tokens.out"
+      note="USD per million tokens. Every reading below is priced at it."
+      options={RATE_CHOICES}
+      value={Math.round(rate * 1_000_000)}
+      format={(r) => `$${r}`}
+      onChange={setRate}
     />
   )
 }

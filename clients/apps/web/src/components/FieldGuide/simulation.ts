@@ -1,8 +1,8 @@
 import { useSyncExternalStore } from 'react'
 
 /**
- * One stream of events runs under the whole manual. The driver emits them, the controls on the page set the
- * rates and the grant, and the live figures fold over the list. Everything a figure shows is derived from it.
+ * One stream of events runs under the whole manual. The driver emits them, the control on the page sets the
+ * rate, and the live figures fold over the list. Everything a figure shows is derived from it.
  */
 
 export type EventName =
@@ -40,7 +40,6 @@ export interface SimState {
 }
 
 export const RATE_CHOICES = [3, 10, 15]
-export const GRANT_CHOICES = [5_000, 10_000, 25_000]
 
 const KEEP = 64
 const ACTORS = ['run_7f2', 'run_91c', 'agent_ada', 'run_b03', 'key_live_4']
@@ -147,7 +146,6 @@ export const setRate = (perMillion: number) =>
     ...state,
     rates: { ...state.rates, 'tokens.out': perMillion / 1_000_000 },
   })
-export const setGrant = (grant: number) => set({ ...state, grant })
 
 export function useSim<T>(select: (s: SimState) => T): T {
   return useSyncExternalStore(

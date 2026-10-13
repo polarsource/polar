@@ -1,5 +1,5 @@
 import { MONO } from '../sheet'
-import { LINE, DIM, MID, BG, HAIR, DOTTED } from '../kit'
+import { LINE, DIM, MID, BG, HAIR } from '../kit'
 import { useSim, type SimEvent } from '../simulation'
 
 const metadata = (e: SimEvent) => {
@@ -32,7 +32,7 @@ export function LiveEventFields({
   if (!e) return null
   const stamp = new Date(e.at).toISOString().slice(0, 19) + 'Z'
   const rows: {
-    cells: { span: number; name: string; value: string; open?: boolean }[]
+    cells: { span: number; name: string; value: string; measure?: boolean }[]
   }[] = [
     { cells: [{ span: 32, name: 'ID', value: e.id }] },
     { cells: [{ span: 32, name: 'TIMESTAMP', value: stamp }] },
@@ -44,7 +44,9 @@ export function LiveEventFields({
     },
     { cells: [{ span: 32, name: 'NAME', value: e.name }] },
     {
-      cells: [{ span: 32, name: 'METADATA', value: metadata(e), open: true }],
+      cells: [
+        { span: 32, name: 'METADATA', value: metadata(e), measure: true },
+      ],
     },
   ]
   return (
@@ -55,7 +57,6 @@ export function LiveEventFields({
         return r.cells.map((c, ci) => {
           const cxx = cx
           cx += c.span * cw
-          const last = ri === rows.length - 1
           return (
             <g key={`${ri}-${ci}`}>
               <rect
@@ -64,15 +65,14 @@ export function LiveEventFields({
                 width={c.span * cw}
                 height={rh}
                 fill={BG}
-                stroke={c.open ? DIM : last ? LINE : MID}
+                stroke={MID}
                 strokeWidth={HAIR}
-                {...(c.open ? DOTTED : {})}
               />
               <text
                 x={cxx + 8}
                 y={y + 11}
                 fontSize={7.5}
-                fill={c.open ? LINE : DIM}
+                fill={c.measure ? LINE : DIM}
                 style={MONO}
               >
                 {c.name}
@@ -82,7 +82,7 @@ export function LiveEventFields({
                 x={cxx + 8}
                 y={y + 22}
                 fontSize={7.5}
-                fill={c.open ? LINE : MID}
+                fill={c.measure ? LINE : MID}
                 style={{
                   ...MONO,
                   letterSpacing: 0,

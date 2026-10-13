@@ -50,10 +50,15 @@ export default function FieldGuideReader() {
       ?.scrollIntoView({ block: 'start', behavior: 'smooth' })
   }, [])
 
-  // Which plate is nearest the middle of the window.
+  // Which plate is nearest the middle of the window. At the top of the book it is the cover, whatever is nearest:
+  // on a tall window the second page can sit closer to the middle than the cover above it.
   const measure = useCallback(() => {
     const root = scrollRef.current
     if (!root) return
+    if (root.scrollTop < 8) {
+      if (current !== ids[0]) setCurrent(ids[0])
+      return
+    }
     const mid = root.getBoundingClientRect().top + root.clientHeight / 2
     let best = current,
       dist = Infinity
@@ -69,7 +74,7 @@ export default function FieldGuideReader() {
   }, [current])
 
   // The book shows once every page is cut to its height and the page the address names is in place, so nothing
-  // moves after the first paint. The address is read once; it then follows the reader.
+  // moves after the first paint. The address is read once; it then follows the reader, and clears at the top.
   const [ready, setReady] = useState(false)
   const started = useRef(false)
   useLayoutEffect(() => {
@@ -85,7 +90,6 @@ export default function FieldGuideReader() {
     else url.searchParams.set('page', current)
     window.history.replaceState(null, '', url)
   }, [current])
-
   useEffect(() => {
     const root = scrollRef.current!
     let raf = 0

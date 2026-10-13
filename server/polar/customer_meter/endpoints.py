@@ -2,13 +2,13 @@ from fastapi import Depends, Query
 
 from polar.customer.schemas.customer import CustomerID
 from polar.customer_session.service import AmbiguousExternalCustomerID
-from polar.declarative_config.exceptions import ConfigAsCodeNotEnabled
+from polar.event.schemas import MeterCreditEvent
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.versioning import version
 from polar.meter.schemas import MeterID
-from polar.models import CustomerMeter
+from polar.models import CustomerMeter, Event
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
@@ -18,10 +18,7 @@ from polar.version import V2027_01
 from . import auth, sorting
 from .schemas import CustomerMeter as CustomerMeterSchema
 from .schemas import CustomerMeterCreditsCreate, CustomerMeterID
-from .service import (
-    CustomerMeterCreditConcurrentRequest,
-    CustomerMeterCreditExternalIDConflict,
-)
+from .service import CustomerMeterCreditExternalIDConflict
 from .service import customer_meter as customer_meter_service
 
 router = APIRouter(
@@ -155,26 +152,25 @@ async def get(
 @router.post(
     "/credits",
     summary="Credit Customer Meter",
-    response_model=CustomerMeterSchema,
+    response_model=MeterCreditEvent,
     status_code=201,
     responses={
-        201: {"description": "Credits granted."},
-        403: {
+        201: {
             "description": (
-                "You don't have permission to manage customers, "
-                "or config as code is not enabled for this organization."
-            ),
-            "model": NotPermitted.schema() | ConfigAsCodeNotEnabled.schema(),
+                "Credit recorded. The customer meter balance is updated asynchronously."
+            )
+        },
+        403: {
+            "description": "You don't have permission to manage customers.",
+            "model": NotPermitted.schema(),
         },
         409: {
             "description": (
                 "The external_id is already used by a different event, "
-                "or by a concurrent request, "
                 "or the external customer ID matches customers "
                 "in several accessible organizations."
             ),
             "model": CustomerMeterCreditExternalIDConflict.schema()
-            | CustomerMeterCreditConcurrentRequest.schema()
             | AmbiguousExternalCustomerID.schema(),
         },
     },
@@ -184,6 +180,11 @@ async def credits(
     credit_create: CustomerMeterCreditsCreate,
     auth_subject: auth.CustomerMeterWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> CustomerMeter:
-    """Manually grant credits on a customer meter."""
+) -> Event:
+    """
+    Manually grant credits on a customer meter.
+
+    Returns the `meter.credited` event. The customer meter balance is updated
+    asynchronously, shortly after the request.
+    """
     return await customer_meter_service.credit(session, auth_subject, credit_create)

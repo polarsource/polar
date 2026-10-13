@@ -16,7 +16,6 @@ from polar.authz.service import assert_organization_permission, get_accessible_o
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer_session.service import AmbiguousExternalCustomerID
-from polar.declarative_config.exceptions import ConfigAsCodeNotEnabled
 from polar.event.repository import EventRepository
 from polar.event.service import event as event_service
 from polar.event.system import (
@@ -51,15 +50,6 @@ from .sorting import CustomerMeterSortProperty
 class CustomerMeterCreditExternalIDConflict(PolarError):
     def __init__(self) -> None:
         super().__init__("This external_id is already used by a different event.", 409)
-
-
-class CustomerMeterCreditConcurrentRequest(PolarError):
-    def __init__(self) -> None:
-        super().__init__(
-            "A credit with this external_id was created by a concurrent request. "
-            "Retry.",
-            409,
-        )
 
 
 class CustomerMeterService:
@@ -244,7 +234,7 @@ class CustomerMeterService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         credit_create: CustomerMeterCreditsCreate,
-    ) -> CustomerMeter:
+    ) -> Event:
         org_ids = await get_accessible_org_ids(session, auth_subject)
 
         customer_repository = CustomerRepository.from_session(session)
@@ -305,53 +295,50 @@ class CustomerMeterService:
             customer.organization_id,
             OrganizationPermission.customers_manage,
         )
-        if not customer.organization.is_config_as_code_enabled:
-            raise ConfigAsCodeNotEnabled()
 
         metadata: MeterCreditedMetadata = {
             "meter_id": str(meter.id),
             "units": credit_create.units,
             "rollover": credit_create.rollover,
         }
-        existing_event = None
-        if credit_create.external_id is not None:
-            event_repository = EventRepository.from_session(session)
+        event = build_system_event(
+            SystemEvent.meter_credited,
+            customer=customer,
+            organization=customer.organization,
+            metadata=metadata,
+        )
+        event.external_id = credit_create.external_id
+        event_repository = EventRepository.from_session(session)
+        try:
+            async with session.begin_nested():
+                await event_service.create_event(session, event)
+        except IntegrityError:
+            if credit_create.external_id is None:
+                raise
             existing_event = await event_repository.get_by_organization_and_external_id(
                 customer.organization_id, credit_create.external_id
             )
-            if existing_event is not None and (
+            if existing_event is None:
+                raise
+            if (
                 existing_event.source != EventSource.system
                 or existing_event.name != SystemEvent.meter_credited
                 or existing_event.customer_id != customer.id
                 or existing_event.user_metadata != metadata
             ):
                 raise CustomerMeterCreditExternalIDConflict()
+            event = existing_event
 
-        if existing_event is None:
-            event = build_system_event(
-                SystemEvent.meter_credited,
-                customer=customer,
-                organization=customer.organization,
-                metadata=metadata,
-            )
-            event.external_id = credit_create.external_id
-            try:
-                async with session.begin_nested():
-                    await event_service.create_event(session, event)
-            except IntegrityError as e:
-                if credit_create.external_id is None:
-                    raise
-                raise CustomerMeterCreditConcurrentRequest() from e
-
-        customer_meter, updated = await self.update_customer_meter(
-            session, customer, meter, activate_meter=True
+        customer_meter_repository = CustomerMeterRepository.from_session(session)
+        customer_meter = await customer_meter_repository.get_by_customer_and_meter(
+            customer.id, meter.id
         )
-        assert customer_meter is not None
+        if customer_meter is not None and customer_meter.activated_at is None:
+            await customer_meter_repository.update(
+                customer_meter, update_dict={"activated_at": utc_now()}
+            )
 
-        if updated:
-            enqueue_job("customer.state_changed", customer.id)
-
-        loaded = await self.get(session, auth_subject, customer_meter.id)
+        loaded = await event_repository.get_by_id_with_eager(event.id)
         assert loaded is not None
         return loaded
 

@@ -80529,8 +80529,7 @@
         "required": [
           "property"
         ],
-        "title": "UniqueAggregation",
-        "deprecated": true
+        "title": "UniqueAggregation"
       },
       "UpdateSubscriptionPlanNotAllowed": {
         "properties": {

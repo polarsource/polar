@@ -13,6 +13,7 @@ from polar.kit.versioning import (
     Version,
     add_versioned_routers,
     api_version_context,
+    deprecated_from,
     prune_version_omitted_schemas,
     routes_for_version,
     version,
@@ -47,6 +48,11 @@ class NextOnlyDiscount(BaseModel):
 
 class VersionedOrder(BaseModel):
     discount: Annotated[NextOnlyDiscount | None, Version(starting_from=NEXT_VERSION)]
+
+
+@deprecated_from(NEXT_VERSION)
+class DeprecatedInNextVersion(BaseModel):
+    name: str
 
 
 def test_api_version_is_ordered_hashable_and_immutable() -> None:
@@ -123,6 +129,16 @@ def test_versioned_fields_are_included_in_versioned_openapi_schema() -> None:
         == "Only available in the next API version."
     )
     assert set(next_product["required"]) == {"name", "shared_field", "next_field"}
+
+
+@pytest.mark.parametrize(
+    ("api_version", "deprecated"), [(CURRENT_VERSION, False), (NEXT_VERSION, True)]
+)
+def test_deprecated_from(api_version: APIVersion, deprecated: bool) -> None:
+    with api_version_context(api_version):
+        schema = DeprecatedInNextVersion.model_json_schema()
+
+    assert schema.get("deprecated", False) is deprecated
 
 
 @pytest.mark.parametrize(

@@ -190,6 +190,21 @@ def Version(
     return field_info
 
 
+def deprecated_from[M: type[BaseModel]](version: APIVersion) -> Callable[[M], M]:
+    version_range = _VersionRange(starting_from=version)
+
+    def json_schema_extra(schema: dict[str, typing.Any]) -> None:
+        active_version = _ACTIVE_API_VERSION.get()
+        if active_version is None or version_range.includes(active_version):
+            schema["deprecated"] = True
+
+    def decorator(model: M) -> M:
+        model.model_config["json_schema_extra"] = json_schema_extra
+        return model
+
+    return decorator
+
+
 def _iter_model_classes(
     cls: type[BaseModel] = BaseModel,
 ) -> Generator[type[BaseModel]]:

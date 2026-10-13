@@ -1,13 +1,7 @@
 from enum import StrEnum
 from typing import TYPE_CHECKING, Annotated, Any, Literal
 
-from pydantic import (
-    AfterValidator,
-    BaseModel,
-    ConfigDict,
-    Discriminator,
-    TypeAdapter,
-)
+from pydantic import AfterValidator, BaseModel, Discriminator, TypeAdapter
 from sqlalchemy import (
     ColumnExpressionArgument,
     Dialect,
@@ -20,6 +14,8 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 
 from polar.kit.metadata import get_nested_metadata_attr, get_nested_metadata_value
+from polar.kit.versioning import deprecated_from
+from polar.version import V2027_01
 
 if TYPE_CHECKING:
     from polar.models import Event
@@ -126,9 +122,8 @@ class PropertyAggregation(BaseModel):
         return None
 
 
+@deprecated_from(V2027_01)
 class UniqueAggregation(BaseModel):
-    model_config = ConfigDict(json_schema_extra={"deprecated": True})
-
     func: Literal[AggregationFunction.unique] = AggregationFunction.unique
     property: Annotated[str, AfterValidator(_strip_metadata_prefix)]
 

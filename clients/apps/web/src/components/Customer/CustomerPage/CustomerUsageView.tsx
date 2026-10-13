@@ -1,9 +1,7 @@
 'use client'
 
-import {
-  addCreditsColumn,
-  useAddCreditsModal,
-} from '@/components/Customer/AddCredits/AddCreditsButton'
+import { AddCreditsModal } from '@/components/Customer/AddCredits/AddCreditsModal'
+import { useModal } from '@/components/Modal/useModal'
 import { estimateMeteredCost } from '@/components/Products/ProductForm/Pricing/utils'
 import { isMeteredPrice, MeteredPrice } from '@/utils/product'
 import { useCustomerMeters } from '@/hooks/queries/customerMeters'
@@ -13,9 +11,14 @@ import { schemas } from '@polar-sh/client'
 import { useRouter } from 'next/navigation'
 import { formatCurrency } from '@polar-sh/currency'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { DataTable, DataTableColumnHeader } from '@polar-sh/orbit'
+import {
+  Button,
+  DataTable,
+  DataTableColumnHeader,
+  InlineModal,
+} from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import FormattedUnits from '../../Meter/FormattedUnits'
 import StackedMeterChart from '../../Meter/StackedMeterChart'
 import { EmptyState } from '../../Shared/EmptyState'
@@ -66,7 +69,8 @@ export const CustomerUsageView = ({
   organization: schemas['Organization']
 }) => {
   const router = useRouter()
-  const addCredits = useAddCreditsModal({ organization, customer })
+  const addCreditsModal = useModal()
+  const [creditMeterId, setCreditMeterId] = useState<string>()
   const { dateRange, interval } = useCustomerMetricsParams(customer)
   const { data: customerMetersData, isLoading } = useCustomerMeters(
     customer.organization_id,
@@ -248,12 +252,44 @@ export const CustomerUsageView = ({
               )
             },
           },
-          ...(addCredits.canAddCredits
-            ? [addCreditsColumn<MeterRow>(addCredits.showForMeter)]
+          ...(organization.feature_settings?.config_as_code_enabled
+            ? [
+                {
+                  id: 'add_credits',
+                  header: '',
+                  size: 130,
+                  cell: ({ row }: { row: { original: MeterRow } }) => (
+                    <Box justifyContent="end">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          setCreditMeterId(row.original.meter_id)
+                          addCreditsModal.show()
+                        }}
+                      >
+                        Add credits
+                      </Button>
+                    </Box>
+                  ),
+                },
+              ]
             : []),
         ]}
       />
-      {addCredits.modal}
+      <InlineModal
+        isShown={addCreditsModal.isShown}
+        hide={addCreditsModal.hide}
+        modalContent={
+          <AddCreditsModal
+            organization={organization}
+            customer={customer}
+            meterId={creditMeterId}
+            onClose={addCreditsModal.hide}
+          />
+        }
+      />
     </Box>
   )
 }

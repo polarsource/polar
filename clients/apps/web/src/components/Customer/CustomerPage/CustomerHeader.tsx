@@ -1,6 +1,6 @@
 'use client'
 
-import { useAddCreditsModal } from '@/components/Customer/AddCredits/AddCreditsButton'
+import { AddCreditsModal } from '@/components/Customer/AddCredits/AddCreditsModal'
 import { EditCustomerModal } from '@/components/Customer/EditCustomerModal'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import IntervalPicker, {
@@ -61,7 +61,11 @@ export const CustomerHeader = ({
     hide: hideDeleteCustomerModal,
     isShown: isDeleteCustomerModalShown,
   } = useModal()
-  const addCredits = useAddCreditsModal({ organization, customer })
+  const {
+    show: showAddCreditsModal,
+    hide: hideAddCreditsModal,
+    isShown: isAddCreditsModalShown,
+  } = useModal()
   const safeCopy = useSafeCopy(toast)
   const canManageCustomers = useHasPermission(
     organization.id,
@@ -194,8 +198,8 @@ export const CustomerHeader = ({
           <DropdownMenuItem onClick={showEditCustomerModal}>
             Edit Customer
           </DropdownMenuItem>
-          {addCredits.canAddCredits && (
-            <DropdownMenuItem onClick={addCredits.show}>
+          {organization.feature_settings?.config_as_code_enabled && (
+            <DropdownMenuItem onClick={showAddCreditsModal}>
               Add Credits
             </DropdownMenuItem>
           )}
@@ -215,7 +219,17 @@ export const CustomerHeader = ({
           />
         }
       />
-      {addCredits.modal}
+      <InlineModal
+        isShown={isAddCreditsModalShown}
+        hide={hideAddCreditsModal}
+        modalContent={
+          <AddCreditsModal
+            organization={organization}
+            customer={customer}
+            onClose={hideAddCreditsModal}
+          />
+        }
+      />
       <ConfirmModal
         isShown={isDeleteCustomerModalShown}
         hide={hideDeleteCustomerModal}

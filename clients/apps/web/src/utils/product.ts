@@ -17,9 +17,8 @@ export const isStaticPrice = (
   ['fixed', 'custom', 'seat_based', 'unit_based'].includes(price.amount_type)
 
 // A price is "free" when it's a fixed price of 0.
-export const isFreePrice = (
-  price: schemas['CheckoutProduct']['prices'][number],
-): boolean => price.amount_type === 'fixed' && price.price_amount === 0
+export const isFreePrice = (price: schemas['ProductPrice']): boolean =>
+  price.amount_type === 'fixed' && price.price_amount === 0
 
 // Surface a fixed price of 0 as the form's UI-only `free` price type so it displays and
 // edits as "Free" when loading a product into the form.
@@ -54,7 +53,7 @@ export type MeteredPrice =
   | schemas['ProductPriceMeteredTiers']
 
 export const isMeteredPrice = (
-  price: schemas['CheckoutProduct']['prices'][number],
+  price: schemas['ProductPrice'],
 ): price is MeteredPrice =>
   price.amount_type === 'metered_unit' || price.amount_type === 'metered_tiers'
 
@@ -64,7 +63,7 @@ export const isSeatBasedPrice = (
   price.amount_type === 'seat_based'
 
 export const isUnitBasedPrice = (
-  price: schemas['CheckoutProduct']['prices'][number],
+  price: schemas['ProductPrice'],
 ): price is schemas['ProductPriceUnitBased'] =>
   price.amount_type === 'unit_based'
 

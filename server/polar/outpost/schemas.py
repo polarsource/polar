@@ -66,6 +66,7 @@ class OutgoingMessageType(StrEnum):
     configuration = "configuration"
     customer_meter = "customer_meter"
     reducer_bucket = "reducer_bucket"
+    reducer_seal = "reducer_seal"
 
 
 class OutgoingMessageBase(MessageBase):
@@ -125,10 +126,23 @@ class ReducerBucketOutgoingMessage(OutgoingMessageBase):
     payload: ReducerBucketOutgoingMessagePayload
 
 
+class ReducerSealOutgoingMessagePayload(MessageBase):
+    reducer_id: UUID4
+    customer_id: UUID4 | None
+    external_customer_id: str | None
+    sealed_until: datetime
+
+
+class ReducerSealOutgoingMessage(OutgoingMessageBase):
+    type: typing.Literal[OutgoingMessageType.reducer_seal]
+    payload: ReducerSealOutgoingMessagePayload
+
+
 type OutgoingMessage = typing.Annotated[
     ConfigurationOutgoingMessage
     | CustomerMeterOutgoingMessage
-    | ReducerBucketOutgoingMessage,
+    | ReducerBucketOutgoingMessage
+    | ReducerSealOutgoingMessage,
     Discriminator("type"),
 ]
 

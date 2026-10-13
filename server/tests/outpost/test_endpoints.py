@@ -1,3 +1,4 @@
+import uuid
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
@@ -220,5 +221,35 @@ class TestOutpost:
                             "max": 6.0,
                         },
                     ],
+                },
+            }
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_event_reducer_seal(
+        self, client: httpx.AsyncClient, redis: Redis, organization: Organization
+    ) -> None:
+        reducer_id = uuid.uuid4()
+        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await publish(
+                redis,
+                organization.id,
+                {
+                    "type": "reducer_seal",
+                    "reducer_id": reducer_id,
+                    "customer_id": None,
+                    "external_customer_id": "external",
+                    "sealed_until": "2026-10-07T12:07:00+00:00",
+                },
+            )
+
+            response = await websocket.receive_json()
+
+            assert response == {
+                "type": "reducer_seal",
+                "payload": {
+                    "reducer_id": str(reducer_id),
+                    "customer_id": None,
+                    "external_customer_id": "external",
+                    "sealed_until": "2026-10-07T12:07:00Z",
                 },
             }

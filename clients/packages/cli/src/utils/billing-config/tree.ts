@@ -26,6 +26,9 @@ const SECTIONS: ReadonlyArray<Section> = [
 
 type Sentence = ReadonlyArray<string>
 
+const isSection = (section: string): section is Section =>
+  (SECTIONS as ReadonlyArray<string>).includes(section)
+
 const SENTENCES: Record<Section, (input: unknown) => Sentence | undefined> = {
   meters: meterSentence,
   benefits: benefitSentence,
@@ -36,7 +39,7 @@ const SENTENCES: Record<Section, (input: unknown) => Sentence | undefined> = {
 
 const COVERED: Record<Section, ReadonlySet<string>> = {
   meters: new Set(['name', 'filter', 'aggregation', 'unit', 'custom_label']),
-  benefits: new Set(['description', 'type', 'properties']),
+  benefits: new Set(['description', 'type', 'properties', 'visibility']),
   products: new Set([
     'name',
     'visibility',
@@ -155,7 +158,7 @@ const redact = (
 const rows = (
   indent: string,
   entry: AppliedEntry,
-  section: Section,
+  section: string,
   document: unknown,
 ) =>
   formatRows(
@@ -163,7 +166,7 @@ const rows = (
     (section === 'webhooks' ? redact(entry.diff, document) : entry.diff).filter(
       ({ field }) =>
         entry.action === 'created'
-          ? !COVERED[section].has(field)
+          ? !(isSection(section) && COVERED[section].has(field))
           : field !== 'benefits',
     ),
     entry.action,
@@ -194,7 +197,7 @@ export const formatTree = (
   raw: ReadonlyArray<AppliedEntry>,
 ) => {
   const entries = raw.map((entry) => ({ ...entry, id: name(entry.id) }))
-  const bySection = (section: Section) =>
+  const bySection = (section: string) =>
     entries.filter((entry) => entry.section === section)
   const docs = {
     meters: documents(input, 'meters'),
@@ -232,13 +235,15 @@ export const formatTree = (
     ]
   }
 
-  const plain = (entry: AppliedEntry, section: Section) => {
+  const plain = (entry: AppliedEntry, section: string) => {
     if (entry.action === 'unchanged') return undefined
-    const document = docs[section].get(entry.id)
+    const document = isSection(section)
+      ? docs[section].get(entry.id)
+      : undefined
     const own = describe(
       MARKS[entry.action],
       entry.id,
-      SENTENCES[section](document),
+      isSection(section) ? SENTENCES[section](document) : undefined,
       entry.action === 'created',
     )
     return [
@@ -249,28 +254,30 @@ export const formatTree = (
     ]
   }
 
-  return SECTIONS.flatMap((section) => {
-    const own = bySection(section)
-    if (own.length === 0) return []
-    const width = Math.max(
-      0,
-      ...own
-        .filter((entry) => entry.action === 'unchanged')
-        .map((entry) => entry.id.length),
-    )
-    const rendered = own.map((entry) => ({
-      entry,
-      lines: section === 'products' ? product(entry) : plain(entry, section),
-    }))
-    const lines = [
-      ...rendered.flatMap(({ lines }) => lines ?? []),
-      ...rendered
-        .filter(({ lines }) => lines === undefined)
-        .map(
-          ({ entry }) =>
-            `${TOP}${MARKS.unchanged} ${ui.dim(entry.id.padEnd(width))}  ${ui.dim('unchanged')}`,
-        ),
-    ]
-    return [[`${TOP}${ui.bold(section)}`, ...lines].join('\n')]
-  }).join('\n\n')
+  return [...new Set([...SECTIONS, ...entries.map(({ section }) => section)])]
+    .flatMap((section) => {
+      const own = bySection(section)
+      if (own.length === 0) return []
+      const width = Math.max(
+        0,
+        ...own
+          .filter((entry) => entry.action === 'unchanged')
+          .map((entry) => entry.id.length),
+      )
+      const rendered = own.map((entry) => ({
+        entry,
+        lines: section === 'products' ? product(entry) : plain(entry, section),
+      }))
+      const lines = [
+        ...rendered.flatMap(({ lines }) => lines ?? []),
+        ...rendered
+          .filter(({ lines }) => lines === undefined)
+          .map(
+            ({ entry }) =>
+              `${TOP}${MARKS.unchanged} ${ui.dim(entry.id.padEnd(width))}  ${ui.dim('unchanged')}`,
+          ),
+      ]
+      return [[`${TOP}${ui.bold(section)}`, ...lines].join('\n')]
+    })
+    .join('\n\n')
 }

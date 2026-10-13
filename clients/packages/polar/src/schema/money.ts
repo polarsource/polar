@@ -185,7 +185,7 @@ export const decimalsOf = <Code extends Currency>(code: Code): Decimals<Code> =>
     ? 0
     : 2) as Decimals<Code>
 
-type Digit = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+export type Digit = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
 
 interface Fraction {
   0: never

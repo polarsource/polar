@@ -107,7 +107,16 @@ describe('auth login', () => {
   test('rejects both environment flags', async () => {
     const { promise } = run(['login', '--sandbox', '--production'])
 
-    await expect(promise).rejects.toThrow('not both')
+    await expect(promise).rejects.toThrow('Pass only one environment flag')
+  })
+
+  test('signs in to a local stack with --local', async () => {
+    const { promise, output } = run(['login', '--local'])
+    await promise
+
+    expect(output()).toContain(
+      'Opening your browser to sign in to Polar local...',
+    )
   })
 
   test('shows the sign-in link while waiting for the browser', async () => {

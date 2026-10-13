@@ -94,7 +94,6 @@ export const make = Effect.gen(function* () {
       const baseUrl = yield* apiOrigin(environment)
       const { accessToken } = yield* auth.resolve(environment)
       return createPolar({
-        environment,
         baseUrl,
         accessToken: Redacted.value(accessToken),
       })
@@ -115,7 +114,6 @@ export const make = Effect.gen(function* () {
         Effect.tryPromise({
           try: () => {
             const clientOptions = {
-              environment,
               baseUrl,
               accessToken: accessToken ? Redacted.value(accessToken) : '',
               ...requestOptions,

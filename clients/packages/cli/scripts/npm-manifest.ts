@@ -106,7 +106,7 @@ Tunnel webhooks to your local environment and manage your Polar organization fro
 \`\`\`bash
 npm install -g ${MAIN_PACKAGE}
 polar login
-polar listen http://localhost:3000/
+polar webhook listen http://localhost:3000/
 \`\`\`
 
 This package installs the prebuilt \`polar\` binary for your platform from one of the

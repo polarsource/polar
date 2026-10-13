@@ -145,7 +145,7 @@ from .schemas import (
     SubscriptionUpdateUnits,
 )
 from .sorting import SubscriptionSortProperty
-from .update import generate_subscription_update
+from .update import generate_subscription_update, next_cycle_bounds
 
 log: Logger = structlog.get_logger()
 
@@ -1500,16 +1500,21 @@ class SubscriptionService:
                 ),
             )
 
-    async def _settle_meter_cycle(
-        self, session: AsyncSession, subscription: Subscription
+    def _enqueue_meter_cycle_order(
+        self, subscription: Subscription, cutoff: datetime
     ) -> None:
         """
-        Settle a meter period's usage into a meter-cycle order. The order import
-        is local because the order service imports this one at module load.
+        Enqueue a meter-cycle order for usage before ``cutoff``.
+        Snapshots the current product and prices so a product switch in
+        the meantime still bills the old product's usage.
         """
-        from polar.order.service import order as order_service
-
-        await order_service.settle_meter_cycle_order(session, subscription)
+        enqueue_job(
+            "order.create_meter_cycle_order",
+            subscription.id,
+            cutoff.isoformat(),
+            [spp.product_price_id for spp in subscription.subscription_product_prices],
+            subscription.product_id,
+        )
 
     def check_meter_cycle_lag(self, subscription: Subscription) -> None:
         """Raise ``SubscriptionMeterCycleLag`` when the meter clock is more
@@ -1601,8 +1606,9 @@ class SubscriptionService:
         # when the billing period hasn't advanced.
         self._clear_expired_discount(subscription, period_start=boundary)
 
-        # Settle before reset: settlement reads the window that reset closes.
-        await self._settle_meter_cycle(session, subscription)
+        # Settlement stops at the boundary, so it excludes the reset and re-grant below.
+        self._enqueue_meter_cycle_order(subscription, boundary)
+
         await self.reset_meters(session, subscription)
         enqueue_job(
             "benefit.enqueue_benefit_grant_cycles", subscription_id=subscription.id
@@ -2096,7 +2102,7 @@ class SubscriptionService:
                     not was_trialing
                     and subscription.current_meter_period_end is not None
                 ):
-                    await self._settle_meter_cycle(session, subscription)
+                    self._enqueue_meter_cycle_order(subscription, utc_now())
 
                 interval_changed = subscription_update.is_interval_changed()
                 ctx.set_previous_product(previous_product)
@@ -2302,6 +2308,54 @@ class SubscriptionService:
             )
             return subscription
 
+    async def _realign_pending_update_cycle(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        """
+        Move a pending update onto the subscription's current period end.
+
+        An interval change owns the next cycle: cycle() applies the stored dates
+        and does not advance the period itself, so they start at the new period
+        end and last one interval of the new product. Any other update keeps the
+        subscription's cycle, so we clear the stored dates and let cycle() roll
+        forward from the period end.
+        """
+        pending_update = subscription.pending_update
+        if pending_update is None:
+            return
+
+        period_end = subscription.current_period_end
+        pending_update.applies_at = period_end
+
+        # A pending update created in this request only gets its product_id on flush
+        await session.flush()
+        product = None
+        if pending_update.product_id is not None:
+            product_repository = ProductRepository.from_session(session)
+            product = await product_repository.get_by_id(pending_update.product_id)
+
+        if (
+            product is not None
+            and is_recurring_product(product)
+            and (
+                product.recurring_interval != subscription.recurring_interval
+                or product.recurring_interval_count
+                != subscription.recurring_interval_count
+            )
+        ):
+            (
+                pending_update.new_cycle_start,
+                pending_update.new_cycle_end,
+            ) = next_cycle_bounds(period_end, product)
+        else:
+            pending_update.new_cycle_start = None
+            pending_update.new_cycle_end = None
+
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        await subscription_update_repository.update(pending_update)
+
     async def update_trial(
         self,
         session: AsyncSession,
@@ -2358,15 +2412,7 @@ class SubscriptionService:
                 subscription.trial_start = utc_now()
                 subscription.trial_end = subscription.current_period_end = trial_end
 
-        # Keep any pending update's cycle end in sync with the new period end,
-        # otherwise apply_update() will clobber current_period_end back to the
-        # stale value when cycle() next runs.
-        if subscription.pending_update is not None:
-            subscription_update_repository = SubscriptionUpdateRepository.from_session(
-                session
-            )
-            subscription.pending_update.new_cycle_end = subscription.current_period_end
-            await subscription_update_repository.update(subscription.pending_update)
+        await self._realign_pending_update_cycle(session, subscription)
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(subscription)
@@ -2650,6 +2696,8 @@ class SubscriptionService:
 
         if subscription.cancel_at_period_end:
             subscription.ends_at = new_period_end
+
+        await self._realign_pending_update_cycle(session, subscription)
 
         await event_service.create_event(
             session,
@@ -3009,7 +3057,7 @@ class SubscriptionService:
             # Settle the final meter period before ending, so usage up to now isn't
             # lost when the subscription closes.
             if subscription.current_meter_period_end is not None:
-                await self._settle_meter_cycle(session, subscription)
+                self._enqueue_meter_cycle_order(subscription, now)
             subscription.ends_at = now
             subscription.ended_at = now
             subscription.status = SubscriptionStatus.canceled
@@ -4538,7 +4586,7 @@ class SubscriptionService:
         )
 
         # Meter cycle was frozen while past_due, so usage accrued unsettled: bill it
-        # now and reset so the credits re-granted below start from a clean window.
+        # and reset so the credits re-granted below start from a clean window.
         if (
             previous_status == SubscriptionStatus.past_due
             and subscription.meter_interval is not None
@@ -4548,7 +4596,7 @@ class SubscriptionService:
             )
             assert loaded is not None
             subscription = loaded
-            await self._settle_meter_cycle(session, subscription)
+            self._enqueue_meter_cycle_order(subscription, utc_now())
             await self.reset_meters(session, subscription)
 
         await self._after_subscription_updated(

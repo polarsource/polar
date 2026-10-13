@@ -1,5 +1,6 @@
 import { Schema } from 'effect'
-import { Metadata, metadataKey } from './metadata'
+import { Builder } from './builder'
+import { Metadata, withMetadata } from './metadata'
 import type { Currency } from './money'
 import {
   fixed,
@@ -14,6 +15,7 @@ import {
   units,
 } from './price'
 import type { PriceDefinition } from './price'
+import { Visibility, withVisibility } from './visibility'
 
 const IntervalUnit = Schema.Literals(['day', 'week', 'month', 'year'])
 
@@ -79,7 +81,7 @@ export const ProductConfig = Schema.Struct({
   benefits: Schema.Array(Schema.String),
   metadata: Schema.optionalKey(Metadata),
   description: Schema.optionalKey(Schema.String),
-  visibility: Schema.optionalKey(Schema.Literals(['private', 'public'])),
+  visibility: Schema.optionalKey(Visibility),
 }).check(
   Schema.makeFilter(({ prices }) =>
     compositionIssues(prices).map((issue) => ({ path: ['prices'], issue })),
@@ -127,35 +129,25 @@ class ProductBuilder<
   Benefit extends string,
   P extends Prices<Meter> | undefined,
   Billing extends Recurring | OneTime | undefined,
-> {
-  readonly [metadataKey]: Metadata | undefined
+> extends withMetadata(withVisibility(Builder)) {
+  readonly trialPeriod: Trial | undefined = undefined
+  readonly benefits: ReadonlyArray<Benefit> = []
+  readonly descriptionText: string | undefined = undefined
 
   constructor(
     readonly name: string | undefined,
     readonly priceList: P,
     readonly billing: Billing,
-    readonly trialPeriod: Trial | undefined = undefined,
-    readonly benefits: ReadonlyArray<Benefit> = [],
-    metadata: Metadata | undefined = undefined,
-    readonly descriptionText: string | undefined = undefined,
-    readonly isPrivate: boolean = false,
   ) {
-    this[metadataKey] = metadata
+    super()
   }
 
   prices(
     ...prices: Prices<Meter>
   ): ProductBuilder<Meter, Benefit, Prices<Meter>, Billing> {
-    return new ProductBuilder(
-      this.name,
-      prices,
-      this.billing,
-      this.trialPeriod,
-      this.benefits,
-      this[metadataKey],
-      this.descriptionText,
-      this.isPrivate,
-    )
+    return this.with<ProductBuilder<Meter, Benefit, Prices<Meter>, Billing>>({
+      priceList: prices,
+    })
   }
 
   recurring(
@@ -177,29 +169,18 @@ class ProductBuilder<
             recurring_interval: unitOf(args[1]),
             recurring_interval_count: args[0],
           }
-    return new ProductBuilder(
-      this.name,
-      this.priceList,
-      billing,
-      this.trialPeriod,
-      this.benefits,
-      this[metadataKey],
-      this.descriptionText,
-      this.isPrivate,
-    )
+    return this.with<ProductBuilder<Meter, Benefit, P, Recurring>>({ billing })
   }
 
   once(): ProductBuilder<Meter, Benefit, P, OneTime> {
-    return new ProductBuilder(
-      this.name,
-      this.priceList,
-      { recurring_interval: null, recurring_interval_count: null },
-      undefined,
-      this.benefits,
-      this[metadataKey],
-      this.descriptionText,
-      this.isPrivate,
-    )
+    const billing: OneTime = {
+      recurring_interval: null,
+      recurring_interval_count: null,
+    }
+    return this.with<ProductBuilder<Meter, Benefit, P, OneTime>>({
+      billing,
+      trialPeriod: undefined,
+    })
   }
 
   trial(
@@ -207,70 +188,20 @@ class ProductBuilder<
     count: number,
     interval: Interval,
   ): ProductBuilder<Meter, Benefit, P, Recurring> {
-    return new ProductBuilder(
-      this.name,
-      this.priceList,
-      this.billing,
-      { trial_interval: unitOf(interval), trial_interval_count: count },
-      this.benefits,
-      this[metadataKey],
-      this.descriptionText,
-      this.isPrivate,
-    )
+    return this.with({
+      trialPeriod: {
+        trial_interval: unitOf(interval),
+        trial_interval_count: count,
+      },
+    })
   }
 
-  grants(
-    benefits: ReadonlyArray<Benefit>,
-  ): ProductBuilder<Meter, Benefit, P, Billing> {
-    return new ProductBuilder(
-      this.name,
-      this.priceList,
-      this.billing,
-      this.trialPeriod,
-      benefits,
-      this[metadataKey],
-      this.descriptionText,
-      this.isPrivate,
-    )
+  grants(benefits: ReadonlyArray<Benefit>): this {
+    return this.with({ benefits })
   }
 
-  metadata(metadata: Metadata): ProductBuilder<Meter, Benefit, P, Billing> {
-    return new ProductBuilder(
-      this.name,
-      this.priceList,
-      this.billing,
-      this.trialPeriod,
-      this.benefits,
-      { ...metadata },
-      this.descriptionText,
-      this.isPrivate,
-    )
-  }
-
-  description(description: string): ProductBuilder<Meter, Benefit, P, Billing> {
-    return new ProductBuilder(
-      this.name,
-      this.priceList,
-      this.billing,
-      this.trialPeriod,
-      this.benefits,
-      this[metadataKey],
-      description,
-      this.isPrivate,
-    )
-  }
-
-  private(): ProductBuilder<Meter, Benefit, P, Billing> {
-    return new ProductBuilder(
-      this.name,
-      this.priceList,
-      this.billing,
-      this.trialPeriod,
-      this.benefits,
-      this[metadataKey],
-      this.descriptionText,
-      true,
-    )
+  description(description: string): this {
+    return this.with({ descriptionText: description })
   }
 }
 

@@ -54,8 +54,8 @@ describe('home', () => {
 
     expect(output).toContain('Logged in     sandbox')
     expect(output).toContain('Organization  Acme sandbox')
-    expect(output).toContain('polar listen 3000')
-    expect(output).toContain('polar trigger order.paid')
+    expect(output).toContain('polar webhook listen 3000')
+    expect(output).toContain('polar webhook trigger order.paid')
     expect(output).toContain('polar auth org')
   })
 

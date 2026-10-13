@@ -4,9 +4,8 @@ import { Output } from '@/utils/output'
 import { auth } from '@/commands/auth'
 import { config } from '@/commands/config'
 import { polar } from '@/commands/home'
-import { listen } from '@/commands/listen'
-import { trigger } from '@/commands/trigger'
 import { update } from '@/commands/update'
+import { webhook } from '@/commands/webhook'
 
 // Add new preview commands in this array, e.g [config, newFeature]
 const previews = [config].map((command) =>
@@ -22,7 +21,7 @@ export const program = ({ preview }: ProgramOptions) =>
     Command.withSubcommands([
       {
         group: 'CLI COMMANDS',
-        commands: [auth, listen, trigger, update, ...(preview ? previews : [])],
+        commands: [auth, webhook, update, ...(preview ? previews : [])],
       },
       { group: 'API RESOURCES', commands },
     ]),

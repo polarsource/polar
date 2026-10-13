@@ -33,6 +33,9 @@ describe('apiUrl', () => {
     expect(withEnv(apiUrl('production', '/cli/events'), {})).toBe(
       'https://api.polar.sh/v1/cli/events',
     )
+    expect(withEnv(apiUrl('local', '/cli/events'), {})).toBe(
+      'http://127.0.0.1:8000/v1/cli/events',
+    )
   })
 
   test('honors POLAR_API_URL and strips trailing slashes', () => {

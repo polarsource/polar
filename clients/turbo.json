@@ -1,5 +1,6 @@
 {
   "$schema": "https://v2-9-4.turborepo.dev/schema.json",
+  "agentGuidance": false,
   "globalDependencies": ["**/.env.*local"],
   "globalEnv": [
     "NEXT_IMAGE_UNOPTIMIZED",

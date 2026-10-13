@@ -422,6 +422,8 @@ def _get_benefit_update_dict(
     update_dict: dict[str, Any] = {}
     if benefit.description != benefit_config.description:
         update_dict["description"] = benefit_config.description
+    if benefit.visibility != benefit_config.visibility:
+        update_dict["visibility"] = benefit_config.visibility
     config_properties = _config_benefit_properties(benefit_config)
     if properties != config_properties:
         update_dict["properties"] = config_properties
@@ -488,6 +490,7 @@ def benefit_type_changes(changes: Sequence[BenefitChange]) -> list[ConfigIssue]:
 
 
 _PRODUCT_FIELDS = ("name", "description", "visibility")
+_TRIAL_FIELDS = ("trial_interval", "trial_interval_count")
 
 
 def price_config(
@@ -567,7 +570,7 @@ def _get_product_update_dict(
     benefits: list[str],
 ) -> dict[str, Any]:
     update_dict: dict[str, Any] = {}
-    for name in _PRODUCT_FIELDS:
+    for name in (*_PRODUCT_FIELDS, *_TRIAL_FIELDS):
         value = getattr(product_config, name)
         if getattr(product, name) != value:
             update_dict[name] = value

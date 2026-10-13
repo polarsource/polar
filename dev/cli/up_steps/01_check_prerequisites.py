@@ -1,5 +1,6 @@
 """Check and install required tools."""
 
+import os
 import platform
 import re
 import time
@@ -7,16 +8,18 @@ from pathlib import Path
 
 from shared import (
     Context,
-    check_clt_can_link,
     check_command_exists,
     console,
     get_command_version,
     is_docker_running,
     print_clt_repair_hint,
+    print_output_tail,
     run_command,
+    run_with_live_status,
     step_failed,
     step_spinner,
     step_status,
+    use_native_toolchain,
     working_pnpm_version,
 )
 
@@ -98,16 +101,8 @@ _CLT_LABEL = re.compile(r"\*\s*Label:\s*(Command Line Tools for Xcode[ \d.]*-([\
 
 
 def find_clt_update_label() -> str | None:
-    """Ask softwareupdate for the newest Command Line Tools package.
-
-    The flag file makes softwareupdate list Command Line Tools packages, the
-    same trick Homebrew's installer uses to install them without the GUI.
-    """
-    try:
-        _CLT_ON_DEMAND_FLAG.touch()
-        result = run_command(["softwareupdate", "--list"], capture=True, timeout=300)
-    finally:
-        _CLT_ON_DEMAND_FLAG.unlink(missing_ok=True)
+    """Ask softwareupdate for the newest Command Line Tools package."""
+    result = run_command(["softwareupdate", "--list"], capture=True, timeout=300)
     if result is None or result.returncode != 0:
         return None
     matches = _CLT_LABEL.findall(result.stdout + result.stderr)
@@ -117,14 +112,32 @@ def find_clt_update_label() -> str | None:
 
 
 def update_xcode_clt() -> bool:
-    """Install the latest Command Line Tools through softwareupdate."""
-    with step_spinner("Looking for a Command Line Tools update..."):
-        label = find_clt_update_label()
-    if label is None:
+    """Install the latest Command Line Tools through softwareupdate.
+
+    The flag file makes softwareupdate offer Command Line Tools packages, the
+    same trick Homebrew's installer uses. It has to stay in place through the
+    install too: with no tools installed, the package only exists while it does.
+    """
+    try:
+        _CLT_ON_DEMAND_FLAG.touch()
+        with step_spinner("Looking for a Command Line Tools update..."):
+            label = find_clt_update_label()
+        if label is None:
+            return False
+        console.print(f"  [dim]Installing '{label}', which needs your password and can take a while[/dim]")
+        auth = run_command(["sudo", "-v"])
+        if auth is None or auth.returncode != 0:
+            return False
+        result = run_with_live_status(
+            ["sudo", "-n", "softwareupdate", "--install", "--verbose", label],
+            f"Installing {label}",
+        )
+    finally:
+        _CLT_ON_DEMAND_FLAG.unlink(missing_ok=True)
+    if result is None or result.returncode != 0:
+        print_output_tail(result)
         return False
-    console.print(f"  [dim]Installing '{label}' (this can take a while and may ask for your password)[/dim]")
-    result = run_command(["sudo", "softwareupdate", "--install", label], capture=False, timeout=3600)
-    return result is not None and result.returncode == 0 and check_clt_can_link()
+    return use_native_toolchain() is not None
 
 
 def run(ctx: Context) -> bool:
@@ -135,8 +148,14 @@ def run(ctx: Context) -> bool:
     # Xcode Command Line Tools (macOS) - required for git, compilers, etc.
     if system == "Darwin":
         if is_xcode_clt_installed():
-            if check_clt_can_link():
-                step_status(True, "Xcode CLT", "installed")
+            toolchain = use_native_toolchain()
+            if toolchain:
+                step_status(True, "Xcode CLT", toolchain)
+                if os.environ.get("DEVELOPER_DIR"):
+                    console.print(
+                        "  [dim]Update Xcode to build native code outside dev, or set"
+                        " DEVELOPER_DIR=/Library/Developer/CommandLineTools[/dim]"
+                    )
             else:
                 console.print("  [yellow]Xcode Command Line Tools are installed but can't build native code, updating...[/yellow]")
                 if update_xcode_clt():

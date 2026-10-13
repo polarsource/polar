@@ -45,8 +45,13 @@ export const PayoutAccountSection = ({
     initialOrg,
   )
   const returnPath = payoutOnboardingReturnPath(organization.slug)
-  const { payoutAccount, openCreate, openManage, modals } =
-    usePayoutAccountSetup(organization, returnPath)
+  const {
+    payoutAccount,
+    managedByAnotherMember,
+    openCreate,
+    openManage,
+    modals,
+  } = usePayoutAccountSetup(organization, returnPath)
 
   const [resumeLoading, setResumeLoading] = useState(false)
   const resumeOnboarding = useCallback(async () => {
@@ -145,7 +150,10 @@ export const PayoutAccountSection = ({
     )
   }
 
-  const presentation = getPayoutAccountPresentation(undefined)
+  const presentation = getPayoutAccountPresentation(
+    undefined,
+    managedByAnotherMember,
+  )
 
   return (
     <>
@@ -155,10 +163,17 @@ export const PayoutAccountSection = ({
         title={presentation.title}
         description={presentation.description}
         action={
-          <Button onClick={openCreate}>
-            Connect payout account
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
+          managedByAnotherMember ? (
+            <Button onClick={openManage}>
+              Switch payout account
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          ) : (
+            <Button onClick={openCreate}>
+              Connect payout account
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          )
         }
       />
       {modals}

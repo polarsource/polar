@@ -180,8 +180,7 @@
                     "group": "CLI commands",
                     "pages": [
                       "integrate/cli/reference/auth",
-                      "integrate/cli/reference/listen",
-                      "integrate/cli/reference/trigger",
+                      "integrate/cli/reference/webhook",
                       "integrate/cli/reference/update"
                     ]
                   },
@@ -1466,6 +1465,14 @@
     }
   },
   "redirects": [
+    {
+      "source": "/integrate/cli/reference/listen",
+      "destination": "/integrate/cli/reference/webhook"
+    },
+    {
+      "source": "/integrate/cli/reference/trigger",
+      "destination": "/integrate/cli/reference/webhook"
+    },
     {
       "source": "/api",
       "destination": "/api-reference"

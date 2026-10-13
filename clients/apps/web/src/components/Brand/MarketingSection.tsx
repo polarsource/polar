@@ -1,5 +1,3 @@
-'use client'
-
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Chapter } from '../Landing/Chapter'

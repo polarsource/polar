@@ -155,14 +155,14 @@ const listenCommand = (emit: Emit, url: string, org: string | undefined) =>
     if (!target) {
       return yield* new ListenError({
         code: 0,
-        message: `"${url}" is not a port or an http(s) URL. Try polar listen 3000 or polar listen http://localhost:3000/api/webhooks.`,
+        message: `"${url}" is not a port or an http(s) URL. Try polar webhook listen 3000 or polar webhook listen http://localhost:3000/api/webhooks.`,
       })
     }
     const status = yield* probeTarget(target)
     if (status === 'unknownHost') {
       return yield* new ListenError({
         code: 0,
-        message: `Can't find a host named "${target.hostname}". To forward to a server on this machine, pass its port, e.g. polar listen 3000.`,
+        message: `Can't find a host named "${target.hostname}". To forward to a server on this machine, pass its port, e.g. polar webhook listen 3000.`,
       })
     }
     const organization = yield* (yield* Organizations).resolve(org)
@@ -179,7 +179,7 @@ const listenCommand = (emit: Emit, url: string, org: string | undefined) =>
       )
     }
     return yield* withTerminalTitle(
-      `polar listen · ${organization.name}`,
+      `polar webhook listen · ${organization.name}`,
       startListening({
         organization,
         forwardUrl: target.href,
@@ -194,19 +194,20 @@ export const listen = Command.make('listen', { url, org, printSecret }).pipe(
   ),
   Command.withExamples([
     {
-      command: 'polar listen 3000',
+      command: 'polar webhook listen 3000',
       description: 'Forward events to http://localhost:3000',
     },
     {
-      command: 'polar listen 3000/api/webhooks',
+      command: 'polar webhook listen 3000/api/webhooks',
       description: 'Forward events to a route on your local server',
     },
     {
-      command: 'polar listen http://localhost:3000/api/webhooks --org <id>',
+      command:
+        'polar webhook listen http://localhost:3000/api/webhooks --org <id>',
       description: 'Forward events for a specific organization',
     },
     {
-      command: 'polar listen --print-secret',
+      command: 'polar webhook listen --print-secret',
       description:
         'Print the signing secret, e.g. for POLAR_WEBHOOK_SECRET in .env',
     },
@@ -220,7 +221,7 @@ export const listen = Command.make('listen', { url, org, printSecret }).pipe(
         return yield* new ListenError({
           code: 0,
           message:
-            'Pass a port or URL to forward events to, e.g. polar listen 3000.',
+            'Pass a port or URL to forward events to, e.g. polar webhook listen 3000.',
         })
       }
       return yield* listenCommand(emit, url.value, organizationId)

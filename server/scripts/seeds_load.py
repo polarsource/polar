@@ -69,6 +69,7 @@ from polar.models.event import Event as EventModel
 from polar.models.file import File, FileServiceTypes
 from polar.models.member import Member, MemberRole
 from polar.models.meter import Meter
+from polar.models.oauth2_client import OAuth2Client
 from polar.models.order import Order
 from polar.models.organization import (
     Organization,
@@ -2785,9 +2786,36 @@ async def create_simple_complement_seed_data(session: AsyncSession) -> bool:
     return True
 
 
+CLI_OAUTH2_CLIENT_ID = "polar_ci_local_cli"
+CLI_OAUTH2_REDIRECT_URI = "http://127.0.0.1:3333/oauth/callback"
+
+
+async def ensure_cli_oauth2_client(session: AsyncSession) -> None:
+    """Register the public client `polar auth login` uses against a local stack."""
+    existing = await session.scalar(
+        select(OAuth2Client).where(OAuth2Client.client_id == CLI_OAUTH2_CLIENT_ID)
+    )
+    if existing is not None:
+        return
+    oauth2_client = OAuth2Client(client_id=CLI_OAUTH2_CLIENT_ID, user=None)
+    oauth2_client.set_client_metadata(
+        {
+            "client_name": "Polar CLI",
+            "redirect_uris": [CLI_OAUTH2_REDIRECT_URI],
+            "token_endpoint_auth_method": "none",
+            "grant_types": ["authorization_code", "refresh_token"],
+            "response_types": ["code"],
+            "scope": " ".join(scope.value for scope in Scope),
+        }
+    )
+    session.add(oauth2_client)
+    await session.commit()
+
+
 async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
     started_at = monotonic()
     print("seed.phase.all status=pending")
+    await ensure_cli_oauth2_client(session)
     simple_created = await create_simple_seed_data(session, redis)
     simple_complement_created = await create_simple_complement_seed_data(session)
     if not simple_created and not simple_complement_created:

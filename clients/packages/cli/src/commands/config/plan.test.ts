@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'vitest'
 import { Effect } from 'effect'
+import { FetchHttpClient } from 'effect/http'
 import { plan } from '@/commands/config/plan'
 import type { LoadedConfig, PlanResult } from '@/schemas/BillingConfig'
+import { Environment } from '@/services/api'
 import { Auth } from '@/services/auth'
 import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
@@ -51,8 +53,8 @@ const locked = {
   location: { line: 3, column: 5, length: 1 },
 }
 
-const run = async (result: PlanResult) => {
-  const cli = runCli(plan, ['polar.json'])
+const run = async (result: PlanResult, args: string[] = []) => {
+  const cli = runCli(plan, ['polar.json', ...args])
   const exit = await Effect.runPromiseExit(
     cli.effect.pipe(
       Effect.provideService(
@@ -72,6 +74,8 @@ const run = async (result: PlanResult) => {
           selected: { id: acme.id, environment: acme.environment },
         }).organizations,
       ),
+      Effect.provideService(Environment, {}),
+      Effect.provide(FetchHttpClient.layer),
     ),
   )
   return { output: stripAnsi(cli.output()), failed: exit._tag === 'Failure' }
@@ -82,22 +86,32 @@ describe('polar config plan', () => {
     const { output, failed } = await run({ entries, issues: [warning] })
     expect(failed).toBe(false)
     expect(output).toContain(
-      '+ tool-calls\n      events       all events\n      aggregation  count',
+      [
+        '  ╭─ Changes Acme (sandbox)',
+        '  │',
+        '  │ meters',
+        '  │ + tool-calls',
+        '  │     events       all events',
+        '  │     aggregation  count',
+        '  │',
+        '  ╰─',
+      ].join('\n'),
     )
     expect(output).toContain(
       'Warning: No events named "tool_call" have been received yet',
     )
     expect(output).toContain('Found 0 errors and 1 warning.')
-    expect(output).toMatch(/Checking config \d+ms/)
+    expect(output).toMatch(
+      /^ {2}Reading {4}polar\.json\n {2}Found {6}1 meter\n {2}Comparing {2}\d+ms$/m,
+    )
   })
 
   test('reports a config that can be applied as is', async () => {
     const { output, failed } = await run({ entries, issues: [] })
     expect(failed).toBe(false)
     expect(output).toContain(
-      'polar.json can be applied: 1 to create, 0 to update, 0 unchanged',
+      'Plan: 0 to change, 1 to add, 0 unchanged\n  Run polar config apply to apply it.',
     )
-    expect(output).toContain('Run polar config apply to make these changes.')
   })
 
   test('fails on errors but still shows the changes and warnings', async () => {
@@ -107,10 +121,20 @@ describe('polar config plan', () => {
     })
     expect(failed).toBe(true)
     expect(output).toContain(
-      '+ tool-calls\n      events       all events\n      aggregation  count',
+      '  │ + tool-calls\n  │     events       all events\n  │     aggregation  count',
     )
     expect(output).toContain('Error: Cannot change "filter" of meters.0')
     expect(output).toContain('Warning:')
     expect(output).toContain('Found 1 error and 1 warning.')
+  })
+
+  test('skips --pr-comment outside a pull request', async () => {
+    const { output, failed } = await run({ entries, issues: [] }, [
+      '--pr-comment',
+    ])
+    expect(failed).toBe(false)
+    expect(output).toContain(
+      'Not building a pull request, skipped --pr-comment.',
+    )
   })
 })

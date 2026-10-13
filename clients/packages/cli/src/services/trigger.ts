@@ -134,6 +134,7 @@ export const make = Effect.gen(function* () {
   const clients: Record<PolarEnvironment, ApiClient> = {
     sandbox: yield* authenticatedClient('sandbox'),
     production: yield* authenticatedClient('production'),
+    local: yield* authenticatedClient('local'),
   }
 
   const listEvents = ({ id, environment }: ActiveOrganization) =>

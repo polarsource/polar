@@ -37,6 +37,14 @@ data "tfe_workspace_ids" "aws" {
   ]
 }
 
+resource "tfe_variable" "grafana_cloud_aws_external_id_organization" {
+  key          = "grafana_cloud_aws_external_id"
+  value        = "2341705"
+  category     = "terraform"
+  description  = "External ID for the Grafana Cloud CloudWatch scrape IAM role trust policy"
+  workspace_id = data.tfe_workspace_ids.aws.ids["organization"]
+}
+
 resource "tfe_variable" "tfc_aws_provider_auth" {
   for_each = local.terraform_cloud_aws_workspaces
 

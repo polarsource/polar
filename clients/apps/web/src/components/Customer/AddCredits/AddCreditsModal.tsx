@@ -87,6 +87,15 @@ export const AddCreditsModal = ({
     if (error) {
       if (isValidationError(error.detail)) {
         setValidationErrors(error.detail, form.setError)
+      } else if (
+        'error' in error &&
+        error.error === 'CustomerMeterCreditExternalIDConflict'
+      ) {
+        toast({
+          title: 'Credits Not Added',
+          description:
+            'These credits may already have been added. Refresh the page to check the balance.',
+        })
       } else {
         toast({
           title: 'Credits Not Added',
@@ -103,18 +112,14 @@ export const AddCreditsModal = ({
     onClose()
   }
 
-  const header = (
-    <InlineModalHeader hide={onClose}>
-      <Text variant="heading-xs" as="h2">
-        Add credits
-      </Text>
-    </InlineModalHeader>
-  )
-
   if (!canManageCustomers) {
     return (
       <Box flexDirection="column" height="100%">
-        {header}
+        <InlineModalHeader hide={onClose}>
+          <Text variant="heading-xs" as="h2">
+            Add credits
+          </Text>
+        </InlineModalHeader>
         <Box flex={1} flexDirection="column" alignItems="center" padding="xl">
           <AccessRestricted
             message={permissionDeniedMessage('customers:manage')}
@@ -126,7 +131,11 @@ export const AddCreditsModal = ({
 
   return (
     <Box flexDirection="column" height="100%">
-      {header}
+      <InlineModalHeader hide={onClose}>
+        <Text variant="heading-xs" as="h2">
+          Add credits
+        </Text>
+      </InlineModalHeader>
       <Form {...form}>
         <Box
           as="form"

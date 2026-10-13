@@ -14,26 +14,22 @@ export interface CreditPreview {
   overage: { before: number; after: number; currency: string } | null
 }
 
-const overageCost = (price: MeteredPrice, balance: number) =>
-  balance < 0 ? estimateMeteredCost(price, -balance) : 0
-
 export const getCreditPreview = (
-  option: MeterCreditOption,
+  { balance, unitPrice }: MeterCreditOption,
   units: number,
 ): CreditPreview => {
-  const balanceAfter = option.balance + units
-  const before = option.unitPrice
-    ? overageCost(option.unitPrice, option.balance)
-    : 0
-  if (!option.unitPrice || before === 0) {
+  const balanceAfter = balance + units
+  if (!unitPrice || balance >= 0) {
     return { balanceAfter, overage: null }
   }
+  const overageCost = (value: number) =>
+    value < 0 ? estimateMeteredCost(unitPrice, -value) : 0
   return {
     balanceAfter,
     overage: {
-      before,
-      after: overageCost(option.unitPrice, balanceAfter),
-      currency: option.unitPrice.price_currency,
+      before: overageCost(balance),
+      after: overageCost(balanceAfter),
+      currency: unitPrice.price_currency,
     },
   }
 }

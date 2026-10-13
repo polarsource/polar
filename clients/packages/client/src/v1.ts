@@ -2158,7 +2158,7 @@ export interface paths {
     put?: never
     /**
      * Create Benefit
-     * @description Create a benefit.
+     * @description Create a benefit, for example license keys, file downloads or Discord access.
      *
      *     **Scopes**: `benefits:write`
      */
@@ -3749,6 +3749,8 @@ export interface paths {
     /**
      * Create Customer
      * @description Create a customer.
+     *
+     *     Set `external_id` to the customer's ID in your system to look it up by that ID.
      *
      *     **Scopes**: `customers:write`
      */

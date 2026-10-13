@@ -2531,7 +2531,7 @@
           "cli"
         ],
         "summary": "Create Benefit",
-        "description": "Create a benefit.\n\n**Scopes**: `benefits:write`",
+        "description": "Create a benefit, for example license keys, file downloads or Discord access.\n\n**Scopes**: `benefits:write`",
         "operationId": "benefits:create",
         "security": [
           {
@@ -2585,7 +2585,7 @@
         },
         "x-tool-name": "benefits_create",
         "x-tool-title": "Create Benefit",
-        "x-tool-description": "Create a benefit.",
+        "x-tool-description": "Create a benefit, for example license keys, file downloads or Discord access.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -14517,7 +14517,7 @@
           "cli"
         ],
         "summary": "Create Customer",
-        "description": "Create a customer.\n\n**Scopes**: `customers:write`",
+        "description": "Create a customer.\n\nSet `external_id` to the customer's ID in your system to look it up by that ID.\n\n**Scopes**: `customers:write`",
         "operationId": "customers:create",
         "security": [
           {
@@ -14570,7 +14570,7 @@
         },
         "x-tool-name": "customers_create",
         "x-tool-title": "Create Customer",
-        "x-tool-description": "Create a customer.",
+        "x-tool-description": "Create a customer.\n\nSet `external_id` to the customer's ID in your system to look it up by that ID.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"

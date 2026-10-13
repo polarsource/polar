@@ -19204,11 +19204,16 @@ export interface components {
     CustomerMeterCreditsCustomerExternalIDCreate: {
       /**
        * Meter Id
-       * Format: uuid4
-       * @description The ID of the meter.
+       * @description The ID of the meter. Required if `external_meter_id` is not provided.
        * @example d498a884-e2cd-4d3e-8002-f536468a8b22
        */
-      meter_id: string
+      meter_id?: string | null
+      /**
+       * External Meter Id
+       * @description The external ID of the meter, as set by config as code. Required if `meter_id` is not provided.
+       * @example tool_call
+       */
+      external_meter_id?: string | null
       /**
        * Units
        * @description The number of units to credit.
@@ -19240,11 +19245,16 @@ export interface components {
     CustomerMeterCreditsCustomerIDCreate: {
       /**
        * Meter Id
-       * Format: uuid4
-       * @description The ID of the meter.
+       * @description The ID of the meter. Required if `external_meter_id` is not provided.
        * @example d498a884-e2cd-4d3e-8002-f536468a8b22
        */
-      meter_id: string
+      meter_id?: string | null
+      /**
+       * External Meter Id
+       * @description The external ID of the meter, as set by config as code. Required if `meter_id` is not provided.
+       * @example tool_call
+       */
+      external_meter_id?: string | null
       /**
        * Units
        * @description The number of units to credit.

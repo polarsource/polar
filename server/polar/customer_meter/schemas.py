@@ -1,4 +1,4 @@
-from typing import Annotated, Any
+from typing import Annotated, Any, Self
 
 from fastapi import Path
 from pydantic import UUID4, Field, model_validator
@@ -46,8 +46,21 @@ class CustomerMeter(CustomerMeterBase):
 
 
 class CustomerMeterCreditsCreateBase(Schema):
-    meter_id: UUID4 = Field(
-        description="The ID of the meter.", examples=[METER_ID_EXAMPLE]
+    meter_id: UUID4 | None = Field(
+        default=None,
+        description=(
+            "The ID of the meter. Required if `external_meter_id` is not provided."
+        ),
+        examples=[METER_ID_EXAMPLE],
+    )
+    external_meter_id: str | None = Field(
+        default=None,
+        min_length=1,
+        description=(
+            "The external ID of the meter, as set by config as code. "
+            "Required if `meter_id` is not provided."
+        ),
+        examples=["tool_call"],
     )
     units: int = Field(
         gt=0,
@@ -80,6 +93,12 @@ class CustomerMeterCreditsCreateBase(Schema):
                 "Provide either customer_id or external_customer_id, not both."
             )
         return data
+
+    @model_validator(mode="after")
+    def _single_meter_selector(self) -> Self:
+        if (self.meter_id is None) == (self.external_meter_id is None):
+            raise ValueError("Provide either meter_id or external_meter_id.")
+        return self
 
 
 class CustomerMeterCreditsCustomerIDCreate(CustomerMeterCreditsCreateBase):

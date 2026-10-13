@@ -232,6 +232,10 @@ class TestCreateCheckoutLink:
         )
 
         assert response.status_code == 422
+        assert any(
+            error["type"] == "missing" and error["loc"][-1] == "products"
+            for error in response.json()["detail"]
+        )
 
 
 @pytest.mark.anyio

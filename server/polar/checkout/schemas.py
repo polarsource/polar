@@ -54,6 +54,7 @@ from polar.kit.trial import (
     TrialConfigurationOutputMixin,
     TrialInterval,
 )
+from polar.kit.versioning import Version
 from polar.models.checkout import (
     CheckoutBillingAddressFields,
     CheckoutCustomerBillingAddressFields,
@@ -69,6 +70,7 @@ from polar.product.schemas import (
     ProductPriceCreateList,
     ProductPriceList,
 )
+from polar.version import V2026_10
 
 Amount = Annotated[
     int,
@@ -600,9 +602,11 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
         description="ID of the organization owning the checkout session."
     )
     product_id: UUID4 | None = Field(description="ID of the product to checkout.")
-    product_price_id: UUID4 | None = Field(
-        description="ID of the product price to checkout.", deprecated=True
-    )
+    product_price_id: Annotated[
+        UUID4 | None,
+        Version(up_to=V2026_10),
+        Field(description="ID of the product price to checkout.", deprecated=True),
+    ]
     discount_id: UUID4 | None = Field(
         description="ID of the discount applied to the checkout."
     )

@@ -115,8 +115,8 @@ const sessionLines = (session: Session) => {
     )
   }
   const suggestions: Array<readonly [string, string]> = [
-    ['polar listen 3000', 'Forward webhooks to your local server'],
-    ['polar trigger order.paid', 'Send a sample event'],
+    ['polar webhook listen 3000', 'Forward webhooks to your local server'],
+    ['polar webhook trigger order.paid', 'Send a sample event'],
   ]
   if (!override) suggestions.push([orgCommand, 'Switch organization'])
   lines.push(ui.blank, `  ${ui.bold('Try next')}`, commandList(suggestions))

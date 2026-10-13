@@ -68,7 +68,7 @@ const deliveryRows = (
     onNone: () => [
       [
         'Forwarded by',
-        `your ${ui.command('polar listen')} terminal, which shows the response`,
+        `your ${ui.command('polar webhook listen')} terminal, which shows the response`,
       ],
     ],
     onSome: ({ forwardUrl, status, statusText, failure, durationMs }) => [
@@ -100,7 +100,7 @@ const responseBody = (delivery: Option.Option<Delivery>) =>
         : [],
   })
 
-const listHint = `Run ${ui.command('polar trigger --list')} to see every event`
+const listHint = `Run ${ui.command('polar webhook trigger --list')} to see every event`
 
 const Sent = Schema.Struct({
   kind: Schema.Literal('sent'),
@@ -153,22 +153,25 @@ export const trigger = Command.make('trigger', {
 }).pipe(
   Command.withDescription('Send a sample webhook event to your local server'),
   Command.withExamples([
-    { command: 'polar trigger', description: 'Pick an event from a list' },
     {
-      command: 'polar trigger order.paid',
+      command: 'polar webhook trigger',
+      description: 'Pick an event from a list',
+    },
+    {
+      command: 'polar webhook trigger order.paid',
       description: 'Send a sample order.paid event',
     },
     {
       command:
-        'polar trigger order.paid --override data.customer.email=jane@example.com',
+        'polar webhook trigger order.paid --override data.customer.email=jane@example.com',
       description: 'Change a field in the payload',
     },
     {
-      command: 'polar trigger order.paid --seed 7',
+      command: 'polar webhook trigger order.paid --seed 7',
       description: 'Generate the same IDs every time',
     },
     {
-      command: 'polar trigger order.paid --dry-run',
+      command: 'polar webhook trigger order.paid --dry-run',
       description: 'Print the payload instead of sending it',
     },
   ]),
@@ -180,7 +183,7 @@ export const trigger = Command.make('trigger', {
         if (!list && Option.isNone(event) && !(yield* interactive)) {
           return yield* new TriggerError({
             message: 'An event name is required when not running interactively',
-            hint: `Try ${ui.command('polar trigger order.created')} or ${ui.command('polar trigger --list')}`,
+            hint: `Try ${ui.command('polar webhook trigger order.created')} or ${ui.command('polar webhook trigger --list')}`,
           })
         }
 
@@ -215,13 +218,13 @@ export const trigger = Command.make('trigger', {
               NoActiveListener: () =>
                 new TriggerError({
                   message: `Nothing is listening for ${organization.name} in ${environment}`,
-                  hint: `Run ${ui.command('polar listen <url>')} in another terminal, then try again`,
+                  hint: `Run ${ui.command('polar webhook listen <url>')} in another terminal, then try again`,
                 }),
               UnknownEvent: ({ event, suggestion }) =>
                 new TriggerError({
                   message: `Unknown event "${event}"`,
                   hint: suggestion
-                    ? `Did you mean ${ui.command(`polar trigger ${suggestion}`)}? ${listHint}`
+                    ? `Did you mean ${ui.command(`polar webhook trigger ${suggestion}`)}? ${listHint}`
                     : listHint,
                 }),
               PayloadRejected: ({ detail }) =>

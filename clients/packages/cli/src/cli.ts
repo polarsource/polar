@@ -1,8 +1,9 @@
 import { BunRuntime, BunServices } from '@effect/platform-bun'
 import { Cause, Console, Effect, Layer, Runtime, Stdio } from 'effect'
-import { CliConfig, Command } from 'effect/cli'
+import { CliConfig, CliOutput, Command } from 'effect/cli'
 import { FetchHttpClient } from 'effect/http'
 import { builtIns, program } from '@/program'
+import { formatter } from '@/utils/cli-output'
 import { stdoutConsole } from '@/utils/console'
 import { Environment as JsonEnvironment } from '@/utils/json'
 import { isJsonFlag, reportedError } from '@/utils/errors'
@@ -69,6 +70,7 @@ const services = Layer.mergeAll(
   Layer.succeed(Console.Console, stdoutConsole),
   Layer.succeed(JsonEnvironment, process.env),
   CliConfig.layer({ builtIns }),
+  CliOutput.layer(formatter),
 )
 
 const reportError = (cause: Cause.Cause<unknown>) => {

@@ -183,7 +183,7 @@ describe('startListening', () => {
     )
   })
 
-  test('records the outcome of a triggered event for polar trigger', async () => {
+  test('records the outcome of a triggered event for polar webhook trigger', async () => {
     run()
     await tick()
     emitWebhook({ 'x-polar-triggered': 'true' })

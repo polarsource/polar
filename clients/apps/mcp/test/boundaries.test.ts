@@ -4,6 +4,7 @@ import { FetchHttpClient } from 'effect/http'
 import { Docs } from '../src/docs'
 import { PolarApiOutbound, type PolarApiOutboundProps } from '../src/outbound'
 import { makeToolRunner } from '../src/results'
+import { isAllowedOperation } from '../src/spec'
 import { request, rpc } from './client'
 import { evaluate, exports, get } from './workers'
 
@@ -65,6 +66,14 @@ test('outbound rejects other origins, writes in read-only mode, and unexposed op
   expect(forwarded.headers.get('Authorization')).toBe('Bearer secret')
   expect(forwarded.headers.get('User-Agent')).toBe('polar-mcp')
   expect(await forwarded.text()).toBe('{"name":"Product"}')
+})
+
+test('only methods and paths of exposed operations are allowed', () => {
+  const id = '11111111-1111-4111-8111-111111111111'
+  expect(isAllowedOperation('GET', `/v1/orders/${id}`)).toBe(true)
+  expect(isAllowedOperation('PATCH', `/v1/orders/${id}`)).toBe(true)
+  expect(isAllowedOperation('GET', '/v1/oauth2/userinfo')).toBe(false)
+  expect(isAllowedOperation('DELETE', `/v1/orders/${id}`)).toBe(false)
 })
 
 test('operation writes preserve path parameters and JSON body, and read-only tools reject writes', async () => {

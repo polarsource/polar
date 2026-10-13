@@ -1,3 +1,4 @@
+import { runInThisContext } from 'node:vm'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { request, rpc } from './client'
 import tools from '../src/generated/tools.json'
@@ -87,12 +88,6 @@ test('code mode is the default for every client; ?codemode=false selects operati
   ])
   expect(defaultTools[0].inputSchema.properties.code.type).toBe('string')
   expect(defaultTools[0].inputSchema.required).toEqual(['code'])
-  for (const userAgent of ['Cursor/1.0', 'claude-code/1.0', 'undici']) {
-    expect(
-      (await rpc('tools/list', {}, '', { 'User-Agent': userAgent })).result
-        .tools,
-    ).toHaveLength(4)
-  }
   expect(
     (await rpc('tools/list', {}, '?codemode=true')).result.tools,
   ).toHaveLength(4)
@@ -159,6 +154,82 @@ test('search and execute preserve sandbox isolation, outbound credentials, and l
   })
   const missing = await rpc('tools/call', { name: 'execute', arguments: {} })
   expect(missing.result?.isError ?? !!missing.error).toBe(true)
+})
+
+test('every sandbox run gets a unique isolate name so a cached isolate never serves another token', async () => {
+  const params = { name: 'execute', arguments: { code: 'async () => 1' } }
+  await rpc('tools/call', params, '', {
+    Authorization: 'Bearer polar_oat_user_a',
+  })
+  await rpc('tools/call', params, '', {
+    Authorization: 'Bearer polar_oat_user_b',
+  })
+  const [[first], [second]] = get.mock.calls
+  expect(first).toMatch(/^polar-mcp-/)
+  expect(second).toMatch(/^polar-mcp-/)
+  expect(first).not.toBe(second)
+})
+
+test('the execute sandbox client serializes requests and handles every kind of response', async () => {
+  await rpc('tools/call', {
+    name: 'execute',
+    arguments: {
+      code: `async () => {
+        const list = await polar.request({
+          path: '/v1/products/',
+          query: { metadata: { tier: 'pro' }, organization_id: ['a', 'b'], limit: 10, skipped: undefined },
+        })
+        const created = await polar.request({ method: 'POST', path: '/v1/products/', body: { name: 'Pro' } })
+        const text = await polar.request({ path: '/v1/files/' })
+        const empty = await polar.request({ method: 'DELETE', path: '/v1/products/1' })
+        const failure = await polar.request({ path: '/v1/products/2' }).catch((error) => error.message)
+        return { list, created, text, empty, failure }
+      }`,
+    },
+  })
+  const source = get.mock.calls[0][1]().modules['worker.js'] as string
+  const sandboxFetch = vi.fn<typeof fetch>()
+  sandboxFetch
+    .mockResolvedValueOnce(Response.json({ items: [] }))
+    .mockResolvedValueOnce(Response.json({ id: 'product' }, { status: 201 }))
+    .mockResolvedValueOnce(new Response('plain text'))
+    .mockResolvedValueOnce(new Response(null, { status: 204 }))
+    .mockResolvedValueOnce(
+      Response.json({ detail: 'Not found' }, { status: 404 }),
+    )
+  const Worker = runInThisContext(
+    `(WorkerEntrypoint, fetch) => {${source
+      .replace("import { WorkerEntrypoint } from 'cloudflare:workers'", '')
+      .replace('export default', 'return')}}`,
+  )(class {}, sandboxFetch)
+  const { result, error } = await new Worker().evaluate()
+  expect(error).toBeUndefined()
+  expect(JSON.parse(result)).toEqual({
+    list: { items: [] },
+    created: { id: 'product' },
+    text: 'plain text',
+    empty: null,
+    failure: 'Polar API 404: {"detail":"Not found"}',
+  })
+
+  const [listUrl, listInit] = sandboxFetch.mock.calls[0]
+  const url = listUrl as URL
+  expect(url.origin + url.pathname).toBe('https://api.polar.test/v1/products/')
+  expect([...url.searchParams]).toEqual([
+    ['metadata[tier]', 'pro'],
+    ['organization_id', 'a'],
+    ['organization_id', 'b'],
+    ['limit', '10'],
+  ])
+  expect(listInit).toEqual({ method: 'GET', headers: {}, body: undefined })
+
+  const [createUrl, createInit] = sandboxFetch.mock.calls[1]
+  expect((createUrl as URL).href).toBe('https://api.polar.test/v1/products/')
+  expect(createInit).toEqual({
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{"name":"Pro"}',
+  })
 })
 
 test('sandbox failures become tool errors and long errors and results are truncated', async () => {

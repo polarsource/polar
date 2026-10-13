@@ -35,6 +35,8 @@ export class Sandbox extends Context.Service<
           const { result, error } = yield* Effect.tryPromise({
             try: () => {
               const worker = loader.get(
+                // The loader caches isolates by name and globalOutbound carries the user's
+                // token, so a reused name would serve one user's isolate to another.
                 `polar-mcp-${crypto.randomUUID()}`,
                 () => ({
                   compatibilityDate: SANDBOX_COMPATIBILITY_DATE,

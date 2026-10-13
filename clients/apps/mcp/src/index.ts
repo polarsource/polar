@@ -50,13 +50,6 @@ const withCors = (response: Response) => {
   })
 }
 
-const readJsonBody = (request: Request) =>
-  request.method === 'POST'
-    ? Effect.tryPromise(() => request.clone().json()).pipe(
-        Effect.orElseSucceed(() => undefined),
-      )
-    : Effect.succeed(undefined)
-
 const handle = Effect.fn('handle')(function* (request: Request) {
   const url = new URL(request.url)
 
@@ -93,7 +86,6 @@ const handle = Effect.fn('handle')(function* (request: Request) {
   }
 
   const readOnly = url.searchParams.get('readonly') === 'true'
-  const body = yield* readJsonBody(request)
   const toolMode = toolModeFor(url)
   const context = yield* Effect.context<
     Sandbox | Docs | HttpClient.HttpClient
@@ -103,7 +95,7 @@ const handle = Effect.fn('handle')(function* (request: Request) {
       Effect.runPromiseWith(context)(
         createServer({ apiUrl, token, readOnly }, toolMode),
       ),
-    ).fetch(request, { parsedBody: body }),
+    ).fetch(request),
   )
 })
 

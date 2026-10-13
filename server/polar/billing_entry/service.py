@@ -1,5 +1,6 @@
 import contextlib
 import dataclasses
+import math
 import uuid
 from collections import defaultdict
 from collections.abc import AsyncGenerator, AsyncIterable, Sequence
@@ -155,7 +156,8 @@ class BillingEntryService:
                 span.set_attribute(
                     "match",
                     all(
-                        quantities.get(meter_id) == units
+                        meter_id in quantities
+                        and math.isclose(quantities[meter_id], units)
                         for meter_id, units in consumed_units.items()
                     ),
                 )

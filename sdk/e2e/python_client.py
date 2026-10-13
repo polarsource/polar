@@ -1,11 +1,27 @@
 import dataclasses
 import json
+import os
 import sys
+import typing
 
 import anyio
 import httpx
 from polar.base import PolarError
 from polar.outpost import Outpost
+
+
+async def read_lines(fd: int) -> typing.AsyncIterator[bytes]:
+    pending = b""
+    while True:
+        await anyio.wait_readable(fd)
+        chunk = os.read(fd, 65536)
+        if not chunk:
+            if pending:
+                yield pending
+            return
+        *lines, pending = (pending + chunk).split(b"\n")
+        for line in lines:
+            yield line
 
 
 async def main() -> None:
@@ -17,7 +33,7 @@ async def main() -> None:
         Outpost(redis_url, client=client) as outpost,
     ):
         print(json.dumps({"result": None}), flush=True)
-        while line := await anyio.to_thread.run_sync(sys.stdin.readline):
+        async for line in read_lines(sys.stdin.fileno()):
             try:
                 command = json.loads(line)
                 operation = command["operation"]

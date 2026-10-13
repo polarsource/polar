@@ -23,12 +23,14 @@ just install
 just test
 ```
 
-`just test -k mixed` selects cross-language runs. Every scenario runs with two Python
-clients, two TypeScript clients, and both assignments of Python/TypeScript clients.
+Every scenario runs once with all Python clients and once with all TypeScript clients.
+Use `just test -k python` or `just test -k typescript` to select one SDK.
 Run `just lint` and `just typecheck` for both languages. The Node helpers are strict
 TypeScript files executed directly by Node 24, without a separate harness build.
 Async orchestration uses AnyIO, and pytest scenarios use `@pytest.mark.anyio`.
 The pytest backend is asyncio because the Redis client requires it.
+Python clients read stdin pipes through AnyIO readiness notifications, without a
+worker thread. This pipe reader requires POSIX (Linux/macOS).
 
 ## Write a scenario
 
@@ -66,7 +68,8 @@ Scenario(
 The helpers compare consumed units, credited units, and balance together.
 
 - `at`: seconds from the start of the timeline, after processes have started.
-- `client`: `writer` or `reader`; snapshot steps always target `polar`.
+- `client`: an SDK process name; names are discovered from the scenario steps.
+  Snapshot steps always target the reserved name `polar`.
 - `arguments`: actual SDK keyword arguments, or a snapshot payload.
 - `expected`: meter fields to compare exactly for a read.
 - `within`: poll allowance in seconds; zero means a single read.
@@ -82,8 +85,13 @@ Failures print the command transcript with scheduled/actual times, arguments, an
 observed results. Client stderr remains visible for crashes. Calls have a ten-second
 response timeout; `within` bounds polling, not the duration of an individual SDK call.
 
-The bundled scenarios cover shared consumption, restart recovery, concurrent
-writers, snapshot reconciliation, and ignoring events older than a snapshot cutoff.
+The concurrent scenario warms four writers and two dedicated readers, then runs
+five rounds of simultaneous writes. Each writer adds a distinct amount (1–4 units)
+per round; all six cached clients must converge to each cumulative total and retain
+the final 50-unit consumption.
+
+The bundled scenarios also cover shared consumption, restart recovery, snapshot
+reconciliation, and ignoring events older than a snapshot cutoff.
 Event timestamps are fixed independently of timeline scheduling, so bucket-boundary
 tests need no five-minute sleeps.
 

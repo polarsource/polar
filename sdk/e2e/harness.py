@@ -212,7 +212,9 @@ async def local_redis():
             await stop(process)
 
 
-async def run(scenario: Scenario, languages: dict[str, str]) -> None:
+async def run(
+    scenario: Scenario, language: typing.Literal["python", "typescript"]
+) -> None:
     transcript = []
     async with contextlib.AsyncExitStack() as stack:
         redis_url = await stack.enter_async_context(local_redis())
@@ -228,10 +230,12 @@ async def run(scenario: Scenario, languages: dict[str, str]) -> None:
         )
         clients: dict[str, Process] = {}
         contexts: dict[str, typing.Any] = {}
-        locks = {name: anyio.Lock() for name in [*languages, "polar"]}
+        client_names = dict.fromkeys(
+            step.client for step in scenario.steps if step.client != "polar"
+        )
+        locks = {name: anyio.Lock() for name in [*client_names, "polar"]}
 
         async def start_client(name: str) -> None:
-            language = languages[name]
             if language == "python":
                 command = (sys.executable, str(ROOT / "python_client.py"))
             elif language == "typescript":
@@ -244,7 +248,7 @@ async def run(scenario: Scenario, languages: dict[str, str]) -> None:
             clients[name] = client
             stack.push_async_callback(context.__aexit__, None, None, None)
 
-        for name in languages:
+        for name in client_names:
             await start_client(name)
         started = anyio.current_time()
 

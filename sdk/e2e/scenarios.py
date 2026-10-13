@@ -29,6 +29,8 @@ INITIAL: Snapshot = {
     "cold": {"tokens": 0},
     "credited": {"meter": 100},
 }
+WRITERS = ("writer-1", "writer-2", "writer-3", "writer-4")
+CONCURRENT_CLIENTS = (*WRITERS, "reader-1", "reader-2")
 
 
 def emit(
@@ -87,12 +89,27 @@ SCENARIOS = [
         CONFIGURATION,
         [INITIAL],
         [
-            expect(0, "writer", 0),
-            expect(0, "reader", 0),
-            emit(0.2, "writer", 7),
-            emit(0.2, "reader", 3),
-            expect(0.4, "writer", 10),
-            expect(0.4, "reader", 10),
+            *(expect(0, client, 0, within=0.4) for client in CONCURRENT_CLIENTS),
+            *(
+                step
+                for round_index in range(5)
+                for step in [
+                    *(
+                        emit(0.5 + round_index * 0.3, writer, units)
+                        for units, writer in enumerate(WRITERS, start=1)
+                    ),
+                    *(
+                        expect(
+                            0.505 + round_index * 0.3,
+                            client,
+                            (round_index + 1) * 10,
+                            within=0,
+                        )
+                        for client in CONCURRENT_CLIENTS
+                    ),
+                ]
+            ),
+            *(expect(2, client, 50, within=0) for client in CONCURRENT_CLIENTS),
         ],
     ),
     Scenario(

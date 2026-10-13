@@ -97,10 +97,7 @@ const callout = (
   if (errors(result.issues) > 0) {
     return `> [!CAUTION]\n> \`${config.file}\` can't be applied to ${where}. Fix the errors below first.`
   }
-  if (unchanged(result.entries)) {
-    return `> [!NOTE]\n> This pull request doesn't change billing for ${where}.`
-  }
-  return `> [!NOTE]\n> This pull request changes billing for ${where}. Review every change below before it's applied.`
+  return `> [!NOTE]\n> Applying the config in this pull request changes billing for ${where}. Review every change below before it's applied.`
 }
 
 const metadata = (
@@ -122,30 +119,36 @@ export const planMarkdown = (
   organization: ActiveOrganization,
   result: PlanResult,
 ) =>
-  [
-    '## Polar billing plan updated',
-    callout(config, organization, result),
-    metadata(config, organization, result),
-    ...[
-      ...new Set([
-        ...Object.keys(HEADINGS),
-        ...result.entries.map(({ section }) => section),
-      ]),
-    ].flatMap((section) => {
-      const changed = result.entries.filter(
-        (entry) => entry.section === section && entry.action !== 'unchanged',
-      )
-      return changed.length === 0
-        ? []
-        : [
-            `#### ${escape(heading(section))}`,
-            codeBlock(plain(changed.flatMap(entryLines).join('\n')), 'diff'),
-          ]
-    }),
-    ...(result.issues.length > 0
-      ? [
-          '#### Problems',
-          codeBlock(plain(formatProblems(config, result.issues))),
-        ]
-      : []),
-  ].join('\n\n')
+  unchanged(result.entries) && errors(result.issues) === 0
+    ? undefined
+    : [
+        '## Polar billing plan updated',
+        callout(config, organization, result),
+        metadata(config, organization, result),
+        ...[
+          ...new Set([
+            ...Object.keys(HEADINGS),
+            ...result.entries.map(({ section }) => section),
+          ]),
+        ].flatMap((section) => {
+          const changed = result.entries.filter(
+            (entry) =>
+              entry.section === section && entry.action !== 'unchanged',
+          )
+          return changed.length === 0
+            ? []
+            : [
+                `#### ${escape(heading(section))}`,
+                codeBlock(
+                  plain(changed.flatMap(entryLines).join('\n')),
+                  'diff',
+                ),
+              ]
+        }),
+        ...(result.issues.length > 0
+          ? [
+              '#### Problems',
+              codeBlock(plain(formatProblems(config, result.issues))),
+            ]
+          : []),
+      ].join('\n\n')

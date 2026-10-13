@@ -40,6 +40,7 @@ const run = (file: string) =>
       const clients = {
         sandbox: yield* authenticatedClient('sandbox'),
         production: yield* authenticatedClient('production'),
+        local: yield* authenticatedClient('local'),
       }
       const config = yield* loader(yield* FileSystem.FileSystem)(file)
       return yield* plan(clients)(config, acme)

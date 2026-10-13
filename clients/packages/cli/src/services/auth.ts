@@ -54,6 +54,7 @@ export const make = (
     const locks = {
       sandbox: yield* Semaphore.make(1),
       production: yield* Semaphore.make(1),
+      local: yield* Semaphore.make(1),
     }
     const override = tokenOverride.pipe(
       Effect.map((token) => token !== undefined),
@@ -63,7 +64,8 @@ export const make = (
       if (value === undefined) return 'production' as const
       if (isEnvironment(value)) return value
       return yield* new AuthError({
-        message: 'POLAR_ENVIRONMENT must be "sandbox" or "production".',
+        message:
+          'POLAR_ENVIRONMENT must be "sandbox", "production" or "local".',
       })
     })
     const requireSavedMode = Effect.gen(function* () {

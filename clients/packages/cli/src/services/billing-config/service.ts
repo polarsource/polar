@@ -38,6 +38,7 @@ const make = Effect.gen(function* () {
   const clients = {
     sandbox: yield* authenticatedClient('sandbox'),
     production: yield* authenticatedClient('production'),
+    local: yield* authenticatedClient('local'),
   }
   const load = loader(fs)
   return BillingConfig.of({

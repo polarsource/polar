@@ -4,6 +4,7 @@ from decimal import Decimal
 import pytest
 from httpx import AsyncClient
 
+from polar.event.system import SystemEvent
 from polar.kit.utils import utc_now
 from polar.models import (
     Customer,
@@ -16,7 +17,7 @@ from polar.models import (
 from polar.version import V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_meter
+from tests.fixtures.random_objects import create_event, create_meter
 
 
 @pytest.fixture
@@ -350,3 +351,37 @@ class TestCreditCustomerMeter:
         assert first.status_code == 201
         assert second.status_code == 409
         assert second.json()["error"] == "CustomerMeterCreditExternalIDConflict"
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_external_id_used_by_user_event(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            name=SystemEvent.meter_credited,
+            external_id="credit_1",
+            metadata={"meter_id": str(meter.id), "units": 100, "rollover": False},
+        )
+
+        response = await client.post(
+            "/v1/customer-meters/credits",
+            json={
+                "customer_id": str(customer.id),
+                "meter_id": str(meter.id),
+                "units": 100,
+                "external_id": "credit_1",
+            },
+        )
+
+        assert response.status_code == 409
+        assert response.json()["error"] == "CustomerMeterCreditExternalIDConflict"

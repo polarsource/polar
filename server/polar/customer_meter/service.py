@@ -297,7 +297,8 @@ class CustomerMeterService:
                 customer.organization_id, credit_create.external_id
             )
             if existing_event is not None and (
-                existing_event.name != SystemEvent.meter_credited
+                existing_event.source != EventSource.system
+                or existing_event.name != SystemEvent.meter_credited
                 or existing_event.customer_id != customer.id
                 or existing_event.user_metadata != metadata
             ):

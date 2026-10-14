@@ -104,8 +104,7 @@ from .product_price import (
     ProductPriceSeatUnit,
     ProductPriceUnit,
 )
-from .reducer import Reducer
-from .reducer_bucket import ReducerBucket
+from .reducer import Reducer, ReducerBucket
 from .refund import Refund
 from .slack_app import SlackApp
 from .subscription import Subscription

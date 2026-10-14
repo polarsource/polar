@@ -10,7 +10,7 @@ from polar.worker import (
 )
 
 from .redis_store import get_reducer_bucket_key
-from .service import reducer_bucket as reducer_bucket_service
+from .service import reducer as reducer_service
 
 
 def _sync_debounce_key(
@@ -41,7 +41,7 @@ async def sync(
     external_customer_id: str | None,
 ) -> None:
     async with AsyncSessionMaker() as session:
-        await reducer_bucket_service.sync(
+        await reducer_service.sync_bucket(
             session,
             reducer_id,
             datetime.fromisoformat(bucket_start),

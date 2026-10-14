@@ -155,9 +155,9 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         external_customer_id: str | None,
         *,
         count: int,
-        total: float = 0,
-        minimum: float | None = None,
-        maximum: float | None = None,
+        total: Decimal = Decimal(0),
+        minimum: Decimal | None = None,
+        maximum: Decimal | None = None,
     ) -> None:
         """Adds to the customer identity's latest bucket, or to the next generation
         once it's sealed."""

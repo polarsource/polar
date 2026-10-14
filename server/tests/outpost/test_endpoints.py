@@ -171,6 +171,16 @@ class TestOutpost:
                 )
             )
 
+        await save_fixture(
+            CustomerMeter(
+                customer=customer_external_id,
+                meter=meter,
+                consumed_units=Decimal(0),
+                credited_units=100,
+                balance=Decimal(100),
+            )
+        )
+
         async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
             await publish(
                 redis,
@@ -186,14 +196,15 @@ class TestOutpost:
             response = await websocket.receive_json()
 
             assert response == {
-                "type": "reducer_bucket",
+                "type": "meter_balance",
                 "payload": {
-                    "reducer_id": str(reducer.id),
+                    "meter_id": str(meter.id),
                     "customer_id": str(customer_external_id.id),
                     "external_customer_id": external_id,
                     "count": 3,
                     "sum": 12.0,
                     "min": 3.0,
                     "max": 5.0,
+                    "credited_units": 100,
                 },
             }

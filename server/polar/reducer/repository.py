@@ -73,9 +73,11 @@ class ReducerRepository(RepositoryBase[Reducer]):
         )
         return self.get_base_statement().where(Reducer.id.in_(active_reducer_ids))
 
-    async def get_active_by_id(self, id: UUID) -> Reducer | None:
+    async def get_active_by_id(
+        self, id: UUID, *, options: Options = ()
+    ) -> Reducer | None:
         return await self.get_one_or_none(
-            self.get_active_statement().where(Reducer.id == id)
+            self.get_active_statement().where(Reducer.id == id).options(*options)
         )
 
     async def get_all_active_by_organization(

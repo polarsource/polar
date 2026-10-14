@@ -7,6 +7,7 @@ from polar.customer.repository import CustomerRepository
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.kit.db.postgres import AsyncReadSession
 from polar.logging import Logger
+from polar.meter.aggregation import UniqueAggregation
 from polar.models import Organization, Reducer
 from polar.reducer.repository import ReducerRepository
 from polar.reducer_bucket.repository import ReducerBucketRepository
@@ -19,11 +20,11 @@ from .schemas import (
     CustomerMeterOutgoingMessagePayload,
     IncomingMessageAdapter,
     IncomingMessageType,
+    MeterBalanceOutgoingMessage,
+    MeterBalanceOutgoingMessagePayload,
     OutgoingMessage,
     OutgoingMessageAdapter,
     OutgoingMessageType,
-    ReducerBucketOutgoingMessage,
-    ReducerBucketOutgoingMessagePayload,
 )
 from .stream import OutpostEvent, ReducerBucketOutpostEvent
 
@@ -136,6 +137,12 @@ class OutpostService:
         event: ReducerBucketOutpostEvent,
         send_stream: MemoryObjectSendStream[OutgoingMessage],
     ) -> None:
+        reducer = await ReducerRepository.from_session(session).get_active_by_id(
+            event["reducer_id"], options=(selectinload(Reducer.meter_reducers),)
+        )
+        if reducer is None or isinstance(reducer.aggregation, UniqueAggregation):
+            return
+
         customer_id = event["customer_id"]
         external_customer_id = event["external_customer_id"]
         customer_repository = CustomerRepository.from_session(session)
@@ -155,23 +162,39 @@ class OutpostService:
         else:
             identities = [(customer_id, external_customer_id)]
 
-        repository = ReducerBucketRepository.from_session(session)
-        count, total, minimum, maximum = await repository.get_unsealed_totals(
-            organization.id, event["reducer_id"], identities
+        count, total, minimum, maximum = await ReducerBucketRepository.from_session(
+            session
+        ).get_unsealed_totals(organization.id, reducer.id, identities)
+        # Temporary: credits come from customer meters until credits are reducers.
+        # Credits reset on renewal before the billed usage gets sealed, so balances
+        # are too low in between.
+        customer_meters = (
+            await CustomerMeterRepository.from_session(
+                session
+            ).get_all_by_customer_and_reducer(customer.id, reducer.id)
+            if customer is not None
+            else []
         )
-        message = ReducerBucketOutgoingMessage(
-            type=OutgoingMessageType.reducer_bucket,
-            payload=ReducerBucketOutgoingMessagePayload(
-                reducer_id=event["reducer_id"],
-                customer_id=customer_id,
-                external_customer_id=external_customer_id,
-                count=count,
-                sum=total,
-                min=minimum,
-                max=maximum,
-            ),
-        )
-        await send_stream.send(message)
+        credited_units = {
+            customer_meter.meter_id: customer_meter.credited_units
+            for customer_meter in customer_meters
+        }
+        for meter_id in reducer.meter_ids:
+            await send_stream.send(
+                MeterBalanceOutgoingMessage(
+                    type=OutgoingMessageType.meter_balance,
+                    payload=MeterBalanceOutgoingMessagePayload(
+                        meter_id=meter_id,
+                        customer_id=customer_id,
+                        external_customer_id=external_customer_id,
+                        count=count,
+                        sum=total,
+                        min=minimum,
+                        max=maximum,
+                        credited_units=credited_units.get(meter_id, 0),
+                    ),
+                )
+            )
 
 
 outpost = OutpostService()

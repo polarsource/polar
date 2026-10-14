@@ -64,7 +64,7 @@ IncomingMessageAdapter: TypeAdapter[IncomingMessage] = TypeAdapter(IncomingMessa
 class OutgoingMessageType(StrEnum):
     configuration = "configuration"
     customer_meter = "customer_meter"
-    reducer_bucket = "reducer_bucket"
+    meter_balance = "meter_balance"
 
 
 class OutgoingMessageBase(MessageBase):
@@ -101,25 +101,27 @@ class CustomerMeterOutgoingMessage(OutgoingMessageBase):
     payload: CustomerMeterOutgoingMessagePayload
 
 
-class ReducerBucketOutgoingMessagePayload(MessageBase):
-    reducer_id: UUID4
+class MeterBalanceOutgoingMessagePayload(MessageBase):
+    meter_id: UUID4
     customer_id: UUID4 | None
     external_customer_id: str | None
     count: int
     sum: float
     min: float | None
     max: float | None
+    # Temporary: credits come from customer meters until credits are reducers.
+    credited_units: int
 
 
-class ReducerBucketOutgoingMessage(OutgoingMessageBase):
-    type: typing.Literal[OutgoingMessageType.reducer_bucket]
-    payload: ReducerBucketOutgoingMessagePayload
+class MeterBalanceOutgoingMessage(OutgoingMessageBase):
+    type: typing.Literal[OutgoingMessageType.meter_balance]
+    payload: MeterBalanceOutgoingMessagePayload
 
 
 type OutgoingMessage = typing.Annotated[
     ConfigurationOutgoingMessage
     | CustomerMeterOutgoingMessage
-    | ReducerBucketOutgoingMessage,
+    | MeterBalanceOutgoingMessage,
     Discriminator("type"),
 ]
 

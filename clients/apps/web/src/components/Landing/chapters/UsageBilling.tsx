@@ -25,45 +25,48 @@ export const UsageBilling = () => (
     paddingBottom={{ base: '4xl', md: '5xl' }}
     marginBottom={{ base: 'none', md: '2xl' }}
   >
-    <Grid
-      templateColumns={{ base: '1fr', lg: '3fr 1fr' }}
-      gap={{ base: '3xl', lg: '3xl' }}
-      alignItems="center"
-    >
-      <UsageBillingMock />
-      <Box flexDirection="column" rowGap="3xl">
-        <Box display="block">
-          <Text variant="heading-s" as="span">
-            Ship usage billing today.{' '}
-          </Text>
-          <Text variant="heading-s" as="span" color="muted" leading="tight">
-            Event-based metering, worldwide billing & unit economics, built in.
-          </Text>
-        </Box>
-        <Box flexDirection="column" rowGap="s">
-          <Text variant="body" color="muted">
-            Features
-          </Text>
-          <Box as="ul" flexDirection="column" rowGap="xs">
-            {FEATURES.map((feature) => (
-              <Box as="li" key={feature.href}>
-                <Link href={feature.href}>
-                  <Box
-                    as="span"
-                    color={{ base: 'text-primary', hover: 'text-secondary' }}
-                    transitionProperty="colors"
-                    transitionDuration="fast"
-                  >
-                    <Text variant="body" as="span" color="inherit">
-                      {feature.label}
-                    </Text>
-                  </Box>
-                </Link>
-              </Box>
-            ))}
+    <div className="[animation:rise_700ms_cubic-bezier(0.2,0.8,0.2,1)_150ms_both]">
+      <Grid
+        templateColumns={{ base: '1fr', lg: '3fr 1fr' }}
+        gap={{ base: '3xl', lg: '3xl' }}
+        alignItems="center"
+      >
+        <UsageBillingMock />
+        <Box flexDirection="column" rowGap="3xl">
+          <Box display="block">
+            <Text variant="heading-s" as="span">
+              Ship usage billing today.{' '}
+            </Text>
+            <Text variant="heading-s" as="span" color="muted" leading="tight">
+              Event-based metering, worldwide billing & unit economics, built
+              in.
+            </Text>
+          </Box>
+          <Box flexDirection="column" rowGap="s">
+            <Text variant="body" color="muted">
+              Features
+            </Text>
+            <Box as="ul" flexDirection="column" rowGap="xs">
+              {FEATURES.map((feature) => (
+                <Box as="li" key={feature.href}>
+                  <Link href={feature.href}>
+                    <Box
+                      as="span"
+                      color={{ base: 'text-primary', hover: 'text-secondary' }}
+                      transitionProperty="colors"
+                      transitionDuration="fast"
+                    >
+                      <Text variant="body" as="span" color="inherit">
+                        {feature.label}
+                      </Text>
+                    </Box>
+                  </Link>
+                </Box>
+              ))}
+            </Box>
           </Box>
         </Box>
-      </Box>
-    </Grid>
+      </Grid>
+    </div>
   </Box>
 )

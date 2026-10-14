@@ -31,7 +31,7 @@ export const CustomerStory = () => (
     >
       <Box flexDirection="column" alignItems="start" rowGap="3xl">
         <ChapterHeadline
-          title="Trusted by AI companies"
+          title="Trusted by leading AI companies"
           subtitle="See how they run billing on Polar"
         />
         <Link href={STORY.href} prefetch>

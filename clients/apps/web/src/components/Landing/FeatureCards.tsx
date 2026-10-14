@@ -15,7 +15,7 @@ interface Feature {
 
 const FEATURES: Feature[] = [
   {
-    title: 'Usage Billing',
+    title: 'Event Ingestion',
     desc: 'Meter tokens, API calls, compute and storage down to the event.',
     href: '/features/usage-billing',
     Graphic: SteppedRadial,

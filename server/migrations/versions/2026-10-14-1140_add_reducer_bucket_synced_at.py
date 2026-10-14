@@ -23,9 +23,11 @@ def upgrade() -> None:
     with op.get_context().autocommit_block():
         op.execute("SET lock_timeout = '5s'")
         try:
-            op.add_column(
-                "reducer_buckets",
-                sa.Column("synced_at", sa.TIMESTAMP(timezone=True), nullable=True),
+            # IF NOT EXISTS: the column is committed before the backfill, so a
+            # retry after a failed UPDATE finds it already there.
+            op.execute(
+                "ALTER TABLE reducer_buckets "
+                "ADD COLUMN IF NOT EXISTS synced_at TIMESTAMP WITH TIME ZONE"
             )
             op.execute(
                 "UPDATE reducer_buckets SET synced_at = bucket_end "

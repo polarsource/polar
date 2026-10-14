@@ -4229,6 +4229,9 @@
         "x-tool-name": "webhooks_reset_webhook_endpoint_secret",
         "x-tool-title": "Reset Webhook Endpoint Secret",
         "x-tool-description": "Regenerate a webhook endpoint secret.",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"

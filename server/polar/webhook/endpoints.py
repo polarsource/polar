@@ -9,7 +9,7 @@ from polar.kit.schemas import MultipleQueryFilter, SetSchemaReference
 from polar.kit.versioning import version
 from polar.models import WebhookEndpoint
 from polar.models.webhook_endpoint import WebhookEventType
-from polar.openapi import APITag, cli_preview
+from polar.openapi import APITag, cli_preview, destructive
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
@@ -179,6 +179,7 @@ async def update_webhook_endpoint_v2026_10(
 
 @router.patch(
     "/endpoints/{id}/secret",
+    openapi_extra=destructive(),
     response_model=WebhookEndpointSchema,
     responses={
         200: {"description": "Webhook endpoint secret reset."},

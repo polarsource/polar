@@ -78,7 +78,7 @@ class BucketStatistics:
 
 
 Updates: typing.TypeAlias = dict[tuple[str, str, int], BucketStatistics]
-BUCKET_SIZE = 300
+BUCKET_SIZE = 300_000_000
 FILTER_OPERATORS = {
     "eq": operator.eq,
     "ne": operator.ne,
@@ -133,7 +133,8 @@ def get_matcher(clause: Filter | FilterClause) -> EventMatcher:
 def get_bucket_start(timestamp: datetime.datetime) -> int:
     if timestamp.utcoffset() is None:
         raise ValueError("Bucket timestamps must include a timezone")
-    epoch = math.floor(timestamp.timestamp())
+    delta = timestamp - datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
+    epoch = (delta.days * 86400 + delta.seconds) * 1_000_000 + delta.microseconds
     return epoch - epoch % BUCKET_SIZE
 
 

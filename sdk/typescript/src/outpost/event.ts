@@ -41,11 +41,13 @@ export const parseEvent = (input: EventInput): Event => {
     throw new TypeError("Event timestamps must include a timezone");
   }
   const timestamp = input.timestamp === undefined ? Date.now() : Date.parse(input.timestamp);
-  if (!Number.isFinite(timestamp)) throw new TypeError("Invalid event timestamp");
+  const fraction = input.timestamp?.match(/\.(\d+)/)?.[1] ?? "";
+  const microseconds = timestamp * 1000 + Number(fraction.padEnd(6, "0").slice(3, 6));
+  if (!Number.isSafeInteger(microseconds)) throw new TypeError("Invalid event timestamp");
   return {
     name: input.name,
     customer: customerKey(input),
-    timestamp: timestamp / 1000,
+    timestamp: microseconds,
     metadata: input.metadata ?? {},
   };
 };
@@ -53,7 +55,7 @@ export const parseEvent = (input: EventInput): Event => {
 export const getProperty = (event: Event, property: string): unknown => {
   if (property === "name") return event.name;
   if (property === "source") return "user";
-  if (property === "timestamp") return Math.trunc(event.timestamp);
+  if (property === "timestamp") return Math.trunc(event.timestamp / 1_000_000);
   let value: unknown = event.metadata;
   for (const part of property.replace(/^metadata\./, "").split(".")) {
     if (

@@ -12,11 +12,11 @@ import type { EventsIngest } from "../2026-04/models";
 
 import { ClientBase } from "../base";
 import { Outpost } from "./client";
-import { getBucketStart, type Reducer } from "./reducer";
+import { BUCKET_SIZE, getBucketStart, type Reducer } from "./reducer";
 import { APPLY_SNAPSHOT_SCRIPT } from "./scripts";
 
 const timestamp = "2026-10-12T12:00:00Z";
-const bucket = getBucketStart(Date.parse(timestamp) / 1000);
+const bucket = getBucketStart(Date.parse(timestamp) * 1000);
 const customer = { external_customer_id: "alice" };
 const meter = { ...customer, meter_id: "meter" };
 const key = "outpost:state:external:alice:tokens";
@@ -167,15 +167,18 @@ it("handles configuration asynchronously and reports a missing customer snapshot
 
 it("propagates snapshots, removes cold buckets, and rejects older cutoffs", async () => {
   await seed();
-  await redis.hset(key, { [`bucket:${bucket - 300}:sum`]: 99, [`bucket:${bucket}:sum`]: 3 });
+  await redis.hset(key, {
+    [`bucket:${bucket - BUCKET_SIZE}:sum`]: 99,
+    [`bucket:${bucket}:sum`]: 3,
+  });
   const reader = await start();
   await reader.actor(customer);
   snapshot = {
     ...customer,
     customer_id: null,
     meter_id: "meter",
-    cold_until: timestamp,
-    version: "2026-10-12T12:10:00.000001Z",
+    cold_until: bucket,
+    version: 1791807000000001,
     count: 2,
     sum: 8,
     min: 3,
@@ -185,7 +188,7 @@ it("propagates snapshots, removes cold buckets, and rejects older cutoffs", asyn
   const writer = await start();
   await writer.actor(customer);
   await vi.waitFor(async () => expect((await reader.customerMeter(meter))?.balance).toBe(89));
-  expect(await redis.hexists(key, `bucket:${bucket - 300}:sum`)).toBe(0);
+  expect(await redis.hexists(key, `bucket:${bucket - BUCKET_SIZE}:sum`)).toBe(0);
   await redis.eval(
     APPLY_SNAPSHOT_SCRIPT,
     1,
@@ -193,7 +196,7 @@ it("propagates snapshots, removes cold buckets, and rejects older cutoffs", asyn
     "external:alice:tokens",
     "outpost:0:updates",
     "unused",
-    bucket - 300,
+    bucket - BUCKET_SIZE,
     1,
     "meter",
     1,
@@ -382,7 +385,7 @@ it("keeps reducer cutoffs and meter credits independent under concurrent writes"
     "external:alice:tokens",
     "outpost:0:updates",
     "epoch",
-    bucket + 300,
+    bucket + BUCKET_SIZE,
     21,
     "meter",
     150,
@@ -409,8 +412,8 @@ it("orders same-cutoff corrections at microsecond precision and keeps null extre
     ...customer,
     customer_id: null,
     meter_id: "meter",
-    cold_until: timestamp,
-    version: "2026-10-12T12:10:00.000002Z",
+    cold_until: bucket,
+    version: 1791807000000002,
     count: 2,
     sum: 10,
     min: 3,
@@ -432,7 +435,7 @@ it("orders same-cutoff corrections at microsecond precision and keeps null extre
   await outpost["receiveWebsocket"](
     JSON.stringify({
       type: "meter_usage",
-      payload: { ...snapshot, version: "2026-10-12T12:10:00.000001Z", sum: 999 },
+      payload: { ...snapshot, version: 1791807000000001, sum: 999 },
     }),
   );
   expect((await outpost.customerMeter(meter))?.consumed_units).toBe(10);
@@ -441,7 +444,7 @@ it("orders same-cutoff corrections at microsecond precision and keeps null extre
       type: "meter_usage",
       payload: {
         ...snapshot,
-        version: "2026-10-12T12:10:00.000003Z",
+        version: 1791807000000003,
         count: 0,
         sum: 0,
         min: null,
@@ -452,4 +455,50 @@ it("orders same-cutoff corrections at microsecond precision and keeps null extre
   expect((await outpost.customerMeter(meter))?.consumed_units).toBe(0);
   expect(await redis.hget(key, "cold:min")).toBeNull();
   expect(await redis.hget(key, "cold:max")).toBeNull();
+});
+
+it("preserves microsecond cutoffs when removing and rejecting local buckets", async () => {
+  snapshot = {
+    ...customer,
+    customer_id: null,
+    meter_id: "meter",
+    cold_until: bucket,
+    version: 1791807000000001,
+    count: 0,
+    sum: 0,
+    min: null,
+    max: null,
+    credited_units: 100,
+  };
+  const outpost = await start();
+  await outpost.actor(customer);
+  await vi.waitFor(async () =>
+    expect((await outpost.customerMeter(meter))?.consumed_units).toBe(0),
+  );
+  await ingest(outpost, 2);
+  await outpost.ingest({
+    events: [
+      { ...customer, name: "api", timestamp: "2026-10-12T12:05:00Z", metadata: { tokens: 4 } },
+    ],
+  });
+  await outpost["receiveWebsocket"](
+    JSON.stringify({
+      type: "meter_usage",
+      payload: {
+        ...snapshot,
+        cold_until: bucket + 1,
+        version: 1791807000000002,
+        count: 1,
+        sum: 2,
+        min: 2,
+        max: 2,
+      },
+    }),
+  );
+  expect((await outpost.customerMeter(meter))?.consumed_units).toBe(6);
+  expect(await redis.hget(key, "cold_until")).toBe(String(bucket + 1));
+  expect(await redis.hget(key, `bucket:${bucket}:sum`)).toBeNull();
+  expect(await redis.hget(key, `bucket:${bucket + BUCKET_SIZE}:sum`)).toBe("4");
+  await ingest(outpost, 999);
+  expect((await outpost.customerMeter(meter))?.consumed_units).toBe(6);
 });

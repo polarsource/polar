@@ -5,6 +5,7 @@ import pytest
 from polar import PolarDeserializationError, deserialize
 from polar.outpost.event import Event
 from polar.outpost.reducer import (
+    BUCKET_SIZE,
     BucketStatistics,
     FilterClause,
     Reducer,
@@ -61,7 +62,7 @@ def test_reduce_buckets(func: str, expected: float) -> None:
         ("other", "usage", bucket_start): BucketStatistics(count=1)
         if func == "count"
         else BucketStatistics(count=1, sum=2, min=2, max=2),
-        ("customer", "usage", bucket_start + 300): BucketStatistics(count=1)
+        ("customer", "usage", bucket_start + BUCKET_SIZE): BucketStatistics(count=1)
         if func == "count"
         else BucketStatistics(count=1, sum=4, min=4, max=4),
     }
@@ -179,3 +180,15 @@ def test_unsupported_configuration_is_rejected() -> None:
             },
             Reducer,
         )
+
+
+@pytest.mark.parametrize(
+    ("timestamp", "expected"),
+    [
+        ("1970-01-01T00:04:59.999999Z", 0),
+        ("1970-01-01T00:05:00Z", BUCKET_SIZE),
+        ("1969-12-31T23:59:59.999999Z", -BUCKET_SIZE),
+    ],
+)
+def test_bucket_boundaries_in_microseconds(timestamp: str, expected: int) -> None:
+    assert get_bucket_start(datetime.datetime.fromisoformat(timestamp)) == expected

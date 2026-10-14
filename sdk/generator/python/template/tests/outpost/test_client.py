@@ -19,13 +19,13 @@ from redis.exceptions import ConnectionError as RedisConnectionError
 from polar.outpost import EventInput
 from polar.outpost.client import (
     APPLY_SNAPSHOT_SCRIPT,
+    WRITE_BUCKET_SCRIPT,
     Outpost,
     PolarOutpostError,
     ReducerState,
-    _version,
     connect_websocket,
 )
-from polar.outpost.reducer import get_bucket_start
+from polar.outpost.reducer import BUCKET_SIZE, get_bucket_start
 from polar.{{ ir.versions[0] | format_version }}.inputs import EventsIngest
 
 TIMESTAMP = "2026-10-12T12:00:00Z"
@@ -192,7 +192,7 @@ async def test_customer_meter_reads_cold_and_shared_buckets(
             "cold:min": 2,
             "cold:max": 2,
             "credited:meter": 20,
-            f"bucket:{BUCKET - 300}:sum": 999,
+            f"bucket:{BUCKET - BUCKET_SIZE}:sum": 999,
         },
     )
     async with (
@@ -270,7 +270,7 @@ async def test_bucket_ownership_and_internal_customer(
     assert meter.consumed_units == 12
     assert (
         await redis.hget(
-            "outpost:state:customer:alice:tokens", f"bucket:{BUCKET - 300}:sum"
+            "outpost:state:customer:alice:tokens", f"bucket:{BUCKET - BUCKET_SIZE}:sum"
         )
         is None
     )
@@ -375,7 +375,7 @@ async def test_snapshot_arrives_over_websocket(
             "cold_until": BUCKET,
             "cold:sum": 100,
             f"bucket:{BUCKET}:sum": 7,
-            f"bucket:{BUCKET + 300}:sum": 4,
+            f"bucket:{BUCKET + BUCKET_SIZE}:sum": 4,
         },
     )
     async with (
@@ -392,8 +392,8 @@ async def test_snapshot_arrives_over_websocket(
             "customer_id": None,
             "external_customer_id": "alice",
             "meter_id": "meter",
-            "version": "2026-10-12T12:10:00Z",
-            "cold_until": "2026-10-12T12:05:00Z",
+            "version": 1791807000000000,
+            "cold_until": 1791806700000000,
             "count": 2,
             "sum": 107,
             "min": 7,
@@ -413,7 +413,7 @@ async def test_snapshot_arrives_over_websocket(
     assert meter.consumed_units == 111
     assert meter.balance == 89
     assert await redis.hget(key, f"bucket:{BUCKET}:sum") is None
-    assert await redis.hget(key, f"bucket:{BUCKET + 300}:sum") == b"4"
+    assert await redis.hget(key, f"bucket:{BUCKET + BUCKET_SIZE}:sum") == b"4"
 
 
 @pytest.mark.anyio
@@ -428,10 +428,12 @@ async def test_duplicate_and_older_snapshots(
     await apply_snapshot(keys=[key], args=args)
     await apply_snapshot(keys=[key], args=args)
     await apply_snapshot(
-        keys=[key], args=[*prefix, BUCKET - 300, 30, "meter", 99, 1, 999, 999, 999]
+        keys=[key],
+        args=[*prefix, BUCKET - BUCKET_SIZE, 30, "meter", 99, 1, 999, 999, 999],
     )
     await apply_snapshot(
-        keys=[key], args=[*prefix, BUCKET, 19, "meter", 99, 1, 999, 999, 999]
+        keys=[key],
+        args=[*prefix, BUCKET, 19, "meter", 99, 1, 999, 999, 999],
     )
     assert await redis.hget(key, "cold:sum") == b"10"
     assert await redis.hget(key, "credited:meter") == b"20"
@@ -799,7 +801,7 @@ async def test_independent_reducers_concurrent_statistics_and_meter_credits(
                 identity,
                 "outpost:0:updates",
                 "epoch",
-                BUCKET + 300,
+                BUCKET + BUCKET_SIZE,
                 21,
                 "meter",
                 150,
@@ -835,12 +837,34 @@ async def test_independent_reducers_concurrent_statistics_and_meter_credits(
         assert await redis.exists("outpost:state:customer:alice:tokens") == 0
 
 
-def test_snapshot_version_preserves_microseconds() -> None:
-    assert (
-        _version("2026-10-12T12:10:00.000002Z")
-        - _version("2026-10-12T12:10:00.000001Z")
-        == 1
+@pytest.mark.anyio
+async def test_cutoff_keeps_microsecond_precision(
+    redis_connection: tuple[str, Redis],
+) -> None:
+    _, redis = redis_connection
+    identity = "external:alice:tokens"
+    key = f"outpost:state:{identity}"
+    prefix = [identity, "outpost:0:updates", "epoch"]
+    write = redis.register_script(WRITE_BUCKET_SCRIPT)
+    snapshot = redis.register_script(APPLY_SNAPSHOT_SCRIPT)
+    await write(keys=[key], args=[*prefix, BUCKET, 1, 2, 2, 2])
+    await write(keys=[key], args=[*prefix, BUCKET + BUCKET_SIZE, 1, 4, 4, 4])
+    await snapshot(
+        keys=[key],
+        args=[
+            *prefix,
+            BUCKET + 1,
+            1791806400000001,
+            "meter",
+            100,
+            1,
+            2,
+            2,
+            2,
+        ],
     )
-    assert _version("2026-10-12T14:10:00.000002+02:00") == _version(
-        "2026-10-12T12:10:00.000002Z"
-    )
+    assert await redis.hget(key, "cold_until") == str(BUCKET + 1).encode()
+    assert await redis.hget(key, f"bucket:{BUCKET}:sum") is None
+    assert await redis.hget(key, f"bucket:{BUCKET + BUCKET_SIZE}:sum") == b"4"
+    await write(keys=[key], args=[*prefix, BUCKET, 1, 999, 999, 999])
+    assert await redis.hget(key, f"bucket:{BUCKET}:sum") is None

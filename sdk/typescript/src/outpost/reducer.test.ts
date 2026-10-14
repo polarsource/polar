@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { customerKey, parseEvent, getProperty } from "./event";
 import {
+  BUCKET_SIZE,
   getBucketStart,
   getMatcher,
   reduce,
@@ -25,6 +26,18 @@ const reducer = (func: "count" | "sum" | "min" | "max" | "avg"): Reducer => ({
 });
 
 describe("reduction", () => {
+  it("keeps microseconds at event parsing and bucket boundaries", () => {
+    const precise = parseEvent({
+      name: "api",
+      external_customer_id: "a",
+      timestamp: "2026-10-12T12:00:00.123456Z",
+    });
+    expect(precise.timestamp).toBe(1791806400123456);
+    expect(getProperty(precise, "timestamp")).toBe(1791806400);
+    expect(getBucketStart(BUCKET_SIZE - 1)).toBe(0);
+    expect(getBucketStart(BUCKET_SIZE)).toBe(BUCKET_SIZE);
+    expect(getBucketStart(-1)).toBe(-BUCKET_SIZE);
+  });
   it.each(["count", "sum", "min", "max", "avg"] as const)("reads empty %s as zero", (func) => {
     expect(quantity(emptyStatistics(), func)).toBe(0);
   });
@@ -40,7 +53,7 @@ describe("reduction", () => {
       event,
       { ...event, metadata: { tokens: -2 } },
       { ...event, customer: "external:bob" },
-      { ...event, timestamp: event.timestamp - 300 },
+      { ...event, timestamp: event.timestamp - BUCKET_SIZE },
     ];
     expect(reduce([reducer(func)], events, bucket)).toEqual([
       {
@@ -63,13 +76,13 @@ describe("reduction", () => {
       },
     ]);
     expect(quantity(reduce([reducer(func)], events, bucket)[0].statistics, func)).toBe(value);
-    expect(getBucketStart(-1)).toBe(-300);
+    expect(getBucketStart(-1)).toBe(-BUCKET_SIZE);
     const fractional = parseEvent({
       name: "api",
       external_customer_id: "a",
       timestamp: "1969-12-31T23:59:59.500Z",
     });
-    expect(getBucketStart(fractional.timestamp)).toBe(-300);
+    expect(getBucketStart(fractional.timestamp)).toBe(-BUCKET_SIZE);
     expect(getProperty(fractional, "timestamp")).toBe(-0);
   });
 
@@ -95,7 +108,7 @@ describe("reduction", () => {
       false,
     );
     expect(getProperty(event, "metadata.__proto__.toString")).toBeUndefined();
-    expect(getProperty(event, "timestamp")).toBe(event.timestamp);
+    expect(getProperty(event, "timestamp")).toBe(event.timestamp / 1_000_000);
   });
 
   it.each([

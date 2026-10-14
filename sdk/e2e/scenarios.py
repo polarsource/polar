@@ -1,4 +1,5 @@
 from polar.outpost.client import Configuration, Snapshot
+from polar.outpost.reducer import BUCKET_SIZE
 
 from harness import (
     ExternalCustomerID,
@@ -10,7 +11,7 @@ from harness import (
     SnapshotStep,
 )
 
-BUCKET = 1791806400
+BUCKET = 1791806400000000
 CONFIGURATION: Configuration = {
     "reducers": [
         {
@@ -27,8 +28,8 @@ INITIAL: Snapshot = {
     **CUSTOMER,
     "customer_id": None,
     "meter_id": "meter",
-    "cold_until": "2026-10-12T12:00:00Z",
-    "version": "2026-10-12T12:00:00.000001Z",
+    "cold_until": BUCKET,
+    "version": BUCKET + 1,
     "count": 0,
     "sum": 0,
     "min": None,
@@ -106,7 +107,7 @@ SCENARIOS = [
                     ),
                     *(
                         expect(
-                            0.503 + round_index * 0.3,
+                            0.504 + round_index * 0.3,
                             client,
                             (round_index + 1) * 10,
                             within=0,
@@ -132,8 +133,8 @@ SCENARIOS = [
                 0.5,
                 {
                     **INITIAL,
-                    "cold_until": "2026-10-12T12:05:00Z",
-                    "version": "2026-10-12T12:05:00.000001Z",
+                    "cold_until": BUCKET + BUCKET_SIZE,
+                    "version": BUCKET + BUCKET_SIZE + 1,
                     "count": 1,
                     "sum": 7,
                     "min": 7,
@@ -210,8 +211,8 @@ SCENARIOS = [
                 0.5,
                 {
                     **INITIAL,
-                    "cold_until": "2026-10-12T12:05:00Z",
-                    "version": "2026-10-12T12:10:00.000002Z",
+                    "cold_until": BUCKET + BUCKET_SIZE,
+                    "version": BUCKET + 2 * BUCKET_SIZE + 2,
                     "count": 4,
                     "sum": 30,
                     "min": 2,
@@ -235,8 +236,8 @@ SCENARIOS = [
                 0.8,
                 {
                     **INITIAL,
-                    "cold_until": "2026-10-12T12:05:00Z",
-                    "version": "2026-10-12T12:10:00.000001Z",
+                    "cold_until": BUCKET + BUCKET_SIZE,
+                    "version": BUCKET + 2 * BUCKET_SIZE + 1,
                     "count": 4,
                     "sum": 999,
                 },
@@ -246,8 +247,8 @@ SCENARIOS = [
                 1,
                 {
                     **INITIAL,
-                    "cold_until": "2026-10-12T12:05:00Z",
-                    "version": "2026-10-12T12:10:00.000003Z",
+                    "cold_until": BUCKET + BUCKET_SIZE,
+                    "version": BUCKET + 2 * BUCKET_SIZE + 3,
                     "count": 6,
                     "sum": 40,
                     "min": 2,

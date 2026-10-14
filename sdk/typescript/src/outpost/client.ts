@@ -32,8 +32,8 @@ interface Snapshot {
   customer_id: string | null;
   external_customer_id: string | null;
   meter_id: string;
-  cold_until: string;
-  version: string;
+  cold_until: number;
+  version: number;
   count: number;
   sum: number;
   min: number | null;
@@ -113,17 +113,6 @@ const decodeState = (value: string[]): State => {
     } else if (field.startsWith("credited:")) state.credited[field.slice(9)] = number(value);
   }
   return state;
-};
-const snapshotVersion = (value: string): number => {
-  const milliseconds = Date.parse(value);
-  if (!Number.isFinite(milliseconds) || !/(?:Z|[+-]\d{2}:\d{2})$/.test(value))
-    throw new TypeError("Invalid snapshot timestamp");
-  const fraction = /\.(\d+)(?:Z|[+-]\d{2}:\d{2})$/.exec(value)?.[1] ?? "";
-  const microseconds = Number(fraction.padEnd(6, "0").slice(3, 6));
-  const version = milliseconds * 1000 + microseconds;
-  if (!Number.isSafeInteger(version))
-    throw new TypeError("Snapshot timestamp exceeds integer precision");
-  return version;
 };
 
 const customerArguments = (customer: string): Customer => {
@@ -484,6 +473,8 @@ export class Outpost {
         external_customer_id: snapshot.external_customer_id ?? undefined,
       });
       const identity = `${customer}:${reducer.id}`;
+      if (!Number.isSafeInteger(snapshot.version) || !Number.isSafeInteger(snapshot.cold_until))
+        throw new TypeError("Snapshot timestamps must be safe integer microseconds");
       for (const value of [
         snapshot.count,
         snapshot.sum,
@@ -498,8 +489,8 @@ export class Outpost {
         identity,
         this.channel,
         generateEpoch(),
-        snapshotVersion(snapshot.cold_until) / 1_000_000,
-        snapshotVersion(snapshot.version),
+        snapshot.cold_until,
+        snapshot.version,
         snapshot.meter_id,
         snapshot.credited_units,
         snapshot.count,

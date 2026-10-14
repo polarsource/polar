@@ -170,25 +170,13 @@ class Snapshot(typing.TypedDict):
     customer_id: str | None
     external_customer_id: str | None
     meter_id: str
-    version: str
-    cold_until: str
+    version: int
+    cold_until: int
     count: int
     sum: int | float
     min: int | float | None
     max: int | float | None
     credited_units: int | float
-
-
-def _timestamp(value: str) -> datetime.datetime:
-    timestamp = datetime.datetime.fromisoformat(value)
-    if timestamp.utcoffset() is None:
-        raise ValueError("Snapshot timestamps must include a timezone")
-    return timestamp
-
-
-def _version(value: str) -> int:
-    delta = _timestamp(value) - datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
-    return (delta.days * 86400 + delta.seconds) * 1_000_000 + delta.microseconds
 
 
 @dataclasses.dataclass
@@ -571,8 +559,8 @@ class Outpost:
                         identity,
                         self._channel,
                         _generate_epoch(),
-                        int(_timestamp(snapshot["cold_until"]).timestamp()),
-                        _version(snapshot["version"]),
+                        snapshot["cold_until"],
+                        snapshot["version"],
                         snapshot["meter_id"],
                         snapshot["credited_units"],
                         snapshot["count"],

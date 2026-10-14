@@ -55,10 +55,10 @@ export interface BucketUpdate {
   bucketStart: number;
   statistics: BucketStatistics;
 }
-export const BUCKET_SIZE = 300;
+export const BUCKET_SIZE = 300_000_000;
 
 export const getBucketStart = (timestamp: number): number => {
-  if (!Number.isFinite(timestamp)) throw new TypeError("Invalid bucket timestamp");
+  if (!Number.isSafeInteger(timestamp)) throw new TypeError("Invalid bucket timestamp");
   return Math.floor(timestamp / BUCKET_SIZE) * BUCKET_SIZE;
 };
 

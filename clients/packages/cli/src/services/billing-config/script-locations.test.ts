@@ -166,3 +166,26 @@ describe('locateInScript with an events section', () => {
     ).toEqual({ line: 14, column: 71, length: 12 })
   })
 })
+
+describe('locateInScript with destructured helpers', () => {
+  const config = [
+    "import { defineConfig, usd } from '@polar-sh/polar'",
+    '',
+    'export default defineConfig({',
+    '  products: ({ product, free, fixed }) => ({',
+    "    free: product('Free').prices(free()).recurring('monthly'),",
+    "    pack: product('Pack').prices(fixed().amount(usd(9))),",
+    '  }),',
+    '})',
+    '',
+  ].join('\n')
+  const input = {
+    products: [{ external_id: 'free' }, { external_id: 'pack' }],
+  }
+
+  test('anchors a product on its entry, not on a helper with the same name', () => {
+    expect(
+      locateInScript(config, input, ['products', 0, 'prices'], undefined),
+    ).toEqual({ line: 5, column: 5, length: 4 })
+  })
+})

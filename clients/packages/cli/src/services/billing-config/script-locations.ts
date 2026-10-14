@@ -21,6 +21,8 @@ const span = (
   length,
 })
 
+const PARAMETERS = /^\s*:\s*(?:async\s*)?\([^)]*\)\s*=>/
+
 const keyPattern = (key: string) =>
   new RegExp(`(?<=^|[\\s{,[(])(['"\`]?)${escape(key)}\\1(?=\\s*[:,\\]])`, 'm')
 
@@ -70,7 +72,8 @@ const sectionRange = (source: string, section: string): Range => {
     (match) => column(match) === Math.min(...own.map(column)),
   )
   if (start === undefined) return whole
-  const from = start.offset + start.length
+  const key = start.offset + start.length
+  const from = key + (PARAMETERS.exec(source.slice(key))?.[0].length ?? 0)
   const ends = SECTIONS.filter((other) => other !== section).flatMap((other) =>
     findAll(source, keyPattern(other), from)
       .filter((match) => column(match) <= column(start))

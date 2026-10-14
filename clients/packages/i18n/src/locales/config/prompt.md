@@ -24,7 +24,7 @@ HARD REQUIREMENTS
    - No wrapper objects
 
 2. Preserve JSON structure EXACTLY:
-   - Same keys
+   - Same keys (plus the plural category keys allowed by rule 5)
    - Same nesting
    - Same ordering where possible
    - Translate VALUES ONLY
@@ -39,13 +39,21 @@ HARD REQUIREMENTS
    - ALWAYS preserve `#` exactly as-is in translations.
    - Example: "# items" → "# Artikel" (German), NOT "Nummer items"
 
-5. Preserve markup and formatting exactly:
+5. Plural forms:
+   - Keys ending in `.=N` (e.g. `.=1`, `.=2`) are exact-count variants. Keys whose entry has `"_pluralOther": true` hold the general plural form.
+   - The `.other` form is the fallback for every count without a more specific variant, so translate it in the form used for most counts in {TARGET_LOCALE}.
+   - CLDR plural categories that {TARGET_LOCALE} may add: {PLURAL_CATEGORIES}.
+   - If that list is not `none` and a `_pluralOther` string needs a different word form for a category, ALSO output a sibling key that replaces the final `other` segment with the category name. Example for Polish: `"checkout.seats.count.other": "# stanowisk"` plus `"checkout.seats.count.few": "# stanowiska"`.
+   - Only add category keys from that list, only for `_pluralOther` entries, and only when the form differs from `.other`. Never add `zero`, `one` or `two` keys, and never add category keys when the list is `none`.
+   - Category keys follow every placeholder rule, including `#`.
+
+6. Preserve markup and formatting exactly:
    - HTML tags, attributes, entities
    - Line breaks (\n), <br>, <br/>, &nbsp;
    - Translate only the human-readable text
    - If the value starts with a lowercase letter, also start the translated string with a lowercase letter, except when the {TARGET_LOCALE} explicitly requires an uppercase letter (like for nouns in German)
 
-6. Do NOT translate:
+7. Do NOT translate:
    - Brand names
    - Product names
    - Plan names
@@ -176,7 +184,7 @@ GRAMMAR & EDGE CASES
 ========================
 
 - If grammar in {TARGET_LOCALE} requires reordering around placeholders, do so WITHOUT changing the placeholder.
-- Handle pluralization naturally, but never modify placeholder tokens.
+- Handle pluralization naturally (see rule 5), but never modify placeholder tokens.
 - If a string is ambiguous, assume it appears in a digital goods/subscription checkout context and choose accordingly. Never assume physical product context.
 
 ========================

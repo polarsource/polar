@@ -53,12 +53,22 @@ type StringShape<S extends string> =
           : never
       >
 
+// CLDR categories a locale may add on top of the en.ts variants. `zero`, `one`
+// and `two` are expressed with the exact `=0`, `=1`, `=2` keys instead.
+export type PluralCategoryKey = 'few' | 'many'
+
 type PluralShape<T> = {
   [K in keyof T]: K extends '_mode'
     ? T[K]
     : T[K] extends string
       ? StringShape<T[K]>
       : T[K]
+} & {
+  [K in Exclude<PluralCategoryKey, keyof T>]?: 'other' extends keyof T
+    ? T['other'] extends string
+      ? StringShape<T['other']>
+      : string
+    : string
 }
 
 type AnnotatedEntryShape<T extends { value: string }> =

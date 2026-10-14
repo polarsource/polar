@@ -85,6 +85,47 @@ export function findPluralPaths(
 }
 
 /**
+ * CLDR plural categories a target locale may add to a plural object on top of
+ * the source variants. `zero`, `one` and `two` are covered by the exact `=0`,
+ * `=1`, `=2` keys, so they are never emitted as category keys.
+ */
+export const PLURAL_CATEGORY_KEYS = ['few', 'many'] as const
+
+/**
+ * The plural category keys a locale may use, based on its CLDR plural rules.
+ * e.g. ['few', 'many'] for Polish, [] for German.
+ */
+export function getPluralCategoryKeys(locale: string): string[] {
+  const categories: string[] = new Intl.PluralRules(locale).resolvedOptions()
+    .pluralCategories
+  return PLURAL_CATEGORY_KEYS.filter((c) => categories.includes(c))
+}
+
+/**
+ * Resolve the source key a translated flat key corresponds to.
+ * Regular keys map to themselves; plural category keys (`path.few`,
+ * `path.many`) map to their plural's `path.other`.
+ * Returns undefined if the key has no counterpart in the source.
+ */
+export function resolveSourceKey(
+  key: string,
+  sourceKeys: Map<string, unknown>,
+  pluralPaths: Set<string>,
+  pluralCategoryKeys: string[],
+): string | undefined {
+  if (sourceKeys.has(key)) return key
+
+  const separator = key.lastIndexOf('.')
+  const path = key.slice(0, separator)
+  const variant = key.slice(separator + 1)
+  if (pluralPaths.has(path) && pluralCategoryKeys.includes(variant)) {
+    return `${path}.other`
+  }
+
+  return undefined
+}
+
+/**
  * Flatten a nested object into a Map of dot-notation keys to values.
  * Plural objects are expanded: { _mode: 'plural', '=1': '...', other: '...' }
  * becomes separate keys like 'path.=1' and 'path.other' (skipping _mode).
@@ -223,12 +264,14 @@ export function findChangedKeys(
 export function findOrphanedKeys(
   sourceKeys: Map<string, EntryValue>,
   existingTranslation: NestedObject,
+  pluralPaths: Set<string> = new Set(),
+  pluralCategoryKeys: string[] = [],
 ): string[] {
   const existingKeys = flattenKeys(existingTranslation)
   const orphaned: string[] = []
 
   for (const key of existingKeys.keys()) {
-    if (!sourceKeys.has(key)) {
+    if (!resolveSourceKey(key, sourceKeys, pluralPaths, pluralCategoryKeys)) {
       orphaned.push(key)
     }
   }
@@ -239,11 +282,18 @@ export function findOrphanedKeys(
 /**
  * Prepare source strings for LLM translation (include context where available)
  */
+export type LLMSourceEntry = {
+  value: string
+  _llmContext?: string
+  _pluralOther?: true
+}
+
 export function prepareForLLM(
   sourceKeys: Map<string, EntryValue>,
   keys: string[],
-): Record<string, { value: string; _llmContext?: string }> {
-  const result: Record<string, { value: string; _llmContext?: string }> = {}
+  pluralPaths: Set<string> = new Set(),
+): Record<string, LLMSourceEntry> {
+  const result: Record<string, LLMSourceEntry> = {}
 
   for (const key of keys) {
     const entry = sourceKeys.get(key)
@@ -253,6 +303,10 @@ export function prepareForLLM(
       result[key] = { value: entry.value, _llmContext: entry._llmContext }
     } else {
       result[key] = { value: getStringValue(entry) }
+    }
+
+    if (key.endsWith('.other') && pluralPaths.has(key.slice(0, -6))) {
+      result[key]._pluralOther = true
     }
   }
 

@@ -1134,22 +1134,22 @@ class TestGetCustomerValue:
         assert value == expected
 
     @pytest.mark.parametrize(
-        ("since", "until", "expected"),
+        ("since", "expected"),
         [
-            (BUCKET_START - REDUCER_BUCKET_SIZE, None, 7),
-            (None, BUCKET_START - REDUCER_BUCKET_SIZE, 2),
-            (None, BUCKET_START, 5),
-            (BUCKET_START, None, 4),
+            (BUCKET_START - 2 * REDUCER_BUCKET_SIZE, 9),
+            (BUCKET_START - 2 * REDUCER_BUCKET_SIZE + timedelta(seconds=1), 7),
+            (BUCKET_START - REDUCER_BUCKET_SIZE, 7),
+            (BUCKET_START, 4),
+            (BUCKET_START + timedelta(seconds=1), 0),
         ],
     )
-    async def test_since_until(
+    async def test_since(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         redis: Redis,
         organization: Organization,
-        since: datetime | None,
-        until: datetime | None,
+        since: datetime,
         expected: int,
     ) -> None:
         reducer = await rollup_tokens(
@@ -1157,7 +1157,7 @@ class TestGetCustomerValue:
         )
 
         value = await reducer_service.get_customer_value(
-            session, redis, reducer, None, "external", since=since, until=until
+            session, redis, reducer, None, "external", since=since
         )
 
         assert value == expected

@@ -250,16 +250,15 @@ class ReducerService:
 
     async def get_customer_value(
         self,
-        session: AsyncReadSession,
+        session: AsyncSession,
         redis: Redis,
         reducer: Reducer,
         customer_id: UUID | None,
         external_customer_id: str | None,
         *,
         since: datetime | None = None,
-        until: datetime | None = None,
     ) -> Decimal:
-        """The customer's usage in the buckets starting in [since, until)."""
+        """The customer's usage in the buckets starting at or after `since`."""
         identities = _get_identities(customer_id, external_customer_id)
         if not identities:
             raise ValueError("customer_id or external_customer_id is required")
@@ -268,24 +267,22 @@ class ReducerService:
 
         totals: list[tuple[Any, ...]] = []
 
-        closed_end = (
-            previous_bucket_start
-            if until is None
-            else min(until, previous_bucket_start)
-        )
-        if since is None or since < closed_end:
+        if since is None or since < previous_bucket_start:
             closed = await ReducerBucketRepository.from_session(
                 session
             ).get_totals_starting_within(
-                reducer.organization_id, reducer.id, identities, since, closed_end
+                reducer.organization_id,
+                reducer.id,
+                identities,
+                since,
+                previous_bucket_start,
             )
             totals.append(tuple(closed))
 
         active_bucket_starts = [
             bucket_start
             for bucket_start in (previous_bucket_start, current_bucket_start)
-            if (since is None or bucket_start >= since)
-            and (until is None or bucket_start < until)
+            if since is None or bucket_start >= since
         ]
         if active_bucket_starts:
             totals += await redis_store.get_bucket_totals(

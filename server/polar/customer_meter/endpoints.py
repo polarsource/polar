@@ -9,7 +9,7 @@ from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.versioning import version
 from polar.meter.schemas import MeterID
 from polar.models import CustomerMeter, Event
-from polar.openapi import APITag
+from polar.openapi import APITag, destructive
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
@@ -154,6 +154,7 @@ async def get(
     summary="Credit Customer Meter",
     response_model=MeterCreditEvent,
     status_code=201,
+    openapi_extra=destructive(),
     responses={
         201: {
             "description": (

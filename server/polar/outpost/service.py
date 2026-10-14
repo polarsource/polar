@@ -26,8 +26,6 @@ from .schemas import (
     ReducerBucketInterval,
     ReducerBucketOutgoingMessage,
     ReducerBucketOutgoingMessagePayload,
-    ReducerSealOutgoingMessage,
-    ReducerSealOutgoingMessagePayload,
 )
 from .stream import OutpostEvent, ReducerBucketOutpostEvent
 
@@ -81,18 +79,6 @@ class OutpostService:
             case "reducer_bucket":
                 return await self._send_reducer_bucket(
                     session, organization, event, send_stream
-                )
-            case "reducer_seal":
-                return await send_stream.send(
-                    ReducerSealOutgoingMessage(
-                        type=OutgoingMessageType.reducer_seal,
-                        payload=ReducerSealOutgoingMessagePayload(
-                            reducer_id=event["reducer_id"],
-                            customer_id=event["customer_id"],
-                            external_customer_id=event["external_customer_id"],
-                            sealed_until=datetime.fromisoformat(event["sealed_until"]),
-                        ),
-                    )
                 )
 
     async def _send_configuration(

@@ -278,27 +278,6 @@ class ReducerBucketService:
                 span.set_attribute("sealed_buckets", len(sealed))
                 span.set_attribute("quantity", str(quantity))
             quantities[reducer.id] = quantity
-            for customer_id, external_customer_id in identities:
-                # Seal splits these slots. The ones between only change to sealed.
-                for bucket_start in sorted(
-                    {
-                        get_reducer_bucket_start(billable_from),
-                        get_reducer_bucket_start(cutoff),
-                    }
-                ):
-                    _enqueue_outpost_event(
-                        reducer, bucket_start, customer_id, external_customer_id
-                    )
-                enqueue_outpost_event(
-                    reducer.organization_id,
-                    {
-                        "type": "reducer_seal",
-                        "reducer_id": reducer.id,
-                        "customer_id": customer_id,
-                        "external_customer_id": external_customer_id,
-                        "sealed_until": cutoff.isoformat(),
-                    },
-                )
         return quantities
 
     async def _lock_buckets(

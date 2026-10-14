@@ -303,11 +303,8 @@ def _pick_checkout_url_hosts(organization: Organization, setup: SetupData) -> li
     """Hosts of checkout success/return URLs and their redirect destinations
     that are worth fetching, in priority order.
 
-    Intermediate redirect hops are not included. Skips hosts on the declared
-    website's or the fetched webhook host's registrable domain, known
-    integration services, and hosts sharing a registrable domain with one
-    already picked. Known hosting platforms are kept: a checkout URL on one is
-    usually the merchant's own storefront.
+    Intermediate redirect hops are not included. Known hosting platforms are
+    kept: a checkout URL on one is usually the merchant's own storefront.
     """
     declared = urlparse(organization.website or "").hostname or ""
     webhook_host = _pick_unknown_webhook_host(organization, setup)
@@ -326,7 +323,7 @@ def _pick_checkout_url_hosts(organization: Organization, setup: SetupData) -> li
 
     picked: list[str] = []
     for url in candidate_urls:
-        host = (urlparse(url).hostname or "").lower()
+        host = urlparse(url).hostname or ""
         if not host:
             continue
         known = match_known_domain(host)

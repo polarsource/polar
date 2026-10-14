@@ -15,6 +15,7 @@ interface OperationTool {
   name: string
   title: string
   description: string
+  annotations: Array<'read_only' | 'destructive' | 'idempotent'>
   method: HttpMethod.HttpMethod
   path: string
   queryParameters: string[]
@@ -26,8 +27,9 @@ const operationTools = (generatedTools as unknown as OperationTool[]).map(
     definition: tool,
     inputSchema: fromJsonSchema<Arguments>(tool.inputSchema),
     annotations: {
-      readOnlyHint: tool.method === 'GET',
-      destructiveHint: tool.method === 'DELETE',
+      readOnlyHint: tool.annotations.includes('read_only'),
+      destructiveHint: tool.annotations.includes('destructive'),
+      idempotentHint: tool.annotations.includes('idempotent'),
       openWorldHint: false,
     },
   }),
@@ -112,7 +114,7 @@ export const registerOperationTools = Effect.fn('registerOperationTools')(
     )
 
     for (const { definition, inputSchema, annotations } of operationTools) {
-      if (readOnly && definition.method !== 'GET') {
+      if (readOnly && !annotations.readOnlyHint) {
         continue
       }
       server.registerTool(

@@ -101,9 +101,25 @@ test('code mode is the default for every client; ?codemode=false selects operati
     await rpc('tools/list', {}, '?codemode=false&readonly=true')
   ).result.tools
   expect(readOnly.map((tool: { name: string }) => tool.name)).toEqual([
-    ...tools.filter((tool) => tool.method === 'GET').map((tool) => tool.name),
+    ...tools
+      .filter((tool) => (tool.annotations as string[]).includes('read_only'))
+      .map((tool) => tool.name),
     ...DOCS_TOOLS,
   ])
+  const annotations = (name: string) =>
+    operations.find((tool: { name: string }) => tool.name === name).annotations
+  expect(annotations('subscriptions_list')).toEqual({
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  })
+  expect(annotations('subscriptions_update')).toMatchObject({
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: false,
+  })
+  expect(annotations('benefit_grants_list').readOnlyHint).toBe(true)
 })
 
 test('initialize returns instructions for the tool mode', async () => {

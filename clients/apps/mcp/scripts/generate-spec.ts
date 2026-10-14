@@ -19,6 +19,8 @@ const outputDirectory = resolve(root, 'src/generated')
 
 type JsonObject = Record<string, unknown>
 
+type ToolAnnotation = 'read_only' | 'destructive' | 'idempotent'
+
 interface Parameter {
   name: string
   in: 'path' | 'query'
@@ -38,6 +40,10 @@ interface Operation {
     content: Record<string, { schema: JsonObject }>
   }
   responses: JsonObject
+  'x-tool-name': string
+  'x-tool-title': string
+  'x-tool-description': string
+  'x-tool-annotations'?: ToolAnnotation[]
 }
 
 const source = JSON.parse(readFileSync(sourcePath, 'utf8')) as {
@@ -123,6 +129,9 @@ const operations = Object.entries(source.paths).flatMap(([path, pathItem]) =>
     if (!operation?.tags.includes(MCP_TAG)) {
       return []
     }
+    if (!operation['x-tool-name']) {
+      throw new Error(`${operation.operationId} has no x-tool-* properties`)
+    }
     const responses = Object.fromEntries(
       Object.entries(operation.responses).filter(([status]) =>
         status.startsWith('2'),
@@ -132,6 +141,12 @@ const operations = Object.entries(source.paths).flatMap(([path, pathItem]) =>
       {
         path,
         method,
+        tool: {
+          name: operation['x-tool-name'],
+          title: operation['x-tool-title'],
+          description: operation['x-tool-description'],
+          annotations: operation['x-tool-annotations'] ?? [],
+        },
         operation: stripExamples({
           operationId: operation.operationId,
           summary: operation.summary,
@@ -168,7 +183,7 @@ const buildSpec = () => {
 }
 
 const buildTools = () =>
-  operations.map(({ path, method, operation }) => {
+  operations.map(({ path, method, tool, operation }) => {
     const parameters = operation.parameters ?? []
     if (parameters.some(({ name }) => name === BODY_ARGUMENT)) {
       throw new Error(
@@ -196,9 +211,7 @@ const buildTools = () =>
     }
 
     return {
-      name: operation.operationId.replaceAll(':', '_'),
-      title: operation.summary,
-      description: operation.description,
+      ...tool,
       method: method.toUpperCase(),
       path,
       queryParameters: parameters

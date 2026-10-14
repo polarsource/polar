@@ -138,17 +138,13 @@ async def _resolve_redirect(
             # On hitting the hop limit, the last redirect target is never
             # fetched but is still where the chain leads.
             final_url = current_url
-            final_domain = _extract_domain(final_url)
-            intermediate_hops = hops[:-1]
             # A chain can leave the domain and come back, so every hop counts.
-            redirected = any(
-                _is_cross_domain(url, hop) for hop in [*intermediate_hops, final_url]
-            )
+            redirected = any(_is_cross_domain(url, hop) for hop in hops)
             return UrlRedirectInfo(
                 original_url=url,
                 final_url=final_url,
-                final_domain=final_domain,
-                hops=intermediate_hops,
+                final_domain=_extract_domain(final_url),
+                hops=hops[:-1],
                 redirected=redirected,
             )
         except httpx.TimeoutException:

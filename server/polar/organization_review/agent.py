@@ -7,6 +7,7 @@ from uuid import UUID
 
 import structlog
 
+from polar.kit.http import SSRFBlockedError, resolve_and_validate_ip
 from polar.models.organization import Organization
 from polar.organization.repository import OrganizationRepository
 from polar.organization_review.collectors.payout_account import (
@@ -300,7 +301,7 @@ def _pick_unknown_webhook_host(
 
 def _pick_checkout_url_hosts(organization: Organization, setup: SetupData) -> list[str]:
     """Hosts of checkout success/return URLs and their redirect destinations
-    that are worth fetching, capped at `MAX_CHECKOUT_URL_HOSTS`.
+    that are worth fetching, in priority order.
 
     Intermediate redirect hops are not included. Skips hosts on the declared
     website's or the fetched webhook host's registrable domain, known
@@ -313,7 +314,7 @@ def _pick_checkout_url_hosts(organization: Organization, setup: SetupData) -> li
     already_fetched = [h for h in (declared, webhook_host) if h]
 
     url_groups = (setup.checkout_success_urls, setup.checkout_return_urls)
-    # Destinations of flagged chains first, so the cap never drops them.
+    # Destinations of flagged chains first, so the crawl cap never drops them.
     candidate_urls = [
         r.final_url
         for group in url_groups
@@ -334,8 +335,6 @@ def _pick_checkout_url_hosts(organization: Organization, setup: SetupData) -> li
         if any(same_registrable_domain(host, h) for h in [*already_fetched, *picked]):
             continue
         picked.append(host)
-        if len(picked) >= MAX_CHECKOUT_URL_HOSTS:
-            break
     return picked
 
 
@@ -381,11 +380,25 @@ async def _collect_webhook_host(
     )
 
 
+async def _is_public_host(host: str) -> bool:
+    try:
+        await resolve_and_validate_ip(host)
+    except SSRFBlockedError:
+        return False
+    return True
+
+
 async def _collect_checkout_url_hosts(
     organization: Organization, setup: SetupData
 ) -> list[WebsiteData]:
-    """Summarize what the sites behind checkout success/return URLs sell."""
-    hosts = _pick_checkout_url_hosts(organization, setup)
+    """Summarize what the sites behind checkout success/return URLs sell.
+
+    Hosts resolving to private or reserved IPs are dropped before the
+    `MAX_CHECKOUT_URL_HOSTS` cap, so they can't crowd out public ones.
+    """
+    candidates = _pick_checkout_url_hosts(organization, setup)
+    is_public = await asyncio.gather(*[_is_public_host(h) for h in candidates])
+    hosts = [h for h, ok in zip(candidates, is_public) if ok][:MAX_CHECKOUT_URL_HOSTS]
     results = await asyncio.gather(
         *[
             _scrape_host(

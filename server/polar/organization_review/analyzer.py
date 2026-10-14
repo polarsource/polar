@@ -947,12 +947,13 @@ class ReviewAnalyzer:
         if snapshot.setup.checkout_url_hosts:
             parts.append("\n## Checkout URL Host Content")
             parts.append(
-                "⚠ These hosts serve the merchant's checkout success/return URLs, "
-                "or are where those URLs redirect to, and differ from the declared "
-                "website host. Customers land here after paying, so what these "
-                "sites sell is what the merchant actually sells. Score "
-                "POLICY_COMPLIANCE and PRODUCT_LEGITIMACY on what is summarized "
-                "below as well as on the declared website."
+                "These hosts serve the merchant's checkout success/return URLs, "
+                "or are where those URLs redirect to, and are not on the declared "
+                "website's domain. Customers are sent to them around payment, so "
+                "use what they sell as supporting evidence for POLICY_COMPLIANCE "
+                "and PRODUCT_LEGITIMACY alongside the declared website. Some may "
+                "be API or redirect endpoints with no storefront; do not treat an "
+                "empty or unrelated page alone as the merchant's product."
             )
             for host_data in snapshot.setup.checkout_url_hosts:
                 _render_scraped_site(

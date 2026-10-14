@@ -3,6 +3,7 @@ from uuid import uuid4
 
 import pytest
 
+from polar.kit.http import SSRFBlockedError
 from polar.organization_review.agent import (
     MAX_CHECKOUT_URL_HOSTS,
     _collect_checkout_url_hosts,
@@ -194,21 +195,23 @@ class TestPickCheckoutUrlHosts:
         )
         assert _pick_checkout_url_hosts(org, setup) == ["shop.com"]
 
-    def test_caps_hosts_keeping_redirect_destinations(self) -> None:
+    def test_puts_redirect_destinations_first(self) -> None:
         org = _make_org("https://example.com")
         setup = _make_setup(
-            success_urls=[f"https://site{i}.com/" for i in range(5)],
+            success_urls=["https://site0.com/", "https://site1.com/"],
             redirects=[
                 UrlRedirectInfo(
-                    original_url="https://site4.com/",
+                    original_url="https://site1.com/",
                     final_url="https://landing.com/",
                     redirected=True,
                 )
             ],
         )
-        hosts = _pick_checkout_url_hosts(org, setup)
-        assert len(hosts) == MAX_CHECKOUT_URL_HOSTS
-        assert hosts[0] == "landing.com"
+        assert _pick_checkout_url_hosts(org, setup) == [
+            "landing.com",
+            "site0.com",
+            "site1.com",
+        ]
 
 
 class TestCollectCheckoutUrlHosts:
@@ -223,9 +226,43 @@ class TestCollectCheckoutUrlHosts:
                 raise RuntimeError("network down")
             return good
 
-        with patch(
-            "polar.organization_review.agent.collect_website_data",
-            new=AsyncMock(side_effect=fake_collect),
+        with (
+            patch("polar.organization_review.agent.resolve_and_validate_ip"),
+            patch(
+                "polar.organization_review.agent.collect_website_data",
+                new=AsyncMock(side_effect=fake_collect),
+            ),
         ):
             result = await _collect_checkout_url_hosts(org, setup)
         assert result == [good]
+
+    @pytest.mark.anyio
+    async def test_skips_private_hosts_before_applying_cap(self) -> None:
+        org = _make_org("https://example.com")
+        setup = _make_setup(
+            success_urls=["https://internal.com/"]
+            + [f"https://site{i}.com/" for i in range(MAX_CHECKOUT_URL_HOSTS + 1)]
+        )
+
+        async def fake_validate(host: str) -> None:
+            if host == "internal.com":
+                raise SSRFBlockedError("private")
+
+        async def fake_collect(url: str, **kwargs: str) -> WebsiteData:
+            return WebsiteData(base_url=url)
+
+        with (
+            patch(
+                "polar.organization_review.agent.resolve_and_validate_ip",
+                new=AsyncMock(side_effect=fake_validate),
+            ),
+            patch(
+                "polar.organization_review.agent.collect_website_data",
+                new=AsyncMock(side_effect=fake_collect),
+            ),
+        ):
+            result = await _collect_checkout_url_hosts(org, setup)
+
+        assert [r.base_url for r in result] == [
+            f"https://site{i}.com/" for i in range(MAX_CHECKOUT_URL_HOSTS)
+        ]

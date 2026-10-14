@@ -339,7 +339,13 @@ class ReducerBucketService:
             statistics = {"count": count, "sum": total, "min": minimum, "max": maximum}
             # Sealed buckets were billed: events since go to a new generation.
             if previous is not None and previous.sealed_at is None:
-                await repository.update(previous, update_dict=statistics)
+                await repository.update(
+                    previous,
+                    update_dict={
+                        **statistics,
+                        "synced_at": previous.synced_at or utc_now(),
+                    },
+                )
                 continue
             await repository.create(
                 ReducerBucket(
@@ -351,6 +357,7 @@ class ReducerBucketService:
                     bucket_end=end,
                     **statistics,
                     generation=1 if previous is None else previous.generation + 1,
+                    synced_at=utc_now(),
                 ),
                 flush=True,
             )
@@ -432,6 +439,7 @@ class ReducerBucketService:
                 bucket_start=split_at,
                 bucket_end=interval_end,
                 **after,
+                synced_at=bucket.synced_at,
             ),
             flush=True,
         )

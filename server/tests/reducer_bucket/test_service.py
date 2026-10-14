@@ -156,6 +156,7 @@ class TestRollup:
         [bucket] = await get_buckets(session)
         assert (bucket.generation, bucket.count, bucket.sum) == (1, 3, Decimal("0.6"))
         assert (bucket.min, bucket.max) == (Decimal("0.1"), Decimal("0.3"))
+        assert bucket.synced_at is None
         enqueue_outpost_event.assert_called_with(
             organization.id,
             {
@@ -475,6 +476,34 @@ class TestSync:
         )
         assert bucket.generation == 1
         assert bucket.sealed_at is None
+        assert bucket.synced_at is not None
+
+    async def test_marks_closed_bucket_contributions_synced(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        sum_reducer: Reducer,
+        organization: Organization,
+    ) -> None:
+        await create_tokens_event(save_fixture, organization, 3)
+        await save_fixture(
+            ReducerBucket(
+                organization=organization,
+                reducer=sum_reducer,
+                external_customer_id="external",
+                bucket_start=BUCKET_START,
+                bucket_end=BUCKET_START + REDUCER_BUCKET_SIZE,
+                count=1,
+                sum=Decimal(3),
+            )
+        )
+
+        await reducer_bucket_service.sync(
+            session, sum_reducer.id, BUCKET_START, None, "external"
+        )
+
+        [bucket] = await get_buckets(session)
+        assert bucket.synced_at is not None
 
     async def test_updates_unbilled_buckets_in_place(
         self,
@@ -624,6 +653,10 @@ class TestSeal:
         assert await get_intervals(session) == [
             (BUCKET_START, CUTOFF, 1, 3, Decimal(5), True),
             (CUTOFF, NEXT_BUCKET_START, 1, 1, Decimal(3), False),
+        ]
+        assert [bucket.synced_at for bucket in await get_buckets(session)] == [
+            BILLED_AT,
+            BILLED_AT,
         ]
 
     async def test_seals_whole_buckets_up_to_a_boundary(

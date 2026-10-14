@@ -15,9 +15,13 @@ import {
   findPluralPaths,
   flattenKeys,
   flattenKeysToStrings,
+  getPluralCategoryKeys,
+  getPluralCategorySamples,
   getStringValue,
+  type LLMSourceEntry,
   normalizeResponse,
   prepareForLLM,
+  resolveSourceKey,
   unflattenKeys,
 } from './utils'
 
@@ -47,21 +51,32 @@ const anthropic = new Anthropic({
 
 async function callLLM(
   targetLocale: TranslatedLocale,
-  sourceStrings: Record<string, { value: string; _llmContext?: string }>,
+  sourceStrings: Record<string, LLMSourceEntry>,
   prompt: string,
 ): Promise<Record<string, string>> {
   const localeName = LOCALE_NAMES[targetLocale] || targetLocale
+  const pluralCategorySamples = Object.entries(
+    getPluralCategorySamples(targetLocale),
+  )
+  const pluralCategories =
+    pluralCategorySamples.length > 0
+      ? pluralCategorySamples
+          .map(([c, counts]) => `"${c}" (e.g. ${counts.join(', ')})`)
+          .join(', ')
+      : 'none'
 
   const systemPromptPart = prompt
     .split('USER')[0]
     .replace('SYSTEM', '')
     .replace(/{TARGET_LOCALE}/g, localeName)
+    .replace(/{PLURAL_CATEGORIES}/g, pluralCategories)
     .replace('{EN_JSON}', JSON.stringify(sourceStrings, null, 2))
     .trim()
 
   const userPromptPart = prompt
     .split('USER')[1]
     .replace(/{TARGET_LOCALE}/g, localeName)
+    .replace(/{PLURAL_CATEGORIES}/g, pluralCategories)
     .replace('{EN_JSON}', JSON.stringify(sourceStrings, null, 2))
     .trim()
 
@@ -209,7 +224,13 @@ async function translate(
       existing,
     ).filter((key) => !lockedKeys.includes(key))
 
-    const orphanedKeys = findOrphanedKeys(sourceKeys, existing)
+    const pluralCategoryKeys = getPluralCategoryKeys(locale)
+    const orphanedKeys = findOrphanedKeys(
+      sourceKeys,
+      existing,
+      pluralPaths,
+      pluralCategoryKeys,
+    )
 
     if (changedKeys.length === 0 && orphanedKeys.length === 0) {
       log.success('Up to date')
@@ -230,15 +251,23 @@ async function translate(
 
     let translations: Record<string, string> = {}
     if (changedKeys.length > 0) {
-      const toTranslate = prepareForLLM(sourceKeys, changedKeys)
+      const toTranslate = prepareForLLM(sourceKeys, changedKeys, pluralPaths)
       translations = await callLLM(locale, toTranslate, prompt)
     }
 
     const existingFlat = flattenKeys(existing)
     const updatedFlat = new Map<string, string>()
 
+    // Plural category keys (few, many) are regenerated along with their `other`
+    const isStale = (key: string) =>
+      orphanedKeys.includes(key) ||
+      changedKeys.includes(
+        resolveSourceKey(key, sourceKeys, pluralPaths, pluralCategoryKeys) ??
+          key,
+      )
+
     for (const [key, value] of existingFlat) {
-      if (!orphanedKeys.includes(key) && !changedKeys.includes(key)) {
+      if (!isStale(key)) {
         updatedFlat.set(key, getStringValue(value))
       }
     }
@@ -256,6 +285,20 @@ async function translate(
         log.item(`  ${log.cyan(locale + ':')} ${translations[key]}`)
       } else {
         log.warning(`No translation received for "${key}"`)
+      }
+    }
+
+    for (const [key, value] of Object.entries(translations)) {
+      const sourceKey = resolveSourceKey(
+        key,
+        sourceKeys,
+        pluralPaths,
+        pluralCategoryKeys,
+      )
+      if (sourceKey && sourceKey !== key && changedKeys.includes(sourceKey)) {
+        updatedFlat.set(key, value)
+        log.item(log.dim(key))
+        log.item(`  ${log.cyan(locale + ':')} ${value}`)
       }
     }
 
@@ -282,6 +325,7 @@ async function translate(
 
 function validate(
   sourceKeys: Map<string, EntryValue>,
+  pluralPaths: Set<string>,
   targetLocales: TranslatedLocale[],
   localeData: Map<SupportedLocale, NestedObject>,
 ): boolean {
@@ -318,9 +362,10 @@ function validate(
       }
     }
 
+    const pluralCategoryKeys = getPluralCategoryKeys(locale)
     const extraKeys: string[] = []
     for (const key of translationKeys.keys()) {
-      if (!sourceKeys.has(key)) {
+      if (!resolveSourceKey(key, sourceKeys, pluralPaths, pluralCategoryKeys)) {
         extraKeys.push(key)
       }
     }
@@ -339,9 +384,15 @@ function validate(
       localeData.get(DEFAULT_LOCALE) as NestedObject,
     )
     const placeholderErrors: string[] = []
-    for (const [key, sourceValue] of sourceStrings) {
-      const translationValue = translationKeys.get(key)
-      if (!translationValue) continue
+    for (const [key, translationValue] of translationKeys) {
+      const sourceKey = resolveSourceKey(
+        key,
+        sourceKeys,
+        pluralPaths,
+        pluralCategoryKeys,
+      )
+      const sourceValue = sourceKey && sourceStrings.get(sourceKey)
+      if (!sourceValue || !translationValue) continue
 
       const sourcePlaceholders = extractPlaceholders(sourceValue)
       const translationPlaceholders = extractPlaceholders(translationValue)
@@ -401,7 +452,7 @@ async function main() {
     if (data) localeData.set(locale, data)
   }
 
-  const isValid = validate(sourceKeys, targetLocales, localeData)
+  const isValid = validate(sourceKeys, pluralPaths, targetLocales, localeData)
 
   if (!isValid) {
     log.blank()

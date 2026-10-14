@@ -1,22 +1,43 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('./config', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./config')>()
+  return {
+    ...actual,
+    SUPPORTED_LOCALES: [...actual.SUPPORTED_LOCALES, 'zh-TW'],
+  }
+})
+
 import { getTranslationLocale, isAcceptedLocale } from './index'
 
 describe('isAcceptedLocale', () => {
-  it('accepts a region-specific supported locale without its bare language', () => {
-    expect(isAcceptedLocale('zh-TW')).toBe(true)
+  it('accepts a supported language', () => {
+    expect(isAcceptedLocale('fr')).toBe(true)
   })
 
   it('accepts a region variant of a supported language', () => {
-    expect(isAcceptedLocale('de-AT')).toBe(true)
+    expect(isAcceptedLocale('fr-CA')).toBe(true)
   })
 
-  it('rejects an unsupported region of a region-only locale', () => {
+  it('accepts a region-only supported locale', () => {
+    expect(isAcceptedLocale('zh-TW')).toBe(true)
+  })
+
+  it('rejects another region of a region-only supported locale', () => {
     expect(isAcceptedLocale('zh-CN')).toBe(false)
+  })
+
+  it('rejects the bare language of a region-only supported locale', () => {
+    expect(isAcceptedLocale('zh')).toBe(false)
+  })
+
+  it('rejects an unsupported language', () => {
+    expect(isAcceptedLocale('xx')).toBe(false)
   })
 })
 
 describe('getTranslationLocale', () => {
-  it('resolves a region-specific supported locale exactly', () => {
-    expect(getTranslationLocale('zh-TW')).toBe('zh-TW')
+  it('returns a region-only supported locale as is', () => {
+    expect(getTranslationLocale('zh-TW' as never)).toBe('zh-TW')
   })
 })

@@ -20,23 +20,20 @@ export const useMeterCreditOptions = (
       customer_id: customer.id,
       limit: 100,
     })
-  const { data: subscriptions } = useSubscriptions(organizationId, {
-    customer_id: customer.id,
-    active: true,
-  })
+  const { data: subscriptions, isLoading: subscriptionsLoading } =
+    useSubscriptions(organizationId, {
+      customer_id: customer.id,
+      active: true,
+    })
 
   const options = useMemo((): MeterCreditOption[] => {
     const balanceByMeter = new Map(
       customerMeters?.items.map((cm) => [cm.meter_id, cm.balance]),
     )
-    const subscriptionByMeter = new Map(
-      subscriptions?.items.flatMap((subscription) =>
-        subscription.meters.map((m) => [m.meter_id, subscription] as const),
-      ),
-    )
-
     return (meters?.items ?? []).map((meter) => {
-      const subscription = subscriptionByMeter.get(meter.id)
+      const subscription = subscriptions?.items.find((sub) =>
+        sub.meters.some((m) => m.meter_id === meter.id),
+      )
       const unitPrice = subscription?.product.prices.find(
         (price): price is MeteredPrice =>
           isMeteredPrice(price) && price.meter_id === meter.id,
@@ -50,5 +47,8 @@ export const useMeterCreditOptions = (
     })
   }, [meters, customerMeters, subscriptions])
 
-  return { options, isLoading: metersLoading || customerMetersLoading }
+  return {
+    options,
+    isLoading: metersLoading || customerMetersLoading || subscriptionsLoading,
+  }
 }

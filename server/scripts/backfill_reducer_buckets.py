@@ -54,7 +54,6 @@ BUCKET_SIZE = timedelta(minutes=5)
 WINDOW_SETTINGS = (
     "SET LOCAL work_mem = '256MB'",
     "SET LOCAL enable_sort = off",
-    "SET LOCAL enable_nestloop = off",
     "SET LOCAL jit = off",
 )
 

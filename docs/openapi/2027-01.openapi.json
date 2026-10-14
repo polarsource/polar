@@ -25240,6 +25240,9 @@
           "Organization",
           "User"
         ],
+        "x-gram": {
+          "description": "List a customer's meters with their current consumed units, credited units and balance. Filter by `customer_id` or `external_customer_id` to look up a customer's meters before crediting one. Each item includes the customer and the meter, so a single call identifies both. A customer only has a customer meter once they have used that meter; if the meter isn't listed, look it up with the meters list tool."
+        },
         "x-speakeasy-pagination": {
           "type": "offsetLimit",
           "inputs": [
@@ -25471,6 +25474,9 @@
           "Organization",
           "User"
         ],
+        "x-gram": {
+          "description": "Grant credits on a customer's meter. Credits can't be reversed.\n\nBefore calling:\n1. List the customer's meters with the customer meters list tool to get the customer ID, the meter ID and the current balance.\n2. Show the user the customer, the meter, the units, the balance before and after (current balance plus units) and whether rollover is on, and wait for them to confirm.\n\nWhen calling:\n- Pass the `customer_id` and `meter_id` returned by the list, not names the user typed.\n- Always set `external_id`, built from the reason, the customer and the date, so a retry doesn't grant the credit twice.\n\nResponses:\n- 201 returns the `meter.credited` event. The balance updates asynchronously, so report the expected balance rather than reading it again straight away.\n- 409 for a used `external_id` means this credit was already granted: report it as done and don't retry with a new ID.\n- 409 for an ambiguous external customer ID means it matches customers in several organizations: ask the user which one, then pass `customer_id` instead."
+        },
         "x-speakeasy-group": "customer_meters",
         "x-speakeasy-name-override": "credits",
         "x-codeSamples": [

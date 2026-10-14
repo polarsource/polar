@@ -187,8 +187,8 @@ export default {
       requestNewInvite: 'Solicitați o nouă invitație',
       retryIn: {
         '=1': 'Încercați din nou peste # secundă',
-        other: 'Încearcă din nou peste # de secunde',
-        few: 'Încearcă din nou peste # secunde',
+        other: 'Încercați din nou peste # de secunde',
+        few: 'Încercați din nou peste # secunde',
         _mode: 'plural',
       },
       connectNewAccount: 'Conectați un cont nou',
@@ -283,7 +283,7 @@ export default {
     short: {
       day: {
         '=1': 'zi',
-        other: '# zi',
+        other: '# de zile',
         few: '# zile',
         _mode: 'plural',
       },
@@ -294,12 +294,13 @@ export default {
       },
       month: {
         '=1': 'lună',
-        other: '# lun.',
+        other: '# de luni',
+        few: '# luni',
         _mode: 'plural',
       },
       year: {
         '=1': 'an',
-        other: '# an',
+        other: '# de ani',
         few: '# ani',
         _mode: 'plural',
       },

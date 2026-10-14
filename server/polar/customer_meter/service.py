@@ -326,17 +326,13 @@ class CustomerMeterService:
         except IntegrityError:
             if credit_create.external_id is None:
                 raise
-            existing_event = await event_repository.get_by_organization_and_external_id(
-                customer.organization_id, credit_create.external_id
+            existing_event = await event_repository.get_meter_credit_by_external_id(
+                customer.organization_id,
+                credit_create.external_id,
+                customer_id=customer.id,
+                metadata=metadata,
             )
             if existing_event is None:
-                raise
-            if (
-                existing_event.source != EventSource.system
-                or existing_event.name != SystemEvent.meter_credited
-                or existing_event.customer_id != customer.id
-                or existing_event.user_metadata != metadata
-            ):
                 raise CustomerMeterCreditExternalIDConflict()
             event = existing_event
 

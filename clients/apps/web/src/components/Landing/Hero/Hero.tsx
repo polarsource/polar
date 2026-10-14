@@ -21,7 +21,7 @@ export const Hero = () => {
               Meet Polar
             </Text>
             <Text variant="heading-m" as="p" color="muted" wrap="balance">
-              The modern billing stack for AI companies
+              Modern billing for AI companies
             </Text>
           </Box>
         </Box>

@@ -3,7 +3,9 @@ import { Box } from '@polar-sh/orbit/Box'
 import type { ComponentType } from 'react'
 import { Chapter } from '../Chapter'
 import { MeterStream } from '../MeterStream'
-import { AggregatePlate, BillPlate, MeasurePlate } from '../plates/MeterPlates'
+import { GaugeSweep } from '../graphics/GaugeSweep'
+import { RadialSpinner } from '../graphics/RadialSpinner'
+import { SteppedRadial } from '../graphics/SteppedRadial'
 
 interface Step {
   title: string
@@ -15,17 +17,17 @@ const STEPS: Step[] = [
   {
     title: 'Measure the usage',
     desc: 'Every call, token and GPU second your users consume, recorded the moment it happens.',
-    Graphic: MeasurePlate,
+    Graphic: RadialSpinner,
   },
   {
     title: 'Aggregate into meters',
     desc: 'Raw events roll up into a live meter for every customer, updated in real time. No batch jobs, no lag.',
-    Graphic: AggregatePlate,
+    Graphic: GaugeSweep,
   },
   {
     title: 'Bill it automatically',
     desc: 'Usage lands on the invoice and settles at the end of every cycle, without any manual reconciliation.',
-    Graphic: BillPlate,
+    Graphic: SteppedRadial,
   },
 ]
 

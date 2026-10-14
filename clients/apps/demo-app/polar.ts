@@ -211,7 +211,7 @@ export const grantSurveyCredits = async (
   externalId: string,
   answer: string,
 ) => {
-  log('Survey answer', answer)
+  log('Survey answer submitted')
 
   // Keyed per customer, so claiming the survey again doesn't grant twice
   await polar

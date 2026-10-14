@@ -53,25 +53,29 @@ export default {
         day: {
           '=1': 'Zilnic',
           '=2': 'La fiecare două zile',
-          other: 'La fiecare # zile',
+          other: 'La fiecare # de zile',
+          few: 'La fiecare # zile',
           _mode: 'plural',
         },
         week: {
           '=1': 'Săptămânal',
           '=2': 'La fiecare două săptămâni',
-          other: 'La fiecare # săptămâni',
+          other: 'La fiecare # de săptămâni',
+          few: 'La fiecare # săptămâni',
           _mode: 'plural',
         },
         month: {
           '=1': 'Lunar',
           '=2': 'La fiecare două luni',
-          other: 'La fiecare # luni',
+          other: 'La fiecare # de luni',
+          few: 'La fiecare # luni',
           _mode: 'plural',
         },
         year: {
           '=1': 'Anual',
           '=2': 'La fiecare doi ani',
-          other: 'La fiecare # ani',
+          other: 'La fiecare # de ani',
+          few: 'La fiecare # ani',
           _mode: 'plural',
         },
       },
@@ -100,12 +104,14 @@ export default {
         numberOfSeats: 'Număr de locuri',
         count: {
           '=1': '# loc',
-          other: '# locuri',
+          other: '# de locuri',
+          few: '# locuri',
           _mode: 'plural',
         },
         included: {
           '=1': 'Un loc inclus',
-          other: '# locuri incluse',
+          other: '# de locuri incluse',
+          few: '# locuri incluse',
           _mode: 'plural',
         },
         range: '{min} - {max} locuri',
@@ -119,7 +125,8 @@ export default {
         numberOfUnits: 'Număr de {unitLabelPlural}',
         count: {
           '=1': '# {unitLabel}',
-          other: '# {unitLabelPlural}',
+          other: '# de {unitLabelPlural}',
+          few: '# {unitLabelPlural}',
           _mode: 'plural',
         },
         updateFailed: 'Nu s-a putut actualiza numărul de unități',
@@ -133,17 +140,20 @@ export default {
         free: {
           day: {
             '=1': '# zi gratuită',
-            other: '# zile gratuite',
+            other: '# de zile gratuite',
+            few: '# zile gratuite',
             _mode: 'plural',
           },
           month: {
             '=1': '# lună gratuită',
-            other: '# luni gratuite',
+            other: '# de luni gratuite',
+            few: '# luni gratuite',
             _mode: 'plural',
           },
           year: {
             '=1': '# an gratuit',
-            other: '# ani gratuiți',
+            other: '# de ani gratuiți',
+            few: '# ani gratuiți',
             _mode: 'plural',
           },
         },
@@ -177,7 +187,8 @@ export default {
       requestNewInvite: 'Solicitați o nouă invitație',
       retryIn: {
         '=1': 'Încercați din nou peste # secundă',
-        other: 'Încercați din nou peste # secunde',
+        other: 'Încearcă din nou peste # de secunde',
+        few: 'Încearcă din nou peste # secunde',
         _mode: 'plural',
       },
       connectNewAccount: 'Conectați un cont nou',
@@ -272,7 +283,8 @@ export default {
     short: {
       day: {
         '=1': 'zi',
-        other: '# zile',
+        other: '# zi',
+        few: '# zile',
         _mode: 'plural',
       },
       week: {
@@ -282,12 +294,13 @@ export default {
       },
       month: {
         '=1': 'lună',
-        other: '# luni',
+        other: '# lun.',
         _mode: 'plural',
       },
       year: {
         '=1': 'an',
-        other: '# ani',
+        other: '# an',
+        few: '# ani',
         _mode: 'plural',
       },
     },

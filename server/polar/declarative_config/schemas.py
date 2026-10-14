@@ -499,7 +499,7 @@ class ConfigSettingsResult(Schema):
 class ConfigApplyResult(Schema):
     changes: list[ConfigResult]
     settings: ConfigSettingsResult | None = Field(
-        default=None, description="Result for `settings`, if in the config."
+        description="Result for `settings`, if in the config."
     )
 
 
@@ -527,7 +527,7 @@ class ConfigSettingsChange(ConfigSettingsResult):
 class ConfigPlan(Schema):
     changes: list[ConfigChange]
     settings: ConfigSettingsChange | None = Field(
-        default=None, description="Change for `settings`, if in the config."
+        description="Change for `settings`, if in the config."
     )
     issues: list[ConfigIssue]
 

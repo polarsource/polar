@@ -16055,7 +16055,7 @@ export interface components {
       /** Changes */
       changes: components['schemas']['ConfigResult'][]
       /** @description Result for `settings`, if in the config. */
-      settings?: components['schemas']['ConfigSettingsResult'] | null
+      settings: components['schemas']['ConfigSettingsResult'] | null
     }
     /** ConfigAsCodeNotEnabled */
     ConfigAsCodeNotEnabled: {
@@ -16566,7 +16566,7 @@ export interface components {
       /** Changes */
       changes: components['schemas']['ConfigChange'][]
       /** @description Change for `settings`, if in the config. */
-      settings?: components['schemas']['ConfigSettingsChange'] | null
+      settings: components['schemas']['ConfigSettingsChange'] | null
       /** Issues */
       issues: components['schemas']['ConfigIssue'][]
     }

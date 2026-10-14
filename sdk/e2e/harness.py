@@ -1,12 +1,15 @@
 import contextlib
+import copy
 import dataclasses
 import json
+import os
 import pathlib
 import socket
 import subprocess
 import sys
 import tempfile
 import typing
+import uuid
 
 import anyio
 from anyio.streams.buffered import BufferedByteReceiveStream
@@ -173,6 +176,11 @@ async def launch(*command: str):
 
 @contextlib.asynccontextmanager
 async def local_redis():
+    if url := os.environ.get("E2E_REDIS_URL"):
+        async with Redis.from_url(url) as redis:
+            await redis.ping()
+        yield url
+        return
     with socket.socket() as listener:
         listener.bind(("127.0.0.1", 0))
         port = listener.getsockname()[1]
@@ -215,9 +223,35 @@ async def local_redis():
 async def run(
     scenario: Scenario, language: typing.Literal["python", "typescript"]
 ) -> None:
+    scenario = copy.deepcopy(scenario)
+    namespace = uuid.uuid4().hex
+    customers = set()
+    payloads = [*scenario.snapshots]
+    for step in scenario.steps:
+        if isinstance(step, IngestStep):
+            payloads.extend(step.arguments["events"])
+        elif not isinstance(step, RestartStep):
+            payloads.append(step.arguments)
+    for payload in {id(payload): payload for payload in payloads}.values():
+        customer_payload = typing.cast(dict[str, object], payload)
+        for field, prefix in (
+            ("customer_id", "customer"),
+            ("external_customer_id", "external"),
+        ):
+            if customer := customer_payload.get(field):
+                customer_payload[field] = f"{namespace}:{customer}"
+                customers.add(f"{prefix}:{customer_payload[field]}")
     transcript = []
     async with contextlib.AsyncExitStack() as stack:
         redis_url = await stack.enter_async_context(local_redis())
+        redis = await stack.enter_async_context(Redis.from_url(redis_url))
+        keys = [
+            f"outpost:state:{customer}:{reducer['id']}"
+            for customer in customers
+            for reducer in scenario.configuration["reducers"]
+        ]
+        if keys:
+            stack.push_async_callback(redis.delete, *keys)
         server, base_url = await stack.enter_async_context(
             launch(sys.executable, str(ROOT / "snapshot_server.py"))
         )

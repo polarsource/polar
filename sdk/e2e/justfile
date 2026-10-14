@@ -2,6 +2,10 @@ install:
     uv sync
     pnpm install
 
+ci:
+    uv sync --frozen
+    pnpm install --frozen-lockfile
+
 build:
     pnpm run build:sdk
 

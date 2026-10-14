@@ -134,9 +134,11 @@ later, and the agent marker on the OAuth client keeps that door open.
   everything they created are deleted after 7 days.
 - **Risks**:
   - *Old credentials still work after the claim.* Reject identity assertions issued before the claim.
-  - *A leaked identity assertion.* Every exchange is checked against the registration, so revoking the agent stops
-    it immediately. Access tokens are short-lived, and the assertion expires after 30 days at most. Binding it to a key
-    the agent holds (DPoP) is a possible later addition.
+  - *A leaked identity assertion.* It's a bearer credential, so whoever holds it can use it until it's revoked or
+    expires. We accept that for now and limit the damage: every exchange is checked against the registration, so
+    revoking the agent stops it immediately, access tokens are short-lived, and the assertion expires after 30 days at
+    most. Only binding it to a key the agent holds (DPoP) would prevent a stolen copy from working; that's a possible
+    later addition, optional for agents that support it.
   - *The agent approves itself* using a browser where the user is already logged in. Require a fresh
     sign-in on the claim page.
   - *Abuse of open anonymous sign-up* (spam orgs, slug squatting). Rate limits, a cap on orgs per agent,

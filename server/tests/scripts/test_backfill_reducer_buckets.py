@@ -197,6 +197,7 @@ class TestBackfillBucket:
             events.append(
                 await create_event(
                     save_fixture,
+                    meter=meter,
                     organization=organization,
                     customer=customer,
                     timestamp=start,
@@ -225,9 +226,18 @@ class TestBackfillBucket:
             product_price=price,
             event=events[3],
         )
-        for excluded in ("filter", "system", "before", "after", "organization", "type"):
+        for excluded in (
+            "filter",
+            "system",
+            "before",
+            "after",
+            "organization",
+            "type",
+            "meter_event",
+        ):
             await create_event(
                 save_fixture,
+                meter=None if excluded == "meter_event" else meter,
                 organization=organization_second
                 if excluded == "organization"
                 else organization,
@@ -291,6 +301,7 @@ class TestBackfillBucket:
         for external_id in ("known", "unresolved-a", "unresolved-b"):
             await create_event(
                 save_fixture,
+                meter=meter,
                 organization=organization,
                 external_customer_id=external_id,
                 timestamp=start,
@@ -298,6 +309,7 @@ class TestBackfillBucket:
         for event_customer in (customer, customer_second):
             await create_event(
                 save_fixture,
+                meter=meter,
                 organization=organization,
                 customer=event_customer,
                 timestamp=start,
@@ -321,6 +333,7 @@ class TestBackfillBucket:
         }
         await create_event(
             save_fixture,
+            meter=meter,
             organization=organization,
             external_customer_id="known",
             timestamp=start,
@@ -370,6 +383,7 @@ class TestBackfillBucket:
         ):
             event = await create_event(
                 save_fixture,
+                meter=meter,
                 organization=organization,
                 timestamp=start,
                 ingested_at=end + timedelta(days=60),
@@ -476,6 +490,7 @@ class TestBackfillBucket:
         ):
             event = await create_event(
                 save_fixture,
+                meter=meter,
                 organization=organization,
                 timestamp=(
                     start - timedelta(seconds=1)
@@ -579,7 +594,10 @@ class TestBackfillBucket:
         for count, order in enumerate(sorted(orders, key=lambda order: order.id), 1):
             for _ in range(count):
                 event = await create_event(
-                    save_fixture, organization=organization, timestamp=start
+                    save_fixture,
+                    organization=organization,
+                    timestamp=start,
+                    meter=meter,
                 )
                 await create_billing_entry(
                     save_fixture,
@@ -630,6 +648,7 @@ class TestBackfillBucket:
             )
         await create_event(
             save_fixture,
+            meter=meter,
             organization=organization,
             customer=customer,
             timestamp=cutoff,
@@ -693,6 +712,7 @@ class TestBackfillBucket:
         ):
             event = await create_event(
                 save_fixture,
+                meter=meter,
                 organization=organization,
                 customer=customer,
                 timestamp=timestamp,
@@ -708,6 +728,7 @@ class TestBackfillBucket:
                 )
         await create_event(
             save_fixture,
+            meter=meter,
             organization=organization,
             customer=customer_second,
             timestamp=cutoff,
@@ -782,6 +803,7 @@ class TestBackfillBucket:
         ):
             await create_event(
                 save_fixture,
+                meter=meter,
                 organization=organization,
                 customer=event_customer,
                 timestamp=timestamp,

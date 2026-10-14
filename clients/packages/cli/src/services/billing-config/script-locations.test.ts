@@ -112,9 +112,11 @@ describe('locateInScript', () => {
         undefined,
       ),
     ).toBeUndefined()
-    expect(
-      locateInScript(builder, input, ['meters'], undefined),
-    ).toBeUndefined()
+    expect(locateInScript(builder, input, ['meters'], undefined)).toEqual({
+      line: 4,
+      column: 3,
+      length: 6,
+    })
   })
 })
 
@@ -216,6 +218,14 @@ describe('locateInScript with a settings section', () => {
         'eur',
       ),
     ).toEqual({ line: 4, column: 55, length: 5 })
+  })
+
+  test('points at the section key for a section-level issue', () => {
+    expect(locateInScript(config, input, ['settings'], undefined)).toEqual({
+      line: 4,
+      column: 3,
+      length: 8,
+    })
   })
 
   test('points at the key of a nested setting without a value', () => {

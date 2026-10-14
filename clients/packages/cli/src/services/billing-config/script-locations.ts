@@ -63,14 +63,19 @@ const SECTIONS = [
   'discounts',
 ]
 
+const columnOf = (source: string, offset: number) =>
+  offset - source.lastIndexOf('\n', offset - 1)
+
+const sectionKey = (source: string, section: string) => {
+  const own = findAll(source, keyPattern(section), 0)
+  const columns = own.map(({ offset }) => columnOf(source, offset))
+  return own[columns.indexOf(Math.min(...columns))]
+}
+
 const sectionRange = (source: string, section: string): Range => {
   const whole = { start: 0, end: source.length }
-  const column = ({ offset }: { offset: number }) =>
-    offset - source.lastIndexOf('\n', offset - 1)
-  const own = findAll(source, keyPattern(section), 0)
-  const start = own.find(
-    (match) => column(match) === Math.min(...own.map(column)),
-  )
+  const column = ({ offset }: { offset: number }) => columnOf(source, offset)
+  const start = sectionKey(source, section)
   if (start === undefined) return whole
   const key = start.offset + start.length
   const from = key + (PARAMETERS.exec(source.slice(key))?.[0].length ?? 0)
@@ -151,6 +156,10 @@ export const locateInScript = (
 ): SourceLocation | undefined => {
   const [section, index, ...rest] = path
   if (typeof section !== 'string') return undefined
+  if (index === undefined) {
+    const key = sectionKey(source, section)
+    return key && span(source, key.offset, key.length)
+  }
   const entries = (input as Record<string, unknown>)?.[section]
   if (typeof index !== 'number') {
     return typeof entries === 'object' && entries !== null

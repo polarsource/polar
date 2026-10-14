@@ -146,7 +146,11 @@ export const getCustomerMeters = (client: ClientBase) => {
 };
 export const creditsCustomerMeters = (client: ClientBase) => {
   /**
-   * Manually grant credits on a customer meter.
+   * Grant free units (credits) on a customer's usage meter, for example to
+   * compensate for an outage or reward an action. Credits can't be reversed.
+   *
+   * Retrying with the same `external_id` and details returns the original
+   * credit instead of granting it twice.
    *
    * Returns the `meter.credited` event. The customer meter balance is updated
    * asynchronously, shortly after the request.

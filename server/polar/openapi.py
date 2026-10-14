@@ -80,10 +80,6 @@ def cli_preview(*fields: tuple[str, str]) -> dict[str, Any]:
     }
 
 
-def mcp_tool(*, description: str) -> dict[str, Any]:
-    return {"x-gram": {"description": description}}
-
-
 type CLIConfirmValue = str | bool | int | float | None
 
 

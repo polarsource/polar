@@ -9,7 +9,7 @@ from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.versioning import version
 from polar.meter.schemas import MeterID
 from polar.models import CustomerMeter, Event
-from polar.openapi import APITag, mcp_tool
+from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
@@ -82,16 +82,6 @@ async def list(
     name="list",
     summary="List Customer Meters",
     response_model=ListResource[CustomerMeterSchema],
-    openapi_extra=mcp_tool(
-        description=(
-            "List a customer's usage meters with their consumed units, "
-            "credited units and remaining balance. Filter by `customer_id` "
-            "or `external_customer_id` to see a customer's usage, or to "
-            "look up their meters and current balance before granting "
-            "credits. Each item includes the customer and the meter. If a "
-            "meter isn't listed for the customer, find it with List meters."
-        )
-    ),
 )
 @version(starting_from=V2027_01)
 async def list_v2027_01(
@@ -184,28 +174,6 @@ async def get(
             | AmbiguousExternalCustomerID.schema(),
         },
     },
-    openapi_extra=mcp_tool(
-        description=(
-            "Grant free units (credits) on a customer's usage meter, for "
-            "example to compensate for an outage, reward an action or top "
-            "up a balance. Credits can't be reversed.\n\n"
-            "Before calling, get the customer's meters and current balance "
-            "with List customer meters. Then show the user the customer, "
-            "the meter, the units, the balance before and after, and "
-            "whether unused units roll over, and get their confirmation in "
-            "the conversation.\n\n"
-            "Pass the customer and meter IDs from that list. Generate a new "
-            "`external_id` for each credit the user confirms, and reuse it "
-            "only to retry that same request: a retry with the same "
-            "`external_id` and details returns the original credit instead "
-            "of granting it twice.\n\n"
-            "The response is the `meter.credited` event. The balance "
-            "updates a few seconds later, so report the expected balance "
-            "instead of reading it again straight away. A 409 on "
-            "`external_id` means it belongs to a different credit and "
-            "nothing was granted."
-        )
-    ),
 )
 @version(starting_from=V2027_01)
 async def credits(
@@ -214,7 +182,11 @@ async def credits(
     session: AsyncSession = Depends(get_db_session),
 ) -> Event:
     """
-    Manually grant credits on a customer meter.
+    Grant free units (credits) on a customer's usage meter, for example to
+    compensate for an outage or reward an action. Credits can't be reversed.
+
+    Retrying with the same `external_id` and details returns the original
+    credit instead of granting it twice.
 
     Returns the `meter.credited` event. The customer meter balance is updated
     asynchronously, shortly after the request.

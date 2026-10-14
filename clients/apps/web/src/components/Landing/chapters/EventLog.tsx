@@ -13,13 +13,21 @@ const ROW = 18
 const GAP = 8
 const STEP = ROW + GAP
 
-const Row = ({ event, age }: { event: UsageEvent; age: number }) => (
+const Row = ({
+  event,
+  age,
+  fade,
+}: {
+  event: UsageEvent
+  age: number
+  fade: boolean
+}) => (
   <Box
     alignItems="center"
     justifyContent="between"
     columnGap="l"
     height={ROW}
-    opacity={Math.max(0.25, 1 - age * 0.12)}
+    opacity={fade ? Math.max(0.25, 1 - age * 0.12) : 1}
     transitionProperty="opacity"
     transitionDuration="slow"
   >
@@ -71,13 +79,19 @@ const Skeleton = () => (
  * down with a transform transition instead of remounting them. Keyed by id, a row mounts once, so the entrance
  * animation only ever plays for the newcomer.
  */
-export const EventLog = ({ events }: { events: UsageEvent[] }) => {
-  const empty = Math.max(0, VISIBLE_EVENTS - events.length)
+export const EventLog = ({
+  events,
+  rows = VISIBLE_EVENTS,
+  fade = true,
+}: {
+  events: UsageEvent[]
+  rows?: number
+  /** Older rows fade back; off for a long log, where it would wash out the bottom. */
+  fade?: boolean
+}) => {
+  const empty = Math.max(0, rows - events.length)
   return (
-    <div
-      className="relative w-full"
-      style={{ height: VISIBLE_EVENTS * STEP - GAP }}
-    >
+    <div className="relative w-full" style={{ height: rows * STEP - GAP }}>
       {events.map((event, position) => (
         <div
           key={event.id}
@@ -85,7 +99,7 @@ export const EventLog = ({ events }: { events: UsageEvent[] }) => {
           style={{ transform: `translateY(${position * STEP}px)` }}
         >
           <div className="[animation:appear_360ms_cubic-bezier(0.2,0.8,0.2,1)_both]">
-            <Row event={event} age={position} />
+            <Row event={event} age={position} fade={fade} />
           </div>
         </div>
       ))}

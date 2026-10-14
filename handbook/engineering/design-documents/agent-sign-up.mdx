@@ -33,7 +33,6 @@ existing OAuth2 server. Agents get ordinary OAuth tokens, so nothing else in the
 
 - **ID-JAG**: identity assertions signed by agent platforms (e.g. "this is Claude, acting for alice@…"), which would skip the claim step. Later, once platforms issue them.
 - **Agent Auth Protocol**: see [Options](#options).
-- **Post-claim scopes**: after the claim, the agent can do what the user can. Narrowing that is a separate design.
 
 ## How it works
 
@@ -151,4 +150,3 @@ These risks go into the risk register before this document is merged.
 
 - Should orgs created by agents use config-as-code (`polar.config.ts`) by default?
 - What should `organization.created` side effects (review, emails) do for an unclaimed org?
-- Post-claim scopes: deliberately deferred to a separate design.

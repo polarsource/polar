@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 
 export const evaluate =
-  vi.fn<() => Promise<{ result?: string; error?: string }>>()
+  vi.fn<() => Promise<{ result?: string; error?: string; requests?: number }>>()
 export const get = vi.fn<
   (
     _name: string | null,

@@ -1,12 +1,19 @@
 import { Effect, Schema } from 'effect'
+import { RequestLog } from './log'
+
+const ToolErrorKind = Schema.Literals(['api', 'script', 'sandbox'])
+export type ToolErrorKind = typeof ToolErrorKind.Type
 
 export class ToolError extends Schema.TaggedError<ToolError>()('ToolError', {
   message: Schema.String,
+  kind: Schema.optionalKey(ToolErrorKind),
+  status: Schema.optionalKey(Schema.Number),
   cause: Schema.optionalKey(Schema.Defect()),
 }) {
-  static fromCause(this: void, cause: unknown) {
+  static fromCause(this: void, cause: unknown, kind?: ToolErrorKind) {
     return new ToolError({
       message: cause instanceof Error ? cause.message : String(cause),
+      ...(kind && { kind }),
       cause,
     })
   }
@@ -48,14 +55,34 @@ const toolError = (error: ToolError) => ({
 })
 
 export const makeToolRunner = Effect.gen(function* () {
+  const log = yield* RequestLog
   const run = Effect.runPromiseWith(yield* Effect.context<never>())
+  const onSuccess = (result: string | OperationResult) => {
+    const text = typeof result === 'string' ? result : result.text
+    log.isError = false
+    log.resultChars = text.length
+    log.truncated = typeof result === 'string' && text.length > MAX_RESULT_CHARS
+    return toolResult(result)
+  }
+  const onFailure = (error: ToolError) => {
+    log.isError = true
+    log.errorKind = error.kind
+    log.apiStatus = error.status
+    // Sandbox errors come from the runtime, such as an exceeded CPU limit.
+    // Script and API errors can quote customer data, so they stay out.
+    if (error.kind === 'sandbox') {
+      log.errorMessage = error.message
+    }
+    return toolError(error)
+  }
   return (
-    effect: Effect.Effect<string | OperationResult, ToolError>,
+    effect: Effect.Effect<string | OperationResult, ToolError, RequestLog>,
     signal: AbortSignal,
   ) =>
     run(
       effect.pipe(
-        Effect.match({ onSuccess: toolResult, onFailure: toolError }),
+        Effect.provideService(RequestLog, log),
+        Effect.match({ onSuccess, onFailure }),
       ),
       { signal },
     )

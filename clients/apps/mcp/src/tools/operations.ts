@@ -93,6 +93,8 @@ export const registerOperationTools = Effect.fn('registerOperationTools')(
         if (response.status < 200 || response.status >= 300) {
           return yield* new ToolError({
             message: `Polar API ${response.status}: ${text}`,
+            kind: 'api',
+            status: response.status,
           })
         }
         if (!text) {

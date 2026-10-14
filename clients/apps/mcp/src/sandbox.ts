@@ -1,10 +1,11 @@
 import { Context, Effect, Layer } from 'effect'
+import { RequestLog } from './log'
 import { ToolError } from './results'
 
 const SANDBOX_COMPATIBILITY_DATE = '2026-10-01'
 
 interface SandboxEntrypoint {
-  evaluate(): Promise<{ result?: string; error?: string }>
+  evaluate(): Promise<{ result?: string; error?: string; requests?: number }>
 }
 
 interface SandboxOptions {
@@ -18,7 +19,9 @@ interface SandboxOptions {
 export class Sandbox extends Context.Service<
   Sandbox,
   {
-    readonly run: (options: SandboxOptions) => Effect.Effect<string, ToolError>
+    readonly run: (
+      options: SandboxOptions,
+    ) => Effect.Effect<string, ToolError, RequestLog>
   }
 >()('mcp/Sandbox') {
   static layer(loader: Env['LOADER']) {
@@ -32,7 +35,7 @@ export class Sandbox extends Context.Service<
           globalOutbound,
           limits,
         }: SandboxOptions) {
-          const { result, error } = yield* Effect.tryPromise({
+          const { result, error, requests } = yield* Effect.tryPromise({
             try: () => {
               const worker = loader.get(
                 // The loader caches isolates by name and globalOutbound carries the user's
@@ -47,15 +50,20 @@ export class Sandbox extends Context.Service<
                     ...modules,
                     'worker.js': `
 import { WorkerEntrypoint } from 'cloudflare:workers'
+let __requests = 0
+const fetch = (...args) => {
+  __requests++
+  return globalThis.fetch(...args)
+}
 ${prelude}
 
 export default class Sandbox extends WorkerEntrypoint {
   async evaluate() {
     try {
       const result = await (${code})()
-      return { result: JSON.stringify(result) ?? String(result) }
+      return { result: JSON.stringify(result) ?? String(result), requests: __requests }
     } catch (error) {
-      return { error: error instanceof Error ? error.message : String(error) }
+      return { error: error instanceof Error ? error.message : String(error), requests: __requests }
     }
   }
 }
@@ -67,10 +75,12 @@ export default class Sandbox extends WorkerEntrypoint {
                 worker.getEntrypoint() as unknown as SandboxEntrypoint
               return entrypoint.evaluate()
             },
-            catch: ToolError.fromCause,
+            catch: (cause) => ToolError.fromCause(cause, 'sandbox'),
           })
+          const log = yield* RequestLog
+          log.apiRequests = requests
           if (error !== undefined) {
-            return yield* new ToolError({ message: error })
+            return yield* new ToolError({ message: error, kind: 'script' })
           }
           return result ?? ''
         }),

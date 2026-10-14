@@ -214,12 +214,13 @@ test('the execute sandbox client serializes requests and handles every kind of r
       Response.json({ detail: 'Not found' }, { status: 404 }),
     )
   const Worker = runInThisContext(
-    `(WorkerEntrypoint, fetch) => {${source
+    `(WorkerEntrypoint, globalThis) => {${source
       .replace("import { WorkerEntrypoint } from 'cloudflare:workers'", '')
       .replace('export default', 'return')}}`,
-  )(class {}, sandboxFetch)
-  const { result, error } = await new Worker().evaluate()
+  )(class {}, { fetch: sandboxFetch })
+  const { result, error, requests } = await new Worker().evaluate()
   expect(error).toBeUndefined()
+  expect(requests).toBe(5)
   expect(JSON.parse(result)).toEqual({
     list: { items: [] },
     created: { id: 'product' },
@@ -295,6 +296,82 @@ test('operation results are not truncated and the text is the serialized structu
   )
   expect(result.content[0].text).toBe(JSON.stringify({ items }))
   expect(result.structuredContent).toEqual({ items })
+})
+
+test('every MCP request logs one line without the token, arguments or results', async () => {
+  const log = vi.spyOn(console, 'log').mockImplementation(() => {})
+  fetchMock.mockResolvedValueOnce(
+    Response.json({ detail: 'jane@example.com not found' }, { status: 404 }),
+  )
+  await rpc(
+    'tools/call',
+    { name: 'customers_get', arguments: { id: 'customer-id' } },
+    '?codemode=false&readonly=true',
+    { 'User-Agent': 'claude-code/3.0' },
+  )
+  evaluate.mockResolvedValueOnce({ result: 'x'.repeat(30_000), requests: 3 })
+  await rpc('tools/call', {
+    name: 'execute',
+    arguments: { code: 'async () => "secret code"' },
+    _meta: {
+      'io.modelcontextprotocol/clientInfo': { name: 'codex', version: '1.2' },
+    },
+  })
+  evaluate.mockRejectedValueOnce(new Error('Worker exceeded CPU time limit.'))
+  await rpc('tools/call', { name: 'execute', arguments: { code: 'x' } })
+
+  const entries = log.mock.calls.map(([entry]) => entry)
+  const base = {
+    event: 'mcp.request',
+    server: 'polar-mcp',
+    rpcMethod: 'tools/call',
+    status: 200,
+    durationMs: expect.any(Number),
+  }
+  expect(entries).toEqual([
+    {
+      ...base,
+      mode: 'operations',
+      readOnly: true,
+      userAgent: 'claude-code/3.0',
+      tool: 'customers_get',
+      isError: true,
+      errorKind: 'api',
+      apiStatus: 404,
+    },
+    {
+      ...base,
+      mode: 'codemode',
+      readOnly: false,
+      userAgent: null,
+      tool: 'execute',
+      client: { name: 'codex', version: '1.2' },
+      isError: false,
+      resultChars: 30_000,
+      truncated: true,
+      apiRequests: 3,
+    },
+    {
+      ...base,
+      mode: 'codemode',
+      readOnly: false,
+      userAgent: null,
+      tool: 'execute',
+      isError: true,
+      errorKind: 'sandbox',
+      errorMessage: 'Worker exceeded CPU time limit.',
+    },
+  ])
+  const logged = JSON.stringify(entries)
+  for (const secret of [
+    'polar_oat_test',
+    'customer-id',
+    'jane@',
+    'secret code',
+  ]) {
+    expect(logged).not.toContain(secret)
+  }
+  log.mockRestore()
 })
 
 test('operation tools preserve query serialization, credentials, JSON results and errors', async () => {

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { Effect } from 'effect'
 import { FetchHttpClient } from 'effect/http'
 import { Docs } from '../src/docs'
+import { RequestLog } from '../src/log'
 import { PolarApiOutbound, type PolarApiOutboundProps } from '../src/outbound'
 import { makeToolRunner } from '../src/results'
 import { isAllowedOperation } from '../src/spec'
@@ -170,7 +171,17 @@ test('cancelling an MCP tool interrupts its effect and runs finalizers', async (
         finalized = true
       }),
   )
-  const runTool = await Effect.runPromise(makeToolRunner)
+  const runTool = await Effect.runPromise(
+    makeToolRunner.pipe(
+      Effect.provideService(RequestLog, {
+        event: 'mcp.request',
+        server: 'polar-mcp',
+        mode: 'codemode',
+        readOnly: false,
+        userAgent: null,
+      }),
+    ),
+  )
   const pending = runTool(effect, controller.signal)
   controller.abort()
   await expect(pending).rejects.toThrow()

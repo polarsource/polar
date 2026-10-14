@@ -6,8 +6,15 @@ import { env } from 'cloudflare:workers'
 import { Effect, Layer, ManagedRuntime } from 'effect'
 import { FetchHttpClient, HttpClient } from 'effect/http'
 import { Auth, getBearerToken, unauthorized } from './auth'
-import { toolModeFor } from './clients'
+import { type ToolMode, toolModeFor } from './clients'
 import { Docs } from './docs'
+import {
+  logOnCompletion,
+  readRpcFields,
+  RequestLog,
+  type RequestLogEntry,
+} from './log'
+import type { PolarApiOutboundProps } from './outbound'
 import { createServer } from './server'
 import { Sandbox } from './sandbox'
 
@@ -67,12 +74,38 @@ const handle = Effect.fn('handle')(function* (request: Request) {
     })
   }
 
-  const mcpMatch = url.pathname.match(MCP_PATH)
-  const apiUrl = mcpMatch ? servers[mcpMatch[1]] : undefined
-  if (!apiUrl) {
+  const server = url.pathname.match(MCP_PATH)?.[1]
+  const apiUrl = server ? servers[server] : undefined
+  if (!server || !apiUrl) {
     return new Response('Not Found', { status: 404 })
   }
 
+  const startedAt = Date.now()
+  const props = {
+    apiUrl,
+    readOnly: url.searchParams.get('readonly') === 'true',
+  }
+  const mode = toolModeFor(url)
+  const log: RequestLogEntry = {
+    event: 'mcp.request',
+    server,
+    mode,
+    readOnly: props.readOnly,
+    userAgent: request.headers.get('User-Agent'),
+    ...(yield* readRpcFields(request)),
+  }
+  const response = yield* handleMcp(request, url, props, mode).pipe(
+    Effect.provideService(RequestLog, log),
+  )
+  return logOnCompletion(response, log, startedAt)
+})
+
+const handleMcp = Effect.fn('handleMcp')(function* (
+  request: Request,
+  url: URL,
+  { apiUrl, readOnly }: Omit<PolarApiOutboundProps, 'token'>,
+  mode: ToolMode,
+) {
   const resourceMetadataUrl = getOAuthProtectedResourceMetadataUrl(
     new URL(url.pathname, url.origin),
   )
@@ -85,15 +118,13 @@ const handle = Effect.fn('handle')(function* (request: Request) {
     return unauthorized(resourceMetadataUrl, 'invalid_token')
   }
 
-  const readOnly = url.searchParams.get('readonly') === 'true'
-  const toolMode = toolModeFor(url)
   const context = yield* Effect.context<
-    Sandbox | Docs | HttpClient.HttpClient
+    Sandbox | Docs | HttpClient.HttpClient | RequestLog
   >()
   return yield* Effect.promise(() =>
     createMcpHandler(() =>
       Effect.runPromiseWith(context)(
-        createServer({ apiUrl, token, readOnly }, toolMode),
+        createServer({ apiUrl, token, readOnly }, mode),
       ),
     ).fetch(request),
   )

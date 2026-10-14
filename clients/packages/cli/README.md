@@ -66,7 +66,7 @@ setup above first: `auth login` refuses to run with `POLAR_ACCESS_TOKEN` set, an
 ```bash
 unset POLAR_API_URL POLAR_ACCESS_TOKEN
 bun src/cli.ts auth login --local
-bun src/cli.ts auth token --env-file /tmp/polar-test.env
+bun src/cli.ts auth token
 ```
 
 ### Generated API commands

@@ -17,8 +17,6 @@ import { awaitCallback, type CallbackResult } from '@/utils/loopback'
 
 const CALLBACK_PATH = '/token/callback'
 
-export const ENVIRONMENT_VARS = ['POLAR_ENVIRONMENT', 'POLAR_API_URL'] as const
-
 export const environmentSettings = (environment: PolarEnvironment) =>
   Effect.gen(function* () {
     switch (environment) {

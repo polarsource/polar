@@ -16,7 +16,7 @@ polar auth <subcommand> [flags]
 - [`polar auth whoami`](#polar-auth-whoami) Show the active organization
 - [`polar auth list`](#polar-auth-list) List the organizations you have access to
 - [`polar auth org`](#polar-auth-org) Choose the active organization
-- [`polar auth token`](#polar-auth-token) Create an organization access token for your app and save it to an env file
+- [`polar auth token`](#polar-auth-token) Create an organization access token for your app and print it as KEY=value lines
 - [`polar auth logout`](#polar-auth-logout) Sign out and remove saved sessions
 
 ## polar auth login
@@ -78,7 +78,7 @@ polar auth org [flags]
 
 ## polar auth token
 
-Create an organization access token for your app and save it to an env file
+Create an organization access token for your app and print it as KEY=value lines
 
 ```bash
 polar auth token [flags]
@@ -89,24 +89,17 @@ polar auth token [flags]
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--scope` | `string` | Scope to preselect on the token page, e.g. products:read. Repeatable. |
-| `--env-file` | `string` | File to write the token to. Defaults to .env.local if it exists, otherwise .env |
-| `--stdout` | `boolean` | Print the variables as KEY=value lines instead of writing --env-file, to pipe into another command |
 
 **Examples**
 
-Create a token for the active organization and add it to .env.local or .env
+Add the token for the active organization to .env.local
 ```bash
-polar auth token
+polar auth token >> .env.local
 ```
 
-Preselect scopes and write to .env.local
+Preselect scopes and pipe the variables into a hosting provider without writing them to disk
 ```bash
-polar auth token --scope products:read --scope checkouts:write --env-file .env.local
-```
-
-Pipe the variables into a hosting provider without writing them to disk
-```bash
-polar auth token --stdout | fly secrets import
+polar auth token --scope products:read --scope checkouts:write | fly secrets import
 ```
 
 ## polar auth logout

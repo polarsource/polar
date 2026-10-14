@@ -35,6 +35,7 @@ from polar.models import (
     BillingEntry,
     Customer,
     Event,
+    MeterEvent,
     MeterReducer,
     Order,
     OrderItem,
@@ -268,13 +269,16 @@ def build_bucket_insert(
             func.min(value).label("min"),
             func.max(value).label("max"),
         )
-        .select_from(Event)
+        .select_from(MeterEvent)
+        .join(MeterReducer, MeterReducer.meter_id == MeterEvent.meter_id)
+        .join(Event, Event.id == MeterEvent.event_id)
         .outerjoin(billing_entries, billing_entries.c.event_id == Event.id)
         .where(
+            MeterReducer.reducer_id == reducer.id,
+            MeterEvent.timestamp >= start,
+            MeterEvent.timestamp < end,
             Event.organization_id == reducer.organization_id,
             Event.source == EventSource.user,
-            Event.timestamp >= start,
-            Event.timestamp < end,
             reducer.aggregation.get_sql_clause(Event),
             or_(is_billed, reducer.filter.get_sql_clause(Event)),
             *event_clauses,

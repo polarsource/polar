@@ -92,7 +92,6 @@ const handle = Effect.fn('handle')(function* (request: Request) {
     mode,
     readOnly: props.readOnly,
     userAgent: request.headers.get('User-Agent'),
-    ...(yield* readRpcFields(request)),
   }
   const response = yield* handleMcp(request, url, props, mode).pipe(
     Effect.provideService(RequestLog, log),
@@ -117,6 +116,7 @@ const handleMcp = Effect.fn('handleMcp')(function* (
   if (!(yield* auth.isTokenValid(apiUrl, token))) {
     return unauthorized(resourceMetadataUrl, 'invalid_token')
   }
+  Object.assign(yield* RequestLog, yield* readRpcFields(request))
 
   const context = yield* Effect.context<
     Sandbox | Docs | HttpClient.HttpClient | RequestLog

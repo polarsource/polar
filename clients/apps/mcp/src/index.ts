@@ -5,7 +5,7 @@ import {
 import { env } from 'cloudflare:workers'
 import { Effect, Layer, ManagedRuntime } from 'effect'
 import { FetchHttpClient, HttpClient } from 'effect/http'
-import { Auth, getBearerToken, unauthorized } from './auth'
+import { Auth, authUnavailable, getBearerToken, unauthorized } from './auth'
 import { type ToolMode, toolModeFor } from './clients'
 import { Docs } from './docs'
 import {
@@ -113,8 +113,14 @@ const handleMcp = Effect.fn('handleMcp')(function* (
     return unauthorized(resourceMetadataUrl)
   }
   const auth = yield* Auth
-  if (!(yield* auth.isTokenValid(apiUrl, token))) {
-    return unauthorized(resourceMetadataUrl, 'invalid_token')
+  const rejection = yield* auth.isTokenValid(apiUrl, token).pipe(
+    Effect.map((valid) =>
+      valid ? undefined : unauthorized(resourceMetadataUrl, 'invalid_token'),
+    ),
+    Effect.catchTag('AuthUnavailable', () => Effect.succeed(authUnavailable())),
+  )
+  if (rejection) {
+    return rejection
   }
   Object.assign(yield* RequestLog, yield* readRpcFields(request))
 

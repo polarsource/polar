@@ -107,7 +107,7 @@ test('operation writes preserve path parameters and JSON body, and read-only too
   expect(fetchMock).toHaveBeenCalledTimes(1)
 })
 
-test('upstream failures remain tool errors and OAuth network failures reject the request', async () => {
+test('upstream failures remain tool errors and OAuth network failures return 503', async () => {
   fetchMock.mockRejectedValue(new Error('network failed'))
   expect(
     (
@@ -121,11 +121,13 @@ test('upstream failures remain tool errors and OAuth network failures reject the
     isError: true,
     content: [{ type: 'text', text: 'Error: network failed' }],
   })
-  await expect(
-    request('/mcp/polar-mcp', {
-      headers: { Authorization: 'Bearer polar_at_network_failure' },
-    }),
-  ).rejects.toThrow()
+  expect(
+    (
+      await request('/mcp/polar-mcp', {
+        headers: { Authorization: 'Bearer polar_at_network_failure' },
+      })
+    ).status,
+  ).toBe(503)
   fetchMock.mockResolvedValueOnce(new Response('not json'))
   expect(
     (

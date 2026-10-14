@@ -52,7 +52,7 @@ test('CORS, metadata, unknown routes and bearer challenges remain unchanged', as
   expect(fetchMock).not.toHaveBeenCalled()
 })
 
-test('OAuth validates per environment, caches for 60 seconds, and does not cache 401s or upstream failures', async () => {
+test('OAuth validates per environment, caches for 60 seconds, and rejects 401s and upstream failures without caching them', async () => {
   let now = 1_000_000
   vi.spyOn(Date, 'now').mockImplementation(() => now)
   const headers = { Authorization: 'Bearer polar_at_cache_test' }
@@ -72,11 +72,13 @@ test('OAuth validates per environment, caches for 60 seconds, and does not cache
     )
   }
   expect(fetchMock).toHaveBeenCalledTimes(4)
-  fetchMock.mockResolvedValue(new Response(null, { status: 503 }))
-  for (let i = 0; i < 2; i++) {
-    expect((await request('/mcp/polar-mcp', { headers })).status).not.toBe(401)
+  for (const status of [403, 500, 503]) {
+    fetchMock.mockResolvedValue(new Response(null, { status }))
+    const response = await request('/mcp/polar-mcp', { headers })
+    expect(response.status).toBe(503)
+    expect(await response.json()).toEqual({ error: 'temporarily_unavailable' })
   }
-  expect(fetchMock).toHaveBeenCalledTimes(6)
+  expect(fetchMock).toHaveBeenCalledTimes(7)
 })
 
 test('code mode is the default for every client; ?codemode=false selects operation mode', async () => {

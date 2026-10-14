@@ -462,6 +462,56 @@ class TestResolveUrlRedirects:
         assert results[0].final_url == "https://legit.com/"
 
     @pytest.mark.anyio
+    async def test_hop_limit_still_checks_last_redirect_target(
+        self, mocker: MockerFixture
+    ) -> None:
+        mocker.patch(
+            "polar.organization_review.collectors.setup._validate_url_host",
+            return_value=None,
+        )
+
+        with respx.mock:
+            for i in range(9):
+                respx.get(f"https://legit.com/{i}").respond(
+                    302, headers={"Location": f"https://legit.com/{i + 1}"}
+                )
+            respx.get("https://legit.com/9").respond(
+                302, headers={"Location": "https://bad-site.com/"}
+            )
+            results = await resolve_url_redirects(["https://legit.com/0"])
+
+        assert len(results) == 1
+        assert results[0].redirected is True
+        assert results[0].final_url == "https://bad-site.com/"
+
+    @pytest.mark.anyio
+    async def test_port_on_subdomain_not_flagged(self, mocker: MockerFixture) -> None:
+        mocker.patch(
+            "polar.organization_review.collectors.setup._validate_url_host",
+            return_value=None,
+        )
+        mocker.patch(
+            "polar.organization_review.collectors.setup._resolve_redirect_with_browser",
+            return_value=UrlRedirectInfo(
+                original_url="https://api.legit.com:8443/success",
+                final_url="https://legit.com/",
+                final_domain="legit.com",
+            ),
+        )
+
+        with respx.mock:
+            respx.get("https://api.legit.com:8443/success").respond(
+                302, headers={"Location": "https://legit.com/"}
+            )
+            respx.get("https://legit.com/").respond(200)
+            results = await resolve_url_redirects(
+                ["https://api.legit.com:8443/success"]
+            )
+
+        assert len(results) == 1
+        assert results[0].redirected is False
+
+    @pytest.mark.anyio
     async def test_subdomain_to_parent_not_flagged(self, mocker: MockerFixture) -> None:
         mocker.patch(
             "polar.organization_review.collectors.setup._validate_url_host",

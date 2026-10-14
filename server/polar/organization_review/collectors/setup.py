@@ -53,12 +53,14 @@ def same_registrable_domain(host_a: str, host_b: str) -> bool:
     return a == b or a.endswith("." + b) or b.endswith("." + a)
 
 
-def _is_cross_domain(original: str | None, final: str | None) -> bool:
-    """Return True if two domains don't share a registrable domain.
+def _is_cross_domain(original_url: str, final_url: str) -> bool:
+    """Return True if two URLs' hosts don't share a registrable domain.
 
-    Returns False if either domain is None (unparseable URLs are not
+    Returns False if either host is missing (unparseable URLs are not
     treated as cross-domain redirects — they surface via the error field).
     """
+    original = urlparse(original_url).hostname
+    final = urlparse(final_url).hostname
     if original is None or final is None:
         return False
     return not same_registrable_domain(original, final)
@@ -133,14 +135,14 @@ async def _resolve_redirect(
                 else:
                     break
 
-            final_url = str(response.url)
+            # On hitting the hop limit, the last redirect target is never
+            # fetched but is still where the chain leads.
+            final_url = current_url
             final_domain = _extract_domain(final_url)
-            original_domain = _extract_domain(url)
             intermediate_hops = hops[:-1]
             # A chain can leave the domain and come back, so every hop counts.
             redirected = any(
-                _is_cross_domain(original_domain, _extract_domain(hop))
-                for hop in [*intermediate_hops, final_url]
+                _is_cross_domain(url, hop) for hop in [*intermediate_hops, final_url]
             )
             return UrlRedirectInfo(
                 original_url=url,
@@ -190,8 +192,7 @@ async def _resolve_redirect_with_browser(url: str) -> UrlRedirectInfo:
 
     final_url = result.url
     final_domain = _extract_domain(final_url)
-    original_domain = _extract_domain(url)
-    redirected = _is_cross_domain(original_domain, final_domain)
+    redirected = _is_cross_domain(url, final_url)
     return UrlRedirectInfo(
         original_url=url,
         final_url=final_url,

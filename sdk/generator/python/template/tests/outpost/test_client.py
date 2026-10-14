@@ -1,5 +1,6 @@
 import collections.abc
 import copy
+import dataclasses
 import datetime
 import functools
 import json
@@ -15,11 +16,17 @@ from redis.asyncio import Redis
 from redis.asyncio.client import PubSub
 from redis.exceptions import ConnectionError as RedisConnectionError
 
-from polar.outpost.client import APPLY_SNAPSHOT_SCRIPT, Outpost, connect_websocket, PolarOutpostError
-from polar.outpost.reducer import get_bucket_start
 from polar.outpost import EventInput
+from polar.outpost.client import (
+    APPLY_SNAPSHOT_SCRIPT,
+    Outpost,
+    PolarOutpostError,
+    ReducerState,
+    _version,
+    connect_websocket,
+)
+from polar.outpost.reducer import get_bucket_start
 from polar.{{ ir.versions[0] | format_version }}.inputs import EventsIngest
-
 
 TIMESTAMP = "2026-10-12T12:00:00Z"
 BUCKET = get_bucket_start(datetime.datetime.fromisoformat(TIMESTAMP))
@@ -99,7 +106,7 @@ async def polar_client(
                         ),
                     }
                 )
-            elif request["type"] == "snapshot":
+            elif request["type"] == "meter_usage":
                 payload = request["payload"]
                 kind = "customer" if "customer_id" in payload else "external"
                 identifier = payload.get(
@@ -111,7 +118,7 @@ async def polar_client(
                         {
                             "type": "websocket.send",
                             "text": json.dumps(
-                                {"type": "snapshot", "payload": snapshot}
+                                {"type": "meter_usage", "payload": snapshot}
                             ),
                         }
                     )
@@ -149,20 +156,22 @@ async def test_ingest_accepts_raw_sdk_payload(
     async with Outpost(url, client=polar_client) as outpost:
         result = await outpost.ingest(**request)
     assert result.inserted == 2
-    field = f"bucket:tokens:{BUCKET}"
-    assert await redis.hget("outpost:state:external:alice", field) == b"3"
-    assert [
-        value
-        for field, value in (
-            await redis.hgetall("outpost:state:customer:alice")
-        ).items()
-        if isinstance(field, bytes) and field.startswith(b"bucket:")
-    ] == [b"5"]
+    field = f"bucket:{BUCKET}:sum"
+    assert await redis.hget("outpost:state:external:alice:tokens", field) == b"3"
+    own = await redis.hgetall("outpost:state:customer:alice:tokens")
+    assert any(
+        isinstance(field, bytes)
+        and field.startswith(b"bucket:")
+        and field.endswith(b":sum")
+        and value == b"5"
+        for field, value in own.items()
+    )
 
 
 @pytest.mark.anyio
 @pytest.mark.parametrize(
-    ("func", "expected"), [("count", 4), ("sum", 4), ("min", -2), ("max", 4)]
+    ("func", "expected"),
+    [("count", 4), ("sum", 4), ("min", -2), ("max", 4), ("avg", 1)],
 )
 async def test_customer_meter_reads_cold_and_shared_buckets(
     redis_connection: tuple[str, Redis],
@@ -175,12 +184,15 @@ async def test_customer_meter_reads_cold_and_shared_buckets(
     url, redis = redis_connection
     configuration["reducers"][0]["aggregation"]["func"] = func
     await redis.hset(
-        "outpost:state:external:alice",
+        "outpost:state:external:alice:tokens",
         mapping={
             "cold_until": BUCKET,
-            "cold:tokens": 2,
+            "cold:count": 2,
+            "cold:sum": 2,
+            "cold:min": 2,
+            "cold:max": 2,
             "credited:meter": 20,
-            f"bucket:tokens:{BUCKET - 300}": 999,
+            f"bucket:{BUCKET - 300}:sum": 999,
         },
     )
     async with (
@@ -228,10 +240,10 @@ async def test_bucket_ownership_and_internal_customer(
 ) -> None:
     url, redis = redis_connection
     await redis.hset(
-        "outpost:state:customer:alice",
+        "outpost:state:customer:alice:tokens",
         mapping={
             "cold_until": BUCKET,
-            "cold:tokens": 10,
+            "cold:sum": 10,
             "credited:meter": 100,
         },
     )
@@ -258,7 +270,7 @@ async def test_bucket_ownership_and_internal_customer(
     assert meter.consumed_units == 12
     assert (
         await redis.hget(
-            "outpost:state:customer:alice", f"bucket:tokens:{BUCKET - 300}"
+            "outpost:state:customer:alice:tokens", f"bucket:{BUCKET - 300}:sum"
         )
         is None
     )
@@ -283,8 +295,13 @@ async def test_actor_is_idempotent_and_missing_snapshot_is_not_zero(
         with pytest.raises(PolarOutpostError, match="snapshot is not ready"):
             await outpost.customer_meter(external_customer_id="alice", meter_id="meter")
     assert [
-        message for message in websocket_requests if message["type"] == "snapshot"
-    ] == [{"type": "snapshot", "payload": {"external_customer_id": "alice"}}]
+        message for message in websocket_requests if message["type"] == "meter_usage"
+    ] == [
+        {
+            "type": "meter_usage",
+            "payload": {"external_customer_id": "alice", "meter_id": "meter"},
+        }
+    ]
 
 
 @pytest.mark.anyio
@@ -308,7 +325,7 @@ async def test_repeated_reduction_and_concurrent_writers(
         for outpost in [first, second] * 5:
             tasks.start_soon(functools.partial(outpost.ingest, events=[event]))
     assert (
-        await redis.hget("outpost:state:external:alice", f"bucket:tokens:{BUCKET}")
+        await redis.hget("outpost:state:external:alice:tokens", f"bucket:{BUCKET}:sum")
         == b"10"
     )
 
@@ -335,10 +352,10 @@ async def test_startup_does_not_wait_for_configuration(
         ):
             tasks.start_soon(functools.partial(outpost.ingest, events=[event]))
             await anyio.lowlevel.checkpoint()
-            assert not await redis.exists("outpost:state:external:alice")
+            assert not await redis.exists("outpost:state:external:alice:tokens")
             gate.set()
     assert (
-        await redis.hget("outpost:state:external:alice", f"bucket:tokens:{BUCKET}")
+        await redis.hget("outpost:state:external:alice:tokens", f"bucket:{BUCKET}:sum")
         == b"3"
     )
 
@@ -351,14 +368,14 @@ async def test_snapshot_arrives_over_websocket(
     websocket_requests: list[dict[str, typing.Any]],
 ) -> None:
     url, redis = redis_connection
-    key = "outpost:state:external:alice"
+    key = "outpost:state:external:alice:tokens"
     await redis.hset(
         key,
         mapping={
             "cold_until": BUCKET,
-            "cold:tokens": 100,
-            f"bucket:tokens:{BUCKET}": 7,
-            f"bucket:tokens:{BUCKET + 300}": 4,
+            "cold:sum": 100,
+            f"bucket:{BUCKET}:sum": 7,
+            f"bucket:{BUCKET + 300}:sum": 4,
         },
     )
     async with (
@@ -368,14 +385,20 @@ async def test_snapshot_arrives_over_websocket(
         await reader.actor(external_customer_id="alice")
         with anyio.fail_after(1):
             while not any(
-                message["type"] == "snapshot" for message in websocket_requests
+                message["type"] == "meter_usage" for message in websocket_requests
             ):
                 await anyio.lowlevel.checkpoint()
         snapshots["external:alice"] = {
+            "customer_id": None,
             "external_customer_id": "alice",
-            "cold_until": BUCKET + 300,
-            "cold": {"tokens": 107},
-            "credited": {"meter": 200},
+            "meter_id": "meter",
+            "version": "2026-10-12T12:10:00Z",
+            "cold_until": "2026-10-12T12:05:00Z",
+            "count": 2,
+            "sum": 107,
+            "min": 7,
+            "max": 100,
+            "credited_units": 200,
         }
         await owner.actor(external_customer_id="alice")
         with anyio.fail_after(1):
@@ -389,8 +412,8 @@ async def test_snapshot_arrives_over_websocket(
     assert meter is not None
     assert meter.consumed_units == 111
     assert meter.balance == 89
-    assert await redis.hget(key, f"bucket:tokens:{BUCKET}") is None
-    assert await redis.hget(key, f"bucket:tokens:{BUCKET + 300}") == b"4"
+    assert await redis.hget(key, f"bucket:{BUCKET}:sum") is None
+    assert await redis.hget(key, f"bucket:{BUCKET + 300}:sum") == b"4"
 
 
 @pytest.mark.anyio
@@ -399,14 +422,24 @@ async def test_duplicate_and_older_snapshots(
 ) -> None:
     _, redis = redis_connection
     apply_snapshot = redis.register_script(APPLY_SNAPSHOT_SCRIPT)
-    key = "outpost:state:external:alice"
-    prefix = ["external:alice", "outpost:0:updates", "epoch"]
-    args = [*prefix, BUCKET, "cold:tokens", 10, "credited:meter", 20]
+    key = "outpost:state:external:alice:tokens"
+    prefix = ["external:alice:tokens", "outpost:0:updates", "epoch"]
+    args = [*prefix, BUCKET, 20, "meter", 20, 1, 10, 10, 10]
     await apply_snapshot(keys=[key], args=args)
     await apply_snapshot(keys=[key], args=args)
-    await apply_snapshot(keys=[key], args=[*prefix, BUCKET - 300, "cold:tokens", 999])
-    assert await redis.hget(key, "cold:tokens") == b"10"
+    await apply_snapshot(
+        keys=[key], args=[*prefix, BUCKET - 300, 30, "meter", 99, 1, 999, 999, 999]
+    )
+    await apply_snapshot(
+        keys=[key], args=[*prefix, BUCKET, 19, "meter", 99, 1, 999, 999, 999]
+    )
+    assert await redis.hget(key, "cold:sum") == b"10"
     assert await redis.hget(key, "credited:meter") == b"20"
+    await apply_snapshot(
+        keys=[key], args=[*prefix, BUCKET, 21, "meter", 25, 0, 0, "", ""]
+    )
+    assert await redis.hget(key, "cold:min") is None
+    assert await redis.hget(key, "cold:max") is None
 
 
 @pytest.mark.anyio
@@ -417,8 +450,8 @@ async def test_warmed_reads_do_not_use_redis(
 ) -> None:
     url, redis = redis_connection
     await redis.hset(
-        "outpost:state:external:alice",
-        mapping={"cold_until": BUCKET, "cold:tokens": 10},
+        "outpost:state:external:alice:tokens",
+        mapping={"cold_until": BUCKET, "cold:sum": 10},
     )
     async with Outpost(url, client=polar_client) as outpost:
         await outpost.ingest(
@@ -452,12 +485,12 @@ async def test_old_messages_and_redis_reset_do_not_roll_back_cache(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, redis = redis_connection
-    key = "outpost:state:external:alice"
+    key = "outpost:state:external:alice:tokens"
     await redis.hset(
         key,
         mapping={
             "cold_until": BUCKET,
-            "cold:tokens": 10,
+            "cold:sum": 10,
             "epoch": "first",
             "revision": 2**53 + 1,
         },
@@ -467,18 +500,18 @@ async def test_old_messages_and_redis_reset_do_not_roll_back_cache(
         received = anyio.Event()
         original = outpost._receive_state
 
-        async def receive_state(customer: str, state: dict[str, str]) -> None:
+        async def receive_state(customer: str, state: ReducerState) -> None:
             await original(customer, state)
-            if state.get("cold:tokens") == "1":
+            if state.cold.sum == 1:
                 received.set()
 
         monkeypatch.setattr(outpost, "_receive_state", receive_state)
         old = {
-            "customer": "external:alice",
+            "customer": "external:alice:tokens",
             "state": [
                 "cold_until",
                 str(BUCKET),
-                "cold:tokens",
+                "cold:sum",
                 "1",
                 "epoch",
                 "first",
@@ -505,7 +538,7 @@ async def test_old_messages_and_redis_reset_do_not_roll_back_cache(
         assert meter is not None and meter.consumed_units == 13
 
         await redis.delete(key)
-        await redis.hset(key, mapping={"cold_until": BUCKET, "cold:tokens": 20})
+        await redis.hset(key, mapping={"cold_until": BUCKET, "cold:sum": 20})
         await outpost.ingest(
             events=[
                 {
@@ -534,11 +567,11 @@ async def test_background_refresh_repairs_missed_notification(
 ) -> None:
     url, redis = redis_connection
     monkeypatch.setattr("polar.outpost.client.SYNC_INTERVAL", 0.01)
-    key = "outpost:state:external:alice"
-    await redis.hset(key, mapping={"cold_until": BUCKET, "cold:tokens": 1})
+    key = "outpost:state:external:alice:tokens"
+    await redis.hset(key, mapping={"cold_until": BUCKET, "cold:sum": 1})
     async with Outpost(url, client=polar_client) as outpost:
         await outpost.actor(external_customer_id="alice")
-        await redis.hset(key, "cold:tokens", 2)
+        await redis.hset(key, "cold:sum", 2)
         await redis.hincrby(key, "revision", 1)
         with anyio.fail_after(2):
             while True:
@@ -570,12 +603,12 @@ async def test_pubsub_reconnect_reloads_state(
         return await original(self, *args, **kwargs)
 
     monkeypatch.setattr(PubSub, "get_message", get_message)
-    key = "outpost:state:external:alice"
-    await redis.hset(key, mapping={"cold_until": BUCKET, "cold:tokens": 1})
+    key = "outpost:state:external:alice:tokens"
+    await redis.hset(key, mapping={"cold_until": BUCKET, "cold:sum": 1})
     async with Outpost(url, client=polar_client) as outpost:
         await outpost.actor(external_customer_id="alice")
         disconnect = True
-        await redis.hset(key, "cold:tokens", 2)
+        await redis.hset(key, "cold:sum", 2)
         with anyio.fail_after(4):
             while outpost._synced.is_set():
                 await anyio.lowlevel.checkpoint()
@@ -593,13 +626,13 @@ async def test_evicted_customer_is_reloaded(
 ) -> None:
     url, redis = redis_connection
     monkeypatch.setattr("polar.outpost.client.CACHE_SIZE", 2)
-    key = "outpost:state:external:alice"
-    await redis.hset(key, mapping={"cold_until": BUCKET, "cold:tokens": 1})
+    key = "outpost:state:external:alice:tokens"
+    await redis.hset(key, mapping={"cold_until": BUCKET, "cold:sum": 1})
     async with Outpost(url, client=polar_client) as outpost:
         await outpost.actor(external_customer_id="alice")
         await outpost.actor(external_customer_id="bob")
         await outpost.actor(external_customer_id="carol")
-        await redis.hset(key, "cold:tokens", 2)
+        await redis.hset(key, "cold:sum", 2)
         meter = await outpost.customer_meter(
             external_customer_id="alice", meter_id="meter"
         )
@@ -644,3 +677,170 @@ async def test_websocket_connection_and_cleanup() -> None:
             }
         assert not client.is_closed
     assert messages[0]["type"] == "websocket.disconnect"
+
+
+@pytest.mark.anyio
+async def test_independent_reducers_concurrent_statistics_and_meter_credits(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    configuration: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    configuration["reducers"][0]["meter_ids"].append("shared")
+    configuration["reducers"].append(
+        {
+            "id": "average",
+            "meter_ids": ["average-meter"],
+            "filter": {"conjunction": "and", "clauses": []},
+            "aggregation": {"func": "avg", "property": "tokens"},
+        }
+    )
+    apply_snapshot = redis.register_script(APPLY_SNAPSHOT_SCRIPT)
+    for reducer_id, meter_id in [("tokens", "meter"), ("average", "average-meter")]:
+        identity = f"external:alice:{reducer_id}"
+        await apply_snapshot(
+            keys=[f"outpost:state:{identity}"],
+            args=[
+                identity,
+                "outpost:0:updates",
+                "epoch",
+                BUCKET,
+                20,
+                meter_id,
+                100,
+                2,
+                20,
+                5,
+                15,
+            ],
+        )
+    identity = "external:alice:tokens"
+    await apply_snapshot(
+        keys=[f"outpost:state:{identity}"],
+        args=[
+            identity,
+            "outpost:0:updates",
+            "epoch",
+            BUCKET,
+            19,
+            "shared",
+            200,
+            1,
+            999,
+            999,
+            999,
+        ],
+    )
+    async with (
+        Outpost(url, client=polar_client) as first,
+        Outpost(url, client=polar_client) as second,
+    ):
+        await first.actor(external_customer_id="alice")
+        await second.actor(external_customer_id="alice")
+
+        async def emit(writer: Outpost, value: int) -> None:
+            for _ in range(10):
+                await writer.ingest(
+                    events=[
+                        {
+                            "name": "call",
+                            "external_customer_id": "alice",
+                            "timestamp": TIMESTAMP,
+                            "metadata": {"tokens": value},
+                        }
+                    ]
+                )
+
+        async with anyio.create_task_group() as tasks:
+            tasks.start_soon(emit, first, 2)
+            tasks.start_soon(emit, second, 8)
+        await first._refresh_states()
+        meter = await first.customer_meter(
+            external_customer_id="alice", meter_id="meter"
+        )
+        shared = await first.customer_meter(
+            external_customer_id="alice", meter_id="shared"
+        )
+        average = await first.customer_meter(
+            external_customer_id="alice", meter_id="average-meter"
+        )
+        assert (
+            meter is not None
+            and meter.consumed_units == 120
+            and meter.credited_units == 100
+        )
+        assert (
+            shared is not None
+            and shared.consumed_units == 120
+            and shared.credited_units == 200
+        )
+        assert average is not None and average.consumed_units == pytest.approx(120 / 22)
+        state = first._cache["external:alice:tokens"].state
+        assert state is not None
+        assert dataclasses.asdict(state.buckets[BUCKET]) == {
+            "count": 20,
+            "sum": 100,
+            "min": 2,
+            "max": 8,
+        }
+        await first.ingest(
+            events=[
+                {
+                    "name": "call",
+                    "external_customer_id": "alice",
+                    "timestamp": "2026-10-12T12:05:00Z",
+                    "metadata": {"tokens": 4},
+                }
+            ]
+        )
+        await apply_snapshot(
+            keys=[f"outpost:state:{identity}"],
+            args=[
+                identity,
+                "outpost:0:updates",
+                "epoch",
+                BUCKET + 300,
+                21,
+                "meter",
+                150,
+                22,
+                120,
+                2,
+                15,
+            ],
+        )
+        await first._refresh_states()
+        assert (
+            await redis.hget(f"outpost:state:{identity}", f"bucket:{BUCKET}:sum")
+            is None
+        )
+        assert (
+            await redis.hget(
+                "outpost:state:external:alice:average", f"bucket:{BUCKET}:sum"
+            )
+            == b"100"
+        )
+        meter = await first.customer_meter(
+            external_customer_id="alice", meter_id="meter"
+        )
+        average = await first.customer_meter(
+            external_customer_id="alice", meter_id="average-meter"
+        )
+        shared = await first.customer_meter(
+            external_customer_id="alice", meter_id="shared"
+        )
+        assert meter is not None and meter.consumed_units == 124 and meter.balance == 26
+        assert average is not None and average.consumed_units == pytest.approx(124 / 23)
+        assert shared is not None and shared.credited_units == 200
+        assert await redis.exists("outpost:state:customer:alice:tokens") == 0
+
+
+def test_snapshot_version_preserves_microseconds() -> None:
+    assert (
+        _version("2026-10-12T12:10:00.000002Z")
+        - _version("2026-10-12T12:10:00.000001Z")
+        == 1
+    )
+    assert _version("2026-10-12T14:10:00.000002+02:00") == _version(
+        "2026-10-12T12:10:00.000002Z"
+    )

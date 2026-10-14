@@ -14,9 +14,9 @@ from python_client import read_lines
 
 
 def customer_key(payload: typing.Mapping[str, object]) -> str:
-    if "customer_id" in payload:
-        return f"customer:{payload['customer_id']}"
-    return f"external:{payload['external_customer_id']}"
+    if payload.get("customer_id") is not None:
+        return f"customer:{payload['customer_id']}:{payload['meter_id']}"
+    return f"external:{payload['external_customer_id']}:{payload['meter_id']}"
 
 
 class SnapshotServer:
@@ -37,11 +37,11 @@ class SnapshotServer:
                 if message["type"] == "configuration":
                     await self._send(websocket, "configuration", self.configuration)
                     for snapshot in list(self.snapshots.values()):
-                        await self._send(websocket, "snapshot", snapshot)
-                elif message["type"] == "snapshot":
+                        await self._send(websocket, "meter_usage", snapshot)
+                elif message["type"] == "meter_usage":
                     snapshot = self.snapshots.get(customer_key(message["payload"]))
                     if snapshot is not None:
-                        await self._send(websocket, "snapshot", snapshot)
+                        await self._send(websocket, "meter_usage", snapshot)
                 else:
                     await websocket.close(code=1008, reason="Unknown message")
                     return
@@ -61,7 +61,7 @@ class SnapshotServer:
             snapshot = typing.cast(Snapshot, arguments)
             self.snapshots[customer_key(snapshot)] = snapshot
             for websocket in list(self.clients):
-                await self._send(websocket, "snapshot", snapshot)
+                await self._send(websocket, "meter_usage", snapshot)
         else:
             raise ValueError(f"Unknown operation: {operation}")
 

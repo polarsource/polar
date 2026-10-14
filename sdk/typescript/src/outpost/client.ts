@@ -5,22 +5,44 @@ import WebSocket from "ws";
 
 import { ClientBase, PolarError } from "../base";
 import { customerKey, parseEvent, type EventInput } from "./event";
-import { reduce, getBucketStart, type Reducer } from "./reducer";
+import {
+  reduce,
+  getBucketStart,
+  type Reducer,
+  type BucketStatistics,
+  emptyStatistics,
+  addStatistics,
+  quantity,
+} from "./reducer";
 import { READ_STATE_SCRIPT, WRITE_BUCKET_SCRIPT, APPLY_SNAPSHOT_SCRIPT } from "./scripts";
 
 const CACHE_SIZE = 1024;
 const SYNC_INTERVAL = 30_000;
 const TIMEOUT = 5_000;
-type State = Record<string, string>;
-type Customer = Parameters<typeof customerKey>[0];
-interface Snapshot extends Customer {
-  cold_until: number;
-  cold: Record<string, number>;
+interface State {
+  epoch: string;
+  revision: bigint;
+  coldUntil?: number;
+  cold: BucketStatistics;
+  buckets: Map<number, BucketStatistics>;
   credited: Record<string, number>;
+}
+type Customer = Parameters<typeof customerKey>[0];
+interface Snapshot {
+  customer_id: string | null;
+  external_customer_id: string | null;
+  meter_id: string;
+  cold_until: string;
+  version: string;
+  count: number;
+  sum: number;
+  min: number | null;
+  max: number | null;
+  credited_units: number;
 }
 type Message =
   | { type: "configuration"; payload: { reducers: Reducer[] } }
-  | { type: "snapshot"; payload: Snapshot };
+  | { type: "meter_usage"; payload: Snapshot };
 interface StateUpdate {
   customer: string;
   state: string[];
@@ -68,9 +90,49 @@ const locked = <T>(local: LocalState, action: () => Promise<T>): Promise<T> => {
   return result;
 };
 const decodeState = (value: string[]): State => {
-  const pairs: [string, string][] = [];
-  for (let i = 0; i < value.length; i += 2) pairs.push([value[i], value[i + 1]]);
-  return Object.fromEntries(pairs);
+  const fields: Record<string, string> = {};
+  for (let i = 0; i < value.length; i += 2) fields[value[i]] = value[i + 1];
+  const state: State = {
+    epoch: fields.epoch,
+    revision: BigInt(fields.revision),
+    coldUntil: fields.cold_until === undefined ? undefined : number(fields.cold_until),
+    cold: emptyStatistics(),
+    buckets: new Map(),
+    credited: {},
+  };
+  for (const [field, value] of Object.entries(fields)) {
+    if (field.startsWith("cold:")) {
+      const statistic = field.slice(5) as keyof BucketStatistics;
+      state.cold[statistic] = number(value);
+    } else if (field.startsWith("bucket:")) {
+      const [, timestamp, statistic] = field.split(":");
+      const start = Number(timestamp);
+      const bucket = state.buckets.get(start) ?? emptyStatistics();
+      bucket[statistic as keyof BucketStatistics] = number(value);
+      state.buckets.set(start, bucket);
+    } else if (field.startsWith("credited:")) state.credited[field.slice(9)] = number(value);
+  }
+  return state;
+};
+const snapshotVersion = (value: string): number => {
+  const milliseconds = Date.parse(value);
+  if (!Number.isFinite(milliseconds) || !/(?:Z|[+-]\d{2}:\d{2})$/.test(value))
+    throw new TypeError("Invalid snapshot timestamp");
+  const fraction = /\.(\d+)(?:Z|[+-]\d{2}:\d{2})$/.exec(value)?.[1] ?? "";
+  const microseconds = Number(fraction.padEnd(6, "0").slice(3, 6));
+  const version = milliseconds * 1000 + microseconds;
+  if (!Number.isSafeInteger(version))
+    throw new TypeError("Snapshot timestamp exceeds integer precision");
+  return version;
+};
+
+const customerArguments = (customer: string): Customer => {
+  const separator = customer.indexOf(":");
+  return {
+    [customer.startsWith("customer:") ? "customer_id" : "external_customer_id"]: customer.slice(
+      separator + 1,
+    ),
+  };
 };
 
 export interface OutpostOptions {
@@ -226,20 +288,22 @@ export class Outpost {
       parsed.reduce((oldest, event) => Math.min(oldest, getBucketStart(event.timestamp)), Infinity),
     );
     for (const customer of new Set(parsed.map((event) => event.customer)))
-      await this.warmCustomer(customer);
+      await this.actor(customerArguments(customer));
     for (const update of updates) {
-      const epoch = generateEpoch();
+      const identity = `${update.customer}:${update.reducer}`;
+      const statistics = update.statistics;
       const state = await redis.outpostWriteBucket(
-        `outpost:state:${update.customer}`,
-        update.customer,
+        `outpost:state:${identity}`,
+        identity,
         this.channel,
-        epoch,
+        generateEpoch(),
         update.bucketStart,
-        `bucket:${update.reducer}:${update.bucketStart}`,
-        update.func,
-        update.value,
+        statistics.count,
+        statistics.sum,
+        statistics.min ?? "",
+        statistics.max ?? "",
       );
-      await this.receiveState(update.customer, decodeState(state));
+      await this.receiveState(identity, decodeState(state));
     }
     return { inserted: parsed.length, duplicates: 0 };
   }
@@ -250,27 +314,14 @@ export class Outpost {
     await this.waitConfigured();
     const reducer = this.reducers.find((item) => item.meter_ids?.includes(input.meter_id));
     if (!reducer) return null;
-    const state = (await this.warmCustomer(customer)).state;
-    if (!state || state.cold_until === undefined)
+    const state = (await this.warmCustomer(customer, reducer)).state;
+    if (!state || state.coldUntil === undefined)
       throw new PolarError("Customer snapshot is not ready");
-    const cutoff = number(state.cold_until);
-    const values = Object.entries(state)
-      .filter(
-        ([field]) =>
-          field.startsWith(`bucket:${reducer.id}:`) &&
-          Number(field.slice(field.lastIndexOf(":") + 1)) >= cutoff,
-      )
-      .map(([, value]) => number(value));
-    if (state[`cold:${reducer.id}`] !== undefined) values.push(number(state[`cold:${reducer.id}`]));
-    const consumed =
-      values.length === 0
-        ? 0
-        : reducer.aggregation.func === "min"
-          ? values.reduce((a, b) => Math.min(a, b))
-          : reducer.aggregation.func === "max"
-            ? values.reduce((a, b) => Math.max(a, b))
-            : values.reduce((a, b) => a + b, 0);
-    const credited = number(state[`credited:${input.meter_id}`] ?? "0");
+    const combined = { ...state.cold };
+    for (const [start, statistics] of state.buckets)
+      if (start >= state.coldUntil) addStatistics(combined, statistics);
+    const consumed = quantity(combined, reducer.aggregation.func);
+    const credited = state.credited[input.meter_id] ?? 0;
     return {
       ...input,
       consumed_units: consumed,
@@ -280,7 +331,8 @@ export class Outpost {
   }
 
   async actor(input: Customer): Promise<void> {
-    await this.warmCustomer(customerKey(input));
+    await this.waitConfigured();
+    for (const reducer of this.reducers) await this.warmCustomer(customerKey(input), reducer);
   }
 
   private requireRedis(): OutpostRedis {
@@ -303,38 +355,36 @@ export class Outpost {
     );
   }
 
-  private async warmCustomer(customer: string): Promise<LocalState> {
+  private async warmCustomer(customer: string, reducer: Reducer): Promise<LocalState> {
+    const identity = `${customer}:${reducer.id}`;
     this.requireRedis();
     while (!this.isSynced) {
       await withTimeout(this.synced.promise);
       this.requireRedis();
     }
-    let local = this.cache.get(customer);
+    let local = this.cache.get(identity);
     if (!local) {
       local = { pending: Promise.resolve() };
-      this.cache.set(customer, local);
+      this.cache.set(identity, local);
       if (this.cache.size > CACHE_SIZE) {
         const evicted = this.cache.keys().next().value!;
         this.cache.delete(evicted);
         this.actors.delete(evicted);
       }
     }
-    this.cache.delete(customer);
-    this.cache.set(customer, local);
-    if (local.state && this.actors.has(customer)) return local;
+    this.cache.delete(identity);
+    this.cache.set(identity, local);
+    if (local.state && this.actors.has(identity)) return local;
     const entry = local;
     await locked(entry, async () => {
-      if (!entry.state) entry.state = await this.loadState(customer);
-      if (!this.actors.has(customer)) {
-        const separator = customer.indexOf(":");
-        await this.send({
-          type: "snapshot",
-          payload: {
-            [customer.startsWith("customer:") ? "customer_id" : "external_customer_id"]:
-              customer.slice(separator + 1),
-          },
-        });
-        this.actors.add(customer);
+      if (!entry.state) entry.state = await this.loadState(identity);
+      if (!this.actors.has(identity)) {
+        for (const meter_id of reducer.meter_ids ?? [])
+          await this.send({
+            type: "meter_usage",
+            payload: { ...customerArguments(customer), meter_id },
+          });
+        this.actors.add(identity);
       }
     });
     return entry;
@@ -354,7 +404,7 @@ export class Outpost {
       const current = local.state;
       if (!current) return;
       if (current.epoch !== state.epoch) state = await this.loadState(customer);
-      else if (BigInt(current.revision) >= BigInt(state.revision)) return;
+      else if (current.revision >= state.revision) return;
       local.state = state;
     });
   }
@@ -424,23 +474,40 @@ export class Outpost {
     if (message.type === "configuration") {
       this.reducers = message.payload.reducers;
       this.configured.resolve();
-    } else if (message.type === "snapshot") {
+    } else if (message.type === "meter_usage") {
       const snapshot = message.payload;
-      const customer = customerKey(snapshot);
-      const epoch = generateEpoch();
-      const args: (string | number)[] = [customer, this.channel, epoch, snapshot.cold_until];
-      for (const group of ["cold", "credited"] as const) {
-        for (const [id, value] of Object.entries(snapshot[group])) {
-          if (!Number.isFinite(value)) throw new TypeError("Snapshot values must be finite");
-          args.push(`${group}:${id}`, value);
-        }
-      }
-      // shortcut: equal-cutoff snapshots are unordered until Polar supplies snapshot versions.
+      const reducer = this.reducers.find((item) => item.meter_ids?.includes(snapshot.meter_id));
+      if (!reducer) return;
+      if (snapshot.customer_id !== null && snapshot.external_customer_id !== null) return;
+      const customer = customerKey({
+        customer_id: snapshot.customer_id ?? undefined,
+        external_customer_id: snapshot.external_customer_id ?? undefined,
+      });
+      const identity = `${customer}:${reducer.id}`;
+      for (const value of [
+        snapshot.count,
+        snapshot.sum,
+        snapshot.min,
+        snapshot.max,
+        snapshot.credited_units,
+      ])
+        if (value !== null && !Number.isFinite(value))
+          throw new TypeError("Snapshot values must be finite");
       const state = await this.requireRedis().outpostApplySnapshot(
-        `outpost:state:${customer}`,
-        ...args,
+        `outpost:state:${identity}`,
+        identity,
+        this.channel,
+        generateEpoch(),
+        snapshotVersion(snapshot.cold_until) / 1_000_000,
+        snapshotVersion(snapshot.version),
+        snapshot.meter_id,
+        snapshot.credited_units,
+        snapshot.count,
+        snapshot.sum,
+        snapshot.min ?? "",
+        snapshot.max ?? "",
       );
-      await this.receiveState(customer, decodeState(state));
+      await this.receiveState(identity, decodeState(state));
     }
   }
 }

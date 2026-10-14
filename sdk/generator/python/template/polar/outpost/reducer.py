@@ -1,4 +1,5 @@
 import collections.abc
+import dataclasses
 import datetime
 import math
 import operator
@@ -25,7 +26,7 @@ class CountAggregation(typing.TypedDict):
 
 
 class PropertyAggregation(typing.TypedDict):
-    func: typing.Literal["sum", "max", "min"]
+    func: typing.Literal["sum", "max", "min", "avg"]
     property: str
 
 
@@ -40,7 +41,43 @@ class Reducer(typing.TypedDict):
 
 
 EventMatcher: typing.TypeAlias = collections.abc.Callable[[Event], bool]
-Updates: typing.TypeAlias = dict[tuple[str, str, int, str], int | float]
+
+
+@dataclasses.dataclass
+class BucketStatistics:
+    count: int = 0
+    sum: int | float = 0
+    min: int | float | None = None
+    max: int | float | None = None
+
+    def add(self, other: "BucketStatistics") -> None:
+        total = self.sum + other.sum
+        if isinstance(total, float) and not math.isfinite(total):
+            raise ValueError("Aggregation values must be finite")
+        self.count += other.count
+        self.sum = total
+        if other.min is not None:
+            self.min = min(self.min, other.min) if self.min is not None else other.min
+        if other.max is not None:
+            self.max = max(self.max, other.max) if self.max is not None else other.max
+
+    def quantity(self, func: str) -> int | float:
+        match func:
+            case "count":
+                return self.count
+            case "sum":
+                return self.sum
+            case "min":
+                return self.min if self.min is not None else 0
+            case "max":
+                return self.max if self.max is not None else 0
+            case "avg":
+                return self.sum / self.count if self.count else 0
+            case _:
+                raise ValueError(f"Unsupported aggregation: {func}")
+
+
+Updates: typing.TypeAlias = dict[tuple[str, str, int], BucketStatistics]
 BUCKET_SIZE = 300
 FILTER_OPERATORS = {
     "eq": operator.eq,
@@ -122,22 +159,19 @@ def reduce(
                 raw_value = event.get_property(
                     typing.cast(PropertyAggregation, aggregation)["property"]
                 )
-                if type(raw_value) not in (int, float):
+                if not isinstance(raw_value, (int, float)) or isinstance(
+                    raw_value, bool
+                ):
                     continue
                 value = typing.cast(int | float, raw_value)
                 if isinstance(value, float) and not math.isfinite(value):
                     raise ValueError("Aggregation values must be finite")
 
-            update_key = (event.external_customer_id, reducer["id"], bucket_start, func)
-            previous = updates.get(update_key)
-            match func:
-                case "count" | "sum":
-                    value = (previous or 0) + value
-                case "min":
-                    value = min(previous, value) if previous is not None else value
-                case "max":
-                    value = max(previous, value) if previous is not None else value
-            if isinstance(value, float) and not math.isfinite(value):
-                raise ValueError("Aggregation values must be finite")
-            updates[update_key] = value
+            update_key = (event.external_customer_id, reducer["id"], bucket_start)
+            statistics = updates.setdefault(update_key, BucketStatistics())
+            statistics.add(
+                BucketStatistics(count=1)
+                if func == "count"
+                else BucketStatistics(count=1, sum=value, min=value, max=value)
+            )
     return updates

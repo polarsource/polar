@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import { customerKey, parseEvent, getProperty } from "./event";
-import { getBucketStart, getMatcher, reduce, type Reducer } from "./reducer";
+import {
+  getBucketStart,
+  getMatcher,
+  reduce,
+  type Reducer,
+  quantity,
+  emptyStatistics,
+} from "./reducer";
 
 const event = {
   ...parseEvent({
@@ -11,18 +18,22 @@ const event = {
   }),
   metadata: { tokens: 3, nested: { flag: true } },
 };
-const reducer = (func: "count" | "sum" | "min" | "max"): Reducer => ({
+const reducer = (func: "count" | "sum" | "min" | "max" | "avg"): Reducer => ({
   id: "tokens",
   filter: { conjunction: "and", clauses: [] },
   aggregation: func === "count" ? { func } : { func, property: "tokens" },
 });
 
 describe("reduction", () => {
+  it.each(["count", "sum", "min", "max", "avg"] as const)("reads empty %s as zero", (func) => {
+    expect(quantity(emptyStatistics(), func)).toBe(0);
+  });
   it.each([
     ["count", 2],
     ["sum", 1],
     ["min", -2],
     ["max", 3],
+    ["avg", 0.5],
   ] as const)("reduces %s by customer and bucket", (func, value) => {
     const bucket = getBucketStart(event.timestamp);
     const events = [
@@ -32,15 +43,26 @@ describe("reduction", () => {
       { ...event, timestamp: event.timestamp - 300 },
     ];
     expect(reduce([reducer(func)], events, bucket)).toEqual([
-      { customer: "external:alice", reducer: "tokens", bucketStart: bucket, func, value },
+      {
+        customer: "external:alice",
+        reducer: "tokens",
+        bucketStart: bucket,
+        statistics:
+          func === "count"
+            ? { count: 2, sum: 0, min: null, max: null }
+            : { count: 2, sum: 1, min: -2, max: 3 },
+      },
       {
         customer: "external:bob",
         reducer: "tokens",
         bucketStart: bucket,
-        func,
-        value: func === "count" ? 1 : 3,
+        statistics:
+          func === "count"
+            ? { count: 1, sum: 0, min: null, max: null }
+            : { count: 1, sum: 3, min: 3, max: 3 },
       },
     ]);
+    expect(quantity(reduce([reducer(func)], events, bucket)[0].statistics, func)).toBe(value);
     expect(getBucketStart(-1)).toBe(-300);
     const fractional = parseEvent({
       name: "api",

@@ -9,19 +9,51 @@ export interface Filter {
   conjunction: "and" | "or";
   clauses: (Filter | FilterClause)[];
 }
-export type Aggregation = { func: "count" } | { func: "sum" | "min" | "max"; property: string };
+export type Aggregation =
+  | { func: "count" }
+  | { func: "sum" | "min" | "max" | "avg"; property: string };
 export interface Reducer {
   id: string;
   filter: Filter;
   aggregation: Aggregation;
   meter_ids?: string[];
 }
+export interface BucketStatistics {
+  count: number;
+  sum: number;
+  min: number | null;
+  max: number | null;
+}
+export const emptyStatistics = (): BucketStatistics => ({ count: 0, sum: 0, min: null, max: null });
+export const addStatistics = (target: BucketStatistics, other: BucketStatistics): void => {
+  const total = target.sum + other.sum;
+  if (!Number.isFinite(total)) throw new TypeError("Aggregation values must be finite");
+  target.count += other.count;
+  target.sum = total;
+  if (other.min !== null)
+    target.min = target.min === null ? other.min : Math.min(target.min, other.min);
+  if (other.max !== null)
+    target.max = target.max === null ? other.max : Math.max(target.max, other.max);
+};
+export const quantity = (statistics: BucketStatistics, func: Aggregation["func"]): number => {
+  switch (func) {
+    case "count":
+      return statistics.count;
+    case "sum":
+      return statistics.sum;
+    case "min":
+      return statistics.min ?? 0;
+    case "max":
+      return statistics.max ?? 0;
+    case "avg":
+      return statistics.count ? statistics.sum / statistics.count : 0;
+  }
+};
 export interface BucketUpdate {
   customer: string;
   reducer: string;
   bucketStart: number;
-  func: Aggregation["func"];
-  value: number;
+  statistics: BucketStatistics;
 }
 export const BUCKET_SIZE = 300;
 
@@ -82,24 +114,23 @@ export const reduce = (
       const value = aggregation.func === "count" ? 1 : getProperty(event, aggregation.property);
       if (typeof value !== "number") continue;
       if (!Number.isFinite(value)) throw new TypeError("Aggregation values must be finite");
-      const key = JSON.stringify([event.customer, reducer.id, bucketStart, aggregation.func]);
-      const previous = updates.get(key)?.value;
-      const reduced =
-        previous === undefined
-          ? value
-          : aggregation.func === "min"
-            ? Math.min(previous, value)
-            : aggregation.func === "max"
-              ? Math.max(previous, value)
-              : previous + value;
-      if (!Number.isFinite(reduced)) throw new TypeError("Aggregation values must be finite");
-      updates.set(key, {
-        customer: event.customer,
-        reducer: reducer.id,
-        bucketStart,
-        func: aggregation.func,
-        value: reduced,
-      });
+      const key = JSON.stringify([event.customer, reducer.id, bucketStart]);
+      let update = updates.get(key);
+      if (!update) {
+        update = {
+          customer: event.customer,
+          reducer: reducer.id,
+          bucketStart,
+          statistics: emptyStatistics(),
+        };
+        updates.set(key, update);
+      }
+      addStatistics(
+        update.statistics,
+        aggregation.func === "count"
+          ? { count: 1, sum: 0, min: null, max: null }
+          : { count: 1, sum: value, min: value, max: value },
+      );
     }
   }
   return [...updates.values()];

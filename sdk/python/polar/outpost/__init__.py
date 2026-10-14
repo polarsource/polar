@@ -8,6 +8,7 @@ from polar.outpost.client import (
 from polar.outpost.event import Event, EventInput
 from polar.outpost.reducer import (
     Aggregation,
+    BucketStatistics,
     EventMatcher,
     Filter,
     FilterClause,
@@ -20,6 +21,7 @@ from polar.outpost.reducer import (
 
 __all__ = [
     "Aggregation",
+    "BucketStatistics",
     "CustomerMeter",
     "Event",
     "EventInput",

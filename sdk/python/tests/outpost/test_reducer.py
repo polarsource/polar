@@ -5,6 +5,7 @@ import pytest
 from polar import PolarDeserializationError, deserialize
 from polar.outpost.event import Event
 from polar.outpost.reducer import (
+    BucketStatistics,
     FilterClause,
     Reducer,
     get_bucket_start,
@@ -16,9 +17,10 @@ TIMESTAMP = datetime.datetime(2026, 10, 12, 12, 4, 59, tzinfo=datetime.UTC)
 
 
 @pytest.mark.parametrize(
-    ("func", "expected"), [("count", 3), ("sum", -2), ("min", -5), ("max", 3)]
+    ("func", "expected"),
+    [("count", 3), ("sum", -2), ("min", -5), ("max", 3), ("avg", -2 / 3)],
 )
-def test_reduce_buckets(func: str, expected: int) -> None:
+def test_reduce_buckets(func: str, expected: float) -> None:
     reducer = deserialize(
         {
             "id": "usage",
@@ -53,10 +55,22 @@ def test_reduce_buckets(func: str, expected: int) -> None:
     )
 
     assert updates == {
-        ("customer", "usage", bucket_start, func): expected,
-        ("other", "usage", bucket_start, func): 1 if func == "count" else 2,
-        ("customer", "usage", bucket_start + 300, func): 1 if func == "count" else 4,
+        ("customer", "usage", bucket_start): BucketStatistics(count=3)
+        if func == "count"
+        else BucketStatistics(count=3, sum=-2, min=-5, max=3),
+        ("other", "usage", bucket_start): BucketStatistics(count=1)
+        if func == "count"
+        else BucketStatistics(count=1, sum=2, min=2, max=2),
+        ("customer", "usage", bucket_start + 300): BucketStatistics(count=1)
+        if func == "count"
+        else BucketStatistics(count=1, sum=4, min=4, max=4),
     }
+    assert updates[("customer", "usage", bucket_start)].quantity(func) == expected
+
+
+@pytest.mark.parametrize("func", ["count", "sum", "min", "max", "avg"])
+def test_empty_statistics(func: str) -> None:
+    assert BucketStatistics().quantity(func) == 0
 
 
 def test_nested_configuration_and_metadata() -> None:
@@ -161,7 +175,7 @@ def test_unsupported_configuration_is_rejected() -> None:
             {
                 "id": "tokens",
                 "filter": {"conjunction": "and", "clauses": []},
-                "aggregation": {"func": "avg", "property": "tokens"},
+                "aggregation": {"func": "unique", "property": "tokens"},
             },
             Reducer,
         )

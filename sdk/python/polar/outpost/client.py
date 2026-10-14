@@ -21,7 +21,13 @@ from redis.exceptions import TimeoutError as RedisTimeoutError
 
 from polar.base import PolarError
 from polar.outpost.event import Event, EventInput
-from polar.outpost.reducer import Reducer, get_bucket_start, get_matcher, reduce
+from polar.outpost.reducer import (
+    BucketStatistics,
+    Reducer,
+    get_bucket_start,
+    get_matcher,
+    reduce,
+)
 
 
 class PolarOutpostError(PolarError): ...
@@ -81,23 +87,22 @@ local cutoff = redis.call('HGET', KEYS[1], 'cold_until')
 if cutoff and tonumber(ARGV[4]) < tonumber(cutoff) then
     return redis.call('HGETALL', KEYS[1])
 end
-local field, func, raw_value = ARGV[5], ARGV[6], ARGV[7]
-if func == 'count' then
-    redis.call('HINCRBY', KEYS[1], field, raw_value)
-elseif func == 'sum' then
-    redis.call('HINCRBYFLOAT', KEYS[1], field, raw_value)
-else
-    assert(func == 'min' or func == 'max', 'Unsupported aggregation')
-    local value = tonumber(raw_value)
-    assert(value and value == value and math.abs(value) ~= math.huge, 'Invalid value')
-    local stored = redis.call('HGET', KEYS[1], field)
-    local previous = stored and assert(tonumber(stored), 'Invalid stored value')
-    if previous then
-        assert(previous == previous and math.abs(previous) ~= math.huge, 'Invalid stored value')
-    end
-    if not previous or (func == 'min' and value < previous)
-        or (func == 'max' and value > previous) then
-        redis.call('HSET', KEYS[1], field, raw_value)
+local prefix = 'bucket:' .. ARGV[4] .. ':'
+local total = tonumber(redis.call('HGET', KEYS[1], prefix .. 'sum') or '0') + tonumber(ARGV[6])
+assert(total == total and math.abs(total) ~= math.huge, 'Aggregation values must be finite')
+redis.call('HINCRBYFLOAT', KEYS[1], prefix .. 'sum', ARGV[6])
+redis.call('HINCRBY', KEYS[1], prefix .. 'count', ARGV[5])
+for i, func in ipairs({'min', 'max'}) do
+    local raw = ARGV[6 + i]
+    if raw ~= '' then
+        local value = tonumber(raw)
+        assert(value and value == value and math.abs(value) ~= math.huge, 'Invalid value')
+        local stored = redis.call('HGET', KEYS[1], prefix .. func)
+        local previous = stored and tonumber(stored)
+        if not previous or (func == 'min' and value < previous)
+            or (func == 'max' and value > previous) then
+            redis.call('HSET', KEYS[1], prefix .. func, raw)
+        end
     end
 end
 """
@@ -111,16 +116,25 @@ local current = redis.call('HGET', KEYS[1], 'cold_until')
 if current and tonumber(current) > cutoff then
     return redis.call('HGETALL', KEYS[1])
 end
-for _, field in ipairs(redis.call('HKEYS', KEYS[1])) do
-    if string.sub(field, 1, 5) == 'cold:' or string.sub(field, 1, 9) == 'credited:'
-        or (string.sub(field, 1, 7) == 'bucket:'
-            and tonumber(string.match(field, ':(%-?%d+)$')) < cutoff) then
-        redis.call('HDEL', KEYS[1], field)
+local version = tonumber(ARGV[5])
+local previous = redis.call('HGET', KEYS[1], 'snapshot_version')
+if not previous or version >= tonumber(previous) then
+    for _, field in ipairs(redis.call('HKEYS', KEYS[1])) do
+        if string.sub(field, 1, 5) == 'cold:'
+            or (string.sub(field, 1, 7) == 'bucket:'
+                and tonumber(string.match(field, '^bucket:(%-?%d+):')) < cutoff) then
+            redis.call('HDEL', KEYS[1], field)
+        end
     end
+    redis.call('HSET', KEYS[1], 'cold_until', ARGV[4], 'snapshot_version', ARGV[5],
+        'cold:count', ARGV[8], 'cold:sum', ARGV[9])
+    if ARGV[10] ~= '' then redis.call('HSET', KEYS[1], 'cold:min', ARGV[10]) end
+    if ARGV[11] ~= '' then redis.call('HSET', KEYS[1], 'cold:max', ARGV[11]) end
 end
-redis.call('HSET', KEYS[1], 'cold_until', ARGV[4])
-for i = 5, #ARGV, 2 do
-    redis.call('HSET', KEYS[1], ARGV[i], ARGV[i + 1])
+local credit_version = redis.call('HGET', KEYS[1], 'credited_version:' .. ARGV[6])
+if not credit_version or version >= tonumber(credit_version) then
+    redis.call('HSET', KEYS[1], 'credited:' .. ARGV[6], ARGV[7],
+        'credited_version:' .. ARGV[6], ARGV[5])
 end
 """
     + PUBLISH_STATE_SCRIPT
@@ -133,8 +147,18 @@ class StateUpdate(typing.TypedDict):
 
 
 @dataclasses.dataclass
+class ReducerState:
+    epoch: str
+    revision: int
+    cold_until: int | None
+    cold: BucketStatistics
+    buckets: dict[int, BucketStatistics]
+    credited: dict[str, int | float]
+
+
+@dataclasses.dataclass
 class LocalState:
-    state: dict[str, str] | None = None
+    state: ReducerState | None = None
     lock: anyio.Lock = dataclasses.field(default_factory=anyio.Lock)
 
 
@@ -143,11 +167,28 @@ class Configuration(typing.TypedDict):
 
 
 class Snapshot(typing.TypedDict):
-    customer_id: typing.NotRequired[str]
-    external_customer_id: typing.NotRequired[str]
-    cold_until: int
-    cold: dict[str, int | float]
-    credited: dict[str, int | float]
+    customer_id: str | None
+    external_customer_id: str | None
+    meter_id: str
+    version: str
+    cold_until: str
+    count: int
+    sum: int | float
+    min: int | float | None
+    max: int | float | None
+    credited_units: int | float
+
+
+def _timestamp(value: str) -> datetime.datetime:
+    timestamp = datetime.datetime.fromisoformat(value)
+    if timestamp.utcoffset() is None:
+        raise ValueError("Snapshot timestamps must include a timezone")
+    return timestamp
+
+
+def _version(value: str) -> int:
+    delta = _timestamp(value) - datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
+    return (delta.days * 86400 + delta.seconds) * 1_000_000 + delta.microseconds
 
 
 @dataclasses.dataclass
@@ -265,23 +306,24 @@ class Outpost:
             ),
         )
         for customer in {event.external_customer_id for event in parsed}:
-            await self._warm_customer(customer)
+            await self.actor(**self._customer_arguments(customer))
         assert self._write_bucket is not None
-        for (customer, reducer_id, bucket_start, func), value in updates.items():
-            epoch = _generate_epoch()
+        for (customer, reducer_id, bucket_start), statistics in updates.items():
+            identity = f"{customer}:{reducer_id}"
             state = await self._write_bucket(
-                keys=[f"outpost:state:{customer}"],
+                keys=[f"outpost:state:{identity}"],
                 args=[
-                    customer,
+                    identity,
                     self._channel,
-                    epoch,
+                    _generate_epoch(),
                     bucket_start,
-                    f"bucket:{reducer_id}:{bucket_start}",
-                    func,
-                    value,
+                    statistics.count,
+                    statistics.sum,
+                    statistics.min if statistics.min is not None else "",
+                    statistics.max if statistics.max is not None else "",
                 ],
             )
-            await self._receive_state(customer, self._decode_state(state))
+            await self._receive_state(identity, self._decode_state(state))
         return IngestResult(inserted=len(parsed))
 
     async def customer_meter(
@@ -306,31 +348,16 @@ class Outpost:
         )
         if reducer is None:
             return None
-        local = await self._warm_customer(customer)
+        local = await self._warm_customer(customer, reducer)
         state = local.state
-        if state is None or "cold_until" not in state:
+        if state is None or state.cold_until is None:
             raise PolarOutpostError("Customer snapshot is not ready")
-        cutoff = int(state["cold_until"])
-        reducer_id = reducer["id"]
-        values = [
-            _number(value)
-            for field, value in state.items()
-            if field.startswith(f"bucket:{reducer_id}:")
-            and int(field.rsplit(":", 1)[1]) >= cutoff
-        ]
-        cold = state.get(f"cold:{reducer_id}")
-        if cold is not None:
-            values.append(_number(cold))
-        func = reducer["aggregation"]["func"]
-        if not values:
-            consumed: int | float = 0
-        elif func == "min":
-            consumed = min(values)
-        elif func == "max":
-            consumed = max(values)
-        else:
-            consumed = sum(values)
-        credited = _number(state.get(f"credited:{meter_id}", "0"))
+        combined = dataclasses.replace(state.cold)
+        for bucket_start, statistics in state.buckets.items():
+            if bucket_start >= state.cold_until:
+                combined.add(statistics)
+        consumed = combined.quantity(reducer["aggregation"]["func"])
+        credited = state.credited.get(meter_id, 0)
         return CustomerMeter(
             meter_id=meter_id,
             customer_id=customer_id,
@@ -347,7 +374,16 @@ class Outpost:
         external_customer_id: str | None = None,
     ) -> None:
         customer = self._customer_key(customer_id, external_customer_id)
-        await self._warm_customer(customer)
+        with anyio.fail_after(5):
+            await self._configured.wait()
+        for reducer in self._reducers:
+            await self._warm_customer(customer, reducer)
+
+    def _customer_arguments(self, customer: str) -> dict[str, str]:
+        kind, identifier = customer.split(":", 1)
+        return {
+            "customer_id" if kind == "customer" else "external_customer_id": identifier
+        }
 
     def _require_redis(self) -> Redis:
         if self._redis is None:
@@ -359,39 +395,39 @@ class Outpost:
             raise RuntimeError("Use Outpost inside an async with block")
         return self._websocket
 
-    async def _warm_customer(self, customer: str) -> LocalState:
+    async def _warm_customer(self, customer: str, reducer: Reducer) -> LocalState:
+        identity = f"{customer}:{reducer['id']}"
         websocket = self._require_websocket()
         with anyio.fail_after(5):
             await self._synced.wait()
-        local = self._cache.get(customer)
+        local = self._cache.get(identity)
         if local is None:
             local = LocalState()
-            self._cache[customer] = local
+            self._cache[identity] = local
             if len(self._cache) > CACHE_SIZE:
                 evicted, _ = self._cache.popitem(last=False)
                 self._actors.discard(evicted)
-        self._cache.move_to_end(customer)
-        if local.state is not None and customer in self._actors:
+        self._cache.move_to_end(identity)
+        if local.state is not None and identity in self._actors:
             return local
         async with local.lock:
             if local.state is None:
-                local.state = await self._load_state(customer)
-            if customer not in self._actors:
-                kind, identifier = customer.split(":", 1)
-                await websocket.send_json(
-                    {
-                        "type": "snapshot",
-                        "payload": {
-                            "customer_id"
-                            if kind == "customer"
-                            else "external_customer_id": identifier
-                        },
-                    }
-                )
-                self._actors.add(customer)
+                local.state = await self._load_state(identity)
+            if identity not in self._actors:
+                for meter_id in reducer.get("meter_ids", []):
+                    await websocket.send_json(
+                        {
+                            "type": "meter_usage",
+                            "payload": {
+                                **self._customer_arguments(customer),
+                                "meter_id": meter_id,
+                            },
+                        }
+                    )
+                self._actors.add(identity)
         return local
 
-    async def _load_state(self, customer: str) -> dict[str, str]:
+    async def _load_state(self, customer: str) -> ReducerState:
         assert self._read_state is not None
         epoch = _generate_epoch()
         state = await self._read_state(
@@ -402,13 +438,34 @@ class Outpost:
 
     def _decode_state(
         self, values: collections.abc.Sequence[str | bytes]
-    ) -> dict[str, str]:
+    ) -> ReducerState:
         decoded = [
             value.decode() if isinstance(value, bytes) else value for value in values
         ]
-        return dict(zip(decoded[::2], decoded[1::2], strict=True))
+        fields = dict(zip(decoded[::2], decoded[1::2], strict=True))
+        cold = BucketStatistics()
+        buckets: dict[int, BucketStatistics] = {}
+        credited: dict[str, int | float] = {}
+        for field, value in fields.items():
+            if field.startswith("cold:"):
+                statistic = field.split(":")[1]
+                setattr(cold, statistic, _number(value))
+            elif field.startswith("bucket:"):
+                _, timestamp, statistic = field.split(":")
+                bucket = buckets.setdefault(int(timestamp), BucketStatistics())
+                setattr(bucket, statistic, _number(value))
+            elif field.startswith("credited:"):
+                credited[field.removeprefix("credited:")] = _number(value)
+        return ReducerState(
+            epoch=fields["epoch"],
+            revision=int(fields["revision"]),
+            cold_until=int(fields["cold_until"]) if "cold_until" in fields else None,
+            cold=cold,
+            buckets=buckets,
+            credited=credited,
+        )
 
-    async def _receive_state(self, customer: str, state: dict[str, str]) -> None:
+    async def _receive_state(self, customer: str, state: ReducerState) -> None:
         local = self._cache.get(customer)
         if local is None:
             return
@@ -416,9 +473,9 @@ class Outpost:
             current = local.state
             if current is None:
                 return
-            if current["epoch"] != state["epoch"]:
+            if current.epoch != state.epoch:
                 state = await self._load_state(customer)
-            elif int(current["revision"]) >= int(state["revision"]):
+            elif current.revision >= state.revision:
                 return
             local.state = state
 
@@ -456,13 +513,7 @@ class Outpost:
                             update: StateUpdate = json.loads(message["data"])
                             await self._receive_state(
                                 update["customer"],
-                                dict(
-                                    zip(
-                                        update["state"][::2],
-                                        update["state"][1::2],
-                                        strict=True,
-                                    )
-                                ),
+                                self._decode_state(update["state"]),
                             )
                         if anyio.current_time() >= next_refresh:
                             await self._refresh_states()
@@ -480,33 +531,57 @@ class Outpost:
             if message["type"] == "configuration":
                 self._reducers = message["payload"]["reducers"]
                 self._configured.set()
-            elif message["type"] == "snapshot":
-                snapshot = message["payload"]
-                customer = self._customer_key(
-                    snapshot.get("customer_id"), snapshot.get("external_customer_id")
+            elif message["type"] == "meter_usage":
+                snapshot: Snapshot = message["payload"]
+                reducer = next(
+                    (
+                        reducer
+                        for reducer in self._reducers
+                        if snapshot["meter_id"] in reducer.get("meter_ids", [])
+                    ),
+                    None,
                 )
-                epoch = _generate_epoch()
-                args: list[str | int | float] = [
-                    customer,
-                    self._channel,
-                    epoch,
-                    snapshot["cold_until"],
-                ]
-                for group, values in (
-                    ("cold", snapshot["cold"]),
-                    ("credited", snapshot["credited"]),
+                if reducer is None:
+                    continue
+                if (
+                    snapshot["customer_id"] is not None
+                    and snapshot["external_customer_id"] is not None
                 ):
-                    for identifier, value in values.items():
-                        if isinstance(value, float) and not math.isfinite(value):
-                            raise ValueError("Snapshot values must be finite")
-                        args.extend((f"{group}:{identifier}", value))
-                # shortcut: equal-cutoff snapshots are unordered until Polar supplies snapshot versions.
+                    continue
+                customer = self._customer_key(
+                    snapshot["customer_id"], snapshot["external_customer_id"]
+                )
+                identity = f"{customer}:{reducer['id']}"
+                statistics = [
+                    snapshot["count"],
+                    snapshot["sum"],
+                    snapshot["min"],
+                    snapshot["max"],
+                    snapshot["credited_units"],
+                ]
+                if any(
+                    isinstance(value, float) and not math.isfinite(value)
+                    for value in statistics
+                ):
+                    raise ValueError("Snapshot values must be finite")
                 assert self._apply_snapshot is not None
                 state = await self._apply_snapshot(
-                    keys=[f"outpost:state:{customer}"],
-                    args=args,
+                    keys=[f"outpost:state:{identity}"],
+                    args=[
+                        identity,
+                        self._channel,
+                        _generate_epoch(),
+                        int(_timestamp(snapshot["cold_until"]).timestamp()),
+                        _version(snapshot["version"]),
+                        snapshot["meter_id"],
+                        snapshot["credited_units"],
+                        snapshot["count"],
+                        snapshot["sum"],
+                        snapshot["min"] if snapshot["min"] is not None else "",
+                        snapshot["max"] if snapshot["max"] is not None else "",
+                    ],
                 )
-                await self._receive_state(customer, self._decode_state(state))
+                await self._receive_state(identity, self._decode_state(state))
 
     def _parse_event(self, event: EventInput) -> Event:
         customer = self._customer_key(

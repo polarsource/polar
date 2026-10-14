@@ -25,9 +25,15 @@ CUSTOMER: ExternalCustomerID = {"external_customer_id": "alice"}
 METER: ExternalCustomerMeterRequest = {**CUSTOMER, "meter_id": "meter"}
 INITIAL: Snapshot = {
     **CUSTOMER,
-    "cold_until": BUCKET,
-    "cold": {"tokens": 0},
-    "credited": {"meter": 100},
+    "customer_id": None,
+    "meter_id": "meter",
+    "cold_until": "2026-10-12T12:00:00Z",
+    "version": "2026-10-12T12:00:00.000001Z",
+    "count": 0,
+    "sum": 0,
+    "min": None,
+    "max": None,
+    "credited_units": 100,
 }
 WRITERS = ("writer-1", "writer-2", "writer-3", "writer-4")
 CONCURRENT_CLIENTS = (*WRITERS, "reader-1", "reader-2")
@@ -100,7 +106,7 @@ SCENARIOS = [
                     ),
                     *(
                         expect(
-                            0.504 + round_index * 0.3,
+                            0.503 + round_index * 0.3,
                             client,
                             (round_index + 1) * 10,
                             within=0,
@@ -126,8 +132,12 @@ SCENARIOS = [
                 0.5,
                 {
                     **INITIAL,
-                    "cold_until": BUCKET + 300,
-                    "cold": {"tokens": 7},
+                    "cold_until": "2026-10-12T12:05:00Z",
+                    "version": "2026-10-12T12:05:00.000001Z",
+                    "count": 1,
+                    "sum": 7,
+                    "min": 7,
+                    "max": 7,
                 },
             ),
             expect(0.7, "writer", 11),
@@ -135,6 +145,124 @@ SCENARIOS = [
             emit(0.9, "writer", 7),
             expect(1, "writer", 11, within=0),
             expect(1, "reader", 11),
+        ],
+    ),
+    Scenario(
+        "independent reducer snapshots and weighted average",
+        {
+            "reducers": [
+                {**CONFIGURATION["reducers"][0], "meter_ids": ["meter", "shared"]},
+                {
+                    "id": "average",
+                    "meter_ids": ["average-meter"],
+                    "filter": {"conjunction": "and", "clauses": []},
+                    "aggregation": {"func": "avg", "property": "tokens"},
+                },
+            ]
+        },
+        [
+            {**INITIAL, "count": 2, "sum": 20, "min": 5, "max": 15},
+            {
+                **INITIAL,
+                "meter_id": "shared",
+                "count": 2,
+                "sum": 20,
+                "min": 5,
+                "max": 15,
+                "credited_units": 200,
+            },
+            {
+                **INITIAL,
+                "meter_id": "average-meter",
+                "count": 2,
+                "sum": 20,
+                "min": 5,
+                "max": 15,
+                "credited_units": 150,
+            },
+        ],
+        [
+            expect(0, "writer", 20),
+            expect(0, "reader", 20),
+            ReadStep(
+                0,
+                "reader",
+                {**CUSTOMER, "meter_id": "shared"},
+                {"consumed_units": 20, "credited_units": 200, "balance": 180},
+            ),
+            ReadStep(
+                0,
+                "reader",
+                {**CUSTOMER, "meter_id": "average-meter"},
+                {"consumed_units": 10, "credited_units": 150, "balance": 140},
+            ),
+            emit(0.2, "writer", 2),
+            emit(0.2, "reader", 8),
+            expect(0.3, "reader", 30),
+            ReadStep(
+                0.3,
+                "reader",
+                {**CUSTOMER, "meter_id": "average-meter"},
+                {"consumed_units": 7.5},
+            ),
+            emit(0.4, "writer", 4, timestamp="2026-10-12T12:05:00Z"),
+            SnapshotStep(
+                0.5,
+                {
+                    **INITIAL,
+                    "cold_until": "2026-10-12T12:05:00Z",
+                    "version": "2026-10-12T12:10:00.000002Z",
+                    "count": 4,
+                    "sum": 30,
+                    "min": 2,
+                    "max": 15,
+                },
+            ),
+            expect(0.7, "reader", 34),
+            ReadStep(
+                0.7,
+                "reader",
+                {**CUSTOMER, "meter_id": "shared"},
+                {"consumed_units": 34, "credited_units": 200},
+            ),
+            ReadStep(
+                0.7,
+                "reader",
+                {**CUSTOMER, "meter_id": "average-meter"},
+                {"consumed_units": 6.8},
+            ),
+            SnapshotStep(
+                0.8,
+                {
+                    **INITIAL,
+                    "cold_until": "2026-10-12T12:05:00Z",
+                    "version": "2026-10-12T12:10:00.000001Z",
+                    "count": 4,
+                    "sum": 999,
+                },
+            ),
+            expect(0.9, "reader", 34),
+            SnapshotStep(
+                1,
+                {
+                    **INITIAL,
+                    "cold_until": "2026-10-12T12:05:00Z",
+                    "version": "2026-10-12T12:10:00.000003Z",
+                    "count": 6,
+                    "sum": 40,
+                    "min": 2,
+                    "max": 15,
+                },
+            ),
+            expect(1.2, "reader", 44),
+            ReadStep(
+                1.2,
+                "reader",
+                {**CUSTOMER, "meter_id": "average-meter"},
+                {"consumed_units": 6.8},
+            ),
+            RestartStep(1.3, "reader"),
+            expect(1.6, "reader", 44),
         ],
     ),
 ]

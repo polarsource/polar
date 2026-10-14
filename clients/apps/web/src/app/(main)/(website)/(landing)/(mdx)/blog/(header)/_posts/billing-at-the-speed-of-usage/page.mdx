@@ -1,0 +1,90 @@
+---
+title: Billing at the speed of usage
+slug: billing-at-the-speed-of-usage
+description: Agents send usage faster than any invoice can count it. So we rebuilt billing to keep up
+created_at: 2026-10-14T12:00:00.000000+00:00
+draft: true
+---
+
+import { MeterReducer, BucketRow, SameFold } from './figures'
+import { Ingestion, Sealing } from './timelines'
+import { Cover } from './cover'
+import { BeforeAfter } from './compare'
+
+<BlogHero
+  title="Billing at the speed of usage"
+  description="Agents send usage faster than any invoice can count it. So we rebuilt billing to keep up."
+  publishDate="2026-10-14"
+/>
+
+<Cover />
+
+<InnerWrapper>
+
+Every number in Polar is derived from events. A meter is a reading over them, a credit balance is a sum over them, an invoice is a sum over a period of them. That is what makes the system simple to reason about. Done naively, it is also a scan.
+
+#### What an invoice cost before
+
+Until now, usage billing ran on billing entries. Every usage event that matched a meter on a subscription produced one billing entry row. One event, one row. A customer sending a million events a month got a million rows beside them, written by a background task that walked each meter's events in batches.
+
+At invoice time the pending entries for the period were joined back to their events and aggregated in one SQL pass. Then every entry was linked to the order item it was billed on, in batches of updates. Customer balances took a separate path and recomputed from a scan over the customer's events since the last reset.
+
+All three grow with event volume. Over the summer we kept them alive with partial indexes, batched linking and a direct count for count meters, after large subscriptions ran out of memory and high-volume ones timed out. The work was linear in events, and events are the one thing an AI startup's agents produce without bound.
+
+<BeforeAfter />
+
+Fast metering means never doing that work twice. So we moved the fold to the moment an event lands.
+
+#### A meter is a reducer
+
+A meter is two things. A filter that says which events count, and an aggregation that says how. Count them, sum a property, take its minimum, maximum or average. That pair is now a first-class object we call a reducer.
+
+<MeterReducer />
+
+Meters point at reducers. Two meters that fold events the same way share one, and the fold runs once. Creating or updating a meter syncs its reducer, so the system always runs exactly what you configured. Unique aggregations stay on the previous path, since distinct counts cannot be added together.
+
+#### Folded at ingestion
+
+When a batch of events lands, each one is matched against the organization's active reducers. A match contributes one value. It is 1 for a count, or the property's value for a sum, minimum, maximum or average. That contribution is added to a bucket keyed by the reducer, the customer and the five-minute slot the event's timestamp falls in.
+
+<Ingestion />
+
+The two open slots, the current one and the one before it, live in Redis. A count is an increment, a sum is a float increment, an average is both, and a minimum or maximum is a sorted-set write that only moves in one direction. Anything older goes straight into Postgres. When a slot closes, a job recomputes it from the events table into a row, debounced so a burst of traffic produces one write rather than a thousand.
+
+#### What a bucket holds
+
+A bucket is one row. The reducer, the customer, the interval, and four numbers. Count, sum, minimum and maximum.
+
+<BucketRow />
+
+From those four, every aggregation Polar supports is recoverable for any period. Count is the sum of counts. Sum is the sum of sums. Average is one divided by the other. Minimum is the smallest minimum, maximum the largest maximum. A month of usage is a few thousand rows per customer instead of millions of events, and it is added up, never recounted.
+
+#### Orders of magnitude fewer rows
+
+A five-minute bucket makes the cost of an invoice independent of traffic. A month has 8,640 five-minute slots, so a customer on one meter has at most that many rows to sum, whether they sent a thousand events or a hundred million. Sealing is one update over those rows. Linking a million entries to an order item is gone, so is the join back to events, and so is the scan.
+
+#### Sealed on billing
+
+Invoices need two guarantees. The period's quantity must be exact at its boundaries, and it must never change afterwards.
+
+Buckets are five minutes wide and a billing period rarely starts on a five-minute mark. So when a period is billed, the bucket containing its start and the bucket containing its cutoff are split at the exact timestamps. Then every bucket inside the period is sealed. A sealed row is frozen. Nothing writes to it again.
+
+<Sealing />
+
+Events still arrive late for sealed intervals. They are not dropped, and they do not alter the sealed row. They open the next generation of the same bucket, which stays open until the next invoice seals it. The invoice you sent is reproducible from its sealed rows forever, and the late usage is billed on the next one.
+
+Splitting and sealing lock the buckets they touch, always in one global order, so ingestion running alongside a billing run cannot deadlock it.
+
+#### The same fold, everywhere
+
+Reducers are also what Polar sends to Outpost, the part of our SDK that runs next to your code. Its socket delivers the organization's reducers, so an event can be folded locally with the same filter and aggregation the cloud applies. That is what makes zero-latency metering possible without two definitions of the same meter.
+
+<SameFold />
+
+#### Rolling it out
+
+Reducer buckets are live at ingestion today. Every billing run seals them and compares the sealed quantity against the previous computation, invoice by invoice. Once the two agree across our design partners' traffic, the scan goes away.
+
+</InnerWrapper>
+
+<DesignPartnerSignup />

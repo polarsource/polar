@@ -612,6 +612,24 @@ class TestApply:
                 Config.model_validate({"benefits": [BETA_BENEFIT]}),
             )
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.benefits_write})
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_meters_require_meters_scope(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        with pytest.raises(InsufficientScopeError):
+            await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate({"meters": [TOOL_CALLS_METER]}),
+            )
+
     @pytest.mark.parametrize("benefits", [[BETA_BENEFIT], []])
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.meters_write})

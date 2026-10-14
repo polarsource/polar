@@ -8,7 +8,6 @@ from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject, is_organization
 from polar.auth.permission import OrganizationPermission
-from polar.auth.scope import Scope
 from polar.authz.service import assert_organization_permission
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.service import benefit as benefit_service
@@ -28,6 +27,7 @@ from polar.redis import Redis
 from polar.webhook.service import webhook as webhook_service
 
 from . import benefits, discounts, products, validation
+from .auth import SECTION_SCOPES
 from .schemas import (
     MAXIMUM_METERS,
     Config,
@@ -63,18 +63,10 @@ _BENEFIT_EXTERNAL_ID_INDEX = "ix_benefits_organization_id_external_id"
 _PRODUCT_EXTERNAL_ID_INDEX = "ix_products_organization_id_external_id"
 
 
-_SECTION_SCOPES = {
-    "settings": (Scope.organizations_read, Scope.organizations_write),
-    "benefits": (Scope.benefits_read, Scope.benefits_write),
-    "products": (Scope.products_read, Scope.products_write),
-    "discounts": (Scope.discounts_read, Scope.discounts_write),
-}
-
-
 def _assert_section_scopes(
     auth_subject: AuthSubject[User | Organization], config: Config, *, write: bool
 ) -> None:
-    for section, (read_scope, write_scope) in _SECTION_SCOPES.items():
+    for section, (read_scope, write_scope) in SECTION_SCOPES.items():
         if section not in config.model_fields_set:
             continue
         required = {write_scope} if write else {read_scope, write_scope}

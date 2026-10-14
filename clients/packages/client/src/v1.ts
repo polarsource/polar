@@ -6100,12 +6100,9 @@ export interface paths {
      *     the resulting currency, or nothing is applied.
      *     Everything is applied in one transaction.
      *
-     *     A `settings` section also requires the `organizations:write` scope and
-     *     permission to manage the organization, a `benefits` section the
-     *     `benefits:write` scope, a `products` section the `products:write` scope,
-     *     and a `discounts` section the `discounts:write` scope.
+     *     Each section requires the write scope for its resource.
      *
-     *     **Scopes**: `meters:write`
+     *     **Scopes**: `benefits:write` `discounts:write` `meters:write` `organizations:write` `products:write`
      */
     post: operations['config:apply']
     delete?: never
@@ -6130,13 +6127,9 @@ export interface paths {
      *     Returns the action for each resource, and every issue: `error` issues make
      *     apply fail, `warning` issues don't.
      *
-     *     A `settings` section also requires the `organizations:read` or
-     *     `organizations:write` scope, a `benefits` section `benefits:read` or
-     *     `benefits:write`, a `products` section `products:read` or
-     *     `products:write`, and a `discounts` section `discounts:read` or
-     *     `discounts:write`.
+     *     Each section requires the read or write scope for its resource.
      *
-     *     **Scopes**: `meters:read` `meters:write`
+     *     **Scopes**: `benefits:read` `benefits:write` `discounts:read` `discounts:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write`
      */
     post: operations['config:plan']
     delete?: never
@@ -62849,7 +62842,7 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
-      /** @description Not allowed to manage this organization, missing the `organizations:write`, `benefits:write`, `products:write` or `discounts:write` scope for that section, or config as code isn't enabled for it. */
+      /** @description Not allowed to manage this organization, missing a scope required by one of the sections, or config as code isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown
@@ -62915,7 +62908,7 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
-      /** @description Not allowed to read this organization's products, missing an organizations, benefits, products or discounts scope for those sections, or config as code isn't enabled for it. */
+      /** @description Not allowed to read this organization's products, missing a scope required by one of the sections, or config as code isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown

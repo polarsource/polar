@@ -48,6 +48,7 @@ from .helper import configure_script_logging, typer_async
 
 cli = typer.Typer()
 BUCKET_SIZE = timedelta(minutes=5)
+LOOKUP_WINDOW = timedelta(days=1)
 
 
 def floor_bucket(value: datetime) -> datetime:
@@ -395,6 +396,55 @@ async def backfill_bucket(
     return rows_written
 
 
+async def get_bucket_starts(
+    session: AsyncSession,
+    reducer: Reducer,
+    start: datetime,
+    end: datetime,
+    *,
+    customer_id: UUID | None = None,
+) -> list[datetime]:
+    """Buckets in [start, end) with candidate events or existing rows; the others
+    are no-ops to backfill."""
+    starts: set[datetime] = set()
+    window_start = start
+    while window_start < end:
+        window_end = min(window_start + LOOKUP_WINDOW, end)
+        events = (
+            select(func.date_bin(BUCKET_SIZE, Event.timestamp, start))
+            .distinct()
+            .where(
+                Event.organization_id == reducer.organization_id,
+                Event.source == EventSource.user,
+                Event.timestamp >= window_start,
+                Event.timestamp < window_end,
+                reducer.aggregation.get_sql_clause(Event),
+            )
+        )
+        rows = (
+            select(ReducerBucket.bucket_start)
+            .distinct()
+            .where(
+                ReducerBucket.organization_id == reducer.organization_id,
+                ReducerBucket.reducer_id == reducer.id,
+                ReducerBucket.bucket_start >= window_start,
+                ReducerBucket.bucket_start < window_end,
+            )
+        )
+        if customer_id is not None:
+            events = events.where(is_in_customer_scope(Event, reducer, customer_id))
+            rows = rows.where(is_in_customer_scope(ReducerBucket, reducer, customer_id))
+        starts.update(
+            floor_bucket(bucket_start)
+            for bucket_start in [
+                *(await session.scalars(events)),
+                *(await session.scalars(rows)),
+            ]
+        )
+        window_start = window_end
+    return sorted(starts)
+
+
 @cli.command()
 @typer_async
 async def backfill(
@@ -425,18 +475,26 @@ async def backfill(
             if isinstance(reducer.aggregation, UniqueAggregation):
                 typer.echo(f"Skipping unique reducer {reducer.id}")
                 continue
-            bucket_start = start
-            while bucket_start < end:
-                bucket_end = bucket_start + BUCKET_SIZE
+            typer.echo(f"Reducer {reducer.id}: finding buckets")
+            async with sessionmaker() as session:
+                bucket_starts = await get_bucket_starts(
+                    session, reducer, start, end, customer_id=customer_id
+                )
+            typer.echo(f"Reducer {reducer.id}: {len(bucket_starts)} buckets")
+            for i, bucket_start in enumerate(bucket_starts, 1):
+                if i % 1000 == 0:
+                    typer.echo(
+                        f"Reducer {reducer.id}: {i}/{len(bucket_starts)} buckets, "
+                        f"at {bucket_start.isoformat()}, {rows_written} rows written"
+                    )
                 async with sessionmaker.begin() as session:
                     rows_written += await backfill_bucket(
                         session,
                         reducer,
                         bucket_start,
-                        bucket_end,
+                        bucket_start + BUCKET_SIZE,
                         customer_id=customer_id,
                     )
-                bucket_start = bucket_end
         typer.echo(f"Wrote {rows_written} reducer bucket rows.")
     finally:
         await engine.dispose()

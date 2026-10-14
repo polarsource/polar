@@ -1,0 +1,56 @@
+clients/apps/mcp/src/tools/execute.ts
+  s_8113b980a37313::t_03d45f9ae9f22d 1-2,4,7-13,16,18-39,43-49,51-65,67-68,70-74,79,82-84,86-87,92-93,95,102
+  s_8113b980a37313::t_0c9c03d173f29f 40-42
+clients/apps/mcp/src/results.ts
+  s_8113b980a37313::t_4db1b54795b184 1-2,4-6,11,13-15,17-19
+  s_8113b980a37313::t_6f8f1089bf902f 3
+  s_0423d89ed45acf::t_49d0329dce55d7 7
+  s_8113b980a37313::t_d52bbe917fa2ab 20
+clients/apps/mcp/src/index.ts
+  s_8113b980a37313::t_f5fb0f3613a4c5 1-5,8-38,51-79,81-84,91-92,94,96,98-99
+clients/apps/mcp/src/sandbox.ts
+  s_8113b980a37313::t_3b92e583877e84 2-16,32-38,40-45,53,55
+clients/apps/mcp/src/server.ts
+  s_8113b980a37313::t_03d45f9ae9f22d 1,3-4,6-7,13,20
+  s_8113b980a37313::t_34616f5cb82cca 2,5,9-10,14,16,19
+clients/apps/mcp/scripts/generate-spec.ts
+  s_8113b980a37313::t_835a5a7533f767 1-8,12-17,19-21,47,49,51-55,77-78,99,108-109,119,125,153,223,225,147
+  s_8113b980a37313::t_96abaf1a2ce7d7 9,43,45-46,56-58,79-98,126,129-130,148,39,63,65-66,68,112
+  s_8113b980a37313::t_0c1c58c020036e 178,215,10-11,18,22-38,40-42,44,48,50,59-62,64,67,69-76,100-107,110-111,113-118,120-124,127-128,131-146,149-152,154-157,159-166,170-177,179-196,198-214,216-222,224
+clients/apps/mcp/src/tools/search.ts
+  s_8113b980a37313::t_03d45f9ae9f22d 1,5-8,10-49,51-55,61-65,81
+clients/apps/mcp/src/clients.ts
+  s_8113b980a37313::t_5185ed87d822b2 3-4,42
+  s_8113b980a37313::t_78fdd77ec26b4c 9
+clients/apps/mcp/src/tools/operations.ts
+  s_8113b980a37313::t_ad942add13b29a 1-6,12-15,17-21
+  s_8113b980a37313::t_e50324adbff834 7,9-11,33,40-42,51,58-62,92,103-104
+  s_8113b980a37313::t_bfe408e04caa08 22-28,30-32
+  s_8113b980a37313::t_036194c590fba5 34-39,50
+  s_8113b980a37313::t_7adffcc7c9b95c 43-49,52-57
+  s_8113b980a37313::t_aeae5626204c5e 102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "7e0cb7ab664deac6964f695dca895b9b023ddc64",
+  "prompts": {},
+  "sessions": {
+    "s_0423d89ed45acf": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a11a3e-8340-7732-9012-a8b757d448a3",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    },
+    "s_8113b980a37313": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41aad960-5555-470b-b8d3-68fd0a8ea3d2",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

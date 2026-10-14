@@ -1,0 +1,19 @@
+server/tests/organization_review/collectors/test_setup.py
+  s_fd528823e8d35d::t_897d268a776286 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e975d38049a0fb9c6a49a8465aeda336aa50e16b",
+  "prompts": {},
+  "sessions": {
+    "s_fd528823e8d35d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

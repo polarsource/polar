@@ -1,0 +1,21 @@
+docs/integrate/cli/reference/benefits.mdx
+  s_ad783061508f15::t_9bffd0e3582a1a 14,24
+docs/integrate/cli/reference/customer_seats.mdx
+  s_ad783061508f15::t_9bffd0e3582a1a 14-19,23,47,64,85,102,122
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "c6df51a7c2df420dc2afdf75d85eb098f6e9c47f",
+  "prompts": {},
+  "sessions": {
+    "s_ad783061508f15": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5e993b79-845e-4ff0-a51e-8ebd9ed9816b",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

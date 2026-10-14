@@ -67,16 +67,16 @@ export const LicenseKeysBenefitForm = () => {
         }}
       />
 
-      <div className="flex flex-row items-center">
-        <div className="grow">
-          <label htmlFor="license-key-ttl">Expires</label>
-        </div>
-        <FormField
-          control={control}
-          name="properties.expires"
-          render={() => {
-            return (
-              <FormItem>
+      <FormField
+        control={control}
+        name="properties.expires"
+        render={() => {
+          return (
+            <FormItem>
+              <div className="flex flex-row items-center">
+                <div className="grow">
+                  <label htmlFor="license-key-ttl">Expires</label>
+                </div>
                 <Switch
                   id="license-key-ttl"
                   checked={showExpirationFields}
@@ -85,12 +85,17 @@ export const LicenseKeysBenefitForm = () => {
                     setValue('properties.expires', value)
                   }}
                 />
-                <FormMessage />
-              </FormItem>
-            )
-          }}
-        />
-      </div>
+              </div>
+              <FormDescription>
+                Expiration only applies to keys granted by one-time purchases.
+                Subscription-backed keys stay valid for as long as the
+                subscription is active.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )
+        }}
+      />
       {expires && (
         <div className="flex flex-col gap-y-2">
           <div className="flex flex-row space-x-4">
@@ -135,10 +140,6 @@ export const LicenseKeysBenefitForm = () => {
               }}
             />
           </div>
-          <FormDescription>
-            Only applies to one-time purchases. Keys granted by a subscription
-            don&apos;t expire and are revoked when the subscription ends.
-          </FormDescription>
         </div>
       )}
 

@@ -7,7 +7,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { Check, CreditCard, LoaderCircle } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Shimmer } from '../Shimmer'
-import { Sheet } from './Frame'
+import { FLOW, Sheet } from './Frame'
 
 /** One loop of the cycle, in milliseconds: credits drain, usage takes over, the invoice settles. */
 const LOOP = 13_000
@@ -77,10 +77,10 @@ export const ChargeFigure = () => {
   return (
     <div
       ref={ref}
-      className="dark:border-polar-800 relative w-full overflow-hidden rounded-md border border-gray-200 bg-[url(/assets/landing/company/Polar_Flow_03_No_Logo.jpg)] bg-cover bg-center p-4 md:p-12"
+      className={`dark:border-polar-800 relative w-full overflow-hidden rounded-md border border-gray-200 bg-cover bg-center p-4 md:p-12 ${FLOW[3]}`}
     >
       <div className="pointer-events-none absolute inset-0 bg-black/40" />
-      <div className="dark:bg-polar-950 dark:border-polar-800 relative mx-auto flex w-full max-w-[56rem] flex-col rounded-3xl border border-gray-200 bg-gray-100 p-1 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.75)]">
+      <div className="dark:bg-polar-950 dark:border-polar-800 relative mx-auto flex w-full max-w-[56rem] flex-col rounded-2xl border border-gray-200 bg-gray-100 p-1 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.75)]">
         <Box
           alignItems="center"
           justifyContent="between"

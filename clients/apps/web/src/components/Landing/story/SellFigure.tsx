@@ -61,7 +61,7 @@ export const SellFigure = () => {
   const landed = beat === 3
 
   return (
-    <Window innerRef={ref} aside="Polar is the merchant of record">
+    <Window flow={2} innerRef={ref} aside="Polar is the merchant of record">
       <Grid templateColumns={{ base: '1fr', lg: 'repeat(3, 1fr)' }} gap="xs">
         <Sheet
           title="Checkout"
@@ -160,17 +160,18 @@ export const SellFigure = () => {
             </div>
           </Box>
           <Text variant="caption" color="muted">
-            Revenue net of fees, every week. No tax liability on your books.
+            Revenue net of fees, paid out whenever you request it. No tax
+            liability on your books.
           </Text>
           <Box marginTop="auto">
             {beat >= 2 ? (
               <Status done={landed}>
-                {landed ? 'Landed' : 'Wiring payout'}
+                {landed ? 'Landed' : 'Payout requested'}
               </Status>
             ) : (
               <Box height={16}>
                 <Text variant="caption" color="muted">
-                  Next payout Friday
+                  Balance ready to withdraw
                 </Text>
               </Box>
             )}

@@ -15,9 +15,9 @@ export const Define = () => (
   <Chapter
     id="define"
     name="01 Define"
-    title="Pricing is code"
-    subtitle="checked in next to the product it prices"
-    description="Plans, meters and credits live in one config file. Change a price in a pull request, preview it against real usage, ship it like any other change."
+    title="Price it any way you sell"
+    subtitle="seats, credits, usage and tiers, in any mix"
+    description="Charge per seat, sell a commitment that draws down credits, or bill pure usage on graduated tiers. Set it up in the dashboard, or from your code through the API, CLI or MCP."
   >
     <DefineFigure />
   </Chapter>
@@ -29,7 +29,7 @@ export const Measure = () => (
     name="02 Measure"
     title="Every event is metered"
     subtitle="the moment it happens"
-    description="Send one event per model call, tool run or GPU second. Polar folds them into live meters per customer, and answers entitlement checks next to your code with no network round trip."
+    description="Send one event per model call, tool run or GPU second. Polar folds them into live meters per customer, and your app reads the result from one customer state call."
   >
     <MeasureFigure />
   </Chapter>
@@ -52,8 +52,8 @@ export const Understand = () => (
     id="understand"
     name="04 Understand"
     title="Know your margin"
-    subtitle="per customer, per model, per feature"
-    description="Polar collects the revenue, so placing inference cost beside it shows your real gross margin. The customer burning more tokens than they pay for stops hiding in your averages."
+    subtitle="for every customer, not just on average"
+    description="Attach the inference cost to the events you already send. Polar collects the revenue, so it can put the two side by side and show the customer burning more than they pay."
   >
     <UnderstandFigure />
   </Chapter>
@@ -65,7 +65,7 @@ export const SellAnywhere = () => (
     name="05 Sell anywhere"
     title="Polar is the merchant of record"
     subtitle="the liability lands on our name, not yours"
-    description="Sell in over 100 markets from day one. Sales tax, fraud, refunds and chargebacks are handled, and revenue settles to your bank account on your schedule."
+    description="Sell in over 100 markets from day one. Sales tax, fraud, refunds and chargebacks are handled, and you withdraw your revenue to your bank account whenever you like."
   >
     <SellFigure />
   </Chapter>
@@ -75,9 +75,9 @@ export const Agents = () => (
   <Chapter
     id="agents"
     name="06 Agents"
-    title="Bill the agents too"
-    subtitle="each with its own meters, credits and limits"
-    description="Acme runs agents on your product. Give each one its own identity, meter its usage, cap its spend, and roll it all up to the customer who pays."
+    title="Run billing from your agent"
+    subtitle="Polar in Claude, Cursor and ChatGPT over MCP"
+    description="Connect the Polar MCP server and ask your agent about customers, usage and revenue, or have it create products, discounts and refunds. Signed in with OAuth, no API keys to paste."
   >
     <AgentsFigure />
   </Chapter>

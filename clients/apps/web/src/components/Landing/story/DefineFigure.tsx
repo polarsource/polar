@@ -1,134 +1,137 @@
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import type { ReactNode } from 'react'
 import { Sheet, Window } from './Frame'
 
-type Tone = 'plain' | 'muted' | 'del' | 'add'
-type Line = { text: string; tone?: Tone }
-
-/** Acme's plan as code. The price line flips between the old and the new value, shown as a diff. */
-const config = (changed: boolean): Line[] => [
-  { text: 'export default defineConfig({', tone: 'muted' },
-  { text: '  meters: {', tone: 'muted' },
-  { text: "    tokensIn: meter('tokens.in').sum('tokens'),", tone: 'plain' },
-  { text: "    tokensOut: meter('tokens.out').sum('tokens'),", tone: 'plain' },
-  { text: "    toolCalls: meter('tool.call').count(),", tone: 'plain' },
-  { text: '  },', tone: 'muted' },
-  { text: '  products: {', tone: 'muted' },
-  { text: "    pro: product('Pro')", tone: 'plain' },
-  { text: '      .recurring(usd(2_499), "month")', tone: 'plain' },
-  { text: '      .credits(40_000)', tone: 'plain' },
-  ...(changed
-    ? [
-        {
-          text: "      .usage('tokensOut', perMillion(2.00))",
-          tone: 'del' as Tone,
-        },
-        {
-          text: "      .usage('tokensOut', perMillion(1.80))",
-          tone: 'add' as Tone,
-        },
-      ]
-    : [
-        {
-          text: "      .usage('tokensOut', perMillion(2.00))",
-          tone: 'plain' as Tone,
-        },
-      ]),
-  { text: "      .usage('toolCalls', usd(0.005)),", tone: 'plain' },
-  { text: '  },', tone: 'muted' },
-  { text: '})', tone: 'muted' },
-]
-
-const TONE: Record<Tone, string> = {
-  plain: 'text-white',
-  muted: 'text-polar-500',
-  del: 'bg-red-500/10 text-red-400',
-  add: 'bg-emerald-500/10 text-emerald-400',
-}
-
-const Row = ({
-  label,
-  value,
-  emphasis = false,
-}: {
-  label: string
-  value: string
-  emphasis?: boolean
-}) => (
+const Line = ({ label, value }: { label: string; value: string }) => (
   <Box justifyContent="between" alignItems="baseline" columnGap="l">
     <Text variant="default" color="muted">
       {label}
     </Text>
-    <Text variant="default" color={emphasis ? 'default' : 'muted'} tabularNums>
+    <Text variant="default" tabularNums>
       {value}
     </Text>
   </Box>
 )
 
-/** Fig. 01: polar.config.ts on the left, the plan Polar builds from it on the right. */
-export const DefineFigure = () => {
-  const changed = true
+/** The pricing models a plan is composed of, as small outlined tags. */
+const Models = ({ models }: { models: string[] }) => (
+  <Box columnGap="xs" rowGap="xs" flexWrap="wrap">
+    {models.map((m) => (
+      <Box
+        key={m}
+        alignItems="center"
+        paddingHorizontal="s"
+        height={22}
+        borderWidth={1}
+        borderStyle="solid"
+        borderColor="border-primary"
+        borderRadius="full"
+      >
+        <Text variant="caption" color="muted">
+          {m}
+        </Text>
+      </Box>
+    ))}
+  </Box>
+)
 
-  return (
-    <Window aside="Acme Inc · Pro">
-      <Grid templateColumns={{ base: '1fr', lg: '3fr 2fr' }} gap="xs">
-        <Sheet
-          title="polar.config.ts"
-          aside={
-            <Text variant="caption" color="muted">
-              {changed ? '1 change' : 'main'}
-            </Text>
-          }
-        >
-          <pre className="m-0 overflow-x-auto font-mono text-[13px] leading-6">
-            {config(changed).map((line, i) => (
+/** A plan: its lines up top, the models it combines anchored at the bottom. */
+const Plan = ({
+  name,
+  aside,
+  models,
+  children,
+}: {
+  name: string
+  aside: string
+  models: string[]
+  children: ReactNode
+}) => (
+  <Sheet
+    title={name}
+    aside={
+      <Text variant="caption" color="muted">
+        {aside}
+      </Text>
+    }
+  >
+    <Box flexDirection="column" rowGap="s">
+      {children}
+    </Box>
+    <Box
+      marginTop="auto"
+      paddingTop="l"
+      borderTopWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
+    >
+      <Models models={models} />
+    </Box>
+  </Sheet>
+)
+
+const TIERS = [
+  { range: 'First 1B', price: '$2.00', width: '100%' },
+  { range: 'Next 4B', price: '$1.60', width: '72%' },
+  { range: 'Beyond 5B', price: '$1.20', width: '28%' },
+]
+
+/** Fig. 01: three plans composed from different pricing models, all on Polar. */
+export const DefineFigure = () => (
+  <Window flow={1} aside="Three ways to sell the same product">
+    <Grid templateColumns={{ base: '1fr', lg: 'repeat(3, 1fr)' }} gap="xs">
+      <Plan name="Team" aside="Per seat" models={['Seats', 'Metered', 'Trial']}>
+        <Line label="Per seat" value="$40 / month" />
+        <Line label="Seats" value="12" />
+        <Line label="Output tokens" value="$3.00 / 1M" />
+        <Line label="Trial" value="14 days" />
+      </Plan>
+      <Plan
+        name="Pro"
+        aside="Commit and draw down"
+        models={['Fixed', 'Credits', 'Metered']}
+      >
+        <Line label="Base" value="$2,499 / month" />
+        <Line label="Credits" value="40,000 / month" />
+        <Line label="Output tokens" value="$2.00 / 1M" />
+        <Line label="Tool calls" value="$0.005 / call" />
+      </Plan>
+      <Plan
+        name="API"
+        aside="Pay as you go"
+        models={['Metered', 'Graduated tiers']}
+      >
+        <Box justifyContent="between" alignItems="baseline" columnGap="l">
+          <Text variant="default" color="muted">
+            Output tokens
+          </Text>
+          <Text variant="caption" color="muted">
+            per 1M
+          </Text>
+        </Box>
+        {TIERS.map((tier) => (
+          <Box key={tier.range} alignItems="center" columnGap="m">
+            <Box width={72} flexShrink={0}>
+              <Text variant="caption" color="muted">
+                {tier.range}
+              </Text>
+            </Box>
+            <div className="dark:bg-polar-800 h-1.5 flex-1 overflow-hidden rounded-full bg-gray-200">
               <div
-                key={`${i}-${line.text}`}
-                className={TONE[line.tone ?? 'plain']}
-              >
-                {line.text}
-              </div>
-            ))}
-          </pre>
-        </Sheet>
-        <Sheet
-          title="Pro plan"
-          aside={
-            <Text variant="caption" color="muted">
-              {changed ? 'Preview' : 'Live'}
-            </Text>
-          }
-        >
-          <Box flexDirection="column" rowGap="s">
-            <Row label="Base" value="$2,499 / month" emphasis />
-            <Row label="Credits" value="40,000 / month" />
-            <Row
-              label="Output tokens"
-              value={changed ? '$1.80 / 1M' : '$2.00 / 1M'}
-              emphasis={changed}
-            />
-            <Row label="Tool calls" value="$0.005 / call" />
+                className="h-full rounded-full bg-white"
+                style={{ width: tier.width }}
+              />
+            </div>
+            <Box width={48} justifyContent="end">
+              <Text variant="default" tabularNums>
+                {tier.price}
+              </Text>
+            </Box>
           </Box>
-          <Box
-            marginTop="auto"
-            paddingTop="l"
-            borderTopWidth={1}
-            borderStyle="solid"
-            borderColor="border-primary"
-            flexDirection="column"
-            rowGap="xs"
-          >
-            <Text variant="caption" color="muted">
-              {changed
-                ? "Acme's bill on last month's usage"
-                : "Acme's bill this month"}
-            </Text>
-            <Text variant="heading-xs" tabularNums>
-              {changed ? '$3,654.87' : '$3,783.30'}
-            </Text>
-          </Box>
-        </Sheet>
-      </Grid>
-    </Window>
-  )
-}
+        ))}
+        <Line label="No monthly fee" value="$0" />
+      </Plan>
+    </Grid>
+  </Window>
+)

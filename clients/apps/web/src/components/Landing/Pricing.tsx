@@ -6,6 +6,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import GetStartedButton from '../Auth/GetStartedButton'
 import { Chapter } from './Chapter'
+import { Sheet, Window } from './story/Frame'
 
 type Tier = {
   name: string
@@ -21,7 +22,7 @@ export const TIERS: Tier[] = [
   {
     name: 'Starter',
     free: true,
-    desc: 'Free to start validating ideas.',
+    desc: 'For validating ideas.',
     fees: ['5.00% + 50¢ per transaction'],
     features: ['All features to sell', 'Standard support'],
   },
@@ -73,55 +74,86 @@ export const Pricing = () => (
         </>
       }
     >
-      <Grid
-        templateColumns={{
-          base: '1fr',
-          sm: 'repeat(2, 1fr)',
-          xl: 'repeat(4, 1fr)',
-        }}
-        gap="l"
-      >
-        {TIERS.map((tier) => (
-          <TierCard key={tier.name} tier={tier} />
-        ))}
-      </Grid>
+      <Window flow={2} bare aside="Start free, upgrade as you grow">
+        <Grid
+          templateColumns={{
+            base: '1fr',
+            md: 'repeat(2, 1fr)',
+            xl: 'repeat(4, 1fr)',
+          }}
+          gap="xs"
+        >
+          {TIERS.map((tier) => (
+            <TierSheet key={tier.name} tier={tier} />
+          ))}
+        </Grid>
+      </Window>
     </Chapter>
   </>
 )
 
-const TierCard = ({ tier }: { tier: Tier }) => (
-  <Box
-    flexDirection="column"
-    justifyContent="between"
-    backgroundColor="background-secondary"
+/** A tier as a sheet in the Polar window: price and fee as lines, its features anchored at the bottom. */
+const TierSheet = ({ tier }: { tier: Tier }) => (
+  <Sheet
+    large
+    title={tier.name}
+    aside={
+      <Text variant="default" color="muted">
+        {tier.desc.replace(/\.$/, '')}
+      </Text>
+    }
   >
-    <Box flexDirection="column" rowGap="xl" padding="xl">
-      <Box flexDirection="column" rowGap="xl">
-        <Box flexDirection="column" rowGap="s">
-          <Text variant="heading-xs" as="h3">
-            {tier.name}
-          </Text>
-          <Box display="block">
-            <Text variant="heading-xxs" color="muted">
-              {tier.desc}
-            </Text>
-          </Box>
-        </Box>
-        <Box alignItems="baseline" columnGap="m">
-          <Text variant="heading-s" as="span">
-            {tier.free ? 'Free' : tier.price}
-          </Text>
-          {tier.period && (
-            <Text as="span" variant="body" color="muted">
-              {tier.period}
-            </Text>
-          )}
-        </Box>
-      </Box>
-      <CardSection items={tier.fees} />
-      <CardSection items={tier.features} check />
+    <Box alignItems="baseline" columnGap="xs">
+      <Text variant="heading-s" tabularNums>
+        {tier.free ? 'Free' : tier.price}
+      </Text>
+      {tier.period ? (
+        <Text variant="body" color="muted">
+          {tier.period}
+        </Text>
+      ) : null}
     </Box>
-  </Box>
+    <Box flexDirection="column" rowGap="s">
+      {tier.fees.map((fee) => (
+        <Box
+          key={fee}
+          justifyContent="between"
+          alignItems="baseline"
+          columnGap="l"
+        >
+          <Text variant="body" color="muted">
+            Transaction fee
+          </Text>
+          <Text variant="body" tabularNums>
+            {fee.replace(' per transaction', '')}
+          </Text>
+        </Box>
+      ))}
+    </Box>
+    <div className="mt-auto pt-8" />
+    <Box
+      as="ul"
+      paddingTop="l"
+      borderTopWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
+      flexDirection="column"
+      rowGap="s"
+    >
+      {tier.features.map((feature) => (
+        <Box
+          as="li"
+          key={feature}
+          display="flex"
+          alignItems="center"
+          columnGap="s"
+        >
+          <CheckOutlined fontSize="inherit" />
+          <Text variant="body">{feature}</Text>
+        </Box>
+      ))}
+    </Box>
+  </Sheet>
 )
 
 export const CardSection = ({

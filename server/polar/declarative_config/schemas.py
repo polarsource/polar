@@ -447,6 +447,7 @@ class ConfigIssueSeverity(StrEnum):
 
 
 class ConfigIssueType(StrEnum):
+    currency_changed = "currency_changed"
     discount_locked = "discount_locked"
     duplicate_code = "duplicate_code"
     duplicate_external_id = "duplicate_external_id"

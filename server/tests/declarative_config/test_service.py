@@ -1288,6 +1288,138 @@ class TestPlan:
 
         assert plan.settings is None
 
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_currency_change_warning(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "settings": {"payments": {"currency": "eur"}},
+                    "products": [{**PACK_PRODUCT, "prices": [EUR_PACK_PRICE]}],
+                }
+            ),
+        )
+
+        assert [(issue.severity, issue.type, issue.loc) for issue in plan.issues] == [
+            (
+                ConfigIssueSeverity.warning,
+                ConfigIssueType.currency_changed,
+                ["body", "settings", "payments", "currency"],
+            )
+        ]
+        assert plan.issues[0].msg == (
+            "New checkouts will use EUR when the product has no price in the "
+            "customer's local currency."
+        )
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_product_missing_new_currency(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "settings": {"payments": {"currency": "eur"}},
+                    "products": [PACK_PRODUCT],
+                }
+            ),
+        )
+
+        [error] = [
+            issue
+            for issue in plan.issues
+            if issue.severity == ConfigIssueSeverity.error
+        ]
+        assert error.type == ConfigIssueType.missing_currency
+        assert error.loc == ["body", "products", 0, "prices"]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_unlisted_product_missing_new_currency(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Legacy",
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate({"settings": {"payments": {"currency": "eur"}}}),
+        )
+
+        [error] = [
+            issue
+            for issue in plan.issues
+            if issue.severity == ConfigIssueSeverity.error
+        ]
+        assert error.type == ConfigIssueType.missing_currency
+        assert error.loc == ["body", "settings", "payments", "currency"]
+        assert "Legacy" in error.msg
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_new_product_missing_default_currency(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {"products": [{**PACK_PRODUCT, "prices": [EUR_PACK_PRICE]}]}
+            ),
+        )
+
+        [error] = plan.issues
+        assert error.type == ConfigIssueType.missing_currency
+        assert error.loc == ["body", "products", 0, "prices"]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_unchanged_product_missing_default_currency(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Pack",
+            external_id="pack",
+            prices=[(900, "eur")],
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "products": [
+                        {
+                            **PACK_PRODUCT,
+                            "description": "Description",
+                            "prices": [EUR_PACK_PRICE],
+                        }
+                    ]
+                }
+            ),
+        )
+
+        assert plan.changes[0].action == ConfigAction.unchanged
+        assert plan.issues == []
+
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.meters_read})
     )

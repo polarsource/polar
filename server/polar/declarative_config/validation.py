@@ -16,6 +16,7 @@ from polar.discount.service import (
 )
 from polar.event.system import SystemEvent
 from polar.event_type.repository import EventTypeRepository
+from polar.kit.currency import PresentmentCurrency
 from polar.meter.filter import Filter, FilterOperator
 from polar.meter.repository import MeterRepository
 from polar.meter.schemas import MeterCreateBase
@@ -316,6 +317,82 @@ def unsupported_prices(changes: Sequence[ProductChange]) -> list[ConfigIssue]:
             )
         )
     return issues
+
+
+def _settings_loc(field: str) -> Loc:
+    return ["body", "settings", *field.split(".")]
+
+
+def missing_product_currencies(
+    changes: Sequence[ProductChange],
+    currency: PresentmentCurrency,
+    *,
+    currency_changed: bool,
+) -> list[ConfigIssue]:
+    return [
+        ConfigIssue(
+            severity=ConfigIssueSeverity.error,
+            type=ConfigIssueType.missing_currency,
+            loc=_loc(ConfigResource.product, change.index, "prices"),
+            msg=(
+                "The product must have a price in the organization's "
+                f"default currency, {currency.upper()}."
+            ),
+            input=None,
+        )
+        for change in changes
+        if (
+            currency_changed
+            or change.existing is None
+            or "prices" in change.update_dict
+        )
+        and all(price.price_currency != currency for price in change.config.prices)
+    ]
+
+
+async def missing_unlisted_product_currencies(
+    session: AsyncSession,
+    organization: Organization,
+    changes: Sequence[ProductChange],
+    currency: PresentmentCurrency,
+) -> list[ConfigIssue]:
+    listed = {change.existing.id for change in changes if change.existing}
+    products = [
+        product
+        for product in await ProductRepository.from_session(
+            session
+        ).get_products_without_currency(organization.id, currency)
+        if product.id not in listed
+    ]
+    if not products:
+        return []
+    return [
+        ConfigIssue(
+            severity=ConfigIssueSeverity.error,
+            type=ConfigIssueType.missing_currency,
+            loc=_settings_loc("payments.currency"),
+            msg=(
+                "Every active product must have a price in this currency. "
+                "Missing on products not in this config: "
+                + ", ".join(product.name for product in products)
+                + "."
+            ),
+            input=currency,
+        )
+    ]
+
+
+def changed_currency(currency: PresentmentCurrency) -> ConfigIssue:
+    return ConfigIssue(
+        severity=ConfigIssueSeverity.warning,
+        type=ConfigIssueType.currency_changed,
+        loc=_settings_loc("payments.currency"),
+        msg=(
+            f"New checkouts will use {currency.upper()} when the product has "
+            "no price in the customer's local currency."
+        ),
+        input=currency,
+    )
 
 
 def changed_intervals(changes: Sequence[ProductChange]) -> list[ConfigIssue]:
@@ -907,4 +984,20 @@ async def check(
         *await duplicate_codes(session, organization, discounts),
     ]
     settings = diff_settings(organization, config.settings)
+    new_currency = (
+        None if settings is None else settings.update_dict.get("payments.currency")
+    )
+    currency = new_currency or organization.default_presentment_currency
+    issues.extend(
+        missing_product_currencies(
+            products, currency, currency_changed=new_currency is not None
+        )
+    )
+    if new_currency is not None:
+        issues.extend(
+            await missing_unlisted_product_currencies(
+                session, organization, products, new_currency
+            )
+        )
+        issues.append(changed_currency(new_currency))
     return ConfigChanges(settings, meters, benefits, products, discounts), issues

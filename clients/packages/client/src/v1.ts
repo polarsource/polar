@@ -16490,6 +16490,7 @@ export interface components {
      * @enum {string}
      */
     ConfigIssueType:
+      | 'currency_changed'
       | 'discount_locked'
       | 'duplicate_code'
       | 'duplicate_external_id'
@@ -71590,6 +71591,7 @@ export const configIssueSeverityValues: ReadonlyArray<
 export const configIssueTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueType']
 > = [
+  'currency_changed',
   'discount_locked',
   'duplicate_code',
   'duplicate_external_id',

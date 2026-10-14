@@ -1,3 +1,6 @@
+import uuid
+from collections.abc import Sequence
+
 import structlog
 from anyio.streams.memory import MemoryObjectSendStream
 from pydantic import ValidationError
@@ -14,12 +17,10 @@ from polar.reducer_bucket.repository import ReducerBucketRepository
 from polar.reducer_bucket.service import get_customer_identities
 
 from .schemas import (
-    CustomerMeterIncomingMessageCustomerPayload,
-    CustomerMeterIncomingMessagePayload,
-    CustomerMeterOutgoingMessage,
-    CustomerMeterOutgoingMessagePayload,
     IncomingMessageAdapter,
     IncomingMessageType,
+    MeterUsageIncomingMessageCustomerPayload,
+    MeterUsageIncomingMessagePayload,
     MeterUsageOutgoingMessage,
     MeterUsageOutgoingMessagePayload,
     OutgoingMessage,
@@ -52,8 +53,8 @@ class OutpostService:
                 return await self._send_configuration(
                     session, organization, send_stream
                 )
-            case IncomingMessageType.customer_meter:
-                return await self._send_customer_meter(
+            case IncomingMessageType.meter_usage:
+                return await self._send_requested_meter_usage(
                     session, organization, incoming.payload, send_stream
                 )
 
@@ -89,37 +90,36 @@ class OutpostService:
         )
         await send_stream.send(message)
 
-    async def _send_customer_meter(
+    async def _send_requested_meter_usage(
         self,
         session: AsyncReadSession,
         organization: Organization,
-        payload: CustomerMeterIncomingMessagePayload,
+        payload: MeterUsageIncomingMessagePayload,
         send_stream: MemoryObjectSendStream[OutgoingMessage],
     ) -> None:
-        customer_meter_repository = CustomerMeterRepository.from_session(session)
-        if isinstance(payload, CustomerMeterIncomingMessageCustomerPayload):
-            customer_meter = (
-                await customer_meter_repository.get_by_organization_customer_and_meter(
-                    organization.id, payload.customer_id, payload.meter_id
-                )
-            )
-        else:
-            customer_meter = await customer_meter_repository.get_by_organization_external_customer_and_meter(
-                organization.id, payload.external_customer_id, payload.meter_id
-            )
-        if customer_meter is None:
+        reducer = await ReducerRepository.from_session(session).get_by_meter_id(
+            payload.meter_id
+        )
+        if reducer is None or reducer.organization_id != organization.id:
             log.warning(
-                "Customer meter not found",
+                "Meter not found",
                 organization_id=organization.id,
-                **payload.model_dump(),
+                meter_id=payload.meter_id,
             )
             return
-
-        message = CustomerMeterOutgoingMessage(
-            type=OutgoingMessageType.customer_meter,
-            payload=CustomerMeterOutgoingMessagePayload.model_validate(customer_meter),
+        if isinstance(payload, MeterUsageIncomingMessageCustomerPayload):
+            customer_id, external_customer_id = payload.customer_id, None
+        else:
+            customer_id, external_customer_id = None, payload.external_customer_id
+        await self._send_meter_usage(
+            session,
+            organization,
+            reducer,
+            [payload.meter_id],
+            customer_id,
+            external_customer_id,
+            send_stream,
         )
-        await send_stream.send(message)
 
     async def _send_reducer_bucket(
         self,
@@ -131,11 +131,31 @@ class OutpostService:
         reducer = await ReducerRepository.from_session(session).get_active_by_id(
             event["reducer_id"], options=(selectinload(Reducer.meter_reducers),)
         )
-        if reducer is None or isinstance(reducer.aggregation, UniqueAggregation):
+        if reducer is None:
+            return
+        await self._send_meter_usage(
+            session,
+            organization,
+            reducer,
+            reducer.meter_ids,
+            event["customer_id"],
+            event["external_customer_id"],
+            send_stream,
+        )
+
+    async def _send_meter_usage(
+        self,
+        session: AsyncReadSession,
+        organization: Organization,
+        reducer: Reducer,
+        meter_ids: Sequence[uuid.UUID],
+        customer_id: uuid.UUID | None,
+        external_customer_id: str | None,
+        send_stream: MemoryObjectSendStream[OutgoingMessage],
+    ) -> None:
+        if isinstance(reducer.aggregation, UniqueAggregation):
             return
 
-        customer_id = event["customer_id"]
-        external_customer_id = event["external_customer_id"]
         customer_repository = CustomerRepository.from_session(session)
         if customer_id is not None:
             customer = await customer_repository.get_by_id_and_organization(
@@ -170,7 +190,7 @@ class OutpostService:
             customer_meter.meter_id: customer_meter.credited_units
             for customer_meter in customer_meters
         }
-        for meter_id in reducer.meter_ids:
+        for meter_id in meter_ids:
             await send_stream.send(
                 MeterUsageOutgoingMessage(
                     type=OutgoingMessageType.meter_usage,

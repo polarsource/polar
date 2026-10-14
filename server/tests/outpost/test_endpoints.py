@@ -70,20 +70,41 @@ class TestOutpost:
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     @pytest.mark.parametrize("customer_key", ["customer_id", "external_customer_id"])
-    async def test_request_customer_meter(
+    async def test_request_meter_usage(
         self,
+        save_fixture: SaveFixture,
         client: httpx.AsyncClient,
+        organization: Organization,
         customer_meter: CustomerMeter,
         customer_key: str,
     ) -> None:
+        customer = customer_meter.customer
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[customer_meter.meter]
+        )
+        bucket_start = datetime(2026, 10, 7, 12, 5, tzinfo=UTC)
+        await save_fixture(
+            ReducerBucket(
+                organization=organization,
+                reducer=reducer,
+                external_customer_id=customer.external_id,
+                bucket_start=bucket_start,
+                bucket_end=bucket_start + timedelta(minutes=5),
+                count=1,
+                sum=Decimal(4),
+                min=Decimal(4),
+                max=Decimal(4),
+            )
+        )
         customer_value = {
-            "customer_id": str(customer_meter.customer_id),
-            "external_customer_id": customer_meter.customer.external_id,
+            "customer_id": str(customer.id),
+            "external_customer_id": customer.external_id,
         }[customer_key]
+
         async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
             await websocket.send_json(
                 {
-                    "type": "customer_meter",
+                    "type": "meter_usage",
                     "payload": {
                         customer_key: customer_value,
                         "meter_id": str(customer_meter.meter_id),
@@ -92,16 +113,19 @@ class TestOutpost:
             )
             response = await websocket.receive_json()
 
-            assert response["type"] == "customer_meter"
-            assert response["payload"]["customer_id"] == str(customer_meter.customer_id)
-            assert (
-                response["payload"]["external_customer_id"]
-                == customer_meter.customer.external_id
-            )
-            assert response["payload"]["meter_id"] == str(customer_meter.meter_id)
-            assert response["payload"]["consumed_units"] == 90.0
-            assert response["payload"]["credited_units"] == 100
-            assert response["payload"]["balance"] == 10.0
+            assert response == {
+                "type": "meter_usage",
+                "payload": {
+                    "meter_id": str(customer_meter.meter_id),
+                    "customer_id": str(customer.id),
+                    "external_customer_id": customer.external_id,
+                    "count": 1,
+                    "sum": 4.0,
+                    "min": 4.0,
+                    "max": 4.0,
+                    "credited_units": 100,
+                },
+            }
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_event_reducer_bucket(

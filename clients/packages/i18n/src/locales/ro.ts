@@ -5,15 +5,15 @@ export default {
       merchantOfRecord:
         'Această comandă este procesată de revânzătorul nostru online și Merchant of Record, Polar, care se ocupă și de solicitările și returnările legate de comandă.',
       mandateSubscriptionTrial:
-        'Prin clic pe „{buttonLabel},” autorizați Polar Software, Inc., revânzătorul nostru online și merchant of record, să debiteze metoda de plată selectată în suma afișată mai sus la sfârșitul perioadei de probă și la fiecare dată de facturare ulterioară până când anulați și sunteți de acord cu {buyerTermsLink}. Puteți anula oricând înainte de sfârșitul perioadei de probă pentru a evita taxarea.',
+        'Prin clic pe „{buttonLabel}”, autorizați Polar Software, Inc., revânzătorul nostru online și merchant of record, să debiteze metoda de plată selectată în suma afișată mai sus la sfârșitul perioadei de probă și la fiecare dată de facturare ulterioară până când anulați și sunteți de acord cu {buyerTermsLink}. Puteți anula oricând înainte de sfârșitul perioadei de probă pentru a evita taxarea.',
       mandateSubscription:
-        'Prin clic pe „{buttonLabel},” autorizați Polar Software, Inc., revânzătorul nostru online și merchant of record, să debiteze imediat metoda de plată selectată în suma afișată mai sus și să debiteze aceeași sumă la fiecare dată de facturare ulterioară până când anulați și sunteți de acord cu {buyerTermsLink}.',
+        'Prin clic pe „{buttonLabel}”, autorizați Polar Software, Inc., revânzătorul nostru online și merchant of record, să debiteze imediat metoda de plată selectată în suma afișată mai sus și să debiteze aceeași sumă la fiecare dată de facturare ulterioară până când anulați și sunteți de acord cu {buyerTermsLink}.',
       mandateOneTime:
-        'Prin clic pe „{buttonLabel},” autorizați Polar Software, Inc., revânzătorul nostru online și merchant of record, să debiteze metoda de plată selectată în suma afișată mai sus și sunteți de acord cu {buyerTermsLink}. Aceasta este o plată unică.',
+        'Prin clic pe „{buttonLabel}”, autorizați Polar Software, Inc., revânzătorul nostru online și merchant of record, să debiteze metoda de plată selectată în suma afișată mai sus și sunteți de acord cu {buyerTermsLink}. Aceasta este o plată unică.',
       mandateSubscriptionTrialDiscounted:
-        'Prin clic pe „{buttonLabel},” autorizați Polar Software, Inc., revânzătorul nostru online și merchant of record, să debiteze metoda de plată selectată în suma redusă afișată mai sus la sfârșitul perioadei de probă și prețul obișnuit la fiecare dată de facturare după expirarea reducerii, până când anulați, și sunteți de acord cu {buyerTermsLink}. Puteți anula oricând înainte de sfârșitul perioadei de probă pentru a evita taxarea.',
+        'Prin clic pe „{buttonLabel}”, autorizați Polar Software, Inc., revânzătorul nostru online și merchant of record, să debiteze metoda de plată selectată în suma redusă afișată mai sus la sfârșitul perioadei de probă și prețul obișnuit la fiecare dată de facturare după expirarea reducerii, până când anulați, și sunteți de acord cu {buyerTermsLink}. Puteți anula oricând înainte de sfârșitul perioadei de probă pentru a evita taxarea.',
       mandateSubscriptionDiscounted:
-        'Prin clic pe „{buttonLabel},” autorizați Polar Software, Inc., revânzătorul nostru online și merchant of record, să debiteze imediat metoda de plată selectată în suma redusă afișată mai sus și prețul obișnuit la fiecare dată de facturare după expirarea reducerii, până când anulați, și sunteți de acord cu {buyerTermsLink}.',
+        'Prin clic pe „{buttonLabel}”, autorizați Polar Software, Inc., revânzătorul nostru online și merchant of record, să debiteze imediat metoda de plată selectată în suma redusă afișată mai sus și prețul obișnuit la fiecare dată de facturare după expirarea reducerii, până când anulați, și sunteți de acord cu {buyerTermsLink}.',
       buyerTermsLink: 'Termenii cumpărătorului',
     },
     form: {

@@ -141,6 +141,11 @@ async def create_subscription_order(
             ):
                 return
 
+        # The cancel order is the final settlement: also bill usage of the
+        # ended period that synced after the period end.
+        if order_reason == OrderBillingReasonInternal.subscription_cancel:
+            billing_cutoff = None
+
         try:
             await order_service.create_subscription_order(
                 session, subscription, order_reason, cutoff=billing_cutoff

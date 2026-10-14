@@ -1,8 +1,8 @@
 """Add external_id to webhook endpoints
 
 Revision ID: 7df5de861459
-Revises: f591dcd9ab42
-Create Date: 2026-10-12 14:00:00.000000
+Revises: 0b6d1f3c9a2e
+Create Date: 2026-10-14 10:00:00.000000
 
 """
 
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "7df5de861459"
-down_revision = "f591dcd9ab42"
+down_revision = "0b6d1f3c9a2e"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

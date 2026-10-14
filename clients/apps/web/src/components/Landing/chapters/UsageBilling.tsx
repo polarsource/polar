@@ -10,9 +10,10 @@ interface Feature {
 
 const FEATURES: Feature[] = [
   { label: 'Event ingestion', href: '/features/event-ingestion' },
-  { label: 'Live meters', href: '/features/meters' },
+  { label: 'Real-time meters', href: '/features/meters' },
+  { label: 'Usage billing', href: '/features/usage-billing' },
   { label: 'Credits', href: '/features/credits' },
-  { label: 'Cost Insights', href: '/features/cost-insights' },
+  { label: 'Cost insights', href: '/features/cost-insights' },
 ]
 
 export const UsageBilling = () => (
@@ -21,20 +22,9 @@ export const UsageBilling = () => (
     width="100%"
     flexDirection="column"
     rowGap={{ base: '3xl', md: '5xl' }}
-    paddingVertical={{ base: '4xl', md: '5xl' }}
-    marginVertical={{ base: 'none', md: '2xl' }}
-    borderTopWidth={1}
-    borderStyle="solid"
-    borderColor="border-primary"
+    paddingBottom={{ base: '4xl', md: '5xl' }}
+    marginBottom={{ base: 'none', md: '2xl' }}
   >
-    <Box flexDirection="column">
-      <Text variant="heading-m" as="h2" wrap="balance">
-        Usage billing for AI software
-      </Text>
-      <Text variant="heading-m" as="p" color="muted" wrap="balance">
-        live in hours, not weeks
-      </Text>
-    </Box>
     <Grid
       templateColumns={{ base: '1fr', lg: '3fr 1fr' }}
       gap={{ base: '3xl', lg: '4xl' }}
@@ -44,14 +34,14 @@ export const UsageBilling = () => (
       <Box flexDirection="column" rowGap="3xl">
         <Box display="block">
           <Text variant="heading-xs" as="span">
-            Send one event per model call.{' '}
+            Ship usage billing today.{' '}
           </Text>
           <Text variant="heading-xs" as="span" color="muted">
-            Polar meters it, prices it and puts it on the invoice.
+            Real-time metering, billing and metrics, built in.
           </Text>
         </Box>
         <Box flexDirection="column" rowGap="s">
-          <Text variant="body" color="muted">
+          <Text variant="caption" color="muted">
             Features
           </Text>
           <Box as="ul" flexDirection="column" rowGap="xs">

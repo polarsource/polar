@@ -10,6 +10,7 @@ import { UsageBilling } from './chapters/UsageBilling'
 import { ClosingCta } from './ClosingCta'
 import { CustomerStory } from './CustomerStory'
 import { Hero } from './Hero/Hero'
+import { MissionRulers } from './Hero/MissionRulers'
 import { Pricing } from './Pricing'
 import { Testimonials } from './Testimonials'
 
@@ -17,10 +18,11 @@ export default function Page() {
   return (
     <div className="flex w-full flex-col">
       <Hero />
-      <Primitives />
       <UsageBilling />
-      <Platform />
       <CustomerStory />
+      <Primitives />
+      <MissionRulers />
+      <Platform />
       <Meter />
       <MerchantOfRecord />
       <Margins />

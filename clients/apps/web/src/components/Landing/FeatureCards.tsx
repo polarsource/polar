@@ -2,9 +2,11 @@ import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import type { ComponentType } from 'react'
-import { CreditArc } from './graphics/CreditArc'
-import { CycleArrow } from './graphics/CycleArrow'
-import { VennCluster } from './graphics/VennCluster'
+import {
+  CreditPlate,
+  SubscriptionPlate,
+  UsagePlate,
+} from './plates/PrimitivePlates'
 
 interface Feature {
   title: string
@@ -18,19 +20,19 @@ const FEATURES: Feature[] = [
     title: 'Usage Billing',
     desc: 'Meter tokens, API calls, compute and storage down to the event.',
     href: '/features/usage-billing',
-    Graphic: VennCluster,
+    Graphic: UsagePlate,
   },
   {
     title: 'Subscriptions',
     desc: 'Recurring plans with trials, upgrades & proration built in.',
     href: '/features/subscriptions',
-    Graphic: CycleArrow,
+    Graphic: SubscriptionPlate,
   },
   {
     title: 'Credits',
     desc: 'Prepaid balances that draw down with usage and top up automatically.',
     href: '/features/credits',
-    Graphic: CreditArc,
+    Graphic: CreditPlate,
   },
 ]
 

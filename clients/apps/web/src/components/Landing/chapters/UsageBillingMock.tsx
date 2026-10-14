@@ -1,28 +1,50 @@
 'use client'
 
-import LogoIcon from '@/components/Brand/logos/LogoIcon'
-import { Text } from '@polar-sh/orbit'
+import LogoType from '@/components/Brand/logos/LogoType'
+import { StaticImage } from '@/components/Image/StaticImage'
+import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Check, LoaderCircle } from 'lucide-react'
+import {
+  ArrowUp,
+  Check,
+  ChevronDown,
+  LoaderCircle,
+  PanelRight,
+  Plus,
+  SquarePen,
+} from 'lucide-react'
 import type { ReactNode } from 'react'
+import { twMerge } from 'tailwind-merge'
+import { Shimmer } from '../Shimmer'
 import { UsageBillingCharge } from './UsageBillingCharge'
 import {
+  chargeFor,
   count,
+  CREDITS_GRANTED,
+  creditsFor,
   dollars,
-  PRICE_PER_TOKEN,
-  STARTING_TOKENS,
   useUsageConversation,
   VISIBLE_EVENTS,
+  type UsageEvent,
 } from './useUsageConversation'
 
 const EventRow = ({
-  tokens,
+  event,
   pending = false,
+  age = 0,
 }: {
-  tokens: number
+  event: UsageEvent
   pending?: boolean
+  age?: number
 }) => (
-  <Box alignItems="center" justifyContent="between" columnGap="l">
+  <Box
+    alignItems="center"
+    justifyContent="between"
+    columnGap="l"
+    opacity={pending ? 1 : Math.max(0.2, 1 - age * 0.12)}
+    transitionProperty="opacity"
+    transitionDuration="slow"
+  >
     <Box alignItems="center" columnGap="s" color="text-secondary">
       {pending ? (
         <LoaderCircle size={12} className="animate-spin" />
@@ -30,12 +52,12 @@ const EventRow = ({
         <Check size={12} />
       )}
       <Text variant="caption" monospace color={pending ? 'default' : 'muted'}>
-        ai.tokens
+        <Shimmer active={pending}>{event.name}</Shimmer>
       </Text>
     </Box>
     <Box alignItems="baseline" columnGap="l">
       <Text variant="caption" color="muted" tabularNums>
-        {count(tokens)}
+        {count(event.quantity)}
       </Text>
       <Box minWidth={64} justifyContent="end">
         <Text
@@ -43,158 +65,345 @@ const EventRow = ({
           tabularNums
           color={pending ? 'muted' : 'default'}
         >
-          {pending ? 'Metering' : `+${dollars(tokens * PRICE_PER_TOKEN, 4)}`}
+          {pending ? (
+            <Shimmer active>Metering</Shimmer>
+          ) : event.name === 'tool.call' ? (
+            `${count(creditsFor(event))} credits`
+          ) : (
+            dollars(chargeFor(event), 4)
+          )}
         </Text>
       </Box>
     </Box>
   </Box>
 )
 
-const Panel = ({ children }: { children: ReactNode }) => (
-  <Box
-    width="100%"
-    height="100%"
-    flexDirection="column"
-    backgroundColor="background-primary"
-    borderWidth={1}
-    borderStyle="solid"
-    borderColor="border-primary"
+/** The chrome of the site's modals: a dark frame with a hairline and a 4px inset. The header sits on the frame. */
+const Panel = ({
+  children,
+  elevated = false,
+}: {
+  children: ReactNode
+  elevated?: boolean
+}) => (
+  <div
+    className={twMerge(
+      'dark:bg-polar-950 dark:border-polar-800 flex h-full w-full flex-col rounded-3xl border border-gray-200 bg-gray-100 p-1 shadow-sm',
+      elevated && 'shadow-[0_16px_40px_-12px_rgba(0,0,0,0.75)]',
+    )}
   >
     {children}
-  </Box>
+  </div>
+)
+
+/** The lighter panel inside the frame, holding the content. */
+const Inner = ({ children }: { children: ReactNode }) => (
+  <div className="dark:bg-polar-900 flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-[20px] bg-white">
+    {children}
+  </div>
 )
 
 export const UsageBillingMock = () => {
-  const { ref, scenario, phase, typed, streamed, settled, billed } =
-    useUsageConversation()
-  const totalTokens = STARTING_TOKENS + billed + streamed
+  const {
+    ref,
+    scenario,
+    phase,
+    composerText,
+    typed,
+    streamed,
+    promptTokens,
+    settled,
+    totalTokens,
+    creditsLeft,
+    inputCharge,
+    outputCharge,
+    billed,
+  } = useUsageConversation()
+  const sent = phase !== 'typing'
 
   return (
     <Box
       ref={ref}
       position="relative"
       width="100%"
-      flexDirection="column"
+      flexDirection={{ base: 'column', md: 'row' }}
+      alignItems={{ base: 'stretch', md: 'start' }}
       rowGap="l"
-      overflow="hidden"
-      height={{ md: '34rem' }}
     >
       <Box
-        position={{ base: 'relative', md: 'absolute' }}
-        top={{ md: '3rem' }}
-        left={{ md: 0 }}
         width={{ base: '100%', md: '60%' }}
-        height={{ md: '38rem' }}
-      >
-        <Panel>
-          <Box alignItems="center" columnGap="s" padding="l">
-            <Box
-              width={20}
-              height={20}
-              alignItems="center"
-              justifyContent="center"
-              backgroundColor="background-card"
-            >
-              <Text variant="caption">L</Text>
-            </Box>
-            <Text variant="body" color="muted">
-              Lumen Assistant
-            </Text>
-          </Box>
-          <Box
-            flexDirection="column"
-            rowGap="l"
-            paddingHorizontal="l"
-            paddingBottom="l"
-            maxWidth={{ md: '58%' }}
-            minHeight={{ base: '13rem', md: 'auto' }}
-          >
-            <Box
-              alignSelf="start"
-              padding="m"
-              backgroundColor="background-card"
-            >
-              <Text variant="body">{scenario.prompt}</Text>
-            </Box>
-            <Text variant="body" color="muted">
-              {scenario.answer.slice(0, typed)}
-              <Box as="span" visibility="hidden">
-                {scenario.answer.slice(typed)}
-              </Box>
-            </Text>
-          </Box>
-        </Panel>
-      </Box>
-
-      <Box
-        position={{ base: 'relative', md: 'absolute' }}
-        top={{ md: 0 }}
-        left={{ md: '38%' }}
-        right={{ md: 0 }}
-        height={{ md: '38rem' }}
-        boxShadow="xl"
+        height={{ md: '30rem' }}
+        marginTop={{ base: 'none', md: '3xl' }}
+        flexShrink={0}
       >
         <Panel>
           <Box
             alignItems="center"
+            columnGap="s"
+            paddingHorizontal="xl"
+            paddingVertical="m"
+          >
+            <StaticImage
+              src="/assets/acme.jpg"
+              alt="Acme"
+              width={20}
+              height={20}
+              className="size-5 rounded-md object-cover"
+            />
+            <Text variant="body" color="muted">
+              Acme
+            </Text>
+            <Box
+              marginLeft="auto"
+              alignItems="center"
+              columnGap="m"
+              color="text-tertiary"
+            >
+              <SquarePen size={14} />
+              <PanelRight size={14} />
+            </Box>
+          </Box>
+          <Inner>
+            <Box
+              flexDirection="column"
+              rowGap="l"
+              paddingHorizontal="xl"
+              paddingVertical="xl"
+              maxWidth={{ md: '72%' }}
+              minHeight={{ base: '13rem', md: 'auto' }}
+            >
+              {sent ? (
+                <>
+                  <div className="[animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_both]">
+                    <Box
+                      alignSelf="start"
+                      padding="m"
+                      backgroundColor="background-card"
+                      borderRadius="l"
+                    >
+                      <Text variant="body">{scenario.prompt}</Text>
+                    </Box>
+                  </div>
+                  {phase === 'working' ? (
+                    <div className="[animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_200ms_both]">
+                      <Box
+                        alignItems="center"
+                        columnGap="s"
+                        color="text-secondary"
+                      >
+                        <LoaderCircle size={14} className="animate-spin" />
+                        <Text variant="body" color="muted">
+                          <Shimmer active>{scenario.working}</Shimmer>
+                        </Text>
+                      </Box>
+                    </div>
+                  ) : (
+                    <div className="[animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_both]">
+                      <Text variant="body" color="muted">
+                        {scenario.answer.slice(0, typed)}
+                        <Box as="span" visibility="hidden">
+                          {scenario.answer.slice(typed)}
+                        </Box>
+                      </Text>
+                    </div>
+                  )}
+                </>
+              ) : null}
+            </Box>
+            <Box paddingHorizontal="xl" paddingBottom="xl" marginTop="auto">
+              <Box
+                width="100%"
+                flexDirection="column"
+                rowGap="l"
+                padding="l"
+                borderWidth={1}
+                borderStyle="solid"
+                borderColor="border-primary"
+                borderRadius="l"
+              >
+                {composerText ? (
+                  <Text variant="body">
+                    {composerText}
+                    <span className="ml-px inline-block h-[1em] w-px translate-y-[0.15em] animate-pulse bg-current" />
+                  </Text>
+                ) : (
+                  <Text variant="body" color="muted">
+                    Ask a follow-up
+                  </Text>
+                )}
+                <Box alignItems="center" justifyContent="between" columnGap="l">
+                  <Box alignItems="center" columnGap="s" color="text-secondary">
+                    <Box
+                      width={24}
+                      height={24}
+                      alignItems="center"
+                      justifyContent="center"
+                      borderWidth={1}
+                      borderStyle="solid"
+                      borderColor="border-primary"
+                      borderRadius="full"
+                    >
+                      <Plus size={12} />
+                    </Box>
+                    <Box
+                      alignItems="center"
+                      columnGap="xs"
+                      paddingHorizontal="s"
+                      height={24}
+                      borderWidth={1}
+                      borderStyle="solid"
+                      borderColor="border-primary"
+                      borderRadius="full"
+                    >
+                      <Text variant="caption" color="muted">
+                        gpt-5
+                      </Text>
+                      <ChevronDown size={10} />
+                    </Box>
+                  </Box>
+                  <Box
+                    width={24}
+                    height={24}
+                    alignItems="center"
+                    justifyContent="center"
+                    backgroundColor={
+                      composerText ? 'background-inverse' : 'background-card'
+                    }
+                    borderRadius="full"
+                    transitionProperty="colors"
+                    transitionDuration="fast"
+                  >
+                    <span className={composerText ? 'text-black' : undefined}>
+                      <ArrowUp size={12} />
+                    </span>
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
+          </Inner>
+        </Panel>
+      </Box>
+
+      <div className="relative z-10 w-full shrink-0 md:-ml-[14%] md:w-[54%]">
+        <Panel elevated>
+          <Box
+            alignItems="center"
             justifyContent="between"
-            padding="l"
-            borderBottomWidth={1}
-            borderStyle="solid"
-            borderColor="border-primary"
+            paddingHorizontal="xl"
+            paddingVertical="m"
           >
             <Box alignItems="center" columnGap="xs">
-              <LogoIcon size={24} />
-              <Text variant="body">Acme Inc</Text>
-              <Text variant="body" color="muted">
-                on Lumen Pro
-              </Text>
+              <LogoType height={14} />
             </Box>
             <Text variant="caption" color="muted">
               Current cycle
             </Text>
           </Box>
-          <Box flexDirection="column" rowGap="xs" padding="l">
-            <Text variant="heading-s" tabularNums>
-              {count(totalTokens)}
-            </Text>
-            <Text variant="body" color="muted">
-              tokens metered
-            </Text>
-          </Box>
-          <Box
-            flexDirection="column"
-            rowGap="m"
-            padding="l"
-            borderTopWidth={1}
-            borderStyle="solid"
-            borderColor="border-primary"
-          >
-            <Box justifyContent="between">
-              <Text variant="caption" color="muted">
-                Events
-              </Text>
-              <Text variant="caption" color="muted">
-                $2.00 per 1M tokens
-              </Text>
+          <Inner>
+            <Box
+              alignItems="center"
+              justifyContent="between"
+              columnGap="l"
+              marginHorizontal="xl"
+              paddingVertical="l"
+              borderBottomWidth={1}
+              borderStyle="solid"
+              borderColor="border-primary"
+            >
+              <Box alignItems="center" columnGap="m">
+                <StaticImage
+                  src="/assets/acme.jpg"
+                  alt="Acme Inc"
+                  width={32}
+                  height={32}
+                  className="size-8 rounded-full object-cover"
+                />
+                <Box flexDirection="column">
+                  <Text variant="body">Acme Inc</Text>
+                  <Text variant="caption" color="muted">
+                    billing@acme.com
+                  </Text>
+                </Box>
+              </Box>
+              <Box
+                alignItems="center"
+                paddingHorizontal="m"
+                height={28}
+                borderWidth={1}
+                borderStyle="solid"
+                borderColor="border-primary"
+                borderRadius="full"
+              >
+                <Text variant="caption" color="muted">
+                  Pro
+                </Text>
+              </Box>
             </Box>
-            {phase === 'prompt' ? null : (
-              <EventRow tokens={streamed} pending={phase === 'streaming'} />
-            )}
-            {settled
-              .slice(
-                0,
-                phase === 'prompt' ? VISIBLE_EVENTS : VISIBLE_EVENTS - 1,
-              )
-              .map((tokens, position) => (
-                <EventRow key={`${position}-${tokens}`} tokens={tokens} />
+            <Grid
+              templateColumns="repeat(2, 1fr)"
+              marginHorizontal="xl"
+              paddingVertical="xl"
+              borderBottomWidth={1}
+              borderStyle="solid"
+              borderColor="border-primary"
+            >
+              <Box flexDirection="column" rowGap="xs">
+                <Text variant="caption" color="muted">
+                  Tokens metered
+                </Text>
+                <Text variant="heading-xs" tabularNums>
+                  {count(totalTokens)}
+                </Text>
+              </Box>
+              <Box
+                flexDirection="column"
+                rowGap="xs"
+                paddingLeft="xl"
+                borderLeftWidth={1}
+                borderStyle="solid"
+                borderColor="border-primary"
+              >
+                <Text variant="caption" color="muted">
+                  Credits left
+                </Text>
+                <Text variant="heading-xs" tabularNums>
+                  {count(creditsLeft)}
+                  <Text as="span" variant="heading-xs" color="muted">
+                    {' '}
+                    / {count(CREDITS_GRANTED)}
+                  </Text>
+                </Text>
+              </Box>
+            </Grid>
+            <Box flexDirection="column" rowGap="s" padding="xl">
+              <EventRow
+                event={
+                  phase === 'typing'
+                    ? { name: 'tokens.in', quantity: promptTokens }
+                    : phase === 'working'
+                      ? { name: 'tool.call', quantity: scenario.tools }
+                      : { name: 'tokens.out', quantity: streamed }
+                }
+                pending={phase !== 'metered'}
+              />
+              {settled.slice(0, VISIBLE_EVENTS - 1).map((event, position) => (
+                <EventRow
+                  key={`${position}-${event.name}-${event.quantity}`}
+                  event={event}
+                  age={position + 1}
+                />
               ))}
-          </Box>
-          <Box paddingHorizontal="l" paddingBottom="l">
-            <UsageBillingCharge usageCharge={totalTokens * PRICE_PER_TOKEN} />
+            </Box>
+          </Inner>
+          <Box paddingTop="xs">
+            <UsageBillingCharge
+              inputCharge={inputCharge}
+              outputCharge={outputCharge}
+              billed={billed}
+            />
           </Box>
         </Panel>
-      </Box>
+      </div>
     </Box>
   )
 }

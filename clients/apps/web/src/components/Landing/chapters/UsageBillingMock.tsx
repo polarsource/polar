@@ -12,6 +12,7 @@ import {
   PanelRight,
   Plus,
   SquarePen,
+  Terminal,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -23,6 +24,7 @@ import {
   CREDITS_GRANTED,
   creditsFor,
   dollars,
+  TERMINAL_STEPS,
   useUsageConversation,
   VISIBLE_EVENTS,
   type UsageEvent,
@@ -108,6 +110,10 @@ export const UsageBillingMock = () => {
     ref,
     scenario,
     phase,
+    stage,
+    terminalCommand,
+    terminalDone,
+    terminalSteps,
     firstPrompt,
     composerText,
     typed,
@@ -137,167 +143,252 @@ export const UsageBillingMock = () => {
       >
         <Box flex={1} minWidth={0}>
           <Panel>
-            <Box
-              alignItems="center"
-              columnGap="s"
-              paddingHorizontal="xl"
-              paddingVertical="m"
-            >
-              <StaticImage
-                src="/assets/acme.jpg"
-                alt="Your App"
-                width={20}
-                height={20}
-                className="size-5 rounded-md object-cover"
-              />
-              <Text variant="body" color="muted">
-                Your App
-              </Text>
-              <Box
-                marginLeft="auto"
-                alignItems="center"
-                columnGap="m"
-                color="text-tertiary"
+            {/* The app opens as a terminal: Claude builds it and wires up Polar, then it fades into the chat. */}
+            <div className="grid h-full *:[grid-area:1/1]">
+              <div
+                className={
+                  stage === 'app'
+                    ? 'pointer-events-none flex h-full min-h-0 [animation:fade_400ms_ease-out_both] flex-col'
+                    : 'flex h-full min-h-0 flex-col'
+                }
+                aria-hidden={stage === 'app'}
               >
-                <SquarePen size={14} />
-                <PanelRight size={14} />
-              </Box>
-            </Box>
-            <Inner>
-              <Box
-                flexDirection="column"
-                rowGap="l"
-                paddingHorizontal="xl"
-                paddingVertical="xl"
-                minHeight={{ base: '13rem', md: 'auto' }}
-              >
-                {sent ? (
-                  <>
-                    <div className="[animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_both]">
-                      <Box
-                        alignSelf="start"
-                        paddingHorizontal="l"
-                        paddingVertical="m"
-                        backgroundColor="background-card"
-                        borderRadius="l"
-                      >
-                        <Text variant="body">{scenario.prompt}</Text>
-                      </Box>
-                    </div>
-                    {/* The status and the answer share one cell, so the status fades out under the answer rising in. */}
-                    <div className="grid *:[grid-area:1/1]">
+                <Box
+                  alignItems="center"
+                  columnGap="s"
+                  paddingHorizontal="xl"
+                  paddingVertical="m"
+                  color="text-secondary"
+                >
+                  <Terminal size={14} />
+                  <Text variant="caption" monospace color="muted">
+                    ~/your-app
+                  </Text>
+                </Box>
+                <Inner>
+                  <Box flexDirection="column" rowGap="m" padding="xl">
+                    <Text variant="caption" monospace color="muted">
+                      $ claude
+                    </Text>
+                    <Text variant="caption" monospace>
+                      {'> '}
+                      {terminalCommand}
+                      {terminalDone ? null : (
+                        <span className="ml-px inline-block h-[1em] w-px translate-y-[0.15em] animate-pulse bg-current" />
+                      )}
+                    </Text>
+                    {terminalSteps.map((step) => (
                       <div
-                        className={
-                          phase === 'working'
-                            ? '[animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_200ms_both]'
-                            : 'pointer-events-none [animation:fade_300ms_ease-out_both]'
-                        }
-                        aria-hidden={phase !== 'working'}
+                        key={step}
+                        className="[animation:rise_400ms_cubic-bezier(0.2,0.8,0.2,1)_both]"
                       >
                         <Box
                           alignItems="center"
                           columnGap="s"
                           color="text-secondary"
                         >
-                          <LoaderCircle size={14} className="animate-spin" />
-                          <Text variant="body" color="muted">
-                            <Shimmer active={phase === 'working'}>
-                              {scenario.working}
-                            </Shimmer>
+                          <Check size={12} />
+                          <Text variant="caption" monospace color="muted">
+                            {step}
                           </Text>
                         </Box>
                       </div>
-                      {phase === 'working' ? null : (
-                        <div className="[animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_150ms_both]">
-                          <Text variant="body" color="muted">
-                            {scenario.answer.slice(0, typed)}
-                            <Box as="span" visibility="hidden">
-                              {scenario.answer.slice(typed)}
-                            </Box>
-                          </Text>
-                        </div>
-                      )}
-                    </div>
-                  </>
-                ) : null}
-              </Box>
-              <Box paddingHorizontal="xl" paddingBottom="xl" marginTop="auto">
-                <Box
-                  width="100%"
-                  flexDirection="column"
-                  rowGap="l"
-                  padding="l"
-                  borderRadius="l"
-                  backgroundColor="background-card"
-                >
-                  {composerText ? (
-                    <Text variant="body">
-                      {composerText}
-                      <span className="ml-px inline-block h-[1em] w-px translate-y-[0.15em] animate-pulse bg-current" />
-                    </Text>
-                  ) : (
-                    <Text variant="body" color="muted">
-                      {firstPrompt ? 'Ask anything…' : 'Ask a follow-up'}
-                    </Text>
-                  )}
+                    ))}
+                    {terminalDone &&
+                    terminalSteps.length < TERMINAL_STEPS.length ? (
+                      <Box
+                        alignItems="center"
+                        columnGap="s"
+                        color="text-secondary"
+                      >
+                        <LoaderCircle size={12} className="animate-spin" />
+                        <Text variant="caption" monospace color="muted">
+                          <Shimmer active>Working</Shimmer>
+                        </Text>
+                      </Box>
+                    ) : null}
+                  </Box>
+                </Inner>
+              </div>
+              {stage === 'app' ? (
+                <div className="flex h-full min-h-0 [animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_200ms_both] flex-col">
                   <Box
                     alignItems="center"
-                    justifyContent="between"
-                    columnGap="l"
+                    columnGap="s"
+                    paddingHorizontal="xl"
+                    paddingVertical="m"
                   >
+                    <StaticImage
+                      src="/assets/acme.jpg"
+                      alt="Your App"
+                      width={20}
+                      height={20}
+                      className="size-5 rounded-md object-cover"
+                    />
+                    <Text variant="body" color="muted">
+                      Your App
+                    </Text>
                     <Box
+                      marginLeft="auto"
                       alignItems="center"
-                      columnGap="s"
-                      color="text-secondary"
+                      columnGap="m"
+                      color="text-tertiary"
                     >
-                      <Box
-                        width={24}
-                        height={24}
-                        alignItems="center"
-                        justifyContent="center"
-                        borderWidth={1}
-                        borderStyle="solid"
-                        borderColor="border-primary"
-                        borderRadius="full"
-                      >
-                        <Plus size={12} />
-                      </Box>
-                      <Box
-                        alignItems="center"
-                        columnGap="xs"
-                        paddingHorizontal="s"
-                        height={24}
-                        borderWidth={1}
-                        borderStyle="solid"
-                        borderColor="border-primary"
-                        borderRadius="full"
-                      >
-                        <Text variant="caption" color="muted">
-                          gpt-5
-                        </Text>
-                        <ChevronDown size={10} />
-                      </Box>
-                    </Box>
-                    <Box
-                      width={24}
-                      height={24}
-                      alignItems="center"
-                      justifyContent="center"
-                      backgroundColor={
-                        composerText ? 'background-inverse' : 'background-card'
-                      }
-                      borderRadius="full"
-                      transitionProperty="colors"
-                      transitionDuration="fast"
-                    >
-                      <span className={composerText ? 'text-black' : undefined}>
-                        <ArrowUp size={12} />
-                      </span>
+                      <SquarePen size={14} />
+                      <PanelRight size={14} />
                     </Box>
                   </Box>
-                </Box>
-              </Box>
-            </Inner>
+                  <Inner>
+                    <Box
+                      flexDirection="column"
+                      rowGap="l"
+                      paddingHorizontal="xl"
+                      paddingVertical="xl"
+                      minHeight={{ base: '13rem', md: 'auto' }}
+                    >
+                      {sent ? (
+                        <>
+                          <div className="[animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_both]">
+                            <Box
+                              alignSelf="start"
+                              paddingHorizontal="l"
+                              paddingVertical="m"
+                              backgroundColor="background-card"
+                              borderRadius="l"
+                            >
+                              <Text variant="body">{scenario.prompt}</Text>
+                            </Box>
+                          </div>
+                          {/* The status and the answer share one cell, so the status fades out under the answer rising in. */}
+                          <div className="grid *:[grid-area:1/1]">
+                            <div
+                              className={
+                                phase === 'working'
+                                  ? '[animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_200ms_both]'
+                                  : 'pointer-events-none [animation:fade_300ms_ease-out_both]'
+                              }
+                              aria-hidden={phase !== 'working'}
+                            >
+                              <Box
+                                alignItems="center"
+                                columnGap="s"
+                                color="text-secondary"
+                              >
+                                <LoaderCircle
+                                  size={14}
+                                  className="animate-spin"
+                                />
+                                <Text variant="body" color="muted">
+                                  <Shimmer active={phase === 'working'}>
+                                    {scenario.working}
+                                  </Shimmer>
+                                </Text>
+                              </Box>
+                            </div>
+                            {phase === 'working' ? null : (
+                              <div className="[animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_150ms_both]">
+                                <Text variant="body" color="muted">
+                                  {scenario.answer.slice(0, typed)}
+                                  <Box as="span" visibility="hidden">
+                                    {scenario.answer.slice(typed)}
+                                  </Box>
+                                </Text>
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      ) : null}
+                    </Box>
+                    <Box
+                      paddingHorizontal="xl"
+                      paddingBottom="xl"
+                      marginTop="auto"
+                    >
+                      <Box
+                        width="100%"
+                        flexDirection="column"
+                        rowGap="l"
+                        padding="l"
+                        borderRadius="l"
+                        backgroundColor="background-card"
+                      >
+                        {composerText ? (
+                          <Text variant="body">
+                            {composerText}
+                            <span className="ml-px inline-block h-[1em] w-px translate-y-[0.15em] animate-pulse bg-current" />
+                          </Text>
+                        ) : (
+                          <Text variant="body" color="muted">
+                            {firstPrompt ? 'Ask anything…' : 'Ask a follow-up'}
+                          </Text>
+                        )}
+                        <Box
+                          alignItems="center"
+                          justifyContent="between"
+                          columnGap="l"
+                        >
+                          <Box
+                            alignItems="center"
+                            columnGap="s"
+                            color="text-secondary"
+                          >
+                            <Box
+                              width={24}
+                              height={24}
+                              alignItems="center"
+                              justifyContent="center"
+                              borderWidth={1}
+                              borderStyle="solid"
+                              borderColor="border-primary"
+                              borderRadius="full"
+                            >
+                              <Plus size={12} />
+                            </Box>
+                            <Box
+                              alignItems="center"
+                              columnGap="xs"
+                              paddingHorizontal="s"
+                              height={24}
+                              borderWidth={1}
+                              borderStyle="solid"
+                              borderColor="border-primary"
+                              borderRadius="full"
+                            >
+                              <Text variant="caption" color="muted">
+                                gpt-5
+                              </Text>
+                              <ChevronDown size={10} />
+                            </Box>
+                          </Box>
+                          <Box
+                            width={24}
+                            height={24}
+                            alignItems="center"
+                            justifyContent="center"
+                            backgroundColor={
+                              composerText
+                                ? 'background-inverse'
+                                : 'background-card'
+                            }
+                            borderRadius="full"
+                            transitionProperty="colors"
+                            transitionDuration="fast"
+                          >
+                            <span
+                              className={
+                                composerText ? 'text-black' : undefined
+                              }
+                            >
+                              <ArrowUp size={12} />
+                            </span>
+                          </Box>
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Inner>
+                </div>
+              ) : null}
+            </div>
           </Panel>
         </Box>
 

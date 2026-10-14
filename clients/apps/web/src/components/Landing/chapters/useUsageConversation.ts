@@ -74,6 +74,16 @@ export const dollars = (value: number, digits: number) =>
     maximumFractionDigits: digits,
   })}`
 
+/** The prologue: Claude is asked to build the app and wire up Polar before the app runs. */
+export const TERMINAL_COMMAND = 'Build a chatbot and hook up Polar for billing'
+export const TERMINAL_STEPS = [
+  'Created app/chat.tsx with a streaming assistant',
+  'Installed @polar-sh/sdk and added polar.config.ts',
+  'Metering tokens.in, tokens.out and tool.call per customer',
+  'Done. Start the app and send a prompt.',
+]
+export type Stage = 'terminal' | 'app'
+
 /** The prompt is typed into the composer, sent, answered, and the answer is metered. */
 type Phase = 'typing' | 'working' | 'streaming' | 'metered'
 
@@ -88,13 +98,53 @@ export const useUsageConversation = () => {
   const [billedOut, setBilledOut] = useState(0)
   const [billedToolCalls, setBilledToolCalls] = useState(0)
   const [firstPrompt, setFirstPrompt] = useState(true)
+  const [stage, setStage] = useState<Stage>('terminal')
+  const [typedCommand, setTypedCommand] = useState(0)
+  const [commandTyped, setCommandTyped] = useState(false)
+  const [stepsShown, setStepsShown] = useState(0)
   const scenario = SCENARIOS[index]
 
   const record = (event: UsageEvent) =>
     setSettled((events) => [event, ...events].slice(0, VISIBLE_EVENTS))
 
   useEffect(() => {
-    if (!inView) return
+    if (!inView || stage !== 'terminal') return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const skip = window.setTimeout(() => setStage('app'), 0)
+      return () => clearTimeout(skip)
+    }
+    let frame = 0
+    let timer = 0
+    if (!commandTyped) {
+      // The command is typed after a beat, one character per frame against the clock.
+      timer = window.setTimeout(() => {
+        let started = 0
+        const tick = (now: number) => {
+          if (!started) started = now
+          const shown = Math.min(
+            TERMINAL_COMMAND.length,
+            Math.floor(((now - started) / 1000) * 28),
+          )
+          setTypedCommand(shown)
+          if (shown < TERMINAL_COMMAND.length)
+            frame = requestAnimationFrame(tick)
+          else timer = window.setTimeout(() => setCommandTyped(true), 900)
+        }
+        frame = requestAnimationFrame(tick)
+      }, 1000)
+    } else if (stepsShown < TERMINAL_STEPS.length) {
+      timer = window.setTimeout(() => setStepsShown((count) => count + 1), 700)
+    } else {
+      timer = window.setTimeout(() => setStage('app'), 1400)
+    }
+    return () => {
+      cancelAnimationFrame(frame)
+      clearTimeout(timer)
+    }
+  }, [inView, stage, commandTyped, stepsShown])
+
+  useEffect(() => {
+    if (!inView || stage !== 'app') return
     const reducedMotion = window.matchMedia(
       '(prefers-reduced-motion: reduce)',
     ).matches
@@ -181,7 +231,7 @@ export const useUsageConversation = () => {
       cancelAnimationFrame(frame)
       clearTimeout(timer)
     }
-  }, [inView, phase, scenario, firstPrompt])
+  }, [inView, stage, phase, scenario, firstPrompt])
 
   const progress = Math.min(typed / scenario.answer.length, 1)
   const streamed =
@@ -195,6 +245,13 @@ export const useUsageConversation = () => {
     ref,
     scenario,
     phase,
+    stage,
+    /** How much of Polar is set up: 1 the product, 2 the meters, 3 the customer. Grows with the terminal steps. */
+    setupLevel: stage === 'app' ? 3 : Math.max(0, stepsShown - 1),
+    /** The terminal command as far as it has been typed. */
+    terminalCommand: TERMINAL_COMMAND.slice(0, typedCommand),
+    terminalDone: typedCommand >= TERMINAL_COMMAND.length,
+    terminalSteps: TERMINAL_STEPS.slice(0, stepsShown),
     /** True until the first prompt has been sent. */
     firstPrompt,
     /** The prompt as far as it has been typed into the composer. */

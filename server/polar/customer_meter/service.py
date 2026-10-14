@@ -40,6 +40,7 @@ from polar.models.event import EventSource
 from polar.outpost.stream import enqueue as enqueue_outpost_event
 from polar.postgres import AsyncSession
 from polar.reducer.repository import ReducerRepository
+from polar.reducer_bucket.service import get_customer_identities
 from polar.worker import enqueue_job
 
 from .repository import CustomerMeterRepository
@@ -217,15 +218,16 @@ class CustomerMeterService:
             meter.id
         )
         if reducer is not None:
-            enqueue_outpost_event(
-                customer.organization_id,
-                {
-                    "type": "reducer_bucket",
-                    "reducer_id": reducer.id,
-                    "customer_id": customer.id,
-                    "external_customer_id": customer.external_id,
-                },
-            )
+            for customer_id, external_customer_id in get_customer_identities(customer):
+                enqueue_outpost_event(
+                    customer.organization_id,
+                    {
+                        "type": "reducer_bucket",
+                        "reducer_id": reducer.id,
+                        "customer_id": customer_id,
+                        "external_customer_id": external_customer_id,
+                    },
+                )
 
         return await repository.update(customer_meter), True
 

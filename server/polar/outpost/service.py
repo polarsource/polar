@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import Sequence
+from datetime import timedelta
 
 import structlog
 from anyio.streams.memory import MemoryObjectSendStream
@@ -11,7 +12,7 @@ from polar.customer_meter.repository import CustomerMeterRepository
 from polar.kit.db.postgres import AsyncReadSession
 from polar.logging import Logger
 from polar.meter.aggregation import UniqueAggregation
-from polar.models import Organization, Reducer
+from polar.models import Customer, Organization, Reducer
 from polar.reducer.repository import ReducerRepository
 from polar.reducer_bucket.repository import ReducerBucketRepository
 from polar.reducer_bucket.service import get_customer_identities
@@ -30,6 +31,11 @@ from .schemas import (
 from .stream import OutpostEvent, ReducerBucketOutpostEvent
 
 log: Logger = structlog.get_logger(__name__)
+
+type Identity = tuple[uuid.UUID | None, str | None]
+
+# Buckets that started earlier than this have been synced.
+SYNCED_LOOKBACK = timedelta(hours=1)
 
 
 class OutpostService:
@@ -108,16 +114,17 @@ class OutpostService:
             )
             return
         if isinstance(payload, MeterUsageIncomingMessageCustomerPayload):
-            customer_id, external_customer_id = payload.customer_id, None
+            identity: Identity = (payload.customer_id, None)
         else:
-            customer_id, external_customer_id = None, payload.external_customer_id
+            identity = (None, payload.external_customer_id)
+        customer = await self._get_customer(session, organization, identity)
         await self._send_meter_usage(
             session,
             organization,
             reducer,
             [payload.meter_id],
-            customer_id,
-            external_customer_id,
+            get_customer_identities(customer) if customer else [identity],
+            customer,
             send_stream,
         )
 
@@ -133,14 +140,29 @@ class OutpostService:
         )
         if reducer is None:
             return
+        identity = (event["customer_id"], event["external_customer_id"])
         await self._send_meter_usage(
             session,
             organization,
             reducer,
             reducer.meter_ids,
-            event["customer_id"],
-            event["external_customer_id"],
+            [identity],
+            await self._get_customer(session, organization, identity),
             send_stream,
+        )
+
+    async def _get_customer(
+        self, session: AsyncReadSession, organization: Organization, identity: Identity
+    ) -> Customer | None:
+        customer_id, external_customer_id = identity
+        repository = CustomerRepository.from_session(session)
+        if customer_id is not None:
+            return await repository.get_by_id_and_organization(
+                customer_id, organization.id
+            )
+        assert external_customer_id is not None
+        return await repository.get_by_external_id_and_organization(
+            external_customer_id, organization.id
         )
 
     async def _send_meter_usage(
@@ -149,33 +171,16 @@ class OutpostService:
         organization: Organization,
         reducer: Reducer,
         meter_ids: Sequence[uuid.UUID],
-        customer_id: uuid.UUID | None,
-        external_customer_id: str | None,
+        identities: Sequence[Identity],
+        customer: Customer | None,
         send_stream: MemoryObjectSendStream[OutgoingMessage],
     ) -> None:
         if isinstance(reducer.aggregation, UniqueAggregation):
             return
 
-        customer_repository = CustomerRepository.from_session(session)
-        if customer_id is not None:
-            customer = await customer_repository.get_by_id_and_organization(
-                customer_id, organization.id
-            )
-        else:
-            assert external_customer_id is not None
-            customer = await customer_repository.get_by_external_id_and_organization(
-                external_customer_id, organization.id
-            )
-        if customer is not None:
-            customer_id = customer.id
-            external_customer_id = customer.external_id
-            identities = get_customer_identities(customer)
-        else:
-            identities = [(customer_id, external_customer_id)]
-
-        count, total, minimum, maximum = await ReducerBucketRepository.from_session(
-            session
-        ).get_unsealed_totals(organization.id, reducer.id, identities)
+        repository = ReducerBucketRepository.from_session(session)
+        version = await repository.get_database_now()
+        since = version - SYNCED_LOOKBACK
         # Temporary: credits come from customer meters until credits are reducers.
         # Credits reset on renewal before the billed usage gets sealed, so balances
         # are too low in between.
@@ -190,22 +195,41 @@ class OutpostService:
             customer_meter.meter_id: customer_meter.credited_units
             for customer_meter in customer_meters
         }
-        for meter_id in meter_ids:
-            await send_stream.send(
-                MeterUsageOutgoingMessage(
-                    type=OutgoingMessageType.meter_usage,
-                    payload=MeterUsageOutgoingMessagePayload(
-                        meter_id=meter_id,
-                        customer_id=customer_id,
-                        external_customer_id=external_customer_id,
-                        count=count,
-                        sum=total,
-                        min=minimum,
-                        max=maximum,
-                        credited_units=credited_units.get(meter_id, 0),
-                    ),
+        for customer_id, external_customer_id in identities:
+            cold_until = (
+                await repository.get_last_synced_end(
+                    organization.id,
+                    reducer.id,
+                    customer_id,
+                    external_customer_id,
+                    since=since,
                 )
+                or since
             )
+            count, total, minimum, maximum = await repository.get_unsealed_totals(
+                organization.id,
+                reducer.id,
+                [(customer_id, external_customer_id)],
+                before=cold_until,
+            )
+            for meter_id in meter_ids:
+                await send_stream.send(
+                    MeterUsageOutgoingMessage(
+                        type=OutgoingMessageType.meter_usage,
+                        payload=MeterUsageOutgoingMessagePayload(
+                            meter_id=meter_id,
+                            customer_id=customer_id,
+                            external_customer_id=external_customer_id,
+                            version=version,
+                            cold_until=cold_until,
+                            count=count,
+                            sum=total,
+                            min=minimum,
+                            max=maximum,
+                            credited_units=credited_units.get(meter_id, 0),
+                        ),
+                    )
+                )
 
 
 outpost = OutpostService()

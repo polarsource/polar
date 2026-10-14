@@ -151,8 +151,11 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         organization_id: UUID,
         reducer_id: UUID,
         identities: Sequence[tuple[UUID | None, str | None]],
+        *,
+        before: datetime,
     ) -> Row[Any]:
-        """count, sum, min and max of the identities' usage not billed yet."""
+        """count, sum, min and max of the identities' usage not billed yet, in
+        buckets starting before `before`."""
         statement = select(
             func.coalesce(func.sum(ReducerBucket.count), 0).label("count"),
             func.coalesce(func.sum(ReducerBucket.sum), 0).label("sum"),
@@ -162,6 +165,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             ReducerBucket.organization_id == organization_id,
             ReducerBucket.reducer_id == reducer_id,
             ReducerBucket.sealed_at.is_(None),
+            ReducerBucket.bucket_start < before,
             or_(
                 *(
                     _is_customer(ReducerBucket, customer_id, external_customer_id)
@@ -171,6 +175,32 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         )
         result = await self.session.execute(statement)
         return result.one()
+
+    async def get_last_synced_end(
+        self,
+        organization_id: UUID,
+        reducer_id: UUID,
+        customer_id: UUID | None,
+        external_customer_id: str | None,
+        *,
+        since: datetime,
+    ) -> datetime | None:
+        """End of the customer identity's latest bucket recomputed by sync, among
+        those starting from `since`."""
+        statement = select(func.max(ReducerBucket.bucket_end)).where(
+            ReducerBucket.organization_id == organization_id,
+            ReducerBucket.reducer_id == reducer_id,
+            _is_customer(ReducerBucket, customer_id, external_customer_id),
+            ReducerBucket.bucket_start >= since,
+            ReducerBucket.synced_at.is_not(None),
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one()
+
+    async def get_database_now(self) -> datetime:
+        """The start of the current transaction, on the database clock."""
+        result = await self.session.execute(select(func.now()))
+        return result.scalar_one()
 
     async def add_contribution(
         self,

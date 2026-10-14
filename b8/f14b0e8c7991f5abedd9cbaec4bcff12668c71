@@ -1,0 +1,51 @@
+server/polar/order/endpoints.py
+  s_ad783061508f15::t_483623878d62b6 98
+  s_ad783061508f15::t_6eb143d716a88a 362,388
+server/polar/checkout_link/endpoints.py
+  s_ad783061508f15::t_1432302c6b8467 120
+server/polar/product/endpoints.py
+  s_ad783061508f15::t_483623878d62b6 59,121,186-188
+docs/openapi/2026-10.openapi.json
+  ai_agent 930,1387,2479,2835,2930,3280,4898,5006,5103,5235,5458,12119,13810-13811,13919-13920,14019,14151,16148,16476,16585,16727-16728,16824,16947,17099,17206,24071,24179,24277,24400
+server/polar/subscription/endpoints.py
+  s_ad783061508f15::t_483623878d62b6 74,231-236
+docs/openapi/2027-01.openapi.json
+  ai_agent 24464-24470,24584,24707
+server/polar/discount/endpoints.py
+  s_ad783061508f15::t_1432302c6b8467 38
+  s_ad783061508f15::t_483623878d62b6 107-113
+server/polar/benefit/endpoints.py
+  s_ad783061508f15::t_483623878d62b6 54,104
+server/polar/custom_field/endpoints.py
+  s_ad783061508f15::t_1432302c6b8467 40
+docs/openapi/2026-04.openapi.json
+  ai_agent 930,1387,2479,2835,2930,3280,4898,5006,5103,5235,5458,12119,13810-13811,13919-13920,14019,14151,16148,16476,16585,16727-16728,16824,16947,17099,17206,24071,24179,24277,24400
+server/polar/meter/endpoints.py
+  s_ad783061508f15::t_483623878d62b6 54,92,155
+server/polar/payment/endpoints.py
+  s_ad783061508f15::t_1432302c6b8467 31
+server/polar/webhook/endpoints.py
+  s_ad783061508f15::t_1432302c6b8467 40
+server/polar/customer/endpoints.py
+  s_ad783061508f15::t_483623878d62b6 81
+server/polar/refund/endpoints.py
+  s_ad783061508f15::t_1432302c6b8467 26
+server/polar/member/endpoints.py
+  s_ad783061508f15::t_483623878d62b6 285,309
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "b8f14b0e8c7991f5abedd9cbaec4bcff12668c71",
+  "prompts": {},
+  "sessions": {
+    "s_ad783061508f15": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5e993b79-845e-4ff0-a51e-8ebd9ed9816b",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

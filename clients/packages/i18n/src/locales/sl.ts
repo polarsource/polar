@@ -153,7 +153,7 @@ export default {
             other: '# dni brezplačno',
             one: '# dan brezplačno',
             two: '# dneva brezplačno',
-            few: '# dnevi brezplačno',
+            few: '# dni brezplačno',
             _mode: 'plural',
           },
           month: {
@@ -161,7 +161,7 @@ export default {
             other: '# mesecev brezplačno',
             one: '# mesec brezplačno',
             two: '# meseca brezplačno',
-            few: '# meseci brezplačno',
+            few: '# mesece brezplačno',
             _mode: 'plural',
           },
           year: {

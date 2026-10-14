@@ -104,6 +104,48 @@ Rules it follows:
 - **One OAuth client per agent**: each registration creates its own OAuth client, so we can tell agents
   apart and revoke one without touching the others.
 
+## Changes to the OAuth server
+
+All changes are additions. The authorization endpoint, the consent screen, the existing grants
+(authorization code, refresh token, web), token format and token validation stay as they are.
+
+**New grants on `/v1/oauth2/token`**
+
+- **Claim grant** (`urn:workos:agent-auth:grant-type:claim`): the agent polls with its claim token. Until the
+  human enters the code, it gets the standard device-flow answers (`authorization_pending`, `slow_down`,
+  `expired_token`). After that it gets an access token and an identity assertion. The claim token works once.
+- **JWT-bearer grant** (`urn:ietf:params:oauth:grant-type:jwt-bearer`, RFC 7523): the agent sends its identity
+  assertion and gets an access token. We check the signature, issuer, type and expiry, that the registration
+  isn't revoked, and that the assertion wasn't issued before the claim. No refresh tokens.
+
+In both grants, the client is taken from the registration the credential belongs to, not from a `client_id`
+the caller sends. So an existing OAuth app can't use them, and an agent can only ever get tokens for itself.
+
+**Agent clients**
+
+- One OAuth client per registration: public (no secret), no redirect URIs, and only the two grants above.
+- Marked as an agent client, so it can't be mistaken for a normal OAuth app.
+
+**Tokens**
+
+- Agents get the same user access tokens as any OAuth app: same table, same validation, same scope checks.
+- The scope comes from the registration. It's narrower before the claim and set to the full agent scope at the
+  claim.
+- At the claim, the tokens issued before it are revoked.
+
+**Identity assertion**
+
+- A JWT signed with our existing signing key, with its own `type` claim, so it can't be confused with any other
+  JWT Polar issues, and vice versa.
+
+**Discovery and revocation**
+
+- The authorization-server metadata (`/.well-known/oauth-authorization-server`) lists the new grants and gains
+  an `agent_auth` block (links to `/auth.md` and the sign-up and claim endpoints).
+- New `/.well-known/oauth-protected-resource` document (RFC 9728).
+- The `WWW-Authenticate` header on 401 responses gains a `resource_metadata` link.
+- The revocation endpoint accepts agent clients, which have no secret, for their own tokens.
+
 ## Decisions
 
 | Topic | Decision |

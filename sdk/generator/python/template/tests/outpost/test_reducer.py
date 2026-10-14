@@ -1,4 +1,5 @@
 import datetime
+import typing
 
 import pytest
 
@@ -20,11 +21,11 @@ TIMESTAMP = datetime.datetime(2026, 10, 12, 12, 4, 59, tzinfo=datetime.UTC)
     ("func", "expected"),
     [("count", 3), ("sum", -2), ("min", -5), ("max", 3), ("avg", -2 / 3)],
 )
-def test_reduce_buckets(func: str, expected: float) -> None:
-    reducer = {
+def test_reduce_buckets(func: typing.Literal["count", "sum", "max", "min", "avg"], expected: float) -> None:
+    reducer: Reducer = {
         "id": "usage",
         "filter": {"conjunction": "and", "clauses": []},
-        "aggregation": {"func": func, "property": "tokens"},
+        "aggregation": {"func": "count"} if func == "count" else {"func": func, "property": "tokens"},
     }
     events = [
         Event("call", "customer", TIMESTAMP, {"tokens": value}) for value in [-5, 0, 3]
@@ -71,31 +72,28 @@ def test_empty_statistics(func: str) -> None:
 
 
 def test_nested_configuration_and_metadata() -> None:
-    reducer = deserialize(
-        {
-            "id": "tokens",
-            "meter_ids": ["meter"],
-            "filter": {
-                "conjunction": "and",
-                "clauses": [
-                    {"property": "name", "operator": "eq", "value": "call"},
-                    {
-                        "conjunction": "or",
-                        "clauses": [
-                            {
-                                "property": "metadata.llm.tokens",
-                                "operator": "gte",
-                                "value": 2,
-                            },
-                            {"property": "source", "operator": "eq", "value": "system"},
-                        ],
-                    },
-                ],
-            },
-            "aggregation": {"func": "sum", "property": "llm.tokens"},
+    reducer: Reducer = {
+        "id": "tokens",
+        "meter_ids": ["meter"],
+        "filter": {
+            "conjunction": "and",
+            "clauses": [
+                {"property": "name", "operator": "eq", "value": "call"},
+                {
+                    "conjunction": "or",
+                    "clauses": [
+                        {
+                            "property": "metadata.llm.tokens",
+                            "operator": "gte",
+                            "value": 2,
+                        },
+                        {"property": "source", "operator": "eq", "value": "system"},
+                    ],
+                },
+            ],
         },
-        Reducer,
-    )
+        "aggregation": {"func": "sum", "property": "llm.tokens"},
+    }
     matcher = get_matcher(reducer["filter"])
     assert matcher(Event("call", "customer", TIMESTAMP, {"llm": {"tokens": 2}}))
     assert not matcher(Event("call", "customer", TIMESTAMP, {"llm": {"tokens": True}}))
@@ -118,14 +116,12 @@ def test_nested_configuration_and_metadata() -> None:
     ],
 )
 def test_equality_filters_use_operand_values(
-    operator: str,
+    operator: typing.Literal["eq", "ne", "gt", "gte", "lt", "lte"],
     actual: str | float | bool,
     expected: str | float | bool,
     equal: bool,
 ) -> None:
-    clause = deserialize(
-        {"property": "value", "operator": operator, "value": expected}, FilterClause
-    )
+    clause: FilterClause = {"property": "value", "operator": operator, "value": expected}
     assert get_matcher(clause)(
         Event("call", "customer", TIMESTAMP, {"value": actual})
     ) is (equal if operator == "eq" else not equal)

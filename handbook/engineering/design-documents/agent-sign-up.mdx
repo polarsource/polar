@@ -94,7 +94,7 @@ starts working. This is the safer flow and ships first.
 | Topic | Decision |
 |---|---|
 | Who the agent is | It acts as the claiming user, like any OAuth app. Its OAuth client carries an "agent" marker so we can attribute actions and list or revoke agents. No separate agent role. |
-| What a claim is | Creating the org, not transferring it. So no identity-verification check at claim time: the org is new, unreviewed and can't be paid out. |
+| What a claim is | A transfer: in one atomic step, the placeholder user's orgs and everything in them move to the claiming user. No identity-verification check at claim time, because claimed or not, the org still has to pass the normal verification before it can be paid out. |
 | Before the claim | Build only: orgs, products, meters, benefits, config, test events. No review submission, payouts, checkouts, customers or webhooks. Enforced on the server, with narrower scopes as a second layer. |
 | After the claim | Anything the user can do. |
 | Rollout | `service_auth` first. Anonymous sign-up starts in sandbox, behind a feature flag, and goes to production once sandbox abuse data looks fine. |

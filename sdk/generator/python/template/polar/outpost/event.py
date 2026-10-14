@@ -38,7 +38,7 @@ class Event:
             case _:
                 value: typing.Any = self.metadata
                 for part in property.removeprefix("metadata.").split("."):
-                    if not isinstance(value, dict):
+                    if not isinstance(value, collections.abc.Mapping):
                         return None
                     value = value.get(part)
                 return value

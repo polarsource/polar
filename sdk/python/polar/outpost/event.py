@@ -1,3 +1,4 @@
+import collections.abc
 import dataclasses
 import datetime
 import typing
@@ -23,7 +24,14 @@ from polar.v2027_01.inputs import (
     EventCreateExternalCustomer as EventCreateExternalCustomerv2027_01,
 )
 
-EventInput: typing.TypeAlias = EventCreateCustomerv2026_04 | EventCreateExternalCustomerv2026_04 | EventCreateCustomerv2026_10 | EventCreateExternalCustomerv2026_10 | EventCreateCustomerv2027_01 | EventCreateExternalCustomerv2027_01
+EventInput: typing.TypeAlias = (
+    EventCreateCustomerv2026_04
+    | EventCreateExternalCustomerv2026_04
+    | EventCreateCustomerv2026_10
+    | EventCreateExternalCustomerv2026_10
+    | EventCreateCustomerv2027_01
+    | EventCreateExternalCustomerv2027_01
+)
 
 
 @dataclasses.dataclass
@@ -50,7 +58,7 @@ class Event:
             case _:
                 value: typing.Any = self.metadata
                 for part in property.removeprefix("metadata.").split("."):
-                    if not isinstance(value, dict):
+                    if not isinstance(value, collections.abc.Mapping):
                         return None
                     value = value.get(part)
                 return value

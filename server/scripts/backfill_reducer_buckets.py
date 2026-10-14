@@ -1,5 +1,6 @@
 from collections import defaultdict
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from itertools import pairwise
@@ -83,6 +84,14 @@ type Identity = tuple[UUID | None, str | None]
 type Interval = tuple[datetime, datetime]
 
 
+@dataclass(frozen=True)
+class DeletedBucket:
+    identity: Identity
+    interval: Interval
+    generation: int
+    sealed_at: datetime | None
+
+
 def select_external_customer_id(
     reducer: Reducer, customer_id: UUID
 ) -> ScalarSelect[str | None]:
@@ -122,9 +131,8 @@ async def delete_bucket_rows(
     end: datetime,
     *,
     customer_id: UUID | None = None,
-) -> list[tuple[Identity, Interval]]:
-    """Deletes the rows starting in [start, end), returning their identity and
-    interval."""
+) -> list[DeletedBucket]:
+    """Deletes the rows starting in [start, end) and returns them."""
     statement = delete(ReducerBucket).where(
         ReducerBucket.organization_id == reducer.organization_id,
         ReducerBucket.reducer_id == reducer.id,
@@ -141,27 +149,49 @@ async def delete_bucket_rows(
             ReducerBucket.external_customer_id,
             ReducerBucket.bucket_start,
             ReducerBucket.bucket_end,
+            ReducerBucket.generation,
+            ReducerBucket.sealed_at,
         )
     )
     return [
-        ((row_customer_id, external_customer_id), (bucket_start, bucket_end))
-        for row_customer_id, external_customer_id, bucket_start, bucket_end in result
+        DeletedBucket(
+            identity=(row.customer_id, row.external_customer_id),
+            interval=(row.bucket_start, row.bucket_end),
+            generation=row.generation,
+            sealed_at=row.sealed_at,
+        )
+        for row in result
     ]
 
 
 def get_split_intervals(
-    start: datetime, end: datetime, rows: Sequence[tuple[Identity, Interval]]
+    start: datetime, end: datetime, deleted: Sequence[DeletedBucket]
 ) -> dict[Identity, list[Interval]]:
     """The intervals sealing split [start, end) into, for each identity whose rows
     were split."""
     boundaries: dict[Identity, set[datetime]] = defaultdict(lambda: {start, end})
-    for identity, (bucket_start, bucket_end) in rows:
-        boundaries[identity].update((bucket_start, min(bucket_end, end)))
+    for bucket in deleted:
+        bucket_start, bucket_end = bucket.interval
+        boundaries[bucket.identity].update((bucket_start, min(bucket_end, end)))
     return {
         identity: list(pairwise(sorted(points)))
         for identity, points in boundaries.items()
         if len(points) > 2
     }
+
+
+def get_latest_sealed_at(
+    deleted: Sequence[DeletedBucket], identity: Identity, interval_start: datetime
+) -> datetime | None:
+    """The `sealed_at` of the latest generation deleted for the interval."""
+    generations = [
+        bucket
+        for bucket in deleted
+        if bucket.identity == identity and bucket.interval[0] == interval_start
+    ]
+    if not generations:
+        return None
+    return max(generations, key=lambda bucket: bucket.generation).sealed_at
 
 
 def select_event_value(reducer: Reducer) -> ColumnElement[Decimal | None]:
@@ -295,6 +325,32 @@ async def insert_buckets(
     return result.rowcount
 
 
+async def insert_empty_bucket(
+    session: AsyncSession,
+    reducer: Reducer,
+    identity: Identity,
+    interval: Interval,
+    *,
+    sealed_at: datetime | None,
+) -> None:
+    customer_id, external_customer_id = identity
+    bucket_start, bucket_end = interval
+    await session.execute(
+        insert(ReducerBucket).values(
+            organization_id=reducer.organization_id,
+            reducer_id=reducer.id,
+            customer_id=customer_id,
+            external_customer_id=external_customer_id,
+            bucket_start=bucket_start,
+            bucket_end=bucket_end,
+            count=0,
+            sum=0,
+            generation=1,
+            sealed_at=sealed_at,
+        )
+    )
+
+
 async def backfill_bucket(
     session: AsyncSession,
     reducer: Reducer,
@@ -315,13 +371,27 @@ async def backfill_bucket(
 
     for identity, intervals in split_intervals.items():
         for interval_start, interval_end in intervals:
-            rows_written += await insert_buckets(
+            interval_rows = await insert_buckets(
                 session,
                 reducer,
                 interval_start,
                 interval_end,
                 is_identity(Event, identity),
             )
+            # Live writes only aggregate into a split slot's existing intervals,
+            # so an empty side still needs its row.
+            if interval_rows == 0:
+                await insert_empty_bucket(
+                    session,
+                    reducer,
+                    identity,
+                    (interval_start, interval_end),
+                    sealed_at=get_latest_sealed_at(
+                        deleted_rows, identity, interval_start
+                    ),
+                )
+                interval_rows = 1
+            rows_written += interval_rows
     return rows_written
 
 

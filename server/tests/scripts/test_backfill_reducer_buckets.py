@@ -28,6 +28,7 @@ from polar.models.billing_entry import BillingEntryType
 from polar.models.event import EventSource
 from polar.reducer.service import reducer as reducer_service
 from scripts.backfill_reducer_buckets import (
+    DeletedBucket,
     backfill_bucket,
     bucket_range,
     floor_bucket,
@@ -96,9 +97,9 @@ class TestGetSplitIntervals:
             start,
             end,
             [
-                (split, (start, first_cut)),
-                (split, (second_cut, end)),
-                (unsplit, (start, end)),
+                DeletedBucket(split, (start, first_cut), 1, None),
+                DeletedBucket(split, (second_cut, end), 1, None),
+                DeletedBucket(unsplit, (start, end), 1, None),
             ],
         ) == {split: [(start, first_cut), (first_cut, second_cut), (second_cut, end)]}
 
@@ -596,6 +597,56 @@ class TestBackfillBucket:
             (1, 1, end),
             (2, 2, end),
         ]
+
+    async def test_empty_split_side_is_kept(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        meter: Meter,
+        customer: Customer,
+    ) -> None:
+        reducer = await reducer_service.sync_meter(session, meter)
+        start = datetime(2026, 10, 1, tzinfo=UTC)
+        cutoff = start + timedelta(minutes=2)
+        end = start + timedelta(minutes=5)
+        sealed_at = end + timedelta(minutes=15)
+        for bucket_start, bucket_end, bucket_sealed_at in (
+            (start, cutoff, sealed_at),
+            (cutoff, end, None),
+        ):
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    customer=customer,
+                    bucket_start=bucket_start,
+                    bucket_end=bucket_end,
+                    sealed_at=bucket_sealed_at,
+                    count=0,
+                )
+            )
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            timestamp=cutoff,
+        )
+
+        for _ in range(2):
+            assert await backfill_bucket(session, reducer, start, end) == 2
+            buckets = (
+                await session.scalars(
+                    select(ReducerBucket).order_by(ReducerBucket.bucket_start)
+                )
+            ).all()
+            assert [
+                (b.bucket_start, b.bucket_end, b.generation, b.count, b.sealed_at)
+                for b in buckets
+            ] == [
+                (start, cutoff, 1, 0, sealed_at),
+                (cutoff, end, 1, 1, None),
+            ]
 
     async def test_sealed_splits_and_reruns(
         self,

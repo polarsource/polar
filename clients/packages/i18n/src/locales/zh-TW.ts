@@ -83,7 +83,7 @@ export default {
         scalar: '單位',
       },
       tiers: {
-        from: '起',
+        from: '最低',
         range: '{from}–{to}',
         andAbove: '{from}+',
         volumeExplainer: '所有用量皆依其所屬區間的費率計費',
@@ -165,7 +165,7 @@ export default {
     productSwitcher: {
       billedRecurring: '按{frequency}計費',
       oneTimePurchase: '一次性購買',
-      fromPrefix: '起',
+      fromPrefix: '最低',
     },
     productDescription: {
       readMore: '閱讀更多',

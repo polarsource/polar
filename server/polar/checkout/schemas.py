@@ -46,7 +46,6 @@ from polar.kit.schemas import (
     IDSchema,
     Int32,
     Schema,
-    SetSchemaReference,
     StripValidator,
     TimestampedSchema,
 )
@@ -55,6 +54,7 @@ from polar.kit.trial import (
     TrialConfigurationOutputMixin,
     TrialInterval,
 )
+from polar.kit.versioning import Version
 from polar.models.checkout import (
     CheckoutBillingAddressFields,
     CheckoutCustomerBillingAddressFields,
@@ -70,6 +70,7 @@ from polar.product.schemas import (
     ProductPriceCreateList,
     ProductPriceList,
 )
+from polar.version import V2026_10
 
 Amount = Annotated[
     int,
@@ -393,31 +394,12 @@ class CheckoutProductsCreate(CheckoutCreateBase):
     )
 
 
-CheckoutCreate = Annotated[
-    CheckoutProductsCreate
-    | SkipJsonSchema[CheckoutProductCreate]
-    | SkipJsonSchema[CheckoutPriceCreate],
-    SetSchemaReference("CheckoutCreate"),
-]
-
-
 class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
     product_id: UUID4 | None = Field(
         default=None,
         description=(
             "ID of the product to checkout. "
             "Must be present in the checkout's product list."
-        ),
-    )
-    product_price_id: UUID4 | None = Field(
-        default=None,
-        description=(
-            "ID of the product price to checkout. "
-            "Must correspond to a price present in the checkout's product list."
-        ),
-        deprecated=(
-            "Use `product_id` unless you have a product with legacy pricing "
-            "including several recurring intervals."
         ),
     )
     amount: Amount | None = None
@@ -620,9 +602,11 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
         description="ID of the organization owning the checkout session."
     )
     product_id: UUID4 | None = Field(description="ID of the product to checkout.")
-    product_price_id: UUID4 | None = Field(
-        description="ID of the product price to checkout.", deprecated=True
-    )
+    product_price_id: Annotated[
+        UUID4 | None,
+        Version(up_to=V2026_10),
+        Field(description="ID of the product price to checkout.", deprecated=True),
+    ]
     discount_id: UUID4 | None = Field(
         description="ID of the discount applied to the checkout."
     )

@@ -1,6 +1,5 @@
 import {
   getUnitLabels,
-  isLegacyRecurringPrice,
   isMeteredPrice,
   MeteredPrice,
   isSeatBasedPrice,
@@ -31,11 +30,7 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
       <AmountLabel
         amount={staticPrice.price_amount}
         currency={staticPrice.price_currency}
-        interval={
-          isLegacyRecurringPrice(staticPrice)
-            ? staticPrice.recurring_interval
-            : product.recurring_interval || undefined
-        }
+        interval={product.recurring_interval || undefined}
         intervalCount={product.recurring_interval_count}
       />
     )

@@ -1,5 +1,6 @@
 'use client'
 
+import LogoIcon from '@/components/Brand/logos/LogoIcon'
 import LogoType from '@/components/Brand/logos/LogoType'
 import { StaticImage } from '@/components/Image/StaticImage'
 import { Grid, Text } from '@polar-sh/orbit'
@@ -80,6 +81,25 @@ const EventRow = ({
   </Box>
 )
 
+/** What Polar sets up while Claude builds the app, in the order the terminal does it. */
+const SETUP_STEPS = [
+  'Organization created',
+  'Pro plan at $49 per month',
+  'Meters for tokens and tool calls',
+  'Customer signed in',
+  'Subscribed to Pro',
+]
+
+/** A skeleton bar, for what Polar does not have yet. */
+const Bone = ({ w, h = 10 }: { w: number; h?: number }) => (
+  <Box
+    width={w}
+    height={h}
+    backgroundColor="background-card"
+    borderRadius="s"
+  />
+)
+
 /** The chrome of the site's modals: a dark frame with a hairline and a 4px inset. The header sits on the frame. */
 const Panel = ({
   children,
@@ -111,6 +131,11 @@ export const UsageBillingMock = () => {
     scenario,
     phase,
     stage,
+    setupLevel,
+    commandSent,
+    signedIn,
+    upgraded,
+    typedEmail,
     terminalCommand,
     terminalDone,
     terminalSteps,
@@ -139,6 +164,7 @@ export const UsageBillingMock = () => {
         flexDirection={{ base: 'column', md: 'row' }}
         alignItems="stretch"
         gap="2xl"
+        height={{ md: '33rem' }}
         transform="scale(.9)"
       >
         <Box flex={1} minWidth={0}>
@@ -147,11 +173,11 @@ export const UsageBillingMock = () => {
             <div className="grid h-full *:[grid-area:1/1]">
               <div
                 className={
-                  stage === 'app'
+                  stage !== 'terminal'
                     ? 'pointer-events-none flex h-full min-h-0 [animation:fade_400ms_ease-out_both] flex-col'
                     : 'flex h-full min-h-0 flex-col'
                 }
-                aria-hidden={stage === 'app'}
+                aria-hidden={stage !== 'terminal'}
               >
                 <Box
                   alignItems="center"
@@ -183,11 +209,13 @@ export const UsageBillingMock = () => {
                         className="[animation:rise_400ms_cubic-bezier(0.2,0.8,0.2,1)_both]"
                       >
                         <Box
-                          alignItems="center"
+                          alignItems="start"
                           columnGap="s"
                           color="text-secondary"
                         >
-                          <Check size={12} />
+                          <Box flexShrink={0} paddingTop="xs">
+                            <Check size={12} />
+                          </Box>
                           <Text variant="caption" monospace color="muted">
                             {step}
                           </Text>
@@ -210,6 +238,225 @@ export const UsageBillingMock = () => {
                   </Box>
                 </Inner>
               </div>
+              {stage === 'signin' ? (
+                <div className="flex h-full min-h-0 [animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_200ms_both] flex-col">
+                  <Box
+                    alignItems="center"
+                    columnGap="s"
+                    paddingHorizontal="xl"
+                    paddingVertical="m"
+                  >
+                    <StaticImage
+                      src="/assets/acme.jpg"
+                      alt="Your App"
+                      width={20}
+                      height={20}
+                      className="size-5 rounded-md object-cover"
+                    />
+                    <Text variant="body" color="muted">
+                      Your App
+                    </Text>
+                  </Box>
+                  <Inner>
+                    <Box
+                      flex={1}
+                      flexDirection="column"
+                      alignItems="center"
+                      justifyContent="center"
+                      rowGap="xl"
+                      padding="xl"
+                    >
+                      <Box
+                        flexDirection="column"
+                        alignItems="center"
+                        rowGap="xs"
+                      >
+                        <Text variant="heading-xxs">Sign in</Text>
+                        <Text variant="caption" color="muted">
+                          Continue to Your App
+                        </Text>
+                      </Box>
+                      <Box
+                        width="100%"
+                        maxWidth={280}
+                        flexDirection="column"
+                        rowGap="s"
+                      >
+                        <Box
+                          alignItems="center"
+                          paddingHorizontal="m"
+                          height={36}
+                          borderWidth={1}
+                          borderStyle="solid"
+                          borderColor="border-primary"
+                          borderRadius="m"
+                        >
+                          {typedEmail ? (
+                            <Text variant="default">
+                              {typedEmail}
+                              {signedIn ? null : (
+                                <span className="ml-px inline-block h-[1em] w-px translate-y-[0.15em] animate-pulse bg-current" />
+                              )}
+                            </Text>
+                          ) : (
+                            <Text variant="default" color="muted">
+                              Email
+                            </Text>
+                          )}
+                        </Box>
+                        <Box
+                          alignItems="center"
+                          justifyContent="center"
+                          height={36}
+                          backgroundColor={
+                            signedIn ? 'background-card' : 'background-inverse'
+                          }
+                          borderRadius="m"
+                          transitionProperty="colors"
+                          transitionDuration="fast"
+                        >
+                          {signedIn ? (
+                            <Box
+                              alignItems="center"
+                              columnGap="s"
+                              color="text-secondary"
+                            >
+                              <LoaderCircle
+                                size={12}
+                                className="animate-spin"
+                              />
+                              <Text variant="default" color="muted">
+                                <Shimmer active>Signing in</Shimmer>
+                              </Text>
+                            </Box>
+                          ) : (
+                            <span className="text-black">
+                              <Text variant="default" color="inherit">
+                                Continue
+                              </Text>
+                            </span>
+                          )}
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Inner>
+                </div>
+              ) : null}
+              {stage === 'upgrade' ? (
+                <div className="flex h-full min-h-0 [animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_200ms_both] flex-col">
+                  <Box
+                    alignItems="center"
+                    columnGap="s"
+                    paddingHorizontal="xl"
+                    paddingVertical="m"
+                  >
+                    <StaticImage
+                      src="/assets/acme.jpg"
+                      alt="Your App"
+                      width={20}
+                      height={20}
+                      className="size-5 rounded-md object-cover"
+                    />
+                    <Text variant="body" color="muted">
+                      Your App
+                    </Text>
+                  </Box>
+                  <Inner>
+                    <Box
+                      flex={1}
+                      flexDirection="column"
+                      alignItems="center"
+                      justifyContent="center"
+                      rowGap="xl"
+                      padding="xl"
+                    >
+                      <Box
+                        flexDirection="column"
+                        alignItems="center"
+                        rowGap="xs"
+                      >
+                        <Text variant="heading-xxs">Upgrade to Pro</Text>
+                        <Text variant="caption" color="muted">
+                          Unlimited chats, tools and usage billing
+                        </Text>
+                      </Box>
+                      <Box
+                        width="100%"
+                        maxWidth={280}
+                        flexDirection="column"
+                        rowGap="m"
+                        padding="l"
+                        borderWidth={1}
+                        borderStyle="solid"
+                        borderColor="border-primary"
+                        borderRadius="l"
+                      >
+                        <Box justifyContent="between" alignItems="baseline">
+                          <Text variant="body">Pro</Text>
+                          <Text variant="body" tabularNums>
+                            $49
+                            <Text as="span" variant="caption" color="muted">
+                              {' '}
+                              / month
+                            </Text>
+                          </Text>
+                        </Box>
+                        <Box flexDirection="column" rowGap="xs">
+                          {[
+                            'Tokens billed as you go',
+                            '5,000 tool credits',
+                          ].map((line) => (
+                            <Box
+                              key={line}
+                              alignItems="center"
+                              columnGap="s"
+                              color="text-secondary"
+                            >
+                              <Check size={12} />
+                              <Text variant="caption" color="muted">
+                                {line}
+                              </Text>
+                            </Box>
+                          ))}
+                        </Box>
+                        <Box
+                          alignItems="center"
+                          justifyContent="center"
+                          height={36}
+                          backgroundColor={
+                            upgraded ? 'background-card' : 'background-inverse'
+                          }
+                          borderRadius="m"
+                          transitionProperty="colors"
+                          transitionDuration="fast"
+                        >
+                          {upgraded ? (
+                            <Box
+                              alignItems="center"
+                              columnGap="s"
+                              color="text-secondary"
+                            >
+                              <LoaderCircle
+                                size={12}
+                                className="animate-spin"
+                              />
+                              <Text variant="default" color="muted">
+                                <Shimmer active>Subscribing</Shimmer>
+                              </Text>
+                            </Box>
+                          ) : (
+                            <span className="text-black">
+                              <Text variant="default" color="inherit">
+                                Upgrade
+                              </Text>
+                            </span>
+                          )}
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Inner>
+                </div>
+              ) : null}
               {stage === 'app' ? (
                 <div className="flex h-full min-h-0 [animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_200ms_both] flex-col">
                   <Box
@@ -394,143 +641,285 @@ export const UsageBillingMock = () => {
 
         <div className="w-full min-w-0 md:flex-1">
           <Panel elevated>
-            <Box
-              alignItems="center"
-              justifyContent="between"
-              paddingHorizontal="xl"
-              paddingVertical="m"
-            >
-              <Box alignItems="center" columnGap="xs">
-                <LogoType height={14} />
-              </Box>
-              <Text variant="caption" color="muted">
-                Current cycle
-              </Text>
-            </Box>
-            <Inner>
-              <Box
-                alignItems="center"
-                justifyContent="between"
-                columnGap="l"
-                marginHorizontal="xl"
-                paddingVertical="l"
+            {/* Polar starts as a closed box with the mark, and opens into the dashboard once setup begins. */}
+            <div className="grid h-full *:[grid-area:1/1]">
+              <div
+                className={
+                  stage === 'app'
+                    ? 'pointer-events-none flex h-full [animation:fade_400ms_ease-out_both] flex-col'
+                    : 'flex h-full flex-col'
+                }
+                aria-hidden={stage === 'app'}
               >
-                <Box alignItems="center" columnGap="m">
-                  <StaticImage
-                    src="/assets/acme.jpg"
-                    alt="Acme Inc"
-                    width={32}
-                    height={32}
-                    className="size-8 rounded-full object-cover"
-                  />
-                  <Box flexDirection="column">
-                    <Text variant="body">Acme Inc</Text>
+                {commandSent ? (
+                  <>
+                    <Box
+                      alignItems="center"
+                      justifyContent="between"
+                      paddingHorizontal="xl"
+                      paddingVertical="m"
+                    >
+                      <Box alignItems="center" columnGap="xs">
+                        <LogoType height={14} />
+                      </Box>
+                      <Text variant="caption" color="muted">
+                        Setup
+                      </Text>
+                    </Box>
+                    <Inner>
+                      <Box flexDirection="column" rowGap="l" padding="xl">
+                        {SETUP_STEPS.map((step, index) => {
+                          const done = setupLevel > index
+                          const active =
+                            setupLevel === index &&
+                            (stage === 'terminal' ? commandSent : true)
+                          return (
+                            <Box
+                              key={step}
+                              alignItems="center"
+                              columnGap="m"
+                              color={done ? 'text-primary' : 'text-secondary'}
+                            >
+                              {done ? (
+                                <Check size={14} />
+                              ) : active ? (
+                                <LoaderCircle
+                                  size={14}
+                                  className="animate-spin"
+                                />
+                              ) : (
+                                <Box
+                                  width={14}
+                                  height={14}
+                                  borderWidth={1}
+                                  borderStyle="solid"
+                                  borderColor="border-primary"
+                                  borderRadius="full"
+                                />
+                              )}
+                              <Text
+                                variant="default"
+                                color={done ? 'default' : 'muted'}
+                              >
+                                {active ? (
+                                  <Shimmer active>{step}</Shimmer>
+                                ) : (
+                                  step
+                                )}
+                              </Text>
+                            </Box>
+                          )
+                        })}
+                      </Box>
+                    </Inner>
+                  </>
+                ) : (
+                  <Inner>
+                    <Box
+                      flex={1}
+                      alignItems="center"
+                      justifyContent="center"
+                      color="text-primary"
+                    >
+                      <LogoIcon size={48} />
+                    </Box>
+                  </Inner>
+                )}
+              </div>
+              {stage === 'app' ? (
+                <div className="flex h-full min-h-0 [animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_150ms_both] flex-col">
+                  <Box
+                    alignItems="center"
+                    justifyContent="between"
+                    paddingHorizontal="xl"
+                    paddingVertical="m"
+                  >
+                    <Box alignItems="center" columnGap="xs">
+                      <LogoType height={14} />
+                    </Box>
                     <Text variant="caption" color="muted">
-                      billing@acme.com
+                      Current cycle
                     </Text>
                   </Box>
-                </Box>
-              </Box>
-              <Grid
-                templateColumns="repeat(2, 1fr)"
-                marginHorizontal="xl"
-                paddingVertical="s"
-              >
-                <Box flexDirection="column" rowGap="xs">
-                  <Text variant="caption" color="muted">
-                    Tokens metered
-                  </Text>
-                  <Text variant="heading-xs" tabularNums>
-                    {count(totalTokens)}
-                  </Text>
-                </Box>
-                <Box
-                  flexDirection="column"
-                  rowGap="xs"
-                  paddingLeft="xl"
-                  borderLeftWidth={1}
-                  borderStyle="solid"
-                  borderColor="border-primary"
-                >
-                  <Text variant="caption" color="muted">
-                    Credits left
-                  </Text>
-                  <Text variant="heading-xs" tabularNums>
-                    {count(creditsLeft)}
-                    <Text as="span" variant="heading-xs" color="muted">
-                      {' '}
-                      / {count(CREDITS_GRANTED)}
-                    </Text>
-                  </Text>
-                </Box>
-              </Grid>
-              <Box flexDirection="column" rowGap="s" padding="xl">
-                {sent ? (
-                  <EventRow
-                    event={
-                      phase === 'working'
-                        ? { name: 'tool.call', quantity: scenario.tools }
-                        : { name: 'tokens.out', quantity: streamed }
-                    }
-                    pending={phase !== 'metered'}
-                  />
-                ) : null}
-                {settled
-                  .slice(0, VISIBLE_EVENTS - (sent ? 1 : 0))
-                  .map((event, position) => (
-                    <EventRow
-                      key={`${position}-${event.name}-${event.quantity}`}
-                      event={event}
-                      age={position + (sent ? 1 : 0)}
-                    />
-                  ))}
-                {Array.from(
-                  {
-                    length: Math.max(
-                      0,
-                      VISIBLE_EVENTS - (sent ? 1 : 0) - settled.length,
-                    ),
-                  },
-                  (_, slot) => (
+                  <Inner>
                     <Box
-                      key={`empty-${slot}`}
                       alignItems="center"
                       justifyContent="between"
                       columnGap="l"
-                      height={18}
+                      marginHorizontal="xl"
+                      paddingVertical="l"
                     >
-                      <Box
-                        width={96}
-                        height={10}
-                        backgroundColor="background-card"
-                        borderRadius="s"
-                      />
-                      <Box alignItems="center" columnGap="l">
-                        <Box
-                          width={40}
-                          height={10}
-                          backgroundColor="background-card"
-                          borderRadius="s"
-                        />
-                        <Box
-                          width={56}
-                          height={10}
-                          backgroundColor="background-card"
-                          borderRadius="s"
-                        />
-                      </Box>
+                      {setupLevel >= 3 ? (
+                        <div className="[animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_both]">
+                          <Box alignItems="center" columnGap="m">
+                            <StaticImage
+                              src="/assets/acme.jpg"
+                              alt="Acme Inc"
+                              width={32}
+                              height={32}
+                              className="size-8 rounded-full object-cover"
+                            />
+                            <Box flexDirection="column">
+                              <Text variant="body">Acme Inc</Text>
+                              <Text variant="caption" color="muted">
+                                billing@acme.com
+                              </Text>
+                            </Box>
+                          </Box>
+                        </div>
+                      ) : (
+                        <Box alignItems="center" columnGap="m">
+                          <Box
+                            width={32}
+                            height={32}
+                            backgroundColor="background-card"
+                            borderRadius="full"
+                          />
+                          <Box flexDirection="column" rowGap="s">
+                            <Bone w={72} />
+                            <Bone w={112} h={8} />
+                          </Box>
+                        </Box>
+                      )}
                     </Box>
-                  ),
-                )}
-              </Box>
-            </Inner>
-            <Box paddingTop="xs">
-              <UsageBillingCharge
-                inputCharge={inputCharge}
-                outputCharge={outputCharge}
-                billed={billed}
-              />
-            </Box>
+                    <Grid
+                      templateColumns="repeat(2, 1fr)"
+                      marginHorizontal="xl"
+                      paddingVertical="s"
+                    >
+                      <Box flexDirection="column" rowGap="xs">
+                        {setupLevel >= 2 ? (
+                          <div className="[animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_both]">
+                            <Box flexDirection="column" rowGap="xs">
+                              <Text variant="caption" color="muted">
+                                Tokens metered
+                              </Text>
+                              <Text variant="heading-xs" tabularNums>
+                                {count(totalTokens)}
+                              </Text>
+                            </Box>
+                          </div>
+                        ) : (
+                          <Box
+                            flexDirection="column"
+                            rowGap="m"
+                            paddingVertical="xs"
+                          >
+                            <Bone w={88} h={8} />
+                            <Bone w={56} h={16} />
+                          </Box>
+                        )}
+                      </Box>
+                      <Box
+                        flexDirection="column"
+                        rowGap="xs"
+                        paddingLeft="xl"
+                        borderLeftWidth={1}
+                        borderStyle="solid"
+                        borderColor="border-primary"
+                      >
+                        {setupLevel >= 2 ? (
+                          <div className="[animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_both]">
+                            <Box flexDirection="column" rowGap="xs">
+                              <Text variant="caption" color="muted">
+                                Credits left
+                              </Text>
+                              <Text variant="heading-xs" tabularNums>
+                                {count(creditsLeft)}
+                                <Text
+                                  as="span"
+                                  variant="heading-xs"
+                                  color="muted"
+                                >
+                                  {' '}
+                                  / {count(CREDITS_GRANTED)}
+                                </Text>
+                              </Text>
+                            </Box>
+                          </div>
+                        ) : (
+                          <Box
+                            flexDirection="column"
+                            rowGap="m"
+                            paddingVertical="xs"
+                          >
+                            <Bone w={64} h={8} />
+                            <Bone w={96} h={16} />
+                          </Box>
+                        )}
+                      </Box>
+                    </Grid>
+                    <Box flexDirection="column" rowGap="s" padding="xl">
+                      {sent ? (
+                        <EventRow
+                          event={
+                            phase === 'working'
+                              ? { name: 'tool.call', quantity: scenario.tools }
+                              : { name: 'tokens.out', quantity: streamed }
+                          }
+                          pending={phase !== 'metered'}
+                        />
+                      ) : null}
+                      {settled
+                        .slice(0, VISIBLE_EVENTS - (sent ? 1 : 0))
+                        .map((event, position) => (
+                          <EventRow
+                            key={`${position}-${event.name}-${event.quantity}`}
+                            event={event}
+                            age={position + (sent ? 1 : 0)}
+                          />
+                        ))}
+                      {Array.from(
+                        {
+                          length: Math.max(
+                            0,
+                            VISIBLE_EVENTS - (sent ? 1 : 0) - settled.length,
+                          ),
+                        },
+                        (_, slot) => (
+                          <Box
+                            key={`empty-${slot}`}
+                            alignItems="center"
+                            justifyContent="between"
+                            columnGap="l"
+                            height={18}
+                          >
+                            <Box
+                              width={96}
+                              height={10}
+                              backgroundColor="background-card"
+                              borderRadius="s"
+                            />
+                            <Box alignItems="center" columnGap="l">
+                              <Box
+                                width={40}
+                                height={10}
+                                backgroundColor="background-card"
+                                borderRadius="s"
+                              />
+                              <Box
+                                width={56}
+                                height={10}
+                                backgroundColor="background-card"
+                                borderRadius="s"
+                              />
+                            </Box>
+                          </Box>
+                        ),
+                      )}
+                    </Box>
+                  </Inner>
+                  <Box paddingTop="xs">
+                    <UsageBillingCharge
+                      setupLevel={setupLevel}
+                      inputCharge={inputCharge}
+                      outputCharge={outputCharge}
+                      billed={billed}
+                    />
+                  </Box>
+                </div>
+              ) : null}
+            </div>
           </Panel>
         </div>
       </Box>

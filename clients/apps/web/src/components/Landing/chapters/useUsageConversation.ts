@@ -82,7 +82,8 @@ export const TERMINAL_STEPS = [
   'Metering tokens.in, tokens.out and tool.call per customer',
   'Done. Start the app and send a prompt.',
 ]
-export type Stage = 'terminal' | 'app'
+export type Stage = 'terminal' | 'signin' | 'upgrade' | 'app'
+const SIGNIN_EMAIL = 'billing@acme.com'
 
 /** The prompt is typed into the composer, sent, answered, and the answer is metered. */
 type Phase = 'typing' | 'working' | 'streaming' | 'metered'
@@ -101,6 +102,9 @@ export const useUsageConversation = () => {
   const [stage, setStage] = useState<Stage>('terminal')
   const [typedCommand, setTypedCommand] = useState(0)
   const [commandTyped, setCommandTyped] = useState(false)
+  const [signedIn, setSignedIn] = useState(false)
+  const [upgraded, setUpgraded] = useState(false)
+  const [typedEmail, setTypedEmail] = useState(0)
   const [stepsShown, setStepsShown] = useState(0)
   const scenario = SCENARIOS[index]
 
@@ -135,13 +139,50 @@ export const useUsageConversation = () => {
     } else if (stepsShown < TERMINAL_STEPS.length) {
       timer = window.setTimeout(() => setStepsShown((count) => count + 1), 700)
     } else {
-      timer = window.setTimeout(() => setStage('app'), 1400)
+      timer = window.setTimeout(() => setStage('signin'), 1400)
     }
     return () => {
       cancelAnimationFrame(frame)
       clearTimeout(timer)
     }
   }, [inView, stage, commandTyped, stepsShown])
+
+  useEffect(() => {
+    if (!inView || stage !== 'signin') return
+    let frame = 0
+    let timer = 0
+    if (!signedIn) {
+      // The email is typed after a beat, then the form submits.
+      timer = window.setTimeout(() => {
+        let started = 0
+        const tick = (now: number) => {
+          if (!started) started = now
+          const shown = Math.min(
+            SIGNIN_EMAIL.length,
+            Math.floor(((now - started) / 1000) * 28),
+          )
+          setTypedEmail(shown)
+          if (shown < SIGNIN_EMAIL.length) frame = requestAnimationFrame(tick)
+          else timer = window.setTimeout(() => setSignedIn(true), 500)
+        }
+        frame = requestAnimationFrame(tick)
+      }, 700)
+    } else timer = window.setTimeout(() => setStage('upgrade'), 900)
+    return () => {
+      cancelAnimationFrame(frame)
+      clearTimeout(timer)
+    }
+  }, [inView, stage, signedIn])
+
+  // The upgrade: the Pro plan is shown, chosen after a beat, and the app opens once it is paid.
+  useEffect(() => {
+    if (!inView || stage !== 'upgrade') return
+    const timer = window.setTimeout(
+      () => (upgraded ? setStage('app') : setUpgraded(true)),
+      upgraded ? 1100 : 1800,
+    )
+    return () => clearTimeout(timer)
+  }, [inView, stage, upgraded])
 
   useEffect(() => {
     if (!inView || stage !== 'app') return
@@ -246,8 +287,14 @@ export const useUsageConversation = () => {
     scenario,
     phase,
     stage,
+    /** True once the terminal command has been sent to Claude. */
+    commandSent: commandTyped,
     /** How much of Polar is set up: 1 the product, 2 the meters, 3 the customer. Grows with the terminal steps. */
-    setupLevel: stage === 'app' ? 3 : Math.max(0, stepsShown - 1),
+    setupLevel: upgraded ? 5 : signedIn ? 4 : Math.min(3, stepsShown),
+    signedIn,
+    upgraded,
+    /** The email as far as it has been typed into the sign-in form. */
+    typedEmail: SIGNIN_EMAIL.slice(0, typedEmail),
     /** The terminal command as far as it has been typed. */
     terminalCommand: TERMINAL_COMMAND.slice(0, typedCommand),
     terminalDone: typedCommand >= TERMINAL_COMMAND.length,

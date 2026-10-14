@@ -37,11 +37,23 @@ const Amount = ({
   </Box>
 )
 
+const Bone = ({ w, h = 10 }: { w: number; h?: number }) => (
+  <Box
+    width={w}
+    height={h}
+    backgroundColor="background-card"
+    borderRadius="s"
+  />
+)
+
 export const UsageBillingCharge = ({
+  setupLevel,
   inputCharge,
   outputCharge,
   billed,
 }: {
+  /** 1 once the product exists, 3 once the customer has subscribed. */
+  setupLevel: number
   inputCharge: number
   outputCharge: number
   billed: number
@@ -57,21 +69,34 @@ export const UsageBillingCharge = ({
         borderStyle="solid"
         borderColor="border-primary"
       >
-        <Box alignItems="center" columnGap="s">
-          <CreditCard size={14} />
-          <Text variant="default">Visa •••• 4242</Text>
-        </Box>
-        <Text variant="default" color="muted">
-          Charges Nov 1
-        </Text>
+        {setupLevel >= 3 ? (
+          <>
+            <Box alignItems="center" columnGap="s">
+              <CreditCard size={14} />
+              <Text variant="default">Visa •••• 4242</Text>
+            </Box>
+            <Text variant="default" color="muted">
+              Charges Nov 1
+            </Text>
+          </>
+        ) : (
+          <>
+            <Bone w={104} />
+            <Bone w={80} />
+          </>
+        )}
       </Box>
       <Box justifyContent="between" columnGap="l">
         <Text variant="default" color="muted">
           Pro
         </Text>
-        <Text variant="default" color="muted" tabularNums>
-          {dollars(PLAN_PRICE, 2)}
-        </Text>
+        {setupLevel >= 1 ? (
+          <Text variant="default" color="muted" tabularNums>
+            {dollars(PLAN_PRICE, 2)}
+          </Text>
+        ) : (
+          <Bone w={56} />
+        )}
       </Box>
       <Box justifyContent="between" columnGap="l">
         <Text variant="default" color="muted">
@@ -94,11 +119,15 @@ export const UsageBillingCharge = ({
         borderColor="border-primary"
       >
         <Text variant="body">Card charge</Text>
-        <Amount
-          value={PLAN_PRICE + inputCharge + outputCharge}
-          settled={billed}
-          emphasis
-        />
+        {setupLevel >= 1 ? (
+          <Amount
+            value={PLAN_PRICE + inputCharge + outputCharge}
+            settled={billed}
+            emphasis
+          />
+        ) : (
+          <Bone w={72} h={14} />
+        )}
       </Box>
     </Box>
   </div>

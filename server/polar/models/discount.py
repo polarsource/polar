@@ -262,62 +262,176 @@ class DiscountPercentage(Discount):
     }
 
 
-# Trigger functions to maintain redemptions_count on the discounts table
-discount_redemptions_count_increment_function = PGFunction(
+_REDEMPTION_COUNTS = """
+        dr.subscription_id IS NOT NULL
+        OR EXISTS (
+            SELECT 1 FROM checkouts c
+            WHERE c.id = dr.checkout_id AND c.status = 'confirmed'
+        )
+        OR EXISTS (
+            SELECT 1 FROM orders o
+            WHERE (dr.checkout_id IS NOT NULL AND o.checkout_id = dr.checkout_id)
+               OR (dr.subscription_id IS NOT NULL AND o.subscription_id = dr.subscription_id)
+        )
+"""
+
+discount_redemptions_count_refresh_function = PGFunction(
     schema="public",
-    signature="discount_redemptions_count_increment()",
+    signature="discount_redemptions_count_refresh(target_discount uuid)",
+    definition=f"""
+    RETURNS void AS $$
+    BEGIN
+        UPDATE discounts
+        SET redemptions_count = (
+            SELECT count(*)::integer
+            FROM discount_redemptions dr
+            WHERE dr.discount_id = target_discount
+              AND ({_REDEMPTION_COUNTS})
+        )
+        WHERE id = target_discount;
+    END
+    $$ LANGUAGE plpgsql;
+    """,
+)
+
+discount_redemptions_count_on_redemption_function = PGFunction(
+    schema="public",
+    signature="discount_redemptions_count_on_redemption()",
     definition="""
     RETURNS trigger AS $$
     BEGIN
-        UPDATE discounts
-        SET redemptions_count = redemptions_count + 1
-        WHERE id = NEW.discount_id;
+        IF TG_OP = 'DELETE' THEN
+            PERFORM discount_redemptions_count_refresh(OLD.discount_id);
+            RETURN OLD;
+        END IF;
+        PERFORM discount_redemptions_count_refresh(NEW.discount_id);
+        IF TG_OP = 'UPDATE' AND OLD.discount_id IS DISTINCT FROM NEW.discount_id THEN
+            PERFORM discount_redemptions_count_refresh(OLD.discount_id);
+        END IF;
         RETURN NEW;
     END
     $$ LANGUAGE plpgsql;
     """,
 )
 
-discount_redemptions_count_decrement_function = PGFunction(
+discount_redemptions_count_on_checkout_function = PGFunction(
     schema="public",
-    signature="discount_redemptions_count_decrement()",
+    signature="discount_redemptions_count_on_checkout()",
     definition="""
     RETURNS trigger AS $$
+    DECLARE
+        redemption_discount uuid;
     BEGIN
-        UPDATE discounts
-        SET redemptions_count = redemptions_count - 1
-        WHERE id = OLD.discount_id;
-        RETURN OLD;
+        IF OLD.status IS NOT DISTINCT FROM NEW.status THEN
+            RETURN NEW;
+        END IF;
+        FOR redemption_discount IN
+            SELECT dr.discount_id
+            FROM discount_redemptions dr
+            WHERE dr.checkout_id = NEW.id
+        LOOP
+            PERFORM discount_redemptions_count_refresh(redemption_discount);
+        END LOOP;
+        RETURN NEW;
     END
     $$ LANGUAGE plpgsql;
     """,
 )
 
-discount_redemptions_count_increment_trigger = PGTrigger(
+discount_redemptions_count_on_order_function = PGFunction(
     schema="public",
-    signature="discount_redemptions_count_increment_trigger",
-    on_entity="discount_redemptions",
+    signature="discount_redemptions_count_on_order()",
     definition="""
-    AFTER INSERT ON discount_redemptions
-    FOR EACH ROW EXECUTE FUNCTION discount_redemptions_count_increment();
+    RETURNS trigger AS $$
+    DECLARE
+        redemption_discount uuid;
+    BEGIN
+        IF TG_OP = 'INSERT' THEN
+            IF NEW.checkout_id IS NULL AND NEW.subscription_id IS NULL THEN
+                RETURN NEW;
+            END IF;
+            FOR redemption_discount IN
+                SELECT DISTINCT dr.discount_id
+                FROM discount_redemptions dr
+                WHERE (NEW.checkout_id IS NOT NULL AND dr.checkout_id = NEW.checkout_id)
+                   OR (NEW.subscription_id IS NOT NULL AND dr.subscription_id = NEW.subscription_id)
+            LOOP
+                PERFORM discount_redemptions_count_refresh(redemption_discount);
+            END LOOP;
+            RETURN NEW;
+        ELSIF TG_OP = 'DELETE' THEN
+            IF OLD.checkout_id IS NULL AND OLD.subscription_id IS NULL THEN
+                RETURN OLD;
+            END IF;
+            FOR redemption_discount IN
+                SELECT DISTINCT dr.discount_id
+                FROM discount_redemptions dr
+                WHERE (OLD.checkout_id IS NOT NULL AND dr.checkout_id = OLD.checkout_id)
+                   OR (OLD.subscription_id IS NOT NULL AND dr.subscription_id = OLD.subscription_id)
+            LOOP
+                PERFORM discount_redemptions_count_refresh(redemption_discount);
+            END LOOP;
+            RETURN OLD;
+        END IF;
+        IF NEW.checkout_id IS NOT DISTINCT FROM OLD.checkout_id
+           AND NEW.subscription_id IS NOT DISTINCT FROM OLD.subscription_id THEN
+            RETURN NEW;
+        END IF;
+        FOR redemption_discount IN
+            SELECT DISTINCT dr.discount_id
+            FROM discount_redemptions dr
+            WHERE (OLD.checkout_id IS NOT NULL AND dr.checkout_id = OLD.checkout_id)
+               OR (OLD.subscription_id IS NOT NULL AND dr.subscription_id = OLD.subscription_id)
+               OR (NEW.checkout_id IS NOT NULL AND dr.checkout_id = NEW.checkout_id)
+               OR (NEW.subscription_id IS NOT NULL AND dr.subscription_id = NEW.subscription_id)
+        LOOP
+            PERFORM discount_redemptions_count_refresh(redemption_discount);
+        END LOOP;
+        RETURN NEW;
+    END
+    $$ LANGUAGE plpgsql;
     """,
 )
 
-discount_redemptions_count_decrement_trigger = PGTrigger(
+discount_redemptions_count_on_redemption_trigger = PGTrigger(
     schema="public",
-    signature="discount_redemptions_count_decrement_trigger",
+    signature="discount_redemptions_count_on_redemption_trigger",
     on_entity="discount_redemptions",
     definition="""
-    AFTER DELETE ON discount_redemptions
-    FOR EACH ROW EXECUTE FUNCTION discount_redemptions_count_decrement();
+    AFTER INSERT OR DELETE OR UPDATE OF discount_id, checkout_id, subscription_id
+    ON discount_redemptions
+    FOR EACH ROW EXECUTE FUNCTION discount_redemptions_count_on_redemption();
+    """,
+)
+
+discount_redemptions_count_on_checkout_trigger = PGTrigger(
+    schema="public",
+    signature="discount_redemptions_count_on_checkout_trigger",
+    on_entity="checkouts",
+    definition="""
+    AFTER UPDATE OF status ON checkouts
+    FOR EACH ROW EXECUTE FUNCTION discount_redemptions_count_on_checkout();
+    """,
+)
+
+discount_redemptions_count_on_order_trigger = PGTrigger(
+    schema="public",
+    signature="discount_redemptions_count_on_order_trigger",
+    on_entity="orders",
+    definition="""
+    AFTER INSERT OR DELETE OR UPDATE OF checkout_id, subscription_id ON orders
+    FOR EACH ROW EXECUTE FUNCTION discount_redemptions_count_on_order();
     """,
 )
 
 register_entities(
     (
-        discount_redemptions_count_increment_function,
-        discount_redemptions_count_decrement_function,
-        discount_redemptions_count_increment_trigger,
-        discount_redemptions_count_decrement_trigger,
+        discount_redemptions_count_refresh_function,
+        discount_redemptions_count_on_redemption_function,
+        discount_redemptions_count_on_checkout_function,
+        discount_redemptions_count_on_order_function,
+        discount_redemptions_count_on_redemption_trigger,
+        discount_redemptions_count_on_checkout_trigger,
+        discount_redemptions_count_on_order_trigger,
     )
 )

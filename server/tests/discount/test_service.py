@@ -353,7 +353,11 @@ class TestUpdate:
                 duration=DiscountDuration.once,
                 organization=organization,
             )
-        checkout = await create_checkout(save_fixture, products=[product])
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.confirmed,
+        )
         await create_discount_redemption(
             save_fixture, discount=discount, checkout=checkout
         )
@@ -405,7 +409,11 @@ class TestUpdate:
                 duration_in_months=3,
                 organization=organization,
             )
-        checkout = await create_checkout(save_fixture, products=[product])
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.confirmed,
+        )
         await create_discount_redemption(
             save_fixture, discount=discount, checkout=checkout
         )
@@ -459,7 +467,11 @@ class TestUpdate:
                 duration=DiscountDuration.once,
                 organization=organization,
             )
-        checkout = await create_checkout(save_fixture, products=[product])
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.confirmed,
+        )
         await create_discount_redemption(
             save_fixture, discount=discount, checkout=checkout
         )

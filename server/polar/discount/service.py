@@ -510,9 +510,8 @@ class DiscountService(ResourceServiceReader[Discount]):
             return False
 
         if discount.max_redemptions is not None:
-            repository = DiscountRedemptionRepository.from_session(session)
-            count = await repository.count_redemptions(discount.id)
-            return count < discount.max_redemptions
+            await session.refresh(discount, {"redemptions_count"})
+            return discount.redemptions_count < discount.max_redemptions
 
         return True
 

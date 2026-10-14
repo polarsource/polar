@@ -400,6 +400,14 @@ class SetupData(Schema):
             "matches the declared host, is a known service, or no webhooks exist."
         ),
     )
+    checkout_url_hosts: list[WebsiteData] = Field(
+        default_factory=list,
+        description=(
+            "Summaries of the public sites on the hosts of checkout success and "
+            "return URLs, and of where they redirect to, when those hosts differ "
+            "from the declared website host and are not known services."
+        ),
+    )
 
 
 class WebsitePage(Schema):

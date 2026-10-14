@@ -4,12 +4,18 @@ from uuid import uuid4
 import pytest
 
 from polar.organization_review.agent import (
+    MAX_CHECKOUT_URL_HOSTS,
+    _collect_checkout_url_hosts,
     _collect_webhook_host,
+    _pick_checkout_url_hosts,
     _pick_unknown_webhook_host,
 )
 from polar.organization_review.schemas import (
+    CheckoutReturnUrlData,
+    CheckoutSuccessUrlData,
     IntegrationData,
     SetupData,
+    UrlRedirectInfo,
     WebsiteData,
 )
 
@@ -130,3 +136,99 @@ class TestCollectWebhookHost:
         ):
             result = await _collect_webhook_host(org, setup)
         assert result is None
+
+
+def _make_checkout_setup(
+    success_urls: list[str],
+    redirects: list[UrlRedirectInfo] | None = None,
+    return_urls: list[str] | None = None,
+    webhook_domains: list[str] | None = None,
+) -> SetupData:
+    return SetupData(
+        checkout_success_urls=CheckoutSuccessUrlData(
+            unique_urls=success_urls, redirect_results=redirects or []
+        ),
+        checkout_return_urls=CheckoutReturnUrlData(unique_urls=return_urls or []),
+        integration=IntegrationData(webhook_domains=webhook_domains or []),
+    )
+
+
+class TestPickCheckoutUrlHosts:
+    def test_skips_declared_website_domain(self) -> None:
+        org = _make_org("https://example.com")
+        setup = _make_checkout_setup(["https://api.example.com/success"])
+        assert _pick_checkout_url_hosts(org, setup) == []
+
+    def test_picks_success_return_and_final_hosts_but_not_hops(self) -> None:
+        org = _make_org("https://example.com")
+        setup = _make_checkout_setup(
+            ["https://api.example.com/success"],
+            redirects=[
+                UrlRedirectInfo(
+                    original_url="https://api.example.com/success",
+                    hops=["https://hop.com/"],
+                    final_url="https://landing.com/",
+                    redirected=True,
+                )
+            ],
+            return_urls=["https://shop.other.com/back"],
+        )
+        assert _pick_checkout_url_hosts(org, setup) == [
+            "landing.com",
+            "shop.other.com",
+        ]
+
+    def test_skips_integration_services_but_keeps_hosting_platforms(self) -> None:
+        org = _make_org("https://example.com")
+        setup = _make_checkout_setup(
+            ["https://hooks.zapier.com/x", "https://store.lovable.app/thanks"]
+        )
+        assert _pick_checkout_url_hosts(org, setup) == ["store.lovable.app"]
+
+    def test_skips_fetched_webhook_host_and_duplicates(self) -> None:
+        org = _make_org("https://example.com")
+        setup = _make_checkout_setup(
+            [
+                "https://hooks.store.com/success",
+                "https://shop.com/a",
+                "https://www.shop.com/b",
+            ],
+            webhook_domains=["store.com"],
+        )
+        assert _pick_checkout_url_hosts(org, setup) == ["shop.com"]
+
+    def test_caps_hosts_keeping_redirect_destinations(self) -> None:
+        org = _make_org("https://example.com")
+        setup = _make_checkout_setup(
+            [f"https://site{i}.com/" for i in range(5)],
+            redirects=[
+                UrlRedirectInfo(
+                    original_url="https://site4.com/",
+                    final_url="https://landing.com/",
+                    redirected=True,
+                )
+            ],
+        )
+        hosts = _pick_checkout_url_hosts(org, setup)
+        assert len(hosts) == MAX_CHECKOUT_URL_HOSTS
+        assert hosts[0] == "landing.com"
+
+
+class TestCollectCheckoutUrlHosts:
+    @pytest.mark.anyio
+    async def test_fetches_each_host_and_drops_failures(self) -> None:
+        org = _make_org("https://example.com")
+        setup = _make_checkout_setup(["https://good.com/", "https://broken.com/"])
+        good = WebsiteData(base_url="https://good.com/")
+
+        async def fake_collect(url: str, **kwargs: str) -> WebsiteData:
+            if url == "https://broken.com/":
+                raise RuntimeError("network down")
+            return good
+
+        with patch(
+            "polar.organization_review.agent.collect_website_data",
+            new=AsyncMock(side_effect=fake_collect),
+        ):
+            result = await _collect_checkout_url_hosts(org, setup)
+        assert result == [good]

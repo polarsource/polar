@@ -28,6 +28,7 @@ from .collectors import (
     collect_website_data,
 )
 from .collectors.setup import resolve_url_redirects, same_registrable_domain
+from .known_domains import KnownDomainCategory, match_known_domain
 from .repository import (
     OrganizationReviewRepository,
     OrganizationRiskSignalRepository,
@@ -49,6 +50,13 @@ from .schemas import (
 )
 
 log = structlog.get_logger(__name__)
+
+MAX_CHECKOUT_URL_HOSTS = 3
+_HOSTING_CATEGORIES: set[KnownDomainCategory] = {
+    "cloud",
+    "no-code-builder",
+    "tunneling",
+}
 
 
 async def run_organization_review(
@@ -89,6 +97,9 @@ async def run_organization_review(
             collector_usage = collector_usage + snapshot.website.usage
         if snapshot.setup.webhook_host and snapshot.setup.webhook_host.usage:
             collector_usage = collector_usage + snapshot.setup.webhook_host.usage
+        for host_data in snapshot.setup.checkout_url_hosts:
+            if host_data.usage:
+                collector_usage = collector_usage + host_data.usage
         usage = analyzer_usage + collector_usage
 
         log.info(
@@ -287,6 +298,75 @@ def _pick_unknown_webhook_host(
     return None
 
 
+def _pick_checkout_url_hosts(organization: Organization, setup: SetupData) -> list[str]:
+    """Hosts of checkout success/return URLs and their redirect destinations
+    that are worth fetching, capped at `MAX_CHECKOUT_URL_HOSTS`.
+
+    Intermediate redirect hops are not included. Skips hosts on the declared
+    website's or the fetched webhook host's registrable domain, known
+    integration services, and hosts sharing a registrable domain with one
+    already picked. Known hosting platforms are kept: a checkout URL on one is
+    usually the merchant's own storefront.
+    """
+    declared = urlparse(organization.website or "").hostname or ""
+    webhook_host = _pick_unknown_webhook_host(organization, setup)
+    already_fetched = [h for h in (declared, webhook_host) if h]
+
+    url_groups = (setup.checkout_success_urls, setup.checkout_return_urls)
+    # Destinations of flagged chains first, so the cap never drops them.
+    candidate_urls = [
+        r.final_url
+        for group in url_groups
+        for r in group.redirect_results
+        if r.redirected and r.final_url
+    ]
+    for group in url_groups:
+        candidate_urls.extend(group.unique_urls)
+
+    picked: list[str] = []
+    for url in candidate_urls:
+        host = (urlparse(url).hostname or "").lower()
+        if not host:
+            continue
+        known = match_known_domain(host)
+        if known is not None and known.category not in _HOSTING_CATEGORIES:
+            continue
+        if any(same_registrable_domain(host, h) for h in [*already_fetched, *picked]):
+            continue
+        picked.append(host)
+        if len(picked) >= MAX_CHECKOUT_URL_HOSTS:
+            break
+    return picked
+
+
+async def _scrape_host(
+    organization: Organization, host: str, *, log_event: str
+) -> WebsiteData | None:
+    log.debug(f"{log_event}.start", organization_id=str(organization.id), host=host)
+    try:
+        data = await collect_website_data(
+            f"https://{host}/",
+            organization_id=str(organization.id),
+            organization_slug=organization.slug,
+        )
+        log.debug(
+            f"{log_event}.complete",
+            organization_id=str(organization.id),
+            host=host,
+            pages_scraped=data.total_pages_succeeded,
+            scrape_error=data.scrape_error,
+        )
+        return data
+    except Exception as e:
+        log.warning(
+            f"{log_event}.failed",
+            organization_id=str(organization.id),
+            host=host,
+            error=str(e),
+        )
+        return None
+
+
 async def _collect_webhook_host(
     organization: Organization, setup: SetupData
 ) -> WebsiteData | None:
@@ -296,34 +376,27 @@ async def _collect_webhook_host(
     host = _pick_unknown_webhook_host(organization, setup)
     if host is None:
         return None
-
-    log.debug(
-        "organization_review.webhook_host_collector.start",
-        organization_id=str(organization.id),
-        webhook_host=host,
+    return await _scrape_host(
+        organization, host, log_event="organization_review.webhook_host_collector"
     )
-    try:
-        data = await collect_website_data(
-            f"https://{host}/",
-            organization_id=str(organization.id),
-            organization_slug=organization.slug,
-        )
-        log.debug(
-            "organization_review.webhook_host_collector.complete",
-            organization_id=str(organization.id),
-            webhook_host=host,
-            pages_scraped=data.total_pages_succeeded,
-            scrape_error=data.scrape_error,
-        )
-        return data
-    except Exception as e:
-        log.warning(
-            "organization_review.webhook_host_collector.failed",
-            organization_id=str(organization.id),
-            webhook_host=host,
-            error=str(e),
-        )
-        return None
+
+
+async def _collect_checkout_url_hosts(
+    organization: Organization, setup: SetupData
+) -> list[WebsiteData]:
+    """Summarize what the sites behind checkout success/return URLs sell."""
+    hosts = _pick_checkout_url_hosts(organization, setup)
+    results = await asyncio.gather(
+        *[
+            _scrape_host(
+                organization,
+                host,
+                log_event="organization_review.checkout_url_host_collector",
+            )
+            for host in hosts
+        ]
+    )
+    return [r for r in results if r is not None]
 
 
 async def _collect_prior_feedback(organization_id: UUID) -> PriorFeedbackData:
@@ -351,12 +424,18 @@ async def _collect_data(
     # Each DB-bound collector creates its own session so queries
     # can execute concurrently across separate connections.
     #
-    # _collect_setup runs first, then _collect_webhook_host chains off it
-    # inside the same parallel slot so the webhook-host fetch (~90s worst
-    # case) doesn't serialize after the rest of the gather.
-    async def _collect_setup_and_webhook_host() -> SetupData:
+    # _collect_setup runs first, then the webhook-host and checkout-URL-host
+    # fetches chain off it inside the same parallel slot so they (~90s worst
+    # case) don't serialize after the rest of the gather.
+    async def _collect_setup_and_hosts() -> SetupData:
         setup = await _collect_setup(organization.id, context)
-        setup.webhook_host = await _collect_webhook_host(organization, setup)
+        (
+            setup.webhook_host,
+            setup.checkout_url_hosts,
+        ) = await asyncio.gather(
+            _collect_webhook_host(organization, setup),
+            _collect_checkout_url_hosts(organization, setup),
+        )
         return setup
 
     results = cast(
@@ -372,7 +451,7 @@ async def _collect_data(
         ],
         await asyncio.gather(
             _collect_products(organization.id, context),
-            _collect_setup_and_webhook_host(),
+            _collect_setup_and_hosts(),
             _collect_metrics(organization.id, context),
             _collect_history(organization),
             _collect_account_identity(organization, context),

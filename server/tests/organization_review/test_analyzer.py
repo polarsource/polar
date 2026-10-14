@@ -265,6 +265,33 @@ class TestBuildPromptRedirects:
         ) in prompt
 
 
+class TestBuildPromptCheckoutUrlHosts:
+    def test_no_section_without_hosts(self, review_analyzer: ReviewAnalyzer) -> None:
+        prompt = review_analyzer._build_prompt(_minimal_snapshot())
+        assert "## Checkout URL Host Content" not in prompt
+
+    def test_renders_each_host(self, review_analyzer: ReviewAnalyzer) -> None:
+        snapshot = _minimal_snapshot().model_copy(
+            update={
+                "setup": SetupData(
+                    checkout_url_hosts=[
+                        _make_website_data(summary="sells streaming subscriptions"),
+                        WebsiteData(
+                            base_url="https://other.com/", scrape_error="timeout"
+                        ),
+                    ]
+                )
+            }
+        )
+
+        prompt = review_analyzer._build_prompt(snapshot)
+
+        assert "## Checkout URL Host Content" in prompt
+        assert "sells streaming subscriptions" in prompt
+        assert "Source: https://other.com/ (0 page(s) scraped)" in prompt
+        assert "Scrape error: timeout" in prompt
+
+
 @pytest.mark.anyio
 class TestAnalyzeReraisesOnError:
     """ReviewAnalyzer re-raises every non-timeout failure so the Dramatiq

@@ -124,8 +124,8 @@ later, and the agent marker on the OAuth client keeps that door open.
 - **Data in and out**: agents send a name, optionally the user's email, and normal API calls. They receive
   an identity assertion, access tokens, a claim token, and a claim link and code to show the human.
 - **Who can access it**: anyone can start an anonymous sign-up, but it only gives access to the new
-  placeholder account and what it creates. After the claim, the agent has the claiming user's access. The
-  user can see and revoke it.
+  placeholder account and what it creates. After the claim, the agent has the claiming user's access, and
+  it can be revoked.
 - **Data we store**: an agent registration (type, status, agent name, email hint, scopes, claim timestamps,
   link to its OAuth client and user). Claim tokens and codes are stored hashed. Unclaimed registrations and
   everything they created are deleted after 7 days.
@@ -142,7 +142,5 @@ later, and the agent marker on the OAuth client keeps that door open.
     the 7-day cleanup, and a feature flag to switch it off.
   - *Side effects of placeholder users*: creating a customer in Polar's own org, and support records in Plain,
     with a fake email. Delay those until the claim.
-  - *Users don't know an agent is connected.* A "Connected agents" page with a revoke button, and an
-    email when an agent is linked.
 
 These risks go into the risk register before this document is merged.

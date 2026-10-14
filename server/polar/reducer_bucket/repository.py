@@ -181,9 +181,9 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         external_customer_id: str | None,
         *,
         count: int,
-        total: float = 0,
-        minimum: float | None = None,
-        maximum: float | None = None,
+        total: Decimal = Decimal(0),
+        minimum: Decimal | None = None,
+        maximum: Decimal | None = None,
     ) -> None:
         """Adds to the customer identity's latest bucket, or to the next generation
         once it's sealed."""
@@ -201,6 +201,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
                     max=func.greatest(ReducerBucket.max, maximum),
                     modified_at=utc_now(),
                 )
+                .execution_options(synchronize_session=False)
             )
             return
         await self.session.execute(

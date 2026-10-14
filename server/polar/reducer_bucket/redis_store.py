@@ -2,6 +2,7 @@ import hashlib
 import uuid
 from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta
+from decimal import Decimal
 
 import structlog
 
@@ -33,7 +34,7 @@ def get_reducer_bucket_key(
 
 
 async def add_to_buckets(
-    redis: Redis, contributions: Mapping[BucketId, Sequence[float]]
+    redis: Redis, contributions: Mapping[BucketId, Sequence[Decimal]]
 ) -> None:
     """Adds the values to their buckets, skipping unique aggregations."""
     ttl = int(REDUCER_BUCKET_TTL.total_seconds())
@@ -47,14 +48,14 @@ async def add_to_buckets(
                 case AggregationFunction.cnt:
                     await pipe.incrby(key, len(values))
                 case AggregationFunction.sum:
-                    await pipe.incrbyfloat(key, sum(values))
+                    await pipe.incrbyfloat(key, float(sum(values)))
                 case AggregationFunction.avg:
                     await pipe.hincrby(key, "count", len(values))
-                    await pipe.hincrbyfloat(key, "sum", sum(values))
+                    await pipe.hincrbyfloat(key, "sum", float(sum(values)))
                 case AggregationFunction.min:
-                    await pipe.zadd(key, {"min": min(values)}, lt=True)
+                    await pipe.zadd(key, {"min": float(min(values))}, lt=True)
                 case AggregationFunction.max:
-                    await pipe.zadd(key, {"max": max(values)}, gt=True)
+                    await pipe.zadd(key, {"max": float(max(values))}, gt=True)
                 case AggregationFunction.unique:
                     log.info(
                         "Ignoring reducer bucket of unique aggregation",

@@ -29,7 +29,7 @@ log: Logger = structlog.get_logger()
 
 REDUCER_BUCKET_SIZE = timedelta(minutes=5)
 
-type Contributions = dict[redis_store.BucketId, list[tuple[datetime, float]]]
+type Contributions = dict[redis_store.BucketId, list[tuple[datetime, Decimal]]]
 
 
 def get_reducer_bucket_start(timestamp: datetime) -> datetime:
@@ -141,7 +141,7 @@ class ReducerBucketService:
                     continue
                 statistics = (
                     {
-                        "total": sum(values),
+                        "total": sum(values, Decimal(0)),
                         "minimum": min(values),
                         "maximum": max(values),
                     }
@@ -495,12 +495,12 @@ def _reduce_events_to_bucket_contributions(
             if not reducer.filter.matches(event):
                 continue
             aggregation = reducer.aggregation
-            value = 1.0
+            value = Decimal(1)
             if isinstance(aggregation, PropertyAggregation):
                 property_value = aggregation.get_value(event)
                 if property_value is None:
                     continue
-                value = property_value
+                value = Decimal(str(property_value))
             bucket_id = (
                 reducer,
                 get_reducer_bucket_start(event.timestamp),

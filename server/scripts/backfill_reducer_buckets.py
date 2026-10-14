@@ -1,6 +1,9 @@
+from collections import defaultdict
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from itertools import pairwise
 from typing import Any
 from uuid import UUID
 
@@ -8,8 +11,11 @@ import typer
 from sqlalchemy import (
     ColumnElement,
     CursorResult,
+    Insert,
     Numeric,
     ScalarSelect,
+    Subquery,
+    and_,
     cast,
     delete,
     func,
@@ -74,6 +80,18 @@ async def get_reducers(
     return (await session.scalars(statement)).all()
 
 
+type Identity = tuple[UUID | None, str | None]
+type Interval = tuple[datetime, datetime]
+
+
+@dataclass(frozen=True)
+class DeletedBucket:
+    identity: Identity
+    interval: Interval
+    generation: int
+    sealed_at: datetime | None
+
+
 def select_external_customer_id(
     reducer: Reducer, customer_id: UUID
 ) -> ScalarSelect[str | None]:
@@ -87,48 +105,108 @@ def select_external_customer_id(
     )
 
 
-async def delete_bucket_rows(
-    session: AsyncSession,
-    reducer: Reducer,
-    bucket_start: datetime,
-    *,
-    customer_id: UUID | None = None,
-) -> None:
-    statement = delete(ReducerBucket).where(
-        ReducerBucket.organization_id == reducer.organization_id,
-        ReducerBucket.reducer_id == reducer.id,
-        ReducerBucket.bucket_start == bucket_start,
+def is_in_customer_scope(
+    model: type[Event | ReducerBucket], reducer: Reducer, customer_id: UUID
+) -> ColumnElement[bool]:
+    return or_(
+        model.customer_id == customer_id,
+        model.external_customer_id == select_external_customer_id(reducer, customer_id),
     )
-    if customer_id is not None:
-        statement = statement.where(
-            or_(
-                ReducerBucket.customer_id == customer_id,
-                ReducerBucket.external_customer_id
-                == select_external_customer_id(reducer, customer_id),
-            )
-        )
-    await session.execute(statement)
 
 
-async def backfill_bucket(
+def is_identity(
+    model: type[Event | ReducerBucket], identity: Identity
+) -> ColumnElement[bool]:
+    customer_id, external_customer_id = identity
+    return and_(
+        model.customer_id.is_not_distinct_from(customer_id),
+        model.external_customer_id.is_not_distinct_from(external_customer_id),
+    )
+
+
+async def delete_bucket_rows(
     session: AsyncSession,
     reducer: Reducer,
     start: datetime,
     end: datetime,
     *,
     customer_id: UUID | None = None,
-) -> int:
-    value: ColumnElement[Decimal | None] = literal(None, type_=Numeric)
-    if isinstance(reducer.aggregation, PropertyAggregation):
-        prop = reducer.aggregation.property
-        if prop in Event._filterable_fields:
-            _, attr = Event._filterable_fields[prop]
-            value = cast(attr, Numeric)
-        else:
-            value = cast(get_nested_metadata_attr(Event, prop).astext, Numeric)
+) -> list[DeletedBucket]:
+    """Deletes the rows starting in [start, end) and returns them."""
+    statement = delete(ReducerBucket).where(
+        ReducerBucket.organization_id == reducer.organization_id,
+        ReducerBucket.reducer_id == reducer.id,
+        ReducerBucket.bucket_start >= start,
+        ReducerBucket.bucket_start < end,
+    )
+    if customer_id is not None:
+        statement = statement.where(
+            is_in_customer_scope(ReducerBucket, reducer, customer_id)
+        )
+    result = await session.execute(
+        statement.returning(
+            ReducerBucket.customer_id,
+            ReducerBucket.external_customer_id,
+            ReducerBucket.bucket_start,
+            ReducerBucket.bucket_end,
+            ReducerBucket.generation,
+            ReducerBucket.sealed_at,
+        )
+    )
+    return [
+        DeletedBucket(
+            identity=(row.customer_id, row.external_customer_id),
+            interval=(row.bucket_start, row.bucket_end),
+            generation=row.generation,
+            sealed_at=row.sealed_at,
+        )
+        for row in result
+    ]
 
-    # Which events got billed, and on what order
-    billing_entries = (
+
+def get_split_intervals(
+    start: datetime, end: datetime, deleted: Sequence[DeletedBucket]
+) -> dict[Identity, list[Interval]]:
+    """The intervals sealing split [start, end) into, for each identity whose rows
+    were split."""
+    boundaries: dict[Identity, set[datetime]] = defaultdict(lambda: {start, end})
+    for bucket in deleted:
+        bucket_start, bucket_end = bucket.interval
+        boundaries[bucket.identity].update((bucket_start, min(bucket_end, end)))
+    return {
+        identity: list(pairwise(sorted(points)))
+        for identity, points in boundaries.items()
+        if len(points) > 2
+    }
+
+
+def get_latest_sealed_at(
+    deleted: Sequence[DeletedBucket], identity: Identity, interval_start: datetime
+) -> datetime | None:
+    """The `sealed_at` of the latest generation deleted for the interval."""
+    generations = [
+        bucket
+        for bucket in deleted
+        if bucket.identity == identity and bucket.interval[0] == interval_start
+    ]
+    if not generations:
+        return None
+    return max(generations, key=lambda bucket: bucket.generation).sealed_at
+
+
+def select_event_value(reducer: Reducer) -> ColumnElement[Decimal | None]:
+    if not isinstance(reducer.aggregation, PropertyAggregation):
+        return literal(None, type_=Numeric)
+    prop = reducer.aggregation.property
+    if prop in Event._filterable_fields:
+        _, attr = Event._filterable_fields[prop]
+        return cast(attr, Numeric)
+    return cast(get_nested_metadata_attr(Event, prop).astext, Numeric)
+
+
+def select_billing_entries(reducer: Reducer) -> Subquery:
+    """Which events got billed, and on what order."""
+    return (
         select(
             BillingEntry.event_id,
             Order.id.label("order_id"),
@@ -145,9 +223,21 @@ async def backfill_bucket(
         )
         .subquery()
     )
+
+
+def build_bucket_insert(
+    reducer: Reducer,
+    start: datetime,
+    end: datetime,
+    *event_clauses: ColumnElement[bool],
+) -> Insert:
+    """Inserts a [start, end) bucket per customer identity and order for the
+    events matching `event_clauses`, numbering generations by billing order."""
+    value = select_event_value(reducer)
+    billing_entries = select_billing_entries(reducer)
     is_billed = billing_entries.c.event_id.is_not(None)
 
-    # Aggregate events for a bucket per customer and order (non-associated orders are aggregated together)
+    # Aggregate events per customer and order (non-associated orders are aggregated together)
     generations = (
         select(
             Event.customer_id,
@@ -168,6 +258,7 @@ async def backfill_bucket(
             Event.timestamp < end,
             reducer.aggregation.get_sql_clause(Event),
             or_(is_billed, reducer.filter.get_sql_clause(Event)),
+            *event_clauses,
         )
         .group_by(
             Event.customer_id,
@@ -175,19 +266,11 @@ async def backfill_bucket(
             billing_entries.c.order_id,
             billing_entries.c.sealed_at,
         )
+        .cte("generations")
     )
-    if customer_id is not None:
-        generations = generations.where(
-            or_(
-                Event.customer_id == customer_id,
-                Event.external_customer_id
-                == select_external_customer_id(reducer, customer_id),
-            )
-        )
-    generations_cte = generations.cte("generations")
 
     # Insert the aggregated buckets and set generation to row_number()
-    statement = insert(ReducerBucket).from_select(
+    return insert(ReducerBucket).from_select(
         [
             "id",
             "organization_id",
@@ -207,34 +290,109 @@ async def backfill_bucket(
             func.gen_random_uuid(),
             literal(reducer.organization_id),
             literal(reducer.id),
-            generations_cte.c.customer_id,
-            generations_cte.c.external_customer_id,
+            generations.c.customer_id,
+            generations.c.external_customer_id,
             literal(start),
             literal(end),
-            generations_cte.c.count,
-            generations_cte.c.sum,
-            generations_cte.c.min,
-            generations_cte.c.max,
+            generations.c.count,
+            generations.c.sum,
+            generations.c.min,
+            generations.c.max,
             func.row_number().over(
                 partition_by=(
-                    generations_cte.c.customer_id,
-                    generations_cte.c.external_customer_id,
+                    generations.c.customer_id,
+                    generations.c.external_customer_id,
                 ),
                 order_by=(
-                    generations_cte.c.sealed_at.asc().nulls_last(),
-                    generations_cte.c.order_id.asc().nulls_last(),
+                    generations.c.sealed_at.asc().nulls_last(),
+                    generations.c.order_id.asc().nulls_last(),
                 ),
             ),
-            generations_cte.c.sealed_at,
+            generations.c.sealed_at,
         ),
     )
 
-    # Clear existing reducer_bucket for start/end time
-    await delete_bucket_rows(session, reducer, start, customer_id=customer_id)
 
-    # Write new value
+async def insert_buckets(
+    session: AsyncSession,
+    reducer: Reducer,
+    start: datetime,
+    end: datetime,
+    *event_clauses: ColumnElement[bool],
+) -> int:
+    statement = build_bucket_insert(reducer, start, end, *event_clauses)
     result: CursorResult[Any] = await session.execute(statement)  # type: ignore[assignment]
     return result.rowcount
+
+
+async def insert_empty_bucket(
+    session: AsyncSession,
+    reducer: Reducer,
+    identity: Identity,
+    interval: Interval,
+    *,
+    sealed_at: datetime | None,
+) -> None:
+    customer_id, external_customer_id = identity
+    bucket_start, bucket_end = interval
+    await session.execute(
+        insert(ReducerBucket).values(
+            organization_id=reducer.organization_id,
+            reducer_id=reducer.id,
+            customer_id=customer_id,
+            external_customer_id=external_customer_id,
+            bucket_start=bucket_start,
+            bucket_end=bucket_end,
+            count=0,
+            sum=0,
+            generation=1,
+            sealed_at=sealed_at,
+        )
+    )
+
+
+async def backfill_bucket(
+    session: AsyncSession,
+    reducer: Reducer,
+    start: datetime,
+    end: datetime,
+    *,
+    customer_id: UUID | None = None,
+) -> int:
+    deleted_rows = await delete_bucket_rows(
+        session, reducer, start, end, customer_id=customer_id
+    )
+    split_intervals = get_split_intervals(start, end, deleted_rows)
+
+    unsplit_clauses = [~is_identity(Event, identity) for identity in split_intervals]
+    if customer_id is not None:
+        unsplit_clauses.append(is_in_customer_scope(Event, reducer, customer_id))
+    rows_written = await insert_buckets(session, reducer, start, end, *unsplit_clauses)
+
+    for identity, intervals in split_intervals.items():
+        for interval_start, interval_end in intervals:
+            interval_rows = await insert_buckets(
+                session,
+                reducer,
+                interval_start,
+                interval_end,
+                is_identity(Event, identity),
+            )
+            # Live writes only aggregate into a split slot's existing intervals,
+            # so an empty side still needs its row.
+            if interval_rows == 0:
+                await insert_empty_bucket(
+                    session,
+                    reducer,
+                    identity,
+                    (interval_start, interval_end),
+                    sealed_at=get_latest_sealed_at(
+                        deleted_rows, identity, interval_start
+                    ),
+                )
+                interval_rows = 1
+            rows_written += interval_rows
+    return rows_written
 
 
 @cli.command()
@@ -249,7 +407,8 @@ async def backfill(
     """Rebuild usage and billing buckets, excluding the latest ten minutes.
 
     Expands START/END to full buckets; naive timestamps are UTC.
-    Replaces all generations in the selected scope, including sealed ones.
+    Replaces all generations in the selected scope, including sealed ones,
+    keeping the bucket splits made when they were sealed.
     """
     start, end = bucket_range(start, end)
     configure_script_logging()

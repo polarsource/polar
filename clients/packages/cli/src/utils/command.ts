@@ -1,4 +1,4 @@
-import { Console, Effect, Schema } from 'effect'
+import { Console, Data, Effect, Schema } from 'effect'
 import { Command } from 'effect/cli'
 import { printJson } from '@/utils/json'
 import { Output } from '@/utils/output'
@@ -52,6 +52,52 @@ export const output =
           }
           const failure = spec.failed?.(result)
           if (failure !== undefined) return yield* Effect.fail(failure)
+        }),
+      ),
+    )
+
+export class JsonUnsupportedError extends Data.TaggedError(
+  'JsonUnsupportedError',
+)<{
+  message: string
+  hint: string
+}> {}
+
+interface TextSpec<Input, Result, Failure, Services> {
+  readonly reason: string
+  readonly run: (
+    input: Input,
+    io: Say,
+  ) => Effect.Effect<Result, Failure, Services>
+  readonly render: (result: Result, input: Input) => ReadonlyArray<string>
+}
+
+export const textOnly =
+  <Input, Result, Failure, Services>(
+    spec: TextSpec<Input, Result, Failure, Services>,
+  ) =>
+  <Name extends string, ContextInput, CommandFailure, CommandServices>(
+    self: Command.Command<
+      Name,
+      Input,
+      ContextInput,
+      CommandFailure,
+      CommandServices
+    >,
+  ) =>
+    self.pipe(
+      Command.withHandler((input: Input) =>
+        Effect.gen(function* () {
+          const { json } = yield* Output
+          if (json) {
+            return yield* new JsonUnsupportedError({
+              message: `The ${self.name} command doesn't support --json: ${spec.reason}`,
+              hint: 'Run it without --json.',
+            })
+          }
+          const say: Say['say'] = (lines) => Console.log(lines.join('\n'))
+          const result = yield* spec.run(input, { say })
+          yield* Console.log(spec.render(result, input).join('\n'))
         }),
       ),
     )

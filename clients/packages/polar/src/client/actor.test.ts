@@ -256,7 +256,7 @@ describe('actor grants', () => {
       customerMeters: { credits, list },
       meters: { getExternal },
     } as unknown as Polar
-    return { actor: createActor({ meters }, sdk), credits, list }
+    return { actor: createActor({ meters }, sdk), credits, list, getExternal }
   }
 
   it('accepts only configured meter names', () => {
@@ -350,30 +350,10 @@ describe('actor grants', () => {
     expect(credits).not.toHaveBeenCalled()
   })
 
-  it('rejects a meter that is not deployed for an external customer', async () => {
-    const credits = vi.fn().mockRejectedValue(
-      new errors.HTTPValidationError(422, {
-        detail: [
-          {
-            loc: ['body', 'external_meter_id'],
-            msg: 'Meter not found',
-            type: 'value_error',
-          },
-        ],
-      }),
-    )
-    const sdk = { customerMeters: { credits } } as unknown as Polar
-    const customer = createActor(
-      { meters },
-      sdk,
-    )({ externalCustomerId: 'external-customer-id' })
-
-    await expect(customer.grant('tool_call', 100)).rejects.toThrow(
-      'not deployed',
-    )
-  })
-
-  it('rejects a meter that is not deployed for a customer', async () => {
+  it.each([
+    { customerId: 'customer-id' },
+    { externalCustomerId: 'external-customer-id' },
+  ])('rejects a meter that is not deployed for %j', async (identifier) => {
     const credits = vi.fn()
     const getExternal = vi.fn().mockRejectedValue(
       new errors.ResourceNotFound(404, {
@@ -385,11 +365,19 @@ describe('actor grants', () => {
       customerMeters: { credits },
       meters: { getExternal },
     } as unknown as Polar
-    const customer = createActor({ meters }, sdk)({ customerId: 'customer-id' })
+    const customer = createActor({ meters }, sdk)(identifier)
 
     await expect(customer.grant('tool_call', 100)).rejects.toThrow(
       'not deployed',
     )
     expect(credits).not.toHaveBeenCalled()
+  })
+
+  it('looks up a meter once per actor', async () => {
+    const { actor, getExternal } = setup()
+
+    await actor({ customerId: 'customer-id' }).grant('tool_call', 100)
+    await actor({ customerId: 'other-customer-id' }).grant('tool_call', 100)
+    expect(getExternal).toHaveBeenCalledTimes(1)
   })
 })

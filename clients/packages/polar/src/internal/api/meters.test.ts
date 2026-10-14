@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from 'vitest'
-import { assertMeterDeployed } from './meters'
+import { getDeployedMeter } from './meters'
 import { createPolar } from '../../sdk'
 
 afterEach(() => vi.restoreAllMocks())
@@ -10,7 +10,9 @@ test('looks up the meter by external ID', async () => {
   const fetch = vi
     .spyOn(globalThis, 'fetch')
     .mockResolvedValue(Response.json({ id: 'meter-id', archived_at: null }))
-  await expect(assertMeterDeployed(sdk, 'tokens')).resolves.toBeUndefined()
+  await expect(getDeployedMeter(sdk, 'tokens')).resolves.toMatchObject({
+    id: 'meter-id',
+  })
   expect(new URL(String(fetch.mock.calls[0]?.[0])).pathname).toBe(
     '/v1/meters/external/tokens',
   )
@@ -42,6 +44,6 @@ test.each([
   'rejects %s external IDs instead of reading the wrong balance',
   async (_, response, message) => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(response)
-    await expect(assertMeterDeployed(sdk, 'tokens')).rejects.toThrow(message)
+    await expect(getDeployedMeter(sdk, 'tokens')).rejects.toThrow(message)
   },
 )

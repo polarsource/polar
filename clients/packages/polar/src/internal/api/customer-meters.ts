@@ -1,6 +1,10 @@
-import { errors, type models, type Polar } from '../../sdk'
-import { getDeployedMeter } from './meters'
+import type { models, Polar } from '../../sdk'
 import type { CustomerIdentifier } from './utils'
+
+export type CreditedMeter = {
+  id: string
+  externalId: string
+}
 
 export type CustomerMeterCredit = {
   units: number
@@ -8,45 +12,21 @@ export type CustomerMeterCredit = {
   externalId?: string | undefined
 }
 
-export const creditCustomerMeter = async (
+export const creditCustomerMeter = (
   sdk: Polar,
   identifier: CustomerIdentifier,
-  externalMeterId: string,
+  meter: CreditedMeter,
   { units, rollover, externalId }: CustomerMeterCredit,
-): Promise<models.MeterCreditEvent> => {
-  const credit = {
+): Promise<models.MeterCreditEvent> =>
+  sdk.customerMeters.credits({
+    // Polar IDs and external IDs can't be mixed in one credit request
+    ...('customer_id' in identifier
+      ? { ...identifier, meter_id: meter.id }
+      : { ...identifier, external_meter_id: meter.externalId }),
     units,
     rollover,
     ...(externalId !== undefined ? { external_id: externalId } : {}),
-  }
-  // Polar IDs and external IDs can't be mixed in one credit request
-  if ('customer_id' in identifier) {
-    const meter = await getDeployedMeter(sdk, externalMeterId)
-    return sdk.customerMeters.credits({
-      ...identifier,
-      meter_id: meter.id,
-      ...credit,
-    })
-  }
-
-  try {
-    return await sdk.customerMeters.credits({
-      ...identifier,
-      external_meter_id: externalMeterId,
-      ...credit,
-    })
-  } catch (error) {
-    if (
-      error instanceof errors.HTTPValidationError &&
-      error.error.detail?.some(({ loc }) => loc.at(-1) === 'external_meter_id')
-    ) {
-      throw new Error(
-        `Meter ${JSON.stringify(externalMeterId)} is not deployed in this environment.`,
-      )
-    }
-    throw error
-  }
-}
+  })
 
 export const getCustomerMeter = async (
   sdk: Polar,

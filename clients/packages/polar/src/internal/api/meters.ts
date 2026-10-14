@@ -19,10 +19,3 @@ export const getDeployedMeter = async (
     `Meter ${JSON.stringify(externalId)} is not deployed in this environment.`,
   )
 }
-
-export const assertMeterDeployed = async (
-  sdk: Polar,
-  externalId: string,
-): Promise<void> => {
-  await getDeployedMeter(sdk, externalId)
-}

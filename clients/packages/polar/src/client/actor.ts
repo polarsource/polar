@@ -9,7 +9,7 @@ import {
   assertBenefitDeployed,
   findBenefitGrant,
 } from '../internal/api/benefits'
-import { assertMeterDeployed } from '../internal/api/meters'
+import { getDeployedMeter } from '../internal/api/meters'
 import { matchesMeter } from '../internal/meter'
 import type {
   CustomerIdentifier,
@@ -162,12 +162,21 @@ export const createActor = <Config extends RuntimeSDKConfig>(
   // and meter. The server processes events asynchronously, so a customer meter
   // last modified before this timestamp doesn't reflect that event yet.
   const latestIngestedAt = new Map<string, Date>()
-  const deployedMeters = new Set<string>()
+  // Polar meter ID per deployed meter external ID
+  const deployedMeters = new Map<string, string>()
   const deployedBenefits = new Set<string>()
   const cacheKey = (identifier: ActorIdentifier, externalMeterId: string) =>
     identifier.customerId !== undefined
       ? `customer:${identifier.customerId}:${externalMeterId}`
       : `external_customer:${identifier.externalCustomerId}:${externalMeterId}`
+  const getDeployedMeterId = async (externalMeterId: string) => {
+    const cached = deployedMeters.get(externalMeterId)
+    if (cached !== undefined) return cached
+
+    const { id } = await getDeployedMeter(sdk, externalMeterId)
+    deployedMeters.set(externalMeterId, id)
+    return id
+  }
   const markIngested = (
     identifier: ActorIdentifier,
     externalMeterId: string,
@@ -287,10 +296,9 @@ export const createActor = <Config extends RuntimeSDKConfig>(
         toCustomerIdentifier(identifier),
         name,
       )
-      if (customerMeter === undefined && !deployedMeters.has(name)) {
-        await assertMeterDeployed(sdk, name)
+      if (customerMeter === undefined) {
+        await getDeployedMeterId(name)
       }
-      deployedMeters.add(name)
 
       const key = cacheKey(identifier, name)
       const ingestedAt = latestIngestedAt.get(key)
@@ -320,10 +328,9 @@ export const createActor = <Config extends RuntimeSDKConfig>(
       const event = await creditCustomerMeter(
         sdk,
         toCustomerIdentifier(identifier),
-        name,
+        { id: await getDeployedMeterId(name), externalId: name },
         { units, rollover, externalId: idempotencyKey },
       )
-      deployedMeters.add(name)
       markIngested(identifier, name, new Date(event.timestamp))
     },
 

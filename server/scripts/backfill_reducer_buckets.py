@@ -9,6 +9,7 @@ from uuid import UUID
 
 import typer
 from sqlalchemy import (
+    TIMESTAMP,
     ColumnElement,
     CursorResult,
     Insert,
@@ -23,6 +24,7 @@ from sqlalchemy import (
     literal,
     or_,
     select,
+    text,
 )
 
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
@@ -48,7 +50,12 @@ from .helper import configure_script_logging, typer_async
 
 cli = typer.Typer()
 BUCKET_SIZE = timedelta(minutes=5)
-LOOKUP_WINDOW = timedelta(days=1)
+WINDOW_SETTINGS = (
+    "SET LOCAL work_mem = '256MB'",
+    "SET LOCAL enable_sort = off",
+    "SET LOCAL enable_nestloop = off",
+    "SET LOCAL jit = off",
+)
 
 
 def floor_bucket(value: datetime) -> datetime:
@@ -232,17 +239,28 @@ def build_bucket_insert(
     end: datetime,
     *event_clauses: ColumnElement[bool],
 ) -> Insert:
-    """Inserts a [start, end) bucket per customer identity and order for the
-    events matching `event_clauses`, numbering generations by billing order."""
+    """Inserts a bucket per 5-minute bucket, customer identity and order for the
+    events matching `event_clauses`, clipped to [start, end) and numbering
+    generations by billing order."""
     value = select_event_value(reducer)
     billing_entries = select_billing_entries(reducer)
     is_billed = billing_entries.c.event_id.is_not(None)
+    start_literal = literal(start, TIMESTAMP(timezone=True))
+    bin_start = func.date_bin(
+        BUCKET_SIZE, Event.timestamp, start_literal, type_=TIMESTAMP(timezone=True)
+    )
+    bucket_start = func.greatest(bin_start, start_literal)
+    bucket_end = func.least(
+        bin_start + BUCKET_SIZE, literal(end, TIMESTAMP(timezone=True))
+    )
 
     # Aggregate events per customer and order (non-associated orders are aggregated together)
     generations = (
         select(
             Event.customer_id,
             Event.external_customer_id,
+            bucket_start.label("bucket_start"),
+            bucket_end.label("bucket_end"),
             billing_entries.c.order_id,
             billing_entries.c.sealed_at,
             func.count().label("count"),
@@ -264,6 +282,8 @@ def build_bucket_insert(
         .group_by(
             Event.customer_id,
             Event.external_customer_id,
+            bucket_start,
+            bucket_end,
             billing_entries.c.order_id,
             billing_entries.c.sealed_at,
         )
@@ -293,8 +313,8 @@ def build_bucket_insert(
             literal(reducer.id),
             generations.c.customer_id,
             generations.c.external_customer_id,
-            literal(start),
-            literal(end),
+            generations.c.bucket_start,
+            generations.c.bucket_end,
             generations.c.count,
             generations.c.sum,
             generations.c.min,
@@ -303,6 +323,7 @@ def build_bucket_insert(
                 partition_by=(
                     generations.c.customer_id,
                     generations.c.external_customer_id,
+                    generations.c.bucket_start,
                 ),
                 order_by=(
                     generations.c.sealed_at.asc().nulls_last(),
@@ -352,7 +373,7 @@ async def insert_empty_bucket(
     )
 
 
-async def backfill_bucket(
+async def backfill_buckets(
     session: AsyncSession,
     reducer: Reducer,
     start: datetime,
@@ -360,17 +381,36 @@ async def backfill_bucket(
     *,
     customer_id: UUID | None = None,
 ) -> int:
+    """Rebuilds the buckets in [start, end), which must be bucket-aligned."""
+    for setting in WINDOW_SETTINGS:
+        await session.execute(text(setting))
     deleted_rows = await delete_bucket_rows(
         session, reducer, start, end, customer_id=customer_id
     )
-    split_intervals = get_split_intervals(start, end, deleted_rows)
+    deleted_by_bucket: dict[datetime, list[DeletedBucket]] = defaultdict(list)
+    for deleted in deleted_rows:
+        deleted_by_bucket[floor_bucket(deleted.interval[0])].append(deleted)
+    split_intervals = {
+        (identity, bucket_start): intervals
+        for bucket_start, deleted in deleted_by_bucket.items()
+        for identity, intervals in get_split_intervals(
+            bucket_start, bucket_start + BUCKET_SIZE, deleted
+        ).items()
+    }
 
-    unsplit_clauses = [~is_identity(Event, identity) for identity in split_intervals]
+    unsplit_clauses = [
+        ~and_(
+            is_identity(Event, identity),
+            Event.timestamp >= bucket_start,
+            Event.timestamp < bucket_start + BUCKET_SIZE,
+        )
+        for identity, bucket_start in split_intervals
+    ]
     if customer_id is not None:
         unsplit_clauses.append(is_in_customer_scope(Event, reducer, customer_id))
     rows_written = await insert_buckets(session, reducer, start, end, *unsplit_clauses)
 
-    for identity, intervals in split_intervals.items():
+    for (identity, _), intervals in split_intervals.items():
         for interval_start, interval_end in intervals:
             interval_rows = await insert_buckets(
                 session,
@@ -396,55 +436,6 @@ async def backfill_bucket(
     return rows_written
 
 
-async def get_bucket_starts(
-    session: AsyncSession,
-    reducer: Reducer,
-    start: datetime,
-    end: datetime,
-    *,
-    customer_id: UUID | None = None,
-) -> list[datetime]:
-    """Buckets in [start, end) with candidate events or existing rows; the others
-    are no-ops to backfill."""
-    starts: set[datetime] = set()
-    window_start = start
-    while window_start < end:
-        window_end = min(window_start + LOOKUP_WINDOW, end)
-        events = (
-            select(func.date_bin(BUCKET_SIZE, Event.timestamp, start))
-            .distinct()
-            .where(
-                Event.organization_id == reducer.organization_id,
-                Event.source == EventSource.user,
-                Event.timestamp >= window_start,
-                Event.timestamp < window_end,
-                reducer.aggregation.get_sql_clause(Event),
-            )
-        )
-        rows = (
-            select(ReducerBucket.bucket_start)
-            .distinct()
-            .where(
-                ReducerBucket.organization_id == reducer.organization_id,
-                ReducerBucket.reducer_id == reducer.id,
-                ReducerBucket.bucket_start >= window_start,
-                ReducerBucket.bucket_start < window_end,
-            )
-        )
-        if customer_id is not None:
-            events = events.where(is_in_customer_scope(Event, reducer, customer_id))
-            rows = rows.where(is_in_customer_scope(ReducerBucket, reducer, customer_id))
-        starts.update(
-            floor_bucket(bucket_start)
-            for bucket_start in [
-                *(await session.scalars(events)),
-                *(await session.scalars(rows)),
-            ]
-        )
-        window_start = window_end
-    return sorted(starts)
-
-
 @cli.command()
 @typer_async
 async def backfill(
@@ -453,6 +444,7 @@ async def backfill(
     organization_id: UUID | None = None,
     meter_id: UUID | None = None,
     customer_id: UUID | None = None,
+    window_hours: int = typer.Option(24, min=1),
 ) -> None:
     """Rebuild usage and billing buckets, excluding the latest ten minutes.
 
@@ -475,26 +467,22 @@ async def backfill(
             if isinstance(reducer.aggregation, UniqueAggregation):
                 typer.echo(f"Skipping unique reducer {reducer.id}")
                 continue
-            typer.echo(f"Reducer {reducer.id}: finding buckets")
-            async with sessionmaker() as session:
-                bucket_starts = await get_bucket_starts(
-                    session, reducer, start, end, customer_id=customer_id
-                )
-            typer.echo(f"Reducer {reducer.id}: {len(bucket_starts)} buckets")
-            for i, bucket_start in enumerate(bucket_starts, 1):
-                if i % 1000 == 0:
-                    typer.echo(
-                        f"Reducer {reducer.id}: {i}/{len(bucket_starts)} buckets, "
-                        f"at {bucket_start.isoformat()}, {rows_written} rows written"
-                    )
+            window_start = start
+            while window_start < end:
+                window_end = min(window_start + timedelta(hours=window_hours), end)
                 async with sessionmaker.begin() as session:
-                    rows_written += await backfill_bucket(
+                    rows_written += await backfill_buckets(
                         session,
                         reducer,
-                        bucket_start,
-                        bucket_start + BUCKET_SIZE,
+                        window_start,
+                        window_end,
                         customer_id=customer_id,
                     )
+                typer.echo(
+                    f"Reducer {reducer.id}: up to {window_end.isoformat()}, "
+                    f"{rows_written} rows written"
+                )
+                window_start = window_end
         typer.echo(f"Wrote {rows_written} reducer bucket rows.")
     finally:
         await engine.dispose()

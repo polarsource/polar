@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@polar-sh/i18n', () => {
-  const SUPPORTED_LOCALES = ['en', 'fr', 'nl'] as const
+  const SUPPORTED_LOCALES: readonly string[] = ['en', 'fr', 'nl', 'zh-TW']
   return {
     DEFAULT_LOCALE: 'en',
     SUPPORTED_LOCALES,
     isAcceptedLocale: (value: string) => {
+      if (SUPPORTED_LOCALES.includes(value)) return true
       const language = value.split('-')[0].toLowerCase()
-      return (SUPPORTED_LOCALES as readonly string[]).includes(language)
+      return SUPPORTED_LOCALES.includes(language)
     },
   }
 })
@@ -121,5 +122,20 @@ describe('resolveLocale', () => {
   it('falls back to the header locale when checkoutLocale is unsupported', async () => {
     headerGet.mockReturnValue('nl')
     await expect(resolveLocale(undefined, 'xx')).resolves.toBe('nl')
+  })
+
+  it('returns a region-only searchParamLocale', async () => {
+    headerGet.mockReturnValue('nl')
+    await expect(resolveLocale('zh-TW')).resolves.toBe('zh-TW')
+  })
+
+  it('returns a region-only checkoutLocale', async () => {
+    headerGet.mockReturnValue('nl')
+    await expect(resolveLocale(undefined, 'zh-TW')).resolves.toBe('zh-TW')
+  })
+
+  it('returns a region-only header locale', async () => {
+    headerGet.mockReturnValue('zh-CN,zh-TW;q=0.9,fr;q=0.8')
+    await expect(resolveLocale()).resolves.toBe('zh-TW')
   })
 })

@@ -57,18 +57,21 @@ export default {
         week: {
           '=1': 'Co tydzień',
           '=2': 'Co dwa tygodnie',
+          few: 'Co # tygodnie',
           other: 'Co # tygodni',
           _mode: 'plural',
         },
         month: {
           '=1': 'Co miesiąc',
           '=2': 'Co drugi miesiąc',
+          few: 'Co # miesiące',
           other: 'Co # miesięcy',
           _mode: 'plural',
         },
         year: {
           '=1': 'Co rok',
           '=2': 'Co dwa lata',
+          few: 'Co # lata',
           other: 'Co # lat',
           _mode: 'plural',
         },
@@ -84,6 +87,7 @@ export default {
         numberOfSeats: 'Liczba stanowisk',
         count: {
           '=1': '# stanowisko',
+          few: '# stanowiska',
           other: '# stanowisk',
           _mode: 'plural',
         },
@@ -93,6 +97,7 @@ export default {
         updateFailed: 'Nie udało się zaktualizować liczby stanowisk',
         included: {
           '=1': 'Jedno miejsce w cenie',
+          few: '# miejsca w cenie',
           other: '# miejsc w cenie',
           _mode: 'plural',
         },
@@ -137,11 +142,13 @@ export default {
           },
           month: {
             '=1': '# miesiąc gratis',
+            few: '# miesiące gratis',
             other: '# miesięcy gratis',
             _mode: 'plural',
           },
           year: {
             '=1': '# rok gratis',
+            few: '# lata gratis',
             other: '# lat gratis',
             _mode: 'plural',
           },
@@ -173,6 +180,7 @@ export default {
       requestNewInvite: 'Poproś o nowe zaproszenie',
       retryIn: {
         '=1': 'Spróbuj ponownie za # sekundę',
+        few: 'Spróbuj ponownie za # sekundy',
         other: 'Spróbuj ponownie za # sekund',
         _mode: 'plural',
       },

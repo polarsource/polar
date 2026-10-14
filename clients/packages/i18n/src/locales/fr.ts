@@ -84,6 +84,7 @@ export default {
         numberOfSeats: 'Nombre de sièges',
         count: {
           '=1': '# siège',
+          one: '# siège',
           other: '# sièges',
           _mode: 'plural',
         },
@@ -93,6 +94,7 @@ export default {
         updateFailed: 'Échec de la mise à jour des sièges',
         included: {
           '=1': 'Un siège inclus',
+          one: '# siège inclus',
           other: '# sièges inclus',
           _mode: 'plural',
         },
@@ -132,16 +134,19 @@ export default {
         free: {
           day: {
             '=1': '# jour gratuit',
+            one: '# jour gratuit',
             other: '# jours gratuits',
             _mode: 'plural',
           },
           month: {
             '=1': '# mois gratuit',
+            one: '# mois gratuit',
             other: '# mois gratuits',
             _mode: 'plural',
           },
           year: {
             '=1': '# an gratuit',
+            one: '# an gratuit',
             other: '# ans gratuits',
             _mode: 'plural',
           },
@@ -173,6 +178,7 @@ export default {
       requestNewInvite: 'Demander une nouvelle invitation',
       retryIn: {
         '=1': 'Réessayer dans # seconde',
+        one: 'Réessayer dans # seconde',
         other: 'Réessayer dans # secondes',
         _mode: 'plural',
       },
@@ -289,6 +295,7 @@ export default {
       },
       year: {
         '=1': 'an',
+        one: '# an',
         other: '# ans',
         _mode: 'plural',
       },

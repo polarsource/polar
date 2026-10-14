@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import httpx
@@ -13,6 +13,7 @@ from polar.models import (
     Organization,
     ReducerBucket,
 )
+from polar.outpost.schemas import to_epoch_microseconds
 from polar.outpost.service import SYNCED_LOOKBACK
 from polar.outpost.stream import publish
 from polar.redis import Redis
@@ -129,11 +130,11 @@ class TestOutpost:
         }
         assert all(p["credited_units"] == 100 for p in payloads.values())
         external = payloads[(None, customer.external_id)]
-        assert datetime.fromisoformat(external["cold_until"]) == bucket_end
+        assert external["cold_until"] == to_epoch_microseconds(bucket_end)
         assert (external["count"], external["sum"]) == (1, 4.0)
         internal = payloads[(str(customer.id), None)]
-        version = datetime.fromisoformat(internal["version"])
-        assert datetime.fromisoformat(internal["cold_until"]) == (
+        version = datetime.fromtimestamp(internal["version"] / 1_000_000, UTC)
+        assert internal["cold_until"] == to_epoch_microseconds(
             get_reducer_bucket_start(version - SYNCED_LOOKBACK)
         )
         assert (internal["count"], internal["sum"]) == (0, 0.0)
@@ -203,7 +204,7 @@ class TestOutpost:
             response = await websocket.receive_json()
 
         payload = response["payload"]
-        datetime.fromisoformat(payload.pop("version"))
+        assert isinstance(payload.pop("version"), int)
         assert response == {
             "type": "meter_usage",
             "payload": {
@@ -211,7 +212,7 @@ class TestOutpost:
                 "customer_id": None,
                 "external_customer_id": external_id,
                 "credited_units": 100,
-                "cold_until": cold_until.isoformat().replace("+00:00", "Z"),
+                "cold_until": to_epoch_microseconds(cold_until),
                 "count": 2,
                 "sum": 7.0,
                 "min": 3.0,
@@ -265,5 +266,5 @@ class TestOutpost:
             response = await websocket.receive_json()
 
         payload = response["payload"]
-        assert datetime.fromisoformat(payload["cold_until"]) == bucket_end
+        assert payload["cold_until"] == to_epoch_microseconds(bucket_end)
         assert payload["count"] == 1

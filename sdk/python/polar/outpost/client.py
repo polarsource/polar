@@ -39,7 +39,7 @@ def _generate_epoch() -> str:
 
 
 @contextlib.asynccontextmanager
-async def connect_redis(url: str) -> collections.abc.AsyncGenerator[Redis]:
+async def connect_redis(url: str) -> collections.abc.AsyncGenerator[Redis, None]:
     async with Redis.from_url(url, retry=Retry(NoBackoff(), 0)) as redis:
         await redis.ping()
         yield redis
@@ -48,7 +48,7 @@ async def connect_redis(url: str) -> collections.abc.AsyncGenerator[Redis]:
 @contextlib.asynccontextmanager
 async def connect_websocket(
     client: httpx.AsyncClient,
-) -> collections.abc.AsyncGenerator[AsyncWebSocketSession]:
+) -> collections.abc.AsyncGenerator[AsyncWebSocketSession, None]:
     async with aconnect_ws(
         str(client.base_url.join("/v1/outpost/")), client
     ) as websocket:

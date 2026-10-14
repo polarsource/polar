@@ -16,6 +16,7 @@ from .schemas import (
     DecisionType,
     ReviewAgentReport,
     ReviewContext,
+    UrlRedirectInfo,
     UsageInfo,
     WebsiteData,
 )
@@ -107,7 +108,8 @@ may point to an unrelated or suspicious destination.
 
 **Redirect detection (CRITICAL):** We follow redirects on checkout success and return \
 URLs. If any URL redirects to a DIFFERENT domain than the original, this is a HIGH risk \
-signal. Scammers use their own API endpoints as success URLs that then redirect users \
+signal — including when the chain passes through another domain before landing back on \
+the merchant's own site. Scammers use their own API endpoints as success URLs that then redirect users \
 to prohibited content (adult sites, gambling, etc.). Any cross-domain redirect from a \
 checkout URL is a strong red flag and should be treated as HIGH risk unless the final \
 destination is a known service domain.
@@ -658,6 +660,14 @@ def _annotate_domains(domains: list[str]) -> str:
     return ", ".join(parts)
 
 
+def _format_redirect(redirect: UrlRedirectInfo) -> str:
+    chain = " → ".join([redirect.original_url, *redirect.hops])
+    return (
+        f"  - {chain} → REDIRECTS TO: "
+        f"{redirect.final_url} (domain: {redirect.final_domain})"
+    )
+
+
 def _render_scraped_site(
     parts: list[str], data: WebsiteData, *, empty_message: str
 ) -> None:
@@ -840,14 +850,11 @@ class ReviewAnalyzer:
                 ]
                 if redirected:
                     parts.append(
-                        "⚠️ SUCCESS URL REDIRECT DETECTED — these URLs redirect "
-                        "to a DIFFERENT domain:"
+                        "⚠️ SUCCESS URL REDIRECT DETECTED — these URLs pass "
+                        "through or land on a DIFFERENT domain:"
                     )
                     for r in redirected:
-                        parts.append(
-                            f"  - {r.original_url} → REDIRECTS TO: "
-                            f"{r.final_url} (domain: {r.final_domain})"
-                        )
+                        parts.append(_format_redirect(r))
         else:
             parts.append("No custom checkout success URLs configured.")
 
@@ -868,14 +875,11 @@ class ReviewAnalyzer:
                 ]
                 if redirected:
                     parts.append(
-                        "⚠️ RETURN URL REDIRECT DETECTED — these URLs redirect "
-                        "to a DIFFERENT domain:"
+                        "⚠️ RETURN URL REDIRECT DETECTED — these URLs pass "
+                        "through or land on a DIFFERENT domain:"
                     )
                     for r in redirected:
-                        parts.append(
-                            f"  - {r.original_url} → REDIRECTS TO: "
-                            f"{r.final_url} (domain: {r.final_domain})"
-                        )
+                        parts.append(_format_redirect(r))
         else:
             parts.append("No custom checkout return URLs configured.")
 

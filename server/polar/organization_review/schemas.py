@@ -338,6 +338,10 @@ class UrlRedirectInfo(Schema):
     original_url: str
     final_url: str | None = None
     final_domain: str | None = None
+    hops: list[str] = Field(
+        default_factory=list,
+        description="URLs visited between the original and final URL.",
+    )
     redirected: bool = False
     error: str | None = None
 

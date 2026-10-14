@@ -6,7 +6,6 @@ import pytest
 from polar.organization_review.agent import (
     _collect_webhook_host,
     _pick_unknown_webhook_host,
-    _same_registrable_domain,
 )
 from polar.organization_review.schemas import (
     IntegrationData,
@@ -32,44 +31,6 @@ def _make_setup(
             webhook_known_service_domains=known_service_domains or [],
         )
     )
-
-
-class TestSameRegistrableDomain:
-    def test_exact_match(self) -> None:
-        assert _same_registrable_domain("example.com", "example.com") is True
-
-    def test_strips_www_on_both_sides(self) -> None:
-        assert _same_registrable_domain("www.example.com", "example.com") is True
-        assert _same_registrable_domain("example.com", "www.example.com") is True
-
-    def test_subdomain_is_same(self) -> None:
-        assert _same_registrable_domain("api.example.com", "example.com") is True
-        assert _same_registrable_domain("example.com", "api.example.com") is True
-
-    def test_deep_subdomain_is_same(self) -> None:
-        assert _same_registrable_domain("a.b.c.example.com", "example.com") is True
-
-    def test_different_domains(self) -> None:
-        assert _same_registrable_domain("example.com", "other.com") is False
-
-    def test_suffix_lookalike_rejected(self) -> None:
-        """notexample.com must not match example.com — dot anchoring required."""
-        assert _same_registrable_domain("notexample.com", "example.com") is False
-        assert _same_registrable_domain("example.com", "notexample.com") is False
-
-    def test_cctld_safe(self) -> None:
-        """Suffix matching must not collapse multi-part TLDs."""
-        # foo.co.uk and bar.co.uk are different orgs even though both end in .co.uk
-        assert _same_registrable_domain("foo.co.uk", "bar.co.uk") is False
-        # but app.foo.co.uk and foo.co.uk are the same org
-        assert _same_registrable_domain("app.foo.co.uk", "foo.co.uk") is True
-
-    def test_case_insensitive(self) -> None:
-        assert _same_registrable_domain("Example.COM", "example.com") is True
-
-    def test_empty_inputs(self) -> None:
-        assert _same_registrable_domain("", "example.com") is False
-        assert _same_registrable_domain("example.com", "") is False
 
 
 class TestPickUnknownWebhookHost:

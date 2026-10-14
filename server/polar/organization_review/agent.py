@@ -27,7 +27,7 @@ from .collectors import (
     collect_setup_data,
     collect_website_data,
 )
-from .collectors.setup import resolve_url_redirects
+from .collectors.setup import resolve_url_redirects, same_registrable_domain
 from .repository import (
     OrganizationReviewRepository,
     OrganizationRiskSignalRepository,
@@ -265,20 +265,6 @@ async def _collect_website(organization: Organization) -> WebsiteData | None:
         return None
 
 
-def _same_registrable_domain(host_a: str, host_b: str) -> bool:
-    """Whether two hosts share a registrable domain after stripping `www.`.
-
-    Subdomains on the same parent are treated as the same domain. Uses suffix
-    matching rather than a hand-rolled SLD split so multi-part TLDs like
-    `*.co.uk` don't collapse false-positives.
-    """
-    a = host_a.lower().removeprefix("www.")
-    b = host_b.lower().removeprefix("www.")
-    if not a or not b:
-        return False
-    return a == b or a.endswith("." + b) or b.endswith("." + a)
-
-
 def _pick_unknown_webhook_host(
     organization: Organization, setup: SetupData
 ) -> str | None:
@@ -295,7 +281,7 @@ def _pick_unknown_webhook_host(
         host_l = host.lower()
         if not host_l or host_l in known:
             continue
-        if declared and _same_registrable_domain(host_l, declared):
+        if declared and same_registrable_domain(host_l, declared):
             continue
         return host_l
     return None

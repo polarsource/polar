@@ -114,8 +114,9 @@ export default {
         },
         included: {
           '=1': 'Uključeno jedno mjesto',
-          other: '# mjesta uključena',
+          other: '# mjesta uključeno',
           one: '# mjesto uključeno',
+          few: '# mjesta uključena',
           _mode: 'plural',
         },
         range: '{min} - {max} mjesta',
@@ -191,7 +192,7 @@ export default {
       granting: 'Dodjeljujemo pogodnosti...',
       requestNewInvite: 'Zatraži novi poziv',
       retryIn: {
-        '=1': 'Pokušajte ponovo za # sekundu',
+        '=1': 'Pokušajte ponovno za # sekundu',
         other: 'Pokušajte ponovno za # sekundi',
         one: 'Pokušajte ponovno za # sekundu',
         few: 'Pokušajte ponovno za # sekunde',
@@ -300,8 +301,8 @@ export default {
         _mode: 'plural',
       },
       year: {
-        '=1': 'god',
-        other: '# g',
+        '=1': 'god.',
+        other: '# god.',
         _mode: 'plural',
       },
     },

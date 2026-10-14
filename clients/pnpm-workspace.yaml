@@ -43,6 +43,7 @@ minimumReleaseAgeExclude:
 
 catalog:
   '@ai-sdk/openai': '^4.0.0'
+  '@anthropic-ai/sdk': '^0.130.0'
   '@radix-ui/react-accordion': '^1.3.1'
   '@radix-ui/react-alert-dialog': '^1.2.1'
   '@radix-ui/react-checkbox': '^1.4.1'

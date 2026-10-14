@@ -1,5 +1,4 @@
-import { createOpenAI } from '@ai-sdk/openai'
-import { generateText } from 'ai'
+import Anthropic from '@anthropic-ai/sdk'
 import dotenv from 'dotenv'
 import { execSync } from 'node:child_process'
 import fs from 'node:fs'
@@ -39,9 +38,11 @@ const PROMPT_FILE = path.join(CONFIG_DIR, 'prompt.md')
 const LOCKS_FILE = path.join(CONFIG_DIR, 'locks.json')
 const CACHE_FILE = path.join(CONFIG_DIR, '.cache.json')
 
-const openai = createOpenAI({
+const MODEL = 'claude-haiku-5-5'
+
+const anthropic = new Anthropic({
   apiKey: process.env.PYDANTIC_AI_GATEWAY_API_KEY,
-  baseURL: 'https://gateway-us.pydantic.dev/proxy/chat/',
+  baseURL: 'https://gateway-us.pydantic.dev/proxy/anthropic/',
 })
 
 async function callLLM(
@@ -64,13 +65,26 @@ async function callLLM(
     .replace('{EN_JSON}', JSON.stringify(sourceStrings, null, 2))
     .trim()
 
-  log.step(`Calling OpenAI (gpt-5.4-mini)...`)
+  log.step(`Calling Anthropic (${MODEL})...`)
 
-  const { text } = await generateText({
-    model: openai('gpt-5.4-mini'),
-    instructions: systemPromptPart,
-    prompt: userPromptPart,
-  })
+  const response = await anthropic.messages
+    .stream({
+      model: MODEL,
+      max_tokens: 64000,
+      system: systemPromptPart,
+      messages: [{ role: 'user', content: userPromptPart }],
+    })
+    .finalMessage()
+
+  if (response.stop_reason !== 'end_turn') {
+    throw new Error(
+      `Unexpected stop reason from Anthropic for ${targetLocale}: ${response.stop_reason}`,
+    )
+  }
+
+  const text = response.content
+    .flatMap((block) => (block.type === 'text' ? [block.text] : []))
+    .join('')
 
   // Strip markdown code fences if present
   const cleaned = text
@@ -83,7 +97,7 @@ async function callLLM(
     return normalizeResponse(parsed)
   } catch {
     throw new Error(
-      `Invalid JSON response from OpenAI for ${targetLocale}: ${cleaned}`,
+      `Invalid JSON response from Anthropic for ${targetLocale}: ${cleaned}`,
     )
   }
 }
@@ -231,7 +245,7 @@ async function translate(
 
     let translatedCount = 0
     for (const key of changedKeys) {
-      if (translations[key]) {
+      if (key in translations) {
         updatedFlat.set(key, translations[key])
         localeCache[key] = getStringValue(sourceKeys.get(key) as EntryValue)
         translatedCount++

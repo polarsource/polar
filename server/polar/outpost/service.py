@@ -14,11 +14,11 @@ from polar.logging import Logger
 from polar.meter.aggregation import UniqueAggregation
 from polar.models import Customer, Organization, Reducer
 from polar.reducer.repository import ReducerRepository
-from polar.reducer_bucket.repository import ReducerBucketRepository
-from polar.reducer_bucket.service import (
+from polar.reducer.service import (
     get_customer_identities,
     get_reducer_bucket_start,
 )
+from polar.reducer.service import reducer as reducer_service
 
 from .schemas import (
     IncomingMessageAdapter,
@@ -181,8 +181,7 @@ class OutpostService:
         if isinstance(reducer.aggregation, UniqueAggregation):
             return
 
-        repository = ReducerBucketRepository.from_session(session)
-        version = await repository.get_database_now()
+        version = await reducer_service.get_database_now(session)
         since = get_reducer_bucket_start(version - SYNCED_LOOKBACK)
         # Temporary: credits come from customer meters until credits are reducers.
         # Credits reset on renewal before the billed usage gets sealed, so balances
@@ -199,21 +198,11 @@ class OutpostService:
             for customer_meter in customer_meters
         }
         for customer_id, external_customer_id in identities:
-            cold_until = (
-                await repository.get_last_synced_end(
-                    organization.id,
-                    reducer.id,
-                    customer_id,
-                    external_customer_id,
-                    since=since,
-                )
-                or since
-            )
-            count, total, minimum, maximum = await repository.get_unsealed_totals(
-                organization.id,
-                reducer.id,
-                [(customer_id, external_customer_id)],
-                before=cold_until,
+            (
+                cold_until,
+                (count, total, minimum, maximum),
+            ) = await reducer_service.get_cold_usage(
+                session, reducer, customer_id, external_customer_id, since=since
             )
             for meter_id in meter_ids:
                 await send_stream.send(

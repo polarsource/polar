@@ -40,7 +40,7 @@ from polar.models.event import EventSource
 from polar.outpost.stream import enqueue as enqueue_outpost_event
 from polar.postgres import AsyncSession
 from polar.reducer.repository import ReducerRepository
-from polar.reducer_bucket.service import get_customer_identities
+from polar.reducer.service import get_customer_identities
 from polar.worker import enqueue_job
 
 from .repository import CustomerMeterRepository

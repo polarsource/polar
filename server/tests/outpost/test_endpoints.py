@@ -16,7 +16,7 @@ from polar.models import (
 from polar.outpost.service import SYNCED_LOOKBACK
 from polar.outpost.stream import publish
 from polar.redis import Redis
-from polar.reducer_bucket.service import get_reducer_bucket_start
+from polar.reducer.service import get_reducer_bucket_start
 from tests.fixtures import AuthSubjectFixture, SaveFixture
 from tests.fixtures.random_objects import create_reducer
 

@@ -146,40 +146,31 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         )
         return await self.get_one_or_none(statement)
 
-    async def get_intervals(
+    async def get_unsealed_totals(
         self,
         organization_id: UUID,
         reducer_id: UUID,
-        bucket_start: datetime,
-        bucket_end: datetime,
-        customer_id: UUID | None,
-        external_customer_id: str | None,
-    ) -> Sequence[Row[Any]]:
-        """count, sum, min and max of the customer identity's intervals starting in
-        the slot, with their sealed generations apart from the open one."""
-        sealed = ReducerBucket.sealed_at.is_not(None).label("sealed")
-        statement = (
-            select(
-                ReducerBucket.bucket_start,
-                ReducerBucket.bucket_end,
-                sealed,
-                func.sum(ReducerBucket.count).label("count"),
-                func.sum(ReducerBucket.sum).label("sum"),
-                func.min(ReducerBucket.min).label("min"),
-                func.max(ReducerBucket.max).label("max"),
-            )
-            .where(
-                ReducerBucket.organization_id == organization_id,
-                ReducerBucket.reducer_id == reducer_id,
-                ReducerBucket.bucket_start >= bucket_start,
-                ReducerBucket.bucket_start < bucket_end,
-                _is_customer(ReducerBucket, customer_id, external_customer_id),
-            )
-            .group_by(ReducerBucket.bucket_start, ReducerBucket.bucket_end, sealed)
-            .order_by(ReducerBucket.bucket_start, sealed.desc())
+        identities: Sequence[tuple[UUID | None, str | None]],
+    ) -> Row[Any]:
+        """count, sum, min and max of the identities' usage not billed yet."""
+        statement = select(
+            func.coalesce(func.sum(ReducerBucket.count), 0).label("count"),
+            func.coalesce(func.sum(ReducerBucket.sum), 0).label("sum"),
+            func.min(ReducerBucket.min).label("min"),
+            func.max(ReducerBucket.max).label("max"),
+        ).where(
+            ReducerBucket.organization_id == organization_id,
+            ReducerBucket.reducer_id == reducer_id,
+            ReducerBucket.sealed_at.is_(None),
+            or_(
+                *(
+                    _is_customer(ReducerBucket, customer_id, external_customer_id)
+                    for customer_id, external_customer_id in identities
+                )
+            ),
         )
         result = await self.session.execute(statement)
-        return result.all()
+        return result.one()
 
     async def add_contribution(
         self,

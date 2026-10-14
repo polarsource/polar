@@ -139,32 +139,34 @@ class TestOutpost:
         redis: Redis,
         organization: Organization,
         meter: Meter,
+        customer_external_id: Customer,
+        customer_second: Customer,
     ) -> None:
         reducer = await create_reducer(
             save_fixture, organization=organization, meters=[meter]
         )
         bucket_start = datetime(2026, 10, 7, 12, 5, tzinfo=UTC)
-        split_at = bucket_start + timedelta(minutes=2)
-        bucket_end = bucket_start + timedelta(minutes=5)
-        billed_at = datetime(2026, 10, 7, 12, 20, tzinfo=UTC)
-        for start, end, generation, sealed_at, value in (
-            (bucket_start, split_at, 1, billed_at, 3),
-            (bucket_start, split_at, 2, billed_at, 4),
-            (bucket_start, split_at, 3, None, 5),
-            (split_at, bucket_end, 1, None, 6),
+        billed_start = bucket_start - timedelta(minutes=5)
+        external_id = customer_external_id.external_id
+        for start, customer, external_customer_id, sealed_at, value in (
+            (bucket_start, customer_external_id, None, None, 3),
+            (bucket_start, None, external_id, None, 4),
+            (bucket_start, customer_external_id, external_id, None, 5),
+            (billed_start, customer_external_id, external_id, bucket_start, 6),
+            (bucket_start, customer_second, None, None, 7),
         ):
             await save_fixture(
                 ReducerBucket(
                     organization=organization,
                     reducer=reducer,
-                    external_customer_id="external",
+                    customer=customer,
+                    external_customer_id=external_customer_id,
                     bucket_start=start,
-                    bucket_end=end,
+                    bucket_end=start + timedelta(minutes=5),
                     count=1,
                     sum=Decimal(value),
                     min=Decimal(value),
                     max=Decimal(value),
-                    generation=generation,
                     sealed_at=sealed_at,
                 )
             )
@@ -176,9 +178,8 @@ class TestOutpost:
                 {
                     "type": "reducer_bucket",
                     "reducer_id": reducer.id,
-                    "bucket_start": bucket_start.isoformat(),
                     "customer_id": None,
-                    "external_customer_id": "external",
+                    "external_customer_id": external_id,
                 },
             )
 
@@ -188,37 +189,11 @@ class TestOutpost:
                 "type": "reducer_bucket",
                 "payload": {
                     "reducer_id": str(reducer.id),
-                    "customer_id": None,
-                    "external_customer_id": "external",
-                    "bucket_start": "2026-10-07T12:05:00Z",
-                    "intervals": [
-                        {
-                            "bucket_start": "2026-10-07T12:05:00Z",
-                            "bucket_end": "2026-10-07T12:07:00Z",
-                            "sealed": True,
-                            "count": 2,
-                            "sum": 7.0,
-                            "min": 3.0,
-                            "max": 4.0,
-                        },
-                        {
-                            "bucket_start": "2026-10-07T12:05:00Z",
-                            "bucket_end": "2026-10-07T12:07:00Z",
-                            "sealed": False,
-                            "count": 1,
-                            "sum": 5.0,
-                            "min": 5.0,
-                            "max": 5.0,
-                        },
-                        {
-                            "bucket_start": "2026-10-07T12:07:00Z",
-                            "bucket_end": "2026-10-07T12:10:00Z",
-                            "sealed": False,
-                            "count": 1,
-                            "sum": 6.0,
-                            "min": 6.0,
-                            "max": 6.0,
-                        },
-                    ],
+                    "customer_id": str(customer_external_id.id),
+                    "external_customer_id": external_id,
+                    "count": 3,
+                    "sum": 12.0,
+                    "min": 3.0,
+                    "max": 5.0,
                 },
             }

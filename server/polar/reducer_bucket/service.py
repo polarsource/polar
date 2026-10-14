@@ -38,6 +38,19 @@ def get_reducer_bucket_start(timestamp: datetime) -> datetime:
     return datetime.fromtimestamp(epoch - epoch % size, tz=UTC)
 
 
+def get_customer_identities(
+    customer: Customer,
+) -> list[tuple[uuid.UUID | None, str | None]]:
+    """The (customer_id, external_customer_id) pairs the customer's buckets use."""
+    identities: list[tuple[uuid.UUID | None, str | None]] = [(customer.id, None)]
+    if customer.external_id is not None:
+        identities += [
+            (None, customer.external_id),
+            (customer.id, customer.external_id),
+        ]
+    return identities
+
+
 class ReducerBucketService:
     async def rollup(
         self,
@@ -144,9 +157,7 @@ class ReducerBucketService:
                     count=len(values),
                     **statistics,
                 )
-            _enqueue_outpost_event(
-                reducer, bucket_start, customer_id, external_customer_id
-            )
+            _enqueue_outpost_event(reducer, customer_id, external_customer_id)
 
     async def sync(
         self,
@@ -168,7 +179,7 @@ class ReducerBucketService:
         await self._sync_bucket(
             repository, reducer, bucket_start, customer_id, external_customer_id
         )
-        _enqueue_outpost_event(reducer, bucket_start, customer_id, external_customer_id)
+        _enqueue_outpost_event(reducer, customer_id, external_customer_id)
 
     async def seal(
         self,
@@ -185,12 +196,7 @@ class ReducerBucketService:
         if billable_from >= cutoff:
             return quantities
         repository = ReducerBucketRepository.from_session(session)
-        identities: list[tuple[uuid.UUID | None, str | None]] = [(customer.id, None)]
-        if customer.external_id is not None:
-            identities += [
-                (None, customer.external_id),
-                (customer.id, customer.external_id),
-            ]
+        identities = get_customer_identities(customer)
 
         await self._lock_buckets(
             repository,
@@ -434,7 +440,6 @@ class ReducerBucketService:
 
 def _enqueue_outpost_event(
     reducer: Reducer,
-    bucket_start: datetime,
     customer_id: uuid.UUID | None,
     external_customer_id: str | None,
 ) -> None:
@@ -443,7 +448,6 @@ def _enqueue_outpost_event(
         {
             "type": "reducer_bucket",
             "reducer_id": reducer.id,
-            "bucket_start": bucket_start.isoformat(),
             "customer_id": customer_id,
             "external_customer_id": external_customer_id,
         },

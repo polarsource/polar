@@ -1,5 +1,4 @@
 import typing
-from datetime import datetime
 from enum import StrEnum
 
 from pydantic import UUID4, BaseModel, ConfigDict, Discriminator, TypeAdapter
@@ -102,22 +101,14 @@ class CustomerMeterOutgoingMessage(OutgoingMessageBase):
     payload: CustomerMeterOutgoingMessagePayload
 
 
-class ReducerBucketInterval(MessageBase):
-    bucket_start: datetime
-    bucket_end: datetime
-    sealed: bool
-    count: int
-    sum: float
-    min: float | None
-    max: float | None
-
-
 class ReducerBucketOutgoingMessagePayload(MessageBase):
     reducer_id: UUID4
     customer_id: UUID4 | None
     external_customer_id: str | None
-    bucket_start: datetime
-    intervals: list[ReducerBucketInterval]
+    count: int
+    sum: float
+    min: float | None
+    max: float | None
 
 
 class ReducerBucketOutgoingMessage(OutgoingMessageBase):

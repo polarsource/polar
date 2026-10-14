@@ -161,7 +161,6 @@ class TestRollup:
             {
                 "type": "reducer_bucket",
                 "reducer_id": sum_reducer.id,
-                "bucket_start": previous_start.isoformat(),
                 "customer_id": None,
                 "external_customer_id": "external",
             },
@@ -433,7 +432,6 @@ class TestSync:
             {
                 "type": "reducer_bucket",
                 "reducer_id": sum_reducer.id,
-                "bucket_start": BUCKET_START.isoformat(),
                 "customer_id": None,
                 "external_customer_id": "external",
             },

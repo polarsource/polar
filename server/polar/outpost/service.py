@@ -1,17 +1,16 @@
-from datetime import datetime
-
 import structlog
 from anyio.streams.memory import MemoryObjectSendStream
 from pydantic import ValidationError
 from sqlalchemy.orm import selectinload
 
+from polar.customer.repository import CustomerRepository
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.kit.db.postgres import AsyncReadSession
 from polar.logging import Logger
 from polar.models import Organization, Reducer
 from polar.reducer.repository import ReducerRepository
 from polar.reducer_bucket.repository import ReducerBucketRepository
-from polar.reducer_bucket.service import REDUCER_BUCKET_SIZE
+from polar.reducer_bucket.service import get_customer_identities
 
 from .schemas import (
     CustomerMeterIncomingMessageCustomerPayload,
@@ -23,7 +22,6 @@ from .schemas import (
     OutgoingMessage,
     OutgoingMessageAdapter,
     OutgoingMessageType,
-    ReducerBucketInterval,
     ReducerBucketOutgoingMessage,
     ReducerBucketOutgoingMessagePayload,
 )
@@ -138,27 +136,39 @@ class OutpostService:
         event: ReducerBucketOutpostEvent,
         send_stream: MemoryObjectSendStream[OutgoingMessage],
     ) -> None:
-        bucket_start = datetime.fromisoformat(event["bucket_start"])
+        customer_id = event["customer_id"]
+        external_customer_id = event["external_customer_id"]
+        customer_repository = CustomerRepository.from_session(session)
+        if customer_id is not None:
+            customer = await customer_repository.get_by_id_and_organization(
+                customer_id, organization.id
+            )
+        else:
+            assert external_customer_id is not None
+            customer = await customer_repository.get_by_external_id_and_organization(
+                external_customer_id, organization.id
+            )
+        if customer is not None:
+            customer_id = customer.id
+            external_customer_id = customer.external_id
+            identities = get_customer_identities(customer)
+        else:
+            identities = [(customer_id, external_customer_id)]
+
         repository = ReducerBucketRepository.from_session(session)
-        intervals = await repository.get_intervals(
-            organization.id,
-            event["reducer_id"],
-            bucket_start,
-            bucket_start + REDUCER_BUCKET_SIZE,
-            event["customer_id"],
-            event["external_customer_id"],
+        count, total, minimum, maximum = await repository.get_unsealed_totals(
+            organization.id, event["reducer_id"], identities
         )
         message = ReducerBucketOutgoingMessage(
             type=OutgoingMessageType.reducer_bucket,
             payload=ReducerBucketOutgoingMessagePayload(
                 reducer_id=event["reducer_id"],
-                customer_id=event["customer_id"],
-                external_customer_id=event["external_customer_id"],
-                bucket_start=bucket_start,
-                intervals=[
-                    ReducerBucketInterval.model_validate(interval._asdict())
-                    for interval in intervals
-                ],
+                customer_id=customer_id,
+                external_customer_id=external_customer_id,
+                count=count,
+                sum=total,
+                min=minimum,
+                max=maximum,
             ),
         )
         await send_stream.send(message)

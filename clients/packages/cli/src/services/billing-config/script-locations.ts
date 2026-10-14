@@ -52,7 +52,14 @@ const findAll = (source: string, pattern: RegExp, from: number) =>
     (match) => ({ offset: from + match.index, length: match[0].length }),
   )
 
-const SECTIONS = ['events', 'meters', 'benefits', 'products', 'discounts']
+const SECTIONS = [
+  'settings',
+  'events',
+  'meters',
+  'benefits',
+  'products',
+  'discounts',
+]
 
 const sectionRange = (source: string, section: string): Range => {
   const whole = { start: 0, end: source.length }

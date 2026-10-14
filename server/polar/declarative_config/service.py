@@ -17,17 +17,21 @@ from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
 from polar.models import Organization, User
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.oauth2.exceptions import InsufficientScopeError
+from polar.organization.repository import OrganizationRepository
 from polar.organization.resolver import OrganizationIDModel, get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
 from polar.redis import Redis
+from polar.webhook.service import webhook as webhook_service
 
 from . import benefits, discounts, products, validation
 from .schemas import (
     MAXIMUM_METERS,
     Config,
+    ConfigAction,
     ConfigApplyResult,
     ConfigChange,
     ConfigExport,
@@ -35,10 +39,13 @@ from .schemas import (
     ConfigExportMeter,
     ConfigIssue,
     ConfigIssueSeverity,
+    ConfigIssueType,
     ConfigMeter,
     ConfigPlan,
     ConfigResource,
     ConfigResult,
+    ConfigSettingsChange,
+    ConfigSettingsResult,
     ConfigSkippedMeter,
     ConfigSkippedReason,
 )
@@ -48,6 +55,7 @@ from .validation import (
     MeterChange,
     ProductChange,
     ResourceChange,
+    SettingsChange,
 )
 
 _METER_EXTERNAL_ID_INDEX = "ix_meters_organization_id_external_id"
@@ -56,6 +64,7 @@ _PRODUCT_EXTERNAL_ID_INDEX = "ix_products_organization_id_external_id"
 
 
 _SECTION_SCOPES = {
+    "settings": (Scope.organizations_read, Scope.organizations_write),
     "benefits": (Scope.benefits_read, Scope.benefits_write),
     "products": (Scope.products_read, Scope.products_write),
     "discounts": (Scope.discounts_read, Scope.discounts_write),
@@ -141,6 +150,13 @@ class DeclarativeConfigService:
         organization = await self._get_organization(
             session, auth_subject, config, OrganizationPermission.products_manage
         )
+        if "settings" in config.model_fields_set:
+            await assert_organization_permission(
+                session,
+                auth_subject,
+                organization.id,
+                OrganizationPermission.organization_manage,
+            )
         changes, issues = await validation.check(
             session, organization, config, for_update=True
         )
@@ -150,6 +166,9 @@ class DeclarativeConfigService:
         if errors:
             raise ConfigInvalid(errors)
 
+        settings_result = await self._apply_settings(
+            session, organization, changes.settings
+        )
         meter_results, meter_ids = await self._apply_meters(
             session, organization, changes.meters
         )
@@ -167,13 +186,25 @@ class DeclarativeConfigService:
         discount_results = await self._apply_discounts(
             session, auth_subject, organization, changes.discounts, product_ids
         )
+        if (
+            changes.settings is not None
+            and changes.settings.action == ConfigAction.updated
+        ):
+            await self._assert_products_have_currency(session, organization)
+            await webhook_service.send(
+                session,
+                organization,
+                WebhookEventType.organization_updated,
+                organization,
+            )
         return ConfigApplyResult(
             changes=[
                 *meter_results,
                 *benefit_results,
                 *product_results,
                 *discount_results,
-            ]
+            ],
+            settings=settings_result,
         )
 
     async def plan(
@@ -196,6 +227,11 @@ class DeclarativeConfigService:
                 *self._plan_changes(ConfigResource.product, changes.products),
                 *self._plan_changes(ConfigResource.discount, changes.discounts),
             ],
+            settings=None
+            if changes.settings is None
+            else ConfigSettingsChange(
+                action=changes.settings.action, diff=changes.settings.diff
+            ),
             issues=issues,
         )
 
@@ -281,6 +317,49 @@ class DeclarativeConfigService:
         if not organization.is_config_as_code_enabled:
             raise ConfigAsCodeNotEnabled()
         return organization
+
+    async def _apply_settings(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        change: SettingsChange | None,
+    ) -> ConfigSettingsResult | None:
+        if change is None:
+            return None
+        if change.update_dict:
+            await OrganizationRepository.from_session(session).update(
+                organization,
+                update_dict={
+                    validation.SETTINGS_FIELDS[field]: value
+                    for field, value in change.update_dict.items()
+                },
+            )
+        return ConfigSettingsResult(action=change.action)
+
+    async def _assert_products_have_currency(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        currency = organization.default_presentment_currency
+        products = await ProductRepository.from_session(
+            session
+        ).get_products_without_currency(organization.id, currency)
+        if products:
+            raise ConfigInvalid(
+                [
+                    ConfigIssue(
+                        severity=ConfigIssueSeverity.error,
+                        type=ConfigIssueType.missing_currency,
+                        loc=["body", "settings", "payments", "currency"],
+                        msg=(
+                            "Every active product must have a price in this "
+                            "currency. Missing on: "
+                            + ", ".join(product.name for product in products)
+                            + "."
+                        ),
+                        input=currency,
+                    )
+                ]
+            )
 
     async def _apply_meters(
         self,

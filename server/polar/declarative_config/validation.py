@@ -53,6 +53,7 @@ from .schemas import (
     ConfigProductPriceMeteredTiers,
     ConfigProductPriceMeteredUnit,
     ConfigResource,
+    ConfigSettings,
 )
 
 Loc = list[str | int]
@@ -97,6 +98,61 @@ class ResourceChange[ConfigT, ModelT]:
         return getattr(self.existing, name)
 
 
+SETTINGS_FIELDS = {
+    "payments.currency": "default_presentment_currency",
+    "payments.tax": "default_tax_behavior",
+}
+
+
+def _setting(settings: ConfigSettings, field: str) -> Any:
+    value: Any = settings
+    for part in field.split("."):
+        value = getattr(value, part)
+        if value is None:
+            return None
+    return value
+
+
+@dataclass
+class SettingsChange:
+    update_dict: dict[str, Any]
+    before: dict[str, Any]
+
+    @property
+    def action(self) -> ConfigAction:
+        if self.update_dict:
+            return ConfigAction.updated
+        return ConfigAction.unchanged
+
+    @property
+    def diff(self) -> list[ConfigFieldChange]:
+        return [
+            ConfigFieldChange(
+                field=field,
+                before=self.before[field],
+                after=after,
+            )
+            for field, after in self.update_dict.items()
+        ]
+
+
+def diff_settings(
+    organization: Organization, settings: ConfigSettings | None
+) -> SettingsChange | None:
+    if settings is None:
+        return None
+    before = {
+        field: getattr(organization, attribute)
+        for field, attribute in SETTINGS_FIELDS.items()
+    }
+    update_dict = {
+        field: value
+        for field in SETTINGS_FIELDS
+        if (value := _setting(settings, field)) is not None and before[field] != value
+    }
+    return SettingsChange(update_dict, before)
+
+
 MeterChange = ResourceChange[ConfigMeter, Meter]
 BenefitChange = ResourceChange[ConfigBenefit, Benefit]
 ProductChange = ResourceChange[ConfigProduct, Product]
@@ -105,6 +161,7 @@ DiscountChange = ResourceChange[ConfigDiscount, Discount]
 
 @dataclass
 class ConfigChanges:
+    settings: SettingsChange | None
     meters: list[MeterChange]
     benefits: list[BenefitChange]
     products: list[ProductChange]
@@ -849,4 +906,5 @@ async def check(
         *immutable_discount_fields(discounts),
         *await duplicate_codes(session, organization, discounts),
     ]
-    return ConfigChanges(meters, benefits, products, discounts), issues
+    settings = diff_settings(organization, config.settings)
+    return ConfigChanges(settings, meters, benefits, products, discounts), issues

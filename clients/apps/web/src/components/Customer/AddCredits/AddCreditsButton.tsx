@@ -21,11 +21,7 @@ export const AddCreditsButton = ({
     'customers:manage',
   )
 
-  if (
-    !canManageCustomers ||
-    !organization.feature_settings?.config_as_code_enabled
-  )
-    return null
+  if (!canManageCustomers) return null
 
   return (
     <>

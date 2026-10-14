@@ -99,7 +99,7 @@ export const AddCreditsModal = ({
 
     toast({
       title: 'Credits Added',
-      description: `Added ${formatCredits(submittedUnits)} on ${option.meter.name} for ${customerLabel}.`,
+      description: `Added ${formatCredits(submittedUnits)} on ${option.meter.name} for ${customerLabel}. The balance will update shortly.`,
     })
     onClose()
   }

@@ -198,12 +198,11 @@ export const CustomerHeader = ({
           <DropdownMenuItem onClick={showEditCustomerModal}>
             Edit Customer
           </DropdownMenuItem>
-          {canManageCustomers &&
-            organization.feature_settings?.config_as_code_enabled && (
-              <DropdownMenuItem onClick={showAddCreditsModal}>
-                Add Credits
-              </DropdownMenuItem>
-            )}
+          {canManageCustomers && (
+            <DropdownMenuItem onClick={showAddCreditsModal}>
+              Add Credits
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem destructive onClick={showDeleteCustomerModal}>
             Delete Customer

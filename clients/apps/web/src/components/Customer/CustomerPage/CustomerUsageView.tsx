@@ -71,9 +71,7 @@ export const CustomerUsageView = ({
 }) => {
   const router = useRouter()
   const addCreditsModal = useModal()
-  const canAddCredits =
-    useHasPermission(organization.id, 'customers:manage') &&
-    !!organization.feature_settings?.config_as_code_enabled
+  const canAddCredits = useHasPermission(organization.id, 'customers:manage')
   const [creditMeterId, setCreditMeterId] = useState<string>()
   const { dateRange, interval } = useCustomerMetricsParams(customer)
   const { data: customerMetersData, isLoading } = useCustomerMeters(

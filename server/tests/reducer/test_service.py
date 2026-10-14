@@ -5,8 +5,10 @@ from decimal import Decimal
 from typing import Any, cast
 
 import pytest
+from logfire.testing import CaptureLogfire
 from pytest_mock import MockerFixture
 
+from polar.event.system import SystemEvent
 from polar.meter.aggregation import (
     Aggregation,
     AggregationFunction,
@@ -14,7 +16,15 @@ from polar.meter.aggregation import (
     PropertyAggregation,
     UniqueAggregation,
 )
-from polar.models import Customer, Event, Meter, Organization, Reducer, ReducerBucket
+from polar.models import (
+    Customer,
+    CustomerMeter,
+    Event,
+    Meter,
+    Organization,
+    Reducer,
+    ReducerBucket,
+)
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from polar.redis import Redis
@@ -1178,3 +1188,80 @@ class TestGetCustomerValue:
         )
 
         assert value == 0
+
+
+@pytest.fixture
+async def customer_meter(
+    save_fixture: SaveFixture, organization: Organization, customer: Customer
+) -> CustomerMeter:
+    meter = await create_meter(save_fixture, organization=organization)
+    await create_reducer(save_fixture, organization=organization, meters=[meter])
+    customer_meter = CustomerMeter(
+        customer=customer,
+        meter=meter,
+        consumed_units=Decimal(5),
+        credited_units=0,
+        balance=Decimal(-5),
+    )
+    await save_fixture(customer_meter)
+    return customer_meter
+
+
+@pytest.mark.anyio
+class TestLogCustomerMeterComparison:
+    async def test_logs_values_since_latest_reset(
+        self,
+        capfire: CaptureLogfire,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+        customer: Customer,
+        customer_meter: CustomerMeter,
+    ) -> None:
+        reset = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_reset,
+            metadata={"meter_id": str(customer_meter.meter_id)},
+        )
+        get_customer_value = mocker.patch.object(
+            reducer_service, "get_customer_value", return_value=Decimal(4)
+        )
+
+        await reducer_service.log_customer_meter_comparison(
+            session, redis, customer_meter
+        )
+
+        assert get_customer_value.call_args.kwargs == {"since": reset.timestamp}
+        [span] = [
+            span
+            for span in capfire.exporter.exported_spans
+            if span.name == "Compare customer meter with reducer"
+            and span.attributes is not None
+            and span.attributes.get("logfire.span_type") == "span"
+        ]
+        assert span.attributes is not None
+        assert span.attributes["legacy"] == "5"
+        assert span.attributes["reducer"] == "4"
+        assert span.attributes["match"] is False
+
+    async def test_swallows_failure(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        customer_meter: CustomerMeter,
+    ) -> None:
+        mocker.patch.object(
+            reducer_service, "get_customer_value", side_effect=RuntimeError
+        )
+
+        await reducer_service.log_customer_meter_comparison(
+            session, redis, customer_meter
+        )
+
+        assert await session.get(CustomerMeter, customer_meter.id) is not None

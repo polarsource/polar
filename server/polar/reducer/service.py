@@ -1,3 +1,4 @@
+import math
 from collections import defaultdict
 from collections.abc import Iterable, Sequence
 from datetime import UTC, datetime, timedelta
@@ -10,6 +11,7 @@ import structlog
 from redis.exceptions import RedisError
 from sqlalchemy import Row
 
+from polar.event.repository import EventRepository
 from polar.kit.db.postgres import AsyncReadSession
 from polar.kit.utils import utc_now
 from polar.logging import Logger
@@ -18,7 +20,15 @@ from polar.meter.aggregation import (
     PropertyAggregation,
     UniqueAggregation,
 )
-from polar.models import Customer, Event, Meter, MeterReducer, Reducer, ReducerBucket
+from polar.models import (
+    Customer,
+    CustomerMeter,
+    Event,
+    Meter,
+    MeterReducer,
+    Reducer,
+    ReducerBucket,
+)
 from polar.outpost.stream import enqueue as enqueue_outpost_event
 from polar.postgres import AsyncSession
 from polar.redis import Redis
@@ -290,6 +300,55 @@ class ReducerService:
             )
 
         return _get_quantity(reducer.aggregation.func, totals)
+
+    async def log_customer_meter_comparison(
+        self, session: AsyncSession, redis: Redis, customer_meter: CustomerMeter
+    ) -> None:
+        """Logs the customer meter's consumed units next to the reducer's value
+        since the meter's latest reset."""
+        customer = customer_meter.customer
+        with logfire.span(
+            "Compare customer meter with reducer",
+            organization_id=str(customer.organization_id),
+            customer_meter_id=str(customer_meter.id),
+        ) as span:
+            try:
+                async with session.begin_nested():
+                    reducer = await ReducerRepository.from_session(
+                        session
+                    ).get_by_meter_id(customer_meter.meter_id)
+                    if reducer is None or isinstance(
+                        reducer.aggregation, UniqueAggregation
+                    ):
+                        return
+                    meter_reset_event = await EventRepository.from_session(
+                        session
+                    ).get_latest_meter_reset(customer, customer_meter.meter_id)
+                    since = (
+                        meter_reset_event.timestamp
+                        if meter_reset_event is not None
+                        else None
+                    )
+                    span.set_attribute("reducer_id", str(reducer.id))
+                    span.set_attribute("since", since)
+                    value = await self.get_customer_value(
+                        session,
+                        redis,
+                        reducer,
+                        customer.id,
+                        customer.external_id,
+                        since=since,
+                    )
+                    span.set_attribute("legacy", str(customer_meter.consumed_units))
+                    span.set_attribute("reducer", str(value))
+                    span.set_attribute(
+                        "match", math.isclose(value, customer_meter.consumed_units)
+                    )
+            except Exception:
+                log.exception(
+                    "Failed to compare customer meter with reducer",
+                    customer_meter_id=customer_meter.id,
+                )
 
     async def _add_to_closed_buckets(
         self, session: AsyncSession, contributions: Contributions

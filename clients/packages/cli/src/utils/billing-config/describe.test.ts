@@ -179,3 +179,40 @@ describe('describeValue for products and benefits', () => {
     expect(describeValue({ amount_type: 'seat_based' })).toBeUndefined()
   })
 })
+
+describe('priceGroups for tiered prices', () => {
+  const tiers = (type: string, ...steps: Array<[number | null, string]>) => ({
+    type,
+    tiers: steps.map(([bound, unit_amount]) => ({ bound, unit_amount })),
+  })
+
+  test('lists each tier with its range, per currency and unit, and usage tiers by bound', () => {
+    const groups = priceGroups([
+      {
+        amount_type: 'unit_based',
+        price_currency: 'usd',
+        tiers: tiers('volume', [10, '1000'], [null, '800']),
+        minimum_units: 2,
+        unit_label: { en: { '=1': 'server', other: 'servers' } },
+      },
+      {
+        amount_type: 'seat_based',
+        price_currency: 'eur',
+        tiers: tiers('graduated', [5, '2000'], [null, '1500']),
+        minimum_units: 1,
+      },
+      {
+        amount_type: 'metered_tiers',
+        price_currency: 'usd',
+        meter: 'tool_call',
+        tiers: tiers('graduated', [1000, '0'], [null, '0.2']),
+        cap_amount: 20000,
+      },
+    ])
+    expect(groups?.map(({ label, text }) => `${label}\n${text.text}`)).toEqual([
+      'USD per server\nvolume, minimum 2\n1–10  $10\n11+   $8',
+      'EUR per seat\ngraduated\n1–5  €20\n6+   €15',
+      'USD per tool_call\ngraduated\nup to 1,000  $0 per 1,000\nover 1,000   $2 per 1,000\ncapped at $200',
+    ])
+  })
+})

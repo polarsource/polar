@@ -16,6 +16,7 @@ export const UsedEnvironments = Context.Reference<Set<PolarEnvironment>>(
 const API_ORIGINS = {
   production: 'https://api.polar.sh',
   sandbox: 'https://sandbox-api.polar.sh',
+  local: 'http://127.0.0.1:8000',
 } as const
 
 const isLoopback = (host: string) =>
@@ -24,7 +25,7 @@ const isLoopback = (host: string) =>
   host === '[::1]' ||
   /^127\.\d+\.\d+\.\d+$/.test(host)
 
-const parseOverride = (value: string) => {
+const parseOverride = (name: string, value: string) => {
   const url = (() => {
     try {
       return new URL(value)
@@ -33,25 +34,34 @@ const parseOverride = (value: string) => {
     }
   })()
   if (!url || !['http:', 'https:'].includes(url.protocol)) {
-    return new Error(`POLAR_API_URL must be an http(s) URL, got "${value}"`)
+    return new Error(`${name} must be an http(s) URL, got "${value}"`)
   }
   if (url.protocol === 'http:' && !isLoopback(url.hostname)) {
     return new Error(
-      `POLAR_API_URL must use https unless it points at localhost, got "${value}". Tokens would otherwise be sent in plain text.`,
+      `${name} must use https unless it points at localhost, got "${value}". Tokens would otherwise be sent in plain text.`,
     )
   }
   return url.origin
 }
 
+const originOverride = (name: string) =>
+  Effect.gen(function* () {
+    const env = yield* Environment
+    const value = env[name]?.trim()
+    if (!value) return undefined
+    const parsed = parseOverride(name, value)
+    return parsed instanceof Error ? yield* Effect.die(parsed) : parsed
+  })
+
+export const apiOverride = originOverride('POLAR_API_URL')
+
+export const dashboardOverride = originOverride('POLAR_DASHBOARD_URL')
+
 export const apiOrigin = (environment: PolarEnvironment) =>
   Effect.gen(function* () {
     const used = yield* UsedEnvironments
     used.add(environment)
-    const env = yield* Environment
-    const override = env['POLAR_API_URL']?.trim()
-    if (!override) return API_ORIGINS[environment]
-    const parsed = parseOverride(override)
-    return parsed instanceof Error ? yield* Effect.die(parsed) : parsed
+    return (yield* apiOverride) ?? API_ORIGINS[environment]
   })
 
 export const apiUrl = (environment: PolarEnvironment, path: string) =>

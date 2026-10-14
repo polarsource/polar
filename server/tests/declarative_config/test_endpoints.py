@@ -164,6 +164,52 @@ class TestApply:
         [error] = response.json()["detail"]
         assert error["loc"] == ["body", "products", 0]
 
+    @pytest.mark.parametrize(
+        "product",
+        [
+            pytest.param(
+                {
+                    "external_id": "pack",
+                    "name": "Pack",
+                    "trial_interval": "day",
+                    "trial_interval_count": 14,
+                    "prices": [{"amount_type": "fixed", "price_amount": 0}],
+                },
+                id="one_time",
+            ),
+            pytest.param(
+                {
+                    "external_id": "pro",
+                    "name": "Pro",
+                    "recurring_interval": "month",
+                    "trial_interval": "day",
+                    "prices": [{"amount_type": "fixed", "price_amount": 2000}],
+                },
+                id="missing_count",
+            ),
+        ],
+    )
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_invalid_trial(
+        self,
+        product: dict[str, Any],
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/config/apply",
+            json={
+                "products": [product],
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 422
+        [error] = response.json()["detail"]
+        assert error["loc"] == ["body", "products", 0]
+
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_duplicate_external_ids(

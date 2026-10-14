@@ -1,12 +1,14 @@
 import { Effect } from 'effect'
 import { validateConfig } from './schema/config'
 import type { BenefitConfig } from './schema/benefit'
+import type { DiscountConfig } from './schema/discount'
 import type { Metadata } from './schema/metadata'
 import type { MeterConfig, MeterFilter } from './schema/meter'
 import { majorAmount, scaleRate } from './schema/money'
 import type { Currency, Scale } from './schema/money'
 import type { PriceConfig } from './schema/price'
 import type { ProductConfig } from './schema/product'
+import type { Visibility } from './schema/visibility'
 
 const literal = (value: string | number | boolean): string =>
   Object.is(value, -0) ? '-0' : JSON.stringify(value)
@@ -22,6 +24,9 @@ const renderMetadata = (metadata: Metadata | undefined): string[] =>
           .map(([name, value]) => `${key(name)}: ${literal(value)}`)
           .join(', ')} })`,
       ]
+
+const renderVisibility = (visibility: Visibility | undefined): string[] =>
+  visibility === 'private' ? ['.private()'] : []
 
 const renderCondition = (
   condition: MeterFilter['clauses'][number],
@@ -76,7 +81,11 @@ const renderBenefit = (
   const name = literal(benefit.description)
   if (benefit.type === 'feature_flag') {
     helpers.add('flag')
-    return [`flag(${name})`, ...renderMetadata(benefit.metadata)].join('\n')
+    return [
+      `flag(${name})`,
+      ...renderMetadata(benefit.metadata),
+      ...renderVisibility(benefit.visibility),
+    ].join('\n')
   }
   helpers.add('credits')
   const { meter, units, rollover } = benefit.properties
@@ -86,6 +95,7 @@ const renderBenefit = (
     `.units(${literal(units)})`,
     ...(rollover ? ['.rollover()'] : []),
     ...renderMetadata(benefit.metadata),
+    ...renderVisibility(benefit.visibility),
   ].join('\n')
 }
 
@@ -366,7 +376,44 @@ const renderProduct =
       ...(product.description === undefined
         ? []
         : [`.description(${literal(product.description)})`]),
-      ...(product.visibility === 'private' ? ['.private()'] : []),
+      ...renderVisibility(product.visibility),
+    ].join('\n')
+  }
+
+const renderDuration = (discount: DiscountConfig): string => {
+  const months = discount.duration_in_months
+  if (discount.duration !== 'repeating' || months === undefined) {
+    return `.${discount.duration}()`
+  }
+  const [count, unit] =
+    months % 12 === 0 ? [months / 12, 'year'] : [months, 'month']
+  return `.repeating(${literal(count)}, ${literal(count === 1 ? unit : `${unit}s`)})`
+}
+
+const renderDiscount =
+  (imports: Set<string>) =>
+  (discount: DiscountConfig, helpers: Set<string>): string => {
+    helpers.add('discount')
+    const optional = (method: string, value: string | number | undefined) =>
+      value === undefined ? [] : [`.${method}(${literal(value)})`]
+    return [
+      `discount(${literal(discount.name)})`,
+      discount.type === 'percentage'
+        ? `.percent(${literal(discount.basis_points / 100)})`
+        : `.amount(${Object.entries(discount.amounts)
+            .map(([currency, amount]) =>
+              renderMoney(currency as Currency, String(amount), imports),
+            )
+            .join(', ')})`,
+      renderDuration(discount),
+      ...optional('code', discount.code),
+      ...(discount.products === undefined
+        ? []
+        : [`.products(${discount.products.map(literal).join(', ')})`]),
+      ...optional('maxRedemptions', discount.max_redemptions),
+      ...optional('perCustomer', discount.max_redemptions_per_customer),
+      ...optional('starts', discount.starts_at),
+      ...optional('ends', discount.ends_at),
     ].join('\n')
   }
 
@@ -413,6 +460,10 @@ export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
     config.products === undefined
       ? []
       : renderEntries('products', config.products, renderProduct(imports))
+  const discounts =
+    config.discounts === undefined
+      ? []
+      : renderEntries('discounts', config.discounts, renderDiscount(imports))
 
   return [
     `import { ${[...imports].join(', ')} } from '@polar-sh/polar'`,
@@ -421,6 +472,7 @@ export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
     ...meters,
     ...benefits,
     ...products,
+    ...discounts,
     '})',
     '',
   ].join('\n')

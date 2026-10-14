@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import { Effect, Option } from 'effect'
-import { trigger as triggerCommand } from '@/commands/trigger'
+import { trigger as triggerCommand } from '@/commands/webhook/trigger'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import { Deliveries, type Delivery } from '@/services/deliveries'
 import { Organizations } from '@/services/organizations'
@@ -146,7 +146,7 @@ describe('trigger', () => {
     await promise
 
     expect(output()).toContain(
-      'Forwarded by  your polar listen terminal, which shows the response',
+      'Forwarded by  your polar webhook listen terminal, which shows the response',
     )
     expect(output()).not.toContain('Delivered to')
   })
@@ -247,9 +247,12 @@ describe('trigger', () => {
     ],
     [
       new UnknownEvent({ event: 'order.create', suggestion: 'order.created' }),
-      'Did you mean polar trigger order.created',
+      'Did you mean polar webhook trigger order.created',
     ],
-    [new UnknownEvent({ event: 'payout.done' }), 'polar trigger --list'],
+    [
+      new UnknownEvent({ event: 'payout.done' }),
+      'polar webhook trigger --list',
+    ],
     [
       new PayloadRejected({
         detail: [{ loc: ['body', 'overrides', 'data', 'x'], msg: 'bad' }],

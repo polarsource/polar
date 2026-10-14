@@ -1,10 +1,14 @@
 import contextlib
 import dataclasses
+import math
 import uuid
+from collections import defaultdict
 from collections.abc import AsyncGenerator, AsyncIterable, Sequence
 from datetime import datetime
+from decimal import Decimal
 from typing import cast
 
+import logfire
 import structlog
 from babel.dates import format_date
 from sqlalchemy.util.typing import Literal
@@ -26,6 +30,7 @@ from polar.product.guard import (
     is_unit_price,
 )
 from polar.product.repository import ProductPriceRepository, ProductRepository
+from polar.reducer.service import reducer as reducer_service
 
 from .repository import BillingEntryRepository
 
@@ -85,7 +90,15 @@ class BillingEntryService:
         await repository.lock_pending_by_subscription(subscription.id)
 
         item_entries_map: dict[OrderItem, BillingEntrySelector] = {}
+        consumed_units: dict[uuid.UUID, Decimal] = defaultdict(Decimal)
         async for line_item, selector in line_items:
+            if (
+                isinstance(line_item, MeteredLineItem)
+                and line_item.price.meter.aggregation.func != AggregationFunction.unique
+            ):
+                consumed_units[line_item.price.meter_id] += Decimal(
+                    str(line_item.consumed_units)
+                )
             order_item = OrderItem(
                 id=uuid.uuid4(),
                 label=line_item.label,
@@ -119,6 +132,39 @@ class BillingEntryService:
             else:
                 await repository.update_order_item_id(selector, order_item.id)
 
+        billable_from = subscription.trial_end or subscription.started_at
+        if consumed_units and billable_from is not None:
+            with logfire.span(
+                "Seal and compare billed usage",
+                subscription_id=str(subscription.id),
+                cutoff=cutoff,
+            ) as span:
+                quantities = await reducer_service.seal(
+                    session,
+                    subscription.customer,
+                    set(consumed_units),
+                    billable_from=billable_from,
+                    cutoff=cutoff,
+                )
+                span.set_attribute(
+                    "quantities",
+                    {
+                        str(meter_id): {
+                            "legacy": str(units),
+                            "reducer": str(quantities.get(meter_id)),
+                        }
+                        for meter_id, units in consumed_units.items()
+                    },
+                )
+                span.set_attribute(
+                    "match",
+                    all(
+                        meter_id in quantities
+                        and math.isclose(quantities[meter_id], units)
+                        for meter_id, units in consumed_units.items()
+                    ),
+                )
+
     def create_order_items_from_pending(
         self,
         session: AsyncSession,
@@ -143,6 +189,7 @@ class BillingEntryService:
         subscription: Subscription,
         *,
         cutoff: datetime | None = None,
+        price_ids: Sequence[uuid.UUID] | None = None,
     ) -> contextlib.AbstractAsyncContextManager[Sequence[OrderItem]]:
         """
         Build order items from the subscription's pending *metered* billing entries
@@ -154,7 +201,7 @@ class BillingEntryService:
             session,
             subscription,
             self.compute_pending_metered_line_items(
-                session, subscription, cutoff=cutoff
+                session, subscription, cutoff=cutoff, price_ids=price_ids
             ),
             cutoff=cutoff,
         )
@@ -205,6 +252,7 @@ class BillingEntryService:
         subscription: Subscription,
         *,
         cutoff: datetime | None = None,
+        price_ids: Sequence[uuid.UUID] | None = None,
     ) -> AsyncGenerator[tuple[MeteredLineItem, BillingEntrySelector]]:
         cutoff = cutoff or utc_now()
         repository = BillingEntryRepository.from_session(session)
@@ -216,6 +264,24 @@ class BillingEntryService:
         # but it involved to load lot of BillingEntry in memory, which was causing
         # performance issues and even OOM on large subscriptions.
         product_price_repository = ProductPriceRepository.from_session(session)
+
+        # ``price_ids`` overrides the subscription's current prices, so a deferred
+        # settlement bills against the prices active when it was triggered.
+        if price_ids is None:
+            active_prices = [
+                spp.product_price for spp in subscription.subscription_product_prices
+            ]
+        else:
+            active_prices = [
+                price
+                for price_id in price_ids
+                if (
+                    price := await product_price_repository.get_by_id(
+                        price_id, include_deleted=True
+                    )
+                )
+                is not None
+            ]
 
         # Track which meters we've already processed to avoid duplicates
         # For non-summable aggregations (max, min, avg, unique), we process each meter only once
@@ -249,12 +315,9 @@ class BillingEntryService:
                 # This is the source of truth - even if all billing entries used priceA,
                 # if the customer changed to priceB, we bill at priceB
                 active_price = None
-                for spp in subscription.subscription_product_prices:
-                    if (
-                        is_metered_price(spp.product_price)
-                        and spp.product_price.meter_id == meter_id
-                    ):
-                        active_price = spp.product_price
+                for price in active_prices:
+                    if is_metered_price(price) and price.meter_id == meter_id:
+                        active_price = price
                         break
 
                 if active_price is None:
@@ -278,8 +341,7 @@ class BillingEntryService:
                 # billing entries from discontinued prices being re-billed
                 # every cycle after a product/price change.
                 is_active_price = any(
-                    spp.product_price_id == product_price_id
-                    for spp in subscription.subscription_product_prices
+                    price.id == product_price_id for price in active_prices
                 )
                 if not is_active_price:
                     log.info(

@@ -250,6 +250,8 @@ export default {
         'Échec de la création du jeton de confirmation, veuillez réessayer plus tard.',
       paymentNotCompleted:
         'Le paiement n’a pas été effectué. Veuillez réessayer.',
+      paymentFormNotLoaded:
+        'Le formulaire de paiement n’a pas pu se charger. Veuillez actualiser la page et réessayer.',
     },
     cta: {
       startTrial: "Commencer l'essai",

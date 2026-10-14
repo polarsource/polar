@@ -246,6 +246,8 @@ export default {
       confirmationTokenFailed:
         'Error al crear el token de confirmación, inténtalo de nuevo más tarde.',
       paymentNotCompleted: 'El pago no se completó. Inténtalo de nuevo.',
+      paymentFormNotLoaded:
+        'No se pudo cargar el formulario de pago. Actualiza la página e inténtalo de nuevo.',
     },
     cta: {
       startTrial: 'Iniciar prueba',

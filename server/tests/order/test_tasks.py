@@ -30,7 +30,9 @@ from polar.notifications.notification import NotificationType
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.order.tasks import (
+    SUBSCRIPTION_ORDER_GRACE_PERIOD,
     OrderDoesNotExist,
+    create_meter_cycle_order,
     create_subscription_order,
     enqueue_stale_payment_locks,
     order_subscription_renewal_notification,
@@ -84,6 +86,109 @@ class TestCreateSubscriptionOrder:
             OrderBillingReasonInternal.subscription_cycle,
             cutoff=cutoff,
         )
+
+    @pytest.mark.parametrize(
+        "order_reason",
+        [
+            OrderBillingReasonInternal.subscription_cycle,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+            OrderBillingReasonInternal.subscription_cancel,
+        ],
+    )
+    async def test_defers_until_grace_period_elapsed(
+        self,
+        order_reason: OrderBillingReasonInternal,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+        cutoff = utc_now() - timedelta(minutes=5)
+        create_order_mock = mocker.patch.object(
+            order_service, "create_subscription_order", new=AsyncMock()
+        )
+        enqueue_job_mock = mocker.patch("polar.order.tasks.enqueue_job")
+
+        await create_subscription_order(
+            subscription.id, order_reason, cutoff.isoformat()
+        )
+
+        create_order_mock.assert_not_awaited()
+        enqueue_job_mock.assert_called_once_with(
+            "order.create_subscription_order",
+            subscription.id,
+            order_reason,
+            cutoff=cutoff.isoformat(),
+            delay=ANY,
+        )
+        delay = enqueue_job_mock.call_args.kwargs["delay"]
+        expected = SUBSCRIPTION_ORDER_GRACE_PERIOD - timedelta(minutes=5)
+        assert 0 < delay <= expected.total_seconds() * 1000
+
+
+@pytest.mark.anyio
+class TestCreateMeterCycleOrder:
+    async def test_defers_until_grace_period_elapsed(
+        self, mocker: MockerFixture
+    ) -> None:
+        subscription_id = uuid.uuid4()
+        price_ids = [uuid.uuid4()]
+        product_id = uuid.uuid4()
+        cutoff = utc_now() - timedelta(minutes=5)
+        settle_mock = mocker.patch.object(
+            order_service, "settle_meter_cycle_order", new=AsyncMock()
+        )
+        enqueue_job_mock = mocker.patch("polar.order.tasks.enqueue_job")
+
+        await create_meter_cycle_order(
+            subscription_id, cutoff.isoformat(), price_ids, product_id
+        )
+
+        settle_mock.assert_not_awaited()
+        enqueue_job_mock.assert_called_once_with(
+            "order.create_meter_cycle_order",
+            subscription_id,
+            cutoff.isoformat(),
+            price_ids,
+            product_id,
+            delay=ANY,
+        )
+
+    async def test_settles_with_cutoff_and_snapshot(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+        price_ids = [uuid.uuid4()]
+        cutoff = utc_now() - SUBSCRIPTION_ORDER_GRACE_PERIOD - timedelta(minutes=1)
+        settle_mock = mocker.patch.object(
+            order_service, "settle_meter_cycle_order", new=AsyncMock()
+        )
+
+        await create_meter_cycle_order(
+            subscription.id, cutoff.isoformat(), price_ids, product.id
+        )
+
+        settle_mock.assert_awaited_once_with(
+            ANY, ANY, cutoff=cutoff, price_ids=price_ids, product=ANY
+        )
+        assert settle_mock.call_args.kwargs["product"].id == product.id
 
 
 @pytest.mark.anyio

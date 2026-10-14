@@ -6,6 +6,8 @@ import type { AuthError } from '@/schemas/Auth'
 import type { BillingConfigError } from '@/schemas/BillingConfig'
 import type { GitHubReleaseError } from '@/services/github-releases'
 import type { UpdaterError } from '@/services/updater'
+import type { JsonUnsupportedError } from '@/utils/command'
+import type { PullRequestCommentError } from '@/services/pull-request-comment'
 import * as ui from '@/utils/ui'
 
 type CommandError =
@@ -17,6 +19,8 @@ type CommandError =
   | UpdateError
   | UpdaterError
   | GitHubReleaseError
+  | JsonUnsupportedError
+  | PullRequestCommentError
 
 interface ErrorDescription {
   title: string
@@ -52,6 +56,8 @@ const isCommandError = (error: unknown): error is CommandError =>
     'UpdateError',
     'UpdaterError',
     'GitHubReleaseError',
+    'JsonUnsupportedError',
+    'PullRequestCommentError',
   ].includes(String(error._tag))
 
 const errorJson = (error: unknown) => {
@@ -90,6 +96,7 @@ export const describeError = (error: unknown): ErrorDescription => {
         : { title: error.message }
     case 'ApiCommandError':
     case 'TriggerError':
+    case 'PullRequestCommentError':
       return error.hint
         ? { title: error.message, hint: error.hint }
         : { title: error.message }
@@ -97,6 +104,8 @@ export const describeError = (error: unknown): ErrorDescription => {
       const hint = listenHint(error.code)
       return hint ? { title: error.message, hint } : { title: error.message }
     }
+    case 'JsonUnsupportedError':
+      return { title: error.message, hint: error.hint }
     case 'UpdateError':
       return { title: error.message, hint: releasesHint }
     case 'UpdaterError':

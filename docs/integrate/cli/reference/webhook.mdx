@@ -1,0 +1,110 @@
+---
+title: "polar webhook"
+sidebarTitle: "webhook"
+description: "Test webhooks against your local server"
+---
+
+{/* Generated from the CLI by `pnpm --filter @polar-sh/cli docs:generate`. Do not edit by hand. */}
+
+```bash
+polar webhook <subcommand> [flags]
+```
+
+**Subcommands**
+
+- [`polar webhook listen`](#polar-webhook-listen) Forward webhook events for an organization to a local URL
+- [`polar webhook trigger`](#polar-webhook-trigger) Send a sample webhook event to your local server
+
+## polar webhook listen
+
+Forward webhook events for an organization to a local URL
+
+```bash
+polar webhook listen [flags] [<url>]
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `url` | `string` | Where to forward webhook events: a port like 3000, or a URL like http://localhost:3000/api/webhooks (optional) |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--org` | `string` | Organization ID or slug for this invocation only |
+| `--print-secret` | `boolean` | Print the secret that signs forwarded events, then exit |
+
+**Examples**
+
+Forward events to http://localhost:3000
+```bash
+polar webhook listen 3000
+```
+
+Forward events to a route on your local server
+```bash
+polar webhook listen 3000/api/webhooks
+```
+
+Forward events for a specific organization
+```bash
+polar webhook listen http://localhost:3000/api/webhooks --org <id>
+```
+
+Print the signing secret, e.g. for POLAR_WEBHOOK_SECRET in .env
+```bash
+polar webhook listen --print-secret
+```
+
+## polar webhook trigger
+
+Send a sample webhook event to your local server
+
+```bash
+polar webhook trigger [flags] [<event>]
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `event` | `string` | Webhook event to send, e.g. order.created. Omit to pick from a list. (optional) |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--org` | `string` | Organization ID or slug for this invocation only |
+| `--override` | `string` | Override a payload field, as path=value. Values are sent as text; use null, a JSON object, array or quoted string for other types. Repeatable. |
+| `--seed` | `integer` | Seed for generated IDs, for a reproducible payload |
+| `--dry-run` | `boolean` | Print the payload that would be sent, without sending it |
+| `--list` | `boolean` | List every event you can trigger, with descriptions |
+
+**Examples**
+
+Pick an event from a list
+```bash
+polar webhook trigger
+```
+
+Send a sample order.paid event
+```bash
+polar webhook trigger order.paid
+```
+
+Change a field in the payload
+```bash
+polar webhook trigger order.paid --override data.customer.email=jane@example.com
+```
+
+Generate the same IDs every time
+```bash
+polar webhook trigger order.paid --seed 7
+```
+
+Print the payload instead of sending it
+```bash
+polar webhook trigger order.paid --dry-run
+```

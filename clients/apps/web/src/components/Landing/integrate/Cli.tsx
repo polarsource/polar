@@ -18,11 +18,12 @@ const COMMANDS: Command[] = [
     desc: 'Sign in through the browser and pick an organization',
   },
   {
-    command: 'polar listen http://localhost:3000/webhooks',
+    command: 'polar webhook listen http://localhost:3000/webhooks',
     desc: 'Webhooks tunneled to your machine, signed',
   },
   {
-    command: 'polar trigger order.paid --override data.subtotal_amount=99900',
+    command:
+      'polar webhook trigger order.paid --override data.subtotal_amount=99900',
     desc: 'Fire any event with realistic fixtures, shaped how you need them',
   },
   {
@@ -36,7 +37,7 @@ const COMMANDS: Command[] = [
 ]
 
 const TRANSCRIPT = [
-  '% polar listen http://localhost:3000/webhooks',
+  '% polar webhook listen 3000/webhooks',
   '',
   '  ✔ Select Organization … Lumen',
   '',
@@ -44,7 +45,7 @@ const TRANSCRIPT = [
   '  Forwarding  http://localhost:3000/webhooks',
   '  Waiting for events...',
   '',
-  '% polar trigger order.paid --seed 7',
+  '% polar webhook trigger order.paid --seed 7',
   '',
   '  order.paid               200  12ms',
   '',
@@ -63,10 +64,10 @@ const FEATURES: Feature[] = [
   {
     name: '--json',
     title: 'Built for agents',
-    desc: 'Auth, trigger and the API commands print JSON on request, so a coding agent can drive the CLI.',
+    desc: 'Auth, webhook and the API commands print JSON on request, so a coding agent can drive the CLI.',
   },
   {
-    name: 'trigger --list',
+    name: 'webhook trigger --list',
     title: 'Every event',
     desc: 'The full webhook catalog with descriptions. Pick one interactively or pass it by name.',
   },

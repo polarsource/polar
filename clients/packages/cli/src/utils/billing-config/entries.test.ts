@@ -1,6 +1,12 @@
 import { describe, expect, test } from 'vitest'
-import { TO_DO, formatRows, tally } from '@/utils/billing-config/entries'
+import {
+  formatRows,
+  lineDiff,
+  planSummary,
+  tally,
+} from '@/utils/billing-config/entries'
 import { stripAnsi } from '@/utils/test-utils/cli'
+import * as ui from '@/utils/ui'
 
 const fixed = (price_currency: string, price_amount: number) => ({
   amount_type: 'fixed',
@@ -62,7 +68,7 @@ describe('formatRows', () => {
         'filter',
         '  - all events',
         '  + name = "x"',
-        '    AND ok = true',
+        '  + AND ok = true',
       ].join('\n'),
     )
   })
@@ -95,9 +101,27 @@ describe('formatRows', () => {
         'prices (USD per tool_call)',
         '  - unset',
         '  + $0.10',
-        '    capped at $100',
+        '  + capped at $100',
       ].join('\n'),
     )
+  })
+
+  test('leaves out price groups that did not change', () => {
+    const output = stripAnsi(
+      formatRows(
+        '',
+        [
+          {
+            field: 'prices',
+            before: [fixed('usd', 4900), metered('eur', '0.18')],
+            after: [fixed('usd', 4900), metered('eur', '0.2')],
+          },
+        ],
+        'updated',
+      ).join('\n'),
+    )
+    expect(output).not.toContain('prices (USD)')
+    expect(output).toContain('prices (EUR per tool_call)')
   })
 
   test('strips control characters from field names', () => {
@@ -112,16 +136,101 @@ describe('formatRows', () => {
   })
 })
 
-describe('tally', () => {
-  test('counts entries per action with the given labels', () => {
-    const entries = [
-      { section: 'meters', id: 'a', action: 'created' as const, diff: [] },
-      { section: 'meters', id: 'b', action: 'created' as const, diff: [] },
-      { section: 'meters', id: 'c', action: 'unchanged' as const, diff: [] },
-    ]
-    expect(stripAnsi(tally(entries))).toBe('2 created, 0 updated, 1 unchanged')
-    expect(stripAnsi(tally(entries, TO_DO))).toBe(
-      '2 to create, 0 to update, 1 unchanged',
+describe('formatRows for tiered prices and discounts', () => {
+  const servers = (usd: string) => [
+    {
+      amount_type: 'unit_based',
+      price_currency: 'usd',
+      tiers: {
+        type: 'volume',
+        tiers: [
+          { bound: 10, unit_amount: usd },
+          { bound: null, unit_amount: '800' },
+        ],
+      },
+      minimum_units: 2,
+    },
+    fixed('eur', 900),
+  ]
+
+  test('marks only the tiers that changed, in the currency that changed', () => {
+    const output = stripAnsi(
+      formatRows(
+        '',
+        [{ field: 'prices', before: servers('1000'), after: servers('1100') }],
+        'updated',
+      ).join('\n'),
     )
+    expect(output).toBe(
+      [
+        'prices (USD per unit)',
+        '    volume, minimum 2',
+        '  - 1–10  $10',
+        '  + 1–10  $11',
+        '    11+   $8',
+      ].join('\n'),
+    )
+  })
+
+  test('reads discount values, durations and product scopes', () => {
+    const output = stripAnsi(
+      formatRows(
+        '',
+        [
+          { field: 'type', before: 'percentage', after: 'fixed' },
+          { field: 'basis_points', before: 2000, after: null },
+          { field: 'amounts', before: null, after: { usd: 1000, eur: 900 } },
+          { field: 'duration', before: 'repeating', after: 'once' },
+          { field: 'duration_in_months', before: 3, after: null },
+          { field: 'products', before: [], after: ['pro'] },
+        ],
+        'updated',
+      ).join('\n'),
+    )
+    expect(output).toBe(
+      [
+        'value     20% off → $10 / €9 off',
+        'duration  3 months → once',
+        'products  all products → pro',
+      ].join('\n'),
+    )
+  })
+})
+
+describe('lineDiff', () => {
+  const text = (before: string[], after: string[]) =>
+    lineDiff(before, after).map(({ mark, line }) => `${mark} ${line}`)
+
+  test('keeps the lines shared at the start and end as context', () => {
+    expect(text(['a', 'b', 'c'], ['a', 'x', 'b', 'c'])).toEqual([
+      '  a',
+      '+ x',
+      '  b',
+      '  c',
+    ])
+    expect(text(['a', 'b'], ['a'])).toEqual(['  a', '- b'])
+    expect(text(['a'], ['b'])).toEqual(['- a', '+ b'])
+  })
+})
+
+describe('tally and planSummary', () => {
+  const entries = [
+    { section: 'meters', id: 'a', action: 'created' as const, diff: [] },
+    { section: 'meters', id: 'b', action: 'created' as const, diff: [] },
+    { section: 'meters', id: 'c', action: 'updated' as const, diff: [] },
+    { section: 'meters', id: 'd', action: 'unchanged' as const, diff: [] },
+  ]
+
+  test('counts entries per action', () => {
+    expect(stripAnsi(tally(entries))).toBe('2 created, 1 updated, 1 unchanged')
+  })
+
+  test('summarises a plan with additions in green and changes in yellow', () => {
+    const summary = planSummary(entries)
+    expect(stripAnsi(summary)).toBe(
+      '  Plan: 1 to change, 2 to add, 1 unchanged',
+    )
+    expect(summary).toContain(ui.yellow('1 to change'))
+    expect(summary).toContain(ui.green('2 to add'))
   })
 })

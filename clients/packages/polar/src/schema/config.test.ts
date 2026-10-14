@@ -2,6 +2,7 @@ import { Schema } from 'effect'
 import { expect, expectTypeOf, test } from 'vitest'
 import { z } from 'zod'
 import { RuntimeSDK } from '../runtime'
+import { flag } from './benefit'
 import { defineConfig } from './config'
 import { eq, gte } from './meter'
 import { eur, perThousand, usd } from './money'
@@ -240,6 +241,7 @@ test('connected configs type and validate track with the declared event schemas'
     .toEqualTypeOf<{ tool: 'search' | 'fetch'; durationMs: number }>()
   expectTypeOf(customer.track)
     .parameter(0)
+    .extract<string>()
     .toEqualTypeOf<'tool_call' | 'llm.completion' | 'llm.embedding'>()
   await expect(
     customer.track('tool_call', { tool: 'search', durationMs: 1.5 }),
@@ -251,7 +253,10 @@ test('connected configs type and validate track with the declared event schemas'
     }),
     { accessToken: 'test' },
   ).actor({ customerId: 'customer-1' })
-  expectTypeOf(untyped.track).parameter(0).toEqualTypeOf<string>()
+  expectTypeOf(untyped.track)
+    .parameter(0)
+    .extract<string>()
+    .toEqualTypeOf<string>()
 })
 
 test('benefits serialize with meter credits linked by meter key', () => {
@@ -447,6 +452,29 @@ test('product description and visibility are only sent when set', () => {
   expect(pro).not.toHaveProperty('visibility')
 })
 
+test('benefits are public unless made private', () => {
+  const config = defineConfig({
+    meters: ({ meter }) => ({ calls: meter('Calls').count() }),
+    benefits: ({ flag, credits }) => ({
+      beta: flag('Beta').private().metadata({ tier: 'pro' }),
+      calls: credits('Calls').meter('calls').units(10).private().rollover(),
+      open: flag('Open'),
+      reset: flag('Reset').private().public(),
+    }),
+  })
+  const [beta, calls, open, reset] = config.toJSON().benefits ?? []
+  expect(beta).toMatchObject({
+    visibility: 'private',
+    metadata: { tier: 'pro' },
+  })
+  expect(calls).toMatchObject({
+    visibility: 'private',
+    properties: { rollover: true },
+  })
+  expect(open).not.toHaveProperty('visibility')
+  expect(reset).not.toHaveProperty('visibility')
+})
+
 test('products only reference declared meters and benefits', () => {
   expect(() =>
     defineConfig({
@@ -534,6 +562,35 @@ test('meters, benefits and products serialize their metadata', () => {
   expect(json.products?.[0]?.metadata).toEqual({ plan: 'pro', rank: 2 })
 })
 
+test('metadata can only be declared once per builder', () => {
+  expect(() =>
+    defineConfig({
+      meters: ({ meter }) => ({
+        calls: meter('Calls')
+          .metadata({ a: 1 })
+          .where(gte('tokens', 1))
+          .metadata({ b: 2 })
+          .count(),
+      }),
+    }),
+  ).toThrow('metadata() can only be called once per builder.')
+  expect(() =>
+    flag('Beta').metadata({ a: 1 }).private().metadata({ b: true }),
+  ).toThrow('metadata() can only be called once per builder.')
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      products: ({ product, free }) => ({
+        pro: product('Pro')
+          .metadata({ a: 1 })
+          .prices(free())
+          .recurring('monthly')
+          .metadata({ b: true }),
+      }),
+    }),
+  ).toThrow('metadata() can only be called once per builder.')
+})
+
 test('metadata follows the API limits', () => {
   const withMetadata = (metadata: Record<string, string | number | boolean>) =>
     defineConfig({
@@ -559,4 +616,139 @@ test('metadata follows the API limits', () => {
       ),
     ).toJSON().meters[0]?.metadata,
   ).toHaveProperty('key49', 49)
+})
+
+test('discounts serialize after products and link products by key', () => {
+  const config = defineConfig({
+    meters: () => ({}),
+    products: ({ product, fixed }) => ({
+      pro: product('Pro')
+        .prices(fixed().amount(usd(20)))
+        .recurring('monthly'),
+      team: product('Team')
+        .prices(fixed().amount(usd(50)))
+        .recurring('yearly'),
+    }),
+    discounts: ({ discount }) => ({
+      launch: discount('Launch 20%')
+        .percent(20)
+        .repeating(3, 'months')
+        .code('LAUNCH20')
+        .products('pro', 'team')
+        .maxRedemptions(500)
+        .ends('2026-12-31'),
+      welcome: discount('Welcome $10')
+        .amount(usd(10), eur(9))
+        .once()
+        .perCustomer(1),
+      loyal: discount().percent(15).repeating(2, 'years'),
+    }),
+  })
+  const json = config.toJSON()
+  expect(Object.keys(json)).toEqual(['meters', 'products', 'discounts'])
+  expect(json.discounts).toEqual([
+    {
+      external_id: 'launch',
+      name: 'Launch 20%',
+      type: 'percentage',
+      basis_points: 2000,
+      duration: 'repeating',
+      duration_in_months: 3,
+      code: 'LAUNCH20',
+      ends_at: '2026-12-31T00:00:00Z',
+      max_redemptions: 500,
+      products: ['pro', 'team'],
+    },
+    {
+      external_id: 'welcome',
+      name: 'Welcome $10',
+      type: 'fixed',
+      amounts: { usd: 1000, eur: 900 },
+      duration: 'once',
+      max_redemptions_per_customer: 1,
+    },
+    {
+      external_id: 'loyal',
+      name: 'loyal',
+      type: 'percentage',
+      basis_points: 1500,
+      duration: 'repeating',
+      duration_in_months: 24,
+    },
+  ])
+})
+
+test('discounts only reference declared products', () => {
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      products: ({ product, free }) => ({
+        pro: product().prices(free()).recurring('monthly'),
+      }),
+      discounts: ({ discount }) => ({
+        // @ts-expect-error unknown product key
+        launch: discount().percent(10).once().products('unknown'),
+      }),
+    }),
+  ).toThrow('Discount "launch" references unknown product "unknown"')
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      discounts: ({ discount }) => ({
+        // @ts-expect-error no products are declared
+        launch: discount().percent(10).once().products('pro'),
+      }),
+    }),
+  ).toThrow('Discount "launch" references unknown product "pro"')
+})
+
+test('discounts need a value and a duration', () => {
+  const typeOnly = () => [
+    defineConfig({
+      meters: () => ({}),
+      // @ts-expect-error missing duration
+      discounts: ({ discount }) => ({ launch: discount().percent(10) }),
+    }),
+    defineConfig({
+      meters: () => ({}),
+      // @ts-expect-error missing value
+      discounts: ({ discount }) => ({ launch: discount().forever() }),
+    }),
+  ]
+  expectTypeOf(typeOnly).toBeFunction()
+})
+
+test('discount codes from unset environment variables are rejected', () => {
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      discounts: ({ discount }) => ({
+        partner: discount('Partner')
+          .percent(15)
+          .forever()
+          .code(undefined as unknown as string),
+      }),
+    }),
+  ).toThrow('Discount "partner" needs a string code, got undefined.')
+})
+
+test('defineConfig rejects invalid discount values', () => {
+  for (const count of [0, 1.5]) {
+    expect(() =>
+      defineConfig({
+        meters: () => ({}),
+        discounts: ({ discount }) => ({
+          launch: discount().percent(10).once().maxRedemptions(count),
+        }),
+      }),
+    ).toThrow()
+  }
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      discounts: ({ discount }) => ({
+        '': discount('Launch').percent(10).once(),
+      }),
+    }),
+  ).toThrow()
 })

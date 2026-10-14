@@ -56,6 +56,7 @@ const run = (file: string | undefined, force = false) =>
       const clients = {
         sandbox: yield* authenticatedClient('sandbox'),
         production: yield* authenticatedClient('production'),
+        local: yield* authenticatedClient('local'),
       }
       const fs = yield* FileSystem.FileSystem
       return yield* pull(fs, loader(fs), clients)(

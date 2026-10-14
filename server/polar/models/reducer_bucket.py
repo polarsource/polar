@@ -6,6 +6,7 @@ from uuid import UUID
 from sqlalchemy import (
     TIMESTAMP,
     BigInteger,
+    CheckConstraint,
     ForeignKey,
     Index,
     Integer,
@@ -13,6 +14,7 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
     Uuid,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -34,6 +36,15 @@ class ReducerBucket(RecordModel):
             "reducer_id",
             "bucket_start",
         ),
+        Index(
+            "ix_reducer_buckets_unsealed_identity",
+            "organization_id",
+            "reducer_id",
+            "customer_id",
+            "external_customer_id",
+            "bucket_end",
+            postgresql_where=text("sealed_at IS NULL"),
+        ),
         UniqueConstraint(
             "organization_id",
             "reducer_id",
@@ -44,6 +55,7 @@ class ReducerBucket(RecordModel):
             name="reducer_buckets_identity_generation_key",
             postgresql_nulls_not_distinct=True,
         ),
+        CheckConstraint("bucket_end > bucket_start", name="bucket_end_after_start"),
     )
 
     created_at: Mapped[datetime] = mapped_column(
@@ -62,8 +74,8 @@ class ReducerBucket(RecordModel):
     bucket_start: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False
     )
-    bucket_end: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True
+    bucket_end: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False
     )
     count: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
     sum: Mapped[Decimal] = mapped_column(Numeric, nullable=False, default=Decimal(0))

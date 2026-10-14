@@ -29,12 +29,13 @@ from polar.discount.schemas import (
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import Int32, Schema, SetSchemaReference
+from polar.kit.trial import TrialConfigurationInputMixin
 from polar.kit.visibility import Visibility
 from polar.meter.aggregation import Aggregation
 from polar.meter.filter import Filter
 from polar.meter.schemas import NAME_DESCRIPTION, MeterCreateBase
 from polar.meter.unit import MeterUnit
-from polar.models.benefit import BenefitType
+from polar.models.benefit import BenefitType, BenefitVisibility
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.product import ProductVisibility
 from polar.models.product_price import ProductPriceAmountType
@@ -117,6 +118,10 @@ class ConfigBenefitBase(MetadataInputMixin, Schema):
             "The description of the benefit. "
             "Will be displayed on products having this benefit."
         ),
+    )
+    visibility: BenefitVisibility = Field(
+        default=Visibility.public,
+        description="The visibility of the benefit.",
     )
 
 
@@ -231,7 +236,7 @@ ConfigProductPrice = Annotated[
 ]
 
 
-class ConfigProduct(MetadataInputMixin, Schema):
+class ConfigProduct(MetadataInputMixin, TrialConfigurationInputMixin, Schema):
     model_config = ConfigDict(extra="forbid")
 
     external_id: str = Field(
@@ -271,6 +276,10 @@ class ConfigProduct(MetadataInputMixin, Schema):
             if self.recurring_interval_count is not None:
                 raise ValueError(
                     "One-time products can't have a recurring interval count."
+                )
+            if self.trial_interval is not None or self.trial_interval_count is not None:
+                raise ValueError(
+                    "Trial configuration is only supported on recurring products."
                 )
             if any(
                 isinstance(

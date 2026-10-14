@@ -118,6 +118,65 @@ export const unitScale = (minors: ReadonlyArray<unknown>) =>
 export const scaled = (minor: unknown, scale: number) =>
   scale === 1 ? minor : Number((Number(minor) * scale).toPrecision(15))
 
+const capOf = (item: Record<string, unknown>) =>
+  item['cap_amount'] === undefined || item['cap_amount'] === null
+    ? []
+    : [`capped at ${money(item['cap_amount'], item['price_currency'])}`]
+
+const singular = (label: unknown) => {
+  const english = record(record(label)?.['en'])
+  const one = english?.['=1'] ?? english?.['one'] ?? english?.['other']
+  return typeof one === 'string' ? name(one) : undefined
+}
+
+const range = (bound: unknown, previous: number, usage: boolean) => {
+  if (usage) {
+    if (typeof bound === 'number') return `up to ${count(bound)}`
+    return previous === 0 ? 'any amount' : `over ${count(previous)}`
+  }
+  return typeof bound === 'number'
+    ? `${count(previous + 1)}–${count(bound)}`
+    : `${count(previous + 1)}+`
+}
+
+const tiered = (item: Record<string, unknown>) => {
+  const tiers = record(item['tiers'])
+  const list = (Array.isArray(tiers?.['tiers']) ? tiers['tiers'] : []).map(
+    record,
+  )
+  const known = list.filter((tier) => tier !== undefined)
+  if (known.length === 0 || known.length !== list.length) return undefined
+  const usage = item['amount_type'] === 'metered_tiers'
+  const scale = unitScale(known.map((tier) => tier['unit_amount']))
+  const steps = known.map((tier, index) => {
+    const previous = known[index - 1]?.['bound']
+    const amount = money(
+      scaled(tier['unit_amount'], scale),
+      item['price_currency'],
+    )
+    return [
+      range(tier['bound'], typeof previous === 'number' ? previous : 0, usage),
+      `${amount}${scale === 1 ? '' : ` per ${count(scale)}`}`,
+    ] as const
+  })
+  const minimum = Number(item['minimum_units'])
+  const width = Math.max(...steps.map(([label]) => label.length))
+  return [
+    [
+      name(tiers?.['type']),
+      ...(minimum > 1 ? [`minimum ${count(minimum)}`] : []),
+    ].join(', '),
+    ...steps.map(([label, amount]) => `${label.padEnd(width)}  ${amount}`),
+    ...capOf(item),
+  ]
+}
+
+const UNITS: Record<string, (item: Record<string, unknown>) => string> = {
+  seat_based: () => 'seat',
+  unit_based: (item) => singular(item['unit_label']) ?? 'unit',
+  metered_tiers: (item) => name(item['meter']),
+}
+
 const price = (item: Record<string, unknown>): PriceGroup | undefined => {
   const currency = String(item['price_currency']).toUpperCase()
   if (item['amount_type'] === 'fixed') {
@@ -126,11 +185,17 @@ const price = (item: Record<string, unknown>): PriceGroup | undefined => {
       text: new Rendered(money(item['price_amount'], item['price_currency'])),
     }
   }
-  if (item['amount_type'] !== 'metered_unit') return undefined
-  const cap =
-    item['cap_amount'] === undefined || item['cap_amount'] === null
+  const unit = UNITS[String(item['amount_type'])]
+  if (unit !== undefined) {
+    const lines = tiered(item)
+    return lines === undefined
       ? undefined
-      : money(item['cap_amount'], item['price_currency'])
+      : {
+          label: `${currency} per ${unit(item)}`,
+          text: new Rendered(lines.join('\n')),
+        }
+  }
+  if (item['amount_type'] !== 'metered_unit') return undefined
   const scale = unitScale([item['unit_amount']])
   const amount = money(
     scaled(item['unit_amount'], scale),
@@ -139,7 +204,10 @@ const price = (item: Record<string, unknown>): PriceGroup | undefined => {
   return {
     label: `${currency} per ${name(item['meter'])}`,
     text: new Rendered(
-      `${amount}${scale === 1 ? '' : ` per ${count(scale)}`}${cap === undefined ? '' : `\ncapped at ${cap}`}`,
+      [
+        `${amount}${scale === 1 ? '' : ` per ${count(scale)}`}`,
+        ...capOf(item),
+      ].join('\n'),
     ),
   }
 }

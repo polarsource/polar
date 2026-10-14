@@ -27,6 +27,7 @@ def benefit_create(
             type=benefit_config.type,
             description=benefit_config.description,
             metadata=benefit_config.metadata,
+            visibility=benefit_config.visibility,
             organization_id=organization_id,
             properties=BenefitMeterCreditCreateProperties(
                 meter_id=meter_ids[properties.meter],
@@ -38,6 +39,7 @@ def benefit_create(
         type=benefit_config.type,
         description=benefit_config.description,
         metadata=benefit_config.metadata,
+        visibility=benefit_config.visibility,
         organization_id=organization_id,
         properties=BenefitFeatureFlagCreateProperties(),
     )

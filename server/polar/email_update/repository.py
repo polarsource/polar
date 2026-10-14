@@ -1,3 +1,6 @@
+from uuid import UUID
+
+from sqlalchemy import delete
 from sqlalchemy.orm import joinedload
 
 from polar.kit.crypto import get_token_hash_candidates
@@ -23,3 +26,9 @@ class EmailVerificationRepository(
             .options(joinedload(EmailVerification.user))
         )
         return await self.get_one_or_none(statement)
+
+    async def delete_by_user_id(self, user_id: UUID) -> None:
+        statement = delete(EmailVerification).where(
+            EmailVerification.user_id == user_id,
+        )
+        await self.session.execute(statement)

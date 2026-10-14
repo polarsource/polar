@@ -196,7 +196,7 @@ class TestOutpost:
             response = await websocket.receive_json()
 
             assert response == {
-                "type": "meter_balance",
+                "type": "meter_usage",
                 "payload": {
                     "meter_id": str(meter.id),
                     "customer_id": str(customer_external_id.id),

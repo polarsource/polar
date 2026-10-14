@@ -20,8 +20,8 @@ from .schemas import (
     CustomerMeterOutgoingMessagePayload,
     IncomingMessageAdapter,
     IncomingMessageType,
-    MeterBalanceOutgoingMessage,
-    MeterBalanceOutgoingMessagePayload,
+    MeterUsageOutgoingMessage,
+    MeterUsageOutgoingMessagePayload,
     OutgoingMessage,
     OutgoingMessageAdapter,
     OutgoingMessageType,
@@ -181,9 +181,9 @@ class OutpostService:
         }
         for meter_id in reducer.meter_ids:
             await send_stream.send(
-                MeterBalanceOutgoingMessage(
-                    type=OutgoingMessageType.meter_balance,
-                    payload=MeterBalanceOutgoingMessagePayload(
+                MeterUsageOutgoingMessage(
+                    type=OutgoingMessageType.meter_usage,
+                    payload=MeterUsageOutgoingMessagePayload(
                         meter_id=meter_id,
                         customer_id=customer_id,
                         external_customer_id=external_customer_id,

@@ -64,7 +64,7 @@ IncomingMessageAdapter: TypeAdapter[IncomingMessage] = TypeAdapter(IncomingMessa
 class OutgoingMessageType(StrEnum):
     configuration = "configuration"
     customer_meter = "customer_meter"
-    meter_balance = "meter_balance"
+    meter_usage = "meter_usage"
 
 
 class OutgoingMessageBase(MessageBase):
@@ -101,7 +101,7 @@ class CustomerMeterOutgoingMessage(OutgoingMessageBase):
     payload: CustomerMeterOutgoingMessagePayload
 
 
-class MeterBalanceOutgoingMessagePayload(MessageBase):
+class MeterUsageOutgoingMessagePayload(MessageBase):
     meter_id: UUID4
     customer_id: UUID4 | None
     external_customer_id: str | None
@@ -113,15 +113,15 @@ class MeterBalanceOutgoingMessagePayload(MessageBase):
     credited_units: int
 
 
-class MeterBalanceOutgoingMessage(OutgoingMessageBase):
-    type: typing.Literal[OutgoingMessageType.meter_balance]
-    payload: MeterBalanceOutgoingMessagePayload
+class MeterUsageOutgoingMessage(OutgoingMessageBase):
+    type: typing.Literal[OutgoingMessageType.meter_usage]
+    payload: MeterUsageOutgoingMessagePayload
 
 
 type OutgoingMessage = typing.Annotated[
     ConfigurationOutgoingMessage
     | CustomerMeterOutgoingMessage
-    | MeterBalanceOutgoingMessage,
+    | MeterUsageOutgoingMessage,
     Discriminator("type"),
 ]
 

@@ -8,6 +8,7 @@ from polar.kit.schemas import (
     CUSTOMER_ID_EXAMPLE,
     METER_ID_EXAMPLE,
     IDSchema,
+    Schema,
     TimestampedSchema,
 )
 from polar.meter.schemas import Meter
@@ -42,3 +43,53 @@ class CustomerMeter(CustomerMeterBase):
 
     customer: Customer = Field(description="The customer associated with this meter.")
     meter: Meter = Field(description="The meter associated with this customer.")
+
+
+class CustomerMeterCreditsCreateBase(Schema):
+    units: int = Field(
+        gt=0,
+        le=1_000_000_000,
+        description="The number of units to credit.",
+        examples=[100],
+    )
+    rollover: bool = Field(
+        default=False,
+        description="Whether unused credits carry over to the next meter period.",
+    )
+    external_id: str | None = Field(
+        default=None,
+        min_length=1,
+        description=(
+            "Your unique identifier for this credit. "
+            "Retrying with the same `external_id` doesn't grant the credit twice."
+        ),
+    )
+
+
+class CustomerMeterCreditsIDCreate(CustomerMeterCreditsCreateBase):
+    """Schema to manually grant credits on a customer meter using Polar IDs."""
+
+    customer_id: UUID4 = Field(
+        description="The ID of the customer.", examples=[CUSTOMER_ID_EXAMPLE]
+    )
+    meter_id: UUID4 = Field(
+        description="The ID of the meter.", examples=[METER_ID_EXAMPLE]
+    )
+
+
+class CustomerMeterCreditsExternalIDCreate(CustomerMeterCreditsCreateBase):
+    """Schema to manually grant credits on a customer meter using external IDs."""
+
+    external_customer_id: str = Field(
+        description="The external ID of the customer.", examples=["usr_1337"]
+    )
+    external_meter_id: str = Field(
+        min_length=1,
+        description="The external ID of the meter, as set by config as code.",
+        examples=["tool_call"],
+    )
+
+
+CustomerMeterCreditsCreate = (
+    CustomerMeterCreditsIDCreate | CustomerMeterCreditsExternalIDCreate
+)

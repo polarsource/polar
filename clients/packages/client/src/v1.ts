@@ -6222,6 +6222,31 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/customer-meters/credits': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Credit Customer Meter
+     * @description Manually grant credits on a customer meter.
+     *
+     *     Returns the `meter.credited` event. The customer meter balance is updated
+     *     asynchronously, shortly after the request.
+     *
+     *     **Scopes**: `customers:write`
+     */
+    post: operations['customer_meters:credits']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/payments/': {
     parameters: {
       query?: never
@@ -19182,6 +19207,89 @@ export interface components {
       customer: components['schemas']['Customer']
       /** @description The meter associated with this customer. */
       meter: components['schemas']['Meter']
+    }
+    /** CustomerMeterCreditExternalIDConflict */
+    CustomerMeterCreditExternalIDConflict: {
+      /**
+       * Error
+       * @example CustomerMeterCreditExternalIDConflict
+       * @constant
+       */
+      error: 'CustomerMeterCreditExternalIDConflict'
+      /** Detail */
+      detail: string
+    }
+    /**
+     * CustomerMeterCreditsExternalIDCreate
+     * @description Schema to manually grant credits on a customer meter using external IDs.
+     */
+    CustomerMeterCreditsExternalIDCreate: {
+      /**
+       * Units
+       * @description The number of units to credit.
+       * @example 100
+       */
+      units: number
+      /**
+       * Rollover
+       * @description Whether unused credits carry over to the next meter period.
+       * @default false
+       */
+      rollover: boolean
+      /**
+       * External Id
+       * @description Your unique identifier for this credit. Retrying with the same `external_id` doesn't grant the credit twice.
+       */
+      external_id?: string | null
+      /**
+       * External Customer Id
+       * @description The external ID of the customer.
+       * @example usr_1337
+       */
+      external_customer_id: string
+      /**
+       * External Meter Id
+       * @description The external ID of the meter, as set by config as code.
+       * @example tool_call
+       */
+      external_meter_id: string
+    }
+    /**
+     * CustomerMeterCreditsIDCreate
+     * @description Schema to manually grant credits on a customer meter using Polar IDs.
+     */
+    CustomerMeterCreditsIDCreate: {
+      /**
+       * Units
+       * @description The number of units to credit.
+       * @example 100
+       */
+      units: number
+      /**
+       * Rollover
+       * @description Whether unused credits carry over to the next meter period.
+       * @default false
+       */
+      rollover: boolean
+      /**
+       * External Id
+       * @description Your unique identifier for this credit. Retrying with the same `external_id` doesn't grant the credit twice.
+       */
+      external_id?: string | null
+      /**
+       * Customer Id
+       * Format: uuid4
+       * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+       */
+      customer_id: string
+      /**
+       * Meter Id
+       * Format: uuid4
+       * @description The ID of the meter.
+       * @example d498a884-e2cd-4d3e-8002-f536468a8b22
+       */
+      meter_id: string
     }
     /**
      * CustomerMeterSortProperty
@@ -63125,6 +63233,61 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_meters:credits': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json':
+          | components['schemas']['CustomerMeterCreditsIDCreate']
+          | components['schemas']['CustomerMeterCreditsExternalIDCreate']
+      }
+    }
+    responses: {
+      /** @description Credit recorded. The customer meter balance is updated asynchronously. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MeterCreditEvent']
+        }
+      }
+      /** @description You don't have permission to manage customers. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description The external_id is already used by a different event, or the external customer ID matches customers in several accessible organizations. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['CustomerMeterCreditExternalIDConflict']
+            | components['schemas']['AmbiguousExternalCustomerID']
         }
       }
       /** @description Validation Error */

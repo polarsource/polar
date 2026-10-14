@@ -6,14 +6,24 @@ from typing import Any
 
 import logfire
 from sqlalchemy import Float, Select, func, or_, select, union_all
-from sqlalchemy.exc import DBAPIError
+from sqlalchemy.exc import DBAPIError, IntegrityError, MultipleResultsFound
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import contains_eager
 
 from polar.auth.models import AuthSubject, Organization, User
-from polar.authz.service import get_accessible_org_ids
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import assert_organization_permission, get_accessible_org_ids
 from polar.config import settings
+from polar.customer.repository import CustomerRepository
+from polar.customer_session.service import AmbiguousExternalCustomerID
 from polar.event.repository import EventRepository
+from polar.event.service import event as event_service
+from polar.event.system import (
+    MeterCreditedMetadata,
+    SystemEvent,
+    build_system_event,
+)
+from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.db.locking import is_lock_not_available_error
 from polar.kit.math import non_negative_running_sum
 from polar.kit.pagination import PaginationParams
@@ -33,7 +43,13 @@ from polar.reducer.repository import ReducerRepository
 from polar.worker import enqueue_job
 
 from .repository import CustomerMeterRepository
+from .schemas import CustomerMeterCreditsCreate, CustomerMeterCreditsIDCreate
 from .sorting import CustomerMeterSortProperty
+
+
+class CustomerMeterCreditExternalIDConflict(PolarError):
+    def __init__(self) -> None:
+        super().__init__("This external_id is already used by a different event.", 409)
 
 
 class CustomerMeterService:
@@ -212,6 +228,126 @@ class CustomerMeterService:
             )
 
         return await repository.update(customer_meter), True
+
+    async def credit(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        credit_create: CustomerMeterCreditsCreate,
+    ) -> Event:
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+
+        customer_repository = CustomerRepository.from_session(session)
+        options = (joinedload(Customer.organization),)
+        if isinstance(credit_create, CustomerMeterCreditsIDCreate):
+            customer_field = "customer_id"
+            customer_value: uuid.UUID | str = credit_create.customer_id
+            customer = await customer_repository.get_readable_by_id(
+                org_ids, credit_create.customer_id, options=options
+            )
+        else:
+            customer_field = "external_customer_id"
+            customer_value = credit_create.external_customer_id
+            try:
+                customer = await customer_repository.get_readable_by_external_id(
+                    org_ids, credit_create.external_customer_id, options=options
+                )
+            except MultipleResultsFound as e:
+                raise AmbiguousExternalCustomerID(
+                    credit_create.external_customer_id
+                ) from e
+        if customer is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", customer_field),
+                        "msg": "Customer not found",
+                        "input": customer_value,
+                    }
+                ]
+            )
+
+        meter_repository = MeterRepository.from_session(session)
+        meter: Meter | None
+        if isinstance(credit_create, CustomerMeterCreditsIDCreate):
+            meter_field = "meter_id"
+            meter_value: uuid.UUID | str = credit_create.meter_id
+            meter = await meter_repository.get_readable_by_id(
+                credit_create.meter_id, org_ids
+            )
+        else:
+            meter_field = "external_meter_id"
+            meter_value = credit_create.external_meter_id
+            meters = await meter_repository.get_all_by_external_ids(
+                customer.organization_id, [credit_create.external_meter_id]
+            )
+            meter = meters[0] if meters else None
+
+        if (
+            meter is None
+            or meter.archived_at is not None
+            or meter.organization_id != customer.organization_id
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", meter_field),
+                        "msg": "Meter not found",
+                        "input": meter_value,
+                    }
+                ]
+            )
+
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            customer.organization_id,
+            OrganizationPermission.customers_manage,
+        )
+
+        metadata: MeterCreditedMetadata = {
+            "meter_id": str(meter.id),
+            "units": credit_create.units,
+            "rollover": credit_create.rollover,
+        }
+        event = build_system_event(
+            SystemEvent.meter_credited,
+            customer=customer,
+            organization=customer.organization,
+            metadata=metadata,
+        )
+        event.external_id = credit_create.external_id
+        event_repository = EventRepository.from_session(session)
+        try:
+            async with session.begin_nested():
+                await event_service.create_event(session, event)
+        except IntegrityError:
+            if credit_create.external_id is None:
+                raise
+            existing_event = await event_repository.get_meter_credit_by_external_id(
+                customer.organization_id,
+                credit_create.external_id,
+                customer_id=customer.id,
+                metadata=metadata,
+            )
+            if existing_event is None:
+                raise CustomerMeterCreditExternalIDConflict()
+            event = existing_event
+
+        customer_meter_repository = CustomerMeterRepository.from_session(session)
+        customer_meter = await customer_meter_repository.get_by_customer_and_meter(
+            customer.id, meter.id
+        )
+        if customer_meter is not None and customer_meter.activated_at is None:
+            await customer_meter_repository.update(
+                customer_meter, update_dict={"activated_at": utc_now()}
+            )
+
+        loaded = await event_repository.get_by_id_with_eager(event.id)
+        assert loaded is not None
+        return loaded
 
     async def get_rollover_units(
         self,

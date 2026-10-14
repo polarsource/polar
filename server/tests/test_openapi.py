@@ -110,6 +110,10 @@ NON_DESTRUCTIVE_TOOL_OPERATIONS = {
     "webhooks:redeliver_webhook_event",
 }
 
+DESTRUCTIVE_TOOL_OPERATIONS_SINCE: dict[str, APIVersion] = {
+    "customer_meters:credits": V2027_01,
+}
+
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("version", VERSIONS)
@@ -144,7 +148,11 @@ async def test_tool_write_operations_are_classified(
             else:
                 non_destructive.add(operation["operationId"])
 
-    assert destructive == DESTRUCTIVE_TOOL_OPERATIONS, CLASSIFICATION_MESSAGE
+    assert destructive == DESTRUCTIVE_TOOL_OPERATIONS | {
+        operation_id
+        for operation_id, since in DESTRUCTIVE_TOOL_OPERATIONS_SINCE.items()
+        if version >= since
+    }, CLASSIFICATION_MESSAGE
     assert non_destructive == NON_DESTRUCTIVE_TOOL_OPERATIONS, CLASSIFICATION_MESSAGE
 
 

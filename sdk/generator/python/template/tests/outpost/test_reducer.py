@@ -4,7 +4,13 @@ import pytest
 
 from polar import PolarDeserializationError, deserialize
 from polar.outpost.event import Event
-from polar.outpost.reducer import Reducer, get_bucket_start, get_matcher, reduce
+from polar.outpost.reducer import (
+    FilterClause,
+    Reducer,
+    get_bucket_start,
+    get_matcher,
+    reduce,
+)
 
 TIMESTAMP = datetime.datetime(2026, 10, 12, 12, 4, 59, tzinfo=datetime.UTC)
 
@@ -86,6 +92,34 @@ def test_nested_configuration_and_metadata() -> None:
     assert not matcher(Event("call", "customer", TIMESTAMP))
 
 
+@pytest.mark.parametrize("operator", ["eq", "ne"])
+@pytest.mark.parametrize(
+    ("actual", "expected", "equal"),
+    [
+        (True, 1, True),
+        (1, True, True),
+        (False, 0, True),
+        (0, False, True),
+        (True, 1.0, True),
+        (True, 2, False),
+        (False, 1, False),
+        ("1", 1, False),
+    ],
+)
+def test_equality_filters_use_operand_values(
+    operator: str,
+    actual: str | float | bool,
+    expected: str | float | bool,
+    equal: bool,
+) -> None:
+    clause = deserialize(
+        {"property": "value", "operator": operator, "value": expected}, FilterClause
+    )
+    assert get_matcher(clause)(
+        Event("call", "customer", TIMESTAMP, {"value": actual})
+    ) is (equal if operator == "eq" else not equal)
+
+
 @pytest.mark.parametrize("value", [True, "5", None])
 def test_non_numeric_aggregation_is_skipped(value: object) -> None:
     reducer: Reducer = {
@@ -131,4 +165,3 @@ def test_unsupported_configuration_is_rejected() -> None:
             },
             Reducer,
         )
-

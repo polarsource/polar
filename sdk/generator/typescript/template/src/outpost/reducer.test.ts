@@ -51,7 +51,7 @@ describe("reduction", () => {
     expect(getProperty(fractional, "timestamp")).toBe(-0);
   });
 
-  it("matches nested filters without coercing booleans or missing properties", () => {
+  it("matches nested filters and ignores missing properties", () => {
     const match = getMatcher({
       conjunction: "and",
       clauses: [
@@ -68,12 +68,27 @@ describe("reduction", () => {
     });
     expect(match(event)).toBe(true);
     expect(getMatcher({ property: "missing", operator: "ne", value: 1 })(event)).toBe(false);
-    expect(getMatcher({ property: "nested.flag", operator: "eq", value: 1 })(event)).toBe(false);
+    expect(getMatcher({ property: "nested.flag", operator: "eq", value: 1 })(event)).toBe(true);
     expect(getMatcher({ property: "nested.flag", operator: "gt", value: false })(event)).toBe(
       false,
     );
     expect(getProperty(event, "metadata.__proto__.toString")).toBeUndefined();
     expect(getProperty(event, "timestamp")).toBe(event.timestamp);
+  });
+
+  it.each([
+    [true, 1, true],
+    [1, true, true],
+    [false, 0, true],
+    [0, false, true],
+    [true, 2, false],
+    [false, 1, false],
+    ["1", 1, false],
+    ["0", false, false],
+  ] as const)("compares %s and %s like Polar", (actual, expected, equal) => {
+    const sample = { ...event, metadata: { value: actual } };
+    expect(getMatcher({ property: "value", operator: "eq", value: expected })(sample)).toBe(equal);
+    expect(getMatcher({ property: "value", operator: "ne", value: expected })(sample)).toBe(!equal);
   });
 
   it("rejects ambiguous customers, timezone-free timestamps, and non-finite reductions", () => {

@@ -69,18 +69,14 @@ def get_matcher(clause: Filter | FilterClause) -> EventMatcher:
             actual = event.get_property(property)
             if actual is None:
                 return False
+            if filter_operator in (operator.eq, operator.ne):
+                return filter_operator(actual, expected)
             same_type = type(actual) is expected_type or (
                 type(actual) in (int, float) and expected_type in (int, float)
             )
             if not same_type:
-                return filter_operator is operator.ne
-            if filter_operator not in (operator.eq, operator.ne) and type(
-                actual
-            ) not in (
-                int,
-                float,
-                str,
-            ):
+                return False
+            if type(actual) not in (int, float, str):
                 return False
             return filter_operator(actual, expected)
 

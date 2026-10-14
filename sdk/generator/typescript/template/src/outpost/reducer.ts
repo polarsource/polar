@@ -40,9 +40,14 @@ export const getMatcher = (filter: Filter | FilterClause): ((event: Event) => bo
   return (event) => {
     const actual = getProperty(event, filter.property);
     if (actual === undefined || actual === null) return false;
-    if (typeof actual !== typeof filter.value) return filter.operator === "ne";
-    if (filter.operator === "eq") return actual === filter.value;
-    if (filter.operator === "ne") return actual !== filter.value;
+    if (filter.operator === "eq" || filter.operator === "ne") {
+      const actualValue = typeof actual === "boolean" ? Number(actual) : actual;
+      const expectedValue = typeof filter.value === "boolean" ? Number(filter.value) : filter.value;
+      return filter.operator === "eq"
+        ? actualValue === expectedValue
+        : actualValue !== expectedValue;
+    }
+    if (typeof actual !== typeof filter.value) return false;
     if (
       (typeof actual !== "number" && typeof actual !== "string") ||
       (typeof filter.value !== "number" && typeof filter.value !== "string")

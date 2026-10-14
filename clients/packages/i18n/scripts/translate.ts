@@ -245,7 +245,7 @@ async function translate(
 
     let translatedCount = 0
     for (const key of changedKeys) {
-      if (translations[key]) {
+      if (key in translations) {
         updatedFlat.set(key, translations[key])
         localeCache[key] = getStringValue(sourceKeys.get(key) as EntryValue)
         translatedCount++

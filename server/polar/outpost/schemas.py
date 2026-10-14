@@ -1,4 +1,5 @@
 import typing
+from datetime import datetime
 from enum import StrEnum
 
 from pydantic import UUID4, BaseModel, ConfigDict, Discriminator, TypeAdapter
@@ -86,14 +87,20 @@ class ConfigurationOutgoingMessage(OutgoingMessageBase):
 
 class MeterUsageOutgoingMessagePayload(MessageBase):
     meter_id: UUID4
+    # The bucket identity as events carry it: a customer can have several.
     customer_id: UUID4 | None
     external_customer_id: str | None
+    # Database time of the read: keep the payload with the highest version.
+    version: datetime
+    # Temporary: the customer's credits, the same for each of its identities,
+    # until credits are reducers.
+    credited_units: int
+    # Usage before this is Polar's; Outpost counts its own from there on.
+    cold_until: datetime
     count: int
     sum: float
     min: float | None
     max: float | None
-    # Temporary: credits come from customer meters until credits are reducers.
-    credited_units: int
 
 
 class MeterUsageOutgoingMessage(OutgoingMessageBase):

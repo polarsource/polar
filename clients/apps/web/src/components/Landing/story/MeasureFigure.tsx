@@ -1,6 +1,7 @@
 'use client'
 
 import LogoType from '@/components/Brand/logos/LogoType'
+import { StaticImage } from '@/components/Image/StaticImage'
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { EventLog } from '../chapters/EventLog'
@@ -9,21 +10,33 @@ import { useTweenedValues } from '../chapters/useTweened'
 import {
   compact,
   useUsageStream,
+  type UsageEvent,
   type UsageEventName,
 } from '../chapters/useUsageStream'
 
 /** Enough rows to fill the sheet beside the three meters. */
 const LOG_ROWS = 8
 
+/** Every customer sends events into the same stream; Acme, the one followed through the page, sends the most. */
+const SENDERS = [
+  'Acme Inc',
+  'Northwind',
+  'Acme Inc',
+  'Lumen',
+  'Acme Inc',
+  'Atlas',
+]
+const customerOf = (event: UsageEvent) => SENDERS[event.id % SENDERS.length]
+
 const METERS: { name: UsageEventName; label: string; fold: string }[] = [
-  { name: 'tokens.in', label: 'Input tokens', fold: 'sum(tokens)' },
-  { name: 'tokens.out', label: 'Output tokens', fold: 'sum(tokens)' },
-  { name: 'tool.call', label: 'Tool calls', fold: 'count()' },
+  { name: 'tokens.in', label: 'Input tokens', fold: "sum('tokens.in')" },
+  { name: 'tokens.out', label: 'Output tokens', fold: "sum('tokens.out')" },
+  { name: 'tool.call', label: 'Tool calls', fold: "count('tool.call')" },
 ]
 
 /**
- * Fig. 02: Acme's events on the left, the meters folding them in the middle, and an entitlement check
- * answered next to the code on the right. Same customer and stream as the hero.
+ * Fig. 02: every customer's events on the left, tagged by who sent them, then Acme's meters and Acme's state.
+ * Same customer and stream as the hero.
  */
 export const MeasureFigure = () => {
   const { ref, events, totals } = useUsageStream(LOG_ROWS)
@@ -47,14 +60,26 @@ export const MeasureFigure = () => {
         >
           <LogoType height={14} />
           <Text variant="caption" color="muted">
-            Acme Inc
+            Events from every customer
           </Text>
         </Box>
         <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr 1fr' }} gap="xs">
-          <Sheet title="Events in">
-            <EventLog events={events} rows={LOG_ROWS} fade={false} />
+          <Sheet title="Event Ingestion">
+            <EventLog
+              events={events}
+              rows={LOG_ROWS}
+              fade={false}
+              customerOf={customerOf}
+            />
           </Sheet>
-          <Sheet title="Meters">
+          <Sheet
+            title="Meters"
+            aside={
+              <Text variant="caption" color="muted">
+                Acme Inc
+              </Text>
+            }
+          >
             <Box flexDirection="column" rowGap="l">
               {METERS.map((meter, i) => (
                 <Box key={meter.name} flexDirection="column" rowGap="xs">
@@ -77,17 +102,29 @@ export const MeasureFigure = () => {
               ))}
             </Box>
           </Sheet>
-          <Sheet
-            title="Customer state"
-            aside={
-              <Text variant="caption" color="muted">
-                API
-              </Text>
-            }
-          >
-            <Text variant="caption" monospace>
-              {"polar.customers.getStateExternal('acme')"}
-            </Text>
+          <Sheet title="Customer state">
+            <Box
+              alignItems="center"
+              columnGap="m"
+              paddingBottom="l"
+              borderBottomWidth={1}
+              borderStyle="solid"
+              borderColor="border-primary"
+            >
+              <StaticImage
+                src="/assets/acme.jpg"
+                alt="Acme Inc"
+                width={32}
+                height={32}
+                className="size-8 shrink-0 rounded-full object-cover"
+              />
+              <Box flexDirection="column">
+                <Text variant="default">Acme Inc</Text>
+                <Text variant="caption" color="muted">
+                  joe@acme.com
+                </Text>
+              </Box>
+            </Box>
             <Box flexDirection="column" rowGap="s">
               <Box justifyContent="between" alignItems="baseline" columnGap="l">
                 <Text variant="default" color="muted">
@@ -95,7 +132,7 @@ export const MeasureFigure = () => {
                 </Text>
                 <Box alignItems="center" columnGap="s">
                   <div className="size-1.5 rounded-full bg-emerald-500" />
-                  <Text variant="default">Pro · active</Text>
+                  <Text variant="default">Business</Text>
                 </Box>
               </Box>
               <Box justifyContent="between" alignItems="baseline" columnGap="l">

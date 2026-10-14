@@ -10,6 +10,7 @@ import {
   Agents,
   Charge,
   Define,
+  Grant,
   Measure,
   SellAnywhere,
   Understand,
@@ -23,6 +24,7 @@ export default function Page() {
       <UsageBilling />
       <CustomerStory />
       <Define />
+      <Grant />
       <Measure />
       <Charge />
       <Understand />

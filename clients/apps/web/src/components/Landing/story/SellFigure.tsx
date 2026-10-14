@@ -8,11 +8,11 @@ import { useEffect, useState } from 'react'
 import { Shimmer } from '../Shimmer'
 import { Sheet, Window } from './Frame'
 
-/** Acme's renewal, in the currency it pays in, and where the tax on it goes. */
+/** Where the tax on this quarter's sales went, by market. */
 const MARKETS = [
   { market: 'Germany', rate: 'VAT 19%', amount: '€711.82' },
-  { market: 'United States', rate: 'Sales tax', amount: '$184.20' },
-  { market: 'United Kingdom', rate: 'VAT 20%', amount: '£96.44' },
+  { market: 'the US', rate: 'Sales tax', amount: '$184.20' },
+  { market: 'the UK', rate: 'VAT 20%', amount: '£96.44' },
 ]
 const PAYOUTS = ['$41,208.60', '$38,915.12', '$44,630.08']
 /** The loop's beats: paying, paid, payout wiring, payout landed. */
@@ -54,53 +54,40 @@ const Status = ({ done, children }: { done: boolean; children: string }) => (
   </Box>
 )
 
-/** Fig. 05: Acme pays in euros with tax included, Polar remits the tax per market, and the payout lands. */
+const Line = ({ label, value }: { label: string; value: string }) => (
+  <Box justifyContent="between" columnGap="l">
+    <Text variant="default" color="muted">
+      {label}
+    </Text>
+    <Text variant="default" color="muted" tabularNums>
+      {value}
+    </Text>
+  </Box>
+)
+
+/** Fig. 05: Acme pays in euros with VAT included, Polar remits the tax per market, and the payout lands. */
 export const SellFigure = () => {
   const { ref, beat, round } = useBeat()
   const paid = beat >= 1
   const landed = beat === 3
 
   return (
-    <Window flow={2} innerRef={ref} aside="Polar is the merchant of record">
+    <Window flow={2} innerRef={ref}>
       <Grid templateColumns={{ base: '1fr', lg: 'repeat(3, 1fr)' }} gap="xs">
         <Sheet
           title="Checkout"
           aside={
             <Text variant="caption" color="muted">
-              Berlin · EUR
+              Acme Inc in Berlin
             </Text>
           }
         >
+          <Text variant="heading-xs" tabularNums>
+            €2,735.81
+          </Text>
           <Box flexDirection="column" rowGap="s">
-            <Box justifyContent="between" columnGap="l">
-              <Text variant="default" color="muted">
-                Pro plan
-              </Text>
-              <Text variant="default" color="muted" tabularNums>
-                €2,299.00
-              </Text>
-            </Box>
-            <Box justifyContent="between" columnGap="l">
-              <Text variant="default" color="muted">
-                VAT 19%
-              </Text>
-              <Text variant="default" color="muted" tabularNums>
-                €436.81
-              </Text>
-            </Box>
-          </Box>
-          <Box
-            justifyContent="between"
-            alignItems="baseline"
-            paddingTop="m"
-            borderTopWidth={1}
-            borderStyle="solid"
-            borderColor="border-primary"
-          >
-            <Text variant="body">Acme Inc pays</Text>
-            <Text variant="heading-xxs" tabularNums>
-              €2,735.81
-            </Text>
+            <Line label="Business plan" value="€2,299.00" />
+            <Line label="VAT 19%" value="€436.81" />
           </Box>
           <Box marginTop="auto">
             <Status done={paid}>{paid ? 'Paid' : 'Processing'}</Status>
@@ -114,28 +101,17 @@ export const SellFigure = () => {
             </Text>
           }
         >
-          <Box flexDirection="column" rowGap="m">
+          <Box flexDirection="column" rowGap="s">
             {MARKETS.map((m) => (
-              <Box
+              <Line
                 key={m.market}
-                justifyContent="between"
-                alignItems="baseline"
-                columnGap="l"
-              >
-                <Box flexDirection="column">
-                  <Text variant="default">{m.market}</Text>
-                  <Text variant="caption" color="muted">
-                    {m.rate}
-                  </Text>
-                </Box>
-                <Text variant="default" color="muted" tabularNums>
-                  {m.amount}
-                </Text>
-              </Box>
+                label={`${m.rate} in ${m.market}`}
+                value={m.amount}
+              />
             ))}
           </Box>
           <Box marginTop="auto">
-            <Status done>Collected and remitted by Polar</Status>
+            <Status done>Remitted by Polar</Status>
           </Box>
         </Sheet>
         <Sheet
@@ -146,35 +122,41 @@ export const SellFigure = () => {
             </Text>
           }
         >
-          <Box flexDirection="column" rowGap="xs">
-            <Text variant="caption" color="muted">
-              To your bank account
+          <div
+            key={round}
+            className="[animation:appear_360ms_cubic-bezier(0.2,0.8,0.2,1)_both]"
+          >
+            <Text variant="heading-xs" tabularNums>
+              {PAYOUTS[round]}
             </Text>
-            <div
-              key={round}
-              className="[animation:appear_360ms_cubic-bezier(0.2,0.8,0.2,1)_both]"
-            >
-              <Text variant="heading-xs" tabularNums>
-                {PAYOUTS[round]}
-              </Text>
-            </div>
-          </Box>
-          <Text variant="caption" color="muted">
-            Revenue net of fees, paid out whenever you request it. No tax
-            liability on your books.
-          </Text>
-          <Box marginTop="auto">
+          </div>
+          <Box
+            marginTop="auto"
+            justifyContent="between"
+            alignItems="center"
+            columnGap="l"
+          >
             {beat >= 2 ? (
               <Status done={landed}>
                 {landed ? 'Landed' : 'Payout requested'}
               </Status>
             ) : (
-              <Box height={16}>
+              <Box height={16} alignItems="center">
                 <Text variant="caption" color="muted">
                   Balance ready to withdraw
                 </Text>
               </Box>
             )}
+            {/* Pressed while the payout is on its way, ready again once it lands. */}
+            <div
+              className={`flex h-7 items-center rounded-full bg-white px-3 transition-opacity duration-300 ${beat === 2 ? 'opacity-40' : 'opacity-100'}`}
+            >
+              <span className="text-black">
+                <Text variant="caption" color="inherit">
+                  Withdraw
+                </Text>
+              </span>
+            </div>
           </Box>
         </Sheet>
       </Grid>

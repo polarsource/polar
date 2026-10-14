@@ -14,59 +14,24 @@ const Line = ({ label, value }: { label: string; value: string }) => (
   </Box>
 )
 
-/** The pricing models a plan is composed of, as small outlined tags. */
-const Models = ({ models }: { models: string[] }) => (
-  <Box columnGap="xs" rowGap="xs" flexWrap="wrap">
-    {models.map((m) => (
-      <Box
-        key={m}
-        alignItems="center"
-        paddingHorizontal="s"
-        height={22}
-        borderWidth={1}
-        borderStyle="solid"
-        borderColor="border-primary"
-        borderRadius="full"
-      >
-        <Text variant="caption" color="muted">
-          {m}
-        </Text>
-      </Box>
-    ))}
-  </Box>
-)
-
-/** A plan: its lines up top, the models it combines anchored at the bottom. */
+/** A plan: its lines up top, and a create action anchored at the bottom. */
 const Plan = ({
   name,
   aside,
-  models,
   children,
 }: {
   name: string
   aside: string
-  models: string[]
   children: ReactNode
 }) => (
-  <Sheet
-    title={name}
-    aside={
-      <Text variant="caption" color="muted">
-        {aside}
-      </Text>
-    }
-  >
+  <Sheet title={name} subtitle={aside}>
     <Box flexDirection="column" rowGap="s">
       {children}
     </Box>
-    <Box
-      marginTop="auto"
-      paddingTop="l"
-      borderTopWidth={1}
-      borderStyle="solid"
-      borderColor="border-primary"
-    >
-      <Models models={models} />
+    <Box marginTop="auto" paddingTop="l">
+      <div className="dark:bg-polar-800 flex h-7 items-center rounded-full bg-gray-100 px-3">
+        <Text variant="caption">Create Product</Text>
+      </div>
     </Box>
   </Sheet>
 )
@@ -79,29 +44,21 @@ const TIERS = [
 
 /** Fig. 01: three plans composed from different pricing models, all on Polar. */
 export const DefineFigure = () => (
-  <Window flow={1} aside="Three ways to sell the same product">
+  <Window flow={1} aside="Example plans for your product">
     <Grid templateColumns={{ base: '1fr', lg: 'repeat(3, 1fr)' }} gap="xs">
-      <Plan name="Team" aside="Per seat" models={['Seats', 'Metered', 'Trial']}>
+      <Plan name="Team" aside="Per seat">
         <Line label="Per seat" value="$40 / month" />
         <Line label="Seats" value="12" />
         <Line label="Output tokens" value="$3.00 / 1M" />
         <Line label="Trial" value="14 days" />
       </Plan>
-      <Plan
-        name="Pro"
-        aside="Commit and draw down"
-        models={['Fixed', 'Credits', 'Metered']}
-      >
+      <Plan name="Business" aside="Commit & draw down">
         <Line label="Base" value="$2,499 / month" />
         <Line label="Credits" value="40,000 / month" />
         <Line label="Output tokens" value="$2.00 / 1M" />
         <Line label="Tool calls" value="$0.005 / call" />
       </Plan>
-      <Plan
-        name="API"
-        aside="Pay as you go"
-        models={['Metered', 'Graduated tiers']}
-      >
+      <Plan name="Flex" aside="Pay as you go">
         <Box justifyContent="between" alignItems="baseline" columnGap="l">
           <Text variant="default" color="muted">
             Output tokens
@@ -112,12 +69,12 @@ export const DefineFigure = () => (
         </Box>
         {TIERS.map((tier) => (
           <Box key={tier.range} alignItems="center" columnGap="m">
-            <Box width={72} flexShrink={0}>
-              <Text variant="caption" color="muted">
+            <Box width={88} flexShrink={0}>
+              <Text variant="default" color="muted">
                 {tier.range}
               </Text>
             </Box>
-            <div className="dark:bg-polar-800 h-1.5 flex-1 overflow-hidden rounded-full bg-gray-200">
+            <div className="dark:bg-polar-800 h-1 flex-1 overflow-hidden rounded-full bg-gray-200">
               <div
                 className="h-full rounded-full bg-white"
                 style={{ width: tier.width }}

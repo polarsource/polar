@@ -89,7 +89,7 @@ export const ChargeFigure = () => {
         >
           <LogoType height={14} />
           <Text variant="caption" color="muted">
-            Acme Inc · Pro
+            Acme Inc on Business
           </Text>
         </Box>
         <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap="xs">
@@ -140,7 +140,7 @@ export const ChargeFigure = () => {
             </Box>
           </Sheet>
           <Sheet
-            title="Invoice · Nov 1"
+            title="November invoice"
             aside={
               <Box
                 alignItems="center"
@@ -176,7 +176,7 @@ export const ChargeFigure = () => {
             }
           >
             <Box flexDirection="column" rowGap="s">
-              <Line label="Pro plan" value={money(PLAN)} />
+              <Line label="Business plan" value={money(PLAN)} />
               <Line label="40,000 credits" value="Included" />
               <Line
                 label="Usage beyond credits"

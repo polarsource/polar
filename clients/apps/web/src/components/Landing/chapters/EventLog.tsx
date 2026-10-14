@@ -17,10 +17,12 @@ const Row = ({
   event,
   age,
   fade,
+  customer,
 }: {
   event: UsageEvent
   age: number
   fade: boolean
+  customer?: string
 }) => (
   <Box
     alignItems="center"
@@ -32,6 +34,11 @@ const Row = ({
     transitionDuration="slow"
   >
     <Box alignItems="center" columnGap="s" minWidth={0}>
+      {customer ? (
+        <Box width={80} flexShrink={0}>
+          <Text variant="caption">{customer}</Text>
+        </Box>
+      ) : null}
       <Text variant="caption" monospace color="muted">
         {event.name}
       </Text>
@@ -83,11 +90,14 @@ export const EventLog = ({
   events,
   rows = VISIBLE_EVENTS,
   fade = true,
+  customerOf,
 }: {
   events: UsageEvent[]
   rows?: number
   /** Older rows fade back; off for a long log, where it would wash out the bottom. */
   fade?: boolean
+  /** Who sent each event, shown ahead of its name when given. */
+  customerOf?: (event: UsageEvent) => string
 }) => {
   const empty = Math.max(0, rows - events.length)
   return (
@@ -99,7 +109,12 @@ export const EventLog = ({
           style={{ transform: `translateY(${position * STEP}px)` }}
         >
           <div className="[animation:appear_360ms_cubic-bezier(0.2,0.8,0.2,1)_both]">
-            <Row event={event} age={position} fade={fade} />
+            <Row
+              event={event}
+              age={position}
+              fade={fade}
+              customer={customerOf?.(event)}
+            />
           </div>
         </div>
       ))}

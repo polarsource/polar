@@ -14,7 +14,7 @@ const TURNS = [
     prompt: 'How much usage has Acme run up this cycle?',
     tool: 'Get customer state by external ID',
     answer:
-      'Acme is on Pro with 9.2B tokens metered. They used all 40,000 credits and $1,284 of usage on top.',
+      'Acme is on Business with 9.2B tokens metered. They used all 40,000 credits and $1,284 of usage on top.',
   },
   {
     prompt: 'Give them 20% off next month.',
@@ -25,7 +25,7 @@ const TURNS = [
 ]
 
 /** Each turn: the prompt types, the tool call runs, the answer appears. Then the session clears and repeats. */
-type Beat = 'typing' | 'calling' | 'answered'
+type Beat = 'typing' | 'calling' | 'settling' | 'answered'
 const TYPE_PER_SECOND = 32
 
 const useSession = () => {
@@ -63,7 +63,10 @@ const useSession = () => {
         frame = requestAnimationFrame(tick)
       }, 600)
     } else if (beat === 'calling') {
-      timer = window.setTimeout(() => setBeat('answered'), 1500)
+      timer = window.setTimeout(() => setBeat('settling'), 1500)
+    } else if (beat === 'settling') {
+      // The tool line fades out before the answer takes its place.
+      timer = window.setTimeout(() => setBeat('answered'), 320)
     } else {
       timer = window.setTimeout(
         () => {
@@ -136,19 +139,12 @@ export const AgentsFigure = () => {
           </Box>
         </Sheet>
         <div className="dark:bg-polar-900 flex min-h-[26rem] w-full flex-col rounded-xl bg-white p-6 font-mono text-[13px] leading-6">
-          <div className="text-polar-500 mb-4 flex items-center justify-between">
-            <span>~/acme · claude</span>
-            <span>polar connected</span>
-          </div>
+          <div className="text-polar-500 mb-4">~/acme</div>
           {done.map((t) => (
             <div key={t.prompt} className="mb-5 flex flex-col gap-1">
               <div className="text-white">
                 <span className="text-polar-500">{'> '}</span>
                 {t.prompt}
-              </div>
-              <div className="text-polar-500 flex items-center gap-2">
-                <Check size={12} className="shrink-0" />
-                polar · {t.tool}
               </div>
               <div className="text-polar-300 whitespace-pre-wrap">
                 {t.answer}
@@ -163,16 +159,14 @@ export const AgentsFigure = () => {
                 <span className="ml-px inline-block h-[1em] w-[0.55em] translate-y-[0.15em] animate-pulse bg-white/80" />
               ) : null}
             </div>
-            {beat !== 'typing' ? (
-              <div className="text-polar-500 flex [animation:appear_300ms_ease-out_both] items-center gap-2">
-                {beat === 'calling' ? (
+            {beat === 'calling' || beat === 'settling' ? (
+              <div
+                className={`transition-opacity duration-300 ${beat === 'settling' ? 'opacity-0' : 'opacity-100'}`}
+              >
+                <div className="text-polar-500 flex [animation:appear_300ms_ease-out_both] items-center gap-2">
                   <LoaderCircle size={12} className="shrink-0 animate-spin" />
-                ) : (
-                  <Check size={12} className="shrink-0" />
-                )}
-                <Shimmer
-                  active={beat === 'calling'}
-                >{`polar · ${current.tool}`}</Shimmer>
+                  <Shimmer active>{current.tool}</Shimmer>
+                </div>
               </div>
             ) : null}
             {beat === 'answered' ? (

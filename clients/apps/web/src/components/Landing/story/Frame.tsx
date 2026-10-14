@@ -6,11 +6,14 @@ import type { ReactNode, Ref } from 'react'
 /** A sheet inside a figure window: a body-size title, an optional aside, and its content filling the height. */
 export const Sheet = ({
   title,
+  subtitle,
   aside,
   children,
   large = false,
 }: {
   title: string
+  /** A muted phrase set right after the title, at the same size. */
+  subtitle?: string
   aside?: ReactNode
   children: ReactNode
   /** Sets the title one step larger, for sheets that are products rather than parts of a figure. */
@@ -19,7 +22,14 @@ export const Sheet = ({
   <div className="dark:bg-polar-900 flex min-h-0 w-full flex-col rounded-xl bg-white">
     <Box flexDirection="column" rowGap="l" padding="xl" height="100%">
       <Box justifyContent="between" alignItems="baseline" columnGap="l">
-        <Text variant={large ? 'heading-xxs' : 'body'}>{title}</Text>
+        <Box alignItems="baseline" columnGap="m" flexWrap="wrap">
+          <Text variant={large ? 'heading-xxs' : 'body'}>{title}</Text>
+          {subtitle ? (
+            <Text variant={large ? 'heading-xxs' : 'body'} color="muted">
+              {subtitle}
+            </Text>
+          ) : null}
+        </Box>
         {aside}
       </Box>
       {children}
@@ -49,7 +59,7 @@ export const Window = ({
   bare?: boolean
   /** Caps the window's width for figures that read better compact. */
   narrow?: boolean
-  aside: string
+  aside?: string
   children: ReactNode
   innerRef?: Ref<HTMLDivElement>
 }) => (

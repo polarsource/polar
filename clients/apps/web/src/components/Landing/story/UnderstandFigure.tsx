@@ -10,10 +10,10 @@ import { Sheet, Window } from './Frame'
 
 /** Margin per customer this cycle. Acme matches the live chart; one customer runs below cost. */
 const CUSTOMERS = [
-  { name: 'Acme Inc', plan: 'Pro', margin: 0.61 },
-  { name: 'Northwind', plan: 'Pro', margin: 0.62 },
-  { name: 'Lumen', plan: 'Growth', margin: 0.51 },
-  { name: 'Atlas', plan: 'Starter', margin: -0.27 },
+  { name: 'Acme Inc', plan: 'Business', margin: 0.61 },
+  { name: 'Northwind', plan: 'Business', margin: 0.62 },
+  { name: 'Lumen', plan: 'Team', margin: 0.51 },
+  { name: 'Atlas', plan: 'Flex', margin: -0.27 },
 ]
 
 /** Fig. 04: Acme's revenue against inference cost as events stream in, and the margin of every customer. */
@@ -24,7 +24,7 @@ export const UnderstandFigure = () => {
   )
 
   return (
-    <Window flow={1} innerRef={ref} aside="Acme Inc · this cycle">
+    <Window flow={1} innerRef={ref} aside="Acme Inc">
       <Grid templateColumns={{ base: '1fr', lg: '3fr 2fr' }} gap="xs">
         <Sheet title="Unit economics">
           <Box justifyContent="between" alignItems="start" columnGap="l">
@@ -60,7 +60,7 @@ export const UnderstandFigure = () => {
               >
                 <Box alignItems="baseline" columnGap="s">
                   <Text variant="default">{c.name}</Text>
-                  <Text variant="caption" color="muted">
+                  <Text variant="default" color="muted">
                     {c.plan}
                   </Text>
                 </Box>

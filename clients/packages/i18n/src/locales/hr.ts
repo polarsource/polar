@@ -5,15 +5,15 @@ export default {
       merchantOfRecord:
         'Ovu narudžbu obrađuje naš online prodavatelj i Merchant of Record, Polar, koji također obrađuje upite o narudžbama i povrate.',
       mandateSubscriptionTrial:
-        'Klikom na „{buttonLabel},” ovlašćujete Polar Software, Inc., našeg online prodavatelja i Merchant of Record, da na odabrani način plaćanja naplati iznos prikazan iznad na kraju probnog razdoblja i na svaki sljedeći datum naplate dok ne otkažete, te prihvaćate {buyerTermsLink}. Možete otkazati u bilo kojem trenutku prije kraja probnog razdoblja kako ne biste bili naplaćeni.',
+        'Klikom na „{buttonLabel}”, ovlašćujete Polar Software, Inc., našeg online prodavatelja i Merchant of Record, da na odabrani način plaćanja naplati iznos prikazan iznad na kraju probnog razdoblja i na svaki sljedeći datum naplate dok ne otkažete, te prihvaćate {buyerTermsLink}. Možete otkazati u bilo kojem trenutku prije kraja probnog razdoblja kako ne biste bili naplaćeni.',
       mandateSubscription:
-        'Klikom na „{buttonLabel},” ovlašćujete Polar Software, Inc., našeg online prodavatelja i Merchant of Record, da odmah naplati na odabrani način plaćanja iznos prikazan iznad te da na svaki sljedeći datum naplate naplati isti iznos dok ne otkažete, te prihvaćate {buyerTermsLink}.',
+        'Klikom na „{buttonLabel}”, ovlašćujete Polar Software, Inc., našeg online prodavatelja i Merchant of Record, da odmah naplati na odabrani način plaćanja iznos prikazan iznad te da na svaki sljedeći datum naplate naplati isti iznos dok ne otkažete, te prihvaćate {buyerTermsLink}.',
       mandateOneTime:
-        'Klikom na „{buttonLabel},” ovlašćujete Polar Software, Inc., našeg online prodavatelja i Merchant of Record, da na odabrani način plaćanja naplati iznos prikazan iznad, te prihvaćate {buyerTermsLink}. Riječ je o jednokratnoj naplati.',
+        'Klikom na „{buttonLabel}”, ovlašćujete Polar Software, Inc., našeg online prodavatelja i Merchant of Record, da na odabrani način plaćanja naplati iznos prikazan iznad, te prihvaćate {buyerTermsLink}. Riječ je o jednokratnoj naplati.',
       mandateSubscriptionTrialDiscounted:
-        'Klikom na „{buttonLabel},” ovlašćujete Polar Software, Inc., našeg online prodavatelja i Merchant of Record, da na odabrani način plaćanja naplati sniženi iznos prikazan iznad na kraju probnog razdoblja te redovitu cijenu na svaki datum naplate nakon isteka popusta, sve dok ne otkažete, te prihvaćate {buyerTermsLink}. Možete otkazati u bilo kojem trenutku prije kraja probnog razdoblja kako ne biste bili naplaćeni.',
+        'Klikom na „{buttonLabel}”, ovlašćujete Polar Software, Inc., našeg online prodavatelja i Merchant of Record, da na odabrani način plaćanja naplati sniženi iznos prikazan iznad na kraju probnog razdoblja te redovitu cijenu na svaki datum naplate nakon isteka popusta, sve dok ne otkažete, te prihvaćate {buyerTermsLink}. Možete otkazati u bilo kojem trenutku prije kraja probnog razdoblja kako ne biste bili naplaćeni.',
       mandateSubscriptionDiscounted:
-        'Klikom na „{buttonLabel},” ovlašćujete Polar Software, Inc., našeg online prodavatelja i Merchant of Record, da odmah naplati na odabrani način plaćanja sniženi iznos prikazan iznad i redovitu cijenu na svaki datum naplate nakon isteka popusta, sve dok ne otkažete, te prihvaćate {buyerTermsLink}.',
+        'Klikom na „{buttonLabel}”, ovlašćujete Polar Software, Inc., našeg online prodavatelja i Merchant of Record, da odmah naplati na odabrani način plaćanja sniženi iznos prikazan iznad i redovitu cijenu na svaki datum naplate nakon isteka popusta, sve dok ne otkažete, te prihvaćate {buyerTermsLink}.',
       buyerTermsLink: 'Uvjeti kupca',
     },
     form: {

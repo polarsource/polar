@@ -368,12 +368,6 @@ variable "sentry_auth_token" {
   sensitive   = true
 }
 
-variable "polar_preview_access_token" {
-  description = "Polar preview access token for the Vercel frontend"
-  type        = string
-  sensitive   = true
-}
-
 variable "mcp_oauth2_client_id" {
   description = "MCP OAuth2 client ID for the Vercel frontend"
   type        = string

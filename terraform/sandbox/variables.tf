@@ -390,12 +390,6 @@ variable "sentry_auth_token" {
   sensitive   = true
 }
 
-variable "polar_preview_access_token" {
-  description = "Polar preview access token for the Vercel frontend"
-  type        = string
-  sensitive   = true
-}
-
 variable "next_public_sentry_dsn" {
   description = "Sentry DSN for the Vercel frontend"
   type        = string

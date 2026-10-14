@@ -14,7 +14,7 @@ interface Scenario {
 
 const SCENARIOS: Scenario[] = [
   {
-    prompt: 'Summarise the churn interviews from this quarter',
+    prompt: 'Summarise the churn interviews',
     answer:
       'Three themes came up most. Onboarding took too long, usage limits were unclear, and finance wanted invoices they could forecast.',
     inputTokens: 3418,
@@ -23,7 +23,7 @@ const SCENARIOS: Scenario[] = [
     working: 'Reading 14 interview transcripts',
   },
   {
-    prompt: 'Draft a reply to the security questionnaire',
+    prompt: 'Reply to the security questionnaire',
     answer:
       'Here is a first draft. It covers data residency, encryption at rest and in transit, and how access to customer data is reviewed.',
     inputTokens: 5126,

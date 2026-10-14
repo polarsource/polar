@@ -122,288 +122,282 @@ export const UsageBillingMock = () => {
   const sent = phase !== 'typing'
 
   return (
-    <Box
+    <div
       ref={ref}
-      position="relative"
-      width="100%"
-      flexDirection={{ base: 'column', md: 'row' }}
-      alignItems={{ base: 'stretch', md: 'start' }}
-      rowGap="l"
+      className="dark:border-polar-800 relative w-full overflow-hidden rounded-md border border-gray-200 bg-[url(/assets/landing/company/Polar_Flow_03_No_Logo.jpg)] bg-cover bg-center p-4 md:p-12"
     >
+      <div className="pointer-events-none absolute inset-0 bg-black/60" />
       <Box
-        width={{ base: '100%', md: '60%' }}
-        height={{ md: '30rem' }}
-        marginTop={{ base: 'none', md: '3xl' }}
-        flexShrink={0}
+        position="relative"
+        width="100%"
+        flexDirection={{ base: 'column', md: 'row' }}
+        alignItems={{ base: 'stretch', md: 'start' }}
+        rowGap="l"
+        transform="scale(.9)"
       >
-        <Panel>
-          <Box
-            alignItems="center"
-            columnGap="s"
-            paddingHorizontal="xl"
-            paddingVertical="m"
-          >
-            <StaticImage
-              src="/assets/acme.jpg"
-              alt="Acme"
-              width={20}
-              height={20}
-              className="size-5 rounded-md object-cover"
-            />
-            <Text variant="body" color="muted">
-              Acme
-            </Text>
+        <Box
+          width={{ base: '100%', md: '60%' }}
+          height={{ md: '27rem' }}
+          marginTop={{ base: 'none', md: '3xl' }}
+          flexShrink={0}
+        >
+          <Panel>
             <Box
-              marginLeft="auto"
               alignItems="center"
-              columnGap="m"
-              color="text-tertiary"
-            >
-              <SquarePen size={14} />
-              <PanelRight size={14} />
-            </Box>
-          </Box>
-          <Inner>
-            <Box
-              flexDirection="column"
-              rowGap="l"
+              columnGap="s"
               paddingHorizontal="xl"
-              paddingVertical="xl"
-              maxWidth={{ md: '72%' }}
-              minHeight={{ base: '13rem', md: 'auto' }}
+              paddingVertical="m"
             >
-              {sent ? (
-                <>
-                  <div className="[animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_both]">
-                    <Box
-                      alignSelf="start"
-                      padding="m"
-                      backgroundColor="background-card"
-                      borderRadius="l"
-                    >
-                      <Text variant="body">{scenario.prompt}</Text>
-                    </Box>
-                  </div>
-                  {phase === 'working' ? (
-                    <div className="[animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_200ms_both]">
-                      <Box
-                        alignItems="center"
-                        columnGap="s"
-                        color="text-secondary"
-                      >
-                        <LoaderCircle size={14} className="animate-spin" />
-                        <Text variant="body" color="muted">
-                          <Shimmer active>{scenario.working}</Shimmer>
-                        </Text>
-                      </Box>
-                    </div>
-                  ) : (
-                    <div className="[animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_both]">
-                      <Text variant="body" color="muted">
-                        {scenario.answer.slice(0, typed)}
-                        <Box as="span" visibility="hidden">
-                          {scenario.answer.slice(typed)}
-                        </Box>
-                      </Text>
-                    </div>
-                  )}
-                </>
-              ) : null}
-            </Box>
-            <Box paddingHorizontal="xl" paddingBottom="xl" marginTop="auto">
+              <StaticImage
+                src="/assets/acme.jpg"
+                alt="Acme"
+                width={20}
+                height={20}
+                className="size-5 rounded-md object-cover"
+              />
+              <Text variant="body" color="muted">
+                Acme
+              </Text>
               <Box
-                width="100%"
+                marginLeft="auto"
+                alignItems="center"
+                columnGap="m"
+                color="text-tertiary"
+              >
+                <SquarePen size={14} />
+                <PanelRight size={14} />
+              </Box>
+            </Box>
+            <Inner>
+              <Box
                 flexDirection="column"
                 rowGap="l"
-                padding="l"
-                borderWidth={1}
-                borderStyle="solid"
-                borderColor="border-primary"
-                borderRadius="l"
+                paddingHorizontal="xl"
+                paddingVertical="xl"
+                maxWidth={{ md: '72%' }}
+                minHeight={{ base: '13rem', md: 'auto' }}
               >
-                {composerText ? (
-                  <Text variant="body">
-                    {composerText}
-                    <span className="ml-px inline-block h-[1em] w-px translate-y-[0.15em] animate-pulse bg-current" />
-                  </Text>
-                ) : (
-                  <Text variant="body" color="muted">
-                    Ask a follow-up
-                  </Text>
-                )}
-                <Box alignItems="center" justifyContent="between" columnGap="l">
-                  <Box alignItems="center" columnGap="s" color="text-secondary">
+                {sent ? (
+                  <>
+                    <div className="[animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_both]">
+                      <Box
+                        alignSelf="start"
+                        paddingHorizontal="l"
+                        paddingVertical="m"
+                        backgroundColor="background-card"
+                        borderRadius="l"
+                      >
+                        <Text variant="body">{scenario.prompt}</Text>
+                      </Box>
+                    </div>
+                    {phase === 'working' ? (
+                      <div className="[animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_200ms_both]">
+                        <Box
+                          alignItems="center"
+                          columnGap="s"
+                          color="text-secondary"
+                        >
+                          <LoaderCircle size={14} className="animate-spin" />
+                          <Text variant="body" color="muted">
+                            <Shimmer active>{scenario.working}</Shimmer>
+                          </Text>
+                        </Box>
+                      </div>
+                    ) : (
+                      <div className="[animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_both]">
+                        <Text variant="body" color="muted">
+                          {scenario.answer.slice(0, typed)}
+                          <Box as="span" visibility="hidden">
+                            {scenario.answer.slice(typed)}
+                          </Box>
+                        </Text>
+                      </div>
+                    )}
+                  </>
+                ) : null}
+              </Box>
+              <Box paddingHorizontal="xl" paddingBottom="xl" marginTop="auto">
+                <Box
+                  width="100%"
+                  flexDirection="column"
+                  rowGap="l"
+                  padding="l"
+                  borderRadius="l"
+                  backgroundColor="background-card"
+                >
+                  {composerText ? (
+                    <Text variant="body">
+                      {composerText}
+                      <span className="ml-px inline-block h-[1em] w-px translate-y-[0.15em] animate-pulse bg-current" />
+                    </Text>
+                  ) : (
+                    <Text variant="body" color="muted">
+                      Ask a follow-up
+                    </Text>
+                  )}
+                  <Box
+                    alignItems="center"
+                    justifyContent="between"
+                    columnGap="l"
+                  >
+                    <Box
+                      alignItems="center"
+                      columnGap="s"
+                      color="text-secondary"
+                    >
+                      <Box
+                        width={24}
+                        height={24}
+                        alignItems="center"
+                        justifyContent="center"
+                        borderWidth={1}
+                        borderStyle="solid"
+                        borderColor="border-primary"
+                        borderRadius="full"
+                      >
+                        <Plus size={12} />
+                      </Box>
+                      <Box
+                        alignItems="center"
+                        columnGap="xs"
+                        paddingHorizontal="s"
+                        height={24}
+                        borderWidth={1}
+                        borderStyle="solid"
+                        borderColor="border-primary"
+                        borderRadius="full"
+                      >
+                        <Text variant="caption" color="muted">
+                          gpt-5
+                        </Text>
+                        <ChevronDown size={10} />
+                      </Box>
+                    </Box>
                     <Box
                       width={24}
                       height={24}
                       alignItems="center"
                       justifyContent="center"
-                      borderWidth={1}
-                      borderStyle="solid"
-                      borderColor="border-primary"
+                      backgroundColor={
+                        composerText ? 'background-inverse' : 'background-card'
+                      }
                       borderRadius="full"
+                      transitionProperty="colors"
+                      transitionDuration="fast"
                     >
-                      <Plus size={12} />
+                      <span className={composerText ? 'text-black' : undefined}>
+                        <ArrowUp size={12} />
+                      </span>
                     </Box>
-                    <Box
-                      alignItems="center"
-                      columnGap="xs"
-                      paddingHorizontal="s"
-                      height={24}
-                      borderWidth={1}
-                      borderStyle="solid"
-                      borderColor="border-primary"
-                      borderRadius="full"
-                    >
-                      <Text variant="caption" color="muted">
-                        gpt-5
-                      </Text>
-                      <ChevronDown size={10} />
-                    </Box>
-                  </Box>
-                  <Box
-                    width={24}
-                    height={24}
-                    alignItems="center"
-                    justifyContent="center"
-                    backgroundColor={
-                      composerText ? 'background-inverse' : 'background-card'
-                    }
-                    borderRadius="full"
-                    transitionProperty="colors"
-                    transitionDuration="fast"
-                  >
-                    <span className={composerText ? 'text-black' : undefined}>
-                      <ArrowUp size={12} />
-                    </span>
                   </Box>
                 </Box>
               </Box>
-            </Box>
-          </Inner>
-        </Panel>
-      </Box>
+            </Inner>
+          </Panel>
+        </Box>
 
-      <div className="relative z-10 w-full shrink-0 md:-ml-[14%] md:w-[54%]">
-        <Panel elevated>
-          <Box
-            alignItems="center"
-            justifyContent="between"
-            paddingHorizontal="xl"
-            paddingVertical="m"
-          >
-            <Box alignItems="center" columnGap="xs">
-              <LogoType height={14} />
-            </Box>
-            <Text variant="caption" color="muted">
-              Current cycle
-            </Text>
-          </Box>
-          <Inner>
+        <div className="relative z-10 w-full shrink-0 md:-ml-[16%] md:w-[54%]">
+          <Panel elevated>
             <Box
               alignItems="center"
               justifyContent="between"
-              columnGap="l"
-              marginHorizontal="xl"
-              paddingVertical="l"
-              borderBottomWidth={1}
-              borderStyle="solid"
-              borderColor="border-primary"
+              paddingHorizontal="xl"
+              paddingVertical="m"
             >
-              <Box alignItems="center" columnGap="m">
-                <StaticImage
-                  src="/assets/acme.jpg"
-                  alt="Acme Inc"
-                  width={32}
-                  height={32}
-                  className="size-8 rounded-full object-cover"
-                />
-                <Box flexDirection="column">
-                  <Text variant="body">Acme Inc</Text>
-                  <Text variant="caption" color="muted">
-                    billing@acme.com
-                  </Text>
-                </Box>
+              <Box alignItems="center" columnGap="xs">
+                <LogoType height={14} />
               </Box>
+              <Text variant="caption" color="muted">
+                Current cycle
+              </Text>
+            </Box>
+            <Inner>
               <Box
                 alignItems="center"
-                paddingHorizontal="m"
-                height={28}
-                borderWidth={1}
-                borderStyle="solid"
-                borderColor="border-primary"
-                borderRadius="full"
+                justifyContent="between"
+                columnGap="l"
+                marginHorizontal="xl"
+                paddingVertical="l"
               >
-                <Text variant="caption" color="muted">
-                  Pro
-                </Text>
+                <Box alignItems="center" columnGap="m">
+                  <StaticImage
+                    src="/assets/acme.jpg"
+                    alt="Acme Inc"
+                    width={32}
+                    height={32}
+                    className="size-8 rounded-full object-cover"
+                  />
+                  <Box flexDirection="column">
+                    <Text variant="body">Acme Inc</Text>
+                    <Text variant="caption" color="muted">
+                      billing@acme.com
+                    </Text>
+                  </Box>
+                </Box>
               </Box>
-            </Box>
-            <Grid
-              templateColumns="repeat(2, 1fr)"
-              marginHorizontal="xl"
-              paddingVertical="xl"
-              borderBottomWidth={1}
-              borderStyle="solid"
-              borderColor="border-primary"
-            >
-              <Box flexDirection="column" rowGap="xs">
-                <Text variant="caption" color="muted">
-                  Tokens metered
-                </Text>
-                <Text variant="heading-xs" tabularNums>
-                  {count(totalTokens)}
-                </Text>
-              </Box>
-              <Box
-                flexDirection="column"
-                rowGap="xs"
-                paddingLeft="xl"
-                borderLeftWidth={1}
-                borderStyle="solid"
-                borderColor="border-primary"
+              <Grid
+                templateColumns="repeat(2, 1fr)"
+                marginHorizontal="xl"
+                paddingVertical="s"
               >
-                <Text variant="caption" color="muted">
-                  Credits left
-                </Text>
-                <Text variant="heading-xs" tabularNums>
-                  {count(creditsLeft)}
-                  <Text as="span" variant="heading-xs" color="muted">
-                    {' '}
-                    / {count(CREDITS_GRANTED)}
+                <Box flexDirection="column" rowGap="xs">
+                  <Text variant="caption" color="muted">
+                    Tokens metered
                   </Text>
-                </Text>
-              </Box>
-            </Grid>
-            <Box flexDirection="column" rowGap="s" padding="xl">
-              <EventRow
-                event={
-                  phase === 'typing'
-                    ? { name: 'tokens.in', quantity: promptTokens }
-                    : phase === 'working'
-                      ? { name: 'tool.call', quantity: scenario.tools }
-                      : { name: 'tokens.out', quantity: streamed }
-                }
-                pending={phase !== 'metered'}
-              />
-              {settled.slice(0, VISIBLE_EVENTS - 1).map((event, position) => (
+                  <Text variant="heading-xs" tabularNums>
+                    {count(totalTokens)}
+                  </Text>
+                </Box>
+                <Box
+                  flexDirection="column"
+                  rowGap="xs"
+                  paddingLeft="xl"
+                  borderLeftWidth={1}
+                  borderStyle="solid"
+                  borderColor="border-primary"
+                >
+                  <Text variant="caption" color="muted">
+                    Credits left
+                  </Text>
+                  <Text variant="heading-xs" tabularNums>
+                    {count(creditsLeft)}
+                    <Text as="span" variant="heading-xs" color="muted">
+                      {' '}
+                      / {count(CREDITS_GRANTED)}
+                    </Text>
+                  </Text>
+                </Box>
+              </Grid>
+              <Box flexDirection="column" rowGap="s" padding="xl">
                 <EventRow
-                  key={`${position}-${event.name}-${event.quantity}`}
-                  event={event}
-                  age={position + 1}
+                  event={
+                    phase === 'typing'
+                      ? { name: 'tokens.in', quantity: promptTokens }
+                      : phase === 'working'
+                        ? { name: 'tool.call', quantity: scenario.tools }
+                        : { name: 'tokens.out', quantity: streamed }
+                  }
+                  pending={phase !== 'metered'}
                 />
-              ))}
+                {settled.slice(0, VISIBLE_EVENTS - 1).map((event, position) => (
+                  <EventRow
+                    key={`${position}-${event.name}-${event.quantity}`}
+                    event={event}
+                    age={position + 1}
+                  />
+                ))}
+              </Box>
+            </Inner>
+            <Box paddingTop="xs">
+              <UsageBillingCharge
+                inputCharge={inputCharge}
+                outputCharge={outputCharge}
+                billed={billed}
+              />
             </Box>
-          </Inner>
-          <Box paddingTop="xs">
-            <UsageBillingCharge
-              inputCharge={inputCharge}
-              outputCharge={outputCharge}
-              billed={billed}
-            />
-          </Box>
-        </Panel>
-      </div>
-    </Box>
+          </Panel>
+        </div>
+      </Box>
+    </div>
   )
 }

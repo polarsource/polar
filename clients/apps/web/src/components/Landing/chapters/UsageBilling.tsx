@@ -27,21 +27,21 @@ export const UsageBilling = () => (
   >
     <Grid
       templateColumns={{ base: '1fr', lg: '3fr 1fr' }}
-      gap={{ base: '3xl', lg: '4xl' }}
+      gap={{ base: '3xl', lg: '3xl' }}
       alignItems="center"
     >
       <UsageBillingMock />
       <Box flexDirection="column" rowGap="3xl">
         <Box display="block">
-          <Text variant="heading-xs" as="span">
+          <Text variant="heading-s" as="span">
             Ship usage billing today.{' '}
           </Text>
-          <Text variant="heading-xs" as="span" color="muted">
-            Real-time metering, billing and metrics, built in.
+          <Text variant="heading-s" as="span" color="muted" leading="tight">
+            Event-based metering, worldwide billing & unit economics, built in.
           </Text>
         </Box>
         <Box flexDirection="column" rowGap="s">
-          <Text variant="caption" color="muted">
+          <Text variant="body" color="muted">
             Features
           </Text>
           <Box as="ul" flexDirection="column" rowGap="xs">

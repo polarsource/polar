@@ -211,7 +211,7 @@ export const grantSurveyCredits = async (
   externalId: string,
   answer: string,
 ) => {
-  log('Survey answer submitted')
+  log(`Survey answer: ${answer}`)
 
   const customer = polar.actor({ externalCustomerId: externalId })
 

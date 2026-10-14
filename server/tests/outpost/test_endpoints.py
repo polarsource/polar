@@ -134,7 +134,7 @@ class TestOutpost:
         internal = payloads[(str(customer.id), None)]
         version = datetime.fromisoformat(internal["version"])
         assert datetime.fromisoformat(internal["cold_until"]) == (
-            version - SYNCED_LOOKBACK
+            get_reducer_bucket_start(version - SYNCED_LOOKBACK)
         )
         assert (internal["count"], internal["sum"]) == (0, 0.0)
 
@@ -218,3 +218,52 @@ class TestOutpost:
                 "max": 4.0,
             },
         }
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_event_reducer_bucket_synced_across_lookback(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx.AsyncClient,
+        redis: Redis,
+        organization: Organization,
+        customer_meter: CustomerMeter,
+    ) -> None:
+        external_id = customer_meter.customer.external_id
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[customer_meter.meter]
+        )
+        # The bucket the lookback starts in.
+        bucket_start = get_reducer_bucket_start(utc_now() - SYNCED_LOOKBACK)
+        bucket_end = bucket_start + timedelta(minutes=5)
+        await save_fixture(
+            ReducerBucket(
+                organization=organization,
+                reducer=reducer,
+                external_customer_id=external_id,
+                bucket_start=bucket_start,
+                bucket_end=bucket_end,
+                count=1,
+                sum=Decimal(3),
+                min=Decimal(3),
+                max=Decimal(3),
+                synced_at=bucket_end,
+            )
+        )
+
+        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await publish(
+                redis,
+                organization.id,
+                {
+                    "type": "reducer_bucket",
+                    "reducer_id": reducer.id,
+                    "customer_id": None,
+                    "external_customer_id": external_id,
+                },
+            )
+
+            response = await websocket.receive_json()
+
+        payload = response["payload"]
+        assert datetime.fromisoformat(payload["cold_until"]) == bucket_end
+        assert payload["count"] == 1

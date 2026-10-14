@@ -15,7 +15,10 @@ from polar.meter.aggregation import UniqueAggregation
 from polar.models import Customer, Organization, Reducer
 from polar.reducer.repository import ReducerRepository
 from polar.reducer_bucket.repository import ReducerBucketRepository
-from polar.reducer_bucket.service import get_customer_identities
+from polar.reducer_bucket.service import (
+    get_customer_identities,
+    get_reducer_bucket_start,
+)
 
 from .schemas import (
     IncomingMessageAdapter,
@@ -180,7 +183,7 @@ class OutpostService:
 
         repository = ReducerBucketRepository.from_session(session)
         version = await repository.get_database_now()
-        since = version - SYNCED_LOOKBACK
+        since = get_reducer_bucket_start(version - SYNCED_LOOKBACK)
         # Temporary: credits come from customer meters until credits are reducers.
         # Credits reset on renewal before the billed usage gets sealed, so balances
         # are too low in between.

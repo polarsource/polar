@@ -1,0 +1,180 @@
+---
+title: "Agent sign-up"
+description: "Let AI agents get Polar API access on their own, and let a human take ownership with one link and code."
+---
+
+<Info>
+
+**Status**: Draft
+
+**Created**: October 2026
+
+**Last Updated**: Oct 14, 2026
+
+**Author**: Abris Simon
+</Info>
+
+## Summary
+
+AI agents (Claude Code, Codex, Cursor…) set up more and more things for their users. Today an agent can't
+use the Polar API until a human creates a token in the dashboard and pastes it in.
+
+We want an agent to sign up and work on Polar by itself. When it's done, the human takes ownership with
+one link and a 6-digit code.
+
+We do this by implementing the [WorkOS auth.md spec](https://workos.com/auth-md/docs/apps) on top of our
+existing OAuth2 server. Agents get ordinary OAuth tokens, so nothing else in the API changes.
+
+## Goals
+
+- An agent can find out how to sign up without a human telling it (discovery).
+- An agent can start building (org, products, meters, config) before any human is involved.
+- A human takes over the result with one link and a code.
+- Before a human claims it, an agent can't touch anything involving real money.
+- Users can see and revoke the agents connected to their account.
+
+## Out of scope
+
+- **ID-JAG**: identity assertions signed by agent platforms (e.g. "this is Claude, acting for alice@…"), which would skip the claim step. Later, once platforms issue them.
+- **Agent Auth Protocol**: see [Options](#options).
+- **Post-claim scopes**: after the claim, the agent can do what the user can. Narrowing that is a separate design.
+
+## How it works
+
+There are two ways to sign up. Agents pick one by reading our `/auth.md` file.
+
+### 1. Anonymous: build first, claim later
+
+The agent doesn't need anything from the human to start.
+
+1. The agent calls `POST /v1/agent/identity` with `{"type": "anonymous"}` and gets credentials right away.
+2. Polar creates a **placeholder user** behind the scenes. Everything the agent builds belongs to it.
+3. The agent creates the org, products, meters and config.
+4. When it's done, it asks the human for their email and starts a claim.
+5. The agent gives the human a link and a 6-digit code.
+6. The human signs in, sees what was built, and types the code.
+7. The org now belongs to the human, and the agent keeps working as them.
+
+```mermaid
+sequenceDiagram
+    participant Agent
+    participant Polar
+    participant Human
+
+    Agent->>Polar: POST /v1/agent/identity {"type":"anonymous"}
+    Polar-->>Agent: identity assertion + claim token
+    Agent->>Polar: Build org, products, meters, config
+    Agent->>Human: What's your email?
+    Human-->>Agent: alice@example.com
+    Agent->>Polar: POST /v1/agent/identity/claim
+    Polar-->>Agent: link + 6-digit code
+    Agent->>Human: Open this link, enter this code
+    Human->>Polar: Sign in, review, enter code
+    Agent->>Polar: Poll token endpoint
+    Polar-->>Agent: New tokens, now acting as Alice
+```
+
+### 2. service_auth: claim up front
+
+The agent registers with the user's email. The human approves with the link and code first, then the agent
+starts working. This is the safer flow and ships first.
+
+### Key pieces
+
+- **Discovery**: how agents find this on their own. Standard OAuth metadata files under `/.well-known/`, a
+  pointer to them in the `WWW-Authenticate` header of 401 responses, and a plain-language recipe at `/auth.md`.
+- **Claim page**: the dashboard page where the human signs in, reviews what the agent built, and enters the
+  code (`/agent/claim`).
+- **Identity assertion**: a long-lived signed credential the agent keeps. It trades it for short-lived access
+  tokens (the standard "JWT-bearer" grant). This replaces refresh tokens.
+- **One OAuth client per agent**: each registration creates its own OAuth client, so we can tell agents
+  apart and revoke one without touching the others.
+
+## Decisions
+
+| Topic | Decision |
+|---|---|
+| Who the agent is | It acts as the claiming user, like any OAuth app. Its OAuth client carries an "agent" marker so we can attribute actions and list or revoke agents. No separate agent role. |
+| What a claim is | Creating the org, not transferring it. So no identity-verification check at claim time: the org is new, unreviewed and can't be paid out. |
+| Before the claim | Build only: orgs, products, meters, benefits, config, test events. No review submission, payouts, checkouts, customers or webhooks. Enforced on the server, with narrower scopes as a second layer. |
+| After the claim | Anything the user can do. |
+| Rollout | Anonymous sign-up starts in sandbox, behind a feature flag. Production later. |
+| Claim window | 7 days. After that we delete the unclaimed org, placeholder user and OAuth client. |
+| Identity assertion | Lives 30 days, renewed on every exchange. |
+
+## Options
+
+| Option | We pick it? |
+|---|---|
+| **auth.md on our OAuth2 server**: small, reuses what we have, agents get normal tokens | Yes |
+| **API tokens from the dashboard**: today's way, needs a human first | No |
+| **Agent Auth Protocol**: stronger, but needs client software on the agent side | No |
+| **Agents as org members with their own role**: needs a new kind of identity | Not now |
+
+**API tokens (status quo).** Works, but a human has to sign up, find the settings page and paste a token
+before the agent can do anything. That's the problem we're solving.
+
+**[Agent Auth Protocol](https://agentauthprotocol.com)** (by Better Auth and Vercel). Better security: each
+agent has its own key and signs every request. But the agent needs extra software (a CLI or MCP server) to
+do that, our API would have to be wrapped as "capabilities", there's no Python SDK, and the spec is still a
+draft. It doesn't work for us today. We can revisit it later.
+
+**Agents as org members.** An agent would be its own identity with its own role in the org. Cleaner in the
+long run, but it means a new identity type across auth, policies and the dashboard. Much bigger. Possible
+later, and the agent marker on the OAuth client keeps that door open.
+
+## Security considerations
+
+- **Data in and out**: agents send a name, optionally the user's email, and normal API calls. They receive
+  an identity assertion, access tokens, a claim token, and a claim link and code to show the human.
+- **Who can access it**: anyone can start an anonymous sign-up, but it only gives access to the new
+  placeholder account and what it creates. After the claim, the agent has the claiming user's access. The
+  user can see and revoke it.
+- **Data we store**: an agent registration (type, status, agent name, email hint, scopes, claim timestamps,
+  link to its OAuth client and user). Claim tokens and codes are stored hashed. Unclaimed registrations and
+  everything they created are deleted after 7 days.
+- **Risks**:
+  - *Old credentials still work after the claim.* Reject identity assertions issued before the claim.
+  - *A leaked identity assertion.* Rotate it on every exchange, so a stolen copy stops working.
+  - *The agent approves itself* using a browser where the user is already logged in. Require a fresh
+    sign-in on the claim page.
+  - *Abuse of open anonymous sign-up* (spam orgs, slug squatting). Rate limits, a cap on orgs per agent,
+    the 7-day cleanup, and a feature flag to switch it off.
+  - *Side effects of placeholder users*, e.g. creating a customer with a fake email in Polar's own org.
+    Skip or delay those until the claim.
+  - *Users don't know an agent is connected.* A "Connected agents" page with a revoke button, and an
+    email when an agent is linked.
+
+These risks go into the risk register before this document is merged.
+
+## Rollout
+
+The detailed checklist will be tracked in the PRs. In short:
+
+**Standalone PRs**, can ship any time:
+
+- This document.
+- Protected-resource metadata and the 401 header hint.
+- Optional `meters` in `defineConfig`.
+- Async-safe JWT helpers.
+
+**Stacked PRs**, in order:
+
+1. Registrations model and `service_auth` sign-up.
+2. Token grants and identity assertion hardening.
+3. Claim page, with fresh sign-in.
+4. Revocation and the "Connected agents" page.
+5. Turn on discovery. `service_auth` is now live.
+6. Anonymous sign-up in sandbox, behind a flag:
+   - 6a. Registration, and claim as org creation.
+   - 6b. No-money guards.
+   - 6c. Cleanup job.
+   - 6d. Abuse controls.
+
+**Then**: turn the flag on in production, once sandbox abuse data looks fine. ID-JAG comes later.
+
+## Open questions
+
+- Should orgs created by agents use config-as-code (`polar.config.ts`) by default?
+- What should `organization.created` side effects (review, emails) do for an unclaimed org?
+- Post-claim scopes: deliberately deferred to a separate design.

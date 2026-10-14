@@ -146,27 +146,6 @@ class TestCreditCustomerMeter:
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth
-    async def test_both_customer_selectors(
-        self,
-        client: AsyncClient,
-        user_organization: UserOrganization,
-        customer: Customer,
-        meter: Meter,
-    ) -> None:
-        response = await client.post(
-            "/v1/customer-meters/credits",
-            json={
-                "customer_id": str(customer.id),
-                "external_customer_id": "usr_1337",
-                "meter_id": str(meter.id),
-                "units": 100,
-            },
-        )
-
-        assert response.status_code == 422
-
-    @pytest.mark.api_version(V2027_01)
-    @pytest.mark.auth
     async def test_meter_from_other_accessible_organization(
         self,
         save_fixture: SaveFixture,
@@ -271,53 +250,31 @@ class TestCreditCustomerMeter:
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth
-    async def test_valid_external_customer_id(
+    async def test_valid_external_ids(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
         user_organization: UserOrganization,
         customer: Customer,
-        meter: Meter,
+        customer_meters_with_external_ids: tuple[CustomerMeter, CustomerMeter],
     ) -> None:
         customer.external_id = "usr_1337"
         await save_fixture(customer)
-
-        response = await client.post(
-            "/v1/customer-meters/credits",
-            json={
-                "external_customer_id": "usr_1337",
-                "meter_id": str(meter.id),
-                "units": 100,
-            },
-        )
-
-        assert response.status_code == 201
-        assert response.json()["customer_id"] == str(customer.id)
-
-    @pytest.mark.api_version(V2027_01)
-    @pytest.mark.auth
-    async def test_valid_external_meter_id(
-        self,
-        client: AsyncClient,
-        user_organization: UserOrganization,
-        customer: Customer,
-        customer_meters_with_external_ids: tuple[CustomerMeter, CustomerMeter],
-    ) -> None:
         tool_call_customer_meter, _ = customer_meters_with_external_ids
 
         response = await client.post(
             "/v1/customer-meters/credits",
             json={
-                "customer_id": str(customer.id),
+                "external_customer_id": "usr_1337",
                 "external_meter_id": "tool_call",
                 "units": 100,
             },
         )
 
         assert response.status_code == 201
-        assert response.json()["metadata"]["meter_id"] == str(
-            tool_call_customer_meter.meter_id
-        )
+        json = response.json()
+        assert json["customer_id"] == str(customer.id)
+        assert json["metadata"]["meter_id"] == str(tool_call_customer_meter.meter_id)
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth

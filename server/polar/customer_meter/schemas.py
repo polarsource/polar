@@ -1,7 +1,7 @@
-from typing import Annotated, Any, Self
+from typing import Annotated
 
 from fastapi import Path
-from pydantic import UUID4, Field, model_validator
+from pydantic import UUID4, Field
 
 from polar.customer.schemas.customer import CustomerResponse as Customer
 from polar.kit.schemas import (
@@ -46,22 +46,6 @@ class CustomerMeter(CustomerMeterBase):
 
 
 class CustomerMeterCreditsCreateBase(Schema):
-    meter_id: UUID4 | None = Field(
-        default=None,
-        description=(
-            "The ID of the meter. Required if `external_meter_id` is not provided."
-        ),
-        examples=[METER_ID_EXAMPLE],
-    )
-    external_meter_id: str | None = Field(
-        default=None,
-        min_length=1,
-        description=(
-            "The external ID of the meter, as set by config as code. "
-            "Required if `meter_id` is not provided."
-        ),
-        examples=["tool_call"],
-    )
     units: int = Field(
         gt=0,
         le=1_000_000_000,
@@ -81,45 +65,31 @@ class CustomerMeterCreditsCreateBase(Schema):
         ),
     )
 
-    @model_validator(mode="before")
-    @classmethod
-    def _single_customer_selector(cls, data: Any) -> Any:
-        if (
-            isinstance(data, dict)
-            and "customer_id" in data
-            and "external_customer_id" in data
-        ):
-            raise ValueError(
-                "Provide either customer_id or external_customer_id, not both."
-            )
-        return data
 
-    @model_validator(mode="after")
-    def _single_meter_selector(self) -> Self:
-        if (self.meter_id is None) == (self.external_meter_id is None):
-            raise ValueError("Provide either meter_id or external_meter_id.")
-        return self
-
-
-class CustomerMeterCreditsCustomerIDCreate(CustomerMeterCreditsCreateBase):
-    """Schema to manually grant credits on a customer meter using a customer ID."""
+class CustomerMeterCreditsIDCreate(CustomerMeterCreditsCreateBase):
+    """Schema to manually grant credits on a customer meter using Polar IDs."""
 
     customer_id: UUID4 = Field(
         description="The ID of the customer.", examples=[CUSTOMER_ID_EXAMPLE]
     )
+    meter_id: UUID4 = Field(
+        description="The ID of the meter.", examples=[METER_ID_EXAMPLE]
+    )
 
 
-class CustomerMeterCreditsCustomerExternalIDCreate(CustomerMeterCreditsCreateBase):
-    """
-    Schema to manually grant credits on a customer meter
-    using an external customer ID.
-    """
+class CustomerMeterCreditsExternalIDCreate(CustomerMeterCreditsCreateBase):
+    """Schema to manually grant credits on a customer meter using external IDs."""
 
     external_customer_id: str = Field(
         description="The external ID of the customer.", examples=["usr_1337"]
     )
+    external_meter_id: str = Field(
+        min_length=1,
+        description="The external ID of the meter, as set by config as code.",
+        examples=["tool_call"],
+    )
 
 
 CustomerMeterCreditsCreate = (
-    CustomerMeterCreditsCustomerIDCreate | CustomerMeterCreditsCustomerExternalIDCreate
+    CustomerMeterCreditsIDCreate | CustomerMeterCreditsExternalIDCreate
 )

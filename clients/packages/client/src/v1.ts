@@ -19220,23 +19220,10 @@ export interface components {
       detail: string
     }
     /**
-     * CustomerMeterCreditsCustomerExternalIDCreate
-     * @description Schema to manually grant credits on a customer meter
-     *     using an external customer ID.
+     * CustomerMeterCreditsExternalIDCreate
+     * @description Schema to manually grant credits on a customer meter using external IDs.
      */
-    CustomerMeterCreditsCustomerExternalIDCreate: {
-      /**
-       * Meter Id
-       * @description The ID of the meter. Required if `external_meter_id` is not provided.
-       * @example d498a884-e2cd-4d3e-8002-f536468a8b22
-       */
-      meter_id?: string | null
-      /**
-       * External Meter Id
-       * @description The external ID of the meter, as set by config as code. Required if `meter_id` is not provided.
-       * @example tool_call
-       */
-      external_meter_id?: string | null
+    CustomerMeterCreditsExternalIDCreate: {
       /**
        * Units
        * @description The number of units to credit.
@@ -19260,24 +19247,18 @@ export interface components {
        * @example usr_1337
        */
       external_customer_id: string
-    }
-    /**
-     * CustomerMeterCreditsCustomerIDCreate
-     * @description Schema to manually grant credits on a customer meter using a customer ID.
-     */
-    CustomerMeterCreditsCustomerIDCreate: {
-      /**
-       * Meter Id
-       * @description The ID of the meter. Required if `external_meter_id` is not provided.
-       * @example d498a884-e2cd-4d3e-8002-f536468a8b22
-       */
-      meter_id?: string | null
       /**
        * External Meter Id
-       * @description The external ID of the meter, as set by config as code. Required if `meter_id` is not provided.
+       * @description The external ID of the meter, as set by config as code.
        * @example tool_call
        */
-      external_meter_id?: string | null
+      external_meter_id: string
+    }
+    /**
+     * CustomerMeterCreditsIDCreate
+     * @description Schema to manually grant credits on a customer meter using Polar IDs.
+     */
+    CustomerMeterCreditsIDCreate: {
       /**
        * Units
        * @description The number of units to credit.
@@ -19302,6 +19283,13 @@ export interface components {
        * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
        */
       customer_id: string
+      /**
+       * Meter Id
+       * Format: uuid4
+       * @description The ID of the meter.
+       * @example d498a884-e2cd-4d3e-8002-f536468a8b22
+       */
+      meter_id: string
     }
     /**
      * CustomerMeterSortProperty
@@ -63268,8 +63256,8 @@ export interface operations {
     requestBody: {
       content: {
         'application/json':
-          | components['schemas']['CustomerMeterCreditsCustomerIDCreate']
-          | components['schemas']['CustomerMeterCreditsCustomerExternalIDCreate']
+          | components['schemas']['CustomerMeterCreditsIDCreate']
+          | components['schemas']['CustomerMeterCreditsExternalIDCreate']
       }
     }
     responses: {

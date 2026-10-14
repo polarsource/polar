@@ -43,7 +43,7 @@ from polar.reducer.repository import ReducerRepository
 from polar.worker import enqueue_job
 
 from .repository import CustomerMeterRepository
-from .schemas import CustomerMeterCreditsCreate, CustomerMeterCreditsCustomerIDCreate
+from .schemas import CustomerMeterCreditsCreate, CustomerMeterCreditsIDCreate
 from .sorting import CustomerMeterSortProperty
 
 
@@ -239,7 +239,7 @@ class CustomerMeterService:
 
         customer_repository = CustomerRepository.from_session(session)
         options = (joinedload(Customer.organization),)
-        if isinstance(credit_create, CustomerMeterCreditsCustomerIDCreate):
+        if isinstance(credit_create, CustomerMeterCreditsIDCreate):
             customer_field = "customer_id"
             customer_value: uuid.UUID | str = credit_create.customer_id
             customer = await customer_repository.get_readable_by_id(
@@ -270,14 +270,13 @@ class CustomerMeterService:
 
         meter_repository = MeterRepository.from_session(session)
         meter: Meter | None
-        if credit_create.meter_id is not None:
+        if isinstance(credit_create, CustomerMeterCreditsIDCreate):
             meter_field = "meter_id"
             meter_value: uuid.UUID | str = credit_create.meter_id
             meter = await meter_repository.get_readable_by_id(
                 credit_create.meter_id, org_ids
             )
         else:
-            assert credit_create.external_meter_id is not None
             meter_field = "external_meter_id"
             meter_value = credit_create.external_meter_id
             meters = await meter_repository.get_all_by_external_ids(

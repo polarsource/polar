@@ -25981,10 +25981,10 @@
               "schema": {
                 "anyOf": [
                   {
-                    "$ref": "#/components/schemas/CustomerMeterCreditsCustomerIDCreate"
+                    "$ref": "#/components/schemas/CustomerMeterCreditsIDCreate"
                   },
                   {
-                    "$ref": "#/components/schemas/CustomerMeterCreditsCustomerExternalIDCreate"
+                    "$ref": "#/components/schemas/CustomerMeterCreditsExternalIDCreate"
                   }
                 ],
                 "title": "Credit Create"
@@ -26069,11 +26069,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_meters.credits(\n    meter_id='d498a884-e2cd-4d3e-8002-f536468a8b22',\n    external_meter_id='tool_call',\n    units=100,\n    rollover=False,\n    customer_id='992fae2a-2a17-4b7a-8d9e-e287cf90131b',\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_meters.credits(\n    units=100,\n    rollover=False,\n    customer_id='992fae2a-2a17-4b7a-8d9e-e287cf90131b',\n    meter_id='d498a884-e2cd-4d3e-8002-f536468a8b22',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerMeters.credits(\n  {\n    \"meter_id\": \"d498a884-e2cd-4d3e-8002-f536468a8b22\",\n    \"external_meter_id\": \"tool_call\",\n    \"units\": 100,\n    \"rollover\": false,\n    \"customer_id\": \"992fae2a-2a17-4b7a-8d9e-e287cf90131b\"\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerMeters.credits(\n  {\n    \"units\": 100,\n    \"rollover\": false,\n    \"customer_id\": \"992fae2a-2a17-4b7a-8d9e-e287cf90131b\",\n    \"meter_id\": \"d498a884-e2cd-4d3e-8002-f536468a8b22\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -49881,40 +49881,8 @@
         ],
         "title": "CustomerMeterCreditExternalIDConflict"
       },
-      "CustomerMeterCreditsCustomerExternalIDCreate": {
+      "CustomerMeterCreditsExternalIDCreate": {
         "properties": {
-          "meter_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Meter Id",
-            "description": "The ID of the meter. Required if `external_meter_id` is not provided.",
-            "examples": [
-              "d498a884-e2cd-4d3e-8002-f536468a8b22"
-            ]
-          },
-          "external_meter_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Meter Id",
-            "description": "The external ID of the meter, as set by config as code. Required if `meter_id` is not provided.",
-            "examples": [
-              "tool_call"
-            ]
-          },
           "units": {
             "type": "integer",
             "maximum": 1000000000.0,
@@ -49951,50 +49919,28 @@
             "examples": [
               "usr_1337"
             ]
+          },
+          "external_meter_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "External Meter Id",
+            "description": "The external ID of the meter, as set by config as code.",
+            "examples": [
+              "tool_call"
+            ]
           }
         },
         "type": "object",
         "required": [
           "units",
-          "external_customer_id"
+          "external_customer_id",
+          "external_meter_id"
         ],
-        "title": "CustomerMeterCreditsCustomerExternalIDCreate",
-        "description": "Schema to manually grant credits on a customer meter\nusing an external customer ID."
+        "title": "CustomerMeterCreditsExternalIDCreate",
+        "description": "Schema to manually grant credits on a customer meter using external IDs."
       },
-      "CustomerMeterCreditsCustomerIDCreate": {
+      "CustomerMeterCreditsIDCreate": {
         "properties": {
-          "meter_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Meter Id",
-            "description": "The ID of the meter. Required if `external_meter_id` is not provided.",
-            "examples": [
-              "d498a884-e2cd-4d3e-8002-f536468a8b22"
-            ]
-          },
-          "external_meter_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Meter Id",
-            "description": "The external ID of the meter, as set by config as code. Required if `meter_id` is not provided.",
-            "examples": [
-              "tool_call"
-            ]
-          },
           "units": {
             "type": "integer",
             "maximum": 1000000000.0,
@@ -50032,15 +49978,25 @@
             "examples": [
               "992fae2a-2a17-4b7a-8d9e-e287cf90131b"
             ]
+          },
+          "meter_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Meter Id",
+            "description": "The ID of the meter.",
+            "examples": [
+              "d498a884-e2cd-4d3e-8002-f536468a8b22"
+            ]
           }
         },
         "type": "object",
         "required": [
           "units",
-          "customer_id"
+          "customer_id",
+          "meter_id"
         ],
-        "title": "CustomerMeterCreditsCustomerIDCreate",
-        "description": "Schema to manually grant credits on a customer meter using a customer ID."
+        "title": "CustomerMeterCreditsIDCreate",
+        "description": "Schema to manually grant credits on a customer meter using Polar IDs."
       },
       "CustomerMeterSortProperty": {
         "type": "string",

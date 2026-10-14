@@ -84,6 +84,9 @@ class ReducerBucket(RecordModel):
     sealed_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
+    synced_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
 
     organization: Mapped["Organization"] = relationship(lazy="raise")
     reducer: Mapped["Reducer"] = relationship(lazy="raise")

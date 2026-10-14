@@ -25,6 +25,9 @@ export function getTranslationLocale(locale: AcceptedLocale): SupportedLocale {
 }
 
 export function isAcceptedLocale(value: string): value is AcceptedLocale {
+  if (SUPPORTED_LOCALES.includes(value as SupportedLocale)) {
+    return true
+  }
   const language = value.split('-')[0].toLowerCase()
   return SUPPORTED_LOCALES.includes(language as SupportedLocale)
 }

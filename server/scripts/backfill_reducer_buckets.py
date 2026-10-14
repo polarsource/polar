@@ -444,7 +444,7 @@ async def backfill(
     organization_id: UUID | None = None,
     meter_id: UUID | None = None,
     customer_id: UUID | None = None,
-    window_hours: int = 24,
+    window_hours: int = typer.Option(24, min=1),
 ) -> None:
     """Rebuild usage and billing buckets, excluding the latest ten minutes.
 

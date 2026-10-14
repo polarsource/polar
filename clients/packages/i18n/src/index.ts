@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useMemo } from 'react'
 
 export { DEFAULT_LOCALE, LOCALE_NAMES, SUPPORTED_LOCALES } from './config'
 export type { AcceptedLocale, SupportedLocale } from './config'
@@ -25,6 +25,9 @@ export function getTranslationLocale(locale: AcceptedLocale): SupportedLocale {
 }
 
 export function isAcceptedLocale(value: string): value is AcceptedLocale {
+  if (SUPPORTED_LOCALES.includes(value as SupportedLocale)) {
+    return true
+  }
   const language = value.split('-')[0].toLowerCase()
   return SUPPORTED_LOCALES.includes(language as SupportedLocale)
 }
@@ -109,62 +112,87 @@ export function getTranslations(
   return merged
 }
 
-export const useTranslations = (locale: AcceptedLocale): TranslateFn => {
-  return useCallback(
-    ((key: string, interpolations?: Record<string, unknown>) => {
-      const translations = getTranslations(locale)
+const pluralRulesCache = new Map<SupportedLocale, Intl.PluralRules>()
 
-      const value = key
-        .split('.')
-        .reduce<unknown>(
-          (obj, k) => (obj as Record<string, unknown>)[k],
-          translations,
-        )
+const getPluralRules = (locale: SupportedLocale): Intl.PluralRules => {
+  let rules = pluralRulesCache.get(locale)
+  if (!rules) {
+    rules = new Intl.PluralRules(locale)
+    pluralRulesCache.set(locale, rules)
+  }
+  return rules
+}
 
-      // Handle plural objects
-      if (
-        typeof value === 'object' &&
-        value !== null &&
-        '_mode' in value &&
-        (value as { _mode: string })._mode === 'plural'
-      ) {
-        const pluralObj = value as Record<string, string>
-        const count = (interpolations as { count: number })?.count ?? 0
-
-        // Exact match first (=0, =1, etc.), then fall back to 'other'
-        const template = pluralObj[`=${count}`] ?? pluralObj.other
-
-        // Replace # with count, then handle other interpolations
-        let result = template.replace(/#/g, count.toString())
-
-        if (interpolations) {
-          result = result.replace(/\{([a-zA-Z0-9_]+)\}/g, (_, k) => {
-            const val = interpolations[k]
-            return val === undefined ? `{${k}}` : String(val)
-          })
-        }
-
-        return result
-      }
-
-      // Handle annotated entries — extract the value string
-      const template =
-        typeof value === 'object' &&
-        value !== null &&
-        'value' in value &&
-        typeof (value as { value: unknown }).value === 'string'
-          ? (value as { value: string }).value
-          : (value as string)
-
-      if (!interpolations) {
-        return template
-      }
-
-      return template.replace(/\{([a-zA-Z0-9_]+)\}/g, (_, k) => {
-        const val = interpolations[k]
-        return val === undefined ? `{${k}}` : String(val)
-      })
-    }) as TranslateFn,
-    [locale],
+const selectPluralTemplate = (
+  pluralObj: Record<string, string>,
+  count: number,
+  locale: SupportedLocale,
+): string => {
+  return (
+    pluralObj[`=${count}`] ??
+    pluralObj[getPluralRules(locale).select(count)] ??
+    pluralObj.other
   )
+}
+
+export const createTranslator = (locale: AcceptedLocale): TranslateFn => {
+  const translationLocale = getTranslationLocale(locale)
+  const translations = getTranslations(translationLocale)
+
+  return ((key: string, interpolations?: Record<string, unknown>) => {
+    const value = key
+      .split('.')
+      .reduce<unknown>(
+        (obj, k) => (obj as Record<string, unknown>)[k],
+        translations,
+      )
+
+    // Handle plural objects
+    if (
+      typeof value === 'object' &&
+      value !== null &&
+      '_mode' in value &&
+      (value as { _mode: string })._mode === 'plural'
+    ) {
+      const pluralObj = value as Record<string, string>
+      const count = (interpolations as { count: number })?.count ?? 0
+
+      // Exact match (=0, =1, …), then the locale's CLDR category, then 'other'
+      const template = selectPluralTemplate(pluralObj, count, translationLocale)
+
+      // Replace # with count, then handle other interpolations
+      let result = template.replace(/#/g, count.toString())
+
+      if (interpolations) {
+        result = result.replace(/\{([a-zA-Z0-9_]+)\}/g, (_, k) => {
+          const val = interpolations[k]
+          return val === undefined ? `{${k}}` : String(val)
+        })
+      }
+
+      return result
+    }
+
+    // Handle annotated entries — extract the value string
+    const template =
+      typeof value === 'object' &&
+      value !== null &&
+      'value' in value &&
+      typeof (value as { value: unknown }).value === 'string'
+        ? (value as { value: string }).value
+        : (value as string)
+
+    if (!interpolations) {
+      return template
+    }
+
+    return template.replace(/\{([a-zA-Z0-9_]+)\}/g, (_, k) => {
+      const val = interpolations[k]
+      return val === undefined ? `{${k}}` : String(val)
+    })
+  }) as TranslateFn
+}
+
+export const useTranslations = (locale: AcceptedLocale): TranslateFn => {
+  return useMemo(() => createTranslator(locale), [locale])
 }

@@ -57,15 +57,9 @@ const PRICES: Record<UsageEventName, number> = {
 }
 export const CREDITS_PER_TOOL_CALL = 10
 export const CREDITS_GRANTED = 5_000
-export const STARTING_TOKENS_IN = 418_206_117
-export const STARTING_TOKENS_OUT = 223_902_214
-const STARTING_TOOL_CALLS = 86
-const EARLIER_EVENTS: UsageEvent[] = [
-  { name: 'tokens.out', quantity: 1876 },
-  { name: 'tool.call', quantity: 2 },
-  { name: 'tokens.in', quantity: 4312 },
-]
-export const VISIBLE_EVENTS = EARLIER_EVENTS.length
+/** The bill starts empty and fills in as the conversation runs. */
+const NO_EVENTS: UsageEvent[] = []
+export const VISIBLE_EVENTS = 3
 export const PLAN_PRICE = 49
 
 export const chargeFor = ({ name, quantity }: UsageEvent) =>
@@ -89,10 +83,11 @@ export const useUsageConversation = () => {
   const [typedPrompt, setTypedPrompt] = useState(0)
   const [typed, setTyped] = useState(0)
   const [phase, setPhase] = useState<Phase>('typing')
-  const [settled, setSettled] = useState(EARLIER_EVENTS)
+  const [settled, setSettled] = useState(NO_EVENTS)
   const [billedIn, setBilledIn] = useState(0)
   const [billedOut, setBilledOut] = useState(0)
   const [billedToolCalls, setBilledToolCalls] = useState(0)
+  const [firstPrompt, setFirstPrompt] = useState(true)
   const scenario = SCENARIOS[index]
 
   const record = (event: UsageEvent) =>
@@ -138,7 +133,6 @@ export const useUsageConversation = () => {
       return () => clearTimeout(timer)
     }
 
-    const started = performance.now()
     // Characters are revealed one at a time against the clock, so the pace is steady at any frame rate.
     const reveal = (
       text: string,
@@ -147,7 +141,10 @@ export const useUsageConversation = () => {
       done: () => void,
       pause: number,
     ) => {
+      // The clock starts on the first painted frame, so a delayed first frame never skips characters.
+      let started = 0
       const tick = (now: number) => {
+        if (!started) started = now
         const shown = Math.min(
           text.length,
           Math.floor(((now - started) / 1000) * perSecond),
@@ -160,14 +157,21 @@ export const useUsageConversation = () => {
     }
 
     switch (phase) {
-      case 'typing':
-        reveal(scenario.prompt, 48, setTypedPrompt, send, 600)
+      case 'typing': {
+        const type = () =>
+          reveal(scenario.prompt, 28, setTypedPrompt, send, 600)
+        // The first prompt waits a moment, so the empty bill is seen before it fills.
+        // Clearing the flag re-runs this effect, which then starts the typing.
+        if (firstPrompt)
+          timer = window.setTimeout(() => setFirstPrompt(false), 1000)
+        else type()
         break
+      }
       case 'working':
         timer = window.setTimeout(answer, 1600)
         break
       case 'streaming':
-        reveal(scenario.answer, 110, setTyped, () => setPhase('metered'), 250)
+        reveal(scenario.answer, 70, setTyped, () => setPhase('metered'), 250)
         break
       case 'metered':
         timer = window.setTimeout(settle, 2600)
@@ -177,20 +181,22 @@ export const useUsageConversation = () => {
       cancelAnimationFrame(frame)
       clearTimeout(timer)
     }
-  }, [inView, phase, scenario])
+  }, [inView, phase, scenario, firstPrompt])
 
   const progress = Math.min(typed / scenario.answer.length, 1)
   const streamed =
     phase === 'streaming' || phase === 'metered'
       ? Math.round(scenario.outputTokens * progress)
       : 0
-  const inputCharge = (STARTING_TOKENS_IN + billedIn) * PRICES['tokens.in']
-  const outputCharge = (STARTING_TOKENS_OUT + billedOut) * PRICES['tokens.out']
+  const inputCharge = billedIn * PRICES['tokens.in']
+  const outputCharge = billedOut * PRICES['tokens.out']
 
   return {
     ref,
     scenario,
     phase,
+    /** True until the first prompt has been sent. */
+    firstPrompt,
     /** The prompt as far as it has been typed into the composer. */
     composerText:
       phase === 'typing' ? scenario.prompt.slice(0, typedPrompt) : '',
@@ -198,20 +204,9 @@ export const useUsageConversation = () => {
     typed,
     /** Output tokens of the answer so far, still being metered. */
     streamed,
-    /** Input tokens of the prompt as far as it has been typed. */
-    promptTokens: Math.round(
-      (scenario.inputTokens * typedPrompt) / scenario.prompt.length,
-    ),
     settled,
-    totalTokens:
-      STARTING_TOKENS_IN +
-      STARTING_TOKENS_OUT +
-      billedIn +
-      billedOut +
-      streamed,
-    creditsLeft:
-      CREDITS_GRANTED -
-      (STARTING_TOOL_CALLS + billedToolCalls) * CREDITS_PER_TOOL_CALL,
+    totalTokens: billedIn + billedOut + streamed,
+    creditsLeft: CREDITS_GRANTED - billedToolCalls * CREDITS_PER_TOOL_CALL,
     inputCharge,
     outputCharge,
     /** Changes whenever usage settles onto the bill, so the charge can react. */

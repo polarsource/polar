@@ -17,13 +17,22 @@ const Amount = ({
 }) => (
   <Box alignItems="baseline" columnGap="s">
     <div key={settled} className="[animation:settle_600ms_ease-out_both]">
-      <Text
-        variant={emphasis ? 'heading-xxs' : 'default'}
-        color={emphasis ? 'default' : 'muted'}
-        tabularNums
-      >
-        {dollars(value, 2)}
-      </Text>
+      {value === 0 && !emphasis ? (
+        <Box
+          width={56}
+          height={10}
+          backgroundColor="background-card"
+          borderRadius="s"
+        />
+      ) : (
+        <Text
+          variant={emphasis ? 'heading-xxs' : 'default'}
+          color={emphasis ? 'default' : 'muted'}
+          tabularNums
+        >
+          {dollars(value, emphasis ? 2 : 4)}
+        </Text>
+      )}
     </div>
   </Box>
 )

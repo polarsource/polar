@@ -108,10 +108,10 @@ export const UsageBillingMock = () => {
     ref,
     scenario,
     phase,
+    firstPrompt,
     composerText,
     typed,
     streamed,
-    promptTokens,
     settled,
     totalTokens,
     creditsLeft,
@@ -124,23 +124,18 @@ export const UsageBillingMock = () => {
   return (
     <div
       ref={ref}
-      className="dark:border-polar-800 relative w-full overflow-hidden rounded-md border border-gray-200 bg-[url(/assets/landing/company/Polar_Flow_03_No_Logo.jpg)] bg-cover bg-center p-4 md:p-12"
+      className="dark:border-polar-800 relative w-full overflow-hidden rounded-md border border-gray-200 bg-[url(/assets/landing/company/Polar_Flow_03_No_Logo.jpg)] bg-cover bg-center p-4 md:p-8"
     >
-      <div className="pointer-events-none absolute inset-0 bg-black/60" />
+      <div className="pointer-events-none absolute inset-0 bg-black/40" />
       <Box
         position="relative"
         width="100%"
         flexDirection={{ base: 'column', md: 'row' }}
-        alignItems={{ base: 'stretch', md: 'start' }}
-        rowGap="l"
+        alignItems="stretch"
+        gap="2xl"
         transform="scale(.9)"
       >
-        <Box
-          width={{ base: '100%', md: '60%' }}
-          height={{ md: '27rem' }}
-          marginTop={{ base: 'none', md: '3xl' }}
-          flexShrink={0}
-        >
+        <Box flex={1} minWidth={0}>
           <Panel>
             <Box
               alignItems="center"
@@ -150,13 +145,13 @@ export const UsageBillingMock = () => {
             >
               <StaticImage
                 src="/assets/acme.jpg"
-                alt="Acme"
+                alt="Your App"
                 width={20}
                 height={20}
                 className="size-5 rounded-md object-cover"
               />
               <Text variant="body" color="muted">
-                Acme
+                Your App
               </Text>
               <Box
                 marginLeft="auto"
@@ -174,7 +169,6 @@ export const UsageBillingMock = () => {
                 rowGap="l"
                 paddingHorizontal="xl"
                 paddingVertical="xl"
-                maxWidth={{ md: '72%' }}
                 minHeight={{ base: '13rem', md: 'auto' }}
               >
                 {sent ? (
@@ -190,8 +184,16 @@ export const UsageBillingMock = () => {
                         <Text variant="body">{scenario.prompt}</Text>
                       </Box>
                     </div>
-                    {phase === 'working' ? (
-                      <div className="[animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_200ms_both]">
+                    {/* The status and the answer share one cell, so the status fades out under the answer rising in. */}
+                    <div className="grid *:[grid-area:1/1]">
+                      <div
+                        className={
+                          phase === 'working'
+                            ? '[animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_200ms_both]'
+                            : 'pointer-events-none [animation:fade_300ms_ease-out_both]'
+                        }
+                        aria-hidden={phase !== 'working'}
+                      >
                         <Box
                           alignItems="center"
                           columnGap="s"
@@ -199,20 +201,23 @@ export const UsageBillingMock = () => {
                         >
                           <LoaderCircle size={14} className="animate-spin" />
                           <Text variant="body" color="muted">
-                            <Shimmer active>{scenario.working}</Shimmer>
+                            <Shimmer active={phase === 'working'}>
+                              {scenario.working}
+                            </Shimmer>
                           </Text>
                         </Box>
                       </div>
-                    ) : (
-                      <div className="[animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_both]">
-                        <Text variant="body" color="muted">
-                          {scenario.answer.slice(0, typed)}
-                          <Box as="span" visibility="hidden">
-                            {scenario.answer.slice(typed)}
-                          </Box>
-                        </Text>
-                      </div>
-                    )}
+                      {phase === 'working' ? null : (
+                        <div className="[animation:rise_500ms_cubic-bezier(0.2,0.8,0.2,1)_150ms_both]">
+                          <Text variant="body" color="muted">
+                            {scenario.answer.slice(0, typed)}
+                            <Box as="span" visibility="hidden">
+                              {scenario.answer.slice(typed)}
+                            </Box>
+                          </Text>
+                        </div>
+                      )}
+                    </div>
                   </>
                 ) : null}
               </Box>
@@ -232,7 +237,7 @@ export const UsageBillingMock = () => {
                     </Text>
                   ) : (
                     <Text variant="body" color="muted">
-                      Ask a follow-up
+                      {firstPrompt ? 'Ask anything…' : 'Ask a follow-up'}
                     </Text>
                   )}
                   <Box
@@ -296,7 +301,7 @@ export const UsageBillingMock = () => {
           </Panel>
         </Box>
 
-        <div className="relative z-10 w-full shrink-0 md:-ml-[16%] md:w-[54%]">
+        <div className="w-full min-w-0 md:flex-1">
           <Panel elevated>
             <Box
               alignItems="center"
@@ -369,23 +374,63 @@ export const UsageBillingMock = () => {
                 </Box>
               </Grid>
               <Box flexDirection="column" rowGap="s" padding="xl">
-                <EventRow
-                  event={
-                    phase === 'typing'
-                      ? { name: 'tokens.in', quantity: promptTokens }
-                      : phase === 'working'
+                {sent ? (
+                  <EventRow
+                    event={
+                      phase === 'working'
                         ? { name: 'tool.call', quantity: scenario.tools }
                         : { name: 'tokens.out', quantity: streamed }
-                  }
-                  pending={phase !== 'metered'}
-                />
-                {settled.slice(0, VISIBLE_EVENTS - 1).map((event, position) => (
-                  <EventRow
-                    key={`${position}-${event.name}-${event.quantity}`}
-                    event={event}
-                    age={position + 1}
+                    }
+                    pending={phase !== 'metered'}
                   />
-                ))}
+                ) : null}
+                {settled
+                  .slice(0, VISIBLE_EVENTS - (sent ? 1 : 0))
+                  .map((event, position) => (
+                    <EventRow
+                      key={`${position}-${event.name}-${event.quantity}`}
+                      event={event}
+                      age={position + (sent ? 1 : 0)}
+                    />
+                  ))}
+                {Array.from(
+                  {
+                    length: Math.max(
+                      0,
+                      VISIBLE_EVENTS - (sent ? 1 : 0) - settled.length,
+                    ),
+                  },
+                  (_, slot) => (
+                    <Box
+                      key={`empty-${slot}`}
+                      alignItems="center"
+                      justifyContent="between"
+                      columnGap="l"
+                      height={18}
+                    >
+                      <Box
+                        width={96}
+                        height={10}
+                        backgroundColor="background-card"
+                        borderRadius="s"
+                      />
+                      <Box alignItems="center" columnGap="l">
+                        <Box
+                          width={40}
+                          height={10}
+                          backgroundColor="background-card"
+                          borderRadius="s"
+                        />
+                        <Box
+                          width={56}
+                          height={10}
+                          backgroundColor="background-card"
+                          borderRadius="s"
+                        />
+                      </Box>
+                    </Box>
+                  ),
+                )}
               </Box>
             </Inner>
             <Box paddingTop="xs">

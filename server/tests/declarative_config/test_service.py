@@ -1125,11 +1125,19 @@ class TestApply:
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_settings_tax(
         self,
+        save_fixture: SaveFixture,
         session: AsyncSession,
         redis: Redis,
         auth_subject: AuthSubject[Organization],
         organization: Organization,
     ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[(1000, "eur")],
+        )
+
         result = await declarative_config_service.apply(
             session,
             redis,

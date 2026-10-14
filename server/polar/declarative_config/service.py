@@ -182,7 +182,8 @@ class DeclarativeConfigService:
             changes.settings is not None
             and changes.settings.action == ConfigAction.updated
         ):
-            await self._assert_products_have_currency(session, organization)
+            if "payments.currency" in changes.settings.update_dict:
+                await self._assert_products_have_currency(session, organization)
             await webhook_service.send(
                 session,
                 organization,

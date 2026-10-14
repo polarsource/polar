@@ -68,12 +68,8 @@ export const tokenPage = (
 
 export const parseHandoff = (
   url: URL,
-  expectedState: string,
   privateKey: KeyObject,
 ): CallbackResult<Redacted.Redacted<string>> => {
-  if (url.searchParams.get('state') !== expectedState) {
-    return { outcome: 'invalid', message: 'Invalid token callback state.' }
-  }
   if (url.searchParams.has('error')) {
     return {
       outcome: 'denied',
@@ -122,7 +118,7 @@ const receive = (request: TokenRequest, announce: AnnounceTokenPage) =>
       path: CALLBACK_PATH,
       state,
       target: page,
-      parse: (url) => parseHandoff(url, state, privateKey),
+      parse: (url) => parseHandoff(url, privateKey),
       copy: tokenCopy,
       browserError: 'Could not open the browser to create the token.',
       timeoutError: 'Token creation timed out. Try again.',

@@ -75,8 +75,7 @@ test('decrypts a token encrypted by the browser', async () => {
   const { privateKey, spki } = keys()
   const encrypted = await encryptLikeTheBrowser(spki, 'polar_oat_secret')
   const result = parseHandoff(
-    callback({ state: 'expected', encrypted_token: encrypted }),
-    'expected',
+    callback({ encrypted_token: encrypted }),
     privateKey,
   )
   expect(result.outcome).toBe('success')
@@ -88,19 +87,17 @@ test('rejects a token encrypted for another key', async () => {
   const { spki } = keys()
   const encrypted = await encryptLikeTheBrowser(spki, 'polar_oat_secret')
   const result = parseHandoff(
-    callback({ state: 'expected', encrypted_token: encrypted }),
-    'expected',
+    callback({ encrypted_token: encrypted }),
     keys().privateKey,
   )
   expect(result.outcome).toBe('invalid')
 })
 
 test.each([
-  [{ state: 'wrong', encrypted_token: 'x' }, 'invalid'],
-  [{ state: 'expected', error: 'access_denied' }, 'denied'],
-  [{ state: 'expected' }, 'invalid'],
+  [{ error: 'access_denied' }, 'denied'],
+  [{}, 'invalid'],
 ] as const)('handles callback %j as %s', (params, outcome) => {
-  expect(
-    parseHandoff(callback(params), 'expected', keys().privateKey).outcome,
-  ).toBe(outcome)
+  expect(parseHandoff(callback(params), keys().privateKey).outcome).toBe(
+    outcome,
+  )
 })

@@ -151,7 +151,12 @@ async def create_subscription_order(
             pass
 
 
-@actor(actor_name="order.create_meter_cycle_order", priority=TaskPriority.LOW)
+@actor(
+    actor_name="order.create_meter_cycle_order",
+    priority=TaskPriority.LOW,
+    # Linking a whole meter period of pending billing entries doesn't fit the default 60s.
+    time_limit=600_000,
+)
 async def create_meter_cycle_order(
     subscription_id: Annotated[uuid.UUID, LoggableField],
     cutoff: Annotated[str, LoggableField],

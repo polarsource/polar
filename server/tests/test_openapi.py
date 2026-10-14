@@ -6,7 +6,7 @@ from openapi_kit.diff import compare
 from openapi_kit.parser import OpenAPIParser
 
 from polar.kit.versioning import APIVersion
-from polar.version import V2027_01, VERSIONS
+from polar.version import V2026_10, V2027_01, VERSIONS
 
 
 @pytest.mark.anyio
@@ -54,3 +54,15 @@ async def test_current_openapi_frozen(version: APIVersion, client: AsyncClient) 
     diff = compare(expected, actual)
     assert len(diff.operation_changes) == 0, OPENAPI_FROZEN_MESSAGE
     assert len(diff.schema_changes) == 0, OPENAPI_FROZEN_MESSAGE
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(("version", "included"), [(V2026_10, True), (V2027_01, False)])
+async def test_legacy_recurring_product_price_schema(
+    version: APIVersion, included: bool, client: AsyncClient
+) -> None:
+    response = await client.get(f"{version}/openapi.json")
+    assert response.status_code == 200
+
+    schemas = response.json()["components"]["schemas"]
+    assert ("LegacyRecurringProductPrice" in schemas) is included

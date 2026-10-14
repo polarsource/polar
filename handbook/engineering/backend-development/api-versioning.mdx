@@ -273,6 +273,29 @@ class Customer(Schema):
 
 Delete the field when `V2026_04` is removed.
 
+### Removing a union member
+
+Put the same marker on the member of an output union:
+
+```python
+from typing import Annotated
+
+from pydantic import Discriminator, Tag
+
+from polar.kit.versioning import Version
+from polar.version import V2026_04
+
+Price = Annotated[
+    Annotated[LegacyPrice, Tag("legacy"), Version(up_to=V2026_04)]
+    | Annotated[NewPrice, Tag("new")],
+    Discriminator(get_price_kind),
+]
+```
+
+Later versions drop the member from the OpenAPI schema, along with any
+component only it references. Validation and serialization do not change.
+Delete the member when `V2026_04` is removed.
+
 ### Limiting availability to a bounded range
 
 Provide both bounds when an endpoint or field exists only during part of the API

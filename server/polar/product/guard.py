@@ -4,8 +4,6 @@ from typing import TypeIs
 from polar.enums import SubscriptionRecurringInterval
 from polar.models.product import Product
 from polar.models.product_price import (
-    LegacyRecurringProductPriceCustom,
-    LegacyRecurringProductPriceFixed,
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
@@ -16,17 +14,12 @@ from polar.models.product_price import (
 )
 
 type StaticPrice = (
-    ProductPriceFixed
-    | LegacyRecurringProductPriceFixed
-    | ProductPriceCustom
-    | LegacyRecurringProductPriceCustom
-    | ProductPriceSeatUnit
-    | ProductPriceUnit
+    ProductPriceFixed | ProductPriceCustom | ProductPriceSeatUnit | ProductPriceUnit
 )
 
-type FixedPrice = ProductPriceFixed | LegacyRecurringProductPriceFixed
+type FixedPrice = ProductPriceFixed
 
-type CustomPrice = ProductPriceCustom | LegacyRecurringProductPriceCustom
+type CustomPrice = ProductPriceCustom
 
 type MeteredUnitPrice = ProductPriceMeteredUnit
 
@@ -38,22 +31,13 @@ type SeatPrice = ProductPriceSeatUnit
 
 type UnitPrice = ProductPriceUnit
 
-type LegacyPrice = LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom
-
-
-def is_legacy_price(price: ProductPrice) -> TypeIs[LegacyPrice]:
-    return isinstance(
-        price,
-        LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom,
-    )
-
 
 def is_fixed_price(price: ProductPrice) -> TypeIs[FixedPrice]:
-    return isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed)
+    return isinstance(price, ProductPriceFixed)
 
 
 def is_custom_price(price: ProductPrice) -> TypeIs[CustomPrice]:
-    return isinstance(price, ProductPriceCustom | LegacyRecurringProductPriceCustom)
+    return isinstance(price, ProductPriceCustom)
 
 
 def is_static_price(price: ProductPrice) -> TypeIs[StaticPrice]:

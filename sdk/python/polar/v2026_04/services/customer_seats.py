@@ -52,8 +52,6 @@ class CustomerSeatsSync(SyncServiceBase):
         request_access_token: str | None = None,
     ) -> SeatsList:
         """
-        List seats for a subscription or order.
-
         **Scopes**: `customer_seats:read`
 
         Args:
@@ -100,8 +98,6 @@ class CustomerSeatsSync(SyncServiceBase):
         **kwargs: typing.Unpack[SeatAssign],
     ) -> CustomerSeat:
         """
-        Assign a seat for a subscription or order.
-
         **Scopes**: `customer_seats:write`
 
         Args:
@@ -147,8 +143,6 @@ class CustomerSeatsSync(SyncServiceBase):
         request_access_token: str | None = None,
     ) -> CustomerSeat:
         """
-        Revoke a customer seat.
-
         **Scopes**: `customer_seats:write`
 
         Args:
@@ -193,8 +187,6 @@ class CustomerSeatsSync(SyncServiceBase):
         request_access_token: str | None = None,
     ) -> CustomerSeat:
         """
-        Resend an invitation for a pending customer seat.
-
         **Scopes**: `customer_seats:write`
 
         Args:
@@ -241,8 +233,6 @@ class CustomerSeatsSync(SyncServiceBase):
         request_access_token: str | None = None,
     ) -> SeatClaimInfo:
         """
-        Get claim information for a customer seat invitation.
-
         Args:
             invitation_token:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
@@ -285,8 +275,6 @@ class CustomerSeatsSync(SyncServiceBase):
         **kwargs: typing.Unpack[SeatClaim],
     ) -> CustomerSeatClaimResponse:
         """
-        Claim a customer seat with an invitation token.
-
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
@@ -329,8 +317,6 @@ class CustomerSeatsAsync(AsyncServiceBase):
         request_access_token: str | None = None,
     ) -> SeatsList:
         """
-        List seats for a subscription or order.
-
         **Scopes**: `customer_seats:read`
 
         Args:
@@ -377,8 +363,6 @@ class CustomerSeatsAsync(AsyncServiceBase):
         **kwargs: typing.Unpack[SeatAssign],
     ) -> CustomerSeat:
         """
-        Assign a seat for a subscription or order.
-
         **Scopes**: `customer_seats:write`
 
         Args:
@@ -424,8 +408,6 @@ class CustomerSeatsAsync(AsyncServiceBase):
         request_access_token: str | None = None,
     ) -> CustomerSeat:
         """
-        Revoke a customer seat.
-
         **Scopes**: `customer_seats:write`
 
         Args:
@@ -470,8 +452,6 @@ class CustomerSeatsAsync(AsyncServiceBase):
         request_access_token: str | None = None,
     ) -> CustomerSeat:
         """
-        Resend an invitation for a pending customer seat.
-
         **Scopes**: `customer_seats:write`
 
         Args:
@@ -518,8 +498,6 @@ class CustomerSeatsAsync(AsyncServiceBase):
         request_access_token: str | None = None,
     ) -> SeatClaimInfo:
         """
-        Get claim information for a customer seat invitation.
-
         Args:
             invitation_token:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
@@ -562,8 +540,6 @@ class CustomerSeatsAsync(AsyncServiceBase):
         **kwargs: typing.Unpack[SeatClaim],
     ) -> CustomerSeatClaimResponse:
         """
-        Claim a customer seat with an invitation token.
-
         Args:
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.

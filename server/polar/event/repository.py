@@ -211,6 +211,11 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 Event.pending_parent_external_id == cast(parent_1d.c.id, String),
                 parent_1d.c.id.in_(inserted_ids),
                 Event.id != parent_1d.c.id,
+                # Implied by the cast match above; only makes the planner use
+                # ix_events_org_pending_parent instead of scanning all pending rows
+                Event.pending_parent_external_id.in_(
+                    [str(event_id) for event_id in inserted_ids]
+                ),
             )
         )
 

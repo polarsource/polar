@@ -45,12 +45,19 @@ def get_customer_identities(
     customer: Customer,
 ) -> list[tuple[UUID | None, str | None]]:
     """The (customer_id, external_customer_id) pairs the customer's buckets use."""
-    identities: list[tuple[UUID | None, str | None]] = [(customer.id, None)]
-    if customer.external_id is not None:
-        identities += [
-            (None, customer.external_id),
-            (customer.id, customer.external_id),
-        ]
+    return _get_identities(customer.id, customer.external_id)
+
+
+def _get_identities(
+    customer_id: UUID | None, external_customer_id: str | None
+) -> list[tuple[UUID | None, str | None]]:
+    identities: list[tuple[UUID | None, str | None]] = []
+    if customer_id is not None:
+        identities.append((customer_id, None))
+    if external_customer_id is not None:
+        identities.append((None, external_customer_id))
+    if customer_id is not None and external_customer_id is not None:
+        identities.append((customer_id, external_customer_id))
     return identities
 
 
@@ -240,6 +247,52 @@ class ReducerService:
 
     async def get_database_now(self, session: AsyncReadSession) -> datetime:
         return await ReducerBucketRepository.from_session(session).get_database_now()
+
+    async def get_customer_value(
+        self,
+        session: AsyncReadSession,
+        redis: Redis,
+        reducer: Reducer,
+        customer_id: UUID | None,
+        external_customer_id: str | None,
+        *,
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> Decimal:
+        """The customer's usage in the buckets starting in [since, until)."""
+        identities = _get_identities(customer_id, external_customer_id)
+        if not identities:
+            raise ValueError("customer_id or external_customer_id is required")
+        current_bucket_start = get_reducer_bucket_start(utc_now())
+        previous_bucket_start = current_bucket_start - REDUCER_BUCKET_SIZE
+
+        totals: list[tuple[Any, ...]] = []
+
+        closed_end = (
+            previous_bucket_start
+            if until is None
+            else min(until, previous_bucket_start)
+        )
+        if since is None or since < closed_end:
+            closed = await ReducerBucketRepository.from_session(
+                session
+            ).get_totals_starting_within(
+                reducer.organization_id, reducer.id, identities, since, closed_end
+            )
+            totals.append(tuple(closed))
+
+        active_bucket_starts = [
+            bucket_start
+            for bucket_start in (previous_bucket_start, current_bucket_start)
+            if (since is None or bucket_start >= since)
+            and (until is None or bucket_start < until)
+        ]
+        if active_bucket_starts:
+            totals += await redis_store.get_bucket_totals(
+                redis, reducer, active_bucket_starts, identities
+            )
+
+        return _get_quantity(reducer.aggregation.func, totals)
 
     async def _add_to_closed_buckets(
         self, session: AsyncSession, contributions: Contributions

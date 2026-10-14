@@ -156,6 +156,36 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
     ) -> Row[Any]:
         """count, sum, min and max of the identities' usage not billed yet, in
         buckets starting before `before`."""
+        return await self._get_totals(
+            organization_id,
+            reducer_id,
+            identities,
+            ReducerBucket.sealed_at.is_(None),
+            ReducerBucket.bucket_start < before,
+        )
+
+    async def get_totals_starting_within(
+        self,
+        organization_id: UUID,
+        reducer_id: UUID,
+        identities: Sequence[tuple[UUID | None, str | None]],
+        start: datetime | None,
+        end: datetime,
+    ) -> Row[Any]:
+        """count, sum, min and max of the identities' buckets of every generation
+        starting in [start, end)."""
+        clauses = [ReducerBucket.bucket_start < end]
+        if start is not None:
+            clauses.append(ReducerBucket.bucket_start >= start)
+        return await self._get_totals(organization_id, reducer_id, identities, *clauses)
+
+    async def _get_totals(
+        self,
+        organization_id: UUID,
+        reducer_id: UUID,
+        identities: Sequence[tuple[UUID | None, str | None]],
+        *clauses: ColumnElement[bool],
+    ) -> Row[Any]:
         statement = select(
             func.coalesce(func.sum(ReducerBucket.count), 0).label("count"),
             func.coalesce(func.sum(ReducerBucket.sum), 0).label("sum"),
@@ -164,14 +194,13 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         ).where(
             ReducerBucket.organization_id == organization_id,
             ReducerBucket.reducer_id == reducer_id,
-            ReducerBucket.sealed_at.is_(None),
-            ReducerBucket.bucket_start < before,
             or_(
                 *(
                     _is_customer(ReducerBucket, customer_id, external_customer_id)
                     for customer_id, external_customer_id in identities
                 )
             ),
+            *clauses,
         )
         result = await self.session.execute(statement)
         return result.one()

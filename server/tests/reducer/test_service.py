@@ -1063,3 +1063,118 @@ class TestSeal:
 
         assert quantities == {}
         assert await session.get(Meter, meter.id) is not None
+
+
+SUM_TOKENS = PropertyAggregation(func=AggregationFunction.sum, property="tokens")
+
+
+async def rollup_tokens(
+    save_fixture: SaveFixture,
+    session: AsyncSession,
+    redis: Redis,
+    organization: Organization,
+    aggregation: Aggregation,
+) -> Reducer:
+    """Rolls up 2, 3 and 4 tokens into the buckets T-2, T-1 and T."""
+    meter = await create_meter(
+        save_fixture, organization=organization, aggregation=aggregation
+    )
+    reducer = await create_reducer(
+        save_fixture, organization=organization, meters=[meter]
+    )
+    events = [
+        build_event(organization, timestamp=timestamp, metadata={"tokens": tokens})
+        for timestamp, tokens in (
+            (BUCKET_START - 2 * REDUCER_BUCKET_SIZE, 2),
+            (BUCKET_START - REDUCER_BUCKET_SIZE, 3),
+            (BUCKET_START, 4),
+        )
+    ]
+    await reducer_service.rollup(session, redis, organization.id, events)
+    return reducer
+
+
+@pytest.mark.anyio
+class TestGetCustomerValue:
+    @pytest.fixture(autouse=True)
+    def now(self, mocker: MockerFixture) -> None:
+        mocker.patch(
+            "polar.reducer.service.utc_now",
+            return_value=BUCKET_START + timedelta(minutes=1),
+        )
+        mocker.patch("polar.reducer.service.enqueue_job")
+
+    @pytest.mark.parametrize(
+        ("aggregation", "expected"),
+        [
+            (CountAggregation(), 3),
+            (SUM_TOKENS, 9),
+            (PropertyAggregation(func=AggregationFunction.avg, property="tokens"), 3),
+            (PropertyAggregation(func=AggregationFunction.min, property="tokens"), 2),
+            (PropertyAggregation(func=AggregationFunction.max, property="tokens"), 4),
+        ],
+    )
+    async def test_combines_postgres_and_redis(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+        aggregation: Aggregation,
+        expected: int,
+    ) -> None:
+        reducer = await rollup_tokens(
+            save_fixture, session, redis, organization, aggregation
+        )
+
+        value = await reducer_service.get_customer_value(
+            session, redis, reducer, uuid.uuid4(), "external"
+        )
+
+        assert value == expected
+
+    @pytest.mark.parametrize(
+        ("since", "until", "expected"),
+        [
+            (BUCKET_START - REDUCER_BUCKET_SIZE, None, 7),
+            (None, BUCKET_START - REDUCER_BUCKET_SIZE, 2),
+            (None, BUCKET_START, 5),
+            (BUCKET_START, None, 4),
+        ],
+    )
+    async def test_since_until(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+        since: datetime | None,
+        until: datetime | None,
+        expected: int,
+    ) -> None:
+        reducer = await rollup_tokens(
+            save_fixture, session, redis, organization, SUM_TOKENS
+        )
+
+        value = await reducer_service.get_customer_value(
+            session, redis, reducer, None, "external", since=since, until=until
+        )
+
+        assert value == expected
+
+    async def test_other_customer(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+    ) -> None:
+        reducer = await rollup_tokens(
+            save_fixture, session, redis, organization, SUM_TOKENS
+        )
+
+        value = await reducer_service.get_customer_value(
+            session, redis, reducer, None, "other"
+        )
+
+        assert value == 0

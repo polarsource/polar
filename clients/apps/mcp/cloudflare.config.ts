@@ -7,7 +7,7 @@ const POLAR_SERVERS = {
 }
 
 const LOCAL_POLAR_SERVERS = {
-  'polar-local': 'http://127.0.0.1:8000',
+  'polar-local': process.env.POLAR_LOCAL_API_URL ?? 'http://127.0.0.1:8000',
 }
 
 export default defineConfig(({ mode }) => ({

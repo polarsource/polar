@@ -3,5 +3,5 @@ import { defineConfig } from 'vite'
 
 export default defineConfig({
   plugins: [cloudflare()],
-  server: { port: 8788 },
+  server: { host: '127.0.0.1', port: 8788 },
 })

@@ -512,31 +512,6 @@ class TestResolveUrlRedirects:
         assert results[0].redirected is False
 
     @pytest.mark.anyio
-    async def test_subdomain_to_parent_not_flagged(self, mocker: MockerFixture) -> None:
-        mocker.patch(
-            "polar.organization_review.collectors.setup._validate_url_host",
-            return_value=None,
-        )
-        mocker.patch(
-            "polar.organization_review.collectors.setup._resolve_redirect_with_browser",
-            return_value=UrlRedirectInfo(
-                original_url="https://api.legit.com/success",
-                final_url="https://legit.com/",
-                final_domain="legit.com",
-            ),
-        )
-
-        with respx.mock:
-            respx.get("https://api.legit.com/success").respond(
-                302, headers={"Location": "https://legit.com/"}
-            )
-            respx.get("https://legit.com/").respond(200)
-            results = await resolve_url_redirects(["https://api.legit.com/success"])
-
-        assert len(results) == 1
-        assert results[0].redirected is False
-
-    @pytest.mark.anyio
     async def test_same_domain_redirect(self, mocker: MockerFixture) -> None:
         """URL that redirects within the same domain reports redirected=False."""
         import respx

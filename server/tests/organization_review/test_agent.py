@@ -29,13 +29,22 @@ def _make_org(website: str | None) -> MagicMock:
 
 
 def _make_setup(
-    webhook_domains: list[str], known_service_domains: list[str] | None = None
+    webhook_domains: list[str] | None = None,
+    known_service_domains: list[str] | None = None,
+    *,
+    success_urls: list[str] | None = None,
+    redirects: list[UrlRedirectInfo] | None = None,
+    return_urls: list[str] | None = None,
 ) -> SetupData:
     return SetupData(
+        checkout_success_urls=CheckoutSuccessUrlData(
+            unique_urls=success_urls or [], redirect_results=redirects or []
+        ),
+        checkout_return_urls=CheckoutReturnUrlData(unique_urls=return_urls or []),
         integration=IntegrationData(
-            webhook_domains=webhook_domains,
+            webhook_domains=webhook_domains or [],
             webhook_known_service_domains=known_service_domains or [],
-        )
+        ),
     )
 
 
@@ -138,31 +147,16 @@ class TestCollectWebhookHost:
         assert result is None
 
 
-def _make_checkout_setup(
-    success_urls: list[str],
-    redirects: list[UrlRedirectInfo] | None = None,
-    return_urls: list[str] | None = None,
-    webhook_domains: list[str] | None = None,
-) -> SetupData:
-    return SetupData(
-        checkout_success_urls=CheckoutSuccessUrlData(
-            unique_urls=success_urls, redirect_results=redirects or []
-        ),
-        checkout_return_urls=CheckoutReturnUrlData(unique_urls=return_urls or []),
-        integration=IntegrationData(webhook_domains=webhook_domains or []),
-    )
-
-
 class TestPickCheckoutUrlHosts:
     def test_skips_declared_website_domain(self) -> None:
         org = _make_org("https://example.com")
-        setup = _make_checkout_setup(["https://api.example.com/success"])
+        setup = _make_setup(success_urls=["https://api.example.com/success"])
         assert _pick_checkout_url_hosts(org, setup) == []
 
     def test_picks_success_return_and_final_hosts_but_not_hops(self) -> None:
         org = _make_org("https://example.com")
-        setup = _make_checkout_setup(
-            ["https://api.example.com/success"],
+        setup = _make_setup(
+            success_urls=["https://api.example.com/success"],
             redirects=[
                 UrlRedirectInfo(
                     original_url="https://api.example.com/success",
@@ -180,15 +174,18 @@ class TestPickCheckoutUrlHosts:
 
     def test_skips_integration_services_but_keeps_hosting_platforms(self) -> None:
         org = _make_org("https://example.com")
-        setup = _make_checkout_setup(
-            ["https://hooks.zapier.com/x", "https://store.lovable.app/thanks"]
+        setup = _make_setup(
+            success_urls=[
+                "https://hooks.zapier.com/x",
+                "https://store.lovable.app/thanks",
+            ]
         )
         assert _pick_checkout_url_hosts(org, setup) == ["store.lovable.app"]
 
     def test_skips_fetched_webhook_host_and_duplicates(self) -> None:
         org = _make_org("https://example.com")
-        setup = _make_checkout_setup(
-            [
+        setup = _make_setup(
+            success_urls=[
                 "https://hooks.store.com/success",
                 "https://shop.com/a",
                 "https://www.shop.com/b",
@@ -199,8 +196,8 @@ class TestPickCheckoutUrlHosts:
 
     def test_caps_hosts_keeping_redirect_destinations(self) -> None:
         org = _make_org("https://example.com")
-        setup = _make_checkout_setup(
-            [f"https://site{i}.com/" for i in range(5)],
+        setup = _make_setup(
+            success_urls=[f"https://site{i}.com/" for i in range(5)],
             redirects=[
                 UrlRedirectInfo(
                     original_url="https://site4.com/",
@@ -218,7 +215,7 @@ class TestCollectCheckoutUrlHosts:
     @pytest.mark.anyio
     async def test_fetches_each_host_and_drops_failures(self) -> None:
         org = _make_org("https://example.com")
-        setup = _make_checkout_setup(["https://good.com/", "https://broken.com/"])
+        setup = _make_setup(success_urls=["https://good.com/", "https://broken.com/"])
         good = WebsiteData(base_url="https://good.com/")
 
         async def fake_collect(url: str, **kwargs: str) -> WebsiteData:

@@ -50,7 +50,7 @@ from polar.models import (
 from polar.models.event import EventSource
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.redis import Redis
-from polar.reducer_bucket.service import reducer_bucket as reducer_bucket_service
+from polar.reducer.service import reducer as reducer_service
 from polar.worker import enqueue_events, enqueue_job
 
 from .repository import EventRepository
@@ -990,7 +990,7 @@ class EventService:
                     organization_id,
                     organization_events,
                 ) in events_by_organization.items():
-                    await reducer_bucket_service.rollup(
+                    await reducer_service.rollup(
                         session, redis, organization_id, organization_events
                     )
 

@@ -99,7 +99,7 @@ starts working. This is the safer flow and ships first.
 | After the claim | Anything the user can do. |
 | Rollout | `service_auth` first. Anonymous sign-up starts in sandbox, behind a feature flag, and goes to production once sandbox abuse data looks fine. |
 | Claim window | 7 days. After that we delete the unclaimed org, placeholder user and OAuth client. |
-| Identity assertion | Lives 30 days, renewed on every exchange. |
+| Identity assertion | Lives 30 days and can be reused until it expires, as the auth.md spec expects. The claim issues a fresh one and invalidates older ones. Revoking the agent stops it immediately. After 30 days the agent signs up again and the human re-approves it. |
 
 ## Options
 
@@ -134,7 +134,9 @@ later, and the agent marker on the OAuth client keeps that door open.
   everything they created are deleted after 7 days.
 - **Risks**:
   - *Old credentials still work after the claim.* Reject identity assertions issued before the claim.
-  - *A leaked identity assertion.* Rotate it on every exchange, so a stolen copy stops working.
+  - *A leaked identity assertion.* Every exchange is checked against the registration, so revoking the agent stops
+    it immediately. Access tokens are short-lived, and the assertion expires after 30 days at most. Binding it to a key
+    the agent holds (DPoP) is a possible later addition.
   - *The agent approves itself* using a browser where the user is already logged in. Require a fresh
     sign-in on the claim page.
   - *Abuse of open anonymous sign-up* (spam orgs, slug squatting). Rate limits, a cap on orgs per agent,

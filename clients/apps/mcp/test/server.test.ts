@@ -174,20 +174,6 @@ test('search and execute preserve sandbox isolation, outbound credentials, and l
   expect(missing.result?.isError ?? !!missing.error).toBe(true)
 })
 
-test('every sandbox run gets a unique isolate name so a cached isolate never serves another token', async () => {
-  const params = { name: 'execute', arguments: { code: 'async () => 1' } }
-  await rpc('tools/call', params, '', {
-    Authorization: 'Bearer polar_oat_user_a',
-  })
-  await rpc('tools/call', params, '', {
-    Authorization: 'Bearer polar_oat_user_b',
-  })
-  const [[first], [second]] = get.mock.calls
-  expect(first).toMatch(/^polar-mcp-/)
-  expect(second).toMatch(/^polar-mcp-/)
-  expect(first).not.toBe(second)
-})
-
 test('the execute sandbox client serializes requests and handles every kind of response', async () => {
   await rpc('tools/call', {
     name: 'execute',

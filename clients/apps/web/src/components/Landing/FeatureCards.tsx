@@ -4,7 +4,7 @@ import Link from 'next/link'
 import type { ComponentType } from 'react'
 import { CreditArc } from './graphics/CreditArc'
 import { CycleArrow } from './graphics/CycleArrow'
-import { VennCluster } from './graphics/VennCluster'
+import { SteppedRadial } from './graphics/SteppedRadial'
 
 interface Feature {
   title: string
@@ -15,10 +15,10 @@ interface Feature {
 
 const FEATURES: Feature[] = [
   {
-    title: 'Usage Billing',
+    title: 'Event Ingestion',
     desc: 'Meter tokens, API calls, compute and storage down to the event.',
     href: '/features/usage-billing',
-    Graphic: VennCluster,
+    Graphic: SteppedRadial,
   },
   {
     title: 'Subscriptions',

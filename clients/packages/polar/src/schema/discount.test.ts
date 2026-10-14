@@ -202,3 +202,30 @@ test('fixed discounts need an amount in a known currency', () => {
   expect(() => fixed({ usd: -1 })).toThrow()
   expect(fixed({ usd: 0 })).toMatchObject({ amounts: { usd: 0 } })
 })
+
+test('metadata is kept whichever order the builder is called in', () => {
+  const metadata = { campaign: 'spring', stackable: false, priority: 2 }
+  const first = discount().metadata(metadata).percent(10).once().code('SPRING')
+  const last = discount().percent(10).once().code('SPRING').metadata(metadata)
+  expect(decode(discountConfig('spring', first))).toMatchObject({ metadata })
+  expect(discountConfig('spring', last)).toEqual(
+    discountConfig('spring', first),
+  )
+  expect(
+    discountConfig('plain', discount().percent(10).once()),
+  ).not.toHaveProperty('metadata')
+  expect(() => last.metadata({ again: true })).toThrow(
+    'metadata() can only be called once per builder.',
+  )
+  expect(() =>
+    decode(
+      discountConfig(
+        'long',
+        discount()
+          .percent(10)
+          .once()
+          .metadata({ ['k'.repeat(41)]: 'v' }),
+      ),
+    ),
+  ).toThrow()
+})

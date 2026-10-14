@@ -414,6 +414,7 @@ const renderDiscount =
       ...optional('perCustomer', discount.max_redemptions_per_customer),
       ...optional('starts', discount.starts_at),
       ...optional('ends', discount.ends_at),
+      ...renderMetadata(discount.metadata),
     ].join('\n')
   }
 

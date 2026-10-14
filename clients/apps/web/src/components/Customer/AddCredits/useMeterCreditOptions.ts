@@ -24,6 +24,7 @@ export const useMeterCreditOptions = (
     useSubscriptions(organizationId, {
       customer_id: customer.id,
       active: true,
+      limit: 100,
     })
 
   const options = useMemo((): MeterCreditOption[] => {

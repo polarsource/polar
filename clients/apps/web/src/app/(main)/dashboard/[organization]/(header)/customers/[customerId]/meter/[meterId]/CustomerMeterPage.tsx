@@ -167,6 +167,14 @@ const CustomerMeterPage = ({
     }
   }, [customerMeter, unitPrice])
 
+  const addCreditsButton = (
+    <AddCreditsButton
+      organization={organization}
+      customer={customer}
+      meterId={meter.id}
+    />
+  )
+
   return (
     <MasterDetailLayoutContent
       header={
@@ -188,12 +196,19 @@ const CustomerMeterPage = ({
                 </Text>
               </Link>
               <Text color="muted">
-                {customer.name || customer.email}
+                {customer.name || customer.email || 'Customer'}
                 {subscription && ` · ${subscription.product.name}`}
               </Text>
             </Box>
+            <Box
+              display={{ base: 'flex', md: 'none' }}
+              marginLeft="auto"
+              flexShrink={0}
+            >
+              {addCreditsButton}
+            </Box>
           </Box>
-          <div className="flex flex-row items-center gap-2">
+          <Box alignItems="center" flexWrap="wrap" gap="s">
             <div>
               <IntervalPicker
                 interval={interval}
@@ -209,12 +224,8 @@ const CustomerMeterPage = ({
                 billingPeriodInterval ? [billingPeriodInterval] : undefined
               }
             />
-            <AddCreditsButton
-              organization={organization}
-              customer={customer}
-              meterId={meter.id}
-            />
-          </div>
+            <Box display={{ base: 'none', md: 'flex' }}>{addCreditsButton}</Box>
+          </Box>
         </>
       }
     >

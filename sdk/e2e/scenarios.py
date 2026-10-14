@@ -107,7 +107,7 @@ SCENARIOS = [
                     ),
                     *(
                         expect(
-                            0.504 + round_index * 0.3,
+                            0.510 + round_index * 0.3,
                             client,
                             (round_index + 1) * 10,
                             within=0,

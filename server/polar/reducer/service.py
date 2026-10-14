@@ -207,16 +207,39 @@ class ReducerService:
         )
         _enqueue_outpost_event(reducer, customer_id, external_customer_id)
 
-    async def get_unsealed_totals(
+    async def get_cold_usage(
         self,
         session: AsyncReadSession,
         reducer: Reducer,
-        identities: Sequence[tuple[UUID | None, str | None]],
-    ) -> Row[Any]:
-        """count, sum, min and max of the identities' usage not billed yet."""
-        return await ReducerBucketRepository.from_session(session).get_unsealed_totals(
-            reducer.organization_id, reducer.id, identities
+        customer_id: UUID | None,
+        external_customer_id: str | None,
+        *,
+        since: datetime,
+    ) -> tuple[datetime, Row[Any]]:
+        """The end of the customer identity's last synced bucket starting from
+        `since`, or `since`, with the count, sum, min and max of its usage not
+        billed yet before it."""
+        repository = ReducerBucketRepository.from_session(session)
+        cold_until = (
+            await repository.get_last_synced_end(
+                reducer.organization_id,
+                reducer.id,
+                customer_id,
+                external_customer_id,
+                since=since,
+            )
+            or since
         )
+        totals = await repository.get_unsealed_totals(
+            reducer.organization_id,
+            reducer.id,
+            [(customer_id, external_customer_id)],
+            before=cold_until,
+        )
+        return cold_until, totals
+
+    async def get_database_now(self, session: AsyncReadSession) -> datetime:
+        return await ReducerBucketRepository.from_session(session).get_database_now()
 
     async def _add_to_closed_buckets(
         self, session: AsyncSession, contributions: Contributions

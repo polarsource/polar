@@ -5,15 +5,15 @@ export default {
       merchantOfRecord:
         'To naročilo obdeluje naš spletni preprodajalec in Merchant of Record, Polar, ki prav tako obravnava poizvedbe v zvezi z naročilom in vračila.',
       mandateSubscriptionTrial:
-        'Z klikom na »{buttonLabel},« pooblastite Polar Software, Inc., našega spletnega preprodajalca in Merchant of Record, da ob koncu preizkusnega obdobja in ob vsakem naslednjem datumu obračuna, dokler ne prekličete, zaračuna izbrani način plačila v znesku, prikazanem zgoraj, ter se strinjate s {buyerTermsLink}. Naročnino lahko prekličete kadarkoli pred koncem preizkusnega obdobja, da se vam ne zaračuna.',
+        'S klikom na »{buttonLabel},« pooblastite Polar Software, Inc., našega spletnega preprodajalca in Merchant of Record, da ob koncu preizkusnega obdobja in ob vsakem naslednjem datumu obračuna, dokler ne prekličete, zaračuna izbrani način plačila v znesku, prikazanem zgoraj, ter se strinjate s {buyerTermsLink}. Naročnino lahko prekličete kadarkoli pred koncem preizkusnega obdobja, da se vam ne zaračuna.',
       mandateSubscription:
-        'Z klikom na »{buttonLabel},« pooblastite Polar Software, Inc., našega spletnega preprodajalca in Merchant of Record, da takoj zaračuna izbrani način plačila v znesku, prikazanem zgoraj, in da zaračuna enak znesek ob vsakem naslednjem datumu obračuna, dokler ne prekličete, ter se strinjate s {buyerTermsLink}.',
+        'S klikom na »{buttonLabel},« pooblastite Polar Software, Inc., našega spletnega preprodajalca in Merchant of Record, da takoj zaračuna izbrani način plačila v znesku, prikazanem zgoraj, in da zaračuna enak znesek ob vsakem naslednjem datumu obračuna, dokler ne prekličete, ter se strinjate s {buyerTermsLink}.',
       mandateOneTime:
-        'Z klikom na »{buttonLabel},« pooblastite Polar Software, Inc., našega spletnega preprodajalca in Merchant of Record, da zaračuna izbrani način plačila v znesku, prikazanem zgoraj, ter se strinjate s {buyerTermsLink}. Gre za enkratno zaračunavanje.',
+        'S klikom na »{buttonLabel},« pooblastite Polar Software, Inc., našega spletnega preprodajalca in Merchant of Record, da zaračuna izbrani način plačila v znesku, prikazanem zgoraj, ter se strinjate s {buyerTermsLink}. Gre za enkratno zaračunavanje.',
       mandateSubscriptionTrialDiscounted:
-        'Z klikom na »{buttonLabel},« pooblastite Polar Software, Inc., našega spletnega preprodajalca in Merchant of Record, da ob koncu preizkusnega obdobja zaračuna izbrani način plačila znižani znesek, prikazan zgoraj, ter redno ceno ob vsakem naslednjem datumu obračuna po koncu popusta, dokler ne prekličete, in se strinjate s {buyerTermsLink}. Naročnino lahko prekličete kadarkoli pred koncem preizkusnega obdobja, da se vam ne zaračuna.',
+        'S klikom na »{buttonLabel},« pooblastite Polar Software, Inc., našega spletnega preprodajalca in Merchant of Record, da ob koncu preizkusnega obdobja zaračuna izbrani način plačila znižani znesek, prikazan zgoraj, ter redno ceno ob vsakem naslednjem datumu obračuna po koncu popusta, dokler ne prekličete, in se strinjate s {buyerTermsLink}. Naročnino lahko prekličete kadarkoli pred koncem preizkusnega obdobja, da se vam ne zaračuna.',
       mandateSubscriptionDiscounted:
-        'Z klikom na »{buttonLabel},« pooblastite Polar Software, Inc., našega spletnega preprodajalca in Merchant of Record, da takoj zaračuna izbrani način plačila znižani znesek, prikazan zgoraj, in redno ceno ob vsakem naslednjem datumu obračuna po koncu popusta, dokler ne prekličete, ter se strinjate s {buyerTermsLink}.',
+        'S klikom na »{buttonLabel},« pooblastite Polar Software, Inc., našega spletnega preprodajalca in Merchant of Record, da takoj zaračuna izbrani način plačila znižani znesek, prikazan zgoraj, in redno ceno ob vsakem naslednjem datumu obračuna po koncu popusta, dokler ne prekličete, ter se strinjate s {buyerTermsLink}.',
       buyerTermsLink: 'Pogoji za kupce',
     },
     form: {

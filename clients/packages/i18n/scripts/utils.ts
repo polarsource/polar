@@ -86,19 +86,63 @@ export function findPluralPaths(
 
 /**
  * CLDR plural categories a target locale may add to a plural object on top of
- * the source variants. `zero`, `one` and `two` are covered by the exact `=0`,
- * `=1`, `=2` keys, so they are never emitted as category keys.
+ * the source variants. Resolution order is exact `=N`, then category, then
+ * `other`.
  */
-export const PLURAL_CATEGORY_KEYS = ['few', 'many'] as const
+export const PLURAL_CATEGORY_KEYS = [
+  'zero',
+  'one',
+  'two',
+  'few',
+  'many',
+] as const
+
+const EXACT_COUNT_FOR_CATEGORY: Record<string, number> = {
+  zero: 0,
+  one: 1,
+  two: 2,
+}
+
+const PLURAL_SAMPLE_COUNTS = [
+  ...Array.from({ length: 201 }, (_, i) => i),
+  1000,
+  10_000,
+  100_000,
+  1_000_000,
+]
 
 /**
- * The plural category keys a locale may use, based on its CLDR plural rules.
- * e.g. ['few', 'many'] for Polish, [] for German.
+ * The plural category keys a locale may use, with sample counts for each,
+ * based on its CLDR plural rules. `zero`, `one` and `two` are only included
+ * when they cover more than their exact count, since the source's `=0`, `=1`
+ * and `=2` keys already handle that count.
+ * e.g. { few: [2, 3, 4, 22, 23], many: [0, 5, 6, 7, 8] } for Polish,
+ * { one: [0, 1], many: [1000000] } for French, {} for German.
+ */
+export function getPluralCategorySamples(
+  locale: string,
+): Record<string, number[]> {
+  const rules = new Intl.PluralRules(locale)
+  const samples: Record<string, number[]> = {}
+
+  for (const category of PLURAL_CATEGORY_KEYS) {
+    const counts = PLURAL_SAMPLE_COUNTS.filter(
+      (n) => rules.select(n) === category,
+    )
+    const exact = EXACT_COUNT_FOR_CATEGORY[category]
+    if (counts.some((n) => n !== exact)) {
+      samples[category] = counts.slice(0, 5)
+    }
+  }
+
+  return samples
+}
+
+/**
+ * The plural category keys a locale may use. See getPluralCategorySamples.
  */
 export function getPluralCategoryKeys(locale: string): string[] {
-  const categories: string[] = new Intl.PluralRules(locale).resolvedOptions()
-    .pluralCategories
-  return PLURAL_CATEGORY_KEYS.filter((c) => categories.includes(c))
+  return Object.keys(getPluralCategorySamples(locale))
 }
 
 /**

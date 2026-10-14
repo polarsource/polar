@@ -16,6 +16,7 @@ import {
   flattenKeys,
   flattenKeysToStrings,
   getPluralCategoryKeys,
+  getPluralCategorySamples,
   getStringValue,
   type LLMSourceEntry,
   normalizeResponse,
@@ -54,10 +55,14 @@ async function callLLM(
   prompt: string,
 ): Promise<Record<string, string>> {
   const localeName = LOCALE_NAMES[targetLocale] || targetLocale
-  const pluralCategoryKeys = getPluralCategoryKeys(targetLocale)
+  const pluralCategorySamples = Object.entries(
+    getPluralCategorySamples(targetLocale),
+  )
   const pluralCategories =
-    pluralCategoryKeys.length > 0
-      ? pluralCategoryKeys.map((c) => `"${c}"`).join(', ')
+    pluralCategorySamples.length > 0
+      ? pluralCategorySamples
+          .map(([c, counts]) => `"${c}" (e.g. ${counts.join(', ')})`)
+          .join(', ')
       : 'none'
 
   const systemPromptPart = prompt

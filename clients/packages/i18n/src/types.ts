@@ -53,9 +53,10 @@ type StringShape<S extends string> =
           : never
       >
 
-// CLDR categories a locale may add on top of the en.ts variants. `zero`, `one`
-// and `two` are expressed with the exact `=0`, `=1`, `=2` keys instead.
-export type PluralCategoryKey = 'few' | 'many'
+// CLDR categories a locale may add on top of the en.ts variants. Unlike the
+// exact `=N` keys, a category covers every count the locale's rules put in it
+// (e.g. `one` is 0 and 1 in French, 1, 21, 31… in Russian).
+export type PluralCategoryKey = 'zero' | 'one' | 'two' | 'few' | 'many'
 
 type PluralShape<T> = {
   [K in keyof T]: K extends '_mode'

@@ -121,23 +121,16 @@ const getPluralRules = (locale: SupportedLocale): Intl.PluralRules => {
   return rules
 }
 
-const EXACT_KEY_FOR_CATEGORY: Partial<Record<Intl.LDMLPluralRule, string>> = {
-  zero: '=0',
-  one: '=1',
-  two: '=2',
-}
-
 const selectPluralTemplate = (
   pluralObj: Record<string, string>,
   count: number,
   locale: SupportedLocale,
 ): string => {
-  const exact = pluralObj[`=${count}`]
-  if (exact !== undefined) return exact
-
-  const category = getPluralRules(locale).select(count)
-  const categoryKey = EXACT_KEY_FOR_CATEGORY[category] ?? category
-  return pluralObj[categoryKey] ?? pluralObj.other
+  return (
+    pluralObj[`=${count}`] ??
+    pluralObj[getPluralRules(locale).select(count)] ??
+    pluralObj.other
+  )
 }
 
 export const createTranslator = (locale: AcceptedLocale): TranslateFn => {

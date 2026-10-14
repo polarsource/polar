@@ -8,6 +8,7 @@ import {
   flattenKeys,
   flattenKeysToStrings,
   getPluralCategoryKeys,
+  getPluralCategorySamples,
   getStringValue,
   hasLlmContext,
   isLeafNode,
@@ -485,13 +486,26 @@ describe('getPluralCategoryKeys', () => {
     expect(getPluralCategoryKeys('pl')).toEqual(['few', 'many'])
   })
 
-  it('returns nothing for locales with only one/other', () => {
+  it('includes one when it covers more than the count 1', () => {
+    expect(getPluralCategoryKeys('fr')).toEqual(['one', 'many'])
+    expect(getPluralCategoryKeys('ru')).toEqual(['one', 'few', 'many'])
+  })
+
+  it('excludes zero, one and two when they only cover their exact count', () => {
     expect(getPluralCategoryKeys('de')).toEqual([])
     expect(getPluralCategoryKeys('en')).toEqual([])
+    expect(getPluralCategoryKeys('ar')).toEqual(['few', 'many'])
   })
 
   it('returns nothing for locales with only other', () => {
     expect(getPluralCategoryKeys('ja')).toEqual([])
+  })
+})
+
+describe('getPluralCategorySamples', () => {
+  it('lists example counts per category', () => {
+    expect(getPluralCategorySamples('ru').one).toEqual([1, 21, 31, 41, 51])
+    expect(getPluralCategorySamples('fr').one).toEqual([0, 1])
   })
 })
 
@@ -528,7 +542,10 @@ describe('resolveSourceKey', () => {
     ).toBeUndefined()
   })
 
-  it('rejects zero/one/two category keys', () => {
+  it('maps one only for locales where it is allowed', () => {
+    expect(
+      resolveSourceKey('seats.one', sourceKeys, pluralPaths, ['one', 'many']),
+    ).toBe('seats.other')
     expect(
       resolveSourceKey('seats.one', sourceKeys, pluralPaths, ['few', 'many']),
     ).toBeUndefined()

@@ -40,12 +40,12 @@ HARD REQUIREMENTS
    - Example: "# items" → "# Artikel" (German), NOT "Nummer items"
 
 5. Plural forms:
-   - Keys ending in `.=N` (e.g. `.=1`, `.=2`) are exact-count variants. Keys whose entry has `"_pluralOther": true` hold the general plural form.
+   - Keys ending in `.=N` (e.g. `.=1`, `.=2`) are exact-count variants: they are used for that count only. Keys whose entry has `"_pluralOther": true` hold the general plural form.
    - The `.other` form is the fallback for every count without a more specific variant, so translate it in the form used for most counts in {TARGET_LOCALE}.
-   - CLDR plural categories that {TARGET_LOCALE} may add: {PLURAL_CATEGORIES}.
-   - If that list is not `none` and a `_pluralOther` string needs a different word form for a category, ALSO output a sibling key that replaces the final `other` segment with the category name. Example for Polish: `"checkout.seats.count.other": "# stanowisk"` plus `"checkout.seats.count.few": "# stanowiska"`.
-   - Only add category keys from that list, only for `_pluralOther` entries, and only when the form differs from `.other`. Never add `zero`, `one` or `two` keys, and never add category keys when the list is `none`.
-   - Category keys follow every placeholder rule, including `#`.
+   - CLDR plural categories that {TARGET_LOCALE} may add, with example counts: {PLURAL_CATEGORIES}.
+   - A category key is used for every count in that category that has no exact `=N` variant. If that list is not `none` and a `_pluralOther` string needs a different word form for a category's counts, ALSO output a sibling key that replaces the final `other` segment with the category name. Examples: Polish `"checkout.seats.count.other": "# stanowisk"` plus `"checkout.seats.count.few": "# stanowiska"`; French `"checkout.seats.count.other": "# sièges"` plus `"checkout.seats.count.one": "# siège"`.
+   - Only add category keys from that list, only for `_pluralOther` entries, and only when the form {TARGET_LOCALE} uses for those counts differs from `.other`. Never add category keys when the list is `none`.
+   - Category keys follow every placeholder rule and must always contain `#`.
 
 6. Preserve markup and formatting exactly:
    - HTML tags, attributes, entities

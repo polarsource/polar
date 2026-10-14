@@ -32,6 +32,8 @@ const toStripeElementLocale = (locale: AcceptedLocale): StripeElementLocale => {
   switch (supported) {
     case 'pt-PT':
       return 'pt'
+    case 'sr':
+      return 'hr'
     default:
       return supported satisfies StripeElementLocale
   }

@@ -36,7 +36,7 @@ validate and parse the webhook event - see full examples below.
 
 <CodeGroup>
 ```typescript icon="square-js" JS (Express)
-import express, { Request, Response } from 'express'
+import express, { NextFunction, Request, Response } from 'express'
 import { webhooks } from '@polar-sh/sdk/2026-10'
 
 const app = express()
@@ -44,7 +44,7 @@ const app = express()
 app.post(
   '/webhook',
   express.raw({ type: 'application/json' }),
-  async (req: Request, res: Response) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const event = await webhooks.validateEvent(
         req.body,
@@ -64,7 +64,12 @@ app.post(
         res.status(403).send('')
         return
       }
-      throw error
+      if (error instanceof webhooks.PolarWebhookUnknownTypeError) {
+        // Event type added after this SDK version: acknowledge it so Polar doesn't retry
+        res.status(202).send('')
+        return
+      }
+      next(error)
     }
   },
 )
@@ -73,7 +78,11 @@ app.post(
 ```python Python (Flask)
 import os
 from flask import Flask, request
-from polar.v2026_10.webhooks import validate_event, PolarWebhookVerificationError
+from polar.v2026_10.webhooks import (
+    PolarWebhookUnknownTypeError,
+    PolarWebhookVerificationError,
+    validate_event,
+)
 
 app = Flask(__name__)
 
@@ -91,6 +100,9 @@ def webhook():
         return "", 202
     except PolarWebhookVerificationError:
         return "", 403
+    except PolarWebhookUnknownTypeError:
+        # Event type added after this SDK version: acknowledge it so Polar doesn't retry
+        return "", 202
 ```
 
 </CodeGroup>

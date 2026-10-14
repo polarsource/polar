@@ -98,6 +98,10 @@ const completion = await openai.chat.completions.create({
   messages: [{ role: "user", content: "Hello!" }],
 });
 
+if (!completion.usage) {
+  throw new Error("OpenAI did not return token usage");
+}
+
 // Calculate cost (example: $0.03 per 1K input tokens, $0.06 per 1K output tokens)
 const inputCost = (completion.usage.prompt_tokens / 1000) * 3; // in cents
 const outputCost = (completion.usage.completion_tokens / 1000) * 6; // in cents

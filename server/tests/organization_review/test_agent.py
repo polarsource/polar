@@ -5,6 +5,7 @@ import pytest
 
 from polar.kit.http import SSRFBlockedError
 from polar.organization_review.agent import (
+    _MAX_CHECKOUT_URL_HOST_CANDIDATES,
     MAX_CHECKOUT_URL_HOSTS,
     _collect_checkout_url_hosts,
     _collect_webhook_host,
@@ -266,3 +267,24 @@ class TestCollectCheckoutUrlHosts:
         assert [r.base_url for r in result] == [
             f"https://site{i}.com/" for i in range(MAX_CHECKOUT_URL_HOSTS)
         ]
+
+    @pytest.mark.anyio
+    async def test_bounds_dns_lookups(self) -> None:
+        org = _make_org("https://example.com")
+        setup = _make_setup(success_urls=[f"https://site{i}.com/" for i in range(50)])
+
+        with (
+            patch(
+                "polar.organization_review.agent.resolve_and_validate_ip",
+                new=AsyncMock(side_effect=SSRFBlockedError("private")),
+            ) as validate,
+            patch(
+                "polar.organization_review.agent.collect_website_data",
+                new_callable=AsyncMock,
+            ) as fetch,
+        ):
+            result = await _collect_checkout_url_hosts(org, setup)
+
+        assert result == []
+        assert validate.await_count == _MAX_CHECKOUT_URL_HOST_CANDIDATES
+        fetch.assert_not_awaited()

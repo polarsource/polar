@@ -53,6 +53,8 @@ from .schemas import (
 log = structlog.get_logger(__name__)
 
 MAX_CHECKOUT_URL_HOSTS = 3
+# Bounds the concurrent DNS lookups done before the crawl cap is applied.
+_MAX_CHECKOUT_URL_HOST_CANDIDATES = 20
 _HOSTING_CATEGORIES: set[KnownDomainCategory] = {
     "cloud",
     "no-code-builder",
@@ -393,7 +395,9 @@ async def _collect_checkout_url_hosts(
     Hosts resolving to private or reserved IPs are dropped before the
     `MAX_CHECKOUT_URL_HOSTS` cap, so they can't crowd out public ones.
     """
-    candidates = _pick_checkout_url_hosts(organization, setup)
+    candidates = _pick_checkout_url_hosts(organization, setup)[
+        :_MAX_CHECKOUT_URL_HOST_CANDIDATES
+    ]
     is_public = await asyncio.gather(*[_is_public_host(h) for h in candidates])
     hosts = [h for h, ok in zip(candidates, is_public) if ok][:MAX_CHECKOUT_URL_HOSTS]
     results = await asyncio.gather(

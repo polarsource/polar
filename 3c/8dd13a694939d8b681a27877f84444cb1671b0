@@ -1,0 +1,20 @@
+server/tests/organization_review/test_agent.py
+  s_fd528823e8d35d::t_f412ccec170cf1 153,158-159,177-181,187-188,199-200,218
+  s_fd528823e8d35d::t_90fc975c153f58 32-37,40-43,45,47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3c8dd13a694939d8b681a27877f84444cb1671b0",
+  "prompts": {},
+  "sessions": {
+    "s_fd528823e8d35d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

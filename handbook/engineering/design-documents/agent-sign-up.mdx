@@ -43,7 +43,7 @@ There are two ways to sign up. Agents pick one by reading our `/auth.md` file.
 The agent doesn't need anything from the human to start.
 
 1. The agent calls `POST /v1/agent/identity` with `{"type": "anonymous"}` and gets credentials right away.
-2. Polar creates a **placeholder user** behind the scenes. Everything the agent builds belongs to it.
+2. Polar creates a [placeholder user](#placeholder-user) behind the scenes. Everything the agent builds belongs to it.
 3. The agent creates the org, products, meters and config.
 4. When it's done, it asks the human for their email and starts a claim.
 5. The agent gives the human a link and a 6-digit code.
@@ -73,6 +73,25 @@ sequenceDiagram
 
 The agent registers with the user's email. The human approves with the link and code first, then the agent
 starts working. This is the safer flow and ships first.
+
+### Placeholder user
+
+A regular row in the `users` table, so it can own orgs, hold memberships and be the user that OAuth tokens
+belong to. What makes it different:
+
+- **Marked explicitly**: a new column on `users` (e.g. `kind = agent_placeholder`), not inferred from the email.
+- **Unreachable email**: `<random>@anonymous-agent.polar.invalid`. `.invalid` is a reserved domain that can
+  never receive mail. The email column is required and unique, so it still needs one.
+
+Rules it follows:
+
+1. **Acts like a user**: owns orgs and memberships, and passes the normal "can this user authenticate" check.
+2. **Can never log in**: email code and Google/GitHub login refuse it.
+3. **Never receives anything**: no sign-up side effects, no emails (the email sender skips it), no support
+   or billing records.
+4. **Isn't counted as a person**: excluded from user metrics and analytics, labelled in the backoffice.
+5. **Short-lived**: one per anonymous registration. Created at sign-up, soft-deleted when the claim completes
+   or the 7-day claim window ends. Once deleted, its leftover access tokens stop working.
 
 ### Key pieces
 

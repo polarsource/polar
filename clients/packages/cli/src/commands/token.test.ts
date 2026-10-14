@@ -2,7 +2,7 @@ import { basename } from 'node:path'
 import { Effect, Redacted } from 'effect'
 import { beforeEach, expect, test } from 'vitest'
 import { token as tokenCommand } from '@/commands/token'
-import type { ActiveOrganization, PolarEnvironment } from '@/schemas/Auth'
+import type { ActiveOrganization } from '@/schemas/Auth'
 import { Organizations } from '@/services/organizations'
 import { type TokenRequest, TokenHandoff } from '@/services/token-handoff'
 import { runCli } from '@/utils/test-utils/cli'
@@ -47,7 +47,7 @@ beforeEach(() => {
   })
 })
 
-test('prints the token and environment as KEY=value lines', async () => {
+test('prints only the token', async () => {
   const { promise, output } = run([
     '--scope',
     'products:read',
@@ -56,9 +56,7 @@ test('prints the token and environment as KEY=value lines', async () => {
   ])
   await promise
 
-  expect(output().trim()).toBe(
-    'POLAR_ACCESS_TOKEN=polar_oat_secret\nPOLAR_ENVIRONMENT=sandbox',
-  )
+  expect(output().trim()).toBe('polar_oat_secret')
   expect(requests).toEqual([
     {
       organization: { slug: 'acme', environment: 'sandbox' },
@@ -66,29 +64,4 @@ test('prints the token and environment as KEY=value lines', async () => {
       scopes: ['products:read', 'checkouts:write'],
     },
   ])
-})
-
-const selectEnvironment = (environment: PolarEnvironment) => {
-  organizations = fakeOrganizations({
-    items: [{ ...acme, environment }],
-    selected: { id: acme.id, environment },
-  })
-}
-
-test('prints only the token for production', async () => {
-  selectEnvironment('production')
-  const { promise, output } = run([])
-  await promise
-
-  expect(output().trim()).toBe('POLAR_ACCESS_TOKEN=polar_oat_secret')
-})
-
-test('prints the local API URL for a local session', async () => {
-  selectEnvironment('local')
-  const { promise, output } = run([])
-  await promise
-
-  expect(output().trim()).toBe(
-    'POLAR_ACCESS_TOKEN=polar_oat_secret\nPOLAR_API_URL=http://127.0.0.1:8000',
-  )
 })

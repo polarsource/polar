@@ -17,15 +17,15 @@ import { awaitCallback, type CallbackResult } from '@/utils/loopback'
 
 const CALLBACK_PATH = '/token/callback'
 
-export const environmentSettings = (environment: PolarEnvironment) =>
+export const sdkHint = (environment: PolarEnvironment) =>
   Effect.gen(function* () {
     switch (environment) {
       case 'production':
-        return []
+        return undefined
       case 'sandbox':
-        return [['POLAR_ENVIRONMENT', 'sandbox'] as const]
+        return "This is a sandbox token. Pass server: 'sandbox' to your Polar SDK."
       case 'local':
-        return [['POLAR_API_URL', yield* apiOrigin('local')] as const]
+        return `This is a local token. Pass serverURL: '${yield* apiOrigin('local')}' to your Polar SDK.`
     }
   })
 

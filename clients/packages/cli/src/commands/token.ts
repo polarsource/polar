@@ -1,8 +1,7 @@
 import { Effect, Path, Redacted } from 'effect'
 import { Command, Flag } from 'effect/cli'
-import type { PolarEnvironment } from '@/schemas/Auth'
 import { Organizations } from '@/services/organizations'
-import { environmentSettings, TokenHandoff } from '@/services/token-handoff'
+import { sdkHint, TokenHandoff } from '@/services/token-handoff'
 import { textOnly } from '@/utils/command'
 import { noteToStderr } from '@/utils/progress'
 import * as ui from '@/utils/ui'
@@ -13,12 +12,6 @@ const scope = Flag.String('scope').pipe(
   ),
   Flag.atLeast(0),
 )
-
-const sdkHints: Record<PolarEnvironment, string | undefined> = {
-  production: undefined,
-  sandbox: 'Pass server: process.env.POLAR_ENVIRONMENT to your Polar SDK',
-  local: 'Pass serverURL: process.env.POLAR_API_URL to your Polar SDK',
-}
 
 const announceTokenPage = (page: URL) =>
   noteToStderr(
@@ -35,22 +28,22 @@ const announceTokenPage = (page: URL) =>
 
 export const token = Command.make('token', { scope }).pipe(
   Command.withDescription(
-    'Create an organization access token for your app and print it as KEY=value lines',
+    'Create an organization access token for your app and print it',
   ),
   Command.withExamples([
     {
-      command: 'polar auth token >> .env.local',
-      description: 'Add the token for the active organization to .env.local',
+      command: 'echo "POLAR_ACCESS_TOKEN=$(polar auth token)" >> .env.local',
+      description: 'Add a token for the active organization to .env.local',
     },
     {
       command:
-        'polar auth token --scope products:read --scope checkouts:write | fly secrets import',
+        'polar auth token --scope products:read --scope checkouts:write | gh secret set POLAR_ACCESS_TOKEN',
       description:
-        'Preselect scopes and pipe the variables into a hosting provider without writing them to disk',
+        'Preselect scopes and store the token as a GitHub Actions secret without writing it to disk',
     },
   ]),
   textOnly({
-    reason: 'it prints the token as KEY=value lines',
+    reason: 'it prints only the token',
     run: (flags) =>
       Effect.gen(function* () {
         const path = yield* Path.Path
@@ -63,14 +56,10 @@ export const token = Command.make('token', { scope }).pipe(
           },
           announceTokenPage,
         )
-        const hint = sdkHints[environment]
+        const hint = yield* sdkHint(environment)
         if (hint) yield* noteToStderr(ui.step(hint))
-        return [
-          ['POLAR_ACCESS_TOKEN', Redacted.value(created)] as const,
-          ...(yield* environmentSettings(environment)),
-        ]
+        return Redacted.value(created)
       }),
-    render: (variables: ReadonlyArray<readonly [string, string]>) =>
-      variables.map(([name, value]) => `${name}=${value}`),
+    render: (created: string) => [created],
   }),
 )

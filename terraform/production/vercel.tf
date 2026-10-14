@@ -82,7 +82,6 @@ module "vercel" {
     mintlify_assistant_api_key  = var.mintlify_assistant_api_key
     gram_api_key                = var.gram_api_key
     sentry_auth_token           = var.sentry_auth_token
-    polar_preview_access_token  = var.polar_preview_access_token
   }
 
   # Environment-specific or target-varies-by-env.

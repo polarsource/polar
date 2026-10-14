@@ -2,10 +2,28 @@ import typing
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import UUID4, BaseModel, ConfigDict, Discriminator, TypeAdapter
+from pydantic import (
+    UUID4,
+    BaseModel,
+    ConfigDict,
+    Discriminator,
+    PlainSerializer,
+    TypeAdapter,
+)
 
 from polar.meter.aggregation import Aggregation
 from polar.meter.filter import Filter
+
+
+def to_epoch_microseconds(value: datetime) -> int:
+    # round absorbs the float error of timestamp()
+    return round(value.timestamp() * 1_000_000)
+
+
+# Microseconds since the Unix epoch, so clients compare integers.
+type EpochMicroseconds = typing.Annotated[
+    datetime, PlainSerializer(to_epoch_microseconds, return_type=int)
+]
 
 
 class MessageBase(BaseModel):
@@ -91,12 +109,12 @@ class MeterUsageOutgoingMessagePayload(MessageBase):
     customer_id: UUID4 | None
     external_customer_id: str | None
     # Database time of the read: keep the payload with the highest version.
-    version: datetime
+    version: EpochMicroseconds
     # Temporary: the customer's credits, the same for each of its identities,
     # until credits are reducers.
     credited_units: int
     # Usage before this is Polar's; Outpost counts its own from there on.
-    cold_until: datetime
+    cold_until: EpochMicroseconds
     count: int
     sum: float
     min: float | None

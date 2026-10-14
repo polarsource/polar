@@ -16,6 +16,7 @@ from polar.meter.aggregation import (
     UniqueAggregation,
 )
 from polar.models import Customer, Event, Reducer, ReducerBucket
+from polar.outpost.stream import enqueue as enqueue_outpost_event
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from polar.reducer.repository import ReducerRepository
@@ -35,6 +36,19 @@ def get_reducer_bucket_start(timestamp: datetime) -> datetime:
     size = int(REDUCER_BUCKET_SIZE.total_seconds())
     epoch = int(timestamp.timestamp())
     return datetime.fromtimestamp(epoch - epoch % size, tz=UTC)
+
+
+def get_customer_identities(
+    customer: Customer,
+) -> list[tuple[uuid.UUID | None, str | None]]:
+    """The (customer_id, external_customer_id) pairs the customer's buckets use."""
+    identities: list[tuple[uuid.UUID | None, str | None]] = [(customer.id, None)]
+    if customer.external_id is not None:
+        identities += [
+            (None, customer.external_id),
+            (customer.id, customer.external_id),
+        ]
+    return identities
 
 
 class ReducerBucketService:
@@ -143,6 +157,7 @@ class ReducerBucketService:
                     count=len(values),
                     **statistics,
                 )
+            _enqueue_outpost_event(reducer, customer_id, external_customer_id)
 
     async def sync(
         self,
@@ -164,6 +179,7 @@ class ReducerBucketService:
         await self._sync_bucket(
             repository, reducer, bucket_start, customer_id, external_customer_id
         )
+        _enqueue_outpost_event(reducer, customer_id, external_customer_id)
 
     async def seal(
         self,
@@ -180,12 +196,7 @@ class ReducerBucketService:
         if billable_from >= cutoff:
             return quantities
         repository = ReducerBucketRepository.from_session(session)
-        identities: list[tuple[uuid.UUID | None, str | None]] = [(customer.id, None)]
-        if customer.external_id is not None:
-            identities += [
-                (None, customer.external_id),
-                (customer.id, customer.external_id),
-            ]
+        identities = get_customer_identities(customer)
 
         await self._lock_buckets(
             repository,
@@ -425,6 +436,22 @@ class ReducerBucketService:
             flush=True,
         )
         return True
+
+
+def _enqueue_outpost_event(
+    reducer: Reducer,
+    customer_id: uuid.UUID | None,
+    external_customer_id: str | None,
+) -> None:
+    enqueue_outpost_event(
+        reducer.organization_id,
+        {
+            "type": "reducer_bucket",
+            "reducer_id": reducer.id,
+            "customer_id": customer_id,
+            "external_customer_id": external_customer_id,
+        },
+    )
 
 
 def _get_bucket_key(bucket_id: redis_store.BucketId) -> str:

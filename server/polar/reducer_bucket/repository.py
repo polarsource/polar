@@ -146,6 +146,32 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         )
         return await self.get_one_or_none(statement)
 
+    async def get_unsealed_totals(
+        self,
+        organization_id: UUID,
+        reducer_id: UUID,
+        identities: Sequence[tuple[UUID | None, str | None]],
+    ) -> Row[Any]:
+        """count, sum, min and max of the identities' usage not billed yet."""
+        statement = select(
+            func.coalesce(func.sum(ReducerBucket.count), 0).label("count"),
+            func.coalesce(func.sum(ReducerBucket.sum), 0).label("sum"),
+            func.min(ReducerBucket.min).label("min"),
+            func.max(ReducerBucket.max).label("max"),
+        ).where(
+            ReducerBucket.organization_id == organization_id,
+            ReducerBucket.reducer_id == reducer_id,
+            ReducerBucket.sealed_at.is_(None),
+            or_(
+                *(
+                    _is_customer(ReducerBucket, customer_id, external_customer_id)
+                    for customer_id, external_customer_id in identities
+                )
+            ),
+        )
+        result = await self.session.execute(statement)
+        return result.one()
+
     async def add_contribution(
         self,
         reducer: Reducer,

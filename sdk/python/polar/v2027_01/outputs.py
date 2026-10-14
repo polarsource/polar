@@ -4400,6 +4400,13 @@ class CustomerMeter:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class CustomerMeterCreditExternalIDConflict:
+    error: typing.Literal["CustomerMeterCreditExternalIDConflict"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerNotReady:
     error: typing.Literal["CustomerNotReady"]
 
@@ -5726,6 +5733,9 @@ class DiscountFixedOnceForeverDuration:
     id: str
     """The ID of the object."""
 
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: MetadataOutputType
 
     name: str
@@ -5776,6 +5786,9 @@ class DiscountFixedOnceForeverDurationBase:
 
     id: str
     """The ID of the object."""
+
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: MetadataOutputType
 
@@ -5831,6 +5844,9 @@ class DiscountFixedRepeatDuration:
     id: str
     """The ID of the object."""
 
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: MetadataOutputType
 
     name: str
@@ -5884,6 +5900,9 @@ class DiscountFixedRepeatDurationBase:
     id: str
     """The ID of the object."""
 
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: MetadataOutputType
 
     name: str
@@ -5931,6 +5950,9 @@ class DiscountPercentageOnceForeverDuration:
     id: str
     """The ID of the object."""
 
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: MetadataOutputType
 
     name: str
@@ -5977,6 +5999,9 @@ class DiscountPercentageOnceForeverDurationBase:
 
     id: str
     """The ID of the object."""
+
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: MetadataOutputType
 
@@ -6028,6 +6053,9 @@ class DiscountPercentageRepeatDuration:
     id: str
     """The ID of the object."""
 
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: MetadataOutputType
 
     name: str
@@ -6076,6 +6104,9 @@ class DiscountPercentageRepeatDurationBase:
 
     id: str
     """The ID of the object."""
+
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: MetadataOutputType
 

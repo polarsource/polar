@@ -119,7 +119,7 @@ export const iterListBenefits = (client: ClientBase) => {
 };
 export const createBenefits = (client: ClientBase) => {
   /**
-   * Create a benefit.
+   * Create a benefit, for example license keys, file downloads or Discord access.
    *
    * **Scopes**: `benefits:write`
    *

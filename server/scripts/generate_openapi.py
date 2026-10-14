@@ -7,6 +7,15 @@ import sys
 # package, so the OpenAPI timezone enum is identical across CI and dev machines.
 os.environ["PYTHONTZPATH"] = ""
 
+# `polar.config.settings` reads POLAR_ENV once, when it is first imported.
+# The polar imports below pull it in, and private routes are part of the schema
+# only in development. Set the env before those imports, or a public generate
+# includes private operations and every schema they reference.
+if "--private" in sys.argv:
+    os.environ["POLAR_ENV"] = "development"
+else:
+    os.environ["POLAR_ENV"] = "testing"
+
 from fastapi.routing import iter_route_contexts
 
 from polar.kit.versioning import (
@@ -38,11 +47,6 @@ if __name__ == "__main__":
 
     if arguments.version not in VERSIONS:
         parser.error(f"Unsupported API version: {arguments.version}")
-
-    if arguments.private:
-        os.environ["POLAR_ENV"] = "development"
-    else:
-        os.environ["POLAR_ENV"] = "testing"
 
     from polar.api import router
     from polar.webhook.webhooks import get_webhook_routes

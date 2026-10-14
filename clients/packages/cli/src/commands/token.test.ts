@@ -146,19 +146,6 @@ test('prints only the variables with --stdout and writes no file', async () => {
   await expect(access(file)).rejects.toThrow()
 })
 
-test('includes the variables in JSON output with --stdout', async () => {
-  const { promise, output } = run(['--stdout', '--json'])
-  await promise
-
-  expect(JSON.parse(output())).toMatchObject({
-    destination: 'stdout',
-    variables: [
-      { name: 'POLAR_ACCESS_TOKEN', value: 'polar_oat_secret' },
-      { name: 'POLAR_ENVIRONMENT', value: 'sandbox' },
-    ],
-  })
-})
-
 test('creates a new env file readable only by the owner', async () => {
   const file = join(dir, '.env')
   const { promise } = run(['--env-file', file])

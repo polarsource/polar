@@ -1,11 +1,11 @@
-import { Effect, Option, Path, Redacted, Schema } from 'effect'
+import { Effect, Option, Path, Redacted } from 'effect'
 import { Command, Flag } from 'effect/cli'
-import { PolarEnvironment } from '@/schemas/Auth'
+import type { PolarEnvironment } from '@/schemas/Auth'
 import { Organizations } from '@/services/organizations'
 import { defaultEnvFile, isExposedToGit, writeEnv } from '@/services/env-file'
 import { environmentSettings, TokenHandoff } from '@/services/token-handoff'
-import { output } from '@/utils/command'
-import { note, noteToStderr } from '@/utils/progress'
+import { textOnly } from '@/utils/command'
+import { noteToStderr } from '@/utils/progress'
 import * as ui from '@/utils/ui'
 
 const scope = Flag.String('scope').pipe(
@@ -29,35 +29,25 @@ const stdout = Flag.Boolean('stdout').pipe(
   ),
 )
 
-const Target = Schema.Struct({
-  slug: Schema.String,
-  environment: PolarEnvironment,
-})
+interface Target {
+  readonly slug: string
+  readonly environment: PolarEnvironment
+}
 
-const Written = Schema.Struct({
-  name: Schema.String,
-  replaced: Schema.Boolean,
-})
-
-const Saved = Schema.Struct({
-  destination: Schema.Literal('file'),
-  organization: Target,
-  envFile: Schema.String,
-  written: Schema.Array(Written),
-  stale: Schema.Array(Schema.String),
-  exposedToGit: Schema.Boolean,
-})
-
-const Printed = Schema.Struct({
-  destination: Schema.Literal('stdout'),
-  organization: Target,
-  variables: Schema.Array(
-    Schema.Struct({ name: Schema.String, value: Schema.String }),
-  ),
-})
-
-const Created = Schema.Union([Saved, Printed])
-type Created = typeof Created.Type
+type Created =
+  | {
+      readonly destination: 'file'
+      readonly organization: Target
+      readonly envFile: string
+      readonly written: ReadonlyArray<{ name: string; replaced: boolean }>
+      readonly stale: ReadonlyArray<string>
+      readonly exposedToGit: boolean
+    }
+  | {
+      readonly destination: 'stdout'
+      readonly organization: Target
+      readonly variables: ReadonlyArray<{ name: string; value: string }>
+    }
 
 const sdkHints: Record<PolarEnvironment, string | undefined> = {
   production: undefined,
@@ -106,9 +96,9 @@ export const token = Command.make('token', {
         'Pipe the variables into a hosting provider without writing them to disk',
     },
   ]),
-  output({
-    result: Created,
-    run: (flags) =>
+  textOnly({
+    reason: 'the token goes into your env file, or with --stdout into a pipe',
+    run: (flags, { say }) =>
       Effect.gen(function* () {
         const path = yield* Path.Path
         const { slug, environment } = yield* (yield* Organizations).resolve()
@@ -119,7 +109,9 @@ export const token = Command.make('token', {
             name: path.basename(process.cwd()),
             scopes: flags.scope,
           },
-          announceTokenPage(flags.stdout ? noteToStderr : note),
+          announceTokenPage(
+            flags.stdout ? noteToStderr : (text) => say([text]),
+          ),
         )
         const settings: ReadonlyArray<readonly [string, string]> = [
           ['POLAR_ACCESS_TOKEN', Redacted.value(created)],

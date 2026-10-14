@@ -340,11 +340,7 @@ class ReducerBucketService:
             # Sealed buckets were billed: events since go to a new generation.
             if previous is not None and previous.sealed_at is None:
                 await repository.update(
-                    previous,
-                    update_dict={
-                        **statistics,
-                        "synced_at": previous.synced_at or utc_now(),
-                    },
+                    previous, update_dict={**statistics, "synced_at": utc_now()}
                 )
                 continue
             await repository.create(

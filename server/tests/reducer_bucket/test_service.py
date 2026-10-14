@@ -507,6 +507,7 @@ class TestSync:
 
     async def test_updates_unbilled_buckets_in_place(
         self,
+        mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
         sum_reducer: Reducer,
@@ -518,17 +519,16 @@ class TestSync:
             await reducer_bucket_service.sync(
                 session, sum_reducer.id, BUCKET_START, None, "external"
             )
-        [bucket] = await get_buckets(session)
-        modified_at = bucket.modified_at
+        mocker.patch("polar.reducer_bucket.service.utc_now", return_value=BILLED_AT)
 
-        # Unchanged: nothing is written.
+        # Unchanged, but synced again.
         await reducer_bucket_service.sync(
             session, sum_reducer.id, BUCKET_START, None, "external"
         )
 
         [bucket] = await get_buckets(session)
         assert (bucket.generation, bucket.count, bucket.sum) == (1, 3, Decimal(12))
-        assert bucket.modified_at == modified_at is not None
+        assert bucket.synced_at == BILLED_AT
         assert bucket.sealed_at is None
 
     async def test_events_after_billing_go_to_next_generation(

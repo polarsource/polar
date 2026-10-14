@@ -2,6 +2,9 @@ import { defineConfig, eur, perThousand, usd } from '@polar-sh/polar'
 import { z } from 'zod'
 
 export default defineConfig({
+  settings: {
+    payments: { currency: 'eur' },
+  },
   events: {
     tool_call: z.object({
       tool: z.string(),
@@ -97,15 +100,15 @@ export default defineConfig({
       // .trial(14, 'days')
       .grants(['custom_servers', 'tool_calls']),
     topup_100: product('100 tool calls')
-      .prices(fixed().amount(usd(9)))
+      .prices(fixed().amount(usd(9), eur(5)))
       .once()
       .grants(['topup_100']),
     topup_500: product('500 tool calls')
-      .prices(fixed().amount(usd(39)))
+      .prices(fixed().amount(usd(39), eur(30)))
       .once()
       .grants(['topup_500']),
     topup_1000: product('1,000 tool calls')
-      .prices(fixed().amount(usd(79)))
+      .prices(fixed().amount(usd(79), eur(50)))
       .once()
       .grants(['topup_1000']),
   }),

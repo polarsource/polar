@@ -42,6 +42,17 @@ jobs:
     env:
       POLAR_EMAIL_RENDERER_BINARY_PATH: "/tmp/email-renderer"
       POLAR_PYDANTIC_AI_GATEWAY_API_KEY: "POLAR_PYDANTIC_AI_GATEWAY_API_KEY"
+      E2E_REDIS_URL: "redis://127.0.0.1:6379/0"
+    services:
+      redis:
+        image: redis:7.4-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
     steps:
       - uses: actions/checkout@v7.0.1
 
@@ -88,8 +99,24 @@ jobs:
       - name: Generate and test SDKs
         working-directory: ./sdk/generator
         run: |
+          sudo apt-get update && sudo apt-get install -y redis-server
           just openapi
           just generate-all
+
+      - name: Install SDK E2E dependencies
+        working-directory: ./sdk/e2e
+        run: |
+          just ci
+
+      - name: Check SDK E2E harness
+        working-directory: ./sdk/e2e
+        run: |
+          just lint
+          just typecheck
+
+      - name: Test SDK E2E scenarios
+        working-directory: ./sdk/e2e
+        run: just test
 
       - name: Verify bundled Python SDK skill
         working-directory: ./sdk/python

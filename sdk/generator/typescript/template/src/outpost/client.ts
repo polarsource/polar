@@ -1,0 +1,504 @@
+import { Redis } from "ioredis";
+import { randomUUID } from "node:crypto";
+import { once } from "node:events";
+import WebSocket from "ws";
+
+import { ClientBase, PolarError } from "../base";
+import { customerKey, parseEvent, type EventInput } from "./event";
+import {
+  reduce,
+  getBucketStart,
+  type Reducer,
+  type BucketStatistics,
+  emptyStatistics,
+  addStatistics,
+  quantity,
+} from "./reducer";
+import { READ_STATE_SCRIPT, WRITE_BUCKET_SCRIPT, APPLY_SNAPSHOT_SCRIPT } from "./scripts";
+
+const CACHE_SIZE = 1024;
+const SYNC_INTERVAL = 30_000;
+const TIMEOUT = 5_000;
+interface State {
+  epoch: string;
+  revision: bigint;
+  coldUntil?: number;
+  cold: BucketStatistics;
+  buckets: Map<number, BucketStatistics>;
+  credited: Record<string, number>;
+}
+type Customer = Parameters<typeof customerKey>[0];
+interface Snapshot {
+  customer_id: string | null;
+  external_customer_id: string | null;
+  meter_id: string;
+  cold_until: number;
+  version: number;
+  count: number;
+  sum: number;
+  min: number | null;
+  max: number | null;
+  credited_units: number;
+}
+type Message =
+  | { type: "configuration"; payload: { reducers: Reducer[] } }
+  | { type: "meter_usage"; payload: Snapshot };
+interface StateUpdate {
+  customer: string;
+  state: string[];
+}
+interface LocalState {
+  state?: State;
+  pending: Promise<unknown>;
+}
+interface OutpostRedis extends Redis {
+  outpostReadState(key: string, ...args: (string | number)[]): Promise<string[]>;
+  outpostWriteBucket(key: string, ...args: (string | number)[]): Promise<string[]>;
+  outpostApplySnapshot(key: string, ...args: (string | number)[]): Promise<string[]>;
+}
+
+const generateEpoch = (): string => randomUUID().replaceAll("-", "");
+const number = (value: string): number => {
+  const parsed: number = JSON.parse(value);
+  if (!Number.isFinite(parsed))
+    throw new TypeError("Stored aggregation values must be finite numbers");
+  return parsed;
+};
+const signal = () => {
+  let resolve!: () => void;
+  const promise = new Promise<void>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+};
+const withTimeout = async <T>(promise: Promise<T>): Promise<T> => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new PolarError("Outpost operation timed out")), TIMEOUT);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+};
+const locked = <T>(local: LocalState, action: () => Promise<T>): Promise<T> => {
+  const result = local.pending.then(action);
+  local.pending = result.catch(() => {});
+  return result;
+};
+const decodeState = (value: string[]): State => {
+  const fields: Record<string, string> = {};
+  for (let i = 0; i < value.length; i += 2) fields[value[i]] = value[i + 1];
+  const state: State = {
+    epoch: fields.epoch,
+    revision: BigInt(fields.revision),
+    coldUntil: fields.cold_until === undefined ? undefined : number(fields.cold_until),
+    cold: emptyStatistics(),
+    buckets: new Map(),
+    credited: {},
+  };
+  for (const [field, value] of Object.entries(fields)) {
+    if (field.startsWith("cold:")) {
+      const statistic = field.slice(5) as keyof BucketStatistics;
+      state.cold[statistic] = number(value);
+    } else if (field.startsWith("bucket:")) {
+      const [, timestamp, statistic] = field.split(":");
+      const start = Number(timestamp);
+      const bucket = state.buckets.get(start) ?? emptyStatistics();
+      bucket[statistic as keyof BucketStatistics] = number(value);
+      state.buckets.set(start, bucket);
+    } else if (field.startsWith("credited:")) state.credited[field.slice(9)] = number(value);
+  }
+  return state;
+};
+
+const customerArguments = (customer: string): Customer => {
+  const separator = customer.indexOf(":");
+  return {
+    [customer.startsWith("customer:") ? "customer_id" : "external_customer_id"]: customer.slice(
+      separator + 1,
+    ),
+  };
+};
+
+export interface OutpostOptions {
+  client: Pick<ClientBase, "buildRequest">;
+}
+export interface IngestResult {
+  inserted: number;
+  duplicates: number;
+}
+export interface CustomerMeter extends Customer {
+  meter_id: string;
+  consumed_units: number;
+  credited_units: number;
+  balance: number;
+}
+
+export class Outpost {
+  private redis?: OutpostRedis;
+  private subscriber?: Redis;
+  private websocket?: WebSocket;
+  private reducers: Reducer[] = [];
+  private readonly cache = new Map<string, LocalState>();
+  private readonly actors = new Set<string>();
+  private configured = signal();
+  private synced = signal();
+  private isSynced = false;
+  private generation = 0;
+  private channel = "";
+  private refreshTimer?: ReturnType<typeof setInterval>;
+  private failure?: Error;
+  private messages: Promise<unknown> = Promise.resolve();
+  private synchronizing?: Promise<void>;
+
+  constructor(
+    readonly redisUrl: string,
+    private readonly options: OutpostOptions,
+  ) {}
+
+  async start(): Promise<this> {
+    if (this.redis) throw new PolarError("Outpost is already connected");
+    this.failure = undefined;
+    this.configured = signal();
+    this.synced = signal();
+    this.messages = Promise.resolve();
+    try {
+      this.redis = new Redis(this.redisUrl, {
+        lazyConnect: true,
+        enableOfflineQueue: false,
+        autoResendUnfulfilledCommands: false,
+        maxRetriesPerRequest: 0,
+        commandTimeout: TIMEOUT,
+      }) as OutpostRedis;
+      this.redis.defineCommand("outpostReadState", { numberOfKeys: 1, lua: READ_STATE_SCRIPT });
+      this.redis.defineCommand("outpostWriteBucket", { numberOfKeys: 1, lua: WRITE_BUCKET_SCRIPT });
+      this.redis.defineCommand("outpostApplySnapshot", {
+        numberOfKeys: 1,
+        lua: APPLY_SNAPSHOT_SCRIPT,
+      });
+      const redis = this.redis;
+      this.redis.on("error", () => {});
+      this.redis.on("close", () => {
+        if (this.redis === redis) this.invalidate();
+      });
+      this.redis.on("ready", () => {
+        if (this.subscriber?.status === "ready") void this.synchronize();
+      });
+      await withTimeout(this.redis.connect());
+      await this.redis.ping();
+      this.channel = `outpost:${this.redis.options.db}:updates`;
+      this.subscriber = this.redis.duplicate({ lazyConnect: true, autoResubscribe: false });
+      const subscriber = this.subscriber;
+      this.subscriber.on("error", () => {});
+      this.subscriber.on("close", () => {
+        if (this.subscriber === subscriber) this.invalidate();
+      });
+      this.subscriber.on("ready", () => {
+        void this.synchronize();
+      });
+      this.subscriber.on("message", (_channel, data) => {
+        void this.receiveRedis(data).catch((error: unknown) => this.fail(error));
+      });
+      await withTimeout(this.subscriber.connect());
+      await withTimeout(this.synced.promise);
+      const [url, request] = this.options.client.buildRequest("GET", "/v1/outpost/");
+      const endpoint = new URL(url);
+      endpoint.protocol = endpoint.protocol === "https:" ? "wss:" : "ws:";
+      this.websocket = new WebSocket(endpoint, {
+        headers: Object.fromEntries(new Headers(request.headers)),
+        handshakeTimeout: TIMEOUT,
+      });
+      this.websocket.on("error", (error) => this.fail(error));
+      this.websocket.on("close", () => {
+        if (this.websocket) this.fail(new PolarError("Outpost WebSocket disconnected"));
+      });
+      this.websocket.on("message", (data) => {
+        this.messages = this.messages
+          .then(() => this.receiveWebsocket(data.toString()))
+          .catch((error: unknown) => this.fail(error));
+      });
+      await withTimeout(once(this.websocket, "open"));
+      await this.send({ type: "configuration" });
+      this.refreshTimer = setInterval(() => {
+        if (this.synchronizing) return;
+        void this.synchronize();
+      }, SYNC_INTERVAL);
+      this.requireRedis();
+      return this;
+    } catch (error) {
+      await this.close();
+      throw error;
+    }
+  }
+
+  async close(): Promise<void> {
+    clearInterval(this.refreshTimer);
+    const websocket = this.websocket;
+    const connections = [this.subscriber, this.redis].filter(
+      (redis): redis is Redis => redis !== undefined,
+    );
+    this.websocket = undefined;
+    this.subscriber = undefined;
+    this.redis = undefined;
+    const closed = connections.map((redis) => {
+      const ended = redis.status === "end" ? Promise.resolve() : once(redis, "end");
+      redis.disconnect();
+      return ended;
+    });
+    if (websocket && websocket.readyState !== WebSocket.CLOSED) {
+      closed.push(once(websocket, "close"));
+      websocket.terminate();
+    }
+    this.invalidate();
+    this.synced.resolve();
+    this.configured.resolve();
+    await Promise.allSettled([...closed, this.messages, this.synchronizing]);
+    this.cache.clear();
+    this.actors.clear();
+    this.reducers = [];
+  }
+
+  async [Symbol.asyncDispose](): Promise<void> {
+    await this.close();
+  }
+
+  async ingest({ events }: { events: readonly EventInput[] }): Promise<IngestResult> {
+    const redis = this.requireRedis();
+    if (!events.length) return { inserted: 0, duplicates: 0 };
+    const parsed = events.map(parseEvent);
+    await this.waitConfigured();
+    const updates = reduce(
+      this.reducers,
+      parsed,
+      parsed.reduce((oldest, event) => Math.min(oldest, getBucketStart(event.timestamp)), Infinity),
+    );
+    for (const customer of new Set(parsed.map((event) => event.customer)))
+      await this.actor(customerArguments(customer));
+    for (const update of updates) {
+      const identity = `${update.customer}:${update.reducer}`;
+      const statistics = update.statistics;
+      const state = await redis.outpostWriteBucket(
+        `outpost:state:${identity}`,
+        identity,
+        this.channel,
+        generateEpoch(),
+        update.bucketStart,
+        statistics.count,
+        statistics.sum,
+        statistics.min ?? "",
+        statistics.max ?? "",
+      );
+      await this.receiveState(identity, decodeState(state));
+    }
+    return { inserted: parsed.length, duplicates: 0 };
+  }
+
+  async customerMeter(input: Customer & { meter_id: string }): Promise<CustomerMeter | null> {
+    const customer = customerKey(input);
+    this.requireRedis();
+    await this.waitConfigured();
+    const reducer = this.reducers.find((item) => item.meter_ids?.includes(input.meter_id));
+    if (!reducer) return null;
+    const state = (await this.warmCustomer(customer, reducer)).state;
+    if (!state || state.coldUntil === undefined)
+      throw new PolarError("Customer snapshot is not ready");
+    const combined = { ...state.cold };
+    for (const [start, statistics] of state.buckets)
+      if (start >= state.coldUntil) addStatistics(combined, statistics);
+    const consumed = quantity(combined, reducer.aggregation.func);
+    const credited = state.credited[input.meter_id] ?? 0;
+    return {
+      ...input,
+      consumed_units: consumed,
+      credited_units: credited,
+      balance: credited - consumed,
+    };
+  }
+
+  async actor(input: Customer): Promise<void> {
+    await this.waitConfigured();
+    for (const reducer of this.reducers) await this.warmCustomer(customerKey(input), reducer);
+  }
+
+  private requireRedis(): OutpostRedis {
+    if (this.failure) throw this.failure;
+    if (!this.redis) throw new PolarError("Call Outpost.start() before using Outpost");
+    return this.redis;
+  }
+
+  private async waitConfigured(): Promise<void> {
+    await withTimeout(this.configured.promise);
+    this.requireRedis();
+  }
+
+  private async send(message: unknown): Promise<void> {
+    this.requireRedis();
+    if (!this.websocket || this.websocket.readyState !== WebSocket.OPEN)
+      throw new PolarError("Outpost WebSocket is not connected");
+    await new Promise<void>((resolve, reject) =>
+      this.websocket!.send(JSON.stringify(message), (error) => (error ? reject(error) : resolve())),
+    );
+  }
+
+  private async warmCustomer(customer: string, reducer: Reducer): Promise<LocalState> {
+    const identity = `${customer}:${reducer.id}`;
+    this.requireRedis();
+    while (!this.isSynced) {
+      await withTimeout(this.synced.promise);
+      this.requireRedis();
+    }
+    let local = this.cache.get(identity);
+    if (!local) {
+      local = { pending: Promise.resolve() };
+      this.cache.set(identity, local);
+      if (this.cache.size > CACHE_SIZE) {
+        const evicted = this.cache.keys().next().value!;
+        this.cache.delete(evicted);
+        this.actors.delete(evicted);
+      }
+    }
+    this.cache.delete(identity);
+    this.cache.set(identity, local);
+    if (local.state && this.actors.has(identity)) return local;
+    const entry = local;
+    await locked(entry, async () => {
+      if (!entry.state) entry.state = await this.loadState(identity);
+      if (!this.actors.has(identity)) {
+        for (const meter_id of reducer.meter_ids ?? [])
+          await this.send({
+            type: "meter_usage",
+            payload: { ...customerArguments(customer), meter_id },
+          });
+        this.actors.add(identity);
+      }
+    });
+    return entry;
+  }
+
+  private async loadState(customer: string): Promise<State> {
+    const epoch = generateEpoch();
+    return decodeState(
+      await this.requireRedis().outpostReadState(`outpost:state:${customer}`, epoch),
+    );
+  }
+
+  private async receiveState(customer: string, state: State): Promise<void> {
+    const local = this.cache.get(customer);
+    if (!local) return;
+    await locked(local, async () => {
+      const current = local.state;
+      if (!current) return;
+      if (current.epoch !== state.epoch) state = await this.loadState(customer);
+      else if (current.revision >= state.revision) return;
+      local.state = state;
+    });
+  }
+
+  private async receiveRedis(data: string): Promise<void> {
+    const update: StateUpdate = JSON.parse(data);
+    await this.receiveState(update.customer, decodeState(update.state));
+  }
+
+  private synchronize(): Promise<void> {
+    if (this.synchronizing) return this.synchronizing;
+    const generation = this.generation;
+    this.synchronizing = (async () => {
+      if (
+        this.failure ||
+        !this.subscriber ||
+        this.subscriber.status !== "ready" ||
+        this.redis?.status !== "ready"
+      )
+        return;
+      if (!this.isSynced) await this.subscriber.subscribe(this.channel);
+      const entries = Array.from(this.cache);
+      for (const [customer, local] of entries) {
+        await locked(local, async () => {
+          const state = await this.loadState(customer);
+          if (generation === this.generation) local.state = state;
+        });
+      }
+      if (generation === this.generation) {
+        this.isSynced = true;
+        this.synced.resolve();
+      }
+    })()
+      .catch((error: unknown) => {
+        if (error instanceof TypeError) this.fail(error);
+        else this.invalidate();
+      })
+      .finally(() => {
+        this.synchronizing = undefined;
+        if (
+          !this.failure &&
+          generation !== this.generation &&
+          this.redis?.status === "ready" &&
+          this.subscriber?.status === "ready"
+        )
+          void this.synchronize();
+      });
+    return this.synchronizing;
+  }
+
+  private invalidate(): void {
+    this.generation++;
+    this.isSynced = false;
+    this.synced.resolve();
+    this.synced = signal();
+    for (const local of this.cache.values()) local.state = undefined;
+  }
+
+  private fail(error: unknown): void {
+    this.failure = error instanceof Error ? error : new PolarError(String(error));
+    this.configured.resolve();
+    this.synced.resolve();
+  }
+
+  private async receiveWebsocket(data: string): Promise<void> {
+    const message: Message = JSON.parse(data);
+    if (message.type === "configuration") {
+      this.reducers = message.payload.reducers;
+      this.configured.resolve();
+    } else if (message.type === "meter_usage") {
+      const snapshot = message.payload;
+      const reducer = this.reducers.find((item) => item.meter_ids?.includes(snapshot.meter_id));
+      if (!reducer) return;
+      if (snapshot.customer_id !== null && snapshot.external_customer_id !== null) return;
+      const customer = customerKey({
+        customer_id: snapshot.customer_id ?? undefined,
+        external_customer_id: snapshot.external_customer_id ?? undefined,
+      });
+      const identity = `${customer}:${reducer.id}`;
+      if (!Number.isSafeInteger(snapshot.version) || !Number.isSafeInteger(snapshot.cold_until))
+        throw new TypeError("Snapshot timestamps must be safe integer microseconds");
+      for (const value of [
+        snapshot.count,
+        snapshot.sum,
+        snapshot.min,
+        snapshot.max,
+        snapshot.credited_units,
+      ])
+        if (value !== null && !Number.isFinite(value))
+          throw new TypeError("Snapshot values must be finite");
+      const state = await this.requireRedis().outpostApplySnapshot(
+        `outpost:state:${identity}`,
+        identity,
+        this.channel,
+        generateEpoch(),
+        snapshot.cold_until,
+        snapshot.version,
+        snapshot.meter_id,
+        snapshot.credited_units,
+        snapshot.count,
+        snapshot.sum,
+        snapshot.min ?? "",
+        snapshot.max ?? "",
+      );
+      await this.receiveState(identity, decodeState(state));
+    }
+  }
+}

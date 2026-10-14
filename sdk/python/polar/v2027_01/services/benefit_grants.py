@@ -28,9 +28,6 @@ class BenefitGrantsSync(SyncServiceBase):
         organization_id: str | builtins.list[str] | None = None,
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
-        external_benefit_id: str | builtins.list[str] | None = None,
-        member_id: str | builtins.list[str] | None = None,
-        external_member_id: str | builtins.list[str] | None = None,
         is_granted: bool | None = None,
         page: int = 1,
         limit: int = 10,
@@ -47,9 +44,6 @@ class BenefitGrantsSync(SyncServiceBase):
             organization_id: Filter by organization ID.
             customer_id: Filter by customer ID.
             external_customer_id: Filter by customer external ID.
-            external_benefit_id: Filter by benefit external ID.
-            member_id: Filter by member ID.
-            external_member_id: Filter by member external ID.
             is_granted: Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
@@ -72,9 +66,6 @@ class BenefitGrantsSync(SyncServiceBase):
                 "organization_id": organization_id,
                 "customer_id": customer_id,
                 "external_customer_id": external_customer_id,
-                "external_benefit_id": external_benefit_id,
-                "member_id": member_id,
-                "external_member_id": external_member_id,
                 "is_granted": is_granted,
                 "page": page,
                 "limit": limit,
@@ -95,9 +86,6 @@ class BenefitGrantsSync(SyncServiceBase):
         organization_id: str | builtins.list[str] | None = None,
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
-        external_benefit_id: str | builtins.list[str] | None = None,
-        member_id: str | builtins.list[str] | None = None,
-        external_member_id: str | builtins.list[str] | None = None,
         is_granted: bool | None = None,
         page: int = 1,
         limit: int = 10,
@@ -114,9 +102,6 @@ class BenefitGrantsSync(SyncServiceBase):
             organization_id: Filter by organization ID.
             customer_id: Filter by customer ID.
             external_customer_id: Filter by customer external ID.
-            external_benefit_id: Filter by benefit external ID.
-            member_id: Filter by member ID.
-            external_member_id: Filter by member external ID.
             is_granted: Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
@@ -139,9 +124,6 @@ class BenefitGrantsSync(SyncServiceBase):
                 organization_id=organization_id,
                 customer_id=customer_id,
                 external_customer_id=external_customer_id,
-                external_benefit_id=external_benefit_id,
-                member_id=member_id,
-                external_member_id=external_member_id,
                 is_granted=is_granted,
                 page=page,
                 limit=limit,
@@ -162,9 +144,6 @@ class BenefitGrantsAsync(AsyncServiceBase):
         organization_id: str | builtins.list[str] | None = None,
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
-        external_benefit_id: str | builtins.list[str] | None = None,
-        member_id: str | builtins.list[str] | None = None,
-        external_member_id: str | builtins.list[str] | None = None,
         is_granted: bool | None = None,
         page: int = 1,
         limit: int = 10,
@@ -181,9 +160,6 @@ class BenefitGrantsAsync(AsyncServiceBase):
             organization_id: Filter by organization ID.
             customer_id: Filter by customer ID.
             external_customer_id: Filter by customer external ID.
-            external_benefit_id: Filter by benefit external ID.
-            member_id: Filter by member ID.
-            external_member_id: Filter by member external ID.
             is_granted: Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
@@ -206,9 +182,6 @@ class BenefitGrantsAsync(AsyncServiceBase):
                 "organization_id": organization_id,
                 "customer_id": customer_id,
                 "external_customer_id": external_customer_id,
-                "external_benefit_id": external_benefit_id,
-                "member_id": member_id,
-                "external_member_id": external_member_id,
                 "is_granted": is_granted,
                 "page": page,
                 "limit": limit,
@@ -229,9 +202,6 @@ class BenefitGrantsAsync(AsyncServiceBase):
         organization_id: str | builtins.list[str] | None = None,
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
-        external_benefit_id: str | builtins.list[str] | None = None,
-        member_id: str | builtins.list[str] | None = None,
-        external_member_id: str | builtins.list[str] | None = None,
         is_granted: bool | None = None,
         page: int = 1,
         limit: int = 10,
@@ -248,9 +218,6 @@ class BenefitGrantsAsync(AsyncServiceBase):
             organization_id: Filter by organization ID.
             customer_id: Filter by customer ID.
             external_customer_id: Filter by customer external ID.
-            external_benefit_id: Filter by benefit external ID.
-            member_id: Filter by member ID.
-            external_member_id: Filter by member external ID.
             is_granted: Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
@@ -273,9 +240,6 @@ class BenefitGrantsAsync(AsyncServiceBase):
                 organization_id=organization_id,
                 customer_id=customer_id,
                 external_customer_id=external_customer_id,
-                external_benefit_id=external_benefit_id,
-                member_id=member_id,
-                external_member_id=external_member_id,
                 is_granted=is_granted,
                 page=page,
                 limit=limit,

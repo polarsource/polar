@@ -1,6 +1,7 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+import respx
 from pytest_mock import MockerFixture
 
 from polar.organization_review.collectors.firecrawl_client import ScrapeResult
@@ -440,8 +441,6 @@ class TestResolveUrlRedirects:
     async def test_chain_through_other_domain_back_to_own_site(
         self, mocker: MockerFixture
     ) -> None:
-        import respx
-
         mocker.patch(
             "polar.organization_review.collectors.setup._validate_url_host",
             return_value=None,
@@ -464,8 +463,6 @@ class TestResolveUrlRedirects:
 
     @pytest.mark.anyio
     async def test_subdomain_to_parent_not_flagged(self, mocker: MockerFixture) -> None:
-        import respx
-
         mocker.patch(
             "polar.organization_review.collectors.setup._validate_url_host",
             return_value=None,

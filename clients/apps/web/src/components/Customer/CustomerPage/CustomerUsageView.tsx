@@ -83,7 +83,7 @@ export const CustomerUsageView = ({
 
   const { data: subscriptionsData } = useSubscriptions(
     customer.organization_id,
-    { customer_id: customer.id, active: true },
+    { customer_id: customer.id, active: true, limit: 100 },
   )
 
   const customerMeters = useMemo((): CustomerMeterWithSubscription[] => {

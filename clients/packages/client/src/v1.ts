@@ -2158,7 +2158,7 @@ export interface paths {
     put?: never
     /**
      * Create Benefit
-     * @description Create a benefit.
+     * @description Create a benefit, for example license keys, file downloads or Discord access.
      *
      *     **Scopes**: `benefits:write`
      */
@@ -3750,6 +3750,8 @@ export interface paths {
      * Create Customer
      * @description Create a customer.
      *
+     *     Set `external_id` to the customer's ID in your system to look it up by that ID.
+     *
      *     **Scopes**: `customers:write`
      */
     post: operations['customers:create']
@@ -5299,13 +5301,17 @@ export interface paths {
     }
     /**
      * List Seats
-     * @description **Scopes**: `customer_seats:read`
+     * @description List seats for a subscription or order.
+     *
+     *     **Scopes**: `customer_seats:read`
      */
     get: operations['customer-seats:list_seats']
     put?: never
     /**
      * Assign Seat
-     * @description **Scopes**: `customer_seats:write`
+     * @description Assign a seat for a subscription or order.
+     *
+     *     **Scopes**: `customer_seats:write`
      */
     post: operations['customer-seats:assign_seat']
     delete?: never
@@ -5326,7 +5332,9 @@ export interface paths {
     post?: never
     /**
      * Revoke Seat
-     * @description **Scopes**: `customer_seats:write`
+     * @description Revoke a customer seat.
+     *
+     *     **Scopes**: `customer_seats:write`
      */
     delete: operations['customer-seats:revoke_seat']
     options?: never
@@ -5345,7 +5353,9 @@ export interface paths {
     put?: never
     /**
      * Resend Invitation
-     * @description **Scopes**: `customer_seats:write`
+     * @description Resend an invitation for a pending customer seat.
+     *
+     *     **Scopes**: `customer_seats:write`
      */
     post: operations['customer-seats:resend_invitation']
     delete?: never
@@ -5361,7 +5371,10 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    /** Get Claim Info */
+    /**
+     * Get Claim Info
+     * @description Get claim information for a customer seat invitation.
+     */
     get: operations['customer-seats:get_claim_info']
     put?: never
     post?: never
@@ -5380,7 +5393,10 @@ export interface paths {
     }
     get?: never
     put?: never
-    /** Claim Seat */
+    /**
+     * Claim Seat
+     * @description Claim a customer seat with an invitation token.
+     */
     post: operations['customer-seats:claim_seat']
     delete?: never
     options?: never

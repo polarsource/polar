@@ -39,4 +39,4 @@ export const command = Command.make(
         invoke: (client) => client.customerSeats.listSeats(query),
       })
     }),
-).pipe(Command.withDescription('**Scopes**: `customer_seats:read`'))
+).pipe(Command.withDescription('List seats for a subscription or order.'))

@@ -455,7 +455,11 @@ async def create(
     auth_subject: auth.CustomerWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Customer:
-    """Create a customer."""
+    """
+    Create a customer.
+
+    Set `external_id` to the customer's ID in your system to look it up by that ID.
+    """
     return await customer_service.create(session, customer_create, auth_subject)
 
 

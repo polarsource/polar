@@ -16,7 +16,7 @@ from polar.models.refund import (
     RefundReason,
     RefundStatus,
 )
-from polar.openapi import cli_confirm_equals
+from polar.openapi import destructive_when_equals
 
 RefundID = Annotated[UUID4, Path(description="The refund ID.")]
 
@@ -54,7 +54,7 @@ class RefundCreate(MetadataInputMixin, Schema):
     )
     revoke_benefits: bool = Field(
         False,
-        json_schema_extra=cli_confirm_equals(True),
+        json_schema_extra=destructive_when_equals(True),
         description=inspect.cleandoc(
             """
             Should this refund trigger the associated customer benefits to be revoked?

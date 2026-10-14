@@ -98,4 +98,8 @@ export const command = Command.make(
         invoke: (client) => client.benefits.create(body),
       })
     }),
-).pipe(Command.withDescription('Create a benefit.'))
+).pipe(
+  Command.withDescription(
+    'Create a benefit, for example license keys, file downloads or Discord access.',
+  ),
+)

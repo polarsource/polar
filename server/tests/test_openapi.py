@@ -77,6 +77,7 @@ DESTRUCTIVE_TOOL_OPERATIONS = {
     "products:update",
     "refunds:create",
     "subscriptions:update",
+    "webhooks:reset_webhook_endpoint_secret",
     "webhooks:update_webhook_endpoint",
 }
 
@@ -107,7 +108,6 @@ NON_DESTRUCTIVE_TOOL_OPERATIONS = {
     "products:update_benefits",
     "webhooks:create_webhook_endpoint",
     "webhooks:redeliver_webhook_event",
-    "webhooks:reset_webhook_endpoint_secret",
 }
 
 

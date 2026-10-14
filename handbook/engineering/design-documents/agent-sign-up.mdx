@@ -93,6 +93,7 @@ starts working. This is the safer flow and ships first.
 | What a claim is | A transfer: in one atomic step, the placeholder user's orgs and everything in them move to the claiming user. No identity-verification check at claim time, because claimed or not, the org still has to pass the normal verification before it can be paid out. |
 | Before the claim | Build only: orgs, products, meters, benefits, config, test events. No review submission, payouts, checkouts, customers or webhooks. Enforced on the server, with narrower scopes as a second layer. |
 | After the claim | Anything the user can do. |
+| Org creation by an unclaimed agent | Polar's own billing customer and the Plain support records are created at the claim, not before. Nothing else changes. |
 | Rollout | `service_auth` first. Anonymous sign-up starts in sandbox, behind a feature flag, and goes to production once sandbox abuse data looks fine. |
 | Claim window | 7 days. After that we delete the unclaimed org, placeholder user and OAuth client. |
 | Identity assertion | Lives 30 days and can be reused until it expires, as the auth.md spec expects. The claim issues a fresh one and invalidates older ones. Revoking the agent stops it immediately. After 30 days the agent signs up again and the human re-approves it. |
@@ -139,13 +140,9 @@ later, and the agent marker on the OAuth client keeps that door open.
     sign-in on the claim page.
   - *Abuse of open anonymous sign-up* (spam orgs, slug squatting). Rate limits, a cap on orgs per agent,
     the 7-day cleanup, and a feature flag to switch it off.
-  - *Side effects of placeholder users*, e.g. creating a customer with a fake email in Polar's own org.
-    Skip or delay those until the claim.
+  - *Side effects of placeholder users*: creating a customer in Polar's own org, and support records in Plain,
+    with a fake email. Delay those until the claim.
   - *Users don't know an agent is connected.* A "Connected agents" page with a revoke button, and an
     email when an agent is linked.
 
 These risks go into the risk register before this document is merged.
-
-## Open questions
-
-- What should `organization.created` side effects (review, emails) do for an unclaimed org?

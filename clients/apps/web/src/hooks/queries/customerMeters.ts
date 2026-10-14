@@ -60,21 +60,15 @@ export const useCreditCustomerMeter = () =>
     onMutate: async ({
       customer_id,
       meter_id,
-    }: schemas['CustomerMeterCreditsCustomerIDCreate']) => ({
-      previousCreditedUnits: meter_id
-        ? await getCreditedUnits(customer_id, meter_id)
-        : undefined,
+    }: schemas['CustomerMeterCreditsIDCreate']) => ({
+      previousCreditedUnits: await getCreditedUnits(customer_id, meter_id),
     }),
-    mutationFn: (body: schemas['CustomerMeterCreditsCustomerIDCreate']) =>
+    mutationFn: (body: schemas['CustomerMeterCreditsIDCreate']) =>
       api.POST('/v1/customer-meters/credits', { body }),
     onSuccess: (result, { customer_id, meter_id }, onMutateResult) => {
       if (result.error) return
       const queryClient = getQueryClient()
       queryClient.invalidateQueries({ queryKey: ['events'] })
-      if (!meter_id) {
-        queryClient.invalidateQueries({ queryKey: ['customer_meters'] })
-        return
-      }
       void waitForCreditedUnitsChange(
         customer_id,
         meter_id,

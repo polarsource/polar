@@ -159,7 +159,7 @@ await customer.track('tool_call', { // !
 
 await saveSurveyAnswer(userId, answer)
 
-await customer.grant('tool_call', 50, { // !
+await customer.grant('tool_call', 10, { // !
   idempotencyKey: \`survey:\${userId}\`, // !
 })`,
       },

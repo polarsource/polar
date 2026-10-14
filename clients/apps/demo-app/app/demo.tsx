@@ -46,17 +46,6 @@ const entriesOf = (
     pending,
   }))
 
-// Customers who claimed the survey credits: { [externalCustomerId]: true }
-const SURVEY_KEY = 'survey_claimed'
-
-const readSurveyClaims = (): Record<string, boolean> => {
-  try {
-    return JSON.parse(localStorage.getItem(SURVEY_KEY) ?? '{}')
-  } catch {
-    return {}
-  }
-}
-
 const readHistory = (): History => {
   try {
     return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '{}')
@@ -130,7 +119,6 @@ export function Demo({
   const [surveyAnswer, setSurveyAnswer] = useState('')
   const [claiming, setClaiming] = useState(false)
   const [claimError, setClaimError] = useState<string>()
-  const [surveyClaimed, setSurveyClaimed] = useState(true)
   const [paywallServer, setPaywallServer] = useState<Server>()
   const [balance, setBalance] = useState<number>()
   const [pristine, setPristine] = useState(false)
@@ -186,7 +174,6 @@ export function Demo({
       ),
     )
     setHistoryLoaded(true)
-    setSurveyClaimed(readSurveyClaims()[externalCustomerId] === true)
   }, [externalCustomerId])
 
   useEffect(() => {
@@ -315,18 +302,8 @@ export function Demo({
       setClaiming(false)
     }
 
-    try {
-      localStorage.setItem(
-        SURVEY_KEY,
-        JSON.stringify({ ...readSurveyClaims(), [externalCustomerId]: true }),
-      )
-    } catch {}
-    setSurveyClaimed(true)
     setActive({ step: 'grant' })
-    setOutcome(
-      'grant',
-      `grant('tool_call', 50, { idempotencyKey: 'survey:…' }) → credited`,
-    )
+    setOutcome('grant', `grant('tool_call', 10) → credited`)
     setModal(undefined)
     setSyncStartedAt(Date.now())
     setPristine(false)
@@ -411,9 +388,9 @@ export function Demo({
                     Get Pro for {proPrice}
                   </button>
                 </form>
-                {paywallServer === 'builtin' && !surveyClaimed && (
+                {paywallServer === 'builtin' && (
                   <button className="link" onClick={openSurvey}>
-                    Or get 50 tool calls for free
+                    Or get 10 tool calls for free
                   </button>
                 )}
                 <button className="ghost" onClick={() => setModal(undefined)}>
@@ -422,12 +399,21 @@ export function Demo({
               </div>
             </div>
           )}
-          {content === 'survey' && (
+          {content === 'survey' && claiming && (
+            <div className="card">
+              <span className="spinner" />
+              <div>
+                <h1>Adding 10 tool calls</h1>
+                <p className="muted">This usually takes 15–20 seconds.</p>
+              </div>
+            </div>
+          )}
+          {content === 'survey' && !claiming && (
             <form className="card" onSubmit={onClaimSurvey}>
               <div>
-                <h1>Get 50 free tool calls</h1>
+                <h1>Get 10 free tool calls</h1>
                 <p className="muted text-pretty">
-                  Tell us what you're building. One reward per account.
+                  Tell us what you're building.
                 </p>
               </div>
               <textarea
@@ -439,21 +425,19 @@ export function Demo({
                 rows={3}
                 required
                 autoFocus
-                disabled={claiming}
               />
               {claimError && <p className="error">{claimError}</p>}
               <div className="actions">
                 <button
                   type="submit"
                   className="primary"
-                  disabled={claiming || surveyAnswer.trim() === ''}
+                  disabled={surveyAnswer.trim() === ''}
                 >
-                  {claiming ? 'Adding tool calls…' : 'Claim 50 tool calls'}
+                  Claim 10 tool calls
                 </button>
                 <button
                   type="button"
                   className="ghost"
-                  disabled={claiming}
                   onClick={() => setModal(undefined)}
                 >
                   Not now

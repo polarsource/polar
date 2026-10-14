@@ -11,7 +11,7 @@ if (!accessToken) {
 export const polar = RuntimeSDK(config, {
   accessToken,
   environment: 'sandbox',
-  baseUrl: 'http://127.0.0.1:8000',
+  // baseUrl: 'http://127.0.0.1:8000',
 })
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -205,7 +205,7 @@ export const purchaseTopUp = async (externalId: string, topUp: TopUp) => {
   return { error: undefined }
 }
 
-export const SURVEY_CREDITS = 50
+export const SURVEY_CREDITS = 10
 
 export const grantSurveyCredits = async (
   externalId: string,
@@ -213,12 +213,18 @@ export const grantSurveyCredits = async (
 ) => {
   log('Survey answer submitted')
 
-  // Keyed per customer, so claiming the survey again doesn't grant twice
-  await polar
-    .actor({ externalCustomerId: externalId })
-    .grant('tool_call', SURVEY_CREDITS, {
-      idempotencyKey: `survey:${externalId}`,
-    })
+  const customer = polar.actor({ externalCustomerId: externalId })
+
+  await customer.grant('tool_call', SURVEY_CREDITS)
+
+  // Credits are applied asynchronously, so the customer can't spend them yet
+  const span = log.start('Waiting for survey credits')
+  const start = performance.now()
+  while (!(await customer.balance('tool_call')).pristine) {
+    if (performance.now() - start > 30000) break
+    await wait(1000)
+  }
+  span.end()
 }
 
 export const callTool = async (

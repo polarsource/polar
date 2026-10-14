@@ -1,5 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/server'
 import { Effect } from 'effect'
+import { version } from '../package.json'
 import type { ToolMode } from './clients'
 import { instructionsFor } from './instructions'
 import type { PolarApiOutboundProps } from './outbound'
@@ -13,7 +14,7 @@ export const createServer = Effect.fn('createServer')(function* (
   toolMode: ToolMode,
 ) {
   const server = new McpServer(
-    { name: 'polar', version: '0.1.0' },
+    { name: 'polar', version },
     { instructions: instructionsFor(toolMode) },
   )
   server.server.registerCapabilities({ tools: { listChanged: false } })

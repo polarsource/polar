@@ -33,8 +33,8 @@ def _is_customer(
     external_customer_id: str | None,
 ) -> ColumnElement[bool]:
     return and_(
-        model.customer_id.is_not_distinct_from(customer_id),
-        model.external_customer_id.is_not_distinct_from(external_customer_id),
+        model.customer_id == customer_id,
+        model.external_customer_id == external_customer_id,
     )
 
 

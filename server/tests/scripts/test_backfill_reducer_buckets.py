@@ -28,10 +28,12 @@ from polar.models.billing_entry import BillingEntryType
 from polar.models.event import EventSource
 from polar.reducer.service import reducer as reducer_service
 from scripts.backfill_reducer_buckets import (
+    DeletedBucket,
     backfill_bucket,
     bucket_range,
     floor_bucket,
     get_reducers,
+    get_split_intervals,
 )
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -81,6 +83,25 @@ class TestBucketRange:
             bucket_range(
                 datetime(2026, 10, 8, tzinfo=UTC), datetime(2026, 10, 7, tzinfo=UTC)
             )
+
+
+class TestGetSplitIntervals:
+    def test_only_split_identities(self) -> None:
+        start = datetime(2026, 10, 1, tzinfo=UTC)
+        first_cut = start + timedelta(minutes=1)
+        second_cut = start + timedelta(minutes=3)
+        end = start + timedelta(minutes=5)
+        split = (uuid4(), None)
+        unsplit = (None, "external")
+        assert get_split_intervals(
+            start,
+            end,
+            [
+                DeletedBucket(split, (start, first_cut), 1, None),
+                DeletedBucket(split, (second_cut, end), 1, None),
+                DeletedBucket(unsplit, (start, end), 1, None),
+            ],
+        ) == {split: [(start, first_cut), (first_cut, second_cut), (second_cut, end)]}
 
 
 @pytest.mark.anyio
@@ -576,6 +597,147 @@ class TestBackfillBucket:
             (1, 1, end),
             (2, 2, end),
         ]
+
+    async def test_empty_split_side_is_kept(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        meter: Meter,
+        customer: Customer,
+    ) -> None:
+        reducer = await reducer_service.sync_meter(session, meter)
+        start = datetime(2026, 10, 1, tzinfo=UTC)
+        cutoff = start + timedelta(minutes=2)
+        end = start + timedelta(minutes=5)
+        sealed_at = end + timedelta(minutes=15)
+        for bucket_start, bucket_end, bucket_sealed_at in (
+            (start, cutoff, sealed_at),
+            (cutoff, end, None),
+        ):
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    customer=customer,
+                    bucket_start=bucket_start,
+                    bucket_end=bucket_end,
+                    sealed_at=bucket_sealed_at,
+                    count=0,
+                )
+            )
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            timestamp=cutoff,
+        )
+
+        for _ in range(2):
+            assert await backfill_bucket(session, reducer, start, end) == 2
+            buckets = (
+                await session.scalars(
+                    select(ReducerBucket).order_by(ReducerBucket.bucket_start)
+                )
+            ).all()
+            assert [
+                (b.bucket_start, b.bucket_end, b.generation, b.count, b.sealed_at)
+                for b in buckets
+            ] == [
+                (start, cutoff, 1, 0, sealed_at),
+                (cutoff, end, 1, 1, None),
+            ]
+
+    async def test_sealed_splits_and_reruns(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        meter: Meter,
+        customer: Customer,
+        customer_second: Customer,
+        product: Product,
+    ) -> None:
+        reducer = await reducer_service.sync_meter(session, meter)
+        price = await create_product_price_metered_unit(
+            save_fixture, product=product, meter=meter
+        )
+        start = datetime(2026, 10, 1, tzinfo=UTC)
+        cutoff = start + timedelta(minutes=2)
+        end = start + timedelta(minutes=5)
+        order = await create_order(
+            save_fixture, customer=customer, created_at=end + timedelta(minutes=15)
+        )
+        for bucket_start, bucket_end, sealed_at in (
+            (start, cutoff, order.created_at),
+            (cutoff, end, None),
+        ):
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    customer=customer,
+                    bucket_start=bucket_start,
+                    bucket_end=bucket_end,
+                    sealed_at=sealed_at,
+                    count=100,
+                )
+            )
+        for timestamp, billed in (
+            (start, True),
+            (start, False),
+            (cutoff, False),
+            (cutoff + timedelta(minutes=1), False),
+        ):
+            event = await create_event(
+                save_fixture,
+                organization=organization,
+                customer=customer,
+                timestamp=timestamp,
+            )
+            if billed:
+                await create_billing_entry(
+                    save_fixture,
+                    type=BillingEntryType.metered,
+                    customer=customer,
+                    product_price=price,
+                    event=event,
+                    order_item=order.items[0],
+                )
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer_second,
+            timestamp=cutoff,
+        )
+
+        for _ in range(2):
+            assert await backfill_bucket(session, reducer, start, end) == 4
+            buckets = (
+                await session.scalars(
+                    select(ReducerBucket).order_by(
+                        ReducerBucket.customer_id == customer.id,
+                        ReducerBucket.bucket_start,
+                        ReducerBucket.generation,
+                    )
+                )
+            ).all()
+            assert [
+                (
+                    b.customer_id,
+                    b.bucket_start,
+                    b.bucket_end,
+                    b.generation,
+                    b.count,
+                    b.sealed_at,
+                )
+                for b in buckets
+            ] == [
+                (customer_second.id, start, end, 1, 1, None),
+                (customer.id, start, cutoff, 1, 1, order.created_at),
+                (customer.id, start, cutoff, 2, 1, None),
+                (customer.id, cutoff, end, 1, 2, None),
+            ]
 
 
 @pytest.mark.asyncio

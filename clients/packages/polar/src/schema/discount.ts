@@ -1,4 +1,6 @@
 import { Schema } from 'effect'
+import { Builder } from './builder'
+import { Metadata, metadataKey, withMetadata } from './metadata'
 import { Currency } from './money'
 import type { Digit, Money } from './money'
 
@@ -74,6 +76,7 @@ const discountFields = {
   products: Schema.optionalKey(
     Schema.Array(Schema.String.check(Schema.isMinLength(1))),
   ),
+  metadata: Schema.optionalKey(Metadata),
 }
 
 export const DiscountConfig = Schema.Union([
@@ -172,54 +175,42 @@ class DiscountBuilder<
   Product extends string,
   Value extends Percentage | Fixed | undefined,
   D extends Duration | undefined,
-> {
+> extends withMetadata(Builder) {
+  readonly limits: Limits<Product> = {}
+
   constructor(
     readonly name: string | undefined,
     readonly value: Value,
     readonly duration: D,
-    readonly limits: Limits<Product> = {},
-  ) {}
+  ) {
+    super()
+  }
 
   /** A percentage off, with at most 2 decimals: `percent(12.5)` is 12.5% off. */
   percent<const Percent extends number>(
     percent: PercentOff<Percent>,
   ): DiscountBuilder<Product, Percentage, D> {
-    return new DiscountBuilder(
-      this.name,
-      { type: 'percentage', basis_points: basisPoints(percent) },
-      this.duration,
-      this.limits,
-    )
+    const value: Percentage = {
+      type: 'percentage',
+      basis_points: basisPoints(percent),
+    }
+    return this.with<DiscountBuilder<Product, Percentage, D>>({ value })
   }
 
   /** A fixed amount off, one per currency: `amount(usd(10), eur(9))`. */
   amount(...amounts: Amounts): DiscountBuilder<Product, Fixed, D> {
-    return new DiscountBuilder(
-      this.name,
-      { type: 'fixed', amounts },
-      this.duration,
-      this.limits,
-    )
+    const value: Fixed = { type: 'fixed', amounts }
+    return this.with<DiscountBuilder<Product, Fixed, D>>({ value })
   }
 
   /** Applies to the first payment only. */
   once(): DiscountBuilder<Product, Value, Duration> {
-    return new DiscountBuilder(
-      this.name,
-      this.value,
-      { duration: 'once' },
-      this.limits,
-    )
+    return this.during({ duration: 'once' })
   }
 
   /** Applies to every payment of the subscription. */
   forever(): DiscountBuilder<Product, Value, Duration> {
-    return new DiscountBuilder(
-      this.name,
-      this.value,
-      { duration: 'forever' },
-      this.limits,
-    )
+    return this.during({ duration: 'forever' })
   }
 
   /** Applies to payments for the given time, counted in months. */
@@ -227,50 +218,48 @@ class DiscountBuilder<
     count: number,
     unit: Unit,
   ): DiscountBuilder<Product, Value, Duration> {
-    return new DiscountBuilder(
-      this.name,
-      this.value,
-      {
-        duration: 'repeating',
-        duration_in_months: unit.startsWith('year') ? count * 12 : count,
-      },
-      this.limits,
-    )
+    return this.during({
+      duration: 'repeating',
+      duration_in_months: unit.startsWith('year') ? count * 12 : count,
+    })
   }
 
   /** The code customers enter at checkout. Without one, apply it through the API. */
   code(code: string): DiscountBuilder<Product, Value, D> {
-    return this.with({ code })
+    return this.limit({ code })
   }
 
   /** Limits the discount to these products. Without it, it applies to all of them. */
   products(...products: Product[]): DiscountBuilder<Product, Value, D> {
-    return this.with({ products })
+    return this.limit({ products })
   }
 
   maxRedemptions(count: number): DiscountBuilder<Product, Value, D> {
-    return this.with({ max_redemptions: count })
+    return this.limit({ max_redemptions: count })
   }
 
   perCustomer(count: number): DiscountBuilder<Product, Value, D> {
-    return this.with({ max_redemptions_per_customer: count })
+    return this.limit({ max_redemptions_per_customer: count })
   }
 
   /** A `Date`, a date such as `'2026-12-31'` or a timestamp with a time zone. */
   starts(date: Instant): DiscountBuilder<Product, Value, D> {
-    return this.with({ starts_at: date })
+    return this.limit({ starts_at: date })
   }
 
   /** A `Date`, a date such as `'2026-12-31'` or a timestamp with a time zone. */
   ends(date: Instant): DiscountBuilder<Product, Value, D> {
-    return this.with({ ends_at: date })
+    return this.limit({ ends_at: date })
   }
 
-  private with(limits: Limits<Product>): DiscountBuilder<Product, Value, D> {
-    return new DiscountBuilder(this.name, this.value, this.duration, {
-      ...this.limits,
-      ...limits,
-    })
+  private during(
+    duration: Duration,
+  ): DiscountBuilder<Product, Value, Duration> {
+    return this.with<DiscountBuilder<Product, Value, Duration>>({ duration })
+  }
+
+  private limit(limits: Limits<Product>): DiscountBuilder<Product, Value, D> {
+    return this.with({ limits: { ...this.limits, ...limits } })
   }
 }
 
@@ -317,7 +306,13 @@ const unique = <Item>(
 /** Builds the API shape of a discount, before it is validated. */
 export const discountConfig = (
   external_id: string,
-  { name, value, duration, limits }: DiscountDefinition,
+  {
+    name,
+    value,
+    duration,
+    limits,
+    [metadataKey]: metadata,
+  }: DiscountDefinition,
 ) => {
   const where = `Discount "${external_id}"`
   if ('code' in limits && typeof limits.code !== 'string') {
@@ -358,6 +353,7 @@ export const discountConfig = (
     ...(limits.products !== undefined && {
       products: unique(limits.products, where, 'product'),
     }),
+    ...(metadata !== undefined && { metadata }),
   }
 }
 

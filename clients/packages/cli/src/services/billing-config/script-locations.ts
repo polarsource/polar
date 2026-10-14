@@ -116,6 +116,33 @@ const entryRange = (
   return { start: start.offset, end: next?.offset ?? within.end }
 }
 
+const locateInObject = (
+  source: string,
+  section: string,
+  keys: Path,
+  got: unknown,
+): SourceLocation | undefined => {
+  const range = sectionRange(source, section)
+  let key: { offset: number; length: number } | undefined
+  for (const part of keys) {
+    if (typeof part !== 'string') break
+    const match = find(
+      source,
+      keyPattern(part),
+      key ? key.offset + key.length : range.start,
+      range.end,
+    )
+    if (match === undefined) break
+    key = match
+  }
+  if (key === undefined) return undefined
+  const target =
+    (got !== undefined &&
+      find(source, literalPattern(got), key.offset + key.length, range.end)) ||
+    key
+  return span(source, target.offset, target.length)
+}
+
 export const locateInScript = (
   source: string,
   input: unknown,
@@ -123,8 +150,13 @@ export const locateInScript = (
   got: unknown,
 ): SourceLocation | undefined => {
   const [section, index, ...rest] = path
-  if (typeof section !== 'string' || typeof index !== 'number') return undefined
+  if (typeof section !== 'string') return undefined
   const entries = (input as Record<string, unknown>)?.[section]
+  if (typeof index !== 'number') {
+    return typeof entries === 'object' && entries !== null
+      ? locateInObject(source, section, path.slice(1), got)
+      : undefined
+  }
   if (!Array.isArray(entries)) return undefined
   const externalIds = entries.map((entry: { external_id?: unknown }) =>
     typeof entry?.external_id === 'string' ? entry.external_id : undefined,

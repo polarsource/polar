@@ -189,3 +189,43 @@ describe('locateInScript with destructured helpers', () => {
     ).toEqual({ line: 5, column: 5, length: 4 })
   })
 })
+
+describe('locateInScript with a settings section', () => {
+  const config = [
+    "import { defineConfig } from '@polar-sh/polar'",
+    '',
+    'export default defineConfig({',
+    "  settings: { payments: { tax: 'exclusive', currency: 'eur' } },",
+    '  products: ({ product, free }) => ({',
+    "    free: product('Free').prices(free()).recurring('monthly'),",
+    '  }),',
+    '})',
+    '',
+  ].join('\n')
+  const input = {
+    settings: { payments: { tax: 'exclusive', currency: 'eur' } },
+    products: [{ external_id: 'free' }],
+  }
+
+  test('points at the value of a nested setting', () => {
+    expect(
+      locateInScript(
+        config,
+        input,
+        ['settings', 'payments', 'currency'],
+        'eur',
+      ),
+    ).toEqual({ line: 4, column: 55, length: 5 })
+  })
+
+  test('points at the key of a nested setting without a value', () => {
+    expect(
+      locateInScript(
+        config,
+        input,
+        ['settings', 'payments', 'currency'],
+        undefined,
+      ),
+    ).toEqual({ line: 4, column: 45, length: 8 })
+  })
+})

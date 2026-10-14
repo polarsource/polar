@@ -72,7 +72,7 @@ sequenceDiagram
 ### 2. service_auth: claim up front
 
 The agent registers with the user's email. The human approves with the link and code first, then the agent
-starts working. This is the safer flow and ships first.
+starts working.
 
 ### Placeholder user
 
@@ -113,7 +113,7 @@ Rules it follows:
 | Before the claim | Build only: orgs, products, meters, benefits, config, test events. No review submission, payouts, checkouts, customers or webhooks. Enforced on the server, with narrower scopes as a second layer. |
 | After the claim | Anything the user can do. |
 | Org creation by an unclaimed agent | Polar's own billing customer and the Plain support records are created at the claim, not before. Nothing else changes. |
-| Rollout | `service_auth` first. Anonymous sign-up starts in sandbox, behind a feature flag, and goes to production once sandbox abuse data looks fine. |
+| Rollout | Both sign-up types ship together, starting in sandbox behind a feature flag, and go to production once sandbox abuse data looks fine. |
 | Claim window | 7 days. After that we delete the unclaimed org, placeholder user and OAuth client. |
 | Identity assertion | Lives 30 days and can be reused until it expires, as the auth.md spec expects. The claim issues a fresh one and invalidates older ones. Revoking the agent stops it immediately. After 30 days the agent signs up again and the human re-approves it. |
 

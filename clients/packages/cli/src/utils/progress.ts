@@ -116,3 +116,8 @@ export const note = (line: string) =>
     if (yield* isJson) return
     yield* Console.log(line)
   })
+
+export const noteToStderr = (line: string) =>
+  Effect.sync(() => {
+    process.stderr.write(`${line}\n`)
+  })

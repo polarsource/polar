@@ -1,6 +1,11 @@
 import { Context, Effect } from 'effect'
 import { HttpClientRequest } from 'effect/http'
-import { loginCommand, orgCommand, type PolarEnvironment } from '@/schemas/Auth'
+import {
+  AuthError,
+  loginCommand,
+  orgCommand,
+  type PolarEnvironment,
+} from '@/schemas/Auth'
 
 type Env = Record<string, string | undefined>
 
@@ -17,6 +22,12 @@ const API_ORIGINS = {
   production: 'https://api.polar.sh',
   sandbox: 'https://sandbox-api.polar.sh',
   local: 'http://127.0.0.1:8000',
+} as const
+
+const DASHBOARD_ORIGINS = {
+  production: 'https://polar.sh',
+  sandbox: 'https://sandbox.polar.sh',
+  local: 'http://127.0.0.1:3000',
 } as const
 
 const isLoopback = (host: string) =>
@@ -62,6 +73,18 @@ export const apiOrigin = (environment: PolarEnvironment) =>
     const used = yield* UsedEnvironments
     used.add(environment)
     return (yield* apiOverride) ?? API_ORIGINS[environment]
+  })
+
+export const dashboardOrigin = (environment: PolarEnvironment) =>
+  Effect.gen(function* () {
+    const override = yield* dashboardOverride
+    if (override) return override
+    if (yield* apiOverride)
+      return yield* new AuthError({
+        message:
+          'POLAR_API_URL is set, so POLAR_DASHBOARD_URL is needed too. Point it at the matching dashboard, e.g. http://127.0.0.1:3000.',
+      })
+    return DASHBOARD_ORIGINS[environment]
   })
 
 export const apiUrl = (environment: PolarEnvironment, path: string) =>

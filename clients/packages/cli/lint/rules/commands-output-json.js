@@ -8,7 +8,7 @@ import {
 } from '../ast.js'
 
 // Paths under src/, e.g. 'commands/auth/token.ts'
-const TEXT_ONLY = []
+const TEXT_ONLY = ['commands/token.ts']
 
 const printers = new Set(['Console', 'printJson'])
 

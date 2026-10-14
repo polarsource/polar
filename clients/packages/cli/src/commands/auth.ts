@@ -11,6 +11,7 @@ import {
 } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
 import { Organizations } from '@/services/organizations'
+import { token } from '@/commands/token'
 import { output } from '@/utils/command'
 import { local, production, sandbox } from '@/utils/flags'
 import { note } from '@/utils/progress'
@@ -466,5 +467,5 @@ const logout = Command.make('logout', {
 
 export const auth = Command.make('auth').pipe(
   Command.withDescription('Manage your Polar sessions and active organization'),
-  Command.withSubcommands([login, whoami, list, org, logout]),
+  Command.withSubcommands([login, whoami, list, org, token, logout]),
 )

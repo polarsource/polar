@@ -304,17 +304,17 @@ export default {
       },
       week: {
         '=1': 'ted.',
-        other: '# t',
+        other: '# ted.',
         _mode: 'plural',
       },
       month: {
         '=1': 'mes.',
-        other: '# mes',
+        other: '# mes.',
         _mode: 'plural',
       },
       year: {
         '=1': 'l.',
-        other: '# l',
+        other: '# l.',
         _mode: 'plural',
       },
     },

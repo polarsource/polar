@@ -104,34 +104,6 @@ class TestOutpost:
             assert response["payload"]["balance"] == 10.0
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_event_customer_meter(
-        self, client: httpx.AsyncClient, redis: Redis, customer_meter: CustomerMeter
-    ) -> None:
-        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
-            await publish(
-                redis,
-                customer_meter.customer.organization_id,
-                {
-                    "type": "customer_meter",
-                    "customer_id": customer_meter.customer_id,
-                    "meter_id": customer_meter.meter_id,
-                },
-            )
-
-            response = await websocket.receive_json()
-
-            assert response["type"] == "customer_meter"
-            assert response["payload"]["customer_id"] == str(customer_meter.customer_id)
-            assert (
-                response["payload"]["external_customer_id"]
-                == customer_meter.customer.external_id
-            )
-            assert response["payload"]["meter_id"] == str(customer_meter.meter_id)
-            assert response["payload"]["consumed_units"] == 90.0
-            assert response["payload"]["credited_units"] == 100
-            assert response["payload"]["balance"] == 10.0
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_event_reducer_bucket(
         self,
         save_fixture: SaveFixture,

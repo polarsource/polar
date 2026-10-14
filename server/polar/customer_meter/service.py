@@ -196,14 +196,6 @@ class CustomerMeterService:
         )
         customer_meter.last_balanced_event = last_event
 
-        enqueue_outpost_event(
-            customer.organization_id,
-            {
-                "type": "customer_meter",
-                "customer_id": customer.id,
-                "meter_id": meter.id,
-            },
-        )
         # Temporary: reducer values carry the credits until credits are reducers.
         reducer = await ReducerRepository.from_session(session).get_by_meter_id(
             meter.id

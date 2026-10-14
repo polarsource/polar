@@ -66,15 +66,6 @@ class OutpostService:
     ) -> None:
         log.debug("Handling event", type=event["type"])
         match event["type"]:
-            case "customer_meter":
-                return await self._send_customer_meter(
-                    session,
-                    organization,
-                    CustomerMeterIncomingMessageCustomerPayload(
-                        customer_id=event["customer_id"], meter_id=event["meter_id"]
-                    ),
-                    send_stream,
-                )
             case "reducer_bucket":
                 return await self._send_reducer_bucket(
                     session, organization, event, send_stream

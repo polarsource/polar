@@ -10,12 +10,6 @@ from polar.redis import Redis
 from polar.worker import enqueue_job
 
 
-class CustomerMeterOutpostEvent(typing.TypedDict):
-    type: typing.Literal["customer_meter"]
-    customer_id: uuid.UUID
-    meter_id: uuid.UUID
-
-
 class ReducerBucketOutpostEvent(typing.TypedDict):
     type: typing.Literal["reducer_bucket"]
     reducer_id: uuid.UUID
@@ -23,7 +17,7 @@ class ReducerBucketOutpostEvent(typing.TypedDict):
     external_customer_id: str | None
 
 
-type OutpostEvent = CustomerMeterOutpostEvent | ReducerBucketOutpostEvent
+type OutpostEvent = ReducerBucketOutpostEvent
 
 
 async def publish(

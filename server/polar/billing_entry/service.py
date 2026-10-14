@@ -136,6 +136,7 @@ class BillingEntryService:
         if consumed_units and billable_from is not None:
             with logfire.span(
                 "Seal and compare billed usage",
+                organization_id=str(subscription.customer.organization_id),
                 subscription_id=str(subscription.id),
                 cutoff=cutoff,
             ) as span:

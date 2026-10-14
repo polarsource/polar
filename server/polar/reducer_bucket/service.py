@@ -215,6 +215,7 @@ class ReducerBucketService:
             for customer_id, external_customer_id in identities:
                 with logfire.span(
                     "Split reducer buckets",
+                    organization_id=str(customer.organization_id),
                     reducer_id=str(reducer.id),
                     customer_id=str(customer.id),
                     bucket_customer_id=customer_id is not None,
@@ -267,6 +268,7 @@ class ReducerBucketService:
                     span.set_attribute("split_cutoff", split_cutoff)
             with logfire.span(
                 "Seal reducer buckets",
+                organization_id=str(customer.organization_id),
                 reducer_id=str(reducer.id),
                 customer_id=str(customer.id),
                 billable_from=billable_from,

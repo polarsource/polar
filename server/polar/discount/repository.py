@@ -105,6 +105,36 @@ class DiscountRedemptionRepository(
         )
         await self.session.execute(statement)
 
+    async def count_redemptions(self, discount_id: UUID) -> int:
+        """
+        Count redemptions that consume the discount's global ``max_redemptions`` budget.
+
+        An order-less redemption counts only while its checkout is confirmed, or
+        when it is tied to a subscription. A redemption that has any order counts,
+        including one whose order was fully refunded. ``redemptions_count`` stays
+        the raw row total.
+        """
+        redemption_orders = select(Order.id).where(
+            or_(
+                Order.checkout_id == DiscountRedemption.checkout_id,
+                Order.subscription_id == DiscountRedemption.subscription_id,
+            )
+        )
+        statement = (
+            select(func.count(distinct(DiscountRedemption.id)))
+            .join(Checkout, Checkout.id == DiscountRedemption.checkout_id, isouter=True)
+            .where(
+                DiscountRedemption.discount_id == discount_id,
+                or_(
+                    redemption_orders.exists(),
+                    Checkout.status == CheckoutStatus.confirmed,
+                    DiscountRedemption.subscription_id.is_not(None),
+                ),
+            )
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one()
+
     async def count_redemptions_by_customer(
         self,
         discount_id: UUID,
@@ -127,7 +157,7 @@ class DiscountRedemptionRepository(
         A redemption whose orders are all fully refunded doesn't count, unless the
         refund was issued to head off a chargeback. A redemption with no order
         counts only while its checkout is still confirmed, or when it is tied to
-        a subscription. The global ``max_redemptions`` budget is unaffected.
+        a subscription.
 
         The current, in-progress redemption is excluded via ``exclude_checkout_id``.
         """

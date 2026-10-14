@@ -871,7 +871,11 @@ class TestIsRedeemableDiscount:
             max_redemptions=max_redemptions,
         )
         for _ in range(max_redemptions):
-            checkout = await create_checkout(save_fixture, products=[product])
+            checkout = await create_checkout(
+                save_fixture,
+                products=[product],
+                status=CheckoutStatus.confirmed,
+            )
             await create_discount_redemption(
                 save_fixture, discount=discount, checkout=checkout
             )
@@ -900,7 +904,11 @@ class TestIsRedeemableDiscount:
             max_redemptions=max_redemptions,
         )
         for _ in range(5):
-            checkout = await create_checkout(save_fixture, products=[product])
+            checkout = await create_checkout(
+                save_fixture,
+                products=[product],
+                status=CheckoutStatus.confirmed,
+            )
             await create_discount_redemption(
                 save_fixture, discount=discount, checkout=checkout
             )
@@ -1357,6 +1365,7 @@ class TestCheckPerCustomerLimitReached:
             amounts={"usd": 1000},
             duration=DiscountDuration.once,
             organization=organization,
+            max_redemptions=1,
             max_redemptions_per_customer=1,
         )
         customer = await create_customer(
@@ -1385,6 +1394,9 @@ class TestCheckPerCustomerLimitReached:
             )
             is False
         )
+        assert (
+            await discount_service.is_redeemable_discount(session, discount)
+        ) is False
 
     async def test_chargeback_prevention_refund_keeps_the_slot(
         self,
@@ -1598,7 +1610,7 @@ class TestCheckPerCustomerLimitReached:
             amounts={"usd": 1000},
             duration=DiscountDuration.once,
             organization=organization,
-            max_redemptions=3,
+            max_redemptions=1,
             max_redemptions_per_customer=1,
         )
         customer = await create_customer(
@@ -1632,7 +1644,7 @@ class TestCheckPerCustomerLimitReached:
         )
         assert (
             await discount_service.is_redeemable_discount(session, discount)
-        ) is False
+        ) is True
 
         confirmed_checkout = await create_checkout(
             save_fixture,
@@ -1650,6 +1662,9 @@ class TestCheckPerCustomerLimitReached:
             )
             is True
         )
+        assert (
+            await discount_service.is_redeemable_discount(session, discount)
+        ) is False
 
 
 @pytest.mark.anyio

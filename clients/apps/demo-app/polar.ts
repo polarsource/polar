@@ -205,6 +205,22 @@ export const purchaseTopUp = async (externalId: string, topUp: TopUp) => {
   return { error: undefined }
 }
 
+export const SURVEY_CREDITS = 50
+
+export const grantSurveyCredits = async (
+  externalId: string,
+  answer: string,
+) => {
+  log('Survey answer', answer)
+
+  // Keyed per customer, so claiming the survey again doesn't grant twice
+  await polar
+    .actor({ externalCustomerId: externalId })
+    .grant('tool_call', SURVEY_CREDITS, {
+      idempotencyKey: `survey:${externalId}`,
+    })
+}
+
 export const callTool = async (
   externalId: string,
   server: 'builtin' | 'custom',

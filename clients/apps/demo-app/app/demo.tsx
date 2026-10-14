@@ -2,7 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { getTopUps } from '../polar'
-import { call, checkUpgraded, getBalance, topUp, upgrade } from './actions'
+import {
+  call,
+  checkUpgraded,
+  claimSurveyCredits,
+  getBalance,
+  topUp,
+  upgrade,
+} from './actions'
 import { CodePanel, type Outcomes } from './code-panel'
 import type { HighlightedSteps } from './highlight'
 import type { Step } from './steps'
@@ -39,6 +46,17 @@ const entriesOf = (
     pending,
   }))
 
+// Customers who claimed the survey credits: { [externalCustomerId]: true }
+const SURVEY_KEY = 'survey_claimed'
+
+const readSurveyClaims = (): Record<string, boolean> => {
+  try {
+    return JSON.parse(localStorage.getItem(SURVEY_KEY) ?? '{}')
+  } catch {
+    return {}
+  }
+}
+
 const readHistory = (): History => {
   try {
     return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '{}')
@@ -64,7 +82,7 @@ const timeAgo = (at: number, now: number) => {
 const countOf = (event: { shiftKey: boolean; metaKey: boolean }) =>
   event.shiftKey ? 100 : event.metaKey ? 10 : 1
 
-type Modal = 'paywall' | 'upgrading' | 'upgraded' | 'topup'
+type Modal = 'paywall' | 'upgrading' | 'upgraded' | 'topup' | 'survey'
 
 type TopUpPack = Awaited<ReturnType<typeof getTopUps>>[number]
 
@@ -109,6 +127,11 @@ export function Demo({
   const [pack, setPack] = useState(topUps[0]?.id)
   const [purchasing, setPurchasing] = useState(false)
   const [purchaseError, setPurchaseError] = useState<string>()
+  const [surveyAnswer, setSurveyAnswer] = useState('')
+  const [claiming, setClaiming] = useState(false)
+  const [claimError, setClaimError] = useState<string>()
+  const [surveyClaimed, setSurveyClaimed] = useState(true)
+  const [paywallServer, setPaywallServer] = useState<Server>()
   const [balance, setBalance] = useState<number>()
   const [pristine, setPristine] = useState(false)
   const [syncStartedAt, setSyncStartedAt] = useState<number>()
@@ -163,6 +186,7 @@ export function Demo({
       ),
     )
     setHistoryLoaded(true)
+    setSurveyClaimed(readSurveyClaims()[externalCustomerId] === true)
   }, [externalCustomerId])
 
   useEffect(() => {
@@ -233,6 +257,7 @@ export function Demo({
 
     if (result.paywall) {
       setEntries((entries) => entries.filter((entry) => entry.at !== at))
+      setPaywallServer(server)
       setModal('paywall')
       return
     }
@@ -268,6 +293,42 @@ export function Demo({
     }
 
     setModal(undefined)
+    setPristine(false)
+  }
+
+  const openSurvey = () => {
+    setClaimError(undefined)
+    setModal('survey')
+  }
+
+  const onClaimSurvey = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setClaiming(true)
+    setClaimError(undefined)
+
+    try {
+      await claimSurveyCredits(surveyAnswer)
+    } catch {
+      setClaimError('Something went wrong. Please try again.')
+      return
+    } finally {
+      setClaiming(false)
+    }
+
+    try {
+      localStorage.setItem(
+        SURVEY_KEY,
+        JSON.stringify({ ...readSurveyClaims(), [externalCustomerId]: true }),
+      )
+    } catch {}
+    setSurveyClaimed(true)
+    setActive({ step: 'grant' })
+    setOutcome(
+      'grant',
+      `grant('tool_call', 50, { idempotencyKey: 'survey:…' }) → credited`,
+    )
+    setModal(undefined)
+    setSyncStartedAt(Date.now())
     setPristine(false)
   }
 
@@ -331,7 +392,8 @@ export function Demo({
         <dialog
           ref={dialog}
           onCancel={(event) => {
-            if (modal === 'upgrading' || purchasing) event.preventDefault()
+            if (modal === 'upgrading' || purchasing || claiming)
+              event.preventDefault()
           }}
           onClose={() => setModal(undefined)}
         >
@@ -349,11 +411,55 @@ export function Demo({
                     Get Pro for {proPrice}
                   </button>
                 </form>
+                {paywallServer === 'builtin' && !surveyClaimed && (
+                  <button className="link" onClick={openSurvey}>
+                    Or get 50 tool calls for free
+                  </button>
+                )}
                 <button className="ghost" onClick={() => setModal(undefined)}>
                   Not now
                 </button>
               </div>
             </div>
+          )}
+          {content === 'survey' && (
+            <form className="card" onSubmit={onClaimSurvey}>
+              <div>
+                <h1>Get 50 free tool calls</h1>
+                <p className="muted text-pretty">
+                  Tell us what you're building. One reward per account.
+                </p>
+              </div>
+              <textarea
+                value={surveyAnswer}
+                onChange={(event) => setSurveyAnswer(event.target.value)}
+                placeholder="An agent that triages support tickets…"
+                aria-label="What are you building?"
+                maxLength={1000}
+                rows={3}
+                required
+                autoFocus
+                disabled={claiming}
+              />
+              {claimError && <p className="error">{claimError}</p>}
+              <div className="actions">
+                <button
+                  type="submit"
+                  className="primary"
+                  disabled={claiming || surveyAnswer.trim() === ''}
+                >
+                  {claiming ? 'Adding tool calls…' : 'Claim 50 tool calls'}
+                </button>
+                <button
+                  type="button"
+                  className="ghost"
+                  disabled={claiming}
+                  onClick={() => setModal(undefined)}
+                >
+                  Not now
+                </button>
+              </div>
+            </form>
           )}
           {content === 'topup' && (
             <div className="card">

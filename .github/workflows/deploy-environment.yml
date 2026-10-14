@@ -127,7 +127,7 @@ jobs:
       - name: Resolve image tag
         id: tag
         run: echo "tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
-      - uses: getsentry/action-release@v3.7.0
+      - uses: getsentry/action-release@v3.7.1
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}

@@ -1,3 +1,4 @@
+import { useInView } from '@/hooks/useInView'
 import { useEffect, useRef, useState } from 'react'
 
 export type UsageEventName = 'tokens.in' | 'tokens.out' | 'tool.call'
@@ -88,7 +89,10 @@ export interface MarginPoint {
  * running margin series for the chart. Starts empty and fills in while the section is in view.
  */
 export const useUsageStream = () => {
-  const ref = useRef<HTMLDivElement>(null)
+  // The stream runs only while the section is on screen. Ids persist across pauses, so resumed events never
+  // collide with rows already on the ledger.
+  const { ref, inView } = useInView()
+  const nextId = useRef(0)
   const [events, setEvents] = useState<UsageEvent[]>([])
   const [totals, setTotals] = useState({
     ...OPENING,
@@ -100,6 +104,7 @@ export const useUsageStream = () => {
   const [series, setSeries] = useState<MarginPoint[]>([])
 
   useEffect(() => {
+    if (!inView) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       // No animation: show a settled stream straight away.
       const settled = Array.from({ length: CHART_POINTS }, (_, i) =>
@@ -129,13 +134,12 @@ export const useUsageStream = () => {
       return () => clearTimeout(timer)
     }
 
-    let id = 0
     let timer = 0
     const next = () => {
       timer = window.setTimeout(
         () => {
-          id += 1
-          const event = makeEvent(id)
+          nextId.current += 1
+          const event = makeEvent(nextId.current)
           setEvents((list) => [event, ...list].slice(0, VISIBLE_EVENTS))
           setTotals((sum) => ({
             revenue: sum.revenue + event.revenue,
@@ -154,7 +158,7 @@ export const useUsageStream = () => {
           )
           next()
         },
-        PACE[0] + noise(id + 0.25) * PACE[1],
+        PACE[0] + noise(nextId.current + 0.25) * PACE[1],
       )
     }
     const start = window.setTimeout(next, 0)
@@ -162,7 +166,7 @@ export const useUsageStream = () => {
       clearTimeout(start)
       clearTimeout(timer)
     }
-  }, [])
+  }, [inView])
 
   return {
     ref,

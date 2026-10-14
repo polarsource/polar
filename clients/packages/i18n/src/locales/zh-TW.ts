@@ -273,7 +273,7 @@ export default {
       },
       month: {
         '=1': '月',
-        other: '# 月',
+        other: '# 個月',
         _mode: 'plural',
       },
       year: {

@@ -165,10 +165,10 @@ Create a webhook handler that listens for `order.paid` events and grants initial
 #### Next.js Example
 
 ```typescript icon="square-js" title="app/api/webhook/polar/route.ts"
-import { Polar } from "@polar-sh/sdk";
+import { createPolar } from "@polar-sh/sdk/2026-10";
 import { Webhooks } from "@polar-sh/nextjs";
 
-const polar = new Polar({ accessToken: process.env.POLAR_ACCESS_TOKEN });
+const polar = createPolar({ accessToken: process.env.POLAR_ACCESS_TOKEN! });
 
 export const POST = Webhooks({
   webhookSecret: process.env.POLAR_WEBHOOK_SECRET!,
@@ -181,7 +181,7 @@ export const POST = Webhooks({
         events: [
           {
             name: "meter-name",
-            customerId: order.data.customer_id,
+            customer_id: order.data.customer_id,
             metadata: {
               units: -10, // Negative value grants credits
               reason: "initial_signup_bonus",
@@ -214,7 +214,7 @@ Test that credits are properly granted when a customer makes a purchase.
     
     ```typescript
     const meters = await polar.customerMeters.list({
-      customerId: "cus_...",
+      customer_id: "cus_...",
     });
     
     console.log(meters.items[0].balance); // Should show -10 (or your credit amount)
@@ -259,7 +259,7 @@ if (!hasGrantedCredits) {
   await polar.events.ingest({
     events: [{
       name: "meter-name",
-      customerId: order.data.customer_id,
+      customer_id: order.data.customer_id,
       metadata: { units: -10 },
     }],
   });

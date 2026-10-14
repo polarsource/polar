@@ -78,34 +78,34 @@ If your customer doesn't already exist in Polar, you need to create them first.
 Use the Polar SDK or API to create a customer programmatically:
 
 ```typescript icon="square-js" title="create-customer.ts"
-import { Polar } from "@polar-sh/sdk";
+import { createPolar } from "@polar-sh/sdk/2026-10";
 
-const polar = new Polar({
-  accessToken: process.env.POLAR_ACCESS_TOKEN,
+const polar = createPolar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN!,
 });
 
 // Create a new customer
 await polar.customers.create({
   email: "user@example.com",
   name: "John Doe",
-  externalId: "user_123", // Your internal user ID (optional)
+  external_id: "user_123", // Your internal user ID (optional)
 });
 ```
 
 <Tip>
-  Use the `externalId` field to link Polar customers with your internal user system. This allows you to reference customers without storing Polar's internal ID.
+  Use the `external_id` field to link Polar customers with your internal user system. This allows you to reference customers without storing Polar's internal ID.
 </Tip>
 
 ### Using External ID
 
-If you set an `externalId` when creating the customer, you can use it in event ingestion instead of the Polar customer ID:
+If you set an `external_id` when creating the customer, you can use it in event ingestion instead of the Polar customer ID:
 
 ```typescript
-// Instead of using customerId, use externalCustomerId
+// Instead of using customer_id, use external_customer_id
 await polar.events.ingest({
   events: [{
     name: "api_usage",
-    externalCustomerId: "user_123", // Your internal ID
+    external_customer_id: "user_123", // Your internal ID
     metadata: { units: -10 }
   }]
 });
@@ -120,17 +120,17 @@ Now that you have a customer and a meter, grant credits by ingesting an event wi
 ### Using the Polar SDK
 
 ```typescript icon="square-js" title="grant-credits.ts"
-import { Polar } from "@polar-sh/sdk";
+import { createPolar } from "@polar-sh/sdk/2026-10";
 
-const polar = new Polar({
-  accessToken: process.env.POLAR_ACCESS_TOKEN,
+const polar = createPolar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN!,
 });
 
 async function grantCredits(customerId: string, credits: number) {
   await polar.events.ingest({
     events: [
       {
-        customerId,
+        customer_id: customerId,
         name: "api_usage", // Must match your meter's filter name
         metadata: {
           units: -credits, // Negative value grants credits
@@ -148,13 +148,13 @@ await grantCredits("cus_abc123", 10);
 
 ### Using External Customer ID
 
-If you're using `externalId` for customer management:
+If you're using `external_id` for customer management:
 
 ```typescript icon="square-js" title="grant-credits-external.ts"
-import { Polar } from "@polar-sh/sdk";
+import { createPolar } from "@polar-sh/sdk/2026-10";
 
-const polar = new Polar({
-  accessToken: process.env.POLAR_ACCESS_TOKEN,
+const polar = createPolar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN!,
 });
 
 async function grantCreditsToExternalUser(externalUserId: string, credits: number) {
@@ -162,7 +162,7 @@ async function grantCreditsToExternalUser(externalUserId: string, credits: numbe
     events: [
       {
         name: "api_usage", // Must match your meter's filter name
-        externalCustomerId: externalUserId, // Use your internal ID
+        external_customer_id: externalUserId, // Use your internal ID
         metadata: {
           units: -credits, // Negative value grants credits
         },
@@ -184,18 +184,18 @@ Check that the credits were successfully granted to the customer.
 ### Using Customer Meters API
 
 ```typescript
-import { Polar } from "@polar-sh/sdk";
+import { createPolar } from "@polar-sh/sdk/2026-10";
 
-const polar = new Polar({
-  accessToken: process.env.POLAR_ACCESS_TOKEN,
+const polar = createPolar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN!,
 });
 
 // Check customer's meter balance
 const meters = await polar.customerMeters.list({
-  customerId: "cus_abc123",
+  customer_id: "cus_abc123",
 });
 
-meters.items.filter((balance) => balance > 0).forEach((meter) => {
+meters.items.filter((meter) => meter.balance > 0).forEach((meter) => {
   console.log(`${Math.abs(meter.balance)} credits available for ${meter.meter_id}.`);
 });
 ```
@@ -210,7 +210,7 @@ meters.items.filter((balance) => balance > 0).forEach((meter) => {
 await polar.events.ingest({
   events: [{
     name: "api_usage",
-    customerId: "cus_abc123",
+    customer_id: "cus_abc123",
     metadata: { units: 3 } // Positive value for usage
   }]
 });
@@ -221,7 +221,7 @@ await polar.events.ingest({
 await polar.events.ingest({
   events: [{
     name: "api_usage",
-    customerId: "cus_abc123",
+    customer_id: "cus_abc123",
     metadata: { units: 8 }
   }]
 });

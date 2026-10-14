@@ -437,6 +437,62 @@ test('renders free tiers with free() and included()', async () => {
   expect(source).toContain('tier().max(20).free(),')
 })
 
+test('renders the tax behavior of a price', async () => {
+  const source = await Effect.runPromise(
+    generateConfig(
+      api
+        .defineConfig({
+          meters: () => ({}),
+          products: ({ product, fixed, units, tier }) => ({
+            pro: product('Pro')
+              .prices(
+                fixed().amount(api.usd(10), api.eur(9)).tax('inclusive'),
+                units()
+                  .graduated(tier().amount(api.usd(1), api.eur(1)))
+                  .tax('exclusive'),
+              )
+              .recurring('monthly'),
+          }),
+        })
+        .toJSON(),
+    ),
+  )
+  expect(source).toContain(
+    'fixed().amount(usd(10), eur(9))\n          .tax("inclusive"),',
+  )
+  expect(source).toContain('.tax("exclusive"),')
+})
+
+test('keeps prices with different tax behaviors in separate builder calls', async () => {
+  const source = await Effect.runPromise(
+    generateConfig({
+      meters: [],
+      products: [
+        {
+          external_id: 'pro',
+          name: 'Pro',
+          recurring_interval: 'month',
+          recurring_interval_count: 1,
+          prices: [
+            {
+              amount_type: 'fixed',
+              price_currency: 'usd',
+              price_amount: 1000,
+              tax_behavior: 'inclusive',
+            },
+            { amount_type: 'fixed', price_currency: 'eur', price_amount: 900 },
+          ],
+          benefits: [],
+        },
+      ],
+    }),
+  )
+  expect(source).toContain(
+    'fixed().amount(usd(10))\n          .tax("inclusive"),',
+  )
+  expect(source).toContain('fixed().amount(eur(9)),')
+})
+
 test('renders free volume tiers without included()', async () => {
   const source = await Effect.runPromise(
     generateConfig(

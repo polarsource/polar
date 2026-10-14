@@ -152,6 +152,7 @@ const tiersOf = (price: PriceConfig): Tiers['tiers'] =>
 const structureOf = (price: PriceConfig): string =>
   JSON.stringify([
     price.amount_type,
+    price.tax_behavior ?? null,
     'meter' in price ? price.meter : null,
     'tiers' in price ? price.tiers.type : null,
     tiersOf(price).map(({ bound }) => bound ?? null),
@@ -248,6 +249,11 @@ const isFree = (group: ReadonlyArray<PriceConfig>): boolean =>
     (price) => price.amount_type === 'fixed' && price.price_amount === 0,
   )
 
+const renderTax = (price: PriceConfig): string[] =>
+  price.tax_behavior === undefined
+    ? []
+    : [`.tax(${literal(price.tax_behavior)})`]
+
 const renderPrice = (
   group: readonly [PriceConfig, ...PriceConfig[]],
   productCurrencies: ReadonlyArray<Currency>,
@@ -267,12 +273,15 @@ const renderPrice = (
         return 'free()'
       }
       helpers.add('fixed')
-      return `fixed().amount(${renderAmounts(
-        group,
-        (price) =>
-          'price_amount' in price ? String(price.price_amount) : undefined,
-        imports,
-      )})`
+      return [
+        `fixed().amount(${renderAmounts(
+          group,
+          (price) =>
+            'price_amount' in price ? String(price.price_amount) : undefined,
+          imports,
+        )})`,
+        ...renderTax(first),
+      ].join('\n')
     }
     case 'seat_based':
     case 'unit_based': {
@@ -301,7 +310,7 @@ const renderPrice = (
         const { '=1': singular, other: plural } = first.unit_label.en
         lines.push(`.label(${literal(singular)}, ${literal(plural)})`)
       }
-      return lines.join('\n')
+      return [...lines, ...renderTax(first)].join('\n')
     }
     case 'metered_unit':
     case 'metered_tiers': {
@@ -320,6 +329,7 @@ const renderPrice = (
             ]
           : renderTiers(first.tiers.type, group, helpers, imports)),
         ...renderCap(group, imports),
+        ...renderTax(first),
       ].join('\n')
     }
   }

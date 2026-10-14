@@ -25,7 +25,8 @@ from polar.redis import Redis
 from polar.worker import enqueue_job
 
 from . import redis_store
-from .repository import ReducerBucketRepository, ReducerRepository
+from .bucket_repository import ReducerBucketRepository
+from .repository import ReducerRepository
 
 log: Logger = structlog.get_logger()
 

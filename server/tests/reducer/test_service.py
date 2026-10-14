@@ -18,8 +18,8 @@ from polar.models import Customer, Event, Meter, Organization, Reducer, ReducerB
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from polar.redis import Redis
+from polar.reducer.bucket_repository import ReducerBucketRepository
 from polar.reducer.redis_store import get_reducer_bucket_key
-from polar.reducer.repository import ReducerBucketRepository
 from polar.reducer.service import (
     REDUCER_BUCKET_SIZE,
     get_reducer_bucket_start,

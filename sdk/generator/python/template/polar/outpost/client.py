@@ -5,13 +5,19 @@ import dataclasses
 import datetime
 import json
 import math
+import random
 import types
 import typing
 import uuid
 
 import anyio
 import httpx
-from httpx_ws import AsyncWebSocketSession, aconnect_ws
+from httpx_ws import (
+    AsyncWebSocketSession,
+    HTTPXWSException,
+    WebSocketUpgradeError,
+    aconnect_ws,
+)
 from opentelemetry import context as otel_context
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
@@ -87,6 +93,12 @@ def _report_local_value(
             span.set_attribute(f"outpost.snapshot.{statistic}", value)
 
 
+def _is_connection_error(error: BaseException) -> bool:
+    if isinstance(error, BaseExceptionGroup):
+        return all(_is_connection_error(inner) for inner in error.exceptions)
+    return isinstance(error, (HTTPXWSException, httpx.HTTPError, OSError))
+
+
 def _generate_epoch() -> str:
     return uuid.uuid4().hex
 
@@ -110,6 +122,8 @@ async def connect_websocket(
 
 CACHE_SIZE = 1024
 SYNC_INTERVAL = 30.0
+RECONNECT_DELAY = 0.5
+MAX_RECONNECT_DELAY = 30.0
 
 READ_STATE_SCRIPT = """
 if not redis.call('HGET', KEYS[1], 'epoch') then
@@ -260,6 +274,7 @@ class Outpost:
         self._redis: Redis | None = None
         self._websocket: AsyncWebSocketSession | None = None
         self._connection_id: str | None = None
+        self._failure: PolarOutpostError | None = None
         self._tasks: anyio.abc.TaskGroup | None = None
         self._reducers: list[Reducer] = []
         self._actors: set[str] = set()
@@ -278,6 +293,7 @@ class Outpost:
             raise RuntimeError("Outpost is already connected")
         self._configured = anyio.Event()
         self._synced = anyio.Event()
+        self._failure = None
         if self._telemetry:
             self._tracer_provider = create_tracer_provider(self._client)
             self._tracer = self._tracer_provider.get_tracer("polar.outpost")
@@ -290,17 +306,12 @@ class Outpost:
             self._read_state = self._redis.register_script(READ_STATE_SCRIPT)
             self._write_bucket = self._redis.register_script(WRITE_BUCKET_SCRIPT)
             self._apply_snapshot = self._redis.register_script(APPLY_SNAPSHOT_SCRIPT)
-            with self._span("outpost.websocket.connect"):
-                self._websocket = await self._stack.enter_async_context(
-                    connect_websocket(self._client)
-                )
             self._tasks = await self._stack.enter_async_context(
                 anyio.create_task_group()
             )
+            await self._tasks.start(self._run_websocket)
             with anyio.fail_after(5):
                 await self._tasks.start(self._listen_redis)
-            self._tasks.start_soon(self._listen_websocket)
-            await self._require_websocket().send_json({"type": "configuration"})
         except BaseException:
             try:
                 if self._tasks is not None:
@@ -479,18 +490,15 @@ class Outpost:
         }
 
     def _require_redis(self) -> Redis:
+        if self._failure is not None:
+            raise self._failure
         if self._redis is None:
             raise RuntimeError("Use Outpost inside an async with block")
         return self._redis
 
-    def _require_websocket(self) -> AsyncWebSocketSession:
-        if self._websocket is None:
-            raise RuntimeError("Use Outpost inside an async with block")
-        return self._websocket
-
     async def _warm_customer(self, customer: str, reducer: Reducer) -> LocalState:
         identity = f"{customer}:{reducer['id']}"
-        websocket = self._require_websocket()
+        self._require_redis()
         with anyio.fail_after(5):
             await self._synced.wait()
         local = self._cache.get(identity)
@@ -506,17 +514,22 @@ class Outpost:
         async with local.lock:
             if local.state is None:
                 local.state = await self._load_state(identity)
-            if identity not in self._actors:
-                for meter_id in reducer.get("meter_ids", []):
-                    await websocket.send_json(
-                        {
-                            "type": "meter_usage",
-                            "payload": {
-                                **self._customer_arguments(customer),
-                                "meter_id": meter_id,
-                            },
-                        }
-                    )
+            websocket = self._websocket
+            if identity not in self._actors and websocket is not None:
+                try:
+                    for meter_id in reducer.get("meter_ids", []):
+                        await websocket.send_json(
+                            {
+                                "type": "meter_usage",
+                                "payload": {
+                                    **self._customer_arguments(customer),
+                                    "meter_id": meter_id,
+                                },
+                            }
+                        )
+                except HTTPXWSException:
+                    # Requested again once reconnected.
+                    return local
                 self._actors.add(identity)
         return local
 
@@ -622,8 +635,53 @@ class Outpost:
                         local.state = None
             await anyio.sleep(1)
 
-    async def _listen_websocket(self) -> None:
-        websocket = self._require_websocket()
+    async def _run_websocket(
+        self,
+        *,
+        task_status: anyio.abc.TaskStatus[None] = anyio.TASK_STATUS_IGNORED,
+    ) -> None:
+        started = False
+        attempt = 0
+        while True:
+            try:
+                async with contextlib.AsyncExitStack() as stack:
+                    with self._span(
+                        "outpost.websocket.connect",
+                        **({"outpost.reconnect.attempt": attempt} if attempt else {}),
+                    ):
+                        websocket = await stack.enter_async_context(
+                            connect_websocket(self._client)
+                        )
+                    self._websocket = websocket
+                    self._actors.clear()
+                    await websocket.send_json({"type": "configuration"})
+                    if not started:
+                        task_status.started()
+                        started = True
+                    attempt = 0
+                    await self._listen_websocket(websocket)
+            except Exception as error:
+                if not started:
+                    raise
+                refused = isinstance(
+                    error, WebSocketUpgradeError
+                ) and error.response.status_code in (401, 403)
+                if refused or not _is_connection_error(error):
+                    self._failure = PolarOutpostError(
+                        "Polar refused the Outpost connection"
+                        if refused
+                        else "Outpost stopped"
+                    )
+                    self._failure.__cause__ = error
+                    return
+            finally:
+                self._websocket = None
+                self._connection_id = None
+            attempt += 1
+            delay = min(MAX_RECONNECT_DELAY, RECONNECT_DELAY * 2 ** (attempt - 1))
+            await anyio.sleep(random.uniform(delay / 2, delay))
+
+    async def _listen_websocket(self, websocket: AsyncWebSocketSession) -> None:
         while True:
             try:
                 message = await websocket.receive_json()

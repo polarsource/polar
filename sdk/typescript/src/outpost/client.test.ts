@@ -54,6 +54,7 @@ let core: ClientBase;
 let reducers: Reducer[];
 let snapshot: Record<string, unknown> | undefined;
 let delayConfiguration = false;
+let refuseConnections = false;
 const connections: WebSocket[] = [];
 const outposts: Outpost[] = [];
 
@@ -75,7 +76,12 @@ beforeAll(async () => {
   });
   redis = new Redis(socket);
   await once(redis, "ready");
-  server = new WebSocketServer({ port: 0, host: "127.0.0.1", path: "/v1/outpost/" });
+  server = new WebSocketServer({
+    port: 0,
+    host: "127.0.0.1",
+    path: "/v1/outpost/",
+    verifyClient: (_info, callback) => callback(!refuseConnections, 401),
+  });
   await once(server, "listening");
   const address = server.address();
   if (typeof address === "string" || !address) throw new Error("Missing WebSocket address");
@@ -112,6 +118,7 @@ beforeEach(async () => {
   ];
   snapshot = undefined;
   delayConfiguration = false;
+  refuseConnections = false;
   exported.length = 0;
 });
 
@@ -554,6 +561,7 @@ it("sends telemetry spans tagged with the connection ID", async () => {
     credited_units: 10,
   };
   const outpost = await start();
+  await vi.waitFor(() => expect(outpost.connectionId).toBe(connectionId));
   await ingest(outpost, 3);
   await vi.waitFor(() =>
     expect(exported.map((span) => span.name)).toEqual(
@@ -651,3 +659,21 @@ it.each([
     });
   },
 );
+
+it("reconnects the WebSocket and keeps serving from Redis", async () => {
+  const outpost = await start();
+  connections[0].terminate();
+  expect(await ingest(outpost, 3)).toEqual({ inserted: 1, duplicates: 0 });
+  await vi.waitFor(() => expect(connections).toHaveLength(2), { timeout: 3_000 });
+  await vi.waitFor(() => expect(outpost.connectionId).toBe(connectionId));
+  expect(await ingest(outpost, 3)).toEqual({ inserted: 1, duplicates: 0 });
+});
+
+it("fails when Polar refuses the reconnection", async () => {
+  const outpost = await start();
+  refuseConnections = true;
+  connections[0].terminate();
+  await vi.waitFor(() => expect(outpost.actor(customer)).rejects.toThrow("refused"), {
+    timeout: 3_000,
+  });
+});

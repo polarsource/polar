@@ -12,6 +12,11 @@ import uuid
 import anyio
 import httpx
 from httpx_ws import AsyncWebSocketSession, aconnect_ws
+from opentelemetry import context as otel_context
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.trace import Span, StatusCode
+from opentelemetry.util.types import AttributeValue
 from redis.asyncio import Redis
 from redis.asyncio.retry import Retry
 from redis.backoff import NoBackoff
@@ -28,6 +33,7 @@ from polar.outpost.reducer import (
     get_matcher,
     reduce,
 )
+from polar.outpost.telemetry import create_tracer_provider, is_telemetry_enabled
 
 
 class PolarOutpostError(PolarError): ...
@@ -196,9 +202,14 @@ class CustomerMeter:
 
 
 class Outpost:
-    def __init__(self, redis_url: str, *, client: httpx.AsyncClient) -> None:
+    def __init__(
+        self, redis_url: str, *, client: httpx.AsyncClient, telemetry: bool = True
+    ) -> None:
         self.redis_url = redis_url
         self._client = client
+        self._telemetry = is_telemetry_enabled(telemetry)
+        self._tracer_provider: TracerProvider | None = None
+        self._tracer: trace.Tracer = trace.NoOpTracer()
         self._stack = contextlib.AsyncExitStack()
         self._redis: Redis | None = None
         self._websocket: AsyncWebSocketSession | None = None
@@ -221,17 +232,22 @@ class Outpost:
             raise RuntimeError("Outpost is already connected")
         self._configured = anyio.Event()
         self._synced = anyio.Event()
+        if self._telemetry:
+            self._tracer_provider = create_tracer_provider(self._client)
+            self._tracer = self._tracer_provider.get_tracer("polar.outpost")
         try:
-            self._redis = await self._stack.enter_async_context(
-                connect_redis(self.redis_url)
-            )
+            with self._span("outpost.redis.connect"):
+                self._redis = await self._stack.enter_async_context(
+                    connect_redis(self.redis_url)
+                )
             self._channel = f"outpost:{self._redis.connection_pool.connection_kwargs.get('db', 0)}:updates"
             self._read_state = self._redis.register_script(READ_STATE_SCRIPT)
             self._write_bucket = self._redis.register_script(WRITE_BUCKET_SCRIPT)
             self._apply_snapshot = self._redis.register_script(APPLY_SNAPSHOT_SCRIPT)
-            self._websocket = await self._stack.enter_async_context(
-                connect_websocket(self._client)
-            )
+            with self._span("outpost.websocket.connect"):
+                self._websocket = await self._stack.enter_async_context(
+                    connect_websocket(self._client)
+                )
             self._tasks = await self._stack.enter_async_context(
                 anyio.create_task_group()
             )
@@ -254,6 +270,7 @@ class Outpost:
                 self._apply_snapshot = None
                 self._read_state = None
                 self._cache.clear()
+                await self._shutdown_telemetry()
             raise
         return self
 
@@ -263,6 +280,10 @@ class Outpost:
         exc_val: BaseException | None = None,
         exc_tb: types.TracebackType | None = None,
     ) -> None:
+        with self._span("outpost.websocket.disconnect"):
+            pass
+        with self._span("outpost.redis.disconnect"):
+            pass
         try:
             if self._tasks is not None:
                 self._tasks.cancel_scope.cancel()
@@ -278,6 +299,7 @@ class Outpost:
             self._apply_snapshot = None
             self._read_state = None
             self._cache.clear()
+            await self._shutdown_telemetry()
 
     @property
     def connection_id(self) -> str | None:
@@ -289,37 +311,39 @@ class Outpost:
         self._require_redis()
         if not events:
             return IngestResult(inserted=0)
-        parsed = [self._parse_event(event) for event in events]
-        with anyio.fail_after(5):
-            await self._configured.wait()
-        reducers = self._reducers
-        updates = reduce(
-            [(reducer, get_matcher(reducer["filter"])) for reducer in reducers],
-            parsed,
-            oldest_bucket_start=min(
-                get_bucket_start(event.timestamp) for event in parsed
-            ),
-        )
-        for customer in {event.external_customer_id for event in parsed}:
-            await self.actor(**self._customer_arguments(customer))
-        assert self._write_bucket is not None
-        for (customer, reducer_id, bucket_start), statistics in updates.items():
-            identity = f"{customer}:{reducer_id}"
-            state = await self._write_bucket(
-                keys=[f"outpost:state:{identity}"],
-                args=[
-                    identity,
-                    self._channel,
-                    _generate_epoch(),
-                    bucket_start,
-                    statistics.count,
-                    statistics.sum,
-                    statistics.min if statistics.min is not None else "",
-                    statistics.max if statistics.max is not None else "",
-                ],
+        with self._span("outpost.ingest", **{"outpost.events": len(events)}) as span:
+            parsed = [self._parse_event(event) for event in events]
+            with anyio.fail_after(5):
+                await self._configured.wait()
+            reducers = self._reducers
+            updates = reduce(
+                [(reducer, get_matcher(reducer["filter"])) for reducer in reducers],
+                parsed,
+                oldest_bucket_start=min(
+                    get_bucket_start(event.timestamp) for event in parsed
+                ),
             )
-            await self._receive_state(identity, self._decode_state(state))
-        return IngestResult(inserted=len(parsed))
+            for customer in {event.external_customer_id for event in parsed}:
+                await self.actor(**self._customer_arguments(customer))
+            assert self._write_bucket is not None
+            for (customer, reducer_id, bucket_start), statistics in updates.items():
+                identity = f"{customer}:{reducer_id}"
+                state = await self._write_bucket(
+                    keys=[f"outpost:state:{identity}"],
+                    args=[
+                        identity,
+                        self._channel,
+                        _generate_epoch(),
+                        bucket_start,
+                        statistics.count,
+                        statistics.sum,
+                        statistics.min if statistics.min is not None else "",
+                        statistics.max if statistics.max is not None else "",
+                    ],
+                )
+                await self._receive_state(identity, self._decode_state(state))
+            span.set_attribute("outpost.buckets", len(updates))
+            return IngestResult(inserted=len(parsed))
 
     async def customer_meter(
         self,
@@ -373,6 +397,32 @@ class Outpost:
             await self._configured.wait()
         for reducer in self._reducers:
             await self._warm_customer(customer, reducer)
+
+    @contextlib.contextmanager
+    def _span(
+        self, name: str, **attributes: AttributeValue
+    ) -> collections.abc.Generator[Span]:
+        if self._connection_id is not None:
+            attributes["outpost.connection_id"] = self._connection_id
+        span = self._tracer.start_span(
+            name, context=otel_context.Context(), attributes=attributes
+        )
+        try:
+            yield span
+        except Exception as e:
+            span.record_exception(e)
+            span.set_status(StatusCode.ERROR)
+            raise
+        finally:
+            span.end()
+
+    async def _shutdown_telemetry(self) -> None:
+        provider = self._tracer_provider
+        self._tracer_provider = None
+        self._tracer = trace.NoOpTracer()
+        if provider is not None:
+            with anyio.CancelScope(shield=True):
+                await anyio.to_thread.run_sync(provider.shutdown)
 
     def _customer_arguments(self, customer: str) -> dict[str, str]:
         kind, identifier = customer.split(":", 1)
@@ -488,14 +538,15 @@ class Outpost:
         while True:
             async with self._require_redis().pubsub() as pubsub:
                 try:
-                    await pubsub.subscribe(self._channel)
-                    subscribed = await pubsub.get_message(timeout=5)
-                    if subscribed is None or subscribed["type"] != "subscribe":
-                        raise RedisTimeoutError(
-                            "Outpost subscription was not acknowledged"
-                        )
-                    await self._refresh_states()
-                    self._synced.set()
+                    with self._span("outpost.redis.subscribe"):
+                        await pubsub.subscribe(self._channel)
+                        subscribed = await pubsub.get_message(timeout=5)
+                        if subscribed is None or subscribed["type"] != "subscribe":
+                            raise RedisTimeoutError(
+                                "Outpost subscription was not acknowledged"
+                            )
+                        await self._refresh_states()
+                        self._synced.set()
                     if not started:
                         task_status.started()
                         started = True
@@ -506,14 +557,18 @@ class Outpost:
                         )
                         if message is not None:
                             update: StateUpdate = json.loads(message["data"])
-                            await self._receive_state(
-                                update["customer"],
-                                self._decode_state(update["state"]),
-                            )
+                            with self._span("outpost.sync.received"):
+                                await self._receive_state(
+                                    update["customer"],
+                                    self._decode_state(update["state"]),
+                                )
                         if anyio.current_time() >= next_refresh:
                             await self._refresh_states()
                             next_refresh = anyio.current_time() + SYNC_INTERVAL
-                except (RedisConnectionError, RedisTimeoutError):
+                except (RedisConnectionError, RedisTimeoutError) as error:
+                    with self._span("outpost.redis.disconnect") as span:
+                        span.record_exception(error)
+                        span.set_status(StatusCode.ERROR)
                     self._synced = anyio.Event()
                     for local in self._cache.values():
                         local.state = None
@@ -522,7 +577,11 @@ class Outpost:
     async def _listen_websocket(self) -> None:
         websocket = self._require_websocket()
         while True:
-            message = await websocket.receive_json()
+            try:
+                message = await websocket.receive_json()
+            except Exception:
+                with self._span("outpost.websocket.disconnect"):
+                    raise
             if message["type"] == "connection":
                 self._connection_id = message["payload"]["id"]
             elif message["type"] == "configuration":
@@ -562,23 +621,30 @@ class Outpost:
                 ):
                     raise ValueError("Snapshot values must be finite")
                 assert self._apply_snapshot is not None
-                state = await self._apply_snapshot(
-                    keys=[f"outpost:state:{identity}"],
-                    args=[
-                        identity,
-                        self._channel,
-                        _generate_epoch(),
-                        snapshot["cold_until"],
-                        snapshot["version"],
-                        snapshot["meter_id"],
-                        snapshot["credited_units"],
-                        snapshot["count"],
-                        snapshot["sum"],
-                        snapshot["min"] if snapshot["min"] is not None else "",
-                        snapshot["max"] if snapshot["max"] is not None else "",
-                    ],
-                )
-                await self._receive_state(identity, self._decode_state(state))
+                with self._span(
+                    "outpost.snapshot.received",
+                    **{
+                        "outpost.meter_id": snapshot["meter_id"],
+                        "outpost.snapshot_version": snapshot["version"],
+                    },
+                ):
+                    state = await self._apply_snapshot(
+                        keys=[f"outpost:state:{identity}"],
+                        args=[
+                            identity,
+                            self._channel,
+                            _generate_epoch(),
+                            snapshot["cold_until"],
+                            snapshot["version"],
+                            snapshot["meter_id"],
+                            snapshot["credited_units"],
+                            snapshot["count"],
+                            snapshot["sum"],
+                            snapshot["min"] if snapshot["min"] is not None else "",
+                            snapshot["max"] if snapshot["max"] is not None else "",
+                        ],
+                    )
+                    await self._receive_state(identity, self._decode_state(state))
 
     def _parse_event(self, event: EventInput) -> Event:
         customer = self._customer_key(

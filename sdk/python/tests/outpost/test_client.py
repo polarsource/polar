@@ -12,10 +12,17 @@ import httpx
 import pytest
 from fakeredis import FakeAsyncRedis, FakeServer
 from httpx_ws.transport import ASGIWebSocketTransport
+from opentelemetry.sdk.trace import ReadableSpan
+from opentelemetry.sdk.trace.export import (
+    SimpleSpanProcessor,
+    SpanExporter,
+    SpanExportResult,
+)
 from redis.asyncio import Redis
 from redis.asyncio.client import PubSub
 from redis.exceptions import ConnectionError as RedisConnectionError
 
+from polar import __version__
 from polar.outpost import EventInput
 from polar.outpost.client import (
     APPLY_SNAPSHOT_SCRIPT,
@@ -26,6 +33,7 @@ from polar.outpost.client import (
     connect_websocket,
 )
 from polar.outpost.reducer import BUCKET_SIZE, get_bucket_start
+from polar.outpost.telemetry import TELEMETRY_ENV
 from polar.v2026_04.inputs import EventsIngest
 
 CONNECTION_ID = "5b6e1f0c-8f4c-4d2a-9a51-3c7d2e8b1f60"
@@ -54,6 +62,27 @@ async def redis_connection(
     )
     async with FakeAsyncRedis(server=server) as redis:
         yield "redis://localhost:6379", redis
+
+
+@pytest.fixture(autouse=True)
+def exported_spans(monkeypatch: pytest.MonkeyPatch) -> list[ReadableSpan]:
+    exported: list[ReadableSpan] = []
+
+    class Exporter(SpanExporter):
+        def export(
+            self, spans: collections.abc.Sequence[ReadableSpan]
+        ) -> SpanExportResult:
+            exported.extend(spans)
+            return SpanExportResult.SUCCESS
+
+    monkeypatch.delenv(TELEMETRY_ENV, raising=False)
+    monkeypatch.setattr(
+        "polar.outpost.telemetry.OTLPSpanExporter", lambda **_: Exporter()
+    )
+    monkeypatch.setattr(
+        "polar.outpost.telemetry.BatchSpanProcessor", SimpleSpanProcessor
+    )
+    return exported
 
 
 @pytest.fixture
@@ -890,3 +919,88 @@ async def test_cutoff_keeps_microsecond_precision(
     assert await redis.hget(key, f"bucket:{BUCKET + BUCKET_SIZE}:sum") == b"4"
     await write(keys=[key], args=[*prefix, BUCKET, 1, 999, 999, 999])
     assert await redis.hget(key, f"bucket:{BUCKET}:sum") is None
+
+
+@pytest.mark.anyio
+async def test_telemetry_spans(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+    exported_spans: list[ReadableSpan],
+) -> None:
+    url, _ = redis_connection
+    snapshots["external:alice"] = {
+        "customer_id": None,
+        "external_customer_id": "alice",
+        "meter_id": "meter",
+        "version": 1791807000000000,
+        "cold_until": 1791806700000000,
+        "count": 0,
+        "sum": 0,
+        "min": None,
+        "max": None,
+        "credited_units": 10,
+    }
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.ingest(
+            events=[
+                {
+                    "name": "call",
+                    "external_customer_id": "alice",
+                    "metadata": {"tokens": 3},
+                }
+            ]
+        )
+        with anyio.fail_after(1):
+            while not {"outpost.snapshot.received", "outpost.sync.received"} <= {
+                span.name for span in exported_spans
+            }:
+                await anyio.lowlevel.checkpoint()
+
+    names = {span.name for span in exported_spans}
+    assert names == {
+        "outpost.redis.connect",
+        "outpost.redis.subscribe",
+        "outpost.websocket.connect",
+        "outpost.ingest",
+        "outpost.snapshot.received",
+        "outpost.sync.received",
+        "outpost.websocket.disconnect",
+        "outpost.redis.disconnect",
+    }
+    connected = [
+        span
+        for span in exported_spans
+        if span.name
+        not in {
+            "outpost.redis.connect",
+            "outpost.redis.subscribe",
+            "outpost.websocket.connect",
+        }
+    ]
+    assert all(
+        span.attributes is not None
+        and span.attributes["outpost.connection_id"] == CONNECTION_ID
+        for span in connected
+    )
+    resource = exported_spans[0].resource.attributes
+    assert resource["service.name"] == "outpost"
+    assert resource["service.version"] == __version__
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(("telemetry", "environment"), [(False, None), (True, "0")])
+async def test_telemetry_opt_out(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    exported_spans: list[ReadableSpan],
+    monkeypatch: pytest.MonkeyPatch,
+    telemetry: bool,
+    environment: str | None,
+) -> None:
+    if environment is not None:
+        monkeypatch.setenv(TELEMETRY_ENV, environment)
+    url, _ = redis_connection
+    async with Outpost(url, client=polar_client, telemetry=telemetry) as outpost:
+        await outpost.ingest(events=[{"name": "call", "external_customer_id": "alice"}])
+    assert exported_spans == []

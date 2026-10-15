@@ -9,7 +9,6 @@ import {
   ApiError,
   type AppliedEntry,
   BillingConfigError,
-  type ConfigResource,
   type EntryResult,
   type LoadedConfig,
   type SettingsResult,
@@ -18,18 +17,6 @@ import { apiUrl, describeApiFailure, withOrganization } from '@/services/api'
 import type { ApiClient } from '@/services/client'
 
 export type Clients = Record<PolarEnvironment, ApiClient>
-
-// Sections the config API doesn't accept yet
-const UNSUPPORTED_SECTIONS = new Set([''])
-
-const stripUnsupported = (input: unknown): unknown =>
-  typeof input === 'object' && input !== null && !Array.isArray(input)
-    ? Object.fromEntries(
-        Object.entries(input).filter(
-          ([section]) => !UNSUPPORTED_SECTIONS.has(section),
-        ),
-      )
-    : input
 
 export const post = (
   clients: Clients,
@@ -42,7 +29,7 @@ export const post = (
       yield* apiUrl(organization.environment, path),
     ).pipe(
       withOrganization(organization.id),
-      HttpClientRequest.bodyJson(stripUnsupported(config.input)),
+      HttpClientRequest.bodyJson(config.input),
     )
     return yield* clients[organization.environment].execute(request)
   })
@@ -52,13 +39,6 @@ export const errorName = (response: HttpClientResponse.HttpClientResponse) =>
     Effect.map(({ error }) => error),
     Effect.orElseSucceed(() => undefined),
   )
-
-const SECTIONS = {
-  meter: 'meters',
-  benefit: 'benefits',
-  product: 'products',
-  discount: 'discounts',
-} as const satisfies Record<typeof ConfigResource.Type, string>
 
 // The server reports settings changes by dotted path, like `payments.currency`
 const settingsEntries = (
@@ -98,7 +78,7 @@ export const entries = (
   ...settingsEntries(settings),
   ...results.map(
     (entry): AppliedEntry => ({
-      section: SECTIONS[entry.resource],
+      section: `${entry.resource}s`,
       id: entry.external_id,
       action: entry.action,
       diff: entry.diff ?? [],
@@ -106,27 +86,18 @@ export const entries = (
   ),
 ]
 
-// Settings, benefits, products and discounts sections need their own scope on top of the meters one
-export const requiredScopes = (
-  config: LoadedConfig,
-  access: 'read' | 'write',
-) => {
-  const input =
-    typeof config.input === 'object' && config.input !== null
-      ? config.input
-      : {}
-  return ['meters', 'benefits', 'products', 'discounts', 'settings']
-    .filter((section) => section === 'meters' || section in input)
-    .map(
-      (section) =>
-        `${section === 'settings' ? 'organizations' : section}:${access}`,
-    )
-}
+const requiredScopes = (response: HttpClientResponse.HttpClientResponse) =>
+  (
+    /scope="([^"]*)"/.exec(response.headers['www-authenticate'] ?? '')?.[1] ??
+    ''
+  )
+    .split(' ')
+    .filter((scope) => scope !== '')
+    .sort()
 
 export const unexpected = (
   response: HttpClientResponse.HttpClientResponse,
   organization: ActiveOrganization,
-  scopes: ReadonlyArray<string>,
 ) =>
   Effect.gen(function* () {
     const error = yield* errorName(response)
@@ -143,9 +114,13 @@ export const unexpected = (
       })
     }
     if (response.status === 403) {
+      const scopes = requiredScopes(response)
       return yield* new BillingConfigError({
         message: `You do not have access to ${organization.name}`,
-        hint: `The token needs the ${scopes.join(', ')} ${scopes.length > 1 ? 'scopes' : 'scope'}.`,
+        hint:
+          scopes.length > 0
+            ? `The token needs the ${scopes.join(', ')} ${scopes.length > 1 ? 'scopes' : 'scope'}.`
+            : "Check the token's organization and permissions.",
       })
     }
     if (response.status === 404) {

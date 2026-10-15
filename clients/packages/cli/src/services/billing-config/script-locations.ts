@@ -54,13 +54,10 @@ const findAll = (source: string, pattern: RegExp, from: number) =>
     (match) => ({ offset: from + match.index, length: match[0].length }),
   )
 
-const SECTIONS = [
-  'settings',
+// `events` is declared in the script but never sent, so the input alone misses it
+const sectionsOf = (input: unknown) => [
   'events',
-  'meters',
-  'benefits',
-  'products',
-  'discounts',
+  ...Object.keys(typeof input === 'object' && input !== null ? input : {}),
 ]
 
 const columnOf = (source: string, offset: number) =>
@@ -72,18 +69,24 @@ const sectionKey = (source: string, section: string) => {
   return own[columns.indexOf(Math.min(...columns))]
 }
 
-const sectionRange = (source: string, section: string): Range => {
+const sectionRange = (
+  source: string,
+  section: string,
+  sections: ReadonlyArray<string>,
+): Range => {
   const whole = { start: 0, end: source.length }
   const column = ({ offset }: { offset: number }) => columnOf(source, offset)
   const start = sectionKey(source, section)
   if (start === undefined) return whole
   const key = start.offset + start.length
   const from = key + (PARAMETERS.exec(source.slice(key))?.[0].length ?? 0)
-  const ends = SECTIONS.filter((other) => other !== section).flatMap((other) =>
-    findAll(source, keyPattern(other), from)
-      .filter((match) => column(match) <= column(start))
-      .map(({ offset }) => offset),
-  )
+  const ends = sections
+    .filter((other) => other !== section)
+    .flatMap((other) =>
+      findAll(source, keyPattern(other), from)
+        .filter((match) => column(match) <= column(start))
+        .map(({ offset }) => offset),
+    )
   return { start: from, end: Math.min(source.length, ...ends) }
 }
 
@@ -107,11 +110,12 @@ const anchorsOf = (
 const entryRange = (
   source: string,
   section: string,
+  sections: ReadonlyArray<string>,
   externalIds: ReadonlyArray<string | undefined>,
   index: number,
 ): Range | undefined => {
   const known = externalIds.map((id) => id ?? '')
-  const within = sectionRange(source, section)
+  const within = sectionRange(source, section, sections)
   const anchors = anchorsOf(source, known, within)
   const start = anchors[index]
   if (start === undefined) return undefined
@@ -124,10 +128,11 @@ const entryRange = (
 const locateInObject = (
   source: string,
   section: string,
+  sections: ReadonlyArray<string>,
   keys: Path,
   got: unknown,
 ): SourceLocation | undefined => {
-  const range = sectionRange(source, section)
+  const range = sectionRange(source, section, sections)
   let key: { offset: number; length: number } | undefined
   for (const part of keys) {
     if (typeof part !== 'string') break
@@ -156,6 +161,7 @@ export const locateInScript = (
 ): SourceLocation | undefined => {
   const [section, index, ...rest] = path
   if (typeof section !== 'string') return undefined
+  const sections = sectionsOf(input)
   if (index === undefined) {
     const key = sectionKey(source, section)
     return key && span(source, key.offset, key.length)
@@ -163,7 +169,7 @@ export const locateInScript = (
   const entries = (input as Record<string, unknown>)?.[section]
   if (typeof index !== 'number') {
     return typeof entries === 'object' && entries !== null
-      ? locateInObject(source, section, path.slice(1), got)
+      ? locateInObject(source, section, sections, path.slice(1), got)
       : undefined
   }
   if (!Array.isArray(entries)) return undefined
@@ -172,7 +178,7 @@ export const locateInScript = (
   )
   const externalId = externalIds[index]
   if (externalId === undefined) return undefined
-  const range = entryRange(source, section, externalIds, index)
+  const range = entryRange(source, section, sections, externalIds, index)
   if (range === undefined) return undefined
   const field = rest[0]
   const fieldMatch =

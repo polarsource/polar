@@ -309,15 +309,20 @@ describe('pull', () => {
 
   test('names the scopes when the token cannot read the config', async () => {
     api.routes[`GET ${exportUrl}`] = Response.json(
-      { error: 'NotPermitted' },
-      { status: 403 },
+      { error: 'insufficient_scope' },
+      {
+        status: 403,
+        headers: {
+          'www-authenticate': `Bearer realm="polar", scope="webhooks:read meters:read", error="insufficient_scope"`,
+        },
+      },
     )
 
     const error = await failure(run('polar.json'))
 
     expect(error.message).toBe('You do not have access to Acme')
     expect(error.hint).toBe(
-      'The token needs the organizations:read, meters:read, benefits:read, products:read, discounts:read, webhooks:read scopes.',
+      'The token needs the meters:read, webhooks:read scopes.',
     )
   })
 

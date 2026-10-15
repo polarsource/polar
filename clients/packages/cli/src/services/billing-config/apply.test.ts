@@ -211,8 +211,13 @@ describe('apply', () => {
 
   test('keeps the generic message for other 403s', async () => {
     api.routes[`POST ${applyUrl}`] = Response.json(
-      { error: 'NotPermitted', detail: 'Not permitted' },
-      { status: 403 },
+      { error: 'insufficient_scope' },
+      {
+        status: 403,
+        headers: {
+          'www-authenticate': `Bearer realm="polar", scope="products:write meters:write", error="insufficient_scope"`,
+        },
+      },
     )
 
     const error = await failure(

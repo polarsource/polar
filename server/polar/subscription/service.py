@@ -1589,6 +1589,12 @@ class SubscriptionService:
                     subscription.meter_interval_count,
                 )
             subscription.current_meter_period_end = period_end
+            await self._after_subscription_updated(
+                session,
+                subscription,
+                previous_status=subscription.status,
+                previous_is_canceled=subscription.canceled,
+            )
             repository = SubscriptionRepository.from_session(session)
             return await repository.release_scheduler_lock(subscription)
 
@@ -1617,6 +1623,12 @@ class SubscriptionService:
 
         subscription.current_meter_period_start = boundary
         subscription.current_meter_period_end = next_period_end
+        await self._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=subscription.status,
+            previous_is_canceled=subscription.canceled,
+        )
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.release_scheduler_lock(subscription)

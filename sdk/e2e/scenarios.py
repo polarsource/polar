@@ -2,6 +2,7 @@ from polar.outpost.client import Configuration, Snapshot
 from polar.outpost.reducer import BUCKET_SIZE
 
 from harness import (
+    DisconnectStep,
     ExternalCustomerID,
     ExternalCustomerMeterRequest,
     IngestStep,
@@ -265,6 +266,52 @@ SCENARIOS = [
             ),
             RestartStep(1.3, "reader"),
             expect(1.6, "reader", 44),
+        ],
+    ),
+    Scenario(
+        "cold read waits for the first snapshot",
+        CONFIGURATION,
+        [{**INITIAL, "count": 1, "sum": 5, "min": 5, "max": 5}],
+        [expect(0, "reader", 5, within=0)],
+    ),
+    Scenario(
+        "unknown customer reads none",
+        CONFIGURATION,
+        [INITIAL],
+        [
+            ReadStep(
+                0,
+                "reader",
+                {"external_customer_id": "bob", "meter_id": "meter"},
+                None,
+            )
+        ],
+    ),
+    Scenario(
+        "reconnect after Polar drops the connection",
+        CONFIGURATION,
+        [INITIAL],
+        [
+            expect(0, "writer", 0),
+            expect(0, "reader", 0),
+            emit(0.2, "writer", 7),
+            DisconnectStep(0.4),
+            emit(0.5, "reader", 3),
+            expect(0.6, "writer", 10),
+            SnapshotStep(
+                1.5,
+                {
+                    **INITIAL,
+                    "cold_until": BUCKET + BUCKET_SIZE,
+                    "version": BUCKET + BUCKET_SIZE + 1,
+                    "count": 3,
+                    "sum": 12,
+                    "min": 2,
+                    "max": 7,
+                },
+            ),
+            expect(1.6, "writer", 12),
+            expect(1.6, "reader", 12),
         ],
     ),
 ]

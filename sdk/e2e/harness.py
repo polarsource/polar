@@ -66,7 +66,7 @@ class IngestStep(TimelineStep):
 class ReadStep(TimelineStep):
     client: str
     arguments: CustomerMeterRequest | ExternalCustomerMeterRequest
-    expected: MeterValues
+    expected: MeterValues | None
     within: float = 0
     operation: typing.ClassVar[typing.Literal["read"]] = "read"
 
@@ -90,13 +90,22 @@ class RestartStep(TimelineStep):
 
 
 @dataclasses.dataclass(frozen=True)
+class DisconnectStep(TimelineStep):
+    arguments: dict[str, object] = dataclasses.field(default_factory=dict)
+    client: typing.ClassVar[typing.Literal["polar"]] = "polar"
+    operation: typing.ClassVar[typing.Literal["disconnect"]] = "disconnect"
+
+
+@dataclasses.dataclass(frozen=True)
 class SnapshotStep(TimelineStep):
     arguments: Snapshot
     client: typing.ClassVar[typing.Literal["polar"]] = "polar"
     operation: typing.ClassVar[typing.Literal["snapshot"]] = "snapshot"
 
 
-Step: typing.TypeAlias = IngestStep | ReadStep | ActorStep | RestartStep | SnapshotStep
+Step: typing.TypeAlias = (
+    IngestStep | ReadStep | ActorStep | RestartStep | DisconnectStep | SnapshotStep
+)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -297,6 +306,7 @@ async def run(
 
         async def execute(step: Step) -> None:
             await anyio.sleep_until(started + step.at)
+            read = isinstance(step, ReadStep)
             expected = step.expected if isinstance(step, ReadStep) else None
             deadline = anyio.current_time() + (
                 step.within if isinstance(step, ReadStep) else 0
@@ -305,9 +315,7 @@ async def run(
                 try:
                     result = await command(step)
                 except ClientError as error:
-                    if expected is None or "Customer snapshot is not ready" not in str(
-                        error
-                    ):
+                    if not read or "Customer snapshot is not ready" not in str(error):
                         raise
                     result = str(error)
                 transcript.append(
@@ -322,10 +330,16 @@ async def run(
                         "result": result,
                     }
                 )
-                if expected is None:
+                if not read:
                     return
-                if isinstance(result, dict) and all(
-                    result.get(field) == value for field, value in expected.items()
+                if expected is None and result is None:
+                    return
+                if (
+                    expected is not None
+                    and isinstance(result, dict)
+                    and all(
+                        result.get(field) == value for field, value in expected.items()
+                    )
                 ):
                     return
                 if anyio.current_time() >= deadline:

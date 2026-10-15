@@ -132,7 +132,11 @@ async def get_charge_preview(
     auth_subject: auth.CustomerPortalUnionRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionChargePreview:
-    """Get current period usage and cost breakdown for a subscription."""
+    """Get the next charge for a subscription.
+
+    Usage on a meter cycle that ends before the subscription invoice is returned
+    separately as ``meter_charge``.
+    """
     subscription = await customer_subscription_service.get_by_id(
         session, auth_subject, id
     )

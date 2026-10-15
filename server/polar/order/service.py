@@ -1462,11 +1462,14 @@ class OrderService:
         discount: Discount | None,
         reference: str | None = None,
         product: Product | None = None,
+        customer_balance: int | None = None,
     ) -> Order:
         """Build the subscription order for ``items`` without persisting: no invoice
         number, no side effects. ``lock_balance`` locks the wallet balance (the
         persist path must; a preview must not); ``reference`` keys the tax calc;
-        ``product`` overrides the subscription's current product."""
+        ``product`` overrides the subscription's current product. ``customer_balance``
+        prices against a known balance instead of reading the wallet, so a preview
+        can apply credit to an earlier charge before a later one."""
         order_id = uuid.uuid4()
         customer = subscription.customer
         product = product or subscription.product
@@ -1480,9 +1483,10 @@ class OrderService:
         )
         total_amount = amounts.total_amount
 
-        customer_balance = await wallet_service.get_billing_wallet_balance(
-            session, customer, subscription.currency, for_update=lock_balance
-        )
+        if customer_balance is None:
+            customer_balance = await wallet_service.get_billing_wallet_balance(
+                session, customer, subscription.currency, for_update=lock_balance
+            )
         applied_balance_amount = apply_wallet_balance(total_amount, customer_balance)
 
         return Order(

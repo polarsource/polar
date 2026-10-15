@@ -67,6 +67,7 @@ const chargePreview: schemas['SubscriptionChargePreview'] = {
   total_amount: 1000,
   applied_balance_amount: -500,
   due_amount: 500,
+  meter_charge: null,
 }
 
 describe('SubscriptionInvoicePreview', () => {

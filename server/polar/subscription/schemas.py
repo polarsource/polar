@@ -582,6 +582,33 @@ class SubscriptionChargePreviewProration(Schema):
     )
 
 
+class SubscriptionMeterChargePreview(Schema):
+    """Preview of metered usage billed on the meter cycle, apart from the subscription invoice."""
+
+    metered_amount: int = Field(
+        description="Metered usage in cents settled on this meter cycle."
+    )
+    subtotal_amount: int = Field(
+        description="Subtotal in cents before discount and tax."
+    )
+    discount_amount: int = Field(description="Discount amount in cents.")
+    net_amount: int = Field(description="Net amount in cents before taxes.")
+    tax_amount: int = Field(description="Tax amount in cents.")
+    total_amount: int = Field(
+        description="Total amount in cents before applying wallet balance."
+    )
+    applied_balance_amount: int = Field(
+        description=(
+            "Wallet balance applied to this usage charge in cents: negative when "
+            "account credit reduces the amount due, positive when the charge clears "
+            "outstanding debt, zero otherwise."
+        )
+    )
+    due_amount: int = Field(
+        description="Amount actually due in cents for this usage charge."
+    )
+
+
 class SubscriptionChargePreview(Schema):
     """Preview of the next charge for a subscription."""
 
@@ -589,7 +616,10 @@ class SubscriptionChargePreview(Schema):
         description="Base subscription amount in cents (sum of product prices)"
     )
     metered_amount: int = Field(
-        description="Total metered usage charges in cents (sum of all meter charges)"
+        description=(
+            "Metered usage in cents included on this invoice. Zero when that "
+            "usage is billed earlier on meter_charge."
+        )
     )
     proration_amount: int = Field(
         description=(
@@ -620,6 +650,13 @@ class SubscriptionChargePreview(Schema):
         description=(
             "Amount actually due in cents: total_amount plus the applied wallet "
             "balance, floored at zero. This is the figure charged today."
+        )
+    )
+    meter_charge: SubscriptionMeterChargePreview | None = Field(
+        description=(
+            "Metered usage billed on its own cycle, when that cycle ends before "
+            "the next subscription invoice. None when usage is included in this "
+            "charge, and on previews that do not separate a meter cycle."
         )
     )
 

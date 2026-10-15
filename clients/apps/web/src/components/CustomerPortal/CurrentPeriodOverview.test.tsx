@@ -3,6 +3,7 @@ import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { render } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { formatChargeDate } from '@/utils/subscriptionCharge'
 import { CurrentPeriodOverview } from './CurrentPeriodOverview'
 
 vi.mock('@/hooks/queries/customerPortal', () => ({
@@ -86,6 +87,7 @@ const mockChargePreview = (baseAmount: number, appliedBalanceAmount = 0) => {
     total_amount: baseAmount,
     applied_balance_amount: appliedBalanceAmount,
     due_amount: baseAmount + appliedBalanceAmount,
+    meter_charge: null,
   }
 
   vi.mocked(useCustomerSubscriptionChargePreview).mockReturnValue({
@@ -202,5 +204,70 @@ describe('CurrentPeriodOverview', () => {
     expect(container.textContent).not.toContain(
       formatCurrency('compact')(2500, 'usd'),
     )
+  })
+
+  it('bills meter usage on the meter period, separate from the yearly renewal', () => {
+    const periodEnd = '2027-01-01T00:00:00Z'
+    const meterEnd = '2026-11-01T00:00:00Z'
+    vi.mocked(useCustomerSubscriptionChargePreview).mockReturnValue({
+      data: {
+        base_amount: 12000,
+        metered_amount: 0,
+        proration_amount: 0,
+        prorations: [],
+        subtotal_amount: 12000,
+        discount_amount: 2000,
+        net_amount: 10000,
+        tax_amount: 0,
+        total_amount: 10000,
+        applied_balance_amount: 0,
+        due_amount: 10000,
+        meter_charge: {
+          metered_amount: 1840,
+          subtotal_amount: 1840,
+          discount_amount: 0,
+          net_amount: 1840,
+          tax_amount: 0,
+          total_amount: 1840,
+          applied_balance_amount: 0,
+          due_amount: 1840,
+        },
+      },
+    } as unknown as ReturnType<typeof useCustomerSubscriptionChargePreview>)
+
+    const subscription = {
+      ...createSubscription(createFixedPrice(12000), null, 12000),
+      recurring_interval: 'year',
+      current_period_end: periodEnd,
+      current_meter_period_end: meterEnd,
+      meters: [
+        {
+          id: 'meter-1',
+          amount: 1840,
+          meter: { id: 'meter', name: 'API requests' },
+        },
+      ],
+    } as unknown as schemas['CustomerSubscription']
+
+    const { container } = render(
+      <CurrentPeriodOverview
+        subscription={subscription}
+        products={[createProduct('product-1', createFixedPrice(12000))]}
+        api={{} as Client}
+      />,
+    )
+
+    const text = container.textContent ?? ''
+    expect(text).toContain(`Next Invoice — ${formatChargeDate(periodEnd)}`)
+    expect(text).toContain(`Next Invoice — ${formatChargeDate(meterEnd)}`)
+    expect(text).toContain('Usage Charge')
+    expect(text).toContain('API requests')
+    expect(text).toContain(formatCurrency('compact')(10000, 'usd'))
+    expect(text).toContain(formatCurrency('compact')(1840, 'usd'))
+    expect(text).toMatch(/Discount\s*-\$20/)
+    const usageAt = text.indexOf('Usage Charge')
+    const discountAt = text.indexOf('Discount')
+    expect(discountAt).toBeGreaterThan(-1)
+    expect(discountAt).toBeLessThan(usageAt)
   })
 })

@@ -269,7 +269,8 @@ async def get_charge_preview(
 
     Returns a breakdown of:
     - Base subscription amount
-    - Metered usage charges
+    - Metered usage charges, on this invoice or on ``meter_charge`` when the
+      meter cycle ends first
     - Applied discounts
     - Calculated taxes
     - Total amount

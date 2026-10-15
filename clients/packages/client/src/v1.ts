@@ -1597,7 +1597,8 @@ export interface paths {
      *
      *     Returns a breakdown of:
      *     - Base subscription amount
-     *     - Metered usage charges
+     *     - Metered usage charges, on this invoice or on ``meter_charge`` when the
+     *       meter cycle ends first
      *     - Applied discounts
      *     - Calculated taxes
      *     - Total amount
@@ -5196,7 +5197,10 @@ export interface paths {
     }
     /**
      * Preview Next Charge For Active Subscription
-     * @description Get current period usage and cost breakdown for a subscription.
+     * @description Get the next charge for a subscription.
+     *
+     *     Usage on a meter cycle that ends before the subscription invoice is returned
+     *     separately as ``meter_charge``.
      *
      *     **Scopes**: `customer_portal:read` `customer_portal:write`
      */
@@ -37220,7 +37224,7 @@ export interface components {
       base_amount: number
       /**
        * Metered Amount
-       * @description Total metered usage charges in cents (sum of all meter charges)
+       * @description Metered usage in cents included on this invoice. Zero when that usage is billed earlier on meter_charge.
        */
       metered_amount: number
       /**
@@ -37268,6 +37272,10 @@ export interface components {
        * @description Amount actually due in cents: total_amount plus the applied wallet balance, floored at zero. This is the figure charged today.
        */
       due_amount: number
+      /** @description Metered usage billed on its own cycle, when that cycle ends before the next subscription invoice. None when usage is included in this charge, and on previews that do not separate a meter cycle. */
+      meter_charge:
+        | components['schemas']['SubscriptionMeterChargePreview']
+        | null
     }
     /**
      * SubscriptionChargePreviewProration
@@ -37723,6 +37731,52 @@ export interface components {
       meter_id: string
       /** @description The meter associated with this subscription. */
       meter: components['schemas']['Meter']
+    }
+    /**
+     * SubscriptionMeterChargePreview
+     * @description Preview of metered usage billed on the meter cycle, apart from the subscription invoice.
+     */
+    SubscriptionMeterChargePreview: {
+      /**
+       * Metered Amount
+       * @description Metered usage in cents settled on this meter cycle.
+       */
+      metered_amount: number
+      /**
+       * Subtotal Amount
+       * @description Subtotal in cents before discount and tax.
+       */
+      subtotal_amount: number
+      /**
+       * Discount Amount
+       * @description Discount amount in cents.
+       */
+      discount_amount: number
+      /**
+       * Net Amount
+       * @description Net amount in cents before taxes.
+       */
+      net_amount: number
+      /**
+       * Tax Amount
+       * @description Tax amount in cents.
+       */
+      tax_amount: number
+      /**
+       * Total Amount
+       * @description Total amount in cents before applying wallet balance.
+       */
+      total_amount: number
+      /**
+       * Applied Balance Amount
+       * @description Wallet balance applied to this usage charge in cents: negative when account credit reduces the amount due, positive when the charge clears outstanding debt, zero otherwise.
+       */
+      applied_balance_amount: number
+      /**
+       * Due Amount
+       * @description Amount actually due in cents for this usage charge.
+       */
+      due_amount: number
     }
     /**
      * SubscriptionMigratedEvent

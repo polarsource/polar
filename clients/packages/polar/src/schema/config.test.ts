@@ -417,6 +417,7 @@ test('products serialize prices per currency and link meters and benefits', () =
         )
         .recurring('monthly')
         .trial(14, 'days')
+        .meterCycle('weekly')
         .grants(['custom_servers']),
     }),
   })
@@ -428,6 +429,8 @@ test('products serialize prices per currency and link meters and benefits', () =
       recurring_interval_count: 1,
       trial_interval: 'day',
       trial_interval_count: 14,
+      meter_interval: 'week',
+      meter_interval_count: 1,
       prices: [
         {
           amount_type: 'seat_based',

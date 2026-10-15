@@ -26,6 +26,11 @@ export const recurrence = (interval: unknown, count: unknown) => {
     : `per ${times} ${name(interval)}s`
 }
 
+const isSet = (value: unknown) => value !== null && value !== undefined
+
+export const meterCycle = (interval: unknown, count: unknown) =>
+  isSet(interval) ? recurrence(interval, count) : 'with billing'
+
 const CURRENCIES = ' / '
 
 const prices = (product: Record<string, unknown>, kind: string) =>
@@ -44,7 +49,10 @@ const pricing = (product: Record<string, unknown>) => {
   const fixed = prices(product, 'fixed')
     .map((price) => money(price['price_amount'], price['price_currency']))
     .join(CURRENCIES)
-  return fixed === '' ? `billed ${cycle}` : `${fixed} ${cycle}`
+  const billing = fixed === '' ? `billed ${cycle}` : `${fixed} ${cycle}`
+  return isSet(product['meter_interval'])
+    ? `${billing}, metered ${meterCycle(product['meter_interval'], product['meter_interval_count'])}`
+    : billing
 }
 
 export interface MeterUse {

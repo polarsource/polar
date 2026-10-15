@@ -12,6 +12,8 @@ test('a product needs prices and a billing cycle', () => {
   const unpriced: ProductDefinition = product().recurring('monthly')
   // @ts-expect-error trials only apply to recurring products
   product().prices(free()).once().trial(1, 'month')
+  // @ts-expect-error meter cycles only apply to recurring products
+  product().prices(free()).once().meterCycle('monthly')
   expect([unbilled, unpriced]).toHaveLength(2)
 })
 
@@ -28,6 +30,18 @@ test('recurring accepts a cadence or an interval count', () => {
     trial_interval: 'week',
     trial_interval_count: 1,
   })
+})
+
+test('meterCycle accepts a cadence or an interval count', () => {
+  expect(
+    product().recurring('yearly').meterCycle('monthly').meterPeriod,
+  ).toEqual({ meter_interval: 'month', meter_interval_count: 1 })
+  expect(
+    product().recurring(2, 'weeks').meterCycle(7, 'days').meterPeriod,
+  ).toEqual({ meter_interval: 'day', meter_interval_count: 7 })
+  expect(
+    product().recurring('yearly').meterCycle('monthly').once().meterPeriod,
+  ).toBeUndefined()
 })
 
 test('free prices follow the currencies of the other prices', () => {

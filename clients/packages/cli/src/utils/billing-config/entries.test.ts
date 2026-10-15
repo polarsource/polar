@@ -106,6 +106,20 @@ describe('formatRows', () => {
     )
   })
 
+  test('merges the meter cycle into one row', () => {
+    const output = stripAnsi(
+      formatRows(
+        '',
+        [
+          { field: 'meter_interval', before: null, after: 'week' },
+          { field: 'meter_interval_count', before: null, after: 2 },
+        ],
+        'updated',
+      ).join('\n'),
+    )
+    expect(output).toBe('meter cycle  with billing → per 2 weeks')
+  })
+
   test('leaves out price groups that did not change', () => {
     const output = stripAnsi(
       formatRows(

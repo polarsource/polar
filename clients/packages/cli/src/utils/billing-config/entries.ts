@@ -8,6 +8,7 @@ import {
 import {
   discountDuration,
   discountValue,
+  meterCycle,
   recurrence,
 } from '@/utils/billing-config/sentences'
 import * as ui from '@/utils/ui'
@@ -227,8 +228,17 @@ const renderSetting = (change: Change): Change => ({
   after: settingValue(change.field, change.after),
 })
 
+const mergeMeterCycle = (diff: ReadonlyArray<Change>) =>
+  merge(
+    diff,
+    ['meter_interval', 'meter_interval_count'],
+    'meter cycle',
+    (values) =>
+      meterCycle(values['meter_interval'], values['meter_interval_count']),
+  )
+
 export const fieldChanges = (diff: ReadonlyArray<Change>, section?: string) =>
-  mergeDiscount(mergeRecurrence(diff))
+  mergeDiscount(mergeMeterCycle(mergeRecurrence(diff)))
     .map((change) => (section === 'settings' ? renderSetting(change) : change))
     .flatMap(expand)
     .map((change) => ({ ...change, field: name(change.field) }))

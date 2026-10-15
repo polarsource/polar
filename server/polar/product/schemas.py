@@ -664,8 +664,7 @@ class ProductCreateRecurring(TrialConfigurationInputMixin, ProductCreateBase):
             "When set, overage settlement, meter resets and meter-credit grants run "
             "on this cadence rather than the billing interval — e.g. yearly billing "
             "with monthly credits. It must evenly divide the billing interval. "
-            "If `None`, or equal to the billing interval, metered concerns follow "
-            "the billing interval. "
+            "If `None`, metered concerns follow the billing interval. "
             "**Once set, it can't be changed.**"
         ),
     )

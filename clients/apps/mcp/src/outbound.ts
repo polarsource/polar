@@ -1,5 +1,5 @@
 import { WorkerEntrypoint } from 'cloudflare:workers'
-import { isAllowedOperation } from './spec'
+import { isAllowedOperation, spec } from './spec'
 
 export interface PolarApiOutboundProps {
   apiUrl: string
@@ -30,6 +30,7 @@ export class PolarApiOutbound extends WorkerEntrypoint<
     const headers = new Headers(request.headers)
     headers.set('Authorization', `Bearer ${token}`)
     headers.set('User-Agent', 'polar-mcp')
+    headers.set('Polar-Version', spec.apiVersion)
     return fetch(new Request(request, { headers }))
   }
 }

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { request, rpc } from './client'
 import scopes from '../src/generated/scopes.json'
 import tools from '../src/generated/tools.json'
+import { spec } from '../src/spec'
 import { evaluate, exports, get } from './workers'
 
 const DOCS_TOOLS = ['search_docs', 'read_docs_page']
@@ -451,6 +452,7 @@ test('operation tools preserve query serialization, credentials, JSON results an
     'Bearer polar_oat_test',
   )
   expect(new Headers(init?.headers).get('User-Agent')).toBe('polar-mcp')
+  expect(new Headers(init?.headers).get('Polar-Version')).toBe(spec.apiVersion)
   fetchMock.mockResolvedValueOnce(new Response('denied', { status: 403 }))
   expect(
     (

@@ -5,7 +5,7 @@ import { Docs } from '../src/docs'
 import { RequestLog } from '../src/log'
 import { PolarApiOutbound, type PolarApiOutboundProps } from '../src/outbound'
 import { makeToolRunner } from '../src/results'
-import { isAllowedOperation } from '../src/spec'
+import { isAllowedOperation, spec } from '../src/spec'
 import { request, rpc } from './client'
 import { evaluate, exports, get } from './workers'
 
@@ -56,6 +56,7 @@ test('outbound rejects other origins, writes in read-only mode, and unexposed op
       headers: {
         Authorization: 'Bearer attacker',
         'User-Agent': 'attacker',
+        'Polar-Version': '1999-01',
         'Content-Type': 'application/json',
       },
       body: '{"name":"Product"}',
@@ -66,6 +67,7 @@ test('outbound rejects other origins, writes in read-only mode, and unexposed op
   const forwarded = fetchMock.mock.calls[0][0] as Request
   expect(forwarded.headers.get('Authorization')).toBe('Bearer secret')
   expect(forwarded.headers.get('User-Agent')).toBe('polar-mcp')
+  expect(forwarded.headers.get('Polar-Version')).toBe(spec.apiVersion)
   expect(await forwarded.text()).toBe('{"name":"Product"}')
 })
 

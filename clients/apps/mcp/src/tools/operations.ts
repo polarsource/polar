@@ -8,6 +8,7 @@ import { HttpClient, HttpClientRequest, type HttpMethod } from 'effect/http'
 import generatedTools from '../generated/tools.json'
 import type { PolarApiOutboundProps } from '../outbound'
 import { makeToolRunner, ToolError } from '../results'
+import { spec } from '../spec'
 
 type Arguments = Record<string, unknown>
 
@@ -75,6 +76,7 @@ export const registerOperationTools = Effect.fn('registerOperationTools')(
         request.pipe(
           HttpClientRequest.bearerToken(token),
           HttpClientRequest.setHeader('User-Agent', 'polar-mcp'),
+          HttpClientRequest.setHeader('Polar-Version', spec.apiVersion),
         ),
       ),
     )

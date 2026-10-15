@@ -1068,3 +1068,87 @@ async def test_snapshot_reports_local_value(
     assert span.attributes["outpost.local.max"] == 5
     assert span.attributes["outpost.snapshot.sum"] == snapshot_sum
     assert span.attributes["outpost.snapshot.delta"] is delta
+
+
+def reconnecting_client(
+    connections: list[str], requests: list[dict[str, typing.Any]]
+) -> httpx.AsyncClient:
+    async def app(scope: typing.Any, receive: typing.Any, send: typing.Any) -> None:
+        behavior = connections.pop(0)
+        assert (await receive())["type"] == "websocket.connect"
+        if behavior == "deny":
+            await send(
+                {"type": "websocket.http.response.start", "status": 401, "headers": []}
+            )
+            await send({"type": "websocket.http.response.body", "body": b""})
+            return
+        await send({"type": "websocket.accept"})
+        await send(
+            {
+                "type": "websocket.send",
+                "text": json.dumps({"type": "connection", "payload": {"id": behavior}}),
+            }
+        )
+        while True:
+            message = await receive()
+            if message["type"] == "websocket.disconnect":
+                return
+            request = json.loads(message["text"])
+            requests.append(request)
+            if request["type"] == "configuration":
+                await send(
+                    {
+                        "type": "websocket.send",
+                        "text": json.dumps(
+                            {"type": "configuration", "payload": CONFIGURATION}
+                        ),
+                    }
+                )
+                if behavior == "first":
+                    await send({"type": "websocket.close", "code": 1012, "reason": ""})
+                    return
+
+    return httpx.AsyncClient(
+        base_url="http://polar.test", transport=ASGIWebSocketTransport(app)
+    )
+
+
+@pytest.mark.anyio
+async def test_websocket_reconnects_and_keeps_serving(
+    redis_connection: tuple[str, Redis], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("polar.outpost.client.RECONNECT_DELAY", 0.01)
+    url, _ = redis_connection
+    requests: list[dict[str, typing.Any]] = []
+    async with (
+        reconnecting_client(["first", "second"], requests) as client,
+        Outpost(url, client=client) as outpost,
+    ):
+        result = await outpost.ingest(
+            events=[{"name": "call", "external_customer_id": "alice"}]
+        )
+        with anyio.fail_after(1):
+            while outpost.connection_id != "second":
+                await anyio.lowlevel.checkpoint()
+
+    assert result.inserted == 1
+    assert [request["type"] for request in requests].count("configuration") == 2
+
+
+@pytest.mark.anyio
+async def test_refused_reconnection_fails_outpost(
+    redis_connection: tuple[str, Redis], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("polar.outpost.client.RECONNECT_DELAY", 0.01)
+    url, _ = redis_connection
+    async with (
+        reconnecting_client(["first", "deny"], []) as client,
+        Outpost(url, client=client) as outpost,
+    ):
+        with anyio.fail_after(1):
+            while True:
+                try:
+                    await outpost.actor(external_customer_id="alice")
+                except PolarOutpostError:
+                    break
+                await anyio.sleep(0.01)

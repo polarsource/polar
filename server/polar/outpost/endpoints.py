@@ -1,10 +1,12 @@
 import uuid
 from contextlib import aclosing
+from typing import Annotated
 
+import anyio.to_thread
 import structlog
 from anyio import create_memory_object_stream, create_task_group
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
-from fastapi import Depends, Request, Response, WebSocket
+from fastapi import Body, Depends, Response, WebSocket
 
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.logging import Logger
@@ -116,9 +118,12 @@ async def outpost(websocket: WebSocket, redis: Redis = Depends(get_redis)) -> No
 
 
 @router.post("/telemetry", include_in_schema=False)
-async def telemetry(request: Request, auth_subject: OutpostWrite) -> Response:
-    forwarded = outpost_service.relay_telemetry(
-        auth_subject.subject, await request.body()
+async def telemetry(
+    auth_subject: OutpostWrite,
+    body: Annotated[bytes, Body(media_type="application/x-protobuf")],
+) -> Response:
+    forwarded = await anyio.to_thread.run_sync(
+        outpost_service.relay_telemetry, auth_subject.subject, body
     )
     return Response(
         content=forwarded.content,

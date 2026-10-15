@@ -1609,7 +1609,7 @@ class SubscriptionService:
         # Settlement stops at the boundary, so it excludes the reset and re-grant below.
         self._enqueue_meter_cycle_order(subscription, boundary)
 
-        await self.reset_meters(session, subscription)
+        await self.reset_meters(session, subscription, reset_at=boundary)
         enqueue_job(
             "benefit.enqueue_benefit_grant_cycles", subscription_id=subscription.id
         )

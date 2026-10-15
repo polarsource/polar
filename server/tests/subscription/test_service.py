@@ -3233,6 +3233,39 @@ class TestCycleMeters:
 
         assert updated.scheduler_locked_at is None
 
+    async def test_resets_meters_at_boundary_when_cycling_late(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        now = utc_now()
+        boundary = now - timedelta(hours=1)
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_start = boundary - timedelta(days=30)
+        subscription.current_meter_period_end = boundary
+        await save_fixture(subscription)
+
+        settle_mock = mocker.patch.object(
+            subscription_service, "_enqueue_meter_cycle_order"
+        )
+        reset_meters_mock = mocker.patch.object(subscription_service, "reset_meters")
+
+        updated = await subscription_service.cycle_meters(session, subscription)
+
+        settle_mock.assert_called_once_with(updated, boundary)
+        reset_meters_mock.assert_awaited_once_with(session, updated, reset_at=boundary)
+
     async def test_frozen_while_past_due(
         self,
         session: AsyncSession,

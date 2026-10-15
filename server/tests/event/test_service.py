@@ -2207,6 +2207,56 @@ class TestIngested:
         await session.refresh(customer_meter)
         assert customer_meter.activated_at is not None
 
+    async def test_activates_only_matching_customer_meters_among_many(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        customer_meters: dict[str, CustomerMeter] = {}
+        for model in ("lite", "pro", "max"):
+            meter = Meter(
+                name=f"Meter {model}",
+                organization=organization,
+                filter=Filter(
+                    conjunction=FilterConjunction.and_,
+                    clauses=[
+                        FilterClause(
+                            property="model", operator=FilterOperator.eq, value=model
+                        )
+                    ],
+                ),
+                aggregation=PropertyAggregation(
+                    func=AggregationFunction.sum, property="tokens"
+                ),
+            )
+            await save_fixture(meter)
+            customer_meter = CustomerMeter(
+                customer=customer, meter=meter, activated_at=None
+            )
+            await save_fixture(customer_meter)
+            customer_meters[model] = customer_meter
+
+        events = [
+            await create_event(
+                save_fixture,
+                customer=customer,
+                organization=organization,
+                source=EventSource.user,
+                metadata={"model": model, "tokens": 10},
+            )
+            for model in ("lite", "max")
+        ]
+
+        await event_service.ingested(session, [event.id for event in events])
+
+        for customer_meter in customer_meters.values():
+            await session.refresh(customer_meter)
+        assert customer_meters["lite"].activated_at is not None
+        assert customer_meters["max"].activated_at is not None
+        assert customer_meters["pro"].activated_at is None
+
     # async def test_creates_meter_events_for_matching_events(
     #     self,
     #     save_fixture: SaveFixture,

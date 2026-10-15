@@ -1,3 +1,4 @@
+from bisect import bisect_right
 from collections.abc import AsyncIterator, Collection, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -12,6 +13,7 @@ from sqlalchemy import (
     and_,
     case,
     delete,
+    func,
     insert,
     literal,
     null,
@@ -24,11 +26,15 @@ from polar.kit.utils import utc_now
 from polar.meter.aggregation import PropertyAggregation, UniqueAggregation
 from polar.models import (
     BillingEntry,
+    Customer,
     Event,
+    MeterReducer,
     Order,
     OrderItem,
+    ProductPrice,
     Reducer,
     ReducerBucket,
+    Subscription,
 )
 from polar.models.billing_entry import BillingEntryType
 from polar.models.event import EventSource
@@ -44,8 +50,11 @@ PAGE_SIZE = 5000
 INSERT_BATCH_SIZE = 2000
 
 type BucketValues = dict[str, Any]
-type BucketKey = tuple[UUID, datetime, UUID | None, str | None]
-"""reducer_id, bucket_start, customer_id, external_customer_id"""
+type BucketKey = tuple[UUID, datetime, datetime, UUID | None, str | None]
+"""reducer_id, bucket_start, bucket_end, customer_id, external_customer_id"""
+type Boundaries = dict[tuple[UUID | str, UUID], list[datetime]]
+"""Per customer id or external id and reducer, the sorted timestamps billing
+splits buckets at: each subscription's billable start and each billed cutoff."""
 
 
 @dataclass
@@ -73,13 +82,14 @@ async def backfill_organization(
     """Rebuilds the buckets of all the organization's reducers starting in
     [start, end) from one pass over its events, and returns how many were written."""
     reducers = await _get_reducers(session, organization_id)
+    boundaries = await _get_boundaries(session, organization_id)
     totals: Totals = {}
     flushed_until = start
     written = 0
     seen = 0
     async for rows in _iter_events(session, organization_id, reducers, start, end):
         billed_at = await _get_billed_at(session, _matched_event_ids(rows))
-        _add_to_totals(totals, reducers, rows, billed_at)
+        _add_to_totals(totals, reducers, rows, billed_at, boundaries)
         # The page may end inside a bucket: only the buckets before it are complete.
         flush_until = get_reducer_bucket_start(rows[-1].timestamp)
         written += await _flush(
@@ -162,6 +172,63 @@ async def _get_reducers(
         for reducer in reducers
         if not isinstance(reducer.aggregation, UniqueAggregation)
     ]
+
+
+async def _get_boundaries(session: AsyncSession, organization_id: UUID) -> Boundaries:
+    """The timestamps billing split the organization's buckets at, per customer
+    and reducer, with the customer's external id as an alternate key."""
+    billable_from = (
+        select(
+            Subscription.customer_id,
+            Customer.external_id,
+            MeterReducer.reducer_id,
+            func.coalesce(Subscription.trial_end, Subscription.started_at),
+        )
+        .join(Customer, Customer.id == Subscription.customer_id)
+        .join(ProductPrice, ProductPrice.product_id == Subscription.product_id)
+        .join(MeterReducer, MeterReducer.meter_id == ProductPrice.__table__.c.meter_id)
+        .where(
+            Subscription.organization_id == organization_id,
+            Subscription.started_at.is_not(None),
+        )
+    )
+    cutoffs = (
+        select(
+            Order.customer_id,
+            Customer.external_id,
+            MeterReducer.reducer_id,
+            OrderItem.end_timestamp,
+        )
+        .join(Order, Order.id == OrderItem.order_id)
+        .join(Customer, Customer.id == Order.customer_id)
+        .join(ProductPrice, ProductPrice.id == OrderItem.product_price_id)
+        .join(MeterReducer, MeterReducer.meter_id == ProductPrice.__table__.c.meter_id)
+        .where(
+            Order.organization_id == organization_id,
+            OrderItem.end_timestamp.is_not(None),
+        )
+    )
+    boundaries: Boundaries = {}
+    for statement in (billable_from, cutoffs):
+        for customer_id, external_id, reducer_id, at in await session.execute(
+            statement
+        ):
+            boundaries.setdefault((customer_id, reducer_id), []).append(at)
+            if external_id is not None:
+                boundaries.setdefault((external_id, reducer_id), []).append(at)
+    return {key: sorted(set(ats)) for key, ats in boundaries.items()}
+
+
+def _get_interval(
+    boundaries: list[datetime], bucket_start: datetime, timestamp: datetime
+) -> tuple[datetime, datetime]:
+    """The part of the bucket the timestamp falls in, once the bucket is split
+    at the boundaries inside it."""
+    bucket_end = bucket_start + REDUCER_BUCKET_SIZE
+    index = bisect_right(boundaries, timestamp)
+    start = max(boundaries[index - 1], bucket_start) if index > 0 else bucket_start
+    end = min(boundaries[index], bucket_end) if index < len(boundaries) else bucket_end
+    return start, end
 
 
 async def _get_events_page(
@@ -252,6 +319,7 @@ def _add_to_totals(
     reducers: Sequence[Reducer],
     rows: Sequence[Row[Any]],
     billed_at: dict[UUID, datetime],
+    boundaries: Boundaries,
 ) -> None:
     """Adds each event's value to the bucket of every reducer it matches, under
     the created_at of the order that billed it, or None."""
@@ -259,10 +327,14 @@ def _add_to_totals(
         id, timestamp, customer_id, external_customer_id, *values = row
         sealed_at = billed_at.get(id)
         bucket_start = get_reducer_bucket_start(timestamp)
+        customer_key = customer_id if customer_id is not None else external_customer_id
         for reducer, value in zip(reducers, values, strict=True):
             if value is None:
                 continue
-            key = (reducer.id, bucket_start, customer_id, external_customer_id)
+            start, end = _get_interval(
+                boundaries.get((customer_key, reducer.id), []), bucket_start, timestamp
+            )
+            key = (reducer.id, start, end, customer_id, external_customer_id)
             totals.setdefault(key, {}).setdefault(sealed_at, Summary()).add(
                 Decimal(str(value))
             )
@@ -284,6 +356,7 @@ def _to_buckets(
     for (
         reducer_id,
         bucket_start,
+        bucket_end,
         customer_id,
         external_customer_id,
     ), summaries in totals.items():
@@ -296,7 +369,7 @@ def _to_buckets(
                     "customer_id": customer_id,
                     "external_customer_id": external_customer_id,
                     "bucket_start": bucket_start,
-                    "bucket_end": bucket_start + REDUCER_BUCKET_SIZE,
+                    "bucket_end": bucket_end,
                     "generation": generation,
                     "sealed_at": sealed_at,
                     "synced_at": synced_at,

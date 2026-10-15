@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 from polar.kit.db.postgres import AsyncSession
 from polar.meter.aggregation import AggregationFunction, PropertyAggregation
-from polar.models import Customer, Organization, Product, ReducerBucket
+from polar.models import Customer, OrderItem, Organization, Product, ReducerBucket
 from polar.models.billing_entry import BillingEntryType
 from scripts.backfill_reducer_buckets import backfill_organization
 from tests.fixtures.database import SaveFixture
@@ -18,16 +18,19 @@ from tests.fixtures.random_objects import (
     create_order,
     create_product_price_metered_unit,
     create_reducer,
+    create_subscription,
 )
 
 START = datetime(2026, 10, 1, 10, 0, tzinfo=UTC)
 BUCKET = timedelta(minutes=5)
 END = START + 3 * BUCKET
+SUBSCRIPTION_START = START + timedelta(minutes=1)
+CUTOFF = START + BUCKET + timedelta(minutes=2)
 
 
 @pytest.mark.anyio
 class TestBackfillBuckets:
-    async def test_billed_pending_and_unbillable_usage(
+    async def test_billing_splits_generations_and_unbillable_usage(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -46,8 +49,28 @@ class TestBackfillBuckets:
         price = await create_product_price_metered_unit(
             save_fixture, product=product, meter=meter
         )
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            started_at=SUBSCRIPTION_START,
+        )
         order = await create_order(
-            save_fixture, customer=customer, created_at=END + timedelta(minutes=15)
+            save_fixture,
+            customer=customer,
+            created_at=END + timedelta(minutes=15),
+            order_items=[
+                OrderItem(
+                    label="",
+                    amount=1000,
+                    net_amount=1000,
+                    tax_amount=0,
+                    proration=False,
+                    product_price=price,
+                    start_timestamp=SUBSCRIPTION_START,
+                    end_timestamp=CUTOFF,
+                )
+            ],
         )
 
         async def usage(
@@ -76,10 +99,11 @@ class TestBackfillBuckets:
                     order_item=order.items[0] if billing == "ordered" else None,
                 )
 
-        await usage(START, 2, "ordered")
+        await usage(START + timedelta(seconds=30), 2, None)
         await usage(START + timedelta(minutes=4), 8, "ordered")
-        await usage(START + BUCKET, 3, "ordered")
-        await usage(START + BUCKET + timedelta(minutes=2), 5, "pending")
+        await usage(START + timedelta(minutes=4, seconds=30), 1, "pending")
+        await usage(START + BUCKET + timedelta(minutes=1), 3, "ordered")
+        await usage(START + BUCKET + timedelta(minutes=3), 5, "pending")
         await usage(START + 2 * BUCKET, 7, None)
         await usage(START - timedelta(seconds=1), 100, "ordered")
         await usage(END, 100, None)
@@ -97,13 +121,13 @@ class TestBackfillBuckets:
             assert all(
                 b.customer_id == customer.id
                 and b.external_customer_id is None
-                and b.bucket_end == b.bucket_start + BUCKET
                 and b.synced_at == END
                 for b in buckets
             )
             assert [
                 (
                     b.bucket_start,
+                    b.bucket_end,
                     b.generation,
                     b.sealed_at,
                     b.count,
@@ -113,9 +137,41 @@ class TestBackfillBuckets:
                 )
                 for b in buckets
             ] == [
-                (START, 1, order.created_at, 2, Decimal(10), Decimal(2), Decimal(8)),
+                # Before the subscription: never billed.
+                (
+                    START,
+                    SUBSCRIPTION_START,
+                    1,
+                    None,
+                    1,
+                    Decimal(2),
+                    Decimal(2),
+                    Decimal(2),
+                ),
+                # Billed, plus a late event that missed that billing.
+                (
+                    SUBSCRIPTION_START,
+                    START + BUCKET,
+                    1,
+                    order.created_at,
+                    1,
+                    Decimal(8),
+                    Decimal(8),
+                    Decimal(8),
+                ),
+                (
+                    SUBSCRIPTION_START,
+                    START + BUCKET,
+                    2,
+                    None,
+                    1,
+                    Decimal(1),
+                    Decimal(1),
+                    Decimal(1),
+                ),
                 (
                     START + BUCKET,
+                    CUTOFF,
                     1,
                     order.created_at,
                     1,
@@ -123,6 +179,25 @@ class TestBackfillBuckets:
                     Decimal(3),
                     Decimal(3),
                 ),
-                (START + BUCKET, 2, None, 1, Decimal(5), Decimal(5), Decimal(5)),
-                (START + 2 * BUCKET, 1, None, 1, Decimal(7), Decimal(7), Decimal(7)),
+                # After the cutoff: pending, then usage with no billing entry.
+                (
+                    CUTOFF,
+                    START + 2 * BUCKET,
+                    1,
+                    None,
+                    1,
+                    Decimal(5),
+                    Decimal(5),
+                    Decimal(5),
+                ),
+                (
+                    START + 2 * BUCKET,
+                    END,
+                    1,
+                    None,
+                    1,
+                    Decimal(7),
+                    Decimal(7),
+                    Decimal(7),
+                ),
             ]

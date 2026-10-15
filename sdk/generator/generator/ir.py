@@ -609,10 +609,12 @@ def _convert_typeref(
         return UnionType(kind="union", variants=variants, composition_kind="allOf")
 
     if schema.enum is not None:
-        if schema.title:
-            name = normalize_model_name(schema.title)
-            if name not in inline_schemas:
-                inline_schemas[name] = schema
+        name = normalize_model_name(schema.title) if schema.title else None
+        # A title already taken by other values would alias the wrong enum.
+        if (
+            name is not None
+            and inline_schemas.setdefault(name, schema).enum == schema.enum
+        ):
             referenced_names.add(name)
             for cs in context_sets:
                 cs.add(name)

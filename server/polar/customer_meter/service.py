@@ -339,14 +339,27 @@ class CustomerMeterService:
                 raise CustomerMeterCreditExternalIDConflict()
             event = existing_event
 
-        customer_meter_repository = CustomerMeterRepository.from_session(session)
-        customer_meter = await customer_meter_repository.get_by_customer_and_meter(
-            customer.id, meter.id
-        )
-        if customer_meter is not None and customer_meter.activated_at is None:
-            await customer_meter_repository.update(
-                customer_meter, update_dict={"activated_at": utc_now()}
+        try:
+            async with session.begin_nested():
+                _, updated = await self.update_customer_meter(
+                    session, customer, meter, activate_meter=True
+                )
+            if updated:
+                enqueue_job("customer.state_changed", customer.id)
+        except DBAPIError as e:
+            if not is_lock_not_available_error(e):
+                raise
+            # A worker is balancing this meter from a snapshot that predates the
+            # credit, so schedule another pass once this transaction commits.
+            enqueue_job("customer_meter.update_customer", customer.id)
+            customer_meter_repository = CustomerMeterRepository.from_session(session)
+            customer_meter = await customer_meter_repository.get_by_customer_and_meter(
+                customer.id, meter.id
             )
+            if customer_meter is not None and customer_meter.activated_at is None:
+                await customer_meter_repository.update(
+                    customer_meter, update_dict={"activated_at": utc_now()}
+                )
 
         loaded = await event_repository.get_by_id_with_eager(event.id)
         assert loaded is not None

@@ -227,14 +227,14 @@ const renderSetting = (change: Change): Change => ({
   after: settingValue(change.field, change.after),
 })
 
+const METER_CYCLE = ['meter_interval', 'meter_interval_count']
+
 const mergeMeterCycle = (diff: ReadonlyArray<Change>) =>
-  merge(
-    diff,
-    ['meter_interval', 'meter_interval_count'],
-    'meter cycle',
-    (values) =>
-      meterCycle(values['meter_interval'], values['meter_interval_count']),
-  )
+  METER_CYCLE.every((field) => diff.some((change) => change.field === field))
+    ? merge(diff, METER_CYCLE, 'meter cycle', (values) =>
+        meterCycle(values['meter_interval'], values['meter_interval_count']),
+      )
+    : [...diff]
 
 export const fieldChanges = (diff: ReadonlyArray<Change>, section?: string) =>
   mergeDiscount(mergeMeterCycle(mergeRecurrence(diff)))

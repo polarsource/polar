@@ -79,6 +79,45 @@ const meterCycleDividesBilling = (
   return false
 }
 
+const meterCycleIssue = ({
+  recurring_interval,
+  recurring_interval_count,
+  meter_interval,
+  meter_interval_count,
+}: {
+  readonly recurring_interval: IntervalUnit | null
+  readonly recurring_interval_count: number | null
+  readonly meter_interval?: IntervalUnit
+  readonly meter_interval_count?: number
+}) => {
+  if (meter_interval === undefined) {
+    return meter_interval_count === undefined
+      ? undefined
+      : {
+          path: ['meter_interval_count'],
+          issue: 'A meter interval count requires a meter interval.',
+        }
+  }
+  if (recurring_interval === null) {
+    return {
+      path: ['meter_interval'],
+      issue: 'A meter cycle is only supported on recurring products.',
+    }
+  }
+  return meterCycleDividesBilling(
+    meter_interval,
+    meter_interval_count ?? 1,
+    recurring_interval,
+    recurring_interval_count ?? 1,
+  )
+    ? undefined
+    : {
+        path: ['meter_interval'],
+        issue:
+          'The meter cycle must evenly divide the billing cycle, so it re-aligns with the billing cycle at every renewal.',
+      }
+}
+
 export const ProductConfig = Schema.Struct({
   external_id: Schema.String.check(Schema.isMinLength(1)),
   name: Schema.String.check(Schema.isMinLength(3), Schema.isMaxLength(64)),
@@ -112,40 +151,10 @@ export const ProductConfig = Schema.Struct({
   Schema.makeFilter(({ prices }) =>
     compositionIssues(prices).map((issue) => ({ path: ['prices'], issue })),
   ),
-  Schema.makeFilter(
-    ({
-      recurring_interval,
-      recurring_interval_count,
-      meter_interval,
-      meter_interval_count,
-    }) =>
-      meter_interval === undefined ||
-      recurring_interval === null ||
-      meterCycleDividesBilling(
-        meter_interval,
-        meter_interval_count ?? 1,
-        recurring_interval,
-        recurring_interval_count ?? 1,
-      )
-        ? []
-        : [
-            {
-              path: ['meter_interval'],
-              issue:
-                'The meter cycle must evenly divide the billing cycle, so it re-aligns with the billing cycle at every renewal.',
-            },
-          ],
-  ),
-  Schema.makeFilter(({ meter_interval, meter_interval_count }) =>
-    meter_interval_count === undefined || meter_interval !== undefined
-      ? []
-      : [
-          {
-            path: ['meter_interval_count'],
-            issue: 'A meter interval count requires a meter interval.',
-          },
-        ],
-  ),
+  Schema.makeFilter((product) => {
+    const issue = meterCycleIssue(product)
+    return issue === undefined ? [] : [issue]
+  }),
 )
 
 export type ProductConfig = typeof ProductConfig.Type

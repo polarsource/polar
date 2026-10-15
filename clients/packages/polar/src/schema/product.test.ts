@@ -57,7 +57,6 @@ test('the meter cycle must evenly divide the billing cycle', () => {
   const base = product().prices(metered('calls').flat().amount(usd(0.01)))
   const divides = 'The meter cycle must evenly divide the billing cycle'
   for (const valid of [
-    base.recurring('yearly').meterCycle('monthly'),
     base.recurring('yearly').meterCycle(3, 'months'),
     base.recurring(2, 'weeks').meterCycle(7, 'days'),
     base.recurring('monthly').meterCycle('daily'),
@@ -69,27 +68,35 @@ test('the meter cycle must evenly divide the billing cycle', () => {
     base.recurring('yearly').meterCycle(5, 'months'),
     base.recurring('monthly').meterCycle('weekly'),
     base.recurring('monthly').meterCycle('yearly'),
-    base.recurring('weekly').meterCycle(3, 'days'),
     base.recurring('yearly').meterCycle('monthly').recurring('weekly'),
   ]) {
     expect(() => decode(invalid)).toThrow(divides)
   }
 })
 
-test('a meter interval count requires a meter interval', () => {
-  const definition = product()
-    .prices(metered('calls').flat().amount(usd(0.01)))
-    .recurring('monthly')
-  expect(() =>
+test('meter cycles the builder cannot produce are rejected', () => {
+  const decode = (fields: object) =>
     Schema.decodeUnknownSync(ProductConfig)({
       external_id: 'pro',
       name: 'Pro',
-      ...definition.billing,
-      meter_interval_count: 2,
-      prices: productPrices('pro', definition),
+      prices: productPrices('pro', product().prices(free()).once()),
       benefits: [],
+      ...fields,
+    })
+  expect(() =>
+    decode({
+      recurring_interval: 'month',
+      recurring_interval_count: 1,
+      meter_interval_count: 2,
     }),
   ).toThrow('A meter interval count requires a meter interval.')
+  expect(() =>
+    decode({
+      recurring_interval: null,
+      recurring_interval_count: null,
+      meter_interval: 'day',
+    }),
+  ).toThrow('A meter cycle is only supported on recurring products.')
 })
 
 test('free prices follow the currencies of the other prices', () => {

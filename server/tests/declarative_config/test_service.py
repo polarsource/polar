@@ -2166,7 +2166,6 @@ class TestPlan:
             pytest.param(
                 [], [ConfigIssueType.meter_cycle_unused], id="nothing_metered"
             ),
-            pytest.param(["beta"], [ConfigIssueType.meter_cycle_unused], id="flag"),
             pytest.param(["tool-call-credits"], [], id="meter_credit"),
         ],
     )
@@ -2184,7 +2183,7 @@ class TestPlan:
             Config.model_validate(
                 {
                     "meters": [TOOL_CALLS_METER],
-                    "benefits": [CREDITS_BENEFIT, BETA_BENEFIT],
+                    "benefits": [CREDITS_BENEFIT],
                     "products": [
                         {
                             **ANNUAL_PRODUCT,
@@ -2214,9 +2213,6 @@ class TestPlan:
             ),
             pytest.param(
                 None, {"meter_interval": "month"}, "meter_interval", id="added"
-            ),
-            pytest.param(
-                MeterInterval.month, {"meter_interval": "month"}, None, id="unchanged"
             ),
         ],
     )

@@ -16,7 +16,13 @@ import {
   unexpected,
 } from '@/services/billing-config/api'
 import type { loader } from '@/services/billing-config/load'
-import { differences, externalIdOf } from '@/utils/billing-config/compare'
+import {
+  differences,
+  externalIdOf,
+  sectionsOf,
+  settingsOf,
+} from '@/utils/billing-config/compare'
+import { record } from '@/utils/billing-config/describe'
 import { renderDocument } from '@/utils/billing-config/document'
 
 const IGNORED_KEYS = new Set(['organization_id'])
@@ -64,7 +70,10 @@ const loadDocument = (
       })
     }
     const unexpected = Object.entries(input)
-      .filter(([key, value]) => !Array.isArray(value) && !IGNORED_KEYS.has(key))
+      .filter(
+        ([key, value]) =>
+          !Array.isArray(value) && key !== 'settings' && !IGNORED_KEYS.has(key),
+      )
       .map(([key]) => key)
     if (unexpected.length > 0) {
       return yield* new BillingConfigError({
@@ -73,9 +82,19 @@ const loadDocument = (
       })
     }
     return Object.fromEntries(
-      Object.entries(input).filter(([, items]) => Array.isArray(items)),
+      Object.entries(input).filter(
+        ([key, items]) => Array.isArray(items) || key === 'settings',
+      ),
     ) as ConfigDocument
   })
+
+const settingsDocument = (settings: unknown): unknown => {
+  const set = Object.entries(record(settings) ?? {}).flatMap(([key, value]) => {
+    const kept = record(value) === undefined ? value : settingsDocument(value)
+    return kept === null || kept === undefined ? [] : [[key, kept] as const]
+  })
+  return set.length > 0 ? Object.fromEntries(set) : undefined
+}
 
 const write = (fs: FileSystem.FileSystem, file: string, content: string) =>
   fs.makeDirectory(dirname(file), { recursive: true }).pipe(
@@ -100,10 +119,15 @@ const resolveFile = (fs: FileSystem.FileSystem) =>
     return DEFAULT_FILE
   })
 
-const entries = (document: ConfigDocument) =>
-  Object.entries(document).flatMap(([section, items]) =>
+const entries = (document: ConfigDocument) => [
+  ...Object.keys(settingsOf(document) ?? {}).map((group) => ({
+    section: 'settings',
+    id: group,
+  })),
+  ...sectionsOf(document).flatMap(([section, items]) =>
     items.map((item) => ({ section, id: externalIdOf(item) ?? section })),
-  )
+  ),
+]
 
 export const pull =
   (fs: FileSystem.FileSystem, load: Loader, clients: Clients) =>
@@ -116,8 +140,12 @@ export const pull =
       const file = target ?? (yield* resolveFile(fs))
       const local = force ? undefined : yield* loadDocument(load, fs, file)
       const exported = yield* exportConfig(clients, organization)
-      const differing =
-        local === undefined ? [] : differences(local, exported.config)
+      const settings = settingsDocument(exported.settings)
+      const remote: ConfigDocument = {
+        ...(settings !== undefined && { settings }),
+        ...exported.config,
+      }
+      const differing = local === undefined ? [] : differences(local, remote)
       if (differing.length > 0) {
         return {
           status: 'conflict',
@@ -125,11 +153,11 @@ export const pull =
           entries: differing,
         } satisfies PullResult
       }
-      yield* write(fs, file, yield* renderDocument(file, exported.config))
+      yield* write(fs, file, yield* renderDocument(file, remote))
       return {
         status: 'written',
         file,
-        entries: entries(exported.config),
+        entries: entries(remote),
         skipped: exported.skipped,
       } satisfies PullResult
     }).pipe(

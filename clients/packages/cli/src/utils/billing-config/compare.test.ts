@@ -69,6 +69,20 @@ describe('differences', () => {
     ).toEqual([{ section: 'meters', id: 'a' }])
   })
 
+  test('compares settings groups the file sets, ignoring unset remote fields', () => {
+    const remote = {
+      settings: { payments: { currency: 'usd', tax: null } },
+      meters: [],
+    }
+    expect(
+      differences({ settings: { payments: { currency: 'usd' } } }, remote),
+    ).toEqual([])
+    expect(
+      differences({ settings: { payments: { currency: 'eur' } } }, remote),
+    ).toEqual([{ section: 'settings', id: 'payments' }])
+    expect(differences({ meters: [] }, remote)).toEqual([])
+  })
+
   test('an empty or missing section has nothing to differ', () => {
     expect(differences({}, { meters: [meter('a')] })).toEqual([])
     expect(differences({ meters: [] }, {})).toEqual([])

@@ -2881,3 +2881,34 @@ class TestExport:
     ) -> None:
         with pytest.raises(InsufficientScopeError):
             await declarative_config_service.export(session, auth_subject, None)
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_unknown_event_only_for_new_or_changed_filters(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_meter(
+            save_fixture, organization=organization, external_id="my-meter"
+        )
+        renamed_filter = {
+            **FIXTURE_METER,
+            "filter": {
+                "conjunction": "and",
+                "clauses": [{"property": "name", "operator": "eq", "value": "other"}],
+            },
+        }
+
+        unchanged = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate({"meters": [FIXTURE_METER]})
+        )
+        changed = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate({"meters": [renamed_filter]})
+        )
+
+        assert unchanged.issues == []
+        assert [issue.type for issue in changed.issues] == [
+            ConfigIssueType.unknown_event
+        ]

@@ -36,6 +36,41 @@ test('defineConfig passes settings through', () => {
   ).toBe(false)
 })
 
+test('defineConfig serializes webhooks with raw as the default format', () => {
+  const config = defineConfig({
+    meters: ({ meter }) => ({ tokens: meter().count() }),
+    webhooks: {
+      orders: {
+        url: 'https://example.com/polar',
+        events: ['order.created', 'order.paid'],
+        api_version: '2026-10',
+      },
+      ops: {
+        url: 'https://hooks.slack.com/services/T0/B0/x',
+        events: ['subscription.canceled'],
+        format: 'slack',
+        api_version: '2026-10',
+      },
+    },
+  })
+  expect(config.toJSON().webhooks).toEqual([
+    {
+      external_id: 'orders',
+      url: 'https://example.com/polar',
+      format: 'raw',
+      events: ['order.created', 'order.paid'],
+      api_version: '2026-10',
+    },
+    {
+      external_id: 'ops',
+      url: 'https://hooks.slack.com/services/T0/B0/x',
+      format: 'slack',
+      events: ['subscription.canceled'],
+      api_version: '2026-10',
+    },
+  ])
+})
+
 test('free prices use the settings currency', () => {
   const prices = (settings?: { payments: { currency: 'eur' } }) =>
     defineConfig({

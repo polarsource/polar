@@ -115,8 +115,9 @@ All changes are additions. The authorization endpoint, the consent screen, the e
   human enters the code, it gets the standard device-flow answers (`authorization_pending`, `slow_down`,
   `expired_token`). After that it gets an access token and an identity assertion. The claim token works once.
 - **JWT-bearer grant** (`urn:ietf:params:oauth:grant-type:jwt-bearer`, RFC 7523): the agent sends its identity
-  assertion and gets an access token. We check the signature, issuer, type and expiry, that the registration
-  isn't revoked, and that the assertion wasn't issued before the claim. No refresh tokens.
+  assertion and gets an access token. We check the signature, issuer, type, audience (which must identify this
+  authorization server) and expiry, that the registration isn't revoked, and that the assertion wasn't issued
+  before the claim. No refresh tokens.
 
 In both grants, the client is taken from the registration the credential belongs to, not from a `client_id`
 the caller sends. So an existing OAuth app can't use them, and an agent can only ever get tokens for itself.

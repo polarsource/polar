@@ -13,7 +13,7 @@ import { WebSocketServer, type WebSocket } from "ws";
 import type { EventsIngest } from "../2026-04/models";
 
 import { ClientBase } from "../base";
-import { Outpost } from "./client";
+import { Outpost, type OutpostOptions } from "./client";
 import { BUCKET_SIZE, getBucketStart, type Reducer } from "./reducer";
 import { APPLY_SNAPSHOT_SCRIPT } from "./scripts";
 import { TELEMETRY_ENV } from "./telemetry";
@@ -101,7 +101,9 @@ beforeAll(async () => {
       if (message.type === "configuration" && !delayConfiguration)
         ws.send(JSON.stringify({ type: "configuration", payload: { reducers } }));
       if (message.type === "meter_usage" && snapshot)
-        ws.send(JSON.stringify({ type: "meter_usage", payload: snapshot }));
+        ws.send(
+          JSON.stringify({ type: "meter_usage", payload: { customer_exists: true, ...snapshot } }),
+        );
     });
   });
 });
@@ -142,8 +144,12 @@ afterAll(async () => {
   if (directory) await rm(directory, { recursive: true, force: true });
 });
 
-const start = async (): Promise<Outpost> => {
-  const outpost = new Outpost(join(directory, "redis.sock"), { client: core });
+const start = async (options: Partial<OutpostOptions> = {}): Promise<Outpost> => {
+  const outpost = new Outpost(join(directory, "redis.sock"), {
+    client: core,
+    snapshotTimeout: 100,
+    ...options,
+  });
   outposts.push(outpost);
   return outpost.start();
 };
@@ -318,7 +324,7 @@ it("invalidates cached state on subscriber loss and reloads after reconnect", as
 
 it("reloads evicted customers and closes owned connections", async () => {
   await seed();
-  const outpost = await start();
+  const outpost = await start({ snapshotTimeout: 0 });
   await outpost.actor(customer);
   for (let i = 0; i < 1024; i++) await outpost.actor({ external_customer_id: `customer-${i}` });
   expect(outpost["cache"].size).toBe(1024);
@@ -472,14 +478,14 @@ it("orders same-cutoff corrections at microsecond precision and keeps null extre
   await outpost["receiveWebsocket"](
     JSON.stringify({
       type: "meter_usage",
-      payload: { ...snapshot, customer_id: "alice", sum: 999 },
+      payload: { ...snapshot, customer_exists: true, customer_id: "alice", sum: 999 },
     }),
   );
   expect((await outpost.customerMeter(meter))?.consumed_units).toBe(10);
   await outpost["receiveWebsocket"](
     JSON.stringify({
       type: "meter_usage",
-      payload: { ...snapshot, version: 1791807000000001, sum: 999 },
+      payload: { ...snapshot, customer_exists: true, version: 1791807000000001, sum: 999 },
     }),
   );
   expect((await outpost.customerMeter(meter))?.consumed_units).toBe(10);
@@ -488,6 +494,7 @@ it("orders same-cutoff corrections at microsecond precision and keeps null extre
       type: "meter_usage",
       payload: {
         ...snapshot,
+        customer_exists: true,
         version: 1791807000000003,
         count: 0,
         sum: 0,
@@ -530,6 +537,7 @@ it("preserves microsecond cutoffs when removing and rejecting local buckets", as
       type: "meter_usage",
       payload: {
         ...snapshot,
+        customer_exists: true,
         cold_until: bucket + 1,
         version: 1791807000000002,
         count: 1,
@@ -604,7 +612,11 @@ it.each([
   ["environment", true, "0"],
 ] as const)("turns telemetry off through the %s", async (_, telemetry, environment) => {
   if (environment !== undefined) vi.stubEnv(TELEMETRY_ENV, environment);
-  const outpost = new Outpost(join(directory, "redis.sock"), { client: core, telemetry });
+  const outpost = new Outpost(join(directory, "redis.sock"), {
+    client: core,
+    telemetry,
+    snapshotTimeout: 100,
+  });
   outposts.push(outpost);
   await outpost.start();
   await ingest(outpost, 3);
@@ -684,3 +696,29 @@ it("fails to start without Redis instead of hanging", async () => {
   const outpost = new Outpost(join(directory, "missing.sock"), { client: core });
   await expect(outpost.start()).rejects.toThrow();
 }, 10_000);
+
+const aliceSnapshot = {
+  ...customer,
+  customer_id: null,
+  meter_id: "meter",
+  cold_until: bucket,
+  version: 1791807000000005,
+  count: 1,
+  sum: 3,
+  min: 3,
+  max: 3,
+  credited_units: 10,
+};
+
+it("waits for the first snapshot on a cold read", async () => {
+  snapshot = aliceSnapshot;
+  const outpost = await start();
+  expect((await outpost.customerMeter(meter))?.balance).toBe(7);
+});
+
+it("reads null for a customer Polar does not know", async () => {
+  snapshot = { ...aliceSnapshot, customer_exists: false };
+  const outpost = await start();
+  await outpost.actor(customer);
+  expect(await outpost.customerMeter(meter)).toBeNull();
+});

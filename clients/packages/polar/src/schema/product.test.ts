@@ -44,6 +44,54 @@ test('meterCycle accepts a cadence or an interval count', () => {
   ).toBeUndefined()
 })
 
+test('the meter cycle must evenly divide the billing cycle', () => {
+  const decode = (definition: ProductDefinition) =>
+    Schema.decodeUnknownSync(ProductConfig)({
+      external_id: 'pro',
+      name: 'Pro',
+      ...definition.billing,
+      ...definition.meterPeriod,
+      prices: productPrices('pro', definition),
+      benefits: [],
+    })
+  const base = product().prices(metered('calls').flat().amount(usd(0.01)))
+  const divides = 'The meter cycle must evenly divide the billing cycle'
+  for (const valid of [
+    base.recurring('yearly').meterCycle('monthly'),
+    base.recurring('yearly').meterCycle(3, 'months'),
+    base.recurring(2, 'weeks').meterCycle(7, 'days'),
+    base.recurring('monthly').meterCycle('daily'),
+    base.recurring(6, 'months').meterCycle(2, 'months'),
+  ]) {
+    expect(() => decode(valid)).not.toThrow()
+  }
+  for (const invalid of [
+    base.recurring('yearly').meterCycle(5, 'months'),
+    base.recurring('monthly').meterCycle('weekly'),
+    base.recurring('monthly').meterCycle('yearly'),
+    base.recurring('weekly').meterCycle(3, 'days'),
+    base.recurring('yearly').meterCycle('monthly').recurring('weekly'),
+  ]) {
+    expect(() => decode(invalid)).toThrow(divides)
+  }
+})
+
+test('a meter interval count requires a meter interval', () => {
+  const definition = product()
+    .prices(metered('calls').flat().amount(usd(0.01)))
+    .recurring('monthly')
+  expect(() =>
+    Schema.decodeUnknownSync(ProductConfig)({
+      external_id: 'pro',
+      name: 'Pro',
+      ...definition.billing,
+      meter_interval_count: 2,
+      prices: productPrices('pro', definition),
+      benefits: [],
+    }),
+  ).toThrow('A meter interval count requires a meter interval.')
+})
+
 test('free prices follow the currencies of the other prices', () => {
   const definition = product()
     .prices(

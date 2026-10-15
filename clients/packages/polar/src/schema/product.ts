@@ -60,6 +60,25 @@ const compositionIssues = (
   return [...issues]
 }
 
+// Mirrors meter_interval_divides_billing_interval on the backend: the meter
+// cycle must re-align with the billing cycle at every renewal.
+const meterCycleDividesBilling = (
+  meter: IntervalUnit,
+  meterCount: number,
+  billing: IntervalUnit,
+  billingCount: number,
+): boolean => {
+  if (meter === billing) return billingCount % meterCount === 0
+  if (meter === 'day' && billing === 'week') {
+    return (billingCount * 7) % meterCount === 0
+  }
+  if (meter === 'month' && billing === 'year') {
+    return (billingCount * 12) % meterCount === 0
+  }
+  if (meter === 'day') return meterCount === 1
+  return false
+}
+
 export const ProductConfig = Schema.Struct({
   external_id: Schema.String.check(Schema.isMinLength(1)),
   name: Schema.String.check(Schema.isMinLength(3), Schema.isMaxLength(64)),
@@ -92,6 +111,40 @@ export const ProductConfig = Schema.Struct({
 }).check(
   Schema.makeFilter(({ prices }) =>
     compositionIssues(prices).map((issue) => ({ path: ['prices'], issue })),
+  ),
+  Schema.makeFilter(
+    ({
+      recurring_interval,
+      recurring_interval_count,
+      meter_interval,
+      meter_interval_count,
+    }) =>
+      meter_interval === undefined ||
+      recurring_interval === null ||
+      meterCycleDividesBilling(
+        meter_interval,
+        meter_interval_count ?? 1,
+        recurring_interval,
+        recurring_interval_count ?? 1,
+      )
+        ? []
+        : [
+            {
+              path: ['meter_interval'],
+              issue:
+                'The meter cycle must evenly divide the billing cycle, so it re-aligns with the billing cycle at every renewal.',
+            },
+          ],
+  ),
+  Schema.makeFilter(({ meter_interval, meter_interval_count }) =>
+    meter_interval_count === undefined || meter_interval !== undefined
+      ? []
+      : [
+          {
+            path: ['meter_interval_count'],
+            issue: 'A meter interval count requires a meter interval.',
+          },
+        ],
   ),
 )
 

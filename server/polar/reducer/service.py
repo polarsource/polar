@@ -120,15 +120,15 @@ class ReducerService:
         cutoff: datetime,
     ) -> dict[UUID, Decimal]:
         """Marks the customer's usage within [billable_from, cutoff] as billed by
-        the order, and returns its quantity per meter. The meter reset at `cutoff`
-        sealed it already, unless its seal is still pending."""
+        the order, and returns its quantity per meter."""
         meter_ids = sorted(meter_ids)
         try:
             async with session.begin_nested():
                 reducers = await self._get_reducers(session, meter_ids)
-                await self._seal_buckets(
-                    session, list(reducers.values()), customer, at=cutoff
-                )
+                for at in (billable_from, cutoff):
+                    await self._seal_buckets(
+                        session, list(reducers.values()), customer, at=at
+                    )
                 quantities = await self._bill_buckets(
                     session,
                     list(reducers.values()),

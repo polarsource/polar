@@ -1253,10 +1253,62 @@ class TestBill:
         )
 
         assert quantities == {meter.id: Decimal(3)}
-        seal.assert_called_once_with(session, [reducer], customer, at=CUTOFF)
+        assert seal.call_args_list == [
+            mocker.call(session, [reducer], customer, at=START),
+            mocker.call(session, [reducer], customer, at=CUTOFF),
+        ]
         bill.assert_called_once_with(
             session, [reducer], customer, order_id=order_id, since=START, until=CUTOFF
         )
+
+    async def test_splits_at_billable_from_without_a_reset(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        external_customer: Customer,
+        organization: Organization,
+        order: Order,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.max, property="tokens"
+            ),
+        )
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        for timestamp, tokens in ((CLOSED, 5), (CUTOFF, 3)):
+            await create_tokens_event(
+                save_fixture,
+                organization,
+                tokens,
+                timestamp=timestamp,
+                ingested_at=INGESTED_AT,
+            )
+        await reducer_service.sync_bucket(
+            session, reducer.id, BUCKET_START, None, "external"
+        )
+
+        quantities = await reducer_service.bill(
+            session,
+            external_customer,
+            [meter.id],
+            order_id=order.id,
+            billable_from=CUTOFF,
+            cutoff=NEXT_BUCKET_START,
+        )
+
+        assert quantities == {meter.id: Decimal(3)}
+        assert [
+            (bucket.bucket_start, bucket.bucket_end, bucket.order_id)
+            for bucket in await get_buckets(session)
+            if (bucket.customer_id, bucket.external_customer_id) == (None, "external")
+        ] == [
+            (BUCKET_START, CUTOFF, None),
+            (CUTOFF, NEXT_BUCKET_START, order.id),
+        ]
 
     async def test_logs_failures_without_raising(
         self,

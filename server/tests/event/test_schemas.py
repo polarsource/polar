@@ -10,7 +10,7 @@ from polar.event.schemas import (
     MeterCreditEvent,
 )
 from polar.event.schemas import SystemEvent as SystemEventUnion
-from polar.event.system import SYSTEM_EVENT_LABELS, MeterCreditedReason
+from polar.event.system import SYSTEM_EVENT_LABELS
 from polar.event.system import SystemEvent as SystemEventEnum
 
 
@@ -178,14 +178,12 @@ class TestMeterCreditEvent:
     @pytest.mark.parametrize(
         ("metadata", "expected"),
         [
-            ({}, MeterCreditedReason.benefit),
-            ({"reason": "benefit"}, MeterCreditedReason.benefit),
-            ({"reason": "manual"}, MeterCreditedReason.manual),
+            ({}, "benefit"),
+            ({"reason": "benefit"}, "benefit"),
+            ({"reason": "manual"}, "manual"),
         ],
     )
-    def test_reason(
-        self, metadata: dict[str, Any], expected: MeterCreditedReason
-    ) -> None:
+    def test_reason(self, metadata: dict[str, Any], expected: str) -> None:
         event = MeterCreditEvent.model_validate(
             {
                 "id": uuid.uuid4(),

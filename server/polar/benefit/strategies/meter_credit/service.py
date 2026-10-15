@@ -7,7 +7,7 @@ from polar.authz.types import AccessibleOrganizationID
 from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.event.repository import EventRepository
 from polar.event.service import event as event_service
-from polar.event.system import MeterCreditedReason, SystemEvent, build_system_event
+from polar.event.system import SystemEvent, build_system_event
 from polar.kit.utils import utc_now
 from polar.meter.repository import MeterRepository
 from polar.models import Benefit, Customer, Member, Organization, User
@@ -98,7 +98,7 @@ class BenefitMeterCreditService(
                             "meter_id": str(meter_id),
                             "units": rollover_units,
                             "rollover": True,
-                            "reason": MeterCreditedReason.benefit,
+                            "reason": "benefit",
                         },
                     ),
                 )
@@ -184,7 +184,7 @@ class BenefitMeterCreditService(
                     "meter_id": str(meter_id),
                     "units": units,
                     "rollover": rollover,
-                    "reason": MeterCreditedReason.benefit,
+                    "reason": "benefit",
                 },
             ),
         )

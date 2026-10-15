@@ -59,6 +59,22 @@ export const useSubscriptionChargePreview = (
     enabled: options?.enabled ?? true,
   })
 
+export const useSubscriptionMeterChargePreview = (
+  id: string,
+  options?: { enabled?: boolean },
+) =>
+  useQuery({
+    queryKey: ['subscriptions', { id }, 'meter-charge-preview'],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/subscriptions/{id}/meter-charge-preview', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: options?.enabled ?? true,
+  })
+
 export const useSubscriptionCancelPreview = (
   id: string,
   options?: { enabled?: boolean },

@@ -354,6 +354,23 @@ export const useCustomerSubscriptionChargePreview = (
     enabled,
   })
 
+export const useCustomerSubscriptionMeterChargePreview = (
+  api: Client,
+  id: string,
+  enabled = true,
+) =>
+  useQuery({
+    queryKey: ['customer_subscription_meter_charge_preview', { id }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customer-portal/subscriptions/{id}/meter-charge-preview', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled,
+  })
+
 export const useCustomerSubscriptionCancelPreview = (
   api: Client,
   id: string,

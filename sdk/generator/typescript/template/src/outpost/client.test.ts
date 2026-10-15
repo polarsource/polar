@@ -754,3 +754,19 @@ it("flushes buffered telemetry on demand", async () => {
   await outpost.flushTelemetry();
   expect(forceFlush).toHaveBeenCalledOnce();
 });
+
+it("raises Outpost errors when Redis fails", async () => {
+  snapshot = aliceSnapshot;
+  const outpost = await start();
+  const redisError = new Error("Connection is closed.");
+  vi.spyOn(outpost["redis"]!, "outpostReadState").mockRejectedValue(redisError);
+  vi.spyOn(outpost["redis"]!, "outpostWriteBucket").mockRejectedValue(redisError);
+  await expect(outpost.customerMeter(meter)).rejects.toMatchObject({
+    message: "Redis is unavailable",
+    cause: redisError,
+  });
+  await expect(ingest(outpost, 3)).rejects.toMatchObject({
+    message: "Redis is unavailable",
+    cause: redisError,
+  });
+});

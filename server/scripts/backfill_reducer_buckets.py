@@ -76,6 +76,7 @@ async def backfill_organization(
     totals: Totals = {}
     flushed_until = start
     written = 0
+    seen = 0
     async for rows in _iter_events(session, organization_id, reducers, start, end):
         billed_at = await _get_billed_at(session, [row.id for row in rows])
         _add_to_totals(totals, reducers, rows, billed_at)
@@ -86,6 +87,11 @@ async def backfill_organization(
         )
         flushed_until = flush_until
         await session.commit()
+        seen += len(rows)
+        typer.echo(
+            f"  {seen:,} events, {written:,} buckets, flushed until "
+            f"{flushed_until.isoformat()}"
+        )
     written += await _flush(session, organization_id, totals, flushed_until, end, end)
     await session.commit()
     return written

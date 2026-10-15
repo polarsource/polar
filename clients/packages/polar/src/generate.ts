@@ -9,6 +9,7 @@ import type { Currency, Scale } from './schema/money'
 import type { PriceConfig } from './schema/price'
 import type { ProductConfig } from './schema/product'
 import type { Visibility } from './schema/visibility'
+import type { WebhookConfig } from './schema/webhook'
 
 const literal = (value: string | number | boolean): string =>
   Object.is(value, -0) ? '-0' : JSON.stringify(value)
@@ -249,6 +250,22 @@ const isFree = (group: ReadonlyArray<PriceConfig>): boolean =>
     (price) => price.amount_type === 'fixed' && price.price_amount === 0,
   )
 
+const currencySet = (group: ReadonlyArray<PriceConfig>) =>
+  [...new Set(group.map(({ price_currency }) => price_currency))]
+    .sort()
+    .join(', ')
+
+const unevenCurrencies = (product: ProductConfig): string | undefined => {
+  const [first, ...rest] = groupPrices(product.prices).filter(
+    (group) => !isFree(group),
+  )
+  if (first === undefined) return undefined
+  const expected = currencySet(first)
+  return rest.some((group) => currencySet(group) !== expected)
+    ? `Product "${product.external_id}" prices in different currencies per price (${expected} and more), which defineConfig can't express.`
+    : undefined
+}
+
 const renderTax = (price: PriceConfig): string[] =>
   price.tax_behavior === undefined
     ? []
@@ -428,11 +445,23 @@ const renderDiscount =
     ].join('\n')
   }
 
-const renderEntries = <Resource extends { readonly external_id: string }>(
-  property: string,
+const renderValue = (value: unknown): string => {
+  if (Array.isArray(value)) return `[${value.map(renderValue).join(', ')}]`
+  if (typeof value === 'object' && value !== null) {
+    return `{ ${Object.entries(value)
+      .map(([name, nested]) => `${key(name)}: ${renderValue(nested)}`)
+      .join(', ')} }`
+  }
+  return literal(value as string | number | boolean)
+}
+
+const renderWebhook = ({ external_id: _, ...webhook }: WebhookConfig) =>
+  renderValue(webhook)
+
+const entryLines = <Resource extends { readonly external_id: string }>(
   resources: ReadonlyArray<Resource>,
   render: (resource: Resource, helpers: Set<string>) => string,
-): string[] => {
+) => {
   const helpers = new Set<string>()
   const ids = resources.map((resource) => resource.external_id)
   const objectKeys = Object.keys(
@@ -447,6 +476,15 @@ const renderEntries = <Resource extends { readonly external_id: string }>(
       ? `    [${literal(resource.external_id)}, ${expression}],`
       : `    ${key(resource.external_id)}: ${expression},`
   })
+  return { helpers, useEntries, lines }
+}
+
+const renderEntries = <Resource extends { readonly external_id: string }>(
+  property: string,
+  resources: ReadonlyArray<Resource>,
+  render: (resource: Resource, helpers: Set<string>) => string,
+): string[] => {
+  const { helpers, useEntries, lines } = entryLines(resources, render)
   const parameters =
     helpers.size === 0 ? '()' : `({ ${[...helpers].join(', ')} })`
   return [
@@ -456,8 +494,23 @@ const renderEntries = <Resource extends { readonly external_id: string }>(
   ]
 }
 
+const renderRecord = <Resource extends { readonly external_id: string }>(
+  property: string,
+  resources: ReadonlyArray<Resource>,
+  render: (resource: Resource) => string,
+): string[] => {
+  const { useEntries, lines } = entryLines(resources, render)
+  return [
+    `  ${property}: ${useEntries ? '[' : '{'}`,
+    ...lines,
+    `  ${useEntries ? ']' : '}'},`,
+  ]
+}
+
 export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
   const config = yield* validateConfig(input)
+  const uneven = (config.products ?? []).map(unevenCurrencies).find(Boolean)
+  if (uneven !== undefined) return yield* Effect.fail(new Error(uneven))
   const imports = new Set(['defineConfig'])
   const meters = renderEntries('meters', config.meters, (meter, helpers) => {
     helpers.add('meter')
@@ -475,15 +528,25 @@ export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
     config.discounts === undefined
       ? []
       : renderEntries('discounts', config.discounts, renderDiscount(imports))
+  const webhooks =
+    config.webhooks === undefined
+      ? []
+      : renderRecord('webhooks', config.webhooks, renderWebhook)
+  const settings =
+    config.settings === undefined
+      ? []
+      : [`  settings: ${renderValue(config.settings)},`]
 
   return [
     `import { ${[...imports].join(', ')} } from '@polar-sh/polar'`,
     '',
     'export default defineConfig({',
+    ...settings,
     ...meters,
     ...benefits,
     ...products,
     ...discounts,
+    ...webhooks,
     '})',
     '',
   ].join('\n')

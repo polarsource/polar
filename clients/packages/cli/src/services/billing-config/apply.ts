@@ -12,7 +12,6 @@ import {
   entries,
   errorName,
   post,
-  requiredScopes,
   transportErrors,
   unexpected,
 } from '@/services/billing-config/api'
@@ -48,9 +47,5 @@ export const apply =
           issues: issues(config, detail),
         } satisfies ApplyResult
       }
-      return yield* unexpected(
-        response,
-        organization,
-        requiredScopes(config, 'write'),
-      )
+      return yield* unexpected(response, organization)
     }).pipe(Effect.scoped, Effect.catchTags(transportErrors))

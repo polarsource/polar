@@ -463,6 +463,7 @@ async def unknown_events(
     references = [
         reference
         for change in changes
+        if change.existing is None or "filter" in change.update_dict
         for reference in _event_name_references(
             change.config.filter, _meter_loc(change.index, "filter")
         )

@@ -33,14 +33,7 @@ export const renderDocument = (file: string, document: ConfigDocument) =>
             hint: 'Use a .ts, .mts, .mjs or .json path.',
           }),
         )
-      : generateConfig(
-          Object.fromEntries(
-            Object.entries(document).map(([section, items]) => [
-              section,
-              items.map(dropOptionalNulls),
-            ]),
-          ),
-        ).pipe(
+      : generateConfig(dropOptionalNulls(document)).pipe(
           Effect.mapError(
             (error) =>
               new BillingConfigError({

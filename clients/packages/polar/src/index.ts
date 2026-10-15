@@ -61,6 +61,11 @@ export { product } from './schema/product'
 export type { ProductConfig, ProductDefinition } from './schema/product'
 export { discount } from './schema/discount'
 export type { DiscountConfig, DiscountDefinition } from './schema/discount'
+export type {
+  WebhookConfig,
+  WebhookDefinition,
+  WebhookFormat,
+} from './schema/webhook'
 export { defineConfig } from './schema/config'
 export type { Config, PolarConfig } from './schema/config'
 export { generateConfig } from './generate'

@@ -23,6 +23,8 @@ import { fixed, free, metered, seats, TaxBehavior, tier, units } from './price'
 import { product, ProductConfig, productPrices } from './product'
 import type { ProductDefinition, ProductHelpers } from './product'
 import { visibilityKey } from './visibility'
+import { WebhookConfig, webhookConfig } from './webhook'
+import type { WebhookEntries } from './webhook'
 
 export const SettingsConfig = Schema.Struct({
   payments: Schema.optionalKey(
@@ -41,6 +43,7 @@ export const PolarConfig = Schema.Struct({
   benefits: Schema.optionalKey(Schema.Array(BenefitConfig)),
   products: Schema.optionalKey(Schema.Array(ProductConfig)),
   discounts: Schema.optionalKey(Schema.Array(DiscountConfig)),
+  webhooks: Schema.optionalKey(Schema.Array(WebhookConfig)),
 })
 
 export type PolarConfig = typeof PolarConfig.Type
@@ -223,6 +226,7 @@ export const defineConfig = <
   readonly discounts?: (
     helpers: DiscountHelpers<ProductKey<Products>>,
   ) => Discounts
+  readonly webhooks?: WebhookEntries
 }): Config<Meters, Benefits, Events> => {
   const events = input.events as Events
   const entries = toEntries(
@@ -338,6 +342,11 @@ export const defineConfig = <
           )
           return discountConfig(external_id, definition)
         },
+      ),
+    }),
+    ...(input.webhooks !== undefined && {
+      webhooks: toEntries(input.webhooks).map(([external_id, definition]) =>
+        webhookConfig(external_id, definition),
       ),
     }),
   })

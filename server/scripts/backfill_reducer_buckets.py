@@ -418,7 +418,10 @@ async def _insert_buckets(session: AsyncSession, buckets: list[BucketValues]) ->
     connection = (
         await (await session.connection()).get_raw_connection()
     ).driver_connection
+    # COPY bypasses SQLAlchemy, which only begins the transaction on its first
+    # statement: the flush's delete. Without it, COPY would autocommit.
     assert connection is not None
+    assert connection.is_in_transaction()
     await connection.copy_records_to_table(
         ReducerBucket.__tablename__,
         records=records,

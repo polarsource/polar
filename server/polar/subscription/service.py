@@ -42,6 +42,7 @@ from polar.enums import (
 )
 from polar.event.service import event as event_service
 from polar.event.system import (
+    MeterCreditedReason,
     SubscriptionCanceledMetadata,
     SubscriptionCreatedMetadata,
     SubscriptionCycledMetadata,
@@ -1495,6 +1496,7 @@ class SubscriptionService:
                         "meter_id": str(subscription_meter.meter_id),
                         "units": rollover_units,
                         "rollover": True,
+                        "reason": MeterCreditedReason.benefit,
                     },
                     timestamp=reset_at,
                 ),

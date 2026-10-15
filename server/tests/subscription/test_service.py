@@ -4706,6 +4706,7 @@ class TestResetMeter:
             "meter_id": str(subscription_meter.meter_id),
             "units": 25,
             "rollover": True,
+            "reason": "benefit",
         }
 
 

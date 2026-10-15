@@ -20,6 +20,7 @@ from polar.event.repository import EventRepository
 from polar.event.service import event as event_service
 from polar.event.system import (
     MeterCreditedMetadata,
+    MeterCreditedReason,
     SystemEvent,
     build_system_event,
 )
@@ -313,6 +314,7 @@ class CustomerMeterService:
             "meter_id": str(meter.id),
             "units": credit_create.units,
             "rollover": credit_create.rollover,
+            "reason": MeterCreditedReason.manual,
         }
         event = build_system_event(
             SystemEvent.meter_credited,

@@ -1,7 +1,8 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, Literal, NotRequired, overload
+from typing import TYPE_CHECKING, Annotated, Any, Literal, NotRequired, overload
 
+from pydantic import Field
 from sqlalchemy.orm import Mapped
 from sqlalchemy.util.typing import TypedDict
 
@@ -93,10 +94,18 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
 }
 
 
+class MeterCreditedReason(StrEnum):
+    benefit = "benefit"
+    manual = "manual"
+
+
 class MeterCreditedMetadata(TypedDict):
     meter_id: str
     units: int
     rollover: bool
+    reason: Annotated[
+        NotRequired[MeterCreditedReason], Field(default=MeterCreditedReason.benefit)
+    ]
 
 
 class MeterCreditedEvent(Event):

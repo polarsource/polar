@@ -326,4 +326,191 @@ describe('CurrentPeriodOverview', () => {
     expect(text).not.toContain('Upcoming Usage Charge')
     expect(text).not.toContain('API requests')
   })
+
+  it('shows only the usage card when a canceled subscription has no renewal charge', () => {
+    vi.mocked(useCustomerSubscriptionChargePreview).mockReturnValue({
+      data: {
+        base_amount: 0,
+        metered_amount: 0,
+        proration_amount: 0,
+        prorations: [],
+        subtotal_amount: 0,
+        discount_amount: 0,
+        net_amount: 0,
+        tax_amount: 0,
+        total_amount: 0,
+        applied_balance_amount: 0,
+        due_amount: 0,
+        meter_charge: {
+          metered_amount: 1840,
+          subtotal_amount: 1840,
+          discount_amount: 0,
+          net_amount: 1840,
+          tax_amount: 0,
+          total_amount: 1840,
+        },
+      },
+    } as unknown as ReturnType<typeof useCustomerSubscriptionChargePreview>)
+
+    const subscription = {
+      ...createSubscription(createFixedPrice(12000), null, 12000),
+      cancel_at_period_end: true,
+      recurring_interval: 'year',
+      current_period_end: '2027-01-01T00:00:00Z',
+      current_meter_period_end: '2026-11-01T00:00:00Z',
+      meters: [
+        {
+          id: 'meter-1',
+          amount: 1840,
+          meter: { id: 'meter', name: 'API requests' },
+        },
+      ],
+    } as unknown as schemas['CustomerSubscription']
+
+    const { container } = render(
+      <CurrentPeriodOverview
+        subscription={subscription}
+        products={[createProduct('product-1', createFixedPrice(12000))]}
+        api={{} as Client}
+      />,
+    )
+
+    const text = container.textContent ?? ''
+    expect(text).toContain('Upcoming Usage Charge')
+    expect(text).toContain('API requests')
+    expect(text).not.toContain('Final Charge')
+    expect(text).not.toContain('Canceled')
+  })
+
+  it('hides the final charge when a canceled meter cycle has nothing to bill', () => {
+    vi.mocked(useCustomerSubscriptionChargePreview).mockReturnValue({
+      data: {
+        base_amount: 0,
+        metered_amount: 0,
+        proration_amount: 0,
+        prorations: [],
+        subtotal_amount: 0,
+        discount_amount: 0,
+        net_amount: 0,
+        tax_amount: 0,
+        total_amount: 0,
+        applied_balance_amount: 0,
+        due_amount: 0,
+        meter_charge: {
+          metered_amount: 0,
+          subtotal_amount: 0,
+          discount_amount: 0,
+          net_amount: 0,
+          tax_amount: 0,
+          total_amount: 0,
+        },
+      },
+    } as unknown as ReturnType<typeof useCustomerSubscriptionChargePreview>)
+
+    const subscription = {
+      ...createSubscription(createFixedPrice(12000), null, 12000),
+      cancel_at_period_end: true,
+      current_meter_period_end: '2026-11-01T00:00:00Z',
+      meters: [
+        {
+          id: 'meter-1',
+          amount: 0,
+          meter: { id: 'meter', name: 'API requests' },
+        },
+      ],
+    } as unknown as schemas['CustomerSubscription']
+
+    const { container } = render(
+      <CurrentPeriodOverview
+        subscription={subscription}
+        products={[createProduct('product-1', createFixedPrice(12000))]}
+        api={{} as Client}
+      />,
+    )
+
+    expect(container.textContent ?? '').toBe('')
+  })
+
+  it('keeps the final charge when a canceled renewal still has a proration', () => {
+    vi.mocked(useCustomerSubscriptionChargePreview).mockReturnValue({
+      data: {
+        base_amount: 0,
+        metered_amount: 0,
+        proration_amount: 500,
+        prorations: [{ label: 'Seat change', amount: 500 }],
+        subtotal_amount: 500,
+        discount_amount: 0,
+        net_amount: 500,
+        tax_amount: 0,
+        total_amount: 500,
+        applied_balance_amount: 0,
+        due_amount: 500,
+        meter_charge: {
+          metered_amount: 1840,
+          subtotal_amount: 1840,
+          discount_amount: 0,
+          net_amount: 1840,
+          tax_amount: 0,
+          total_amount: 1840,
+        },
+      },
+    } as unknown as ReturnType<typeof useCustomerSubscriptionChargePreview>)
+
+    const subscription = {
+      ...createSubscription(createFixedPrice(12000), null, 12000),
+      cancel_at_period_end: true,
+      current_meter_period_end: '2026-11-01T00:00:00Z',
+      meters: [
+        {
+          id: 'meter-1',
+          amount: 1840,
+          meter: { id: 'meter', name: 'API requests' },
+        },
+      ],
+    } as unknown as schemas['CustomerSubscription']
+
+    const { container } = render(
+      <CurrentPeriodOverview
+        subscription={subscription}
+        products={[createProduct('product-1', createFixedPrice(12000))]}
+        api={{} as Client}
+      />,
+    )
+
+    const text = container.textContent ?? ''
+    expect(text).toContain('Upcoming Usage Charge')
+    expect(text).toContain('Final Charge')
+    expect(text).toContain('Seat change')
+    expect(text.indexOf('Final Charge')).toBeGreaterThan(
+      text.indexOf('Upcoming Usage Charge'),
+    )
+  })
+
+  it('keeps metered usage on the final charge when it bills with the subscription', () => {
+    mockChargePreview(0)
+    const subscription = {
+      ...createSubscription(createFixedPrice(12000), null, 12000),
+      cancel_at_period_end: true,
+      meters: [
+        {
+          id: 'meter-1',
+          amount: 500,
+          meter: { id: 'meter', name: 'API requests' },
+        },
+      ],
+    } as unknown as schemas['CustomerSubscription']
+
+    const { container } = render(
+      <CurrentPeriodOverview
+        subscription={subscription}
+        products={[createProduct('product-1', createFixedPrice(12000))]}
+        api={{} as Client}
+      />,
+    )
+
+    const text = container.textContent ?? ''
+    expect(text).toContain('Final Charge')
+    expect(text).toContain('API requests')
+    expect(text).not.toContain('Upcoming Usage Charge')
+  })
 })

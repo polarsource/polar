@@ -65,6 +65,15 @@ const SubscriptionInvoicePreview = ({
   const metersOnBase = hasMeters && !usageSeparate
   const overageMeters = subscription.meters.filter((meter) => meter.amount > 0)
   const showUsage = usageSeparate && overageMeters.length > 0
+  const showBase =
+    !isCancelingAtPeriodEnd ||
+    !usageSeparate ||
+    hasProrations ||
+    chargePreview.base_amount > 0
+
+  if (!showBase && !showUsage) {
+    return null
+  }
 
   const isSeatBasedProduct = product?.prices.some(
     (price) =>
@@ -128,7 +137,7 @@ const SubscriptionInvoicePreview = ({
   return (
     <Box
       flexDirection="column"
-      rowGap={showUsage ? '4xl' : undefined}
+      rowGap={showUsage && showBase ? '4xl' : undefined}
       borderTopWidth={1}
       borderStyle="solid"
       borderColor="border-primary"
@@ -173,35 +182,40 @@ const SubscriptionInvoicePreview = ({
           </Text>
         </OrderSection>
       )}
-      <OrderSection
-        title={title}
-        description={
-          <Box alignItems="center" columnGap="s">
-            <Text color="muted">{dateLabel}</Text>
-            {chargeDate && (
-              <>
-                <Text color="muted">·</Text>
-                <Text color="muted">
-                  <FormattedDateTime dateStyle="medium" datetime={chargeDate} />
-                </Text>
-              </>
-            )}
-          </Box>
-        }
-      >
-        <InvoicePreview
-          currency={subscription.currency}
-          items={items}
-          subtotalAmount={chargePreview.subtotal_amount}
-          discountAmount={chargePreview.discount_amount}
-          netAmount={chargePreview.net_amount}
-          taxAmount={chargePreview.tax_amount}
-          totalAmount={chargePreview.total_amount}
-          appliedBalanceAmount={chargePreview.applied_balance_amount}
-          dueAmount={chargePreview.due_amount}
-        />
-        {note && <Text color="muted">{note}</Text>}
-      </OrderSection>
+      {showBase && (
+        <OrderSection
+          title={title}
+          description={
+            <Box alignItems="center" columnGap="s">
+              <Text color="muted">{dateLabel}</Text>
+              {chargeDate && (
+                <>
+                  <Text color="muted">·</Text>
+                  <Text color="muted">
+                    <FormattedDateTime
+                      dateStyle="medium"
+                      datetime={chargeDate}
+                    />
+                  </Text>
+                </>
+              )}
+            </Box>
+          }
+        >
+          <InvoicePreview
+            currency={subscription.currency}
+            items={items}
+            subtotalAmount={chargePreview.subtotal_amount}
+            discountAmount={chargePreview.discount_amount}
+            netAmount={chargePreview.net_amount}
+            taxAmount={chargePreview.tax_amount}
+            totalAmount={chargePreview.total_amount}
+            appliedBalanceAmount={chargePreview.applied_balance_amount}
+            dueAmount={chargePreview.due_amount}
+          />
+          {note && <Text color="muted">{note}</Text>}
+        </OrderSection>
+      )}
     </Box>
   )
 }

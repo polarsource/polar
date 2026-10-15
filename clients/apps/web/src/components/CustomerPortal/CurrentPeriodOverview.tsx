@@ -126,6 +126,13 @@ export const CurrentPeriodOverview = ({
   const metersOnBase = hasMeters && !usageSeparate
   const overageMeters = subscription.meters.filter((meter) => meter.amount > 0)
   const showUsageCard = usageSeparate && overageMeters.length > 0
+  // A cancellation zeros the renewal. Usage that bills on its own cycle is not
+  // on that invoice, so the Final Charge card only stays when something else is.
+  const showBaseCard =
+    !isCancelingAtPeriodEnd ||
+    !usageSeparate ||
+    hasProrations ||
+    (subscriptionPreview?.base_amount ?? 0) > 0
 
   const chargeDate = isTrialing
     ? subscription.trial_end
@@ -254,7 +261,7 @@ export const CurrentPeriodOverview = ({
   )
 
   if (!showUsageCard || meterCharge == null) {
-    return baseCard
+    return showBaseCard ? baseCard : null
   }
 
   return (
@@ -285,7 +292,7 @@ export const CurrentPeriodOverview = ({
           }
         />
       </OverviewSummaryCard>
-      {baseCard}
+      {showBaseCard ? baseCard : null}
     </>
   )
 }

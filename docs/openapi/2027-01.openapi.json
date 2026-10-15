@@ -25973,7 +25973,7 @@
           "cli"
         ],
         "summary": "Credit Customer Meter",
-        "description": "Manually grant credits on a customer meter.\n\nReturns the `meter.credited` event. The customer meter balance is updated\nasynchronously, shortly after the request.\n\n**Scopes**: `customers:write`",
+        "description": "Manually grant credits on a customer meter.\n\nReturns the `meter.credited` event. The customer meter balance is updated\nbefore the response is returned, unless the meter is being updated\nconcurrently, in which case it catches up shortly after.\n\n**Scopes**: `customers:write`",
         "operationId": "customer_meters:credits",
         "requestBody": {
           "content": {
@@ -25995,7 +25995,7 @@
         },
         "responses": {
           "201": {
-            "description": "Credit recorded. The customer meter balance is updated asynchronously.",
+            "description": "Credit recorded and the customer meter balance updated. If the meter is being updated concurrently, the balance catches up shortly after.",
             "content": {
               "application/json": {
                 "schema": {

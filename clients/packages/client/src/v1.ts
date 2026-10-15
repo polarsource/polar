@@ -6235,7 +6235,8 @@ export interface paths {
      * @description Manually grant credits on a customer meter.
      *
      *     Returns the `meter.credited` event. The customer meter balance is updated
-     *     asynchronously, shortly after the request.
+     *     before the response is returned, unless the meter is being updated
+     *     concurrently, in which case it catches up shortly after.
      *
      *     **Scopes**: `customers:write`
      */
@@ -63301,7 +63302,7 @@ export interface operations {
       }
     }
     responses: {
-      /** @description Credit recorded. The customer meter balance is updated asynchronously. */
+      /** @description Credit recorded and the customer meter balance updated. If the meter is being updated concurrently, the balance catches up shortly after. */
       201: {
         headers: {
           [name: string]: unknown

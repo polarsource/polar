@@ -220,10 +220,14 @@ export class Outpost {
       this.redis.on("ready", () => {
         if (this.subscriber?.status === "ready") void this.synchronize();
       });
-      await this.trace("outpost.redis.connect", async () => {
-        await withTimeout(redis.connect());
-        await redis.ping();
-      });
+      await this.trace(
+        "outpost.redis.connect",
+        async () => {
+          await withTimeout(redis.connect());
+          await redis.ping();
+        },
+        { "outpost.redis.connection": "primary" },
+      );
       this.channel = `outpost:${this.redis.options.db}:updates`;
       this.subscriber = this.redis.duplicate({ lazyConnect: true, autoResubscribe: false });
       const subscriber = this.subscriber;
@@ -239,7 +243,9 @@ export class Outpost {
       this.subscriber.on("message", (_channel, data) => {
         void this.receiveRedis(data).catch((error: unknown) => this.fail(error));
       });
-      await withTimeout(this.subscriber.connect());
+      await this.trace("outpost.redis.connect", () => withTimeout(subscriber.connect()), {
+        "outpost.redis.connection": "subscriber",
+      });
       await withTimeout(this.synced.promise);
       const [url, request] = this.options.client.buildRequest("GET", "/v1/outpost/");
       const endpoint = new URL(url);

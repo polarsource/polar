@@ -616,6 +616,7 @@ async def get_intervals(
             bucket.sealed_at is not None,
         )
         for bucket in await get_buckets(session)
+        if (bucket.customer_id, bucket.external_customer_id) == (None, "external")
     ]
 
 
@@ -664,7 +665,11 @@ class TestSealBuckets:
             (BUCKET_START, CUTOFF, 1, 3, Decimal(5), True),
             (CUTOFF, NEXT_BUCKET_START, 1, 1, Decimal(3), False),
         ]
-        assert [bucket.synced_at for bucket in await get_buckets(session)] == [
+        assert [
+            bucket.synced_at
+            for bucket in await get_buckets(session)
+            if (bucket.customer_id, bucket.external_customer_id) == (None, "external")
+        ] == [
             BILLED_AT,
             BILLED_AT,
         ]
@@ -752,6 +757,38 @@ class TestSealBuckets:
 
         assert await get_intervals(session) == [
             (BUCKET_START, CUTOFF, 1, 1, Decimal(5), True),
+            (CUTOFF, NEXT_BUCKET_START, 1, 0, None, False),
+        ]
+
+    async def test_persists_boundary_without_usage(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        max_reducer: Reducer,
+        external_customer: Customer,
+        organization: Organization,
+    ) -> None:
+        await reducer_service._seal_buckets(
+            session,
+            [max_reducer],
+            external_customer,
+            billable_from=START,
+            cutoff=CUTOFF,
+        )
+        await create_tokens_event(
+            save_fixture,
+            organization,
+            5,
+            timestamp=CLOSED,
+            ingested_at=BILLED_AT + timedelta(minutes=1),
+        )
+        await reducer_service.sync_bucket(
+            session, max_reducer.id, BUCKET_START, None, "external"
+        )
+
+        assert await get_intervals(session) == [
+            (BUCKET_START, CUTOFF, 1, 0, None, True),
+            (BUCKET_START, CUTOFF, 2, 1, Decimal(5), False),
             (CUTOFF, NEXT_BUCKET_START, 1, 0, None, False),
         ]
 

@@ -598,15 +598,14 @@ class ReducerService:
     ) -> bool:
         """Makes `split_at` a bucket boundary, so a seal can include the usage on
         one side of it only: `interval`, which contains it, becomes
-        [interval_start, split_at) and [split_at, interval_end)."""
+        [interval_start, split_at) and [split_at, interval_end), created empty
+        if the bucket doesn't exist yet."""
         interval_start, interval_end = interval
         bucket = await repository.get_latest_for_update(
             reducer, interval_start, customer_id, external_customer_id
         )
-        if bucket is None:
-            return False  # No usage in the interval.
         # An earlier seal billed past `split_at`. Billed rows can't change.
-        if bucket.sealed_at is not None:
+        if bucket is not None and bucket.sealed_at is not None:
             log.warning(
                 "Skipping split of a sealed reducer bucket",
                 reducer_id=reducer.id,
@@ -616,7 +615,7 @@ class ReducerService:
             return False
         # Same, but late events arrived after that seal and opened a new generation.
         # Splitting it would leave its generations covering different intervals.
-        if bucket.generation > 1:
+        if bucket is not None and bucket.generation > 1:
             log.warning(
                 "Skipping split of a reducer bucket with a sealed generation",
                 reducer_id=reducer.id,
@@ -636,7 +635,23 @@ class ReducerService:
                 reducer, split_at, interval_end, customer_id, external_customer_id
             )
         )._asdict()
-        await repository.update(bucket, update_dict={"bucket_end": split_at, **before})
+        if bucket is None:
+            await repository.create(
+                ReducerBucket(
+                    organization_id=reducer.organization_id,
+                    reducer=reducer,
+                    customer_id=customer_id,
+                    external_customer_id=external_customer_id,
+                    bucket_start=interval_start,
+                    bucket_end=split_at,
+                    **before,
+                ),
+                flush=True,
+            )
+        else:
+            await repository.update(
+                bucket, update_dict={"bucket_end": split_at, **before}
+            )
         await repository.create(
             ReducerBucket(
                 organization_id=reducer.organization_id,
@@ -646,7 +661,7 @@ class ReducerService:
                 bucket_start=split_at,
                 bucket_end=interval_end,
                 **after,
-                synced_at=bucket.synced_at,
+                synced_at=None if bucket is None else bucket.synced_at,
             ),
             flush=True,
         )

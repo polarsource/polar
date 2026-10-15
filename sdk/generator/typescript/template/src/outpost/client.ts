@@ -463,6 +463,10 @@ export class Outpost {
     });
   }
 
+  async flushTelemetry(): Promise<void> {
+    await this.tracerProvider?.forceFlush();
+  }
+
   private async warmActor(customer: string): Promise<[Reducer, LocalState][]> {
     await this.waitConfigured();
     const warmed: [Reducer, LocalState][] = [];

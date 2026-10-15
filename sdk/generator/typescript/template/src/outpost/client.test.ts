@@ -623,6 +623,7 @@ it.each([
   outposts.push(outpost);
   await outpost.start();
   await ingest(outpost, 3);
+  await outpost.flushTelemetry();
   await outpost.close();
   expect(exported).toEqual([]);
 });
@@ -745,4 +746,11 @@ it("reads the value of a customer created after a miss", async () => {
   expect(await outpost.customerMeter(meter)).toBeNull();
   snapshot = aliceSnapshot;
   await vi.waitFor(async () => expect((await outpost.customerMeter(meter))?.balance).toBe(7));
+});
+
+it("flushes buffered telemetry on demand", async () => {
+  const outpost = await start();
+  const forceFlush = vi.spyOn(outpost["tracerProvider"]!, "forceFlush");
+  await outpost.flushTelemetry();
+  expect(forceFlush).toHaveBeenCalledOnce();
 });

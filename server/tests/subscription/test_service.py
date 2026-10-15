@@ -9415,6 +9415,62 @@ class TestUpdateSeats:
             assert billing_entry.direction == BillingEntryDirection.debit
             assert billing_entry.amount == 1000 * new
 
+    async def test_proration_reset_reanchors_meter_period(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        frozen_time: datetime,
+        enqueue_job_mock: MagicMock,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+
+        # Given: Yearly subscription with a monthly meter clock
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+            current_period_start=datetime(2025, 1, 1, tzinfo=UTC),
+            current_period_end=datetime(2026, 1, 1, tzinfo=UTC),
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_start = datetime(2025, 6, 1, tzinfo=UTC)
+        subscription.current_meter_period_end = datetime(2025, 7, 1, tzinfo=UTC)
+        await save_fixture(subscription)
+
+        # When: Seats change with reset behavior mid-month
+        update_time = datetime(2025, 6, 15, tzinfo=UTC)
+        with freezegun.freeze_time(update_time):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated_subscription = await subscription_service.update_seats(
+                    session,
+                    ctx,
+                    subscription,
+                    seats=10,
+                    proration_behavior=SubscriptionProrationBehavior.reset,
+                )
+
+        # Then: The meter clock follows the reset billing cycle
+        assert updated_subscription.current_period_start == update_time
+        assert updated_subscription.current_meter_period_start == update_time
+        assert updated_subscription.current_meter_period_end == datetime(
+            2025, 7, 15, tzinfo=UTC
+        )
+
     async def test_proration_prorate_behavior(
         self,
         session: AsyncSession,

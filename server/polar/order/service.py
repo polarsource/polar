@@ -2623,6 +2623,13 @@ class OrderService:
                 if is_free_product_price:
                     return
 
+        # Skip usage invoices fully covered by meter credits
+        if (
+            order.billing_reason == OrderBillingReasonInternal.subscription_meter_cycle
+            and order.total_amount == 0
+        ):
+            return
+
         product = order.product
         customer = order.customer
         subscription = order.subscription

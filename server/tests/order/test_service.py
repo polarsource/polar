@@ -3313,6 +3313,30 @@ class TestSendConfirmationEmail:
 
         enqueue_email_mock.assert_not_called()
 
+    async def test_meter_cycle_skips_zero_amount(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+            subtotal_amount=0,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        enqueue_email_mock.assert_not_called()
+
     async def test_subscription_create_with_temporary_discount(
         self,
         mocker: MockerFixture,

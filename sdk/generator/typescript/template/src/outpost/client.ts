@@ -286,6 +286,7 @@ export class Outpost {
         enableOfflineQueue: false,
         autoResendUnfulfilledCommands: false,
         maxRetriesPerRequest: 0,
+        connectTimeout: TIMEOUT,
         commandTimeout: TIMEOUT,
       }) as OutpostRedis;
       this.redis.defineCommand("outpostReadState", { numberOfKeys: 1, lua: READ_STATE_SCRIPT });

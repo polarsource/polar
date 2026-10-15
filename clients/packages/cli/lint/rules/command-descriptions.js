@@ -49,16 +49,20 @@ const describes = (combinator, namespace) =>
   namespaceOf(combinator.callee) === namespace &&
   combinator.callee.property.name === 'withDescription'
 
+const styled = (text) => /^[A-Z]/.test(text) && !text.endsWith('.')
+
 export default {
   meta: {
     type: 'problem',
     docs: {
       description:
-        'Every command, flag and argument declares a description so --help is complete.',
+        'Every command, flag and argument declares a description, written as a capitalised phrase without a trailing period, so --help is complete and reads as a list.',
     },
     messages: {
       missing:
         '{{kind}} "{{name}}" has no description. Pipe it through {{namespace}}.withDescription so it shows up in --help.',
+      style:
+        'Descriptions start with a capital letter and end without a period, so --help reads as a list: "Overwrite the file", not "overwrite the file.".',
     },
   },
   create(context) {
@@ -71,11 +75,23 @@ export default {
           constructors.push(node)
           return
         }
+        const namespace = namespaceOf(node.callee)
+        const [text] = node.arguments
+        if (
+          namespace !== undefined &&
+          describes(node, namespace) &&
+          text?.type === 'Literal' &&
+          typeof text.value === 'string' &&
+          !styled(text.value)
+        ) {
+          context.report({ node: text, messageId: 'style' })
+          return
+        }
         if (!isPipeCall(node)) return
         const { root, steps } = unwrapPipes(node)
         if (!isConstructor(root)) return
-        const namespace = namespaceOf(root.callee)
-        if (steps.some((step) => describes(step, namespace))) {
+        const rootNamespace = namespaceOf(root.callee)
+        if (steps.some((step) => describes(step, rootNamespace))) {
           described.add(root)
         }
       },

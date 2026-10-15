@@ -15,3 +15,15 @@ polar update [flags]
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--method` | `choice` | How the CLI was installed: binary (install.sh), npm, pnpm, bun, yarn or vp (Vite+). Detected when omitted (choices: binary, npm, pnpm, bun, yarn, vp) |
+
+**Examples**
+
+Update to the latest version of the CLI
+```bash
+polar update
+```
+
+Update through npm instead of the detected install method
+```bash
+polar update --method npm
+```

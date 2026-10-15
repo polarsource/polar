@@ -70,14 +70,14 @@ polar webhook trigger [flags] [<event>]
 
 | Argument | Type | Description |
 | --- | --- | --- |
-| `event` | `string` | Webhook event to send, e.g. order.created. Omit to pick from a list. (optional) |
+| `event` | `string` | Webhook event to send, e.g. order.created. Omit to pick from a list (optional) |
 
 **Flags**
 
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--org` | `string` | Organization ID or slug for this invocation only |
-| `--override` | `string` | Override a payload field, as path=value. Values are sent as text; use null, a JSON object, array or quoted string for other types. Repeatable. |
+| `--override` | `string` | Override a payload field, as path=value. Values are sent as text; use null, a JSON object, array or quoted string for other types. Repeatable |
 | `--seed` | `integer` | Seed for generated IDs, for a reproducible payload |
 | `--dry-run` | `boolean` | Print the payload that would be sent, without sending it |
 | `--list` | `boolean` | List every event you can trigger, with descriptions |

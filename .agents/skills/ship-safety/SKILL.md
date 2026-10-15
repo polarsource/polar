@@ -25,9 +25,10 @@ with a dependency between them.
 
 **Owned elsewhere.** `ADR-0006` covers the migration rules — lock timeout (5s for lock-taking
 DDL, `5min` for `CREATE INDEX CONCURRENTLY`), nullable → batched `run_batched_update` script →
-NOT NULL across separate PRs, the unconditional `UPDATE` in the enforce migration, and keeping
-migration PRs isolated from code. CI enforces it with the
-Migration Isolation Check. `adr-check` reports violations; do not restate ADR-0006 here.
+NOT NULL across separate PRs, the unconditional `UPDATE` in the enforce migration, dropping a
+column across two PRs via `UNMAPPED_COLUMNS`, and keeping migration PRs isolated from code. CI
+enforces it with the Migration Isolation Check. `adr-check` reports violations; do not restate
+ADR-0006 here.
 Reinvented helpers → `reuse-check`. Billing-specific lock and cycle rules → `billing-review`.
 
 What is left for you is everything ADR-0006 does not say.
@@ -39,9 +40,9 @@ What is left for you is everything ADR-0006 does not say.
 ADR-0006 stops code shipping ahead of its schema. The reverse still bites: between the
 migration and the new code, the **old code runs against the new schema**.
 
-- **Dropping a column or table** breaks the running app immediately — SQLAlchemy maps every
-  model to a table at import, so a dropped table can fail before any query runs. Stop using
-  it, deploy, drop in a later PR.
+- **Dropping a table** breaks the running app immediately — SQLAlchemy maps every model to a
+  table at import, so a dropped table can fail before any query runs. Stop using it, deploy,
+  drop in a later PR. (Dropping a **column** is ADR-0006's `UNMAPPED_COLUMNS` two-PR path.)
 - **Renaming** is always two steps.
 
 Ask of every schema change: *is the currently-deployed code still correct against this?*

@@ -1225,3 +1225,52 @@ async def test_missing_snapshot_times_out(
         await outpost.actor(external_customer_id="alice")
         with pytest.raises(PolarOutpostError, match="not ready"):
             await outpost.customer_meter(meter_id="meter", external_customer_id="alice")
+
+
+@pytest.mark.anyio
+async def test_cold_read_waits_for_its_own_meter(
+    redis_connection: tuple[str, Redis],
+) -> None:
+    url, _ = redis_connection
+    configuration = copy.deepcopy(CONFIGURATION)
+    configuration["reducers"][0]["meter_ids"].append("shared")
+    credits = {"meter": 100, "shared": 200}
+
+    async def app(scope: typing.Any, receive: typing.Any, send: typing.Any) -> None:
+        assert (await receive())["type"] == "websocket.connect"
+        await send({"type": "websocket.accept"})
+        while True:
+            message = await receive()
+            if message["type"] == "websocket.disconnect":
+                return
+            request = json.loads(message["text"])
+            if request["type"] == "configuration":
+                payload: typing.Any = configuration
+            else:
+                meter_id = request["payload"]["meter_id"]
+                if meter_id == "shared":
+                    await anyio.sleep(0.05)
+                payload = {
+                    **ALICE_SNAPSHOT,
+                    "customer_exists": True,
+                    "meter_id": meter_id,
+                    "credited_units": credits[meter_id],
+                }
+            await send(
+                {
+                    "type": "websocket.send",
+                    "text": json.dumps({"type": request["type"], "payload": payload}),
+                }
+            )
+
+    async with (
+        httpx.AsyncClient(
+            base_url="http://polar.test", transport=ASGIWebSocketTransport(app)
+        ) as client,
+        Outpost(url, client=client) as outpost,
+    ):
+        meter = await outpost.customer_meter(
+            meter_id="shared", external_customer_id="alice"
+        )
+    assert meter is not None
+    assert meter.credited_units == 200

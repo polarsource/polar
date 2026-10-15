@@ -1,3 +1,6 @@
+import uuid
+import warnings
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 
@@ -9,12 +12,15 @@ from polar.kit.currency import PresentmentCurrency
 from polar.models.product_price import ProductPriceAmountType
 from polar.product.meter_interval import meter_interval_divides_billing_interval
 from polar.product.schemas import (
+    LegacyRecurringProductPriceFixed,
     ProductCreate,
     ProductCreateOneTime,
     ProductCreateRecurring,
+    ProductPrice,
     ProductPriceCustomCreate,
     ProductPriceFixedCreate,
     ProductPriceMeteredTiersCreate,
+    ProductPriceMeteredUnit,
     ProductPriceMeteredUnitCreate,
     ProductPriceSeatTiers,
     ProductPriceUnitBasedCreate,
@@ -848,3 +854,58 @@ class TestProductPriceSeatTiers:
                     ],
                 }
             )
+
+
+PRICE_BASE_FIELDS: dict[str, Any] = {
+    "id": uuid.uuid4(),
+    "created_at": datetime.now(UTC),
+    "modified_at": None,
+    "source": "catalog",
+    "price_currency": "usd",
+    "tax_behavior": None,
+    "is_archived": False,
+    "product_id": uuid.uuid4(),
+    "type": "recurring",
+    "recurring_interval": "month",
+}
+
+
+ProductPriceAdapter: TypeAdapter[Any] = TypeAdapter(ProductPrice)
+
+
+class TestProductPriceSerialization:
+    def test_new_price_instance_serializes_without_warnings(self) -> None:
+        price = ProductPriceMeteredUnit.model_validate(
+            {
+                **PRICE_BASE_FIELDS,
+                "amount_type": "metered_unit",
+                "cap_amount": None,
+                "meter_id": METER_ID,
+                "meter": {
+                    "id": METER_ID,
+                    "name": "Meter",
+                    "unit": "scalar",
+                    "custom_label": None,
+                    "custom_multiplier": None,
+                },
+                "unit_amount": Decimal("4.4"),
+            }
+        )
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            data = ProductPriceAdapter.dump_python(price, mode="json")
+
+        assert data["amount_type"] == "metered_unit"
+        assert "legacy" not in data
+
+    def test_legacy_price_instance_serializes_as_legacy(self) -> None:
+        price = LegacyRecurringProductPriceFixed.model_validate(
+            {**PRICE_BASE_FIELDS, "amount_type": "fixed", "price_amount": 1000}
+        )
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            data = ProductPriceAdapter.dump_python(price, mode="json")
+
+        assert data["legacy"] is True

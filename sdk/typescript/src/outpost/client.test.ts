@@ -666,6 +666,7 @@ it("reconnects the WebSocket and keeps serving from Redis", async () => {
   expect(await ingest(outpost, 3)).toEqual({ inserted: 1, duplicates: 0 });
   await vi.waitFor(() => expect(connections).toHaveLength(2), { timeout: 3_000 });
   await vi.waitFor(() => expect(outpost.connectionId).toBe(connectionId));
+  expect(outpost.connected).toBe(true);
   expect(await ingest(outpost, 3)).toEqual({ inserted: 1, duplicates: 0 });
 });
 
@@ -676,6 +677,7 @@ it("fails when Polar refuses the reconnection", async () => {
   await vi.waitFor(() => expect(outpost.actor(customer)).rejects.toThrow("refused"), {
     timeout: 3_000,
   });
+  expect(outpost.connected).toBe(false);
 });
 
 it("fails to start without Redis instead of hanging", async () => {

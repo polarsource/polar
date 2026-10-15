@@ -27232,6 +27232,12 @@ export interface components {
       units: number
       /** Rollover */
       rollover: boolean
+      /**
+       * Reason
+       * @default benefit
+       * @enum {string}
+       */
+      reason: 'benefit' | 'manual'
     }
     /** MeterQuantities */
     MeterQuantities: {
@@ -72728,6 +72734,9 @@ export const merchantMigrationStepValues: ReadonlyArray<
 export const meterCreditEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MeterCreditEvent']['name']
 > = ['meter.credited']
+export const meterCreditedMetadataReasonValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MeterCreditedMetadata']['reason']
+> = ['benefit', 'manual']
 export const meterResetEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MeterResetEvent']['name']
 > = ['meter.reset']

@@ -313,6 +313,7 @@ class CustomerMeterService:
             "meter_id": str(meter.id),
             "units": credit_create.units,
             "rollover": credit_create.rollover,
+            "reason": "manual",
         }
         event = build_system_event(
             SystemEvent.meter_credited,

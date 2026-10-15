@@ -1495,6 +1495,7 @@ class SubscriptionService:
                         "meter_id": str(subscription_meter.meter_id),
                         "units": rollover_units,
                         "rollover": True,
+                        "reason": "benefit",
                     },
                     timestamp=reset_at,
                 ),

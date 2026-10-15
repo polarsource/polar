@@ -4,7 +4,11 @@ from typing import Any, get_args, get_type_hints
 import pytest
 from pydantic import ValidationError
 
-from polar.event.schemas import EventCreateCustomer, EventCreateExternalCustomer
+from polar.event.schemas import (
+    EventCreateCustomer,
+    EventCreateExternalCustomer,
+    MeterCreditEvent,
+)
 from polar.event.schemas import SystemEvent as SystemEventUnion
 from polar.event.system import SYSTEM_EVENT_LABELS
 from polar.event.system import SystemEvent as SystemEventEnum
@@ -168,3 +172,40 @@ class TestSystemEventCoverage:
         assert not missing, (
             f"SystemEvent enum values missing from SYSTEM_EVENT_LABELS: {missing}"
         )
+
+
+class TestMeterCreditEvent:
+    @pytest.mark.parametrize(
+        ("metadata", "expected"),
+        [
+            ({}, "benefit"),
+            ({"reason": "benefit"}, "benefit"),
+            ({"reason": "manual"}, "manual"),
+        ],
+    )
+    def test_reason(self, metadata: dict[str, Any], expected: str) -> None:
+        event = MeterCreditEvent.model_validate(
+            {
+                "id": uuid.uuid4(),
+                "timestamp": "2026-01-01T00:00:00Z",
+                "organization_id": uuid.uuid4(),
+                "customer_id": None,
+                "customer": None,
+                "external_customer_id": None,
+                "member_id": None,
+                "external_member_id": None,
+                "child_count": 0,
+                "parent_id": None,
+                "label": "Meter Credited",
+                "source": "system",
+                "name": "meter.credited",
+                "metadata": {
+                    "meter_id": str(uuid.uuid4()),
+                    "units": 10,
+                    "rollover": False,
+                    **metadata,
+                },
+            }
+        )
+
+        assert event.metadata["reason"] == expected

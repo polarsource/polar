@@ -205,6 +205,7 @@ class TestCreditCustomerMeter:
             "meter_id": str(meter.id),
             "units": 100,
             "rollover": True,
+            "reason": "manual",
         }
 
         await customer_meter_service.update_customer(session, customer)

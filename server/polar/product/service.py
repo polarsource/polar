@@ -392,12 +392,11 @@ class ProductService:
             errors.extend(prices_errors)
 
         # Prevent non-legacy products from changing their recurring interval
-        if (
-            (
+        if not all(is_legacy_price(price) for price in product.prices):
+            if (
                 update_schema.recurring_interval is not None
                 or update_schema.recurring_interval_count is not None
-            )
-            and (
+            ) and (
                 (
                     update_schema.recurring_interval is not None
                     and update_schema.recurring_interval != product.recurring_interval
@@ -407,17 +406,42 @@ class ProductService:
                     and update_schema.recurring_interval_count
                     != product.recurring_interval_count
                 )
-            )
-            and not all(is_legacy_price(price) for price in product.prices)
-        ):
-            errors.append(
-                {
-                    "type": "value_error",
-                    "loc": ("body", "recurring_interval"),
-                    "msg": "Recurring interval cannot be changed.",
-                    "input": update_schema.recurring_interval,
-                }
-            )
+            ):
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "recurring_interval"),
+                        "msg": "Recurring interval cannot be changed.",
+                        "input": update_schema.recurring_interval,
+                    }
+                )
+
+            if (
+                "recurring_interval" in update_schema.model_fields_set
+                and update_schema.recurring_interval is None
+                and product.recurring_interval is not None
+            ):
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "recurring_interval"),
+                        "msg": "Recurring interval cannot be changed.",
+                        "input": update_schema.recurring_interval,
+                    }
+                )
+            if (
+                "recurring_interval_count" in update_schema.model_fields_set
+                and update_schema.recurring_interval_count is None
+                and product.recurring_interval_count is not None
+            ):
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "recurring_interval_count"),
+                        "msg": "Recurring interval cannot be changed.",
+                        "input": update_schema.recurring_interval_count,
+                    }
+                )
 
         # Prevent trying to add trial configuration to non-recurring products
         if (

@@ -253,6 +253,7 @@ class OutpostService:
                             meter_id=meter_id,
                             customer_id=customer_id,
                             external_customer_id=external_customer_id,
+                            customer_exists=customer is not None,
                             version=version,
                             cold_until=cold_until,
                             count=count,

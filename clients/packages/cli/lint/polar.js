@@ -1,8 +1,11 @@
 import commandBoundaries from './rules/command-boundaries.js'
 import commandDescriptions from './rules/command-descriptions.js'
+import commandExamples from './rules/command-examples.js'
 import commandsOnly from './rules/commands-only.js'
 import commandsOutputJson from './rules/commands-output-json.js'
+import flagConventions from './rules/flag-conventions.js'
 import noAnsiEscapes from './rules/no-ansi-escapes.js'
+import noDoubleCast from './rules/no-double-cast.js'
 import noEffectRunOutsideEntrypoint from './rules/no-effect-run-outside-entrypoint.js'
 import noHardcodedHosts from './rules/no-hardcoded-hosts.js'
 import noProcessEnv from './rules/no-process-env.js'
@@ -17,9 +20,12 @@ export default {
   rules: {
     'command-boundaries': commandBoundaries,
     'command-descriptions': commandDescriptions,
+    'command-examples': commandExamples,
     'commands-only': commandsOnly,
     'commands-output-json': commandsOutputJson,
+    'flag-conventions': flagConventions,
     'no-ansi-escapes': noAnsiEscapes,
+    'no-double-cast': noDoubleCast,
     'no-effect-run-outside-entrypoint': noEffectRunOutsideEntrypoint,
     'no-hardcoded-hosts': noHardcodedHosts,
     'no-process-env': noProcessEnv,

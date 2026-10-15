@@ -79,6 +79,16 @@ export const update = Command.make('update', {
   ),
 }).pipe(
   Command.withDescription('Update the CLI to the latest release'),
+  Command.withExamples([
+    {
+      command: 'polar update',
+      description: 'Update to the latest version of the CLI',
+    },
+    {
+      command: 'polar update --method npm',
+      description: 'Update through npm instead of the detected install method',
+    },
+  ]),
   output({
     result: Outcome,
     run: ({ method }) =>

@@ -1,5 +1,7 @@
+import type { AppliedEntry } from '@/schemas/BillingConfig'
 import {
   ALL_EVENTS,
+  Rendered,
   aggregation,
   count,
   filter,
@@ -143,6 +145,33 @@ export const webhookUrl = (url: unknown, format: unknown) => {
   if (format === 'raw') return shown
   const parsed = URL.parse(shown)
   return parsed ? `${parsed.origin}/***` : shown
+}
+
+const shownUrl = (url: unknown, format: unknown) =>
+  url === undefined || url === null
+    ? url
+    : new Rendered(webhookUrl(url, format))
+
+// Webhook URLs in a diff are redacted by the format on their own side.
+export const shownDiff = (
+  section: string,
+  diff: AppliedEntry['diff'],
+  document: unknown,
+): AppliedEntry['diff'] => {
+  if (section !== 'webhooks') return diff
+  const format = diff.find((change) => change.field === 'format')
+  const before =
+    format === undefined ? record(document)?.['format'] : format.before
+  const after = record(document)?.['format']
+  return diff.map((change) =>
+    change.field === 'url'
+      ? {
+          ...change,
+          before: shownUrl(change.before, before),
+          after: shownUrl(change.after, after),
+        }
+      : change,
+  )
 }
 
 export const webhookSentence = (input: unknown) => {

@@ -11,6 +11,7 @@ import { apply } from '@/services/billing-config/apply'
 import { loader } from '@/services/billing-config/load'
 import { plan } from '@/services/billing-config/plan'
 import { pull } from '@/services/billing-config/pull'
+import { webhookSecret } from '@/services/billing-config/webhook-secret'
 import { authenticatedClient } from '@/services/client'
 
 export class BillingConfig extends Context.Service<
@@ -30,6 +31,10 @@ export class BillingConfig extends Context.Service<
       file: string | undefined,
       force: boolean,
     ) => Effect.Effect<PullResult, AuthError | BillingConfigError>
+    webhookSecret: (
+      organization: ActiveOrganization,
+      key: string,
+    ) => Effect.Effect<string, AuthError | BillingConfigError>
   }
 >()('BillingConfig') {}
 
@@ -46,6 +51,7 @@ const make = Effect.gen(function* () {
     plan: plan(clients),
     apply: apply(clients),
     pull: pull(fs, load, clients),
+    webhookSecret: webhookSecret(clients),
   })
 })
 

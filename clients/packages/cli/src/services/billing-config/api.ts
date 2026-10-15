@@ -67,7 +67,6 @@ export const entries = (results: ReadonlyArray<typeof EntryResult.Type>) =>
       id: entry.external_id,
       action: entry.action,
       diff: entry.diff ?? [],
-      ...(entry.secret ? { secret: entry.secret } : {}),
     }),
   )
 

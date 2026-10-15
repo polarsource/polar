@@ -225,41 +225,6 @@ describe('apply', () => {
     )
   })
 
-  test('keeps the signing secret only for webhooks the apply returned one for', async () => {
-    api.routes[`POST ${applyUrl}`] = Response.json({
-      changes: [
-        {
-          resource: 'webhook',
-          external_id: 'app',
-          action: 'created',
-          secret: 'polar_whs_abc',
-        },
-        {
-          resource: 'webhook',
-          external_id: 'sales',
-          action: 'updated',
-          secret: null,
-        },
-      ],
-    })
-
-    const result = await run(await write(source))
-
-    expect(result).toEqual({
-      status: 'applied',
-      entries: [
-        {
-          section: 'webhooks',
-          id: 'app',
-          action: 'created',
-          diff: [],
-          secret: 'polar_whs_abc',
-        },
-        { section: 'webhooks', id: 'sales', action: 'updated', diff: [] },
-      ],
-    })
-  })
-
   test('asks for the webhooks scope when the config declares webhooks', async () => {
     api.routes[`POST ${applyUrl}`] = Response.json(
       { error: 'NotPermitted', detail: 'Not permitted' },

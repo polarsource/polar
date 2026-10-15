@@ -25,6 +25,7 @@ const helpOnlyServices = Layer.mergeAll(
       plan: unused,
       apply: unused,
       pull: unused,
+      webhookSecret: unused,
     }),
   ),
   Layer.succeed(Organizations, fakeOrganizations().organizations),

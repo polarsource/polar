@@ -1,5 +1,6 @@
 import { Duration, Effect, Option, Stdio } from 'effect'
 import { Command, Flag, Prompt } from 'effect/cli'
+import { record } from '@/utils/billing-config/describe'
 import { changeCount, tally } from '@/utils/billing-config/entries'
 import { formatProblems, plural } from '@/utils/billing-config/problems'
 import {
@@ -41,6 +42,28 @@ const applied = (
     ? ui.success(`${target(organization)} is up to date, nothing to apply`)
     : `${ui.INDENT}${config.file} applied to ${target(organization)}: ${plural(entries.length, 'entry', 'entries')} (${tally(entries)})`
 
+const signingSecrets = (
+  config: LoadedConfig,
+  entries: ReadonlyArray<AppliedEntry>,
+) => {
+  const webhooks = record(config.input)?.['webhooks']
+  const handled = new Set(
+    (Array.isArray(webhooks) ? webhooks : [])
+      .map(record)
+      .filter((webhook) => webhook?.['format'] === 'raw')
+      .map((webhook) => webhook?.['external_id']),
+  )
+  return entries
+    .filter(
+      ({ section, action, id }) =>
+        section === 'webhooks' && action === 'created' && handled.has(id),
+    )
+    .map(
+      ({ id }) =>
+        `${ui.INDENT}${ui.dim(`Get the signing secret of ${id} with`)} ${ui.command(`polar webhook secret ${id}`)}`,
+    )
+}
+
 const render = (
   config: LoadedConfig,
   organization: ActiveOrganization,
@@ -55,7 +78,10 @@ const render = (
       ]
     : unchanged(result.entries)
       ? [ui.blank, applied(config, organization, result.entries)]
-      : [applied(config, organization, result.entries)]
+      : [
+          applied(config, organization, result.entries),
+          ...signingSecrets(config, result.entries),
+        ]
 
 const interactive = Effect.gen(function* () {
   const stdio = yield* Stdio.Stdio

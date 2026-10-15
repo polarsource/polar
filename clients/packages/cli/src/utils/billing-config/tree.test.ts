@@ -296,7 +296,7 @@ describe('formatTree', () => {
     )
   })
 
-  test('shows only the host of a created Slack webhook and its new signing secret', () => {
+  test('shows only the host of a created Slack webhook', () => {
     const slackUrl = 'https://hooks.slack.com/services/T0/B0/token'
     const output = stripAnsi(
       formatTree(
@@ -312,13 +312,10 @@ describe('formatTree', () => {
           ],
         },
         [
-          {
-            ...entry('webhooks', 'sales', 'created', [
-              { field: 'url', before: null, after: slackUrl },
-              { field: 'format', before: null, after: 'slack' },
-            ]),
-            secret: 'polar_whs_abc',
-          },
+          entry('webhooks', 'sales', 'created', [
+            { field: 'url', before: null, after: slackUrl },
+            { field: 'format', before: null, after: 'slack' },
+          ]),
         ],
       ),
     )
@@ -329,8 +326,6 @@ describe('formatTree', () => {
         '      url     https://hooks.slack.com/***',
         '      format  slack',
         '      events  order.paid, subscription.canceled',
-        '      secret  polar_whs_abc',
-        "      Set it as your webhook signing secret (e.g. POLAR_WEBHOOK_SECRET); it won't be shown again.",
       ].join('\n'),
     )
   })

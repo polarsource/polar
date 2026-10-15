@@ -6,12 +6,11 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import select
 
-from polar.event.system import SystemEvent
 from polar.kit.db.postgres import AsyncSession
 from polar.meter.aggregation import AggregationFunction, PropertyAggregation
 from polar.models import Customer, OrderItem, Organization, Product, ReducerBucket
 from polar.models.billing_entry import BillingEntryType
-from polar.models.event import EventSource
+from polar.reducer.service import reducer as reducer_service
 from scripts.backfill_reducer_buckets import backfill_organization
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -28,7 +27,6 @@ START = datetime(2026, 10, 1, 10, 0, tzinfo=UTC)
 BUCKET = timedelta(minutes=5)
 END = START + 3 * BUCKET
 SUBSCRIPTION_START = START + timedelta(minutes=1)
-CUTOFF = START + BUCKET + timedelta(minutes=2)
 
 
 @pytest.mark.anyio
@@ -87,16 +85,6 @@ class TestBackfillBuckets:
                     end_timestamp=START + BUCKET + timedelta(minutes=1),
                 )
             ],
-        )
-        # Billing cycles reset the meter at their cutoff.
-        await create_event(
-            save_fixture,
-            organization=organization,
-            customer=customer,
-            source=EventSource.system,
-            name=SystemEvent.meter_reset,
-            timestamp=CUTOFF,
-            metadata={"meter_id": str(meter.id)},
         )
 
         async def usage(
@@ -202,9 +190,11 @@ class TestBackfillBuckets:
                     Decimal(1),
                     Decimal(1),
                 ),
+                # Billed up to the previous cutoff, then pending: two generations,
+                # the cutoff itself isn't reconstructed.
                 (
                     START + BUCKET,
-                    CUTOFF,
+                    START + 2 * BUCKET,
                     1,
                     order.created_at,
                     1,
@@ -212,17 +202,17 @@ class TestBackfillBuckets:
                     Decimal(3),
                     Decimal(3),
                 ),
-                # After the cutoff: pending, then usage with no billing entry.
                 (
-                    CUTOFF,
+                    START + BUCKET,
                     START + 2 * BUCKET,
-                    1,
+                    2,
                     None,
                     1,
                     Decimal(5),
                     Decimal(5),
                     Decimal(5),
                 ),
+                # Usage with no billing entry.
                 (
                     START + 2 * BUCKET,
                     END,
@@ -243,3 +233,25 @@ class TestBackfillBuckets:
             ).all()
             assert sum(b.count for b in count_buckets) == 6
             assert all(b.sealed_at is None for b in count_buckets)
+
+        # The next billing seals everything still open since the subscription
+        # started: the late event, the pending one and the unbilled one.
+        quantities = await reducer_service.seal(
+            session,
+            customer,
+            [meter.id],
+            billable_from=SUBSCRIPTION_START,
+            cutoff=END,
+        )
+        assert quantities == {meter.id: Decimal(13)}
+        still_open = (
+            await session.scalars(
+                select(ReducerBucket).where(
+                    ReducerBucket.reducer_id == reducer.id,
+                    ReducerBucket.sealed_at.is_(None),
+                )
+            )
+        ).all()
+        assert [(b.bucket_start, b.bucket_end) for b in still_open] == [
+            (START, SUBSCRIPTION_START)
+        ]

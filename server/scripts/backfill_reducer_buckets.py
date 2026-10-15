@@ -10,7 +10,6 @@ import typer
 from sqlalchemy import (
     ColumnElement,
     Row,
-    String,
     and_,
     case,
     delete,
@@ -22,7 +21,6 @@ from sqlalchemy import (
     select,
 )
 
-from polar.event.system import SystemEvent
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import PropertyAggregation, UniqueAggregation
@@ -55,9 +53,10 @@ type BucketValues = dict[str, Any]
 type BucketKey = tuple[UUID, datetime, datetime, UUID | None, str | None]
 """reducer_id, bucket_start, bucket_end, customer_id, external_customer_id"""
 type Boundaries = dict[tuple[UUID | str, UUID], list[datetime]]
-"""Per customer id or external id and reducer, the sorted timestamps billing
-splits buckets at: each subscription's billable start and each meter reset,
-which every billing cycle performs at its cutoff."""
+"""Per customer id or external id and reducer, the sorted timestamps buckets
+are split at: each subscription's billable start, so that usage before it can
+never be billed. Past billing cutoffs aren't reconstructed: what each order
+billed is a sealed generation, what's pending an open one."""
 
 
 @dataclass
@@ -178,8 +177,8 @@ async def _get_reducers(
 
 
 async def _get_boundaries(session: AsyncSession, organization_id: UUID) -> Boundaries:
-    """The timestamps billing split the organization's buckets at, per customer
-    and reducer, with the customer's external id as an alternate key."""
+    """The timestamps the organization's buckets are split at, per customer and
+    reducer, with the customer's external id as an alternate key."""
     billable_from = (
         select(
             Subscription.customer_id,
@@ -195,27 +194,8 @@ async def _get_boundaries(session: AsyncSession, organization_id: UUID) -> Bound
             Subscription.started_at.is_not(None),
         )
     )
-    resets = (
-        select(
-            Event.customer_id,
-            Customer.external_id,
-            MeterReducer.reducer_id,
-            Event.timestamp,
-        )
-        .join(Customer, Customer.id == Event.customer_id)
-        .join(
-            MeterReducer,
-            MeterReducer.meter_id.cast(String)
-            == Event.user_metadata["meter_id"].as_string(),
-        )
-        .where(
-            Event.organization_id == organization_id,
-            Event.source == EventSource.system,
-            Event.name == SystemEvent.meter_reset,
-        )
-    )
     boundaries: Boundaries = {}
-    for statement in (billable_from, resets):
+    for statement in (billable_from,):
         for customer_id, external_id, reducer_id, at in await session.execute(
             statement
         ):

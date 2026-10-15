@@ -19,7 +19,7 @@ import type { DiscountDefinition, DiscountHelpers } from './discount'
 import { meter, MeterConfig } from './meter'
 import { Currency } from './money'
 import type { MeterDefinition } from './meter'
-import { fixed, free, metered, seats, tier, units } from './price'
+import { fixed, free, metered, seats, TaxBehavior, tier, units } from './price'
 import { product, ProductConfig, productPrices } from './product'
 import type { ProductDefinition, ProductHelpers } from './product'
 import { visibilityKey } from './visibility'
@@ -28,9 +28,7 @@ export const SettingsConfig = Schema.Struct({
   payments: Schema.optionalKey(
     Schema.Struct({
       currency: Schema.optionalKey(Currency),
-      tax: Schema.optionalKey(
-        Schema.Literals(['location', 'inclusive', 'exclusive']),
-      ),
+      tax: Schema.optionalKey(TaxBehavior),
     }),
   ),
 })

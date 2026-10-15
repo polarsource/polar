@@ -115,6 +115,8 @@ def product_create(
         recurring_interval_count=config.recurring_interval_count or 1,
         trial_interval=config.trial_interval,
         trial_interval_count=config.trial_interval_count,
+        meter_interval=config.meter_interval,
+        meter_interval_count=config.meter_interval_count,
         prices=prices,
         organization_id=organization_id,
     )

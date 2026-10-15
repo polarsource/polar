@@ -210,6 +210,73 @@ class TestApply:
         [error] = response.json()["detail"]
         assert error["loc"] == ["body", "products", 0]
 
+    @pytest.mark.parametrize(
+        "product",
+        [
+            pytest.param(
+                {
+                    "external_id": "pack",
+                    "name": "Pack",
+                    "meter_interval": "day",
+                    "prices": [{"amount_type": "fixed", "price_amount": 0}],
+                },
+                id="one_time",
+            ),
+            pytest.param(
+                {
+                    "external_id": "pro",
+                    "name": "Pro",
+                    "recurring_interval": "month",
+                    "meter_interval_count": 1,
+                    "prices": [{"amount_type": "fixed", "price_amount": 2000}],
+                },
+                id="missing_interval",
+            ),
+            pytest.param(
+                {
+                    "external_id": "pro",
+                    "name": "Pro",
+                    "recurring_interval": "month",
+                    "meter_interval": "week",
+                    "prices": [{"amount_type": "fixed", "price_amount": 2000}],
+                },
+                id="not_dividing",
+            ),
+            pytest.param(
+                {
+                    "external_id": "pro",
+                    "name": "Pro",
+                    "recurring_interval": "month",
+                    "recurring_interval_count": 3,
+                    "meter_interval": "month",
+                    "meter_interval_count": 2,
+                    "prices": [{"amount_type": "fixed", "price_amount": 2000}],
+                },
+                id="not_dividing_count",
+            ),
+        ],
+    )
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_invalid_meter_cycle(
+        self,
+        product: dict[str, Any],
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/config/apply",
+            json={
+                "products": [product],
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 422
+        [error] = response.json()["detail"]
+        assert error["loc"] == ["body", "products", 0]
+
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_duplicate_external_ids(

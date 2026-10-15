@@ -25,7 +25,7 @@ from polar.declarative_config.service import (
     declarative_config as declarative_config_service,
 )
 from polar.discount.repository import DiscountRepository
-from polar.enums import SubscriptionRecurringInterval, TaxBehaviorOption
+from polar.enums import MeterInterval, SubscriptionRecurringInterval, TaxBehaviorOption
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.trial import TrialInterval
 from polar.kit.visibility import Visibility
@@ -173,6 +173,20 @@ METERED_TIERS_PRICE = {
 }
 
 
+ANNUAL_PRODUCT = {
+    "external_id": "annual",
+    "name": "Annual",
+    "recurring_interval": "year",
+    "meter_interval": "month",
+    "prices": [
+        {"amount_type": "fixed", "price_amount": 24000},
+        {
+            "amount_type": "metered_unit",
+            "meter": "sdk-tool-calls",
+            "unit_amount": "0.5",
+        },
+    ],
+}
 USAGE_PRODUCT = {
     "external_id": "usage",
     "name": "Usage",
@@ -706,6 +720,56 @@ class TestApply:
         ]
         assert product.prices[1].id == metered_price.id
         assert [benefit.description for benefit in product.benefits] == ["Beta access"]
+
+    @pytest.mark.usefixtures("config_as_code_enabled", "meter_cycling_enabled")
+    async def test_product_meter_cycle(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        config = Config.model_validate(
+            {"meters": [TOOL_CALLS_METER], "products": [ANNUAL_PRODUCT]}
+        )
+        plan = await declarative_config_service.plan(session, auth_subject, config)
+        assert [
+            issue
+            for issue in plan.issues
+            if issue.severity == ConfigIssueSeverity.error
+        ] == []
+        product_change = next(
+            change
+            for change in plan.changes
+            if change.resource == ConfigResource.product
+        )
+        assert [
+            (field.field, field.after)
+            for field in product_change.diff
+            if field.field.startswith("meter_")
+        ] == [
+            ("meter_interval", MeterInterval.month),
+            ("meter_interval_count", 1),
+        ]
+
+        await declarative_config_service.apply(session, redis, auth_subject, config)
+
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["annual"])
+        assert product.recurring_interval == SubscriptionRecurringInterval.year
+        assert product.meter_interval == MeterInterval.month
+        assert product.meter_interval_count == 1
+
+        unchanged = await declarative_config_service.plan(session, auth_subject, config)
+        assert [
+            issue
+            for issue in unchanged.issues
+            if issue.severity == ConfigIssueSeverity.error
+        ] == []
+        assert {change.action for change in unchanged.changes} == {
+            ConfigAction.unchanged
+        }
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_product_trial(
@@ -2075,6 +2139,129 @@ class TestPlan:
             for issue in plan.issues
             if issue.type == ConfigIssueType.interval_changed
         ] == [["body", "products", 0, field]]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_product_meter_cycle_not_enabled(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {"meters": [TOOL_CALLS_METER], "products": [ANNUAL_PRODUCT]}
+            ),
+        )
+
+        assert [
+            (issue.type, issue.loc)
+            for issue in plan.issues
+            if issue.severity == ConfigIssueSeverity.error
+        ] == [
+            (ConfigIssueType.not_supported, ["body", "products", 0, "meter_interval"])
+        ]
+
+    @pytest.mark.parametrize(
+        ("benefits", "issues"),
+        [
+            pytest.param(
+                [], [ConfigIssueType.meter_cycle_unused], id="nothing_metered"
+            ),
+            pytest.param(["beta"], [ConfigIssueType.meter_cycle_unused], id="flag"),
+            pytest.param(["tool-call-credits"], [], id="meter_credit"),
+        ],
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled", "meter_cycling_enabled")
+    async def test_product_meter_cycle_unused(
+        self,
+        benefits: list[str],
+        issues: list[ConfigIssueType],
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "meters": [TOOL_CALLS_METER],
+                    "benefits": [CREDITS_BENEFIT, BETA_BENEFIT],
+                    "products": [
+                        {
+                            **ANNUAL_PRODUCT,
+                            "prices": [{"amount_type": "fixed", "price_amount": 24000}],
+                            "benefits": benefits,
+                        }
+                    ],
+                }
+            ),
+        )
+
+        assert [
+            issue.type
+            for issue in plan.issues
+            if issue.severity == ConfigIssueSeverity.error
+        ] == issues
+
+    @pytest.mark.parametrize(
+        ("existing", "meter_cycle", "field"),
+        [
+            pytest.param(MeterInterval.month, {}, "meter_interval", id="removed"),
+            pytest.param(
+                MeterInterval.month,
+                {"meter_interval": "month", "meter_interval_count": 2},
+                "meter_interval_count",
+                id="count_changed",
+            ),
+            pytest.param(
+                None, {"meter_interval": "month"}, "meter_interval", id="added"
+            ),
+            pytest.param(
+                MeterInterval.month, {"meter_interval": "month"}, None, id="unchanged"
+            ),
+        ],
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled", "meter_cycling_enabled")
+    async def test_product_meter_cycle_changed(
+        self,
+        existing: MeterInterval | None,
+        meter_cycle: dict[str, Any],
+        field: str | None,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            meter_interval=existing,
+            external_id="pro",
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "products": [
+                        {
+                            "external_id": "pro",
+                            "name": "Pro",
+                            "recurring_interval": "year",
+                            "prices": [{"amount_type": "fixed", "price_amount": 1000}],
+                            **meter_cycle,
+                        }
+                    ]
+                }
+            ),
+        )
+
+        assert [
+            issue.loc
+            for issue in plan.issues
+            if issue.type == ConfigIssueType.interval_changed
+        ] == ([] if field is None else [["body", "products", 0, field]])
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_product_trial_changed(

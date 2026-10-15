@@ -13,3 +13,14 @@ async def config_as_code_enabled(
         "config_as_code_enabled": True,
     }
     await save_fixture(organization)
+
+
+@pytest.fixture
+async def meter_cycling_enabled(
+    save_fixture: SaveFixture, organization: Organization
+) -> None:
+    organization.feature_settings = {
+        **organization.feature_settings,
+        "meter_cycling_enabled": True,
+    }
+    await save_fixture(organization)

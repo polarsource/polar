@@ -1,6 +1,7 @@
 import { runInThisContext } from 'node:vm'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { request, rpc } from './client'
+import scopes from '../src/generated/scopes.json'
 import tools from '../src/generated/tools.json'
 import { evaluate, exports, get } from './workers'
 
@@ -17,6 +18,10 @@ beforeEach(() => {
 })
 afterEach(() => vi.unstubAllGlobals())
 
+const RESOURCE_METADATA_URL =
+  'https://mcp.polar.test/.well-known/oauth-protected-resource/mcp/polar-mcp'
+const ALL_SCOPES = [...scopes.read, ...scopes.write]
+
 test('CORS, metadata, unknown routes and bearer challenges remain unchanged', async () => {
   const preflight = await request('/anything', { method: 'OPTIONS' })
   expect(preflight.status).toBe(204)
@@ -29,6 +34,7 @@ test('CORS, metadata, unknown routes and bearer challenges remain unchanged', as
   expect(await metadata.json()).toEqual({
     resource: 'https://mcp.polar.test/mcp/polar-mcp',
     authorization_servers: ['https://api.polar.test'],
+    scopes_supported: ALL_SCOPES,
     bearer_methods_supported: ['header'],
     resource_name: 'Polar',
   })
@@ -46,10 +52,30 @@ test('CORS, metadata, unknown routes and bearer challenges remain unchanged', as
     expect(response.status).toBe(401)
     expect(await response.json()).toEqual({ error: 'unauthorized' })
     expect(response.headers.get('WWW-Authenticate')).toBe(
-      'Bearer resource_metadata="https://mcp.polar.test/.well-known/oauth-protected-resource/mcp/polar-mcp"',
+      `Bearer resource_metadata="${RESOURCE_METADATA_URL}", scope="${ALL_SCOPES.join(' ')}"`,
     )
   }
   expect(fetchMock).not.toHaveBeenCalled()
+})
+
+test('scopes are the least-privileged scopes of the exposed operations, and read-only connections challenge for read scopes only', async () => {
+  expect(scopes.read).toContain('products:read')
+  expect(scopes.read).not.toContain('products:write')
+  expect(scopes.write).toContain('products:write')
+  expect(scopes.read.every((scope) => !scope.endsWith(':write'))).toBe(true)
+  expect(scopes.write.every((scope) => !scopes.read.includes(scope))).toBe(true)
+
+  const missing = await request('/mcp/polar-mcp?readonly=true')
+  expect(missing.headers.get('WWW-Authenticate')).toBe(
+    `Bearer resource_metadata="${RESOURCE_METADATA_URL}", scope="${scopes.read.join(' ')}"`,
+  )
+  fetchMock.mockResolvedValue(new Response(null, { status: 401 }))
+  const invalid = await request('/mcp/polar-mcp?readonly=true', {
+    headers: { Authorization: 'Bearer polar_at_revoked' },
+  })
+  expect(invalid.headers.get('WWW-Authenticate')).toBe(
+    `Bearer resource_metadata="${RESOURCE_METADATA_URL}", scope="${scopes.read.join(' ')}", error="invalid_token"`,
+  )
 })
 
 test('OAuth validates per environment, caches for 60 seconds, and rejects 401s and upstream failures without caching them', async () => {

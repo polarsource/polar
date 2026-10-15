@@ -25,6 +25,7 @@ from polar.models import (
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.product_price import ProductPriceFixed
+from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_meter import SubscriptionMeter
 from polar.postgres import AsyncSession
 from polar.subscription.service import SubscriptionUpdateContext
@@ -73,6 +74,41 @@ def set_tax(tax_mock: MagicMock, amount: int) -> None:
         )
 
     tax_mock.calculate = AsyncMock(side_effect=calculate)
+
+
+async def create_meter_cycle_subscription(
+    save_fixture: SaveFixture,
+    *,
+    organization: Organization,
+    customer: Customer,
+    usage: int,
+    meter_period_end: datetime = datetime(2026, 11, 1, tzinfo=UTC),
+    discount: Any | None = None,
+) -> Subscription:
+    """Yearly plan with a monthly meter cycle, renewing on 2027-01-01."""
+    product = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.year,
+        prices=[(1000, "usd")],
+    )
+    subscription = await create_active_subscription(
+        save_fixture,
+        product=product,
+        customer=customer,
+        discount=discount,
+        current_period_start=datetime(2026, 1, 1, tzinfo=UTC),
+        current_period_end=datetime(2027, 1, 1, tzinfo=UTC),
+    )
+    subscription.meter_interval = SubscriptionRecurringInterval.month
+    subscription.meter_interval_count = 1
+    subscription.current_meter_period_start = datetime(2026, 10, 1, tzinfo=UTC)
+    subscription.current_meter_period_end = meter_period_end
+    meter = await create_meter(save_fixture, organization=organization)
+    await save_fixture(
+        SubscriptionMeter(subscription=subscription, meter=meter, amount=usage)
+    )
+    return subscription
 
 
 @pytest.mark.anyio
@@ -407,6 +443,68 @@ class TestCalculateChargePreview:
         assert preview.discount_amount == 2500
         assert preview.net_amount == 7500
 
+    async def test_usage_billed_on_meter_cycle_is_excluded(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_meter_cycle_subscription(
+            save_fixture, organization=organization, customer=customer, usage=500
+        )
+
+        preview = await subscription_service.calculate_charge_preview(
+            session, subscription
+        )
+
+        assert preview.base_amount == 1000
+        assert preview.metered_amount == 0
+        assert preview.subtotal_amount == 1000
+        assert preview.total_amount == 1000
+
+    async def test_meter_cycle_ending_with_the_period_keeps_usage(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_meter_cycle_subscription(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            usage=500,
+            meter_period_end=datetime(2027, 1, 1, tzinfo=UTC),
+        )
+
+        preview = await subscription_service.calculate_charge_preview(
+            session, subscription
+        )
+
+        assert preview.metered_amount == 500
+        assert preview.subtotal_amount == 1500
+
+    async def test_paused_subscription_keeps_usage(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_meter_cycle_subscription(
+            save_fixture, organization=organization, customer=customer, usage=500
+        )
+        subscription.status = SubscriptionStatus.paused
+        await save_fixture(subscription)
+
+        preview = await subscription_service.calculate_charge_preview(
+            session, subscription
+        )
+
+        assert preview.metered_amount == 500
+        assert preview.subtotal_amount == 1500
+
 
 @pytest.mark.anyio
 class TestCalculateChargePreviewTaxMatchesOrder:
@@ -579,3 +677,154 @@ class TestCalculateChargePreviewPersistsNothing:
             )
             == 1
         )
+
+
+@pytest.mark.anyio
+class TestCalculateMeterChargePreview:
+    async def test_no_discount(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_meter_cycle_subscription(
+            save_fixture, organization=organization, customer=customer, usage=500
+        )
+
+        preview = await subscription_service.calculate_meter_charge_preview(
+            session, subscription
+        )
+
+        assert preview.metered_amount == 500
+        assert preview.subtotal_amount == 500
+        assert preview.discount_amount == 0
+        assert preview.total_amount == 500
+
+    async def test_fixed_discount_skipped(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1200},
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        subscription = await create_meter_cycle_subscription(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            usage=500,
+            discount=discount,
+        )
+
+        preview = await subscription_service.calculate_meter_charge_preview(
+            session, subscription
+        )
+
+        assert preview.discount_amount == 0
+        assert preview.total_amount == 500
+
+    async def test_percentage_discount_applied(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=2500,
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        subscription = await create_meter_cycle_subscription(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            usage=400,
+            discount=discount,
+        )
+
+        preview = await subscription_service.calculate_meter_charge_preview(
+            session, subscription
+        )
+
+        assert preview.discount_amount == 100
+        assert preview.total_amount == 300
+
+    @pytest.mark.parametrize(
+        "discount_applied_at", [None, datetime(2026, 1, 1, tzinfo=UTC)]
+    )
+    async def test_once_discount_expired(
+        self,
+        discount_applied_at: datetime | None,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=2500,
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+        subscription = await create_meter_cycle_subscription(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            usage=400,
+            discount=discount,
+        )
+        subscription.discount_applied_at = discount_applied_at
+        await save_fixture(subscription)
+
+        preview = await subscription_service.calculate_meter_charge_preview(
+            session, subscription
+        )
+
+        assert preview.discount_amount == 0
+        assert preview.total_amount == 400
+
+    async def test_repeating_discount_covers_usage_but_not_renewal(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=2500,
+            duration=DiscountDuration.repeating,
+            duration_in_months=11,
+            organization=organization,
+        )
+        subscription = await create_meter_cycle_subscription(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            usage=400,
+            discount=discount,
+        )
+
+        meter_preview = await subscription_service.calculate_meter_charge_preview(
+            session, subscription
+        )
+        renewal_preview = await subscription_service.calculate_charge_preview(
+            session, subscription
+        )
+
+        assert meter_preview.discount_amount == 100
+        assert meter_preview.total_amount == 300
+        assert renewal_preview.discount_amount == 0
+        assert renewal_preview.total_amount == 1000

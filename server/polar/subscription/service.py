@@ -135,6 +135,7 @@ from .schemas import (
     SubscriptionChargePreviewProration,
     SubscriptionCreate,
     SubscriptionCreateCustomer,
+    SubscriptionMeterChargePreview,
     SubscriptionPause,
     SubscriptionResume,
     SubscriptionRevoke,
@@ -3175,6 +3176,9 @@ class SubscriptionService:
         self, session: AsyncSession, subscription: Subscription
     ) -> SubscriptionChargePreview:
         next_period_start = subscription.current_period_end
+        # Usage of the current meter cycle is settled before any pending update
+        # applies, on its own order ahead of this invoice.
+        usage_billed_on_meter_cycle = self.bills_usage_on_meter_cycle(subscription)
 
         # Apply any pending subscription update (product change, seats change)
         pending_update = subscription.pending_update
@@ -3214,7 +3218,11 @@ class SubscriptionService:
         else:
             base_price = sum(p.amount for p in subscription.subscription_product_prices)
 
-        metered_amount = sum(meter.amount for meter in subscription.meters)
+        metered_amount = (
+            0
+            if usage_billed_on_meter_cycle
+            else sum(meter.amount for meter in subscription.meters)
+        )
 
         items = [
             OrderItem(
@@ -3263,6 +3271,71 @@ class SubscriptionService:
             metered_amount=metered_amount,
             prorations=prorations,
             proration_amount=proration_amount,
+        )
+
+    def bills_usage_on_meter_cycle(self, subscription: Subscription) -> bool:
+        """Whether the current usage is settled at the end of the meter cycle,
+        on its own order, before the next subscription invoice.
+
+        The meter cycle doesn't settle while the subscription is inactive, and
+        when both periods end together the renewal invoice includes the usage.
+        """
+        meter_period_end = subscription.current_meter_period_end
+        return (
+            subscription.active
+            and subscription.meter_interval is not None
+            and meter_period_end is not None
+            and meter_period_end < subscription.current_period_end
+            and len(subscription.meters) > 0
+        )
+
+    async def calculate_meter_charge_preview(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> SubscriptionMeterChargePreview:
+        """
+        Calculate a preview of the usage charge settled at the end of the current
+        meter cycle. Only valid when ``bills_usage_on_meter_cycle`` holds.
+        """
+        meter_period_end = subscription.current_meter_period_end
+        assert meter_period_end is not None
+
+        discount = subscription.discount
+        if discount is not None and discount.is_repetition_expired(
+            subscription.discount_applied_at or subscription.current_period_start,
+            meter_period_end,
+        ):
+            discount = None
+
+        metered_amount = sum(meter.amount for meter in subscription.meters)
+        items = [
+            OrderItem(
+                label="Metered usage",
+                amount=metered_amount,
+                net_amount=metered_amount,
+                tax_amount=0,
+                proration=False,
+            )
+        ]
+
+        nested = await session.begin_nested()
+        try:
+            order = await self._build_preview_order(
+                session,
+                subscription,
+                items,
+                billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+                discount=discount,
+            )
+        finally:
+            await nested.rollback()
+
+        return SubscriptionMeterChargePreview(
+            metered_amount=metered_amount,
+            subtotal_amount=order.subtotal_amount,
+            discount_amount=order.discount_amount,
+            net_amount=order.net_amount,
+            tax_amount=order.tax_amount,
+            total_amount=order.total_amount,
         )
 
     async def calculate_cancel_preview(
@@ -3611,19 +3684,13 @@ class SubscriptionService:
         prorations: Sequence[SubscriptionChargePreviewProration],
         proration_amount: int,
     ) -> SubscriptionChargePreview:
-        """Price ``items`` through the cycle's builder and read the resulting order.
-        Non-locking and keyed on the subscription: a preview must not lock the
-        balance, and repeated identical previews reuse the tax calculation."""
-        from polar.order.service import order as order_service
-
-        order = await order_service.build_subscription_order(
+        """Price ``items`` through the cycle's builder and read the resulting order."""
+        order = await self._build_preview_order(
             session,
             subscription,
             items,
-            billing_reason,
-            lock_balance=False,
+            billing_reason=billing_reason,
             discount=discount,
-            reference=str(subscription.id),
         )
 
         return SubscriptionChargePreview(
@@ -3638,6 +3705,29 @@ class SubscriptionService:
             total_amount=order.total_amount,
             applied_balance_amount=order.applied_balance_amount,
             due_amount=order.due_amount,
+        )
+
+    async def _build_preview_order(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        items: Sequence[OrderItem],
+        *,
+        billing_reason: OrderBillingReasonInternal,
+        discount: Discount | None,
+    ) -> Order:
+        """Non-locking and keyed on the subscription: a preview must not lock the
+        balance, and repeated identical previews reuse the tax calculation."""
+        from polar.order.service import order as order_service
+
+        return await order_service.build_subscription_order(
+            session,
+            subscription,
+            items,
+            billing_reason,
+            lock_balance=False,
+            discount=discount,
+            reference=str(subscription.id),
         )
 
     async def _after_subscription_updated(

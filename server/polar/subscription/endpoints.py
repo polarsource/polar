@@ -45,6 +45,7 @@ from .schemas import (
     SubscriptionChargePreview,
     SubscriptionCreate,
     SubscriptionID,
+    SubscriptionMeterChargePreview,
     SubscriptionUpdate,
 )
 from .service import (
@@ -299,6 +300,36 @@ async def get_charge_preview(
         raise ResourceNotFound()
 
     return await subscription_service.calculate_charge_preview(session, subscription)
+
+
+@router.get(
+    "/{id}/meter-charge-preview",
+    summary="Preview Usage Charge For Subscription",
+    response_model=SubscriptionMeterChargePreview,
+    responses={404: SubscriptionNotFound},
+    tags=[APITag.private],
+)
+async def get_meter_charge_preview(
+    id: SubscriptionID,
+    auth_subject: auth.SubscriptionsRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionMeterChargePreview:
+    """
+    Get a preview of the usage charge settled at the end of the current meter cycle.
+
+    Only available when the meter cycle ends before the next subscription invoice;
+    otherwise usage is part of the charge preview.
+    """
+    subscription = await subscription_service.get(session, auth_subject, id)
+
+    if subscription is None or not subscription_service.bills_usage_on_meter_cycle(
+        subscription
+    ):
+        raise ResourceNotFound()
+
+    return await subscription_service.calculate_meter_charge_preview(
+        session, subscription
+    )
 
 
 @router.get(

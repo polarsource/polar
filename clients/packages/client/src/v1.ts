@@ -1618,6 +1618,31 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/subscriptions/{id}/meter-charge-preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Preview Usage Charge For Subscription
+     * @description Get a preview of the usage charge settled at the end of the current meter cycle.
+     *
+     *     Only available when the meter cycle ends before the next subscription invoice;
+     *     otherwise usage is part of the charge preview.
+     *
+     *     **Scopes**: `subscriptions:read` `subscriptions:write`
+     */
+    get: operations['subscriptions:get_meter_charge_preview']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/subscriptions/{id}/cancel-preview': {
     parameters: {
       query?: never
@@ -5201,6 +5226,31 @@ export interface paths {
      *     **Scopes**: `customer_portal:read` `customer_portal:write`
      */
     get: operations['customer_portal:subscriptions:get_charge_preview']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-portal/subscriptions/{id}/meter-charge-preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Preview Usage Charge For Active Subscription
+     * @description Get a preview of the usage charge settled at the end of the current meter cycle.
+     *
+     *     Only available when the meter cycle ends before the next subscription invoice;
+     *     otherwise usage is part of the charge preview.
+     *
+     *     **Scopes**: `customer_portal:read` `customer_portal:write`
+     */
+    get: operations['customer_portal:subscriptions:get_meter_charge_preview']
     put?: never
     post?: never
     delete?: never
@@ -37220,7 +37270,7 @@ export interface components {
       base_amount: number
       /**
        * Metered Amount
-       * @description Total metered usage charges in cents (sum of all meter charges)
+       * @description Metered usage in cents billed on this invoice. Zero when usage is billed on its own meter cycle, ending before this invoice.
        */
       metered_amount: number
       /**
@@ -37723,6 +37773,42 @@ export interface components {
       meter_id: string
       /** @description The meter associated with this subscription. */
       meter: components['schemas']['Meter']
+    }
+    /**
+     * SubscriptionMeterChargePreview
+     * @description Preview of the metered usage billed at the end of the current meter cycle.
+     */
+    SubscriptionMeterChargePreview: {
+      /**
+       * Metered Amount
+       * @description Metered usage amount in cents.
+       */
+      metered_amount: number
+      /**
+       * Subtotal Amount
+       * @description Subtotal amount in cents, before discount and tax.
+       */
+      subtotal_amount: number
+      /**
+       * Discount Amount
+       * @description Discount amount in cents.
+       */
+      discount_amount: number
+      /**
+       * Net Amount
+       * @description Net amount in cents, before taxes.
+       */
+      net_amount: number
+      /**
+       * Tax Amount
+       * @description Tax amount in cents.
+       */
+      tax_amount: number
+      /**
+       * Total Amount
+       * @description Total amount in cents, before applying the wallet balance.
+       */
+      total_amount: number
     }
     /**
      * SubscriptionMigratedEvent
@@ -46024,6 +46110,47 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['SubscriptionChargePreview']
+        }
+      }
+      /** @description Subscription not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'subscriptions:get_meter_charge_preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The subscription ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SubscriptionMeterChargePreview']
         }
       }
       /** @description Subscription not found. */
@@ -57612,6 +57739,47 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['SubscriptionChargePreview']
+        }
+      }
+      /** @description Customer subscription was not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:subscriptions:get_meter_charge_preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The subscription ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SubscriptionMeterChargePreview']
         }
       }
       /** @description Customer subscription was not found. */

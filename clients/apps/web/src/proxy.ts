@@ -438,7 +438,7 @@ export const config = {
      * - ingest (Posthog)
      * - monitoring (Sentry)
      * - docs, _mintlify, mintlify-assets (Mintlify)
-     * - perspectives (Shadow Document)
+     * - perspectives (Prompting Company / GEO)
      * - assets (static asset files)
      * - _next (Next.js internals: static files, image optimization, data)
      * - favicon.ico, sitemap.xml, robots.txt (metadata files)

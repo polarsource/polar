@@ -24,6 +24,7 @@ class MeterEvent(Model):
             "ingested_at",
         ),
         Index("ix_meter_events_event_id", "event_id"),
+        Index("ix_meter_events_meter_timestamp", "meter_id", "timestamp"),
     )
 
     meter_id: Mapped[UUID] = mapped_column(

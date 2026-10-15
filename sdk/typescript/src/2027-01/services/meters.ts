@@ -12,7 +12,7 @@ import type {
   Timezone,
 } from "../models";
 
-import { AmbiguousExternalMeterID, HTTPValidationError, ResourceNotFound } from "../errors";
+import { HTTPValidationError, ResourceNotFound } from "../errors";
 
 export const listMeters = (client: ClientBase) => {
   /**
@@ -31,7 +31,6 @@ export const listMeters = (client: ClientBase) => {
   return async (
     query?: {
       organization_id?: string | string[] | null;
-      external_id?: string | string[] | null;
       query?: string | null;
       is_archived?: boolean | null;
       page?: number;
@@ -44,7 +43,6 @@ export const listMeters = (client: ClientBase) => {
     const pathParams = {};
     const queryParams = {
       organization_id: query?.organization_id,
-      external_id: query?.external_id,
       query: query?.query,
       is_archived: query?.is_archived,
       page: query?.page ?? 1,
@@ -76,7 +74,6 @@ export const iterListMeters = (client: ClientBase) => {
   return async function* (
     query?: {
       organization_id?: string | string[] | null;
-      external_id?: string | string[] | null;
       query?: string | null;
       is_archived?: boolean | null;
       page?: number;
@@ -123,42 +120,6 @@ export const createMeters = (client: ClientBase) => {
     const request = client.buildRequest("POST", "/v1/meters/", pathParams, queryParams, body);
     const response = await client.sendRequest(request, requestOptions);
     return client.parseResponse<Meter>(response, "json", {
-      422: HTTPValidationError,
-    });
-  };
-};
-export const getExternalMeters = (client: ClientBase) => {
-  /**
-   * Get a meter by external ID.
-   *
-   * **Scopes**: `meters:read` `meters:write`
-   *
-   * @param external_id
-   * @param requestOptions - Request options
-   * @returns {Meter}
-   * @throws {PolarNetworkError} When a network error occurs
-   * @throws {PolarRateLimitError} When the rate limit is exceeded
-   * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {ResourceNotFound} Meter not found.
-   * @throws {AmbiguousExternalMeterID} The external ID matches meters in several accessible organizations.
-   * @throws {HTTPValidationError} Validation Error
-   */
-  return async (external_id: string, requestOptions?: RequestOptions): Promise<Meter> => {
-    const pathParams = {
-      external_id: external_id,
-    };
-    const queryParams = {};
-    const request = client.buildRequest(
-      "GET",
-      "/v1/meters/external/{external_id}",
-      pathParams,
-      queryParams,
-      undefined,
-    );
-    const response = await client.sendRequest(request, requestOptions);
-    return client.parseResponse<Meter>(response, "json", {
-      404: ResourceNotFound,
-      409: AmbiguousExternalMeterID,
       422: HTTPValidationError,
     });
   };
@@ -288,7 +249,6 @@ export function createMetersService(client: ClientBase) {
   return {
     list: listMeters(client),
     create: createMeters(client),
-    getExternal: getExternalMeters(client),
     get: getMeters(client),
     update: updateMeters(client),
     quantities: quantitiesMeters(client),

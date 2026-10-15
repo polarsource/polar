@@ -49,10 +49,10 @@ Ad-hoc prices are marked with `source: "ad_hoc"` in the API response, while cata
 
 <CodeGroup>
 ```ts TypeScript
-import { Polar } from "@polar-sh/sdk";
+import { createPolar } from "@polar-sh/sdk/2026-10";
 
-const polar = new Polar({
-  accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
+const polar = createPolar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN!,
 });
 
 async function run() {
@@ -61,9 +61,9 @@ async function run() {
     prices: {
       "productId": [
         {
-          amountType: "fixed",
-          priceAmount: 10000, // $100.00
-          priceCurrency: "usd",
+          amount_type: "fixed",
+          price_amount: 10000, // $100.00
+          price_currency: "usd",
         }
       ]
     }
@@ -76,14 +76,12 @@ run();
 ```
 
 ```py Python
-from polar_sdk import Polar
+from polar.v2026_10 import Polar
 
-with Polar(
-    access_token="<YOUR_BEARER_TOKEN_HERE>",
-) as polar:
-    checkout = polar.checkouts.create(request={
-        "products": ["<product_id>"],
-        "prices": {
+with Polar("<YOUR_BEARER_TOKEN_HERE>") as polar:
+    checkout = polar.checkouts.create(
+        products=["<product_id>"],
+        prices={
             "<product_id>": [
                 {
                     "amount_type": "fixed",
@@ -91,8 +89,8 @@ with Polar(
                     "price_currency": "usd",
                 }
             ]
-        }
-    })
+        },
+    )
 
     print(checkout.url)
 ```
@@ -133,26 +131,26 @@ In that case, forward the customer's IP address as `customer_ip_address` in the 
 
 <CodeGroup>
 ```ts TypeScript
-import { Polar } from "@polar-sh/sdk";
+import { createPolar } from "@polar-sh/sdk/2026-10";
 
-const polar = new Polar({
-  accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
+const polar = createPolar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN!,
 });
 
 const checkout = await polar.checkouts.create({
   products: ["productId"],
-  customerIpAddress: request.headers.get("CF-Connecting-IP") ?? undefined,
+  customer_ip_address: request.headers.get("CF-Connecting-IP") ?? undefined,
 });
 ```
 
 ```py Python
-from polar_sdk import Polar
+from polar.v2026_10 import Polar
 
-with Polar(access_token="<YOUR_BEARER_TOKEN_HERE>") as polar:
-    checkout = polar.checkouts.create(request={
-        "products": ["<product_id>"],
-        "customer_ip_address": request.headers.get("True-Client-IP") or request.client.host,
-    })
+with Polar("<YOUR_BEARER_TOKEN_HERE>") as polar:
+    checkout = polar.checkouts.create(
+        products=["<product_id>"],
+        customer_ip_address=request.headers.get("True-Client-IP") or request.client.host,
+    )
 ```
 </CodeGroup>
 
@@ -168,10 +166,10 @@ Using our SDK, creating a checkout session is quite straightforward.
 
 <CodeGroup>
     ```ts TypeScript
-    import { Polar } from "@polar-sh/sdk";
+    import { createPolar } from "@polar-sh/sdk/2026-10";
 
-    const polar = new Polar({
-      accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
+    const polar = createPolar({
+      accessToken: process.env.POLAR_ACCESS_TOKEN!,
     });
 
     async function run() {
@@ -186,16 +184,13 @@ Using our SDK, creating a checkout session is quite straightforward.
     ```
 
     ```py Python
-    from polar_sdk import Polar
+    from polar.v2026_10 import Polar
 
-    with Polar(
-        access_token="<YOUR_BEARER_TOKEN_HERE>",
-    ) as polar:
-
-        checkout = polar.checkouts.create(request={
-            "allow_discount_codes": True,
-            "product_id": "<value>",
-        })
+    with Polar("<YOUR_BEARER_TOKEN_HERE>") as polar:
+        checkout = polar.checkouts.create(
+            allow_discount_codes=True,
+            products=["<product_id>"],
+        )
 
         print(checkout.url)
     ```

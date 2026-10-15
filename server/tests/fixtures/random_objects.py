@@ -49,6 +49,7 @@ from polar.models import (
     LegacyRecurringProductPriceFixed,
     Member,
     Meter,
+    MeterEvent,
     MeterReducer,
     Order,
     OrderItem,
@@ -2266,6 +2267,7 @@ async def create_event(
     root_id: uuid.UUID | None = None,
     metadata: dict[str, str | int | bool | float | Any] | None = None,
     event_type: EventType | None = None,
+    meter: Meter | None = None,
 ) -> Event:
     event_id = uuid.uuid4()
     if root_id is None:
@@ -2286,6 +2288,18 @@ async def create_event(
         event_type_id=event_type.id if event_type else None,
     )
     await save_fixture(event)
+    if meter is not None:
+        await save_fixture(
+            MeterEvent(
+                meter_id=meter.id,
+                event_id=event.id,
+                customer_id=event.customer_id,
+                external_customer_id=event.external_customer_id,
+                organization_id=event.organization_id,
+                ingested_at=event.ingested_at,
+                timestamp=event.timestamp,
+            )
+        )
     return event
 
 

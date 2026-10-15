@@ -20,6 +20,40 @@ test('config serializes to JSON without exposing mutable internal data', () => {
   expect(config.toJSON().meters).toHaveLength(1)
 })
 
+test('defineConfig passes settings through', () => {
+  const config = defineConfig({
+    settings: { payments: { currency: 'eur', tax: 'inclusive' } },
+    meters: ({ meter }) => ({ tokens: meter().count() }),
+  })
+  expect(config.toJSON().settings).toEqual({
+    payments: { currency: 'eur', tax: 'inclusive' },
+  })
+  expect(
+    'settings' in
+      defineConfig({
+        meters: ({ meter }) => ({ tokens: meter().count() }),
+      }).toJSON(),
+  ).toBe(false)
+})
+
+test('free prices use the settings currency', () => {
+  const prices = (settings?: { payments: { currency: 'eur' } }) =>
+    defineConfig({
+      ...(settings && { settings }),
+      meters: ({ meter }) => ({ tokens: meter().count() }),
+      products: ({ product, free }) => ({
+        free: product('Free').prices(free()).recurring('monthly'),
+      }),
+    }).toJSON().products?.[0]?.prices
+
+  expect(prices({ payments: { currency: 'eur' } })).toEqual([
+    { amount_type: 'fixed', price_currency: 'eur', price_amount: 0 },
+  ])
+  expect(prices()).toEqual([
+    { amount_type: 'fixed', price_currency: 'usd', price_amount: 0 },
+  ])
+})
+
 test('RuntimeSDK rejects duplicate IDs without changing JSON serialization', () => {
   const config = defineConfig({
     meters: ({ meter }) => [

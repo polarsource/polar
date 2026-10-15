@@ -20,6 +20,9 @@ dependencies = [
   "typing-extensions>=4.13.0",
 ]
 
+[project.optional-dependencies]
+outpost = ["redis>=5.0.4", "httpx-ws>=0.9.0", "anyio>=4.0.0"]
+
 [project.urls]
 homepage = "https://polar.sh"
 repository = "https://github.com/polarsource/polar/tree/main/sdk/python"
@@ -36,7 +39,7 @@ packages = ["polar"]
 artifacts = ["/polar/.agents/**"]
 
 [dependency-groups]
-dev = ["ty", "ruff", "pytest", "standardwebhooks>=1.0.0,<2.0.0"]
+dev = ["ty", "ruff", "pytest", "fakeredis[lua]>=2.36.1", "standardwebhooks>=1.0.0,<2.0.0"]
 
 [tool.ruff]
 target-version = "py311"

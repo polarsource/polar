@@ -2158,7 +2158,7 @@ export interface paths {
     put?: never
     /**
      * Create Benefit
-     * @description Create a benefit.
+     * @description Create a benefit, for example license keys, file downloads or Discord access.
      *
      *     **Scopes**: `benefits:write`
      */
@@ -3772,6 +3772,8 @@ export interface paths {
      * Create Customer
      * @description Create a customer.
      *
+     *     Set `external_id` to the customer's ID in your system to look it up by that ID.
+     *
      *     **Scopes**: `customers:write`
      */
     post: operations['customers:create']
@@ -5321,13 +5323,17 @@ export interface paths {
     }
     /**
      * List Seats
-     * @description **Scopes**: `customer_seats:read`
+     * @description List seats for a subscription or order.
+     *
+     *     **Scopes**: `customer_seats:read`
      */
     get: operations['customer-seats:list_seats']
     put?: never
     /**
      * Assign Seat
-     * @description **Scopes**: `customer_seats:write`
+     * @description Assign a seat for a subscription or order.
+     *
+     *     **Scopes**: `customer_seats:write`
      */
     post: operations['customer-seats:assign_seat']
     delete?: never
@@ -5348,7 +5354,9 @@ export interface paths {
     post?: never
     /**
      * Revoke Seat
-     * @description **Scopes**: `customer_seats:write`
+     * @description Revoke a customer seat.
+     *
+     *     **Scopes**: `customer_seats:write`
      */
     delete: operations['customer-seats:revoke_seat']
     options?: never
@@ -5367,7 +5375,9 @@ export interface paths {
     put?: never
     /**
      * Resend Invitation
-     * @description **Scopes**: `customer_seats:write`
+     * @description Resend an invitation for a pending customer seat.
+     *
+     *     **Scopes**: `customer_seats:write`
      */
     post: operations['customer-seats:resend_invitation']
     delete?: never
@@ -5383,7 +5393,10 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    /** Get Claim Info */
+    /**
+     * Get Claim Info
+     * @description Get claim information for a customer seat invitation.
+     */
     get: operations['customer-seats:get_claim_info']
     put?: never
     post?: never
@@ -5402,7 +5415,10 @@ export interface paths {
     }
     get?: never
     put?: never
-    /** Claim Seat */
+    /**
+     * Claim Seat
+     * @description Claim a customer seat with an invitation token.
+     */
     post: operations['customer-seats:claim_seat']
     delete?: never
     options?: never
@@ -6101,14 +6117,14 @@ export interface paths {
      *     Meters, benefits, products, discounts and webhook endpoints are matched by
      *     `external_id`: missing ones are created, changed ones are updated, and ones
      *     not listed are left untouched.
+     *     `settings` are applied first, so products can be priced in a new
+     *     `payments.currency` in the same config. Every active product must have a price in
+     *     the resulting currency, or nothing is applied.
      *     Everything is applied in one transaction.
      *
-     *     A `benefits` section also requires the `benefits:write` scope, a
-     *     `products` section the `products:write` scope, a `discounts` section
-     *     the `discounts:write` scope, and a `webhooks` section the
-     *     `webhooks:write` scope.
+     *     Each section requires the write scope for its resource.
      *
-     *     **Scopes**: `meters:write`
+     *     **Scopes**: `benefits:write` `discounts:write` `meters:write` `organizations:write` `products:write` `webhooks:write`
      */
     post: operations['config:apply']
     delete?: never
@@ -6133,12 +6149,9 @@ export interface paths {
      *     Returns the action for each resource, and every issue: `error` issues make
      *     apply fail, `warning` issues don't.
      *
-     *     A `benefits` section also requires the `benefits:read` or `benefits:write`
-     *     scope, a `products` section `products:read` or `products:write`, a
-     *     `discounts` section `discounts:read` or `discounts:write`, and a
-     *     `webhooks` section `webhooks:read` or `webhooks:write`.
+     *     Each section requires the read or write scope for its resource.
      *
-     *     **Scopes**: `meters:read` `meters:write`
+     *     **Scopes**: `benefits:read` `benefits:write` `discounts:read` `discounts:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
      */
     post: operations['config:plan']
     delete?: never
@@ -6224,6 +6237,31 @@ export interface paths {
     get: operations['customer_meters:get']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-meters/credits': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Credit Customer Meter
+     * @description Manually grant credits on a customer meter.
+     *
+     *     Returns the `meter.credited` event. The customer meter balance is updated
+     *     asynchronously, shortly after the request.
+     *
+     *     **Scopes**: `customers:write`
+     */
+    post: operations['customer_meters:credits']
     delete?: never
     options?: never
     head?: never
@@ -16037,6 +16075,8 @@ export interface components {
     ConfidenceLevel: 'low' | 'medium' | 'high'
     /** Config */
     Config: {
+      /** @description Organization settings to update. Left untouched when omitted. */
+      settings?: components['schemas']['ConfigSettings'] | null
       /**
        * Meters
        * @description Meters to create or update, matched by `external_id`. Omitted fields are set to their default, except `metadata`, which is left untouched when omitted. Existing meters that aren't listed are left untouched, and archived meters stay archived.
@@ -16077,6 +16117,8 @@ export interface components {
     ConfigApplyResult: {
       /** Changes */
       changes: components['schemas']['ConfigResult'][]
+      /** @description Result for `settings`, if in the config. */
+      settings: components['schemas']['ConfigSettingsResult'] | null
     }
     /** ConfigAsCodeNotEnabled */
     ConfigAsCodeNotEnabled: {
@@ -16504,12 +16546,14 @@ export interface components {
      * @enum {string}
      */
     ConfigIssueType:
+      | 'currency_changed'
       | 'discount_locked'
       | 'duplicate_code'
       | 'duplicate_external_id'
       | 'duration_changed'
       | 'interval_changed'
       | 'meter_locked'
+      | 'missing_currency'
       | 'not_supported'
       | 'type_changed'
       | 'unknown_event'
@@ -16584,6 +16628,8 @@ export interface components {
     ConfigPlan: {
       /** Changes */
       changes: components['schemas']['ConfigChange'][]
+      /** @description Change for `settings`, if in the config. */
+      settings: components['schemas']['ConfigSettingsChange'] | null
       /** Issues */
       issues: components['schemas']['ConfigIssue'][]
     }
@@ -16813,6 +16859,33 @@ export interface components {
        * @description The resource's `external_id`.
        */
       external_id: string
+      /** @description What applying the config does. */
+      action: components['schemas']['ConfigAction']
+    }
+    /** ConfigSettings */
+    ConfigSettings: {
+      /** @description Payment settings. Left untouched when omitted. */
+      payments?: components['schemas']['ConfigSettingsPayments'] | null
+    }
+    /** ConfigSettingsChange */
+    ConfigSettingsChange: {
+      /** @description What applying the config does. */
+      action: components['schemas']['ConfigAction']
+      /**
+       * Diff
+       * @description Settings that applying the config changes.
+       */
+      diff: components['schemas']['ConfigFieldChange'][]
+    }
+    /** ConfigSettingsPayments */
+    ConfigSettingsPayments: {
+      /** @description The organization's default presentment currency. Every active product must have a price in it. Left untouched when omitted. */
+      currency?: components['schemas']['PresentmentCurrency'] | null
+      /** @description The organization's default tax behavior, used by prices without their own. Left untouched when omitted. */
+      tax?: components['schemas']['TaxBehaviorOption'] | null
+    }
+    /** ConfigSettingsResult */
+    ConfigSettingsResult: {
       /** @description What applying the config does. */
       action: components['schemas']['ConfigAction']
     }
@@ -19245,6 +19318,89 @@ export interface components {
       customer: components['schemas']['Customer']
       /** @description The meter associated with this customer. */
       meter: components['schemas']['Meter']
+    }
+    /** CustomerMeterCreditExternalIDConflict */
+    CustomerMeterCreditExternalIDConflict: {
+      /**
+       * Error
+       * @example CustomerMeterCreditExternalIDConflict
+       * @constant
+       */
+      error: 'CustomerMeterCreditExternalIDConflict'
+      /** Detail */
+      detail: string
+    }
+    /**
+     * CustomerMeterCreditsExternalIDCreate
+     * @description Schema to manually grant credits on a customer meter using external IDs.
+     */
+    CustomerMeterCreditsExternalIDCreate: {
+      /**
+       * Units
+       * @description The number of units to credit.
+       * @example 100
+       */
+      units: number
+      /**
+       * Rollover
+       * @description Whether unused credits carry over to the next meter period.
+       * @default false
+       */
+      rollover: boolean
+      /**
+       * External Id
+       * @description Your unique identifier for this credit. Retrying with the same `external_id` doesn't grant the credit twice.
+       */
+      external_id?: string | null
+      /**
+       * External Customer Id
+       * @description The external ID of the customer.
+       * @example usr_1337
+       */
+      external_customer_id: string
+      /**
+       * External Meter Id
+       * @description The external ID of the meter, as set by config as code.
+       * @example tool_call
+       */
+      external_meter_id: string
+    }
+    /**
+     * CustomerMeterCreditsIDCreate
+     * @description Schema to manually grant credits on a customer meter using Polar IDs.
+     */
+    CustomerMeterCreditsIDCreate: {
+      /**
+       * Units
+       * @description The number of units to credit.
+       * @example 100
+       */
+      units: number
+      /**
+       * Rollover
+       * @description Whether unused credits carry over to the next meter period.
+       * @default false
+       */
+      rollover: boolean
+      /**
+       * External Id
+       * @description Your unique identifier for this credit. Retrying with the same `external_id` doesn't grant the credit twice.
+       */
+      external_id?: string | null
+      /**
+       * Customer Id
+       * Format: uuid4
+       * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+       */
+      customer_id: string
+      /**
+       * Meter Id
+       * Format: uuid4
+       * @description The ID of the meter.
+       * @example d498a884-e2cd-4d3e-8002-f536468a8b22
+       */
+      meter_id: string
     }
     /**
      * CustomerMeterSortProperty
@@ -62926,7 +63082,7 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
-      /** @description Not allowed to manage this organization, missing the `benefits:write`, `products:write`, `discounts:write` or `webhooks:write` scope for that section, or config as code isn't enabled for it. */
+      /** @description Not allowed to manage this organization, missing a scope required by one of the sections, or config as code isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown
@@ -62993,7 +63149,7 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
-      /** @description Not allowed to read this organization's products, missing a benefits, products, discounts or webhooks scope for those sections, or config as code isn't enabled for it. */
+      /** @description Not allowed to read this organization's products, missing a scope required by one of the sections, or config as code isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown
@@ -63244,6 +63400,61 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_meters:credits': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json':
+          | components['schemas']['CustomerMeterCreditsIDCreate']
+          | components['schemas']['CustomerMeterCreditsExternalIDCreate']
+      }
+    }
+    responses: {
+      /** @description Credit recorded. The customer meter balance is updated asynchronously. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MeterCreditEvent']
+        }
+      }
+      /** @description You don't have permission to manage customers. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description The external_id is already used by a different event, or the external customer ID matches customers in several accessible organizations. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['CustomerMeterCreditExternalIDConflict']
+            | components['schemas']['AmbiguousExternalCustomerID']
         }
       }
       /** @description Validation Error */
@@ -71669,12 +71880,14 @@ export const configIssueSeverityValues: ReadonlyArray<
 export const configIssueTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueType']
 > = [
+  'currency_changed',
   'discount_locked',
   'duplicate_code',
   'duplicate_external_id',
   'duration_changed',
   'interval_changed',
   'meter_locked',
+  'missing_currency',
   'not_supported',
   'type_changed',
   'unknown_event',

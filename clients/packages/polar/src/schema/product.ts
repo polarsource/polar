@@ -226,6 +226,7 @@ export const product = <
 export const productPrices = (
   external_id: string,
   { priceList, billing }: ProductDefinition,
+  defaultCurrency: Currency = 'usd',
 ): ReadonlyArray<PriceConfig> => {
   const where = (index: number) =>
     `Price ${index + 1} of product "${external_id}"`
@@ -250,7 +251,7 @@ export const productPrices = (
     }
   })
   return priceList.flatMap((price, index) =>
-    priceConfigs(price, currencies ?? ['usd'], where(index)),
+    priceConfigs(price, currencies ?? [defaultCurrency], where(index)),
   )
 }
 

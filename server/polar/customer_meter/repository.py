@@ -15,7 +15,7 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.kit.repository.base import Options
-from polar.models import Customer, CustomerMeter, Meter
+from polar.models import Customer, CustomerMeter, Meter, MeterReducer
 
 from .sorting import CustomerMeterSortProperty
 
@@ -58,45 +58,18 @@ class CustomerMeterRepository(
         )
         return await self.get_one_or_none(statement)
 
-    async def get_by_organization_customer_and_meter(
-        self,
-        organization_id: UUID,
-        customer_id: UUID,
-        meter_id: UUID,
-        *,
-        options: Options = (),
-    ) -> CustomerMeter | None:
+    async def get_all_by_customer_and_reducer(
+        self, customer_id: UUID, reducer_id: UUID
+    ) -> Sequence[CustomerMeter]:
         statement = (
             self.get_base_statement()
-            .join(CustomerMeter.customer)
+            .join(MeterReducer, MeterReducer.meter_id == CustomerMeter.meter_id)
             .where(
-                Customer.organization_id == organization_id,
                 CustomerMeter.customer_id == customer_id,
-                CustomerMeter.meter_id == meter_id,
+                MeterReducer.reducer_id == reducer_id,
             )
-            .options(contains_eager(CustomerMeter.customer), *options)
         )
-        return await self.get_one_or_none(statement)
-
-    async def get_by_organization_external_customer_and_meter(
-        self,
-        organization_id: UUID,
-        external_customer_id: str,
-        meter_id: UUID,
-        *,
-        options: Options = (),
-    ) -> CustomerMeter | None:
-        statement = (
-            self.get_base_statement()
-            .join(CustomerMeter.customer)
-            .where(
-                Customer.organization_id == organization_id,
-                Customer.external_id == external_customer_id,
-                CustomerMeter.meter_id == meter_id,
-            )
-            .options(contains_eager(CustomerMeter.customer), *options)
-        )
-        return await self.get_one_or_none(statement)
+        return await self.get_all(statement)
 
     async def get_by_customer_and_meter_for_update(
         self,

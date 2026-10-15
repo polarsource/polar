@@ -61,4 +61,6 @@ export const command = Command.make(
           ),
       })
     }),
-).pipe(Command.withDescription('claim_seat'))
+).pipe(
+  Command.withDescription('Claim a customer seat with an invitation token.'),
+)

@@ -1,7 +1,7 @@
 from fastapi import Depends, Query
 
 from polar.exceptions import NotPermitted, Unauthorized
-from polar.meter.auth import MeterRead, MeterWrite
+from polar.meter.auth import MeterRead
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
@@ -13,6 +13,7 @@ from polar.postgres import (
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
+from .auth import ConfigRead, ConfigWrite
 from .schemas import Config, ConfigApplyResult, ConfigExport, ConfigPlan
 from .service import (
     ConfigAsCodeNotEnabled,
@@ -78,8 +79,7 @@ async def export(
         403: {
             "description": (
                 "Not allowed to manage this organization, "
-                "missing the `benefits:write`, `products:write`, "
-                "`discounts:write` or `webhooks:write` scope for that section, "
+                "missing a scope required by one of the sections, "
                 "or config as code isn't enabled for it."
             ),
             "model": NotPermitted.schema() | ConfigAsCodeNotEnabled.schema(),
@@ -99,7 +99,7 @@ async def export(
 )
 async def apply(
     config: Config,
-    auth_subject: MeterWrite,
+    auth_subject: ConfigWrite,
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
 ) -> ConfigApplyResult:
@@ -109,12 +109,12 @@ async def apply(
     Meters, benefits, products, discounts and webhook endpoints are matched by
     `external_id`: missing ones are created, changed ones are updated, and ones
     not listed are left untouched.
+    `settings` are applied first, so products can be priced in a new
+    `payments.currency` in the same config. Every active product must have a price in
+    the resulting currency, or nothing is applied.
     Everything is applied in one transaction.
 
-    A `benefits` section also requires the `benefits:write` scope, a
-    `products` section the `products:write` scope, a `discounts` section
-    the `discounts:write` scope, and a `webhooks` section the
-    `webhooks:write` scope.
+    Each section requires the write scope for its resource.
     """
     return await declarative_config_service.apply(session, redis, auth_subject, config)
 
@@ -129,8 +129,7 @@ async def apply(
         403: {
             "description": (
                 "Not allowed to read this organization's products, "
-                "missing a benefits, products, discounts or webhooks scope "
-                "for those sections, "
+                "missing a scope required by one of the sections, "
                 "or config as code isn't enabled for it."
             ),
             "model": NotPermitted.schema() | ConfigAsCodeNotEnabled.schema(),
@@ -139,7 +138,7 @@ async def apply(
 )
 async def plan(
     config: Config,
-    auth_subject: MeterRead,
+    auth_subject: ConfigRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> ConfigPlan:
     """
@@ -148,9 +147,6 @@ async def plan(
     Returns the action for each resource, and every issue: `error` issues make
     apply fail, `warning` issues don't.
 
-    A `benefits` section also requires the `benefits:read` or `benefits:write`
-    scope, a `products` section `products:read` or `products:write`, a
-    `discounts` section `discounts:read` or `discounts:write`, and a
-    `webhooks` section `webhooks:read` or `webhooks:write`.
+    Each section requires the read or write scope for its resource.
     """
     return await declarative_config_service.plan(session, auth_subject, config)

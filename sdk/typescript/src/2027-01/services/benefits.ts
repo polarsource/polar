@@ -41,7 +41,6 @@ export const listBenefits = (client: ClientBase) => {
       organization_id?: string | string[] | null;
       type?: BenefitType | BenefitType[] | null;
       id?: string | string[] | null;
-      external_id?: string | string[] | null;
       exclude_id?: string | string[] | null;
       query?: string | null;
       page?: number;
@@ -56,7 +55,6 @@ export const listBenefits = (client: ClientBase) => {
       organization_id: query?.organization_id,
       type: query?.type,
       id: query?.id,
-      external_id: query?.external_id,
       exclude_id: query?.exclude_id,
       query: query?.query,
       page: query?.page ?? 1,
@@ -90,7 +88,6 @@ export const iterListBenefits = (client: ClientBase) => {
       organization_id?: string | string[] | null;
       type?: BenefitType | BenefitType[] | null;
       id?: string | string[] | null;
-      external_id?: string | string[] | null;
       exclude_id?: string | string[] | null;
       query?: string | null;
       page?: number;
@@ -119,7 +116,7 @@ export const iterListBenefits = (client: ClientBase) => {
 };
 export const createBenefits = (client: ClientBase) => {
   /**
-   * Create a benefit.
+   * Create a benefit, for example license keys, file downloads or Discord access.
    *
    * **Scopes**: `benefits:write`
    *

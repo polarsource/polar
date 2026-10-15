@@ -49,18 +49,18 @@ When deploying to Encore Cloud, you'll set production secrets through the dashbo
 
 ## Configuring a Polar API Client
 
-To interact with the Polar API, create a new instance of the `Polar` class using Encore's secret management.
+To interact with the Polar API, create a client with `createPolar` using Encore's secret management.
 
 ```tsx title="payments/polar.ts"
-import { Polar } from "@polar-sh/sdk";
+import { createPolar } from "@polar-sh/sdk/2026-10";
 import { secret } from "encore.dev/config";
 
 const POLAR_MODE = secret("POLAR_MODE");
 const POLAR_ACCESS_TOKEN = secret("POLAR_ACCESS_TOKEN");
 
-export const polar = new Polar({
+export const polar = createPolar({
   accessToken: POLAR_ACCESS_TOKEN(),
-  server: POLAR_MODE as "sandbox" | "production",
+  environment: POLAR_MODE() as "sandbox" | "production",
 });
 ```
 
@@ -88,8 +88,8 @@ export const checkout = api.raw(
 
     try {
       const result = await polar.checkouts.create({
-        productId,
-        successUrl: "https://your-app.com/confirmation?checkout_id={CHECKOUT_ID}",
+        products: [productId],
+        success_url: "https://your-app.com/confirmation?checkout_id={CHECKOUT_ID}",
       });
 
       resp.writeHead(302, { Location: result.url });
@@ -242,6 +242,6 @@ git push encore
 Encore automatically provisions all the infrastructure your app needs. Remember to:
 
 1. Set production secrets in the Encore Cloud dashboard
-2. Update the `server` parameter from `"sandbox"` to `"production"` in your Polar client
+2. Set the `POLAR_MODE` secret to `"production"`
 3. Update your webhook URL in Polar to point to your production domain
-4. Update `successUrl` to your production URL
+4. Update `success_url` to your production URL

@@ -210,4 +210,21 @@ describe('planMarkdown', () => {
       ].join('\n'),
     )
   })
+
+  test('diffs settings groups like entries', () => {
+    const markdown = planMarkdown(config, acme, {
+      entries: [
+        {
+          section: 'settings',
+          id: 'payments',
+          action: 'updated',
+          diff: [{ field: 'currency', before: 'usd', after: 'eur' }],
+        },
+      ],
+      issues: [],
+    })
+    expect(markdown).toContain(
+      '#### Settings\n\n```diff\n  payments\n-   currency  USD\n+   currency  EUR\n```',
+    )
+  })
 })

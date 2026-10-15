@@ -234,3 +234,16 @@ describe('tally and planSummary', () => {
     expect(summary).toContain(ui.green('2 to add'))
   })
 })
+
+describe('formatRows for settings', () => {
+  const diff = [{ field: 'currency', before: 'usd', after: 'eur' }]
+
+  test('renders setting values as plain codes only in the settings section', () => {
+    expect(
+      stripAnsi(formatRows('', diff, 'updated', 'settings').join('\n')),
+    ).toBe('currency  USD → EUR')
+    expect(
+      stripAnsi(formatRows('', diff, 'updated', 'products').join('\n')),
+    ).toBe('currency  "usd" → "eur"')
+  })
+})

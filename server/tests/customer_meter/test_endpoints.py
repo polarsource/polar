@@ -4,15 +4,22 @@ from decimal import Decimal
 import pytest
 from httpx import AsyncClient
 
+from polar.customer_meter.repository import CustomerMeterRepository
+from polar.customer_meter.service import customer_meter as customer_meter_service
+from polar.event.system import SystemEvent
 from polar.models import (
     Customer,
     CustomerMeter,
+    Meter,
     Organization,
+    User,
     UserOrganization,
 )
+from polar.postgres import AsyncSession
 from polar.version import V2027_01
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_meter
+from tests.fixtures.random_objects import create_event, create_meter
 
 
 @pytest.fixture
@@ -120,3 +127,232 @@ class TestGetCustomerMeter:
         )
 
         assert response.status_code == 404
+
+
+@pytest.mark.anyio
+class TestCreditCustomerMeter:
+    @pytest.mark.api_version(V2027_01)
+    async def test_anonymous_2027_01(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/v1/customer-meters/credits",
+            json={
+                "customer_id": str(uuid.uuid4()),
+                "meter_id": str(uuid.uuid4()),
+                "units": 100,
+            },
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_meter_from_other_accessible_organization(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        user_organization: UserOrganization,
+        organization_second: Organization,
+        customer: Customer,
+        customer_meter_organization_second: CustomerMeter,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(user=user, organization=organization_second)
+        )
+
+        response = await client.post(
+            "/v1/customer-meters/credits",
+            json={
+                "customer_id": str(customer.id),
+                "meter_id": str(customer_meter_organization_second.meter_id),
+                "units": 100,
+            },
+        )
+
+        assert response.status_code == 422
+        assert response.json()["detail"][0]["loc"] == ["body", "meter_id"]
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        response = await client.post(
+            "/v1/customer-meters/credits",
+            json={
+                "customer_id": str(customer.id),
+                "meter_id": str(meter.id),
+                "units": 100,
+                "rollover": True,
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        assert json["source"] == "system"
+        assert json["name"] == SystemEvent.meter_credited
+        assert json["customer_id"] == str(customer.id)
+        assert json["customer"]["id"] == str(customer.id)
+        assert json["metadata"] == {
+            "meter_id": str(meter.id),
+            "units": 100,
+            "rollover": True,
+        }
+
+        await customer_meter_service.update_customer(session, customer)
+        repository = CustomerMeterRepository.from_session(session)
+        customer_meter = await repository.get_by_customer_and_meter(
+            customer.id, meter.id
+        )
+        assert customer_meter is not None
+        assert customer_meter.activated_at is not None
+        assert customer_meter.balance == 100
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_activates_existing_customer_meter(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        customer_meter = CustomerMeter(customer=customer, meter=meter)
+        await save_fixture(customer_meter)
+
+        response = await client.post(
+            "/v1/customer-meters/credits",
+            json={
+                "customer_id": str(customer.id),
+                "meter_id": str(meter.id),
+                "units": 100,
+            },
+        )
+
+        assert response.status_code == 201
+
+        await customer_meter_service.update_customer(session, customer)
+        repository = CustomerMeterRepository.from_session(session)
+        updated = await repository.get_by_customer_and_meter(customer.id, meter.id)
+        assert updated is not None
+        assert updated.activated_at is not None
+        assert updated.balance == 100
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_valid_external_ids(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer: Customer,
+        customer_meters_with_external_ids: tuple[CustomerMeter, CustomerMeter],
+    ) -> None:
+        customer.external_id = "usr_1337"
+        await save_fixture(customer)
+        tool_call_customer_meter, _ = customer_meters_with_external_ids
+
+        response = await client.post(
+            "/v1/customer-meters/credits",
+            json={
+                "external_customer_id": "usr_1337",
+                "external_meter_id": "tool_call",
+                "units": 100,
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        assert json["customer_id"] == str(customer.id)
+        assert json["metadata"]["meter_id"] == str(tool_call_customer_meter.meter_id)
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_external_id_replay(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        payload = {
+            "customer_id": str(customer.id),
+            "meter_id": str(meter.id),
+            "units": 100,
+            "external_id": "credit_1",
+        }
+
+        first = await client.post("/v1/customer-meters/credits", json=payload)
+        second = await client.post("/v1/customer-meters/credits", json=payload)
+
+        assert first.status_code == 201
+        assert second.status_code == 201
+        assert second.json()["id"] == first.json()["id"]
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_external_id_conflict(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        payload = {
+            "customer_id": str(customer.id),
+            "meter_id": str(meter.id),
+            "units": 100,
+            "external_id": "credit_1",
+        }
+
+        first = await client.post("/v1/customer-meters/credits", json=payload)
+        second = await client.post(
+            "/v1/customer-meters/credits", json={**payload, "units": 200}
+        )
+
+        assert first.status_code == 201
+        assert second.status_code == 409
+        assert second.json()["error"] == "CustomerMeterCreditExternalIDConflict"
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_external_id_used_by_user_event(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            name=SystemEvent.meter_credited,
+            external_id="credit_1",
+            metadata={"meter_id": str(meter.id), "units": 100, "rollover": False},
+        )
+
+        response = await client.post(
+            "/v1/customer-meters/credits",
+            json={
+                "customer_id": str(customer.id),
+                "meter_id": str(meter.id),
+                "units": 100,
+                "external_id": "credit_1",
+            },
+        )
+
+        assert response.status_code == 409
+        assert response.json()["error"] == "CustomerMeterCreditExternalIDConflict"

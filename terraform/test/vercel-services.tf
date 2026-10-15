@@ -98,10 +98,6 @@ locals {
     SENTRY_AUTH_TOKEN = {
       value = var.sentry_auth_token
     }
-    POLAR_PREVIEW_ACCESS_TOKEN = {
-      value  = var.polar_preview_access_token
-      target = ["preview"]
-    }
     MCP_OAUTH2_CLIENT_ID = {
       value = var.mcp_oauth2_client_id
     }

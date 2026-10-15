@@ -128,7 +128,6 @@ db_recreate = { cmd = "python -m scripts.db recreate", help = "drop and recreate
 db_reparent = { cmd = "python -m scripts.db reparent", help = "try to auto-fix conflicting migrations" }
 check_migrations = { cmd = "python -m scripts.check_migrations", help = "check migration heads, filenames, and staged column drops" }
 tb_deploy = { cmd = "python -m scripts.tinybird", help = "deploy tinybird datasources" }
-preview = { cmd = "python -m scripts.preview", help = "manage preview environments" }
 clean = { cmd = "find * -name '*.pyc' -delete && find * -name '__pycache__' -delete", help = "clean up .pyc and __pycache__" }
 verify_github_app = { cmd = "python -m polar.verify_github_app", help = "verify that the github app is correctly configured" }
 seeds_load = { cmd = "python -m scripts.seeds_load", help = "load sample/test data into the database" }

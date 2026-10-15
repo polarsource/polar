@@ -25,4 +25,6 @@ export const command = Command.make(
           client.customerSeats.resendInvitation(config.path.seat_id),
       })
     }),
-).pipe(Command.withDescription('**Scopes**: `customer_seats:write`'))
+).pipe(
+  Command.withDescription('Resend an invitation for a pending customer seat.'),
+)

@@ -33,15 +33,15 @@ You can create an organization access token from your organization settings.
 
 ## Configuring a Polar API Client
 
-To interact with the Polar API, you need to create a new instance of the `Polar` class. This class uses the provided access token to authenticate with the Polar API.
+To interact with the Polar API, create a client with `createPolar`. It uses the provided access token to authenticate with the Polar API.
 
 ```typescript
 // src/polar.ts
-import { Polar } from "@polar-sh/sdk";
+import { createPolar } from "@polar-sh/sdk/2026-10";
 
-export const api = new Polar({
+export const api = createPolar({
   accessToken: process.env.POLAR_ACCESS_TOKEN!,
-  server: "sandbox", // Use this option if you're using the sandbox environment - else use 'production' or omit the parameter
+  environment: "sandbox", // Use this option if you're using the sandbox environment - else use 'production' or omit the parameter
 });
 ```
 

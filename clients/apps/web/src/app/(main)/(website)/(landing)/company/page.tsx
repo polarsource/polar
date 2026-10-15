@@ -1,4 +1,4 @@
-import { LogoVideo } from '@/components/Brand/logos/LogoVideo'
+import LogoType from '@/components/Brand/logos/LogoType'
 import { StaticImage } from '@/components/Image/StaticImage'
 import { Chapter } from '@/components/Landing/Chapter'
 import { TextRings } from '@/components/Landing/graphics/TextRings'
@@ -42,11 +42,11 @@ export default function CompanyPage() {
             <Box flexDirection="column" alignItems="start" rowGap="2xl">
               <Box display="block" maxWidth="32rem">
                 <Text variant="heading-s" as="h1" wrap="pretty">
-                  A small, senior team working remotely across the world.
+                  A small senior team, remote across the world.
                 </Text>
                 <Text variant="heading-s" as="p" color="muted" wrap="pretty">
-                  Building the finance layer for the next generation of AI
-                  products.
+                  Building the billing stack for the next generation of AI
+                  companies.
                 </Text>
               </Box>
               <a href="#open-roles">
@@ -85,7 +85,23 @@ export default function CompanyPage() {
               ))}
             </Box>
           </Box>
-          <LogoVideo />
+          <Box
+            position="relative"
+            width="100%"
+            overflow="hidden"
+            aspectRatio="16 / 9"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <StaticImage
+              src="/assets/landing/company/Polar_Flow_03_No_Logo.jpg"
+              alt=""
+              fill
+              className="object-cover"
+              sizes="(min-width: 1280px) 80rem, 100vw"
+            />
+            <LogoType className="relative h-auto w-[16%] text-white" />
+          </Box>
         </Box>
       </Chapter>
 

@@ -1,4 +1,4 @@
-from collections.abc import Collection, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
@@ -211,6 +211,11 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 Event.pending_parent_external_id == cast(parent_1d.c.id, String),
                 parent_1d.c.id.in_(inserted_ids),
                 Event.id != parent_1d.c.id,
+                # Implied by the cast match above; only makes the planner use
+                # ix_events_org_pending_parent instead of scanning all pending rows
+                Event.pending_parent_external_id.in_(
+                    [str(event_id) for event_id in inserted_ids]
+                ),
             )
         )
 
@@ -514,6 +519,23 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
 
     def get_eager_options(self) -> Options:
         return (joinedload(Event.customer), joinedload(Event.event_types))
+
+    async def get_meter_credit_by_external_id(
+        self,
+        organization_id: UUID,
+        external_id: str,
+        *,
+        customer_id: UUID,
+        metadata: Mapping[str, Any],
+    ) -> Event | None:
+        statement = self.get_base_statement().where(
+            Event.organization_id == organization_id,
+            Event.external_id == external_id,
+            Event.is_meter_credit,
+            Event.customer_id == customer_id,
+            Event.user_metadata == metadata,
+        )
+        return await self.get_one_or_none(statement)
 
     async def get_by_id_with_eager(self, id: UUID) -> Event | None:
         statement = (

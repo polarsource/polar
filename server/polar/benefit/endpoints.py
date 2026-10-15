@@ -264,7 +264,7 @@ async def create(
     redis: Redis = Depends(get_redis),
 ) -> Benefit:
     """
-    Create a benefit.
+    Create a benefit, for example license keys, file downloads or Discord access.
     """
     benefit = await benefit_service.user_create(
         session, redis, benefit_create, auth_subject

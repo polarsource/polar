@@ -158,7 +158,7 @@ class CLICommandsEmitter(EmitterBase):
                     and method.response_type == "json"
                     and method.body is None
                     and not any(
-                        p.required or p.cli_confirm for p in method.query_params
+                        p.required or p.destructive_when for p in method.query_params
                     )
                 ):
                     arguments = ", ".join(
@@ -222,9 +222,13 @@ class CLICommandsEmitter(EmitterBase):
                 }
             )
 
-        always_confirm = method.http_method == "DELETE" or method.cli_confirm is True
-        conditions = [] if always_confirm else confirmation_fields(fields, api)
-        needs_confirmation = always_confirm or bool(conditions)
+        conditions = confirmation_fields(fields, api)
+        if conditions and not method.destructive:
+            raise ValueError(
+                f"{method.operation_id} has destructive fields but isn't destructive."
+            )
+        needs_confirmation = bool(method.destructive)
+        always_confirm = needs_confirmation and not conditions
 
         if always_confirm:
             confirmation_expression = "true"
@@ -490,18 +494,18 @@ class CLICommandsEmitter(EmitterBase):
                     field = field.model_copy(
                         update={"description": previous.description}
                     )
-                if previous and previous.cli_confirm:
+                if previous and previous.destructive_when:
                     if (
-                        field.cli_confirm
-                        and previous.cli_confirm.model_dump_json()
-                        != field.cli_confirm.model_dump_json()
+                        field.destructive_when
+                        and previous.destructive_when.model_dump_json()
+                        != field.destructive_when.model_dump_json()
                     ):
                         raise ValueError(
-                            f"Conflicting CLI confirmation rules for {field.name!r}"
+                            f"Conflicting destructive conditions for {field.name!r}"
                         )
 
                     field = field.model_copy(
-                        update={"cli_confirm": previous.cli_confirm}
+                        update={"destructive_when": previous.destructive_when}
                     )
 
                 if previous and previous.type != field.type:

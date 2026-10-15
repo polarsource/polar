@@ -9,6 +9,7 @@ import { Auth } from '@/services/auth'
 import { BillingConfig } from '@/services/billing-config/service'
 import { Deliveries } from '@/services/deliveries'
 import { Organizations } from '@/services/organizations'
+import { TokenHandoff } from '@/services/token-handoff'
 import { Trigger } from '@/services/trigger'
 import { Updater } from '@/services/updater'
 import { captureConsole } from '@/utils/test-utils/cli'
@@ -29,6 +30,7 @@ const helpOnlyServices = Layer.mergeAll(
   ),
   Layer.succeed(Organizations, fakeOrganizations().organizations),
   Layer.succeed(Trigger, Trigger.of({ listEvents: unused, send: unused })),
+  Layer.succeed(TokenHandoff, TokenHandoff.of({ receive: unused })),
   Layer.succeed(ApiRuntime, ApiRuntime.of({ execute: unused })),
   Layer.succeed(Deliveries, Deliveries.of({ record: unused, await: unused })),
   Layer.succeed(

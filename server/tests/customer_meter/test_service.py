@@ -3,6 +3,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 import pytest
+from pytest_mock import MockerFixture
 
 from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.event.repository import EventRepository
@@ -28,6 +29,7 @@ from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
     create_event,
     create_meter,
+    create_reducer,
 )
 
 
@@ -856,6 +858,34 @@ class TestUpdateCustomerMeter:
         assert customer_meter is not None
         assert customer_meter.consumed_units == Decimal(80)
         assert updated is True
+
+    async def test_notifies_outpost_of_the_reducer(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        events: list[Event],
+        meter: Meter,
+    ) -> None:
+        enqueue_outpost_event = mocker.patch(
+            "polar.customer_meter.service.enqueue_outpost_event"
+        )
+        reducer = await create_reducer(
+            save_fixture, organization=meter.organization, meters=[meter]
+        )
+
+        await customer_meter_service.update_customer_meter(session, customer, meter)
+
+        enqueue_outpost_event.assert_called_with(
+            customer.organization_id,
+            {
+                "type": "reducer_bucket",
+                "reducer_id": reducer.id,
+                "customer_id": customer.id,
+                "external_customer_id": customer.external_id,
+            },
+        )
 
 
 @pytest.mark.anyio

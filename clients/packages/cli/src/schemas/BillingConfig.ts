@@ -53,8 +53,14 @@ export const EntryResult = Schema.Struct({
   diff: Schema.optional(Schema.Array(FieldChange)),
 })
 
+export const SettingsResult = Schema.Struct({
+  action: EntryAction,
+  diff: Schema.optional(Schema.Array(FieldChange)),
+})
+
 export const ApplyResponse = Schema.Struct({
   changes: Schema.Array(EntryResult),
+  settings: Schema.optional(Schema.NullOr(SettingsResult)),
 })
 
 export const AppliedEntry = Schema.Struct({
@@ -67,6 +73,7 @@ export type AppliedEntry = typeof AppliedEntry.Type
 
 export const PlanResponse = Schema.Struct({
   changes: Schema.Array(EntryResult),
+  settings: Schema.optional(Schema.NullOr(SettingsResult)),
   issues: Schema.Array(ServerError),
 })
 

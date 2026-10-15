@@ -44,4 +44,8 @@ export const command = Command.make(
           ),
       })
     }),
-).pipe(Command.withDescription('get_claim_info'))
+).pipe(
+  Command.withDescription(
+    'Get claim information for a customer seat invitation.',
+  ),
+)

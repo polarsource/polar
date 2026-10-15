@@ -17,10 +17,10 @@ export default function Page() {
   return (
     <div className="flex w-full flex-col">
       <Hero />
-      <Primitives />
       <UsageBilling />
-      <Platform />
       <CustomerStory />
+      <Primitives />
+      <Platform />
       <Meter />
       <MerchantOfRecord />
       <Margins />

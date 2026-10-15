@@ -66,7 +66,6 @@ locals {
     { key = "MINTLIFY_ASSISTANT_API_KEY", value = var.secrets.mintlify_assistant_api_key, target = ["production", "preview"], sensitive = true },
     { key = "GRAM_API_KEY", value = var.secrets.gram_api_key, target = ["production", "preview"], sensitive = false },
     { key = "SENTRY_AUTH_TOKEN", value = var.secrets.sentry_auth_token, target = ["production", "preview"], sensitive = false },
-    { key = "POLAR_PREVIEW_ACCESS_TOKEN", value = var.secrets.polar_preview_access_token, target = ["preview"], sensitive = true },
   ]
 
   managed_environment_variables = concat(

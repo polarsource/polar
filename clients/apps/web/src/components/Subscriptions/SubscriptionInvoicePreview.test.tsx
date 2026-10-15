@@ -86,4 +86,44 @@ describe('SubscriptionInvoicePreview', () => {
     expect(container.textContent).toContain('Applied balance -500')
     expect(container.textContent).toContain('To be paid 500')
   })
+
+  it('lists the usage charge before the renewal', () => {
+    vi.mocked(useSubscriptionChargePreview).mockReturnValue({
+      data: {
+        ...chargePreview,
+        meter_charge: {
+          metered_amount: 1840,
+          subtotal_amount: 1840,
+          discount_amount: 0,
+          net_amount: 1840,
+          tax_amount: 0,
+          total_amount: 1840,
+        },
+      },
+    } as unknown as ReturnType<typeof useSubscriptionChargePreview>)
+
+    const { container } = render(
+      <SubscriptionInvoicePreview
+        subscription={
+          {
+            ...subscription,
+            current_meter_period_end: '2026-11-01T00:00:00Z',
+            meters: [
+              {
+                id: 'meter-1',
+                amount: 1840,
+                meter: { id: 'meter', name: 'API requests' },
+              },
+            ],
+          } as unknown as schemas['Subscription']
+        }
+      />,
+    )
+
+    const text = container.textContent ?? ''
+    const usageAt = text.indexOf('Upcoming usage charge')
+    const renewalAt = text.indexOf('Upcoming renewal')
+    expect(usageAt).toBeGreaterThan(-1)
+    expect(renewalAt).toBeGreaterThan(usageAt)
+  })
 })

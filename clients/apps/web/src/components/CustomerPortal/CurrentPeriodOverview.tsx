@@ -259,7 +259,6 @@ export const CurrentPeriodOverview = ({
 
   return (
     <>
-      {baseCard}
       <OverviewSummaryCard
         title="Upcoming Usage Charge"
         meta={`Next Invoice — ${formatChargeDate(subscription.current_meter_period_end)}`}
@@ -286,6 +285,7 @@ export const CurrentPeriodOverview = ({
           }
         />
       </OverviewSummaryCard>
+      {baseCard}
     </>
   )
 }

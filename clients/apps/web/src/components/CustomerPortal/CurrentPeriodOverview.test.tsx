@@ -267,9 +267,11 @@ describe('CurrentPeriodOverview', () => {
     expect(text).toContain(formatCurrency('compact')(1840, 'usd'))
     expect(text).toMatch(/Discount\s*-\$20/)
     const usageAt = text.indexOf('Upcoming Usage Charge')
+    const renewalAt = text.indexOf('Upcoming Renewal')
     const discountAt = text.indexOf('Discount')
-    expect(discountAt).toBeGreaterThan(-1)
-    expect(discountAt).toBeLessThan(usageAt)
+    expect(usageAt).toBeGreaterThan(-1)
+    expect(renewalAt).toBeGreaterThan(usageAt)
+    expect(discountAt).toBeGreaterThan(usageAt)
   })
 
   it('hides the usage card when the meter cycle has no overage', () => {

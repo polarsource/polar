@@ -134,7 +134,7 @@ export const CurrentPeriodOverview = ({
       : subscription.current_period_end
 
   // Determine header and label based on subscription state
-  let headerTitle = usageSeparate ? 'Next Renewal' : 'Next Charge'
+  let headerTitle = 'Upcoming Renewal'
   let dateLabel = 'Next Invoice'
 
   if (isTrialing) {
@@ -261,7 +261,7 @@ export const CurrentPeriodOverview = ({
     <>
       {baseCard}
       <OverviewSummaryCard
-        title="Next Usage Charge"
+        title="Upcoming Usage Charge"
         meta={`Next Invoice — ${formatChargeDate(subscription.current_meter_period_end)}`}
       >
         {overageMeters.map((meter) => (

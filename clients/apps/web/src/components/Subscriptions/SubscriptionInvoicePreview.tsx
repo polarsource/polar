@@ -99,7 +99,7 @@ const SubscriptionInvoicePreview = ({
       ? subscription.resumes_at
       : subscription.current_period_end
 
-  let title = usageSeparate ? 'Next renewal' : 'Upcoming charge'
+  let title = 'Upcoming renewal'
   let dateLabel = 'Next invoice'
   if (isTrialing) {
     title = 'First charge after trial'
@@ -165,7 +165,7 @@ const SubscriptionInvoicePreview = ({
       </OrderSection>
       {showUsage && meterCharge && (
         <OrderSection
-          title="Next usage charge"
+          title="Upcoming usage charge"
           description={
             <Box alignItems="center" columnGap="s">
               <Text color="muted">Next invoice</Text>

@@ -82,7 +82,7 @@ describe('SubscriptionInvoicePreview', () => {
       <SubscriptionInvoicePreview subscription={subscription} />,
     )
 
-    expect(container.textContent).toContain('Upcoming charge')
+    expect(container.textContent).toContain('Upcoming renewal')
     expect(container.textContent).toContain('Applied balance -500')
     expect(container.textContent).toContain('To be paid 500')
   })

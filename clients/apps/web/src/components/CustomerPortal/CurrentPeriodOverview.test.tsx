@@ -162,6 +162,8 @@ describe('CurrentPeriodOverview', () => {
       />,
     )
 
+    expect(container.textContent).toContain('Upcoming Renewal')
+    expect(container.textContent).not.toContain('Next Charge')
     expect(container.textContent).not.toContain('Applied balance')
     expect(container.textContent).not.toContain('To be paid')
   })
@@ -258,13 +260,13 @@ describe('CurrentPeriodOverview', () => {
     const text = container.textContent ?? ''
     expect(text).toContain(`Next Invoice — ${formatChargeDate(periodEnd)}`)
     expect(text).toContain(`Next Invoice — ${formatChargeDate(meterEnd)}`)
-    expect(text).toContain('Next Renewal')
-    expect(text).toContain('Next Usage Charge')
+    expect(text).toContain('Upcoming Renewal')
+    expect(text).toContain('Upcoming Usage Charge')
     expect(text).toContain('API requests')
     expect(text).toContain(formatCurrency('compact')(10000, 'usd'))
     expect(text).toContain(formatCurrency('compact')(1840, 'usd'))
     expect(text).toMatch(/Discount\s*-\$20/)
-    const usageAt = text.indexOf('Next Usage Charge')
+    const usageAt = text.indexOf('Upcoming Usage Charge')
     const discountAt = text.indexOf('Discount')
     expect(discountAt).toBeGreaterThan(-1)
     expect(discountAt).toBeLessThan(usageAt)
@@ -318,8 +320,8 @@ describe('CurrentPeriodOverview', () => {
     )
 
     const text = container.textContent ?? ''
-    expect(text).toContain('Next Renewal')
-    expect(text).not.toContain('Next Usage Charge')
+    expect(text).toContain('Upcoming Renewal')
+    expect(text).not.toContain('Upcoming Usage Charge')
     expect(text).not.toContain('API requests')
   })
 })

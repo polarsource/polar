@@ -5,7 +5,7 @@ import type { Money } from './money'
 const Units = Schema.Int.check(Schema.isGreaterThanOrEqualTo(1))
 const Cents = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0))
 
-const TaxBehavior = Schema.Literals([
+export const TaxBehavior = Schema.Literals([
   'location',
   'inclusive',
   'exclusive',

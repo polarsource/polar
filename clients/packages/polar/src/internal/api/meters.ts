@@ -1,12 +1,12 @@
-import { errors, type Polar } from '../../sdk'
+import { errors, type models, type Polar } from '../../sdk'
 
-export const assertMeterDeployed = async (
+export const getDeployedMeter = async (
   sdk: Polar,
   externalId: string,
-): Promise<void> => {
+): Promise<models.Meter> => {
   try {
     const meter = await sdk.meters.getExternal(externalId)
-    if (meter.archived_at == null) return
+    if (meter.archived_at == null) return meter
   } catch (error) {
     if (error instanceof errors.AmbiguousExternalMeterID) {
       throw new Error(

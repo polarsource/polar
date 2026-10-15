@@ -1491,8 +1491,8 @@ importers:
   packages/polar:
     dependencies:
       '@polar-sh/sdk':
-        specifier: 1.0.3-alpha.1
-        version: 1.0.3-alpha.1
+        specifier: 1.0.3-alpha.4
+        version: 1.0.3-alpha.4(ioredis@5.11.1(supports-color@10.2.2))(ws@8.22.0)
       '@standard-schema/spec':
         specifier: ^1.1.0
         version: 1.1.0
@@ -4616,9 +4616,17 @@ packages:
     resolution: {integrity: sha512-c3jdqYloVfcejKsAqYfYcW4bG7KkXj5bXkgdsdx4GHlJPzHFV5tysfeZGf9V7dJReLBirAluchsuHWiAIBco8w==}
     engines: {node: '>=22'}
 
-  '@polar-sh/sdk@1.0.3-alpha.1':
-    resolution: {integrity: sha512-YzxYN39L7c6vHTLJNYRdaJquHu5yexo1hhFJFTdV08RE/Zp+1bRMxcGJgCh8N1Wf1Ma/xSAy1bKRqY8Rs35rSg==}
+  '@polar-sh/sdk@1.0.3-alpha.4':
+    resolution: {integrity: sha512-ZHCc5PcMTxi0isFxRTd/2KleqXfW11U3CE3kNGmSRNpj9BRt6/SJYiDbSG7OxB10IidIO+8YTPYvn/308yG6Tw==}
     engines: {node: '>=24'}
+    peerDependencies:
+      ioredis: ^5.11.0
+      ws: ^8.21.0
+    peerDependenciesMeta:
+      ioredis:
+        optional: true
+      ws:
+        optional: true
 
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
@@ -18032,7 +18040,10 @@ snapshots:
 
   '@polar-sh/sdk@1.0.2': {}
 
-  '@polar-sh/sdk@1.0.3-alpha.1': {}
+  '@polar-sh/sdk@1.0.3-alpha.4(ioredis@5.11.1(supports-color@10.2.2))(ws@8.22.0)':
+    optionalDependencies:
+      ioredis: 5.11.1(supports-color@10.2.2)
+      ws: 8.22.0
 
   '@polka/url@1.0.0-next.29': {}
 

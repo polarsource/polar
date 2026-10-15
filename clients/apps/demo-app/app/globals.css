@@ -69,7 +69,8 @@ p {
     0 12px 32px -12px #0000001f;
 }
 
-input {
+input,
+textarea {
   height: 40px;
   padding: 0 12px;
   border: 0;
@@ -81,7 +82,15 @@ input {
   transition: box-shadow 0.2s;
 }
 
-input:focus {
+textarea {
+  height: auto;
+  padding: 10px 12px;
+  resize: none;
+  text-align: left;
+}
+
+input:focus,
+textarea:focus {
   outline: none;
   box-shadow:
     0 0 0 1px var(--accent),

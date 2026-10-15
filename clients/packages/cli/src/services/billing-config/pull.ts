@@ -34,9 +34,12 @@ const exportConfig = (clients: Clients, organization: ActiveOrganization) =>
     )
     if (response.status !== 200) {
       return yield* unexpected(response, organization, [
+        'organizations:read',
         'meters:read',
         'benefits:read',
         'products:read',
+        'discounts:read',
+        'webhooks:read',
       ])
     }
     return yield* HttpClientResponse.schemaBodyJson(ConfigExport)(response)

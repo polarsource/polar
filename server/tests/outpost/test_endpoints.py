@@ -354,5 +354,6 @@ class TestTelemetry:
         assert attributes == {
             "polar.organization_id": str(organization.id),
             "service.name": "outpost",
+            "deployment.environment.name": "testing",
         }
         assert forward_mock.call_args.kwargs["path"] == "/v1/traces"

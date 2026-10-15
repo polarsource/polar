@@ -435,10 +435,7 @@ export class Outpost {
       const reducer = this.reducers.find((item) => item.meter_ids?.includes(input.meter_id));
       if (!reducer) return null;
       const local = await this.warmCustomer(customer, reducer);
-      await waitAtMost(
-        this.waitReady(reducer, local, [input.meter_id]),
-        this.options.snapshotTimeout ?? 5_000,
-      );
+      await this.waitReady(reducer, local, [input.meter_id]);
       if (local.missing) return null;
       const state = local.state;
       if (!state || state.coldUntil === undefined)
@@ -460,11 +457,8 @@ export class Outpost {
   async actor(input: Customer): Promise<void> {
     return this.trace("outpost.actor", async () => {
       const warmed = await this.warmActor(customerKey(input));
-      await waitAtMost(
-        Promise.all(
-          warmed.map(([reducer, local]) => this.waitReady(reducer, local, reducer.meter_ids ?? [])),
-        ),
-        this.options.snapshotTimeout ?? 5_000,
+      await Promise.all(
+        warmed.map(([reducer, local]) => this.waitReady(reducer, local, reducer.meter_ids ?? [])),
       );
     });
   }
@@ -484,7 +478,9 @@ export class Outpost {
   ): Promise<void> {
     // Polar sends no snapshot for unique reducers, nor without a connection.
     if ((reducer.aggregation.func as string) === "unique" || !this.connected) return;
-    while (!isReady(local, meterIds)) await local.changed.promise;
+    const deadline = Date.now() + (this.options.snapshotTimeout ?? 5_000);
+    while (!isReady(local, meterIds) && Date.now() < deadline)
+      await waitAtMost(local.changed.promise, deadline - Date.now());
   }
 
   private requireRedis(): OutpostRedis {
@@ -762,7 +758,11 @@ export class Outpost {
         local.missing = !snapshot.customer_exists;
         notify(local);
       }
-      if (!snapshot.customer_exists) return;
+      if (!snapshot.customer_exists) {
+        // Asked again on the next read, in case it was created since.
+        this.actors.delete(identity);
+        return;
+      }
       if (!Number.isSafeInteger(snapshot.version) || !Number.isSafeInteger(snapshot.cold_until))
         throw new TypeError("Snapshot timestamps must be safe integer microseconds");
       for (const value of [

@@ -589,7 +589,6 @@ it("sends telemetry spans tagged with the connection ID", async () => {
       "outpost.redis.subscribe",
       "outpost.websocket.connect",
       "outpost.ingest",
-      "outpost.actor",
       "outpost.customer_meter",
       "outpost.snapshot.received",
       "outpost.sync.received",
@@ -738,4 +737,12 @@ it("waits for the snapshot of the meter it reads", async () => {
   expect((await outpost.customerMeter({ ...customer, meter_id: "shared" }))?.credited_units).toBe(
     200,
   );
+});
+
+it("reads the value of a customer created after a miss", async () => {
+  snapshot = { ...aliceSnapshot, customer_exists: false };
+  const outpost = await start();
+  expect(await outpost.customerMeter(meter)).toBeNull();
+  snapshot = aliceSnapshot;
+  await vi.waitFor(async () => expect((await outpost.customerMeter(meter))?.balance).toBe(7));
 });

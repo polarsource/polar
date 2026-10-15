@@ -385,7 +385,7 @@ const nextConfig = {
 
     return [
       {
-        source: '/((?!checkout|embed|oauth2|docs).*)',
+        source: '/((?!checkout|embed|oauth2|docs|perspectives).*)',
         headers: baseHeaders,
       },
       {

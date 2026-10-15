@@ -84,6 +84,13 @@ const isForwardedRoute = (request: NextRequest): boolean => {
     return true
   }
 
+  if (
+    request.nextUrl.pathname === '/perspectives' ||
+    request.nextUrl.pathname.startsWith('/perspectives/')
+  ) {
+    return true
+  }
+
   return false
 }
 
@@ -431,10 +438,11 @@ export const config = {
      * - ingest (Posthog)
      * - monitoring (Sentry)
      * - docs, _mintlify, mintlify-assets (Mintlify)
+     * - perspectives (Shadow Document)
      * - assets (static asset files)
      * - _next (Next.js internals: static files, image optimization, data)
      * - favicon.ico, sitemap.xml, robots.txt (metadata files)
      */
-    '/((?!api|fonts|ingest|monitoring|docs|_mintlify|mintlify-assets|assets|_next|favicon.ico|sitemap.xml|robots.txt).*)',
+    '/((?!api|fonts|ingest|monitoring|docs|perspectives|_mintlify|mintlify-assets|assets|_next|favicon.ico|sitemap.xml|robots.txt).*)',
   ],
 }

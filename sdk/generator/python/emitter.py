@@ -141,6 +141,7 @@ class PythonEmitter(EmitterBase):
             ("tests", "outpost", "test_client.py"),
             ("tests", "outpost", "test_event.py"),
             ("tests", "outpost", "test_reducer.py"),
+            ("tests", "outpost", "test_telemetry.py"),
             (".python-version",),
             ("justfile",),
             ("LICENSE",),

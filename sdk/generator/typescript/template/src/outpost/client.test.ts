@@ -560,6 +560,7 @@ it("sends telemetry spans tagged with the connection ID", async () => {
       expect.arrayContaining(["outpost.snapshot.received", "outpost.sync.received"]),
     ),
   );
+  await outpost.customerMeter(meter);
   await outpost.close();
 
   expect(new Set(exported.map((span) => span.name))).toEqual(
@@ -568,6 +569,8 @@ it("sends telemetry spans tagged with the connection ID", async () => {
       "outpost.redis.subscribe",
       "outpost.websocket.connect",
       "outpost.ingest",
+      "outpost.actor",
+      "outpost.customer_meter",
       "outpost.snapshot.received",
       "outpost.sync.received",
       "outpost.websocket.disconnect",

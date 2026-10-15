@@ -181,7 +181,7 @@ export const AddCreditsModal = ({
                 <FormItem>
                   <FormControl>
                     <Checkbox
-                      label="Keep unused credits after the billing period ends"
+                      label="Rollover unused credits to the next billing cycle"
                       checked={field.value}
                       onCheckedChange={(checked) =>
                         field.onChange(checked === true)

@@ -1274,3 +1274,23 @@ async def test_cold_read_waits_for_its_own_meter(
         )
     assert meter is not None
     assert meter.credited_units == 200
+
+
+@pytest.mark.anyio
+async def test_unknown_customer_reads_its_value_once_created(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+) -> None:
+    url, _ = redis_connection
+    snapshots["external:alice"] = {**ALICE_SNAPSHOT, "customer_exists": False}
+    async with Outpost(url, client=polar_client) as outpost:
+        read = functools.partial(
+            outpost.customer_meter, meter_id="meter", external_customer_id="alice"
+        )
+        assert await read() is None
+        snapshots["external:alice"] = ALICE_SNAPSHOT
+        with anyio.fail_after(1):
+            while (meter := await read()) is None:
+                await anyio.sleep(0.01)
+    assert meter.balance == 7

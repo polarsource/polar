@@ -779,6 +779,8 @@ class Outpost:
                     local.missing = not snapshot["customer_exists"]
                     local.notify()
                 if not snapshot["customer_exists"]:
+                    # Asked again on the next read, in case it was created since.
+                    self._actors.discard(identity)
                     continue
                 statistics = [
                     snapshot["count"],

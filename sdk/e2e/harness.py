@@ -259,6 +259,8 @@ class RedisProxy:
     def __init__(self, url: str) -> None:
         parsed = urllib.parse.urlsplit(url)
         self.target = (parsed.hostname or "127.0.0.1", parsed.port or 6379)
+        # Clients authenticate through the proxy, which only relays bytes.
+        self.credentials = parsed.netloc.rpartition("@")[0]
         self.path = parsed.path
         self.available = True
         self.streams: set[anyio.abc.SocketStream] = set()
@@ -269,7 +271,8 @@ class RedisProxy:
     ) -> None:
         listener = await anyio.create_tcp_listener(local_host="127.0.0.1")
         port = listener.extra(anyio.abc.SocketAttribute.local_port)
-        self.url = f"redis://127.0.0.1:{port}{self.path}"
+        credentials = f"{self.credentials}@" if self.credentials else ""
+        self.url = f"redis://{credentials}127.0.0.1:{port}{self.path}"
         task_status.started()
         await listener.serve(self.handle)
 

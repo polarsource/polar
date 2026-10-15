@@ -15,6 +15,7 @@ from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_resource_permission
 from polar.authz.types import AccessibleOrganizationID
+from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.billing_entry.service import MeteredLineItem
 from polar.billing_entry.service import billing_entry as billing_entry_service
@@ -4600,6 +4601,16 @@ class SubscriptionService:
             subscription = loaded
             self._enqueue_meter_cycle_order(subscription, utc_now())
             await self.reset_meters(session, subscription)
+
+            # Grants kept through the revocation grace period are skipped by the
+            # grant below, so the reset would leave them without credits: cycle
+            # them instead. Listed now, before the grant jobs run, so grants
+            # revoked during past_due are re-granted only once, by the grant.
+            benefit_grant_repository = BenefitGrantRepository.from_session(session)
+            for grant in await benefit_grant_repository.list_granted_by_scope(
+                subscription=subscription
+            ):
+                enqueue_job("benefit.cycle", benefit_grant_id=grant.id)
 
         await self._after_subscription_updated(
             session,

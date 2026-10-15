@@ -554,6 +554,7 @@ it("sends telemetry spans tagged with the connection ID", async () => {
     credited_units: 10,
   };
   const outpost = await start();
+  await vi.waitFor(() => expect(outpost.connectionId).toBe(connectionId));
   await ingest(outpost, 3);
   await vi.waitFor(() =>
     expect(exported.map((span) => span.name)).toEqual(

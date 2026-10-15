@@ -309,6 +309,12 @@ class TestOrganization:
         assert request.headers["Polar-Organization"] == "org_1"
 
 
+def test_user_agent(client: SyncClientBase | AsyncClientBase) -> None:
+    request = client.build_request(method="GET", url="/v1/items/")
+
+    assert request.headers["User-Agent"] == "polar-sdk-python/{{ version }}"
+
+
 def test_parse_response_json_empty_body() -> None:
     response = httpx.Response(202, headers={"Content-Type": "application/json"})
 

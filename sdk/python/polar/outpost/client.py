@@ -93,6 +93,12 @@ def _report_local_value(
             span.set_attribute(f"outpost.snapshot.{statistic}", value)
 
 
+def _backoff_delay(attempt: int, base: float, cap: float) -> float:
+    # Bounded exponent: a long outage would overflow the float otherwise.
+    delay = min(cap, base * 2 ** min(attempt - 1, 16))
+    return random.uniform(delay / 2, delay)
+
+
 def _is_connection_error(error: BaseException) -> bool:
     if isinstance(error, BaseExceptionGroup):
         return all(_is_connection_error(inner) for inner in error.exceptions)
@@ -275,6 +281,7 @@ class Outpost:
         self._websocket: AsyncWebSocketSession | None = None
         self._connection_id: str | None = None
         self._failure: PolarOutpostError | None = None
+        self._reconnect_attempts = 0
         self._tasks: anyio.abc.TaskGroup | None = None
         self._reducers: list[Reducer] = []
         self._actors: set[str] = set()
@@ -641,8 +648,9 @@ class Outpost:
         task_status: anyio.abc.TaskStatus[None] = anyio.TASK_STATUS_IGNORED,
     ) -> None:
         started = False
-        attempt = 0
+        self._reconnect_attempts = 0
         while True:
+            attempt = self._reconnect_attempts
             try:
                 async with contextlib.AsyncExitStack() as stack:
                     with self._span(
@@ -658,7 +666,6 @@ class Outpost:
                     if not started:
                         task_status.started()
                         started = True
-                    attempt = 0
                     await self._listen_websocket(websocket)
             except Exception as error:
                 if not started:
@@ -677,9 +684,12 @@ class Outpost:
             finally:
                 self._websocket = None
                 self._connection_id = None
-            attempt += 1
-            delay = min(MAX_RECONNECT_DELAY, RECONNECT_DELAY * 2 ** (attempt - 1))
-            await anyio.sleep(random.uniform(delay / 2, delay))
+            self._reconnect_attempts += 1
+            await anyio.sleep(
+                _backoff_delay(
+                    self._reconnect_attempts, RECONNECT_DELAY, MAX_RECONNECT_DELAY
+                )
+            )
 
     async def _listen_websocket(self, websocket: AsyncWebSocketSession) -> None:
         while True:
@@ -693,6 +703,8 @@ class Outpost:
             elif message["type"] == "configuration":
                 self._reducers = message["payload"]["reducers"]
                 self._configured.set()
+                # A session counts as stable once Polar configured it.
+                self._reconnect_attempts = 0
             elif message["type"] == "meter_usage":
                 snapshot: Snapshot = message["payload"]
                 reducer = next(

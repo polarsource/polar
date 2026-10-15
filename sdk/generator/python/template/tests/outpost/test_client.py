@@ -30,6 +30,7 @@ from polar.outpost.client import (
     Outpost,
     PolarOutpostError,
     ReducerState,
+    _backoff_delay,
     connect_websocket,
 )
 from polar.outpost.reducer import BUCKET_SIZE, get_bucket_start
@@ -1152,3 +1153,7 @@ async def test_refused_reconnection_fails_outpost(
                 except PolarOutpostError:
                     break
                 await anyio.sleep(0.01)
+
+
+def test_backoff_delay_stays_bounded() -> None:
+    assert 15 <= _backoff_delay(5000, 0.5, 30) <= 30

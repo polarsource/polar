@@ -5,6 +5,12 @@ from decimal import Decimal
 import httpx
 import httpx_ws
 import pytest
+from logfire.experimental.forwarding import ForwardExportRequestResponse
+from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import (
+    ExportTraceServiceRequest,
+)
+from opentelemetry.proto.common.v1.common_pb2 import AnyValue
+from pytest_mock import MockerFixture
 
 from polar.kit.utils import utc_now
 from polar.models import (
@@ -281,3 +287,72 @@ class TestOutpost:
         payload = response["payload"]
         assert payload["cold_until"] == to_epoch_microseconds(bucket_end)
         assert payload["count"] == 1
+
+
+def _export_request(**attributes: str) -> ExportTraceServiceRequest:
+    request = ExportTraceServiceRequest()
+    resource_spans = request.resource_spans.add()
+    for key, value in attributes.items():
+        resource_spans.resource.attributes.add(
+            key=key, value=AnyValue(string_value=value)
+        )
+    return request
+
+
+@pytest.mark.anyio
+class TestTelemetry:
+    async def test_anonymous(self, client: httpx.AsyncClient) -> None:
+        response = await client.post(
+            "/v1/outpost/telemetry",
+            content=_export_request().SerializeToString(),
+            headers={"Content-Type": "application/x-protobuf"},
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_invalid_body(self, client: httpx.AsyncClient) -> None:
+        response = await client.post(
+            "/v1/outpost/telemetry",
+            content=b"not protobuf",
+            headers={"Content-Type": "application/x-protobuf"},
+        )
+
+        assert response.status_code == 400
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_forwards_with_organization(
+        self,
+        mocker: MockerFixture,
+        client: httpx.AsyncClient,
+        organization: Organization,
+    ) -> None:
+        forward_mock = mocker.patch(
+            "polar.outpost.service.logfire.forward_export_request",
+            return_value=ForwardExportRequestResponse(
+                status_code=200,
+                headers={"Content-Type": "application/x-protobuf"},
+                content=b"",
+            ),
+        )
+
+        response = await client.post(
+            "/v1/outpost/telemetry",
+            content=_export_request(
+                **{"polar.organization_id": "spoofed", "service.name": "other"}
+            ).SerializeToString(),
+            headers={"Content-Type": "application/x-protobuf"},
+        )
+
+        assert response.status_code == 200
+        forwarded = ExportTraceServiceRequest()
+        forwarded.ParseFromString(forward_mock.call_args.kwargs["body"])
+        attributes = {
+            attribute.key: attribute.value.string_value
+            for attribute in forwarded.resource_spans[0].resource.attributes
+        }
+        assert attributes == {
+            "polar.organization_id": str(organization.id),
+            "service.name": "outpost",
+        }
+        assert forward_mock.call_args.kwargs["path"] == "/v1/traces"

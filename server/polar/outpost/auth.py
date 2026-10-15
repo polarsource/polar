@@ -1,6 +1,9 @@
-import structlog
-from fastapi import WebSocket
+from typing import Annotated
 
+import structlog
+from fastapi import Depends, WebSocket
+
+from polar.auth.dependencies import Authenticator
 from polar.auth.models import AuthSubject, Organization, Subject, is_organization
 from polar.auth.scope import Scope
 from polar.exception_handlers import polar_exception_handler
@@ -9,6 +12,13 @@ from polar.logging import Logger
 from polar.oauth2.exceptions import InsufficientScopeError
 
 REQUIRED_SCOPES = {Scope.events_write}
+
+OutpostWrite = Annotated[
+    AuthSubject[Organization],
+    Depends(
+        Authenticator(required_scopes=REQUIRED_SCOPES, allowed_subjects={Organization})
+    ),
+]
 
 log: Logger = structlog.get_logger(__name__)
 

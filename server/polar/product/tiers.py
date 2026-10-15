@@ -3,7 +3,7 @@ from enum import StrEnum
 from itertools import pairwise
 from typing import Any, TypedDict
 
-from pydantic import BaseModel, Field, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 from pydantic_core import PydanticCustomError
 from sqlalchemy import Dialect, TypeDecorator
 from sqlalchemy.dialects.postgresql import JSONB
@@ -38,6 +38,8 @@ class TierInput(BaseModel):
     """A tier submitted through the API. Rates stop at the reach of the
     BigInteger amount columns, with 12 decimal places.
     """
+
+    model_config = ConfigDict(json_schema_serialization_defaults_required=True)
 
     bound: int | None = Field(default=None, gt=0)
     unit_amount: Decimal = Field(

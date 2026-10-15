@@ -1,5 +1,6 @@
+import uuid
 from decimal import Decimal
-from typing import Any
+from typing import Any, get_args
 
 import pytest
 from pytest_mock import MockerFixture
@@ -10,9 +11,15 @@ from polar.benefit.repository import BenefitRepository
 from polar.declarative_config.schemas import (
     Config,
     ConfigAction,
+    ConfigBenefit,
+    ConfigDiscount,
+    ConfigExport,
+    ConfigExportDocument,
     ConfigIssueSeverity,
     ConfigIssueType,
+    ConfigProductPrice,
     ConfigResource,
+    ConfigSkippedReason,
 )
 from polar.declarative_config.service import (
     ConfigAsCodeNotEnabled,
@@ -57,11 +64,13 @@ from tests.fixtures.random_objects import (
     create_benefit,
     create_discount,
     create_event,
+    create_legacy_recurring_product_price,
     create_meter,
     create_product,
     create_product_price_metered_tiers,
     create_product_price_unit_based,
     create_webhook_endpoint,
+    set_product_benefits,
 )
 
 TOOL_CALLS_METER = {
@@ -2581,3 +2590,294 @@ class TestPlan:
                 "Another discount in this config has the same code.",
             ),
         ]
+
+
+ROUND_TRIP_CONFIG: dict[str, Any] = {
+    "webhooks": [ORDERS_WEBHOOK],
+    "settings": {"payments": {"currency": "usd", "tax": "inclusive"}},
+    "meters": [{**TOOL_CALLS_METER, "metadata": {"team": "billing"}}],
+    "benefits": [
+        {
+            **CREDITS_BENEFIT,
+            "properties": {"meter": "sdk-tool-calls", "units": 1000, "rollover": True},
+        },
+        {**BETA_BENEFIT, "visibility": "private", "metadata": {"tier": 1}},
+    ],
+    "products": [
+        {
+            **PRO_PRODUCT,
+            "description": "The Pro plan",
+            "visibility": "private",
+            "recurring_interval_count": 3,
+            "trial_interval": "day",
+            "trial_interval_count": 14,
+            "prices": [
+                {"amount_type": "fixed", "price_amount": 2000},
+                {
+                    "amount_type": "metered_unit",
+                    "meter": "sdk-tool-calls",
+                    "unit_amount": "0.5",
+                    "cap_amount": 10000,
+                },
+            ],
+            "metadata": {"plan": "pro"},
+        },
+        TEAM_PRODUCT,
+        USAGE_PRODUCT,
+        {
+            "external_id": "devices",
+            "name": "Devices",
+            "recurring_interval": "month",
+            "prices": [
+                {
+                    **UNIT_BASED_PRICE,
+                    "minimum_units": 2,
+                    "unit_label": {"en": {"=1": "device", "other": "devices"}},
+                }
+            ],
+        },
+        {
+            "external_id": "lifetime",
+            "name": "Lifetime",
+            "prices": [{"amount_type": "fixed", "price_amount": 0}],
+            "benefits": ["beta"],
+        },
+    ],
+    "discounts": [
+        {**LAUNCH_DISCOUNT, "products": ["pro"], "metadata": {"campaign": "launch"}},
+        {
+            "external_id": "five-off",
+            "name": "Five off",
+            "type": "fixed",
+            "amounts": {"usd": 500},
+            "duration": "repeating",
+            "duration_in_months": 3,
+            "starts_at": "2026-01-01T00:00:00Z",
+            "ends_at": "2027-01-01T00:00:00Z",
+            "max_redemptions": 100,
+            "max_redemptions_per_customer": 1,
+        },
+    ],
+}
+
+
+def _variants(annotated: Any) -> set[type]:
+    return set(get_args(get_args(annotated)[0]))
+
+
+class TestExportDocument:
+    def test_exports_every_section(self) -> None:
+        sections = Config.model_fields.keys() - {"organization_id"}
+        exported = ConfigExportDocument.model_fields.keys() | (
+            ConfigExport.model_fields.keys() & sections
+        )
+
+        assert exported == sections
+        assert ROUND_TRIP_CONFIG.keys() == sections
+
+    def test_round_trip_config_covers_every_variant(self) -> None:
+        config = Config.model_validate(ROUND_TRIP_CONFIG)
+
+        assert {type(benefit) for benefit in config.benefits} == _variants(
+            ConfigBenefit
+        )
+        assert {
+            type(price) for product in config.products for price in product.prices
+        } == _variants(ConfigProductPrice)
+        assert {type(discount) for discount in config.discounts} == _variants(
+            ConfigDiscount
+        )
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+class TestExport:
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_round_trips_through_apply(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        mocker.patch("polar.meter.service.enqueue_job")
+        await declarative_config_service.apply(
+            session, redis, auth_subject, Config.model_validate(ROUND_TRIP_CONFIG)
+        )
+
+        exported = await declarative_config_service.export(session, auth_subject, None)
+        config = Config.model_validate(
+            {
+                **exported.config.model_dump(mode="json"),
+                "settings": exported.settings.model_dump(mode="json"),
+            }
+        )
+        plan = await declarative_config_service.plan(session, auth_subject, config)
+        applied = await declarative_config_service.apply(
+            session, redis, auth_subject, config
+        )
+
+        assert exported.skipped == []
+        assert config == Config.model_validate(ROUND_TRIP_CONFIG)
+        assert [
+            issue
+            for issue in plan.issues
+            if issue.type != ConfigIssueType.unknown_event
+        ] == []
+        assert {change.action for change in plan.changes} == {ConfigAction.unchanged}
+        assert {change.action for change in applied.changes} == {ConfigAction.unchanged}
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_skips_what_config_cannot_express(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        unlisted_meter = await create_meter(save_fixture, organization=organization)
+        credits = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={
+                "meter_id": str(unlisted_meter.id),
+                "units": 10,
+                "rollover": False,
+            },
+            external_id="credits",
+        )
+        custom = await create_benefit(
+            save_fixture, organization=organization, external_id="custom"
+        )
+        custom_price = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(500, None, None, "usd")],
+            external_id="pay-what-you-want",
+        )
+        archived = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            is_archived=True,
+            external_id="archived",
+        )
+
+        legacy = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[],
+            external_id="legacy",
+        )
+        await create_legacy_recurring_product_price(
+            save_fixture,
+            amount_type=ProductPriceAmountType.fixed,
+            product=legacy,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        usage_meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="usage",
+        )
+        untiered = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[],
+            external_id="untiered",
+        )
+        untiered_price = await create_product_price_metered_tiers(
+            save_fixture,
+            product=untiered,
+            meter=usage_meter,
+            tiers=Tiers.model_validate(METERED_TIERS_PRICE["tiers"]),
+        )
+        setattr(untiered_price, "tiers", None)
+        await save_fixture(untiered_price)
+        for product in (legacy, untiered):
+            await session.refresh(product, ["prices"])
+        separate_cycle = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            meter_interval=SubscriptionRecurringInterval.month,
+            external_id="separate-cycle",
+        )
+        disabled_webhook = await create_webhook_endpoint(
+            save_fixture, organization=organization, external_id="disabled"
+        )
+        disabled_webhook.enabled = False
+        await save_fixture(disabled_webhook)
+
+        sale = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization,
+            products=[custom_price],
+            external_id="sale",
+        )
+
+        exported = await declarative_config_service.export(session, auth_subject, None)
+
+        assert [meter.external_id for meter in exported.config.meters] == ["usage"]
+        assert exported.config.benefits == []
+        assert exported.config.products == []
+        assert exported.config.discounts == []
+        assert exported.config.webhooks == []
+        assert [(skip.id, skip.reason) for skip in exported.skipped] == [
+            (disabled_webhook.id, ConfigSkippedReason.invalid),
+            (unlisted_meter.id, ConfigSkippedReason.missing_external_id),
+            (credits.id, ConfigSkippedReason.invalid),
+            (custom.id, ConfigSkippedReason.invalid),
+            (custom_price.id, ConfigSkippedReason.invalid),
+            (archived.id, ConfigSkippedReason.archived),
+            (legacy.id, ConfigSkippedReason.invalid),
+            (untiered.id, ConfigSkippedReason.invalid),
+            (separate_cycle.id, ConfigSkippedReason.invalid),
+            (sale.id, ConfigSkippedReason.invalid),
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_skips_product_with_skipped_benefit(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture, organization=organization, type=BenefitType.feature_flag
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="one-time",
+        )
+        await set_product_benefits(save_fixture, product=product, benefits=[benefit])
+
+        exported = await declarative_config_service.export(session, auth_subject, None)
+
+        assert [(skip.id, skip.reason) for skip in exported.skipped] == [
+            (benefit.id, ConfigSkippedReason.missing_external_id),
+            (product.id, ConfigSkippedReason.invalid),
+        ]
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(
+            subject="organization", scopes={Scope.meters_read, Scope.benefits_read}
+        )
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_requires_products_scope(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        with pytest.raises(InsufficientScopeError):
+            await declarative_config_service.export(session, auth_subject, None)

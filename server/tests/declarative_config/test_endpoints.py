@@ -486,7 +486,14 @@ class TestExport:
 
         assert response.status_code == 200
         json = response.json()
-        assert json["config"] == {"meters": []}
+        assert json["settings"] == {"payments": {"currency": "usd", "tax": "location"}}
+        assert json["config"] == {
+            "webhooks": [],
+            "meters": [],
+            "benefits": [],
+            "products": [],
+            "discounts": [],
+        }
         assert json["skipped"] == [
             {
                 "resource": "meter",
@@ -518,7 +525,7 @@ class TestExport:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        mocker.patch("polar.declarative_config.service.MAXIMUM_METERS", 1)
+        mocker.patch("polar.declarative_config.export.MAXIMUM_METERS", 1)
         await create_meter(
             save_fixture,
             organization=organization,
@@ -530,6 +537,12 @@ class TestExport:
             organization=organization,
             id=uuid.uuid4(),
             external_id="second-meter",
+        )
+        await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="third-meter",
         )
 
         response = await client.get(

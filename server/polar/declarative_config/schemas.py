@@ -6,6 +6,7 @@ from annotated_types import Gt
 from pydantic import (
     UUID4,
     AwareDatetime,
+    BaseModel,
     ConfigDict,
     Discriminator,
     Field,
@@ -28,14 +29,11 @@ from polar.discount.schemas import (
 )
 from polar.enums import SubscriptionRecurringInterval, TaxBehaviorOption
 from polar.kit.currency import PresentmentCurrency
-from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
+from polar.kit.metadata import MetadataInputMixin, MetadataOutputType
 from polar.kit.schemas import Int32, Schema, SetSchemaReference
 from polar.kit.trial import TrialConfigurationInputMixin
 from polar.kit.visibility import Visibility
-from polar.meter.aggregation import Aggregation
-from polar.meter.filter import Filter
-from polar.meter.schemas import NAME_DESCRIPTION, MeterCreateBase
-from polar.meter.unit import MeterUnit
+from polar.meter.schemas import MeterCreateBase
 from polar.models.benefit import BenefitType, BenefitVisibility
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.product import ProductVisibility
@@ -131,7 +129,9 @@ class ConfigBenefitFeatureFlag(ConfigBenefitBase):
 
 
 class ConfigBenefitMeterCreditProperties(Schema):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid", json_schema_serialization_defaults_required=True
+    )
 
     meter: MeterReference
     units: Annotated[Int32, Gt(0)] = Field(
@@ -156,7 +156,9 @@ ConfigBenefit = Annotated[
 
 
 class ConfigProductPriceSeatBased(ProductPriceSeatBasedCreate):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid", json_schema_serialization_defaults_required=True
+    )
 
     minimum_units: int = Field(
         default=1,
@@ -166,7 +168,9 @@ class ConfigProductPriceSeatBased(ProductPriceSeatBasedCreate):
 
 
 class ConfigProductPriceUnitBased(ProductPriceUnitBasedCreate):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid", json_schema_serialization_defaults_required=True
+    )
 
     minimum_units: int = Field(
         default=1,
@@ -176,7 +180,9 @@ class ConfigProductPriceUnitBased(ProductPriceUnitBasedCreate):
 
 
 class ConfigProductPriceMeteredTiers(ProductPriceCreateBase):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid", json_schema_serialization_defaults_required=True
+    )
 
     amount_type: Literal[ProductPriceAmountType.metered_tiers]
     meter: MeterReference
@@ -196,7 +202,9 @@ class ConfigProductPriceMeteredTiers(ProductPriceCreateBase):
 
 
 class ConfigProductPriceFixed(ProductPriceFixedCreate):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid", json_schema_serialization_defaults_required=True
+    )
 
     price_amount: Annotated[
         PriceAmount,
@@ -211,7 +219,9 @@ class ConfigProductPriceFixed(ProductPriceFixedCreate):
 
 
 class ConfigProductPriceMeteredUnit(ProductPriceCreateBase):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid", json_schema_serialization_defaults_required=True
+    )
 
     amount_type: Literal[ProductPriceAmountType.metered_unit]
     meter: MeterReference
@@ -384,7 +394,9 @@ class ConfigWebhookEndpoint(Schema):
 
 
 class ConfigSettingsPayments(Schema):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid", json_schema_serialization_defaults_required=True
+    )
 
     currency: PresentmentCurrency | None = Field(
         default=None,
@@ -404,7 +416,9 @@ class ConfigSettingsPayments(Schema):
 
 
 class ConfigSettings(Schema):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid", json_schema_serialization_defaults_required=True
+    )
 
     payments: ConfigSettingsPayments | None = Field(
         default=None,
@@ -564,24 +578,59 @@ class ConfigPlan(Schema):
     issues: list[ConfigIssue]
 
 
-class ConfigExportMeter(Schema, MetadataOutputMixin):
-    external_id: str = Field(description="Your identifier for the meter.")
-    name: str = Field(description=NAME_DESCRIPTION)
-    unit: MeterUnit = Field(description="The unit of the meter.")
-    custom_label: str | None = Field(description="The label for the custom unit.")
-    custom_multiplier: int | None = Field(
-        description="The multiplier to convert from base unit to display scale."
-    )
-    filter: Filter = Field(
-        description="The filter applied on events to calculate the meter."
-    )
-    aggregation: Aggregation = Field(
-        description="The aggregation applied on the filtered events."
-    )
+# Config entries serialize `metadata` as `user_metadata` for the create schemas
+# they feed. Export entries subclass them so the shape can't drift from what
+# plan and apply accept, only serializing `metadata` under its own name.
+class _ConfigExportMetadata(BaseModel):
+    model_config = ConfigDict(json_schema_serialization_defaults_required=True)
+
+    metadata: MetadataOutputType = Field(default_factory=dict)
+
+
+class ConfigExportMeter(_ConfigExportMetadata, ConfigMeter):
+    pass
+
+
+class ConfigExportBenefitFeatureFlag(_ConfigExportMetadata, ConfigBenefitFeatureFlag):
+    pass
+
+
+class ConfigExportBenefitMeterCredit(_ConfigExportMetadata, ConfigBenefitMeterCredit):
+    pass
+
+
+ConfigExportBenefit = Annotated[
+    ConfigExportBenefitFeatureFlag | ConfigExportBenefitMeterCredit,
+    Discriminator("type"),
+    SetSchemaReference("ConfigExportBenefit"),
+]
+
+
+class ConfigExportProduct(_ConfigExportMetadata, ConfigProduct):
+    pass
+
+
+class ConfigExportDiscountPercentage(_ConfigExportMetadata, ConfigDiscountPercentage):
+    pass
+
+
+class ConfigExportDiscountFixed(_ConfigExportMetadata, ConfigDiscountFixed):
+    pass
+
+
+ConfigExportDiscount = Annotated[
+    ConfigExportDiscountPercentage | ConfigExportDiscountFixed,
+    Discriminator("type"),
+    SetSchemaReference("ConfigExportDiscount"),
+]
 
 
 class ConfigExportDocument(Schema):
+    webhooks: list[ConfigWebhookEndpoint]
     meters: list[ConfigExportMeter]
+    benefits: list[ConfigExportBenefit]
+    products: list[ConfigExportProduct]
+    discounts: list[ConfigExportDiscount]
 
 
 class ConfigSkippedReason(StrEnum):
@@ -591,12 +640,12 @@ class ConfigSkippedReason(StrEnum):
     over_limit = "over_limit"
 
 
-class ConfigSkippedMeter(Schema):
+class ConfigSkippedResource(Schema):
     resource: ConfigResource = Field(description="The type of resource.")
-    id: UUID4 = Field(description="The meter ID.")
-    name: str = Field(description="The meter name.")
+    id: UUID4 = Field(description="The resource ID.")
+    name: str = Field(description="The resource name.")
     reason: ConfigSkippedReason = Field(
-        description="Why the meter isn't in the exported config."
+        description="Why the resource isn't in the exported config."
     )
 
 
@@ -604,6 +653,12 @@ class ConfigExport(Schema):
     config: ConfigExportDocument = Field(
         description="The current config, in the same shape plan and apply accept."
     )
-    skipped: list[ConfigSkippedMeter] = Field(
-        description="Meters left out of the exported config."
+    settings: ConfigSettings = Field(
+        description=(
+            "The current settings, in the shape `settings` accepts in plan and "
+            "apply. Kept out of `config` so older clients keep decoding it."
+        )
+    )
+    skipped: list[ConfigSkippedResource] = Field(
+        description="Resources left out of the exported config."
     )

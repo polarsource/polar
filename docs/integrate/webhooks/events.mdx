@@ -147,7 +147,8 @@ In order to properly implement logic for handling subscriptions, you should look
     horizontal
   >
     Carries a `billing_reason` field, which can be `purchase`,
-    `subscription_create`, `subscription_cycle` and `subscription_update`. To act
+    `subscription_create`, `subscription_cycle`, `subscription_update` and
+    `subscription_meter_cycle`. To act
     on a renewal, listen to `subscription.cycled` instead: it fires whether or not
     the renewal payment succeeds.
   </Card>

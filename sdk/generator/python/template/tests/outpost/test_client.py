@@ -677,9 +677,14 @@ async def test_pubsub_reconnect_reloads_state(
         with anyio.fail_after(4):
             while outpost._synced.is_set():
                 await anyio.lowlevel.checkpoint()
-            meter = await outpost.customer_meter(
-                external_customer_id="alice", meter_id="meter"
-            )
+            while True:
+                try:
+                    meter = await outpost.customer_meter(
+                        external_customer_id="alice", meter_id="meter"
+                    )
+                    break
+                except PolarOutpostError:
+                    await anyio.sleep(0.05)
         assert meter is not None and meter.consumed_units == 2
 
 
@@ -1364,3 +1369,22 @@ async def test_redis_unavailable_at_startup(
     with pytest.raises(UnavailableRedisError):
         async with Outpost(url, client=polar_client):
             pass
+
+
+@pytest.mark.anyio
+async def test_redis_outage_fails_fast(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+) -> None:
+    url, redis = redis_connection
+    server: FakeServer = redis.connection_pool.connection_kwargs["server"]
+    async with Outpost(url, client=polar_client) as outpost:
+        server.connected = False
+        with anyio.fail_after(3):
+            while outpost._synced.is_set():
+                await anyio.sleep(0.01)
+        with anyio.fail_after(0.5):
+            with pytest.raises(PolarOutpostError, match="Redis is unavailable"):
+                await outpost.customer_meter(
+                    meter_id="meter", external_customer_id="bob"
+                )

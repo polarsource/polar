@@ -1080,6 +1080,9 @@ NewProductPrice = Annotated[
 def _get_discriminator_value(v: Any) -> Literal["legacy", "new"]:
     if isinstance(v, dict):
         return "legacy" if "legacy" in v else "new"
+    # Schema instances always carry the compatibility `type` field
+    if isinstance(v, ProductPriceBase):
+        return "legacy" if isinstance(v, LegacyRecurringProductPriceMixin) else "new"
     type = getattr(v, "type", None)
     return "legacy" if type is not None else "new"
 

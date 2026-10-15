@@ -574,6 +574,11 @@ it("sends telemetry spans tagged with the connection ID", async () => {
       "outpost.redis.disconnect",
     ]),
   );
+  expect(
+    exported
+      .filter((span) => span.name === "outpost.redis.connect")
+      .map((span) => span.attributes["outpost.redis.connection"]),
+  ).toEqual(["primary", "subscriber"]);
   const beforeConnection = [
     "outpost.redis.connect",
     "outpost.redis.subscribe",

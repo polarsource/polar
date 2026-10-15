@@ -21,6 +21,7 @@ from .service import (
     ConfigInvalid,
     ConfigMeterConflict,
     ConfigProductConflict,
+    ConfigWebhookConflict,
 )
 from .service import declarative_config as declarative_config_service
 
@@ -91,7 +92,8 @@ async def export(
             "model": ConfigInvalid.schema()
             | ConfigMeterConflict.schema()
             | ConfigBenefitConflict.schema()
-            | ConfigProductConflict.schema(),
+            | ConfigProductConflict.schema()
+            | ConfigWebhookConflict.schema(),
         },
     },
 )
@@ -104,9 +106,9 @@ async def apply(
     """
     Apply a declarative config document to the organization.
 
-    Meters, benefits, products and discounts are matched by `external_id`:
-    missing ones are created, changed ones are updated, and ones not listed are
-    left untouched.
+    Meters, benefits, products, discounts and webhook endpoints are matched by
+    `external_id`: missing ones are created, changed ones are updated, and ones
+    not listed are left untouched.
     `settings` are applied first, so products can be priced in a new
     `payments.currency` in the same config. Every active product must have a price in
     the resulting currency, or nothing is applied.

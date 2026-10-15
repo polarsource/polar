@@ -7,6 +7,7 @@ import {
   callTool,
   createProCheckout,
   ensureFreePlan,
+  grantSurveyCredits,
   isPro,
   polar,
   purchaseTopUp,
@@ -64,6 +65,16 @@ export async function checkUpgraded() {
   if (!externalId) redirect('/')
 
   return isPro(externalId)
+}
+
+export async function claimSurveyCredits(answer: string) {
+  const externalId = await getExternalCustomerId()
+  if (!externalId) redirect('/')
+  if (typeof answer !== 'string' || answer.trim() === '') {
+    throw new Error('Missing survey answer')
+  }
+
+  await grantSurveyCredits(externalId, answer.trim().slice(0, 1000))
 }
 
 export async function topUp(pack: TopUp) {

@@ -432,13 +432,19 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def _canceled_expression(cls) -> ColumnElement[bool]:
         return cls.canceled_at.is_not(None)
 
-    def initialize_meter_period(self, start: datetime | None) -> None:
+    def initialize_meter_period(
+        self, start: datetime | None, *, containing: datetime | None = None
+    ) -> None:
         """
         Initialize (or clear) the meter clock from the snapshotted ``meter_interval``.
 
         Set only when a meter cycle is configured and a ``start`` is given; otherwise
         cleared. During a trial ``start`` is ``None`` and the clock stays empty until
         conversion, mirroring how the billing period behaves.
+
+        With ``containing``, the clock is fast-forwarded from ``start`` to the meter
+        period containing that instant, so a ``start`` in the past doesn't leave the
+        meter clock periods behind.
         """
         if (
             start is None
@@ -448,10 +454,17 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
             self.current_meter_period_start = None
             self.current_meter_period_end = None
             return
-        self.current_meter_period_start = start
-        self.current_meter_period_end = self.meter_interval.get_next_period(
+        period_start = start
+        period_end = self.meter_interval.get_next_period(
             start, self.anchor_day, self.meter_interval_count
         )
+        while containing is not None and period_end <= containing:
+            period_start = period_end
+            period_end = self.meter_interval.get_next_period(
+                period_end, self.anchor_day, self.meter_interval_count
+            )
+        self.current_meter_period_start = period_start
+        self.current_meter_period_end = period_end
 
     @hybrid_property
     def billable(self) -> bool:

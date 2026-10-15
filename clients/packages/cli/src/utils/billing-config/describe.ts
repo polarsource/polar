@@ -125,6 +125,19 @@ const capOf = (item: Record<string, unknown>) =>
     ? []
     : [`capped at ${money(item['cap_amount'], item['price_currency'])}`]
 
+const TAX_LABELS: Record<string, string> = {
+  inclusive: 'tax inclusive',
+  exclusive: 'tax exclusive',
+  location: 'tax by location',
+}
+
+export const taxOf = (item: Record<string, unknown>) => {
+  const behavior = item['tax_behavior']
+  return typeof behavior === 'string'
+    ? [TAX_LABELS[behavior] ?? `tax ${name(behavior)}`]
+    : []
+}
+
 const singular = (label: unknown) => {
   const english = record(record(label)?.['en'])
   const one = english?.['=1'] ?? english?.['one'] ?? english?.['other']
@@ -184,7 +197,12 @@ const price = (item: Record<string, unknown>): PriceGroup | undefined => {
   if (item['amount_type'] === 'fixed') {
     return {
       label: currency,
-      text: new Rendered(money(item['price_amount'], item['price_currency'])),
+      text: new Rendered(
+        [
+          money(item['price_amount'], item['price_currency']),
+          ...taxOf(item),
+        ].join('\n'),
+      ),
     }
   }
   const unit = UNITS[String(item['amount_type'])]
@@ -194,7 +212,7 @@ const price = (item: Record<string, unknown>): PriceGroup | undefined => {
       ? undefined
       : {
           label: `${currency} per ${unit(item)}`,
-          text: new Rendered(lines.join('\n')),
+          text: new Rendered([...lines, ...taxOf(item)].join('\n')),
         }
   }
   if (item['amount_type'] !== 'metered_unit') return undefined
@@ -209,6 +227,7 @@ const price = (item: Record<string, unknown>): PriceGroup | undefined => {
       [
         `${amount}${scale === 1 ? '' : ` per ${count(scale)}`}`,
         ...capOf(item),
+        ...taxOf(item),
       ].join('\n'),
     ),
   }

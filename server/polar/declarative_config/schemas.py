@@ -52,11 +52,18 @@ from polar.product.schemas import (
     ProductPriceUnitBasedCreate,
 )
 from polar.product.tiers import TiersInput
+from polar.webhook.schemas import (
+    AvailableAPIVersion,
+    EndpointEvents,
+    EndpointFormat,
+    EndpointURL,
+)
 
 MAXIMUM_METERS = 100
 MAXIMUM_BENEFITS = 100
 MAXIMUM_PRODUCTS = 100
 MAXIMUM_DISCOUNTS = 100
+MAXIMUM_WEBHOOK_ENDPOINTS = 25
 
 
 class ConfigMeter(MeterCreateBase):
@@ -408,6 +415,22 @@ ConfigDiscount = Annotated[
 ]
 
 
+class ConfigWebhookEndpoint(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    external_id: str = Field(
+        ...,
+        min_length=1,
+        description="Your identifier for the webhook endpoint, used to match it.",
+    )
+    url: EndpointURL
+    format: EndpointFormat
+    events: EndpointEvents = Field(min_length=1)
+    api_version: AvailableAPIVersion = Field(
+        description="The API version that'll be used in event payloads."
+    )
+
+
 class ConfigSettingsPayments(Schema):
     model_config = ConfigDict(extra="forbid")
 
@@ -480,6 +503,14 @@ class Config(Schema):
             "Existing discounts that aren't listed are left untouched."
         ),
     )
+    webhooks: list[ConfigWebhookEndpoint] = Field(
+        default_factory=list,
+        max_length=MAXIMUM_WEBHOOK_ENDPOINTS,
+        description=(
+            "Webhook endpoints to create or update, matched by `external_id`. "
+            "Existing endpoints that aren't listed are left untouched."
+        ),
+    )
     organization_id: OrganizationID | None = Field(
         default=None,
         description=(
@@ -533,6 +564,7 @@ class ConfigResource(StrEnum):
     benefit = "benefit"
     product = "product"
     discount = "discount"
+    webhook = "webhook"
 
 
 class ConfigResult(Schema):

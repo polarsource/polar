@@ -11,6 +11,7 @@ import structlog
 from pydantic import AnyUrl
 from sqlalchemy import CursorResult, String, desc, or_, select, text, update
 from sqlalchemy import cast as sql_cast
+from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
@@ -93,6 +94,17 @@ def generate_webhook_secret() -> str:
 class WebhookError(PolarError): ...
 
 
+class AmbiguousExternalWebhookEndpointID(WebhookError):
+    def __init__(self, external_id: str) -> None:
+        self.external_id = external_id
+        super().__init__(
+            "Several webhook endpoints across your organizations share this "
+            "external ID. Use an organization-scoped token, the Polar webhook "
+            "endpoint ID, or a unique external ID to disambiguate.",
+            409,
+        )
+
+
 class EventDoesNotExist(WebhookError):
     def __init__(self, event_id: UUID) -> None:
         self.event_id = event_id
@@ -147,6 +159,24 @@ class WebhookService:
             WebhookEndpoint.id == id
         )
         return await repository.get_one_or_none(statement)
+
+    async def get_external_endpoint(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        external_id: str,
+    ) -> WebhookEndpoint | None:
+        repository = WebhookEndpointRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.organization_manage
+        )
+        statement = repository.get_statement_by_org_ids(org_ids).where(
+            WebhookEndpoint.external_id == external_id
+        )
+        try:
+            return await repository.get_one_or_none(statement)
+        except MultipleResultsFound as e:
+            raise AmbiguousExternalWebhookEndpointID(external_id) from e
 
     async def create_endpoint(
         self,

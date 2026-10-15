@@ -71,6 +71,36 @@ test('fixed prices expand to one price per currency', () => {
   ])
 })
 
+test('tax behavior is set per price and survives later builder calls', () => {
+  expect(
+    priceConfigs(fixed().amount(usd(1)).tax('inclusive'), ['usd'], 'Price'),
+  ).toEqual([
+    {
+      amount_type: 'fixed',
+      price_currency: 'usd',
+      price_amount: 100,
+      tax_behavior: 'inclusive',
+    },
+  ])
+  expect(
+    priceConfigs(
+      seats().flat().amount(usd(1)).tax('exclusive').min(2),
+      ['usd'],
+      'Price',
+    ),
+  ).toMatchObject([{ tax_behavior: 'exclusive', minimum_units: 2 }])
+  expect(
+    priceConfigs(
+      metered('calls').flat().amount(usd(0.01)).tax('location').cap(usd(10)),
+      ['usd'],
+      'Price',
+    ),
+  ).toMatchObject([{ tax_behavior: 'location', cap_amount: 1000 }])
+  expect(priceConfigs(free(), ['usd'], 'Price')).toEqual([
+    { amount_type: 'fixed', price_currency: 'usd', price_amount: 0 },
+  ])
+})
+
 test('flat seats are a single volume tier bounded by max', () => {
   const price = seats().flat().min(3).amount(usd(1)).max(1000)
   expect(priceConfigs(price, ['usd'], 'Price')).toEqual([

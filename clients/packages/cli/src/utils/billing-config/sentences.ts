@@ -8,6 +8,7 @@ import {
   name,
   record,
   scaled,
+  taxOf,
   unitScale,
 } from '@/utils/billing-config/describe'
 import * as ui from '@/utils/ui'
@@ -46,12 +47,36 @@ const pricing = (product: Record<string, unknown>) => {
     product['recurring_interval_count'],
   )
   const fixed = prices(product, 'fixed')
-    .map((price) => money(price['price_amount'], price['price_currency']))
+  const taxes = fixed.map((price) => taxOf(price)[0])
+  const uniform = new Set(taxes).size <= 1
+  const amounts = fixed
+    .map((price, index) => {
+      const amount = money(price['price_amount'], price['price_currency'])
+      const tax = taxes[index]
+      return uniform || tax === undefined ? amount : `${amount} (${tax})`
+    })
     .join(CURRENCIES)
-  const billing = fixed === '' ? `billed ${cycle}` : `${fixed} ${cycle}`
+  const billed = amounts === '' ? `billed ${cycle}` : `${amounts} ${cycle}`
+  const shared = uniform ? taxes[0] : undefined
+  const billing = shared === undefined ? billed : `${billed}, ${shared}`
   return isSet(product['meter_interval'])
     ? `${billing}, metered ${meterCycle(product['meter_interval'], product['meter_interval_count'])}`
     : billing
+}
+
+const taxFact = (items: ReadonlyArray<Record<string, unknown>>) => {
+  const taxes = items.map((item) => taxOf(item)[0])
+  if (new Set(taxes).size <= 1) return taxes[0] === undefined ? [] : [taxes[0]]
+  return [
+    items
+      .flatMap((item, index) => {
+        const tax = taxes[index]
+        return tax === undefined
+          ? []
+          : [`${tax} (${String(item['price_currency']).toUpperCase()})`]
+      })
+      .join(', '),
+  ]
 }
 
 export interface MeterUse {
@@ -87,6 +112,7 @@ export const productMeters = (
       facts: [
         `${rate} per ${scale === 1 ? '' : `${count(scale)} `}${unitOf(id)}`,
         ...(caps.length === 0 ? [] : [`capped at ${caps.join(CURRENCIES)}`]),
+        ...taxFact(items),
       ],
     }
   })

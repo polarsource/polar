@@ -1,8 +1,9 @@
+import logging
 from typing import Any, cast
 
 import pytest
 
-from polar.sentry import before_send
+from polar.sentry import before_breadcrumb, before_send
 
 # before_send does not touch Postgres, MinIO, or the worker.
 # Override the suite's autouse fixtures so this module can run without them.
@@ -175,6 +176,33 @@ class TestBeforeSend:
 
         assert before_send(cast(Any, event), {}) is None
 
+    def test_removes_personal_fields_from_breadcrumbs(self) -> None:
+        event = {
+            "breadcrumbs": {
+                "values": [
+                    {
+                        "message": "customer.created",
+                        "data": {
+                            "email": "buyer@example.com",
+                            "customer": {"name": "Test Buyer", "country": "CA"},
+                            "customer_id": "cus_123",
+                        },
+                    },
+                    {"message": "no data"},
+                ]
+            }
+        }
+
+        result = before_send(cast(Any, event), {})
+
+        assert result is not None
+        breadcrumbs = cast(dict[str, Any], result["breadcrumbs"])["values"]
+        assert breadcrumbs[0]["data"] == {
+            "customer": {"country": "CA"},
+            "customer_id": "cus_123",
+        }
+        assert breadcrumbs[1] == {"message": "no data"}
+
     def test_leaves_non_mapping_request_data(self) -> None:
         event = {"request": {"data": "raw-body"}}
 
@@ -183,3 +211,46 @@ class TestBeforeSend:
         assert result is not None
         request = cast(dict[str, Any], result["request"])
         assert request["data"] == "raw-body"
+
+
+def _log_record(msg: object) -> logging.LogRecord:
+    return logging.LogRecord("polar.test", logging.INFO, __file__, 1, msg, (), None)
+
+
+class TestBeforeBreadcrumb:
+    def test_moves_structlog_fields_out_of_message(self) -> None:
+        record = _log_record(
+            {
+                "event": "customer.created",
+                "email": "buyer@example.com",
+                "customer_id": "cus_123",
+                "level": "info",
+                "logger": "polar.test",
+                "timestamp": "2026-10-15T00:00:00Z",
+                "exc_info": True,
+            }
+        )
+        crumb = {"type": "log", "message": record.getMessage(), "data": {}}
+
+        result = before_breadcrumb(crumb, {"log_record": record})
+
+        assert result["message"] == "customer.created"
+        assert result["data"] == {
+            "email": "buyer@example.com",
+            "customer_id": "cus_123",
+        }
+
+    def test_leaves_stdlib_log_message(self) -> None:
+        record = _log_record("plain message")
+        crumb = {"type": "log", "message": "plain message", "data": {}}
+
+        result = before_breadcrumb(crumb, {"log_record": record})
+
+        assert result == {"type": "log", "message": "plain message", "data": {}}
+
+    def test_leaves_non_log_breadcrumb(self) -> None:
+        crumb = {"type": "http", "data": {"url": "https://example.com"}}
+
+        result = before_breadcrumb(crumb, {})
+
+        assert result == {"type": "http", "data": {"url": "https://example.com"}}

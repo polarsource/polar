@@ -12,6 +12,8 @@ from polar.models import CustomerMeter, Event
 from polar.openapi import APITag, destructive
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
+from polar.redis import Redis, get_redis
+from polar.reducer.service import reducer as reducer_service
 from polar.routing import APIRouter
 from polar.version import V2027_01
 
@@ -139,12 +141,15 @@ async def get(
     id: CustomerMeterID,
     auth_subject: auth.CustomerMeterRead,
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> CustomerMeter:
     """Get a customer meter by ID."""
     customer_meter = await customer_meter_service.get(session, auth_subject, id)
 
     if customer_meter is None:
         raise ResourceNotFound()
+
+    await reducer_service.log_customer_meter_comparison(session, redis, customer_meter)
 
     return customer_meter
 
@@ -158,7 +163,9 @@ async def get(
     responses={
         201: {
             "description": (
-                "Credit recorded. The customer meter balance is updated asynchronously."
+                "Credit recorded and the customer meter balance updated. "
+                "If the meter is being updated concurrently, "
+                "the balance catches up shortly after."
             )
         },
         403: {
@@ -186,6 +193,7 @@ async def credits(
     Manually grant credits on a customer meter.
 
     Returns the `meter.credited` event. The customer meter balance is updated
-    asynchronously, shortly after the request.
+    before the response is returned, unless the meter is being updated
+    concurrently, in which case it catches up shortly after.
     """
     return await customer_meter_service.credit(session, auth_subject, credit_create)

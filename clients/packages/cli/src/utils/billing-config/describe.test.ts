@@ -142,6 +142,40 @@ describe('describeValue for products and benefits', () => {
     expect(priceGroups([])).toBeUndefined()
   })
 
+  test('names the tax behavior of a price when it is set', () => {
+    expect(
+      priceGroups([
+        {
+          amount_type: 'fixed',
+          price_currency: 'usd',
+          tax_behavior: 'inclusive',
+          price_amount: 1000,
+        },
+        {
+          amount_type: 'metered_unit',
+          price_currency: 'usd',
+          tax_behavior: 'exclusive',
+          meter: 'tool_call',
+          unit_amount: '10',
+        },
+        {
+          amount_type: 'seat_based',
+          price_currency: 'eur',
+          tax_behavior: 'location',
+          tiers: {
+            type: 'volume',
+            tiers: [{ bound: null, unit_amount: '500' }],
+          },
+          minimum_units: 1,
+        },
+      ])?.map(({ text }) => text.text),
+    ).toEqual([
+      '$10\ntax inclusive',
+      '$0.10\ntax exclusive',
+      'volume\n1+  €5\ntax by location',
+    ])
+  })
+
   test('describes a price list inline when it is not expanded into rows', () => {
     expect(
       describeValue([

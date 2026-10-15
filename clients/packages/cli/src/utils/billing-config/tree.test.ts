@@ -446,4 +446,83 @@ describe('formatTree', () => {
       '      tax       location → inclusive',
     ])
   })
+
+  test("mentions the tax behavior of a created product's fixed prices", () => {
+    const output = stripAnsi(
+      formatTree(
+        {
+          products: [
+            {
+              external_id: 'addon',
+              name: 'Add-on',
+              recurring_interval: 'month',
+              recurring_interval_count: 1,
+              prices: [
+                {
+                  amount_type: 'fixed',
+                  price_currency: 'usd',
+                  tax_behavior: 'inclusive',
+                  price_amount: 500,
+                },
+              ],
+              benefits: [],
+            },
+          ],
+        },
+        [entry('products', 'addon', 'created')],
+      ),
+    )
+    expect(output).toContain('$5 per month, tax inclusive')
+  })
+
+  test('pairs each amount with its tax behavior when they differ', () => {
+    const output = stripAnsi(
+      formatTree(
+        {
+          products: [
+            {
+              external_id: 'addon',
+              name: 'Add-on',
+              recurring_interval: 'month',
+              recurring_interval_count: 1,
+              prices: [
+                {
+                  amount_type: 'fixed',
+                  price_currency: 'usd',
+                  tax_behavior: 'inclusive',
+                  price_amount: 1000,
+                },
+                {
+                  amount_type: 'fixed',
+                  price_currency: 'eur',
+                  tax_behavior: 'exclusive',
+                  price_amount: 900,
+                },
+                {
+                  amount_type: 'metered_unit',
+                  price_currency: 'usd',
+                  tax_behavior: 'exclusive',
+                  meter: 'tool_call',
+                  unit_amount: '10',
+                },
+                {
+                  amount_type: 'metered_unit',
+                  price_currency: 'eur',
+                  tax_behavior: 'exclusive',
+                  meter: 'tool_call',
+                  unit_amount: '9',
+                },
+              ],
+              benefits: [],
+            },
+          ],
+        },
+        [entry('products', 'addon', 'created')],
+      ),
+    )
+    expect(output).toContain(
+      '$10 (tax inclusive) / €9 (tax exclusive) per month',
+    )
+    expect(output).toMatch(/\$0\.10 \/ €0\.09 per units\n\s+tax exclusive$/)
+  })
 })

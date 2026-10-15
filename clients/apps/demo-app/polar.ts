@@ -11,7 +11,7 @@ if (!accessToken) {
 export const polar = RuntimeSDK(config, {
   accessToken,
   environment: 'sandbox',
-  baseUrl: 'http://127.0.0.1:8000',
+  // baseUrl: 'http://127.0.0.1:8000',
 })
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -203,6 +203,19 @@ export const purchaseTopUp = async (externalId: string, topUp: TopUp) => {
   span.end()
 
   return { error: undefined }
+}
+
+export const SURVEY_CREDITS = 10
+
+export const grantSurveyCredits = async (
+  externalId: string,
+  answer: string,
+) => {
+  log(`Survey answer: ${answer}`)
+
+  await polar
+    .actor({ externalCustomerId: externalId })
+    .grant('tool_call', SURVEY_CREDITS)
 }
 
 export const callTool = async (

@@ -2323,6 +2323,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/webhooks/endpoints/external/{external_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Webhook Endpoint by External ID
+     * @description Get a webhook endpoint by external ID.
+     *
+     *     **Scopes**: `webhooks:read` `webhooks:write`
+     */
+    get: operations['webhooks:get_external_webhook_endpoint']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/webhooks/endpoints/{id}': {
     parameters: {
       query?: never
@@ -6092,9 +6114,9 @@ export interface paths {
      * Apply Config
      * @description Apply a declarative config document to the organization.
      *
-     *     Meters, benefits, products and discounts are matched by `external_id`:
-     *     missing ones are created, changed ones are updated, and ones not listed are
-     *     left untouched.
+     *     Meters, benefits, products, discounts and webhook endpoints are matched by
+     *     `external_id`: missing ones are created, changed ones are updated, and ones
+     *     not listed are left untouched.
      *     `settings` are applied first, so products can be priced in a new
      *     `payments.currency` in the same config. Every active product must have a price in
      *     the resulting currency, or nothing is applied.
@@ -6102,7 +6124,7 @@ export interface paths {
      *
      *     Each section requires the write scope for its resource.
      *
-     *     **Scopes**: `benefits:write` `discounts:write` `meters:write` `organizations:write` `products:write`
+     *     **Scopes**: `benefits:write` `discounts:write` `meters:write` `organizations:write` `products:write` `webhooks:write`
      */
     post: operations['config:apply']
     delete?: never
@@ -6129,7 +6151,7 @@ export interface paths {
      *
      *     Each section requires the read or write scope for its resource.
      *
-     *     **Scopes**: `benefits:read` `benefits:write` `discounts:read` `discounts:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write`
+     *     **Scopes**: `benefits:read` `benefits:write` `discounts:read` `discounts:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
      */
     post: operations['config:plan']
     delete?: never
@@ -6235,7 +6257,8 @@ export interface paths {
      * @description Manually grant credits on a customer meter.
      *
      *     Returns the `meter.credited` event. The customer meter balance is updated
-     *     asynchronously, shortly after the request.
+     *     before the response is returned, unless the meter is being updated
+     *     concurrently, in which case it catches up shortly after.
      *
      *     **Scopes**: `customers:write`
      */
@@ -8366,6 +8389,17 @@ export interface components {
        * @constant
        */
       error: 'AmbiguousExternalMeterID'
+      /** Detail */
+      detail: string
+    }
+    /** AmbiguousExternalWebhookEndpointID */
+    AmbiguousExternalWebhookEndpointID: {
+      /**
+       * Error
+       * @example AmbiguousExternalWebhookEndpointID
+       * @constant
+       */
+      error: 'AmbiguousExternalWebhookEndpointID'
       /** Detail */
       detail: string
     }
@@ -16065,6 +16099,11 @@ export interface components {
        */
       discounts?: components['schemas']['ConfigDiscount'][]
       /**
+       * Webhooks
+       * @description Webhook endpoints to create or update, matched by `external_id`. Existing endpoints that aren't listed are left untouched.
+       */
+      webhooks?: components['schemas']['ConfigWebhookEndpoint'][]
+      /**
        * Organization Id
        * @description The ID of the organization to apply the config to. **Required unless you use an organization token.**
        */
@@ -16819,7 +16858,7 @@ export interface components {
      * ConfigResource
      * @enum {string}
      */
-    ConfigResource: 'meter' | 'benefit' | 'product' | 'discount'
+    ConfigResource: 'meter' | 'benefit' | 'product' | 'discount' | 'webhook'
     /** ConfigResult */
     ConfigResult: {
       /** @description The type of resource. */
@@ -16886,6 +16925,45 @@ export interface components {
       | 'archived'
       | 'invalid'
       | 'over_limit'
+    /** ConfigWebhookConflict */
+    ConfigWebhookConflict: {
+      /**
+       * Error
+       * @example ConfigWebhookConflict
+       * @constant
+       */
+      error: 'ConfigWebhookConflict'
+      /** Detail */
+      detail: string
+    }
+    /** ConfigWebhookEndpoint */
+    ConfigWebhookEndpoint: {
+      /**
+       * External Id
+       * @description Your identifier for the webhook endpoint, used to match it.
+       */
+      external_id: string
+      /**
+       * Url
+       * Format: uri
+       * @description The URL where the webhook events will be sent.
+       * @example https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0
+       */
+      url: string
+      /** @description The format of the webhook payload. */
+      format: components['schemas']['WebhookFormat']
+      /**
+       * Events
+       * @description The events that will trigger the webhook.
+       */
+      events: components['schemas']['WebhookEventType'][]
+      /**
+       * Api Version
+       * @description The API version that'll be used in event payloads.
+       * @enum {string}
+       */
+      api_version: '2026-04' | '2026-10' | '2027-01'
+    }
     /** CostMetadata */
     'CostMetadata-Input': {
       /**
@@ -27240,6 +27318,12 @@ export interface components {
       units: number
       /** Rollover */
       rollover: boolean
+      /**
+       * Reason
+       * @default benefit
+       * @enum {string}
+       */
+      reason: 'benefit' | 'manual'
     }
     /** MeterQuantities */
     MeterQuantities: {
@@ -41354,6 +41438,12 @@ export interface components {
      */
     WebhookEndpoint: {
       /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
+      /**
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
@@ -48092,6 +48182,55 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['WebhookEndpoint']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'webhooks:get_external_webhook_endpoint': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        external_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['WebhookEndpoint']
+        }
+      }
+      /** @description Webhook endpoint not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The external ID matches webhook endpoints in several accessible organizations. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AmbiguousExternalWebhookEndpointID']
         }
       }
       /** @description Validation Error */
@@ -62980,6 +63119,7 @@ export interface operations {
             | components['schemas']['ConfigMeterConflict']
             | components['schemas']['ConfigBenefitConflict']
             | components['schemas']['ConfigProductConflict']
+            | components['schemas']['ConfigWebhookConflict']
         }
       }
       /** @description Validation Error */
@@ -63303,7 +63443,7 @@ export interface operations {
       }
     }
     responses: {
-      /** @description Credit recorded. The customer meter balance is updated asynchronously. */
+      /** @description Credit recorded and the customer meter balance updated. If the meter is being updated concurrently, the balance catches up shortly after. */
       201: {
         headers: {
           [name: string]: unknown
@@ -71786,10 +71926,13 @@ export const configProductPriceUnitBasedAmount_typeValues: ReadonlyArray<
 > = ['unit_based']
 export const configResourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigResource']
-> = ['meter', 'benefit', 'product', 'discount']
+> = ['meter', 'benefit', 'product', 'discount', 'webhook']
 export const configSkippedReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigSkippedReason']
 > = ['missing_external_id', 'archived', 'invalid', 'over_limit']
+export const configWebhookEndpointApi_versionValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigWebhookEndpoint']['api_version']
+> = ['2026-04', '2026-10', '2027-01']
 export const countAggregationFuncValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CountAggregation']['func']
 > = ['count']
@@ -72737,6 +72880,9 @@ export const merchantMigrationStepValues: ReadonlyArray<
 export const meterCreditEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MeterCreditEvent']['name']
 > = ['meter.credited']
+export const meterCreditedMetadataReasonValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MeterCreditedMetadata']['reason']
+> = ['benefit', 'manual']
 export const meterResetEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MeterResetEvent']['name']
 > = ['meter.reset']

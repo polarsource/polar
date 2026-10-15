@@ -98,6 +98,7 @@ class BenefitMeterCreditService(
                             "meter_id": str(meter_id),
                             "units": rollover_units,
                             "rollover": True,
+                            "reason": "benefit",
                         },
                     ),
                 )
@@ -183,6 +184,7 @@ class BenefitMeterCreditService(
                     "meter_id": str(meter_id),
                     "units": units,
                     "rollover": rollover,
+                    "reason": "benefit",
                 },
             ),
         )

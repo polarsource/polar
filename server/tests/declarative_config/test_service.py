@@ -42,11 +42,14 @@ from polar.models.benefit import BenefitType
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.product_price import ProductPriceAmountType
 from polar.models.user_organization import OrganizationRole
+from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.oauth2.exceptions import InsufficientScopeError
 from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
 from polar.product.tiers import Tiers
 from polar.redis import Redis
+from polar.version import CURRENT_API_VERSION, V2026_04
+from polar.webhook.repository import WebhookEndpointRepository
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -58,6 +61,7 @@ from tests.fixtures.random_objects import (
     create_product,
     create_product_price_metered_tiers,
     create_product_price_unit_based,
+    create_webhook_endpoint,
 )
 
 TOOL_CALLS_METER = {
@@ -215,6 +219,15 @@ DEVICES_PRODUCT = {
     "description": "Description",
     "recurring_interval": "month",
     "prices": [UNIT_BASED_PRICE],
+}
+
+
+ORDERS_WEBHOOK = {
+    "external_id": "orders",
+    "url": "https://example.com/webhook",
+    "format": "raw",
+    "events": ["order.created", "order.paid"],
+    "api_version": str(CURRENT_API_VERSION),
 }
 
 
@@ -1046,6 +1059,75 @@ class TestApply:
         assert product.name == "Devices Plus"
         assert [price.id for price in product.prices] == [price.id]
 
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
+    async def test_create_webhook(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+    ) -> None:
+        config = Config.model_validate(
+            {
+                "organization_id": str(organization.id),
+                "webhooks": [{**ORDERS_WEBHOOK, "api_version": str(V2026_04)}],
+            }
+        )
+
+        created = await declarative_config_service.apply(
+            session, redis, auth_subject, config
+        )
+        plan = await declarative_config_service.plan(session, auth_subject, config)
+        reapplied = await declarative_config_service.apply(
+            session, redis, auth_subject, config
+        )
+
+        [created_change] = created.changes
+        assert created_change.action == ConfigAction.created
+        [endpoint] = await WebhookEndpointRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["orders"])
+        assert endpoint.url == "https://example.com/webhook"
+        assert endpoint.format == WebhookFormat.raw
+        assert endpoint.events == ["order.created", "order.paid"]
+        assert endpoint.api_version == V2026_04
+        assert endpoint.secret.startswith("whsec_")
+        assert [change.action for change in plan.changes] == [ConfigAction.unchanged]
+        assert [change.action for change in reapplied.changes] == [
+            ConfigAction.unchanged
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_update_webhook(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        endpoint = await create_webhook_endpoint(
+            save_fixture,
+            organization=organization,
+            events=[WebhookEventType.order_created],
+            external_id="orders",
+        )
+
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"webhooks": [{**ORDERS_WEBHOOK, "url": "https://example.com/polar"}]}
+            ),
+        )
+
+        assert [change.action for change in result.changes] == [ConfigAction.updated]
+        assert endpoint.url == "https://example.com/polar"
+        assert endpoint.events == ["order.created", "order.paid"]
+        assert endpoint.secret == "SECRET"
+
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_create_and_update_discount(
         self,
@@ -1509,6 +1591,124 @@ class TestPlan:
 
         assert plan.changes[0].action == ConfigAction.unchanged
         assert plan.issues == []
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.meters_read})
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_webhooks_require_webhooks_scope(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        with pytest.raises(InsufficientScopeError):
+            await declarative_config_service.plan(
+                session,
+                auth_subject,
+                Config.model_validate({"webhooks": [ORDERS_WEBHOOK]}),
+            )
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_webhooks_require_organization_manage(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        user_organization.role = OrganizationRole.member
+        await save_fixture(user_organization)
+        config = {"organization_id": str(organization.id), "benefits": [BETA_BENEFIT]}
+
+        plan = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate(config)
+        )
+        assert [change.action for change in plan.changes] == [ConfigAction.created]
+        with pytest.raises(NotPermitted):
+            await declarative_config_service.plan(
+                session,
+                auth_subject,
+                Config.model_validate({**config, "webhooks": [ORDERS_WEBHOOK]}),
+            )
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_webhook_diff(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_webhook_endpoint(
+            save_fixture,
+            organization=organization,
+            events=[WebhookEventType.order_created, WebhookEventType.order_paid],
+            external_id="orders",
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "webhooks": [
+                        {
+                            **ORDERS_WEBHOOK,
+                            "url": "https://example.com/polar",
+                            "format": "slack",
+                            "events": ["order.paid", "order.refunded"],
+                        },
+                        {**ORDERS_WEBHOOK, "external_id": "refunds"},
+                    ]
+                }
+            ),
+        )
+
+        assert [(change.external_id, change.action) for change in plan.changes] == [
+            ("orders", ConfigAction.updated),
+            ("refunds", ConfigAction.created),
+        ]
+        assert [
+            (change.field, change.before, change.after)
+            for change in plan.changes[0].diff
+        ] == [
+            ("url", "https://example.com/webhook", "https://example.com/polar"),
+            ("format", WebhookFormat.raw, WebhookFormat.slack),
+            (
+                "events",
+                ["order.created", "order.paid"],
+                ["order.paid", "order.refunded"],
+            ),
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_webhook_events_order_ignored(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_webhook_endpoint(
+            save_fixture,
+            organization=organization,
+            events=[WebhookEventType.order_created, WebhookEventType.order_paid],
+            external_id="orders",
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "webhooks": [
+                        {**ORDERS_WEBHOOK, "events": ["order.paid", "order.created"]}
+                    ]
+                }
+            ),
+        )
+
+        assert [change.action for change in plan.changes] == [ConfigAction.unchanged]
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.meters_read})
@@ -2386,6 +2586,7 @@ class TestPlan:
             auth_subject,
             Config.model_validate(
                 {
+                    "webhooks": [ORDERS_WEBHOOK, ORDERS_WEBHOOK],
                     "benefits": [BETA_BENEFIT, BETA_BENEFIT],
                     "products": [
                         {
@@ -2402,7 +2603,10 @@ class TestPlan:
             issue.loc
             for issue in plan.issues
             if issue.type == ConfigIssueType.duplicate_external_id
-        ] == [["body", "benefits", 1, "external_id"]]
+        ] == [
+            ["body", "webhooks", 1, "external_id"],
+            ["body", "benefits", 1, "external_id"],
+        ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_discount_diff(

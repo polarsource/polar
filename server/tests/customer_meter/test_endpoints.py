@@ -3,9 +3,10 @@ from decimal import Decimal
 
 import pytest
 from httpx import AsyncClient
+from pytest_mock import MockerFixture
+from sqlalchemy.exc import DBAPIError
 
 from polar.customer_meter.repository import CustomerMeterRepository
-from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.event.system import SystemEvent
 from polar.models import (
     Customer,
@@ -205,9 +206,9 @@ class TestCreditCustomerMeter:
             "meter_id": str(meter.id),
             "units": 100,
             "rollover": True,
+            "reason": "manual",
         }
 
-        await customer_meter_service.update_customer(session, customer)
         repository = CustomerMeterRepository.from_session(session)
         customer_meter = await repository.get_by_customer_and_meter(
             customer.id, meter.id
@@ -241,12 +242,53 @@ class TestCreditCustomerMeter:
 
         assert response.status_code == 201
 
-        await customer_meter_service.update_customer(session, customer)
         repository = CustomerMeterRepository.from_session(session)
         updated = await repository.get_by_customer_and_meter(customer.id, meter.id)
         assert updated is not None
         assert updated.activated_at is not None
         assert updated.balance == 100
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_customer_meter_locked(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        customer_meter = CustomerMeter(customer=customer, meter=meter)
+        await save_fixture(customer_meter)
+        mocker.patch(
+            "polar.customer_meter.service.CustomerMeterService.update_customer_meter",
+            side_effect=DBAPIError(
+                "SELECT", {}, Exception("could not obtain lock on row")
+            ),
+        )
+        enqueue_job_mock = mocker.patch("polar.customer_meter.service.enqueue_job")
+
+        response = await client.post(
+            "/v1/customer-meters/credits",
+            json={
+                "customer_id": str(customer.id),
+                "meter_id": str(meter.id),
+                "units": 100,
+            },
+        )
+
+        assert response.status_code == 201
+
+        repository = CustomerMeterRepository.from_session(session)
+        updated = await repository.get_by_customer_and_meter(customer.id, meter.id)
+        assert updated is not None
+        assert updated.activated_at is not None
+        assert updated.balance == 0
+        enqueue_job_mock.assert_called_once_with(
+            "customer_meter.update_customer", customer.id
+        )
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth

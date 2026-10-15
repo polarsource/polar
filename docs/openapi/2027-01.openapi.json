@@ -3934,6 +3934,128 @@
         ]
       }
     },
+    "/v1/webhooks/endpoints/external/{external_id}": {
+      "get": {
+        "tags": [
+          "webhooks",
+          "public",
+          "mcp",
+          "cli"
+        ],
+        "summary": "Get Webhook Endpoint by External ID",
+        "description": "Get a webhook endpoint by external ID.\n\n**Scopes**: `webhooks:read` `webhooks:write`",
+        "operationId": "webhooks:get_external_webhook_endpoint",
+        "security": [
+          {
+            "oidc": [
+              "webhooks:read",
+              "webhooks:write"
+            ]
+          },
+          {
+            "pat": [
+              "webhooks:read",
+              "webhooks:write"
+            ]
+          },
+          {
+            "oat": [
+              "webhooks:read",
+              "webhooks:write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "external_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "External Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookEndpoint"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Webhook endpoint not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The external ID matches webhook endpoints in several accessible organizations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AmbiguousExternalWebhookEndpointID"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-polar-cli-preview": {
+          "fields": [
+            {
+              "key": "id",
+              "label": "ID"
+            },
+            {
+              "key": "name",
+              "label": "Name"
+            },
+            {
+              "key": "url",
+              "label": "URL"
+            },
+            {
+              "key": "enabled",
+              "label": "Enabled"
+            }
+          ]
+        },
+        "x-speakeasy-group": "webhooks",
+        "x-speakeasy-name-override": "get_external_webhook_endpoint",
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.webhooks.get_external_webhook_endpoint(\n    'string',\n)\nprint(response)\n"
+          },
+          {
+            "lang": "typescript",
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.webhooks.getExternalWebhookEndpoint(\n  \"string\",\n);\nconsole.log(response);\n"
+          }
+        ]
+      }
+    },
     "/v1/webhooks/endpoints/{id}": {
       "get": {
         "tags": [
@@ -29609,6 +29731,28 @@
           "detail"
         ],
         "title": "AmbiguousExternalMeterID"
+      },
+      "AmbiguousExternalWebhookEndpointID": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "AmbiguousExternalWebhookEndpointID",
+            "title": "Error",
+            "examples": [
+              "AmbiguousExternalWebhookEndpointID"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "AmbiguousExternalWebhookEndpointID"
       },
       "AttachedCustomField": {
         "properties": {
@@ -83855,6 +83999,21 @@
       },
       "WebhookEndpoint": {
         "properties": {
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -83951,6 +84110,7 @@
         },
         "type": "object",
         "required": [
+          "external_id",
           "created_at",
           "modified_at",
           "id",

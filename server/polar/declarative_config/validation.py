@@ -33,10 +33,12 @@ from polar.models import (
     ProductPriceMeteredUnit,
     ProductPriceSeatUnit,
     ProductPriceUnit,
+    WebhookEndpoint,
 )
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
+from polar.webhook.repository import WebhookEndpointRepository
 
 from .schemas import (
     Config,
@@ -55,6 +57,7 @@ from .schemas import (
     ConfigProductPriceMeteredUnit,
     ConfigResource,
     ConfigSettings,
+    ConfigWebhookEndpoint,
 )
 
 Loc = list[str | int]
@@ -158,11 +161,13 @@ MeterChange = ResourceChange[ConfigMeter, Meter]
 BenefitChange = ResourceChange[ConfigBenefit, Benefit]
 ProductChange = ResourceChange[ConfigProduct, Product]
 DiscountChange = ResourceChange[ConfigDiscount, Discount]
+WebhookChange = ResourceChange[ConfigWebhookEndpoint, WebhookEndpoint]
 
 
 @dataclass
 class ConfigChanges:
     settings: SettingsChange | None
+    webhooks: list[WebhookChange]
     meters: list[MeterChange]
     benefits: list[BenefitChange]
     products: list[ProductChange]
@@ -940,6 +945,73 @@ async def duplicate_codes(
     return issues
 
 
+def _webhook_config_values(webhook_config: ConfigWebhookEndpoint) -> dict[str, Any]:
+    return {
+        "url": str(webhook_config.url),
+        "format": webhook_config.format,
+        "events": list(webhook_config.events),
+        "api_version": str(webhook_config.api_version),
+    }
+
+
+def _webhook_endpoint_values(endpoint: WebhookEndpoint) -> dict[str, Any]:
+    return {
+        "url": endpoint.url,
+        "format": endpoint.format,
+        "events": list(endpoint.events),
+        "api_version": str(endpoint.api_version),
+    }
+
+
+def _get_webhook_update_dict(
+    before: dict[str, Any], after: dict[str, Any]
+) -> dict[str, Any]:
+    update_dict: dict[str, Any] = {}
+    for name, value in after.items():
+        if name == "events":
+            if set(before[name]) != set(value):
+                update_dict[name] = value
+        elif before[name] != value:
+            update_dict[name] = value
+    return update_dict
+
+
+async def diff_webhooks(
+    session: AsyncSession,
+    organization: Organization,
+    webhook_configs: Sequence[ConfigWebhookEndpoint],
+    *,
+    for_update: bool,
+) -> list[WebhookChange]:
+    repository = WebhookEndpointRepository.from_session(session)
+    existing_endpoints = {
+        endpoint.external_id: endpoint
+        for endpoint in await repository.get_all_by_external_ids(
+            organization.id,
+            [config.external_id for config in webhook_configs],
+            for_update=for_update,
+        )
+    }
+    changes: list[WebhookChange] = []
+    for index, webhook_config in enumerate(webhook_configs):
+        endpoint = existing_endpoints.get(webhook_config.external_id)
+        after = _webhook_config_values(webhook_config)
+        if endpoint is None:
+            changes.append(WebhookChange(index, webhook_config, None, after))
+            continue
+        before = _webhook_endpoint_values(endpoint)
+        changes.append(
+            WebhookChange(
+                index,
+                webhook_config,
+                endpoint,
+                _get_webhook_update_dict(before, after),
+                before,
+            )
+        )
+    return changes
+
+
 def _external_ids_by_id(
     changes: Sequence[ResourceChange[Any, Any]],
 ) -> dict[str, str]:
@@ -957,6 +1029,9 @@ async def check(
     *,
     for_update: bool,
 ) -> tuple[ConfigChanges, list[ConfigIssue]]:
+    webhooks = await diff_webhooks(
+        session, organization, config.webhooks, for_update=for_update
+    )
     meters = await diff_meters(
         session, organization, config.meters, for_update=for_update
     )
@@ -970,6 +1045,7 @@ async def check(
         session, organization, config.discounts, products, for_update=for_update
     )
     issues = [
+        *unique_external_ids(ConfigResource.webhook, webhooks),
         *unique_external_ids(ConfigResource.meter, meters),
         *unique_external_ids(ConfigResource.benefit, benefits),
         *unique_external_ids(ConfigResource.product, products),
@@ -1000,4 +1076,7 @@ async def check(
             )
         )
         issues.append(changed_currency(new_currency))
-    return ConfigChanges(settings, meters, benefits, products, discounts), issues
+    return (
+        ConfigChanges(settings, webhooks, meters, benefits, products, discounts),
+        issues,
+    )

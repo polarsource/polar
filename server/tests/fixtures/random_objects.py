@@ -2799,6 +2799,7 @@ async def create_webhook_endpoint(
     *,
     organization: Organization,
     events: list[WebhookEventType] | None = None,
+    external_id: str | None = None,
 ) -> WebhookEndpoint:
     webhook_endpoint = WebhookEndpoint(
         url="https://example.com/webhook",
@@ -2806,6 +2807,7 @@ async def create_webhook_endpoint(
         secret="SECRET",
         events=events or list(WebhookEventType),
         organization=organization,
+        external_id=external_id,
     )
     await save_fixture(webhook_endpoint)
     return webhook_endpoint

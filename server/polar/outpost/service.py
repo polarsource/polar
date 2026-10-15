@@ -2,13 +2,21 @@ import uuid
 from collections.abc import Sequence
 from datetime import timedelta
 
+import logfire
 import structlog
 from anyio.streams.memory import MemoryObjectSendStream
+from google.protobuf.message import DecodeError
+from logfire.experimental.forwarding import ForwardExportRequestResponse
+from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import (
+    ExportTraceServiceRequest,
+)
+from opentelemetry.proto.common.v1.common_pb2 import AnyValue, KeyValue
 from pydantic import ValidationError
 from sqlalchemy.orm import selectinload
 
 from polar.customer.repository import CustomerRepository
 from polar.customer_meter.repository import CustomerMeterRepository
+from polar.exceptions import BadRequest
 from polar.kit.db.postgres import AsyncReadSession
 from polar.logging import Logger
 from polar.meter.aggregation import UniqueAggregation
@@ -80,6 +88,37 @@ class OutpostService:
                 return await self._send_reducer_bucket(
                     session, organization, event, send_stream
                 )
+
+    def relay_telemetry(
+        self, organization: Organization, body: bytes
+    ) -> ForwardExportRequestResponse:
+        request = ExportTraceServiceRequest()
+        try:
+            request.ParseFromString(body)
+        except DecodeError as e:
+            raise BadRequest("Invalid OTLP trace export request.") from e
+
+        overrides = {
+            "polar.organization_id": str(organization.id),
+            "service.name": "outpost",
+        }
+        for resource_spans in request.resource_spans:
+            attributes = resource_spans.resource.attributes
+            kept = [
+                attribute for attribute in attributes if attribute.key not in overrides
+            ]
+            del attributes[:]
+            attributes.extend(kept)
+            attributes.extend(
+                KeyValue(key=key, value=AnyValue(string_value=value))
+                for key, value in overrides.items()
+            )
+
+        return logfire.forward_export_request(
+            path="/v1/traces",
+            headers={"Content-Type": "application/x-protobuf"},
+            body=request.SerializeToString(),
+        )
 
     async def _send_configuration(
         self,

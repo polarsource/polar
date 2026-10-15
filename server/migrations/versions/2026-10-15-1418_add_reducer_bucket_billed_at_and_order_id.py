@@ -22,15 +22,38 @@ def upgrade() -> None:
     op.add_column(
         "reducer_buckets",
         sa.Column("billed_at", sa.TIMESTAMP(timezone=True), nullable=True),
+        if_not_exists=True,
     )
-    op.add_column("reducer_buckets", sa.Column("order_id", sa.Uuid(), nullable=True))
+    op.add_column(
+        "reducer_buckets",
+        sa.Column("order_id", sa.Uuid(), nullable=True),
+        if_not_exists=True,
+    )
+    op.drop_constraint(
+        op.f("reducer_buckets_order_id_fkey"),
+        "reducer_buckets",
+        type_="foreignkey",
+        if_exists=True,
+    )
     op.create_foreign_key(
         op.f("reducer_buckets_order_id_fkey"),
         "reducer_buckets",
         "orders",
         ["order_id"],
         ["id"],
+        postgresql_not_valid=True,
     )
+
+    # Commit the column additions before scanning existing rows to validate the FK.
+    with op.get_context().autocommit_block():
+        op.execute("SET lock_timeout = '5s'")
+        try:
+            op.execute(
+                "ALTER TABLE reducer_buckets "
+                "VALIDATE CONSTRAINT reducer_buckets_order_id_fkey"
+            )
+        finally:
+            op.execute("RESET lock_timeout")
 
 
 def downgrade() -> None:

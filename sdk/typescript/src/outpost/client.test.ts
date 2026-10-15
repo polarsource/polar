@@ -55,6 +55,7 @@ let reducers: Reducer[];
 let snapshot: Record<string, unknown> | undefined;
 let delayConfiguration = false;
 let refuseConnections = false;
+let meterSnapshots: Record<string, { credited_units: number; delay: number }> = {};
 const connections: WebSocket[] = [];
 const outposts: Outpost[] = [];
 
@@ -100,10 +101,12 @@ beforeAll(async () => {
       const message = JSON.parse(data.toString());
       if (message.type === "configuration" && !delayConfiguration)
         ws.send(JSON.stringify({ type: "configuration", payload: { reducers } }));
-      if (message.type === "meter_usage" && snapshot)
-        ws.send(
-          JSON.stringify({ type: "meter_usage", payload: { customer_exists: true, ...snapshot } }),
-        );
+      if (message.type === "meter_usage" && snapshot) {
+        const meterId: string = message.payload.meter_id;
+        const { delay = 0, ...override } = meterSnapshots[meterId] ?? {};
+        const payload = { customer_exists: true, ...snapshot, meter_id: meterId, ...override };
+        setTimeout(() => ws.send(JSON.stringify({ type: "meter_usage", payload })), delay);
+      }
     });
   });
 });
@@ -121,6 +124,7 @@ beforeEach(async () => {
   snapshot = undefined;
   delayConfiguration = false;
   refuseConnections = false;
+  meterSnapshots = {};
   exported.length = 0;
 });
 
@@ -721,4 +725,17 @@ it("reads null for a customer Polar does not know", async () => {
   const outpost = await start();
   await outpost.actor(customer);
   expect(await outpost.customerMeter(meter)).toBeNull();
+});
+
+it("waits for the snapshot of the meter it reads", async () => {
+  reducers[0].meter_ids = ["meter", "shared"];
+  snapshot = aliceSnapshot;
+  meterSnapshots = {
+    meter: { credited_units: 100, delay: 0 },
+    shared: { credited_units: 200, delay: 50 },
+  };
+  const outpost = await start();
+  expect((await outpost.customerMeter({ ...customer, meter_id: "shared" }))?.credited_units).toBe(
+    200,
+  );
 });

@@ -956,6 +956,7 @@ async def test_telemetry_spans(
                 span.name for span in exported_spans
             }:
                 await anyio.lowlevel.checkpoint()
+        await outpost.customer_meter(meter_id="meter", external_customer_id="alice")
 
     names = {span.name for span in exported_spans}
     assert names == {
@@ -963,6 +964,8 @@ async def test_telemetry_spans(
         "outpost.redis.subscribe",
         "outpost.websocket.connect",
         "outpost.ingest",
+        "outpost.actor",
+        "outpost.customer_meter",
         "outpost.snapshot.received",
         "outpost.sync.received",
         "outpost.websocket.disconnect",

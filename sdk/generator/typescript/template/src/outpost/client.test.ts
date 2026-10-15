@@ -677,3 +677,8 @@ it("fails when Polar refuses the reconnection", async () => {
     timeout: 3_000,
   });
 });
+
+it("fails to start without Redis instead of hanging", async () => {
+  const outpost = new Outpost(join(directory, "missing.sock"), { client: core });
+  await expect(outpost.start()).rejects.toThrow();
+}, 10_000);

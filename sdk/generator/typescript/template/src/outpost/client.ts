@@ -329,7 +329,10 @@ export class Outpost {
     this.subscriber = undefined;
     this.redis = undefined;
     const closed = connections.map((redis) => {
-      const ended = redis.status === "end" ? Promise.resolve() : once(redis, "end");
+      // disconnect() stops a connection that is not up without ever emitting "end".
+      const ended = ["end", "reconnecting", "wait"].includes(redis.status)
+        ? Promise.resolve()
+        : once(redis, "end");
       redis.disconnect();
       return ended;
     });

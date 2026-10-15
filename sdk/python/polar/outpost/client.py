@@ -705,8 +705,10 @@ class Outpost:
                     for local in self._cache.values():
                         local.state = None
             attempt += 1
+            # Bounded exponent: a long outage would overflow the float otherwise.
             delay = min(
-                MAX_REDIS_RECONNECT_DELAY, REDIS_RECONNECT_DELAY * 2 ** (attempt - 1)
+                MAX_REDIS_RECONNECT_DELAY,
+                REDIS_RECONNECT_DELAY * 2 ** min(attempt - 1, 16),
             )
             await anyio.sleep(random.uniform(delay / 2, delay))
 

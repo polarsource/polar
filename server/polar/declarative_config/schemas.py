@@ -26,7 +26,8 @@ from polar.discount.schemas import (
     MaxRedemptionsPerCustomer,
     Name,
 )
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import SubscriptionRecurringInterval, TaxBehaviorOption
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import Int32, Schema, SetSchemaReference
 from polar.kit.trial import TrialConfigurationInputMixin
@@ -359,8 +360,42 @@ ConfigDiscount = Annotated[
 ]
 
 
+class ConfigSettingsPayments(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    currency: PresentmentCurrency | None = Field(
+        default=None,
+        description=(
+            "The organization's default presentment currency. "
+            "Every active product must have a price in it. "
+            "Left untouched when omitted."
+        ),
+    )
+    tax: TaxBehaviorOption | None = Field(
+        default=None,
+        description=(
+            "The organization's default tax behavior, used by prices "
+            "without their own. Left untouched when omitted."
+        ),
+    )
+
+
+class ConfigSettings(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    payments: ConfigSettingsPayments | None = Field(
+        default=None,
+        description="Payment settings. Left untouched when omitted.",
+    )
+
+
 class Config(Schema):
     model_config = ConfigDict(extra="forbid")
+
+    settings: ConfigSettings | None = Field(
+        default=None,
+        description="Organization settings to update. Left untouched when omitted.",
+    )
 
     meters: list[ConfigMeter] = Field(
         default_factory=list,
@@ -412,12 +447,14 @@ class ConfigIssueSeverity(StrEnum):
 
 
 class ConfigIssueType(StrEnum):
+    currency_changed = "currency_changed"
     discount_locked = "discount_locked"
     duplicate_code = "duplicate_code"
     duplicate_external_id = "duplicate_external_id"
     duration_changed = "duration_changed"
     interval_changed = "interval_changed"
     meter_locked = "meter_locked"
+    missing_currency = "missing_currency"
     not_supported = "not_supported"
     type_changed = "type_changed"
     unknown_event = "unknown_event"
@@ -455,8 +492,15 @@ class ConfigResult(Schema):
     action: ConfigAction = Field(description="What applying the config does.")
 
 
+class ConfigSettingsResult(Schema):
+    action: ConfigAction = Field(description="What applying the config does.")
+
+
 class ConfigApplyResult(Schema):
     changes: list[ConfigResult]
+    settings: ConfigSettingsResult | None = Field(
+        description="Result for `settings`, if in the config."
+    )
 
 
 class ConfigFieldChange(Schema):
@@ -474,8 +518,17 @@ class ConfigChange(ConfigResult):
     )
 
 
+class ConfigSettingsChange(ConfigSettingsResult):
+    diff: list[ConfigFieldChange] = Field(
+        description="Settings that applying the config changes."
+    )
+
+
 class ConfigPlan(Schema):
     changes: list[ConfigChange]
+    settings: ConfigSettingsChange | None = Field(
+        description="Change for `settings`, if in the config."
+    )
     issues: list[ConfigIssue]
 
 

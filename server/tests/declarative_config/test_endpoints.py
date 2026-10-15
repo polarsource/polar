@@ -78,6 +78,7 @@ class TestApply:
                     "action": "created",
                 }
             ],
+            "settings": None,
         }
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
@@ -286,7 +287,7 @@ class TestPlan:
         )
 
         assert response.status_code == 200
-        assert response.json() == {"changes": [], "issues": []}
+        assert response.json() == {"changes": [], "settings": None, "issues": []}
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")

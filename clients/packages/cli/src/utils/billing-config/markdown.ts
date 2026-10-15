@@ -15,6 +15,7 @@ import { formatProblems } from '@/utils/billing-config/problems'
 import { errors, unchanged } from '@/utils/billing-config/review'
 
 const HEADINGS: Record<string, string> = {
+  settings: 'Settings',
   meters: 'Meters',
   benefits: 'Benefits',
   products: 'Products',
@@ -56,9 +57,9 @@ const valueRows = (
     : [`${mark}   ${field}`, ...lines.map((line) => `${mark}     ${line}`)]
 }
 
-const entryLines = ({ id, action, diff }: AppliedEntry) => {
+const entryLines = ({ section, id, action, diff }: AppliedEntry) => {
   const created = action === 'created'
-  const changes = fieldChanges(diff)
+  const changes = fieldChanges(diff, section)
   const width = Math.max(
     0,
     ...changes

@@ -211,8 +211,25 @@ const mergeDiscount = (diff: ReadonlyArray<Change>) =>
       : change,
   )
 
-export const fieldChanges = (diff: ReadonlyArray<Change>) =>
+const SETTING_VALUES: Record<string, (value: string) => string> = {
+  currency: (value) => value.toUpperCase(),
+  tax: (value) => value,
+}
+
+const settingValue = (field: string, value: unknown) =>
+  typeof value === 'string' && SETTING_VALUES[field]
+    ? new Rendered(SETTING_VALUES[field](value))
+    : value
+
+const renderSetting = (change: Change): Change => ({
+  ...change,
+  before: settingValue(change.field, change.before),
+  after: settingValue(change.field, change.after),
+})
+
+export const fieldChanges = (diff: ReadonlyArray<Change>, section?: string) =>
   mergeDiscount(mergeRecurrence(diff))
+    .map((change) => (section === 'settings' ? renderSetting(change) : change))
     .flatMap(expand)
     .map((change) => ({ ...change, field: name(change.field) }))
 
@@ -220,8 +237,9 @@ export const formatRows = (
   indent: string,
   diff: ReadonlyArray<Change>,
   action: Action,
+  section?: string,
 ) => {
-  const changes = fieldChanges(diff)
+  const changes = fieldChanges(diff, section)
   const width = Math.max(0, ...changes.map((change) => change.field.length))
   return changes.flatMap((change) =>
     formatChange(indent, change, action, width),

@@ -185,4 +185,54 @@ describe('plan', () => {
       'The token needs the meters:read, benefits:read scopes.',
     )
   })
+
+  test('lists settings changes first, grouped by section', async () => {
+    api.routes[`POST ${planUrl}`] = Response.json({
+      changes: [],
+      settings: {
+        action: 'updated',
+        diff: [
+          { field: 'payments.currency', before: 'usd', after: 'eur' },
+          { field: 'payments.tax', before: 'location', after: 'inclusive' },
+        ],
+      },
+      issues: [],
+    })
+
+    const result = await run(
+      await write(
+        JSON.stringify({
+          settings: { payments: { currency: 'eur' } },
+          meters: [],
+        }),
+      ),
+    )
+
+    expect(result.entries).toEqual([
+      {
+        section: 'settings',
+        id: 'payments',
+        action: 'updated',
+        diff: [
+          { field: 'currency', before: 'usd', after: 'eur' },
+          { field: 'tax', before: 'location', after: 'inclusive' },
+        ],
+      },
+    ])
+  })
+
+  test('asks for the organizations scope for settings', async () => {
+    api.routes[`POST ${planUrl}`] = Response.json(
+      { error: 'NotPermitted', detail: 'Not permitted' },
+      { status: 403 },
+    )
+
+    const error = await failure(
+      run(await write(JSON.stringify({ settings: {}, meters: [] }))),
+    )
+
+    expect(error.hint).toBe(
+      'The token needs the meters:read, organizations:read scopes.',
+    )
+  })
 })

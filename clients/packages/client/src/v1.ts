@@ -6095,13 +6095,14 @@ export interface paths {
      *     Meters, benefits, products and discounts are matched by `external_id`:
      *     missing ones are created, changed ones are updated, and ones not listed are
      *     left untouched.
+     *     `settings` are applied first, so products can be priced in a new
+     *     `payments.currency` in the same config. Every active product must have a price in
+     *     the resulting currency, or nothing is applied.
      *     Everything is applied in one transaction.
      *
-     *     A `benefits` section also requires the `benefits:write` scope, a
-     *     `products` section the `products:write` scope, and a `discounts` section
-     *     the `discounts:write` scope.
+     *     Each section requires the write scope for its resource.
      *
-     *     **Scopes**: `meters:write`
+     *     **Scopes**: `benefits:write` `discounts:write` `meters:write` `organizations:write` `products:write`
      */
     post: operations['config:apply']
     delete?: never
@@ -6126,11 +6127,9 @@ export interface paths {
      *     Returns the action for each resource, and every issue: `error` issues make
      *     apply fail, `warning` issues don't.
      *
-     *     A `benefits` section also requires the `benefits:read` or `benefits:write`
-     *     scope, a `products` section `products:read` or `products:write`, and a
-     *     `discounts` section `discounts:read` or `discounts:write`.
+     *     Each section requires the read or write scope for its resource.
      *
-     *     **Scopes**: `meters:read` `meters:write`
+     *     **Scopes**: `benefits:read` `benefits:write` `discounts:read` `discounts:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write`
      */
     post: operations['config:plan']
     delete?: never
@@ -16043,6 +16042,8 @@ export interface components {
     ConfidenceLevel: 'low' | 'medium' | 'high'
     /** Config */
     Config: {
+      /** @description Organization settings to update. Left untouched when omitted. */
+      settings?: components['schemas']['ConfigSettings'] | null
       /**
        * Meters
        * @description Meters to create or update, matched by `external_id`. Omitted fields are set to their default, except `metadata`, which is left untouched when omitted. Existing meters that aren't listed are left untouched, and archived meters stay archived.
@@ -16078,6 +16079,8 @@ export interface components {
     ConfigApplyResult: {
       /** Changes */
       changes: components['schemas']['ConfigResult'][]
+      /** @description Result for `settings`, if in the config. */
+      settings: components['schemas']['ConfigSettingsResult'] | null
     }
     /** ConfigAsCodeNotEnabled */
     ConfigAsCodeNotEnabled: {
@@ -16505,12 +16508,14 @@ export interface components {
      * @enum {string}
      */
     ConfigIssueType:
+      | 'currency_changed'
       | 'discount_locked'
       | 'duplicate_code'
       | 'duplicate_external_id'
       | 'duration_changed'
       | 'interval_changed'
       | 'meter_locked'
+      | 'missing_currency'
       | 'not_supported'
       | 'type_changed'
       | 'unknown_event'
@@ -16585,6 +16590,8 @@ export interface components {
     ConfigPlan: {
       /** Changes */
       changes: components['schemas']['ConfigChange'][]
+      /** @description Change for `settings`, if in the config. */
+      settings: components['schemas']['ConfigSettingsChange'] | null
       /** Issues */
       issues: components['schemas']['ConfigIssue'][]
     }
@@ -16814,6 +16821,33 @@ export interface components {
        * @description The resource's `external_id`.
        */
       external_id: string
+      /** @description What applying the config does. */
+      action: components['schemas']['ConfigAction']
+    }
+    /** ConfigSettings */
+    ConfigSettings: {
+      /** @description Payment settings. Left untouched when omitted. */
+      payments?: components['schemas']['ConfigSettingsPayments'] | null
+    }
+    /** ConfigSettingsChange */
+    ConfigSettingsChange: {
+      /** @description What applying the config does. */
+      action: components['schemas']['ConfigAction']
+      /**
+       * Diff
+       * @description Settings that applying the config changes.
+       */
+      diff: components['schemas']['ConfigFieldChange'][]
+    }
+    /** ConfigSettingsPayments */
+    ConfigSettingsPayments: {
+      /** @description The organization's default presentment currency. Every active product must have a price in it. Left untouched when omitted. */
+      currency?: components['schemas']['PresentmentCurrency'] | null
+      /** @description The organization's default tax behavior, used by prices without their own. Left untouched when omitted. */
+      tax?: components['schemas']['TaxBehaviorOption'] | null
+    }
+    /** ConfigSettingsResult */
+    ConfigSettingsResult: {
       /** @description What applying the config does. */
       action: components['schemas']['ConfigAction']
     }
@@ -62916,7 +62950,7 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
-      /** @description Not allowed to manage this organization, missing the `benefits:write`, `products:write` or `discounts:write` scope for that section, or config as code isn't enabled for it. */
+      /** @description Not allowed to manage this organization, missing a scope required by one of the sections, or config as code isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown
@@ -62982,7 +63016,7 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
-      /** @description Not allowed to read this organization's products, missing a benefits, products or discounts scope for those sections, or config as code isn't enabled for it. */
+      /** @description Not allowed to read this organization's products, missing a scope required by one of the sections, or config as code isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown
@@ -71713,12 +71747,14 @@ export const configIssueSeverityValues: ReadonlyArray<
 export const configIssueTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueType']
 > = [
+  'currency_changed',
   'discount_locked',
   'duplicate_code',
   'duplicate_external_id',
   'duration_changed',
   'interval_changed',
   'meter_locked',
+  'missing_currency',
   'not_supported',
   'type_changed',
   'unknown_event',

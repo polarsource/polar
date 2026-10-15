@@ -112,9 +112,11 @@ describe('locateInScript', () => {
         undefined,
       ),
     ).toBeUndefined()
-    expect(
-      locateInScript(builder, input, ['meters'], undefined),
-    ).toBeUndefined()
+    expect(locateInScript(builder, input, ['meters'], undefined)).toEqual({
+      line: 4,
+      column: 3,
+      length: 6,
+    })
   })
 })
 
@@ -164,5 +166,76 @@ describe('locateInScript with an events section', () => {
         'tool_calls',
       ),
     ).toEqual({ line: 14, column: 71, length: 12 })
+  })
+})
+
+describe('locateInScript with destructured helpers', () => {
+  const config = [
+    "import { defineConfig, usd } from '@polar-sh/polar'",
+    '',
+    'export default defineConfig({',
+    '  products: ({ product, free, fixed }) => ({',
+    "    free: product('Free').prices(free()).recurring('monthly'),",
+    "    pack: product('Pack').prices(fixed().amount(usd(9))),",
+    '  }),',
+    '})',
+    '',
+  ].join('\n')
+  const input = {
+    products: [{ external_id: 'free' }, { external_id: 'pack' }],
+  }
+
+  test('anchors a product on its entry, not on a helper with the same name', () => {
+    expect(
+      locateInScript(config, input, ['products', 0, 'prices'], undefined),
+    ).toEqual({ line: 5, column: 5, length: 4 })
+  })
+})
+
+describe('locateInScript with a settings section', () => {
+  const config = [
+    "import { defineConfig } from '@polar-sh/polar'",
+    '',
+    'export default defineConfig({',
+    "  settings: { payments: { tax: 'exclusive', currency: 'eur' } },",
+    '  products: ({ product, free }) => ({',
+    "    free: product('Free').prices(free()).recurring('monthly'),",
+    '  }),',
+    '})',
+    '',
+  ].join('\n')
+  const input = {
+    settings: { payments: { tax: 'exclusive', currency: 'eur' } },
+    products: [{ external_id: 'free' }],
+  }
+
+  test('points at the value of a nested setting', () => {
+    expect(
+      locateInScript(
+        config,
+        input,
+        ['settings', 'payments', 'currency'],
+        'eur',
+      ),
+    ).toEqual({ line: 4, column: 55, length: 5 })
+  })
+
+  test('points at the section key for a section-level issue', () => {
+    expect(locateInScript(config, input, ['settings'], undefined)).toEqual({
+      line: 4,
+      column: 3,
+      length: 8,
+    })
+  })
+
+  test('points at the key of a nested setting without a value', () => {
+    expect(
+      locateInScript(
+        config,
+        input,
+        ['settings', 'payments', 'currency'],
+        undefined,
+      ),
+    ).toEqual({ line: 4, column: 45, length: 8 })
   })
 })

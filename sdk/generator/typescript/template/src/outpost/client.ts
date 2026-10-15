@@ -1,3 +1,13 @@
+import type { TracerProvider } from "@opentelemetry/sdk-trace";
+
+import {
+  INVALID_SPAN_CONTEXT,
+  SpanStatusCode,
+  trace,
+  type Attributes,
+  type Span,
+  type Tracer,
+} from "@opentelemetry/api";
 import { Redis } from "ioredis";
 import { randomUUID } from "node:crypto";
 import { once } from "node:events";
@@ -15,6 +25,7 @@ import {
   quantity,
 } from "./reducer";
 import { READ_STATE_SCRIPT, WRITE_BUCKET_SCRIPT, APPLY_SNAPSHOT_SCRIPT } from "./scripts";
+import { createTracerProvider, isTelemetryEnabled } from "./telemetry";
 
 const CACHE_SIZE = 1024;
 const SYNC_INTERVAL = 30_000;
@@ -116,6 +127,11 @@ const decodeState = (value: string[]): State => {
   return state;
 };
 
+const recordError = (span: Span, error: unknown): void => {
+  span.recordException(error instanceof Error ? error : String(error));
+  span.setStatus({ code: SpanStatusCode.ERROR });
+};
+
 const customerArguments = (customer: string): Customer => {
   const separator = customer.indexOf(":");
   return {
@@ -127,6 +143,8 @@ const customerArguments = (customer: string): Customer => {
 
 export interface OutpostOptions {
   client: Pick<ClientBase, "buildRequest">;
+  /** Send Outpost telemetry to Polar. Also disabled by `POLAR_OUTPOST_TELEMETRY=0`. */
+  telemetry?: boolean;
 }
 export interface IngestResult {
   inserted: number;
@@ -144,6 +162,8 @@ export class Outpost {
   private subscriber?: Redis;
   private websocket?: WebSocket;
   private _connectionId?: string;
+  private tracerProvider?: TracerProvider;
+  private tracer?: Tracer;
   private reducers: Reducer[] = [];
   private readonly cache = new Map<string, LocalState>();
   private readonly actors = new Set<string>();
@@ -172,6 +192,10 @@ export class Outpost {
     this.configured = signal();
     this.synced = signal();
     this.messages = Promise.resolve();
+    if (isTelemetryEnabled(this.options.telemetry ?? true)) {
+      this.tracerProvider = createTracerProvider(this.options.client);
+      this.tracer = this.tracerProvider.getTracer("polar.outpost");
+    }
     try {
       this.redis = new Redis(this.redisUrl, {
         lazyConnect: true,
@@ -189,19 +213,29 @@ export class Outpost {
       const redis = this.redis;
       this.redis.on("error", () => {});
       this.redis.on("close", () => {
-        if (this.redis === redis) this.invalidate();
+        if (this.redis !== redis) return;
+        this.event("outpost.redis.disconnect", new PolarError("Redis connection closed"));
+        this.invalidate();
       });
       this.redis.on("ready", () => {
         if (this.subscriber?.status === "ready") void this.synchronize();
       });
-      await withTimeout(this.redis.connect());
-      await this.redis.ping();
+      await this.trace(
+        "outpost.redis.connect",
+        async () => {
+          await withTimeout(redis.connect());
+          await redis.ping();
+        },
+        { "outpost.redis.connection": "primary" },
+      );
       this.channel = `outpost:${this.redis.options.db}:updates`;
       this.subscriber = this.redis.duplicate({ lazyConnect: true, autoResubscribe: false });
       const subscriber = this.subscriber;
       this.subscriber.on("error", () => {});
       this.subscriber.on("close", () => {
-        if (this.subscriber === subscriber) this.invalidate();
+        if (this.subscriber !== subscriber) return;
+        this.event("outpost.redis.disconnect", new PolarError("Redis subscriber closed"));
+        this.invalidate();
       });
       this.subscriber.on("ready", () => {
         void this.synchronize();
@@ -209,7 +243,9 @@ export class Outpost {
       this.subscriber.on("message", (_channel, data) => {
         void this.receiveRedis(data).catch((error: unknown) => this.fail(error));
       });
-      await withTimeout(this.subscriber.connect());
+      await this.trace("outpost.redis.connect", () => withTimeout(subscriber.connect()), {
+        "outpost.redis.connection": "subscriber",
+      });
       await withTimeout(this.synced.promise);
       const [url, request] = this.options.client.buildRequest("GET", "/v1/outpost/");
       const endpoint = new URL(url);
@@ -220,14 +256,19 @@ export class Outpost {
       });
       this.websocket.on("error", (error) => this.fail(error));
       this.websocket.on("close", () => {
-        if (this.websocket) this.fail(new PolarError("Outpost WebSocket disconnected"));
+        if (!this.websocket) return;
+        const error = new PolarError("Outpost WebSocket disconnected");
+        this.event("outpost.websocket.disconnect", error);
+        this.fail(error);
       });
       this.websocket.on("message", (data) => {
         this.messages = this.messages
           .then(() => this.receiveWebsocket(data.toString()))
           .catch((error: unknown) => this.fail(error));
       });
-      await withTimeout(once(this.websocket, "open"));
+      await this.trace("outpost.websocket.connect", () =>
+        withTimeout(once(this.websocket!, "open")),
+      );
       await this.send({ type: "configuration" });
       this.refreshTimer = setInterval(() => {
         if (this.synchronizing) return;
@@ -247,6 +288,8 @@ export class Outpost {
     const connections = [this.subscriber, this.redis].filter(
       (redis): redis is Redis => redis !== undefined,
     );
+    if (websocket) this.event("outpost.websocket.disconnect");
+    if (connections.length) this.event("outpost.redis.disconnect");
     this.websocket = undefined;
     this._connectionId = undefined;
     this.subscriber = undefined;
@@ -267,6 +310,10 @@ export class Outpost {
     this.cache.clear();
     this.actors.clear();
     this.reducers = [];
+    const tracerProvider = this.tracerProvider;
+    this.tracerProvider = undefined;
+    this.tracer = undefined;
+    await tracerProvider?.shutdown();
   }
 
   async [Symbol.asyncDispose](): Promise<void> {
@@ -276,32 +323,42 @@ export class Outpost {
   async ingest({ events }: { events: readonly EventInput[] }): Promise<IngestResult> {
     const redis = this.requireRedis();
     if (!events.length) return { inserted: 0, duplicates: 0 };
-    const parsed = events.map(parseEvent);
-    await this.waitConfigured();
-    const updates = reduce(
-      this.reducers,
-      parsed,
-      parsed.reduce((oldest, event) => Math.min(oldest, getBucketStart(event.timestamp)), Infinity),
+    return this.trace(
+      "outpost.ingest",
+      async (span) => {
+        const parsed = events.map(parseEvent);
+        await this.waitConfigured();
+        const updates = reduce(
+          this.reducers,
+          parsed,
+          parsed.reduce(
+            (oldest, event) => Math.min(oldest, getBucketStart(event.timestamp)),
+            Infinity,
+          ),
+        );
+        for (const customer of new Set(parsed.map((event) => event.customer)))
+          await this.actor(customerArguments(customer));
+        for (const update of updates) {
+          const identity = `${update.customer}:${update.reducer}`;
+          const statistics = update.statistics;
+          const state = await redis.outpostWriteBucket(
+            `outpost:state:${identity}`,
+            identity,
+            this.channel,
+            generateEpoch(),
+            update.bucketStart,
+            statistics.count,
+            statistics.sum,
+            statistics.min ?? "",
+            statistics.max ?? "",
+          );
+          await this.receiveState(identity, decodeState(state));
+        }
+        span.setAttribute("outpost.buckets", updates.length);
+        return { inserted: parsed.length, duplicates: 0 };
+      },
+      { "outpost.events": events.length },
     );
-    for (const customer of new Set(parsed.map((event) => event.customer)))
-      await this.actor(customerArguments(customer));
-    for (const update of updates) {
-      const identity = `${update.customer}:${update.reducer}`;
-      const statistics = update.statistics;
-      const state = await redis.outpostWriteBucket(
-        `outpost:state:${identity}`,
-        identity,
-        this.channel,
-        generateEpoch(),
-        update.bucketStart,
-        statistics.count,
-        statistics.sum,
-        statistics.min ?? "",
-        statistics.max ?? "",
-      );
-      await this.receiveState(identity, decodeState(state));
-    }
-    return { inserted: parsed.length, duplicates: 0 };
   }
 
   async customerMeter(input: Customer & { meter_id: string }): Promise<CustomerMeter | null> {
@@ -407,7 +464,9 @@ export class Outpost {
 
   private async receiveRedis(data: string): Promise<void> {
     const update: StateUpdate = JSON.parse(data);
-    await this.receiveState(update.customer, decodeState(update.state));
+    await this.trace("outpost.sync.received", () =>
+      this.receiveState(update.customer, decodeState(update.state)),
+    );
   }
 
   private synchronize(): Promise<void> {
@@ -421,7 +480,8 @@ export class Outpost {
         this.redis?.status !== "ready"
       )
         return;
-      if (!this.isSynced) await this.subscriber.subscribe(this.channel);
+      if (!this.isSynced)
+        await this.trace("outpost.redis.subscribe", () => this.subscriber!.subscribe(this.channel));
       const entries = Array.from(this.cache);
       for (const [customer, local] of entries) {
         await locked(local, async () => {
@@ -465,6 +525,38 @@ export class Outpost {
     this.synced.resolve();
   }
 
+  private startSpan(name: string, attributes: Attributes = {}): Span {
+    if (!this.tracer) return trace.wrapSpanContext(INVALID_SPAN_CONTEXT);
+    return this.tracer.startSpan(name, {
+      root: true,
+      attributes: this._connectionId
+        ? { ...attributes, "outpost.connection_id": this._connectionId }
+        : attributes,
+    });
+  }
+
+  private async trace<T>(
+    name: string,
+    run: (span: Span) => Promise<T>,
+    attributes?: Attributes,
+  ): Promise<T> {
+    const span = this.startSpan(name, attributes);
+    try {
+      return await run(span);
+    } catch (error) {
+      recordError(span, error);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  private event(name: string, error?: Error): void {
+    const span = this.startSpan(name);
+    if (error) recordError(span, error);
+    span.end();
+  }
+
   private async receiveWebsocket(data: string): Promise<void> {
     const message: Message = JSON.parse(data);
     if (message.type === "connection") {
@@ -493,21 +585,27 @@ export class Outpost {
       ])
         if (value !== null && !Number.isFinite(value))
           throw new TypeError("Snapshot values must be finite");
-      const state = await this.requireRedis().outpostApplySnapshot(
-        `outpost:state:${identity}`,
-        identity,
-        this.channel,
-        generateEpoch(),
-        snapshot.cold_until,
-        snapshot.version,
-        snapshot.meter_id,
-        snapshot.credited_units,
-        snapshot.count,
-        snapshot.sum,
-        snapshot.min ?? "",
-        snapshot.max ?? "",
+      await this.trace(
+        "outpost.snapshot.received",
+        async () => {
+          const state = await this.requireRedis().outpostApplySnapshot(
+            `outpost:state:${identity}`,
+            identity,
+            this.channel,
+            generateEpoch(),
+            snapshot.cold_until,
+            snapshot.version,
+            snapshot.meter_id,
+            snapshot.credited_units,
+            snapshot.count,
+            snapshot.sum,
+            snapshot.min ?? "",
+            snapshot.max ?? "",
+          );
+          await this.receiveState(identity, decodeState(state));
+        },
+        { "outpost.meter_id": snapshot.meter_id, "outpost.snapshot_version": snapshot.version },
       );
-      await this.receiveState(identity, decodeState(state));
     }
   }
 }

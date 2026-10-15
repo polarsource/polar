@@ -19,6 +19,7 @@ log: Logger = structlog.get_logger()
 HEARTBEAT_INTERVAL = 5.0
 HEARTBEAT_TIMEOUT = 15.0
 EXIT_GRACE_SECONDS = 5.0
+DUMP_TIMEOUT_SECONDS = 30.0
 
 
 class _EventLoopWatchdog(threading.Thread):
@@ -67,10 +68,7 @@ class _EventLoopWatchdog(threading.Thread):
 
             if not self._heartbeat_event.wait(timeout=self.heartbeat_timeout):
                 self._consecutive_misses += 1
-                # Diagnostics are best effort. A failure here must never
-                # skip the exit below, or a stuck worker stays stuck.
-                with contextlib.suppress(Exception):
-                    self._dump_stacks()
+                self._dump_stacks_or_exit()
                 if self.max_misses > 0 and self._consecutive_misses >= self.max_misses:
                     self._exit_process()
             else:
@@ -89,6 +87,23 @@ class _EventLoopWatchdog(threading.Thread):
 
     def stop(self) -> None:
         self._stop_event.set()
+
+    def _dump_stacks_or_exit(self) -> None:
+        # The dump logs, and a thread stuck holding the logging lock (e.g. on a
+        # full stderr pipe) would hang it forever, so a hung dump exits instead.
+        timer: threading.Timer | None = None
+        if self.max_misses > 0:
+            timer = threading.Timer(DUMP_TIMEOUT_SECONDS, os._exit, args=(1,))
+            timer.daemon = True
+            timer.start()
+        try:
+            # Diagnostics are best effort. A failure here must never
+            # skip the exit, or a stuck worker stays stuck.
+            with contextlib.suppress(Exception):
+                self._dump_stacks()
+        finally:
+            if timer is not None:
+                timer.cancel()
 
     def _exit_process(self) -> None:
         if self._exiting:

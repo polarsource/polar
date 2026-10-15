@@ -1,14 +1,17 @@
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Literal
+from uuid import uuid4
 
 import pytest
 from sqlalchemy import select
 
+from polar.event.system import SystemEvent
 from polar.kit.db.postgres import AsyncSession
 from polar.meter.aggregation import AggregationFunction, PropertyAggregation
 from polar.models import Customer, OrderItem, Organization, Product, ReducerBucket
 from polar.models.billing_entry import BillingEntryType
+from polar.models.event import EventSource
 from scripts.backfill_reducer_buckets import backfill_organization
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -45,9 +48,22 @@ class TestBackfillBuckets:
                 func=AggregationFunction.sum, property="tokens"
             ),
         )
-        await create_reducer(save_fixture, organization=organization, meters=[meter])
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
         price = await create_product_price_metered_unit(
             save_fixture, product=product, meter=meter
+        )
+        # A second meter on the same events, billed on its own schedule: its
+        # entries are all still pending.
+        count_meter = await create_meter(
+            save_fixture, organization=organization, id=uuid4(), name="Count"
+        )
+        count_reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[count_meter]
+        )
+        count_price = await create_product_price_metered_unit(
+            save_fixture, product=product, meter=count_meter
         )
         await create_subscription(
             save_fixture,
@@ -68,9 +84,19 @@ class TestBackfillBuckets:
                     proration=False,
                     product_price=price,
                     start_timestamp=SUBSCRIPTION_START,
-                    end_timestamp=CUTOFF,
+                    end_timestamp=START + BUCKET + timedelta(minutes=1),
                 )
             ],
+        )
+        # Billing cycles reset the meter at their cutoff.
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_reset,
+            timestamp=CUTOFF,
+            metadata={"meter_id": str(meter.id)},
         )
 
         async def usage(
@@ -98,6 +124,13 @@ class TestBackfillBuckets:
                     event=event,
                     order_item=order.items[0] if billing == "ordered" else None,
                 )
+                await create_billing_entry(
+                    save_fixture,
+                    type=BillingEntryType.metered,
+                    customer=customer,
+                    product_price=count_price,
+                    event=event,
+                )
 
         await usage(START + timedelta(seconds=30), 2, None)
         await usage(START + timedelta(minutes=4), 8, "ordered")
@@ -113,9 +146,9 @@ class TestBackfillBuckets:
             await backfill_organization(session, organization.id, START, END)
             buckets = (
                 await session.scalars(
-                    select(ReducerBucket).order_by(
-                        ReducerBucket.bucket_start, ReducerBucket.generation
-                    )
+                    select(ReducerBucket)
+                    .where(ReducerBucket.reducer_id == reducer.id)
+                    .order_by(ReducerBucket.bucket_start, ReducerBucket.generation)
                 )
             ).all()
             assert all(
@@ -201,3 +234,12 @@ class TestBackfillBuckets:
                     Decimal(7),
                 ),
             ]
+            count_buckets = (
+                await session.scalars(
+                    select(ReducerBucket).where(
+                        ReducerBucket.reducer_id == count_reducer.id
+                    )
+                )
+            ).all()
+            assert sum(b.count for b in count_buckets) == 6
+            assert all(b.sealed_at is None for b in count_buckets)

@@ -10,6 +10,7 @@ import typer
 from sqlalchemy import (
     ColumnElement,
     Row,
+    String,
     and_,
     case,
     delete,
@@ -21,6 +22,7 @@ from sqlalchemy import (
     select,
 )
 
+from polar.event.system import SystemEvent
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import PropertyAggregation, UniqueAggregation
@@ -54,7 +56,8 @@ type BucketKey = tuple[UUID, datetime, datetime, UUID | None, str | None]
 """reducer_id, bucket_start, bucket_end, customer_id, external_customer_id"""
 type Boundaries = dict[tuple[UUID | str, UUID], list[datetime]]
 """Per customer id or external id and reducer, the sorted timestamps billing
-splits buckets at: each subscription's billable start and each billed cutoff."""
+splits buckets at: each subscription's billable start and each meter reset,
+which every billing cycle performs at its cutoff."""
 
 
 @dataclass
@@ -192,24 +195,27 @@ async def _get_boundaries(session: AsyncSession, organization_id: UUID) -> Bound
             Subscription.started_at.is_not(None),
         )
     )
-    cutoffs = (
+    resets = (
         select(
-            Order.customer_id,
+            Event.customer_id,
             Customer.external_id,
             MeterReducer.reducer_id,
-            OrderItem.end_timestamp,
+            Event.timestamp,
         )
-        .join(Order, Order.id == OrderItem.order_id)
-        .join(Customer, Customer.id == Order.customer_id)
-        .join(ProductPrice, ProductPrice.id == OrderItem.product_price_id)
-        .join(MeterReducer, MeterReducer.meter_id == ProductPrice.__table__.c.meter_id)
+        .join(Customer, Customer.id == Event.customer_id)
+        .join(
+            MeterReducer,
+            MeterReducer.meter_id.cast(String)
+            == Event.user_metadata["meter_id"].as_string(),
+        )
         .where(
-            Order.organization_id == organization_id,
-            OrderItem.end_timestamp.is_not(None),
+            Event.organization_id == organization_id,
+            Event.source == EventSource.system,
+            Event.name == SystemEvent.meter_reset,
         )
     )
     boundaries: Boundaries = {}
-    for statement in (billable_from, cutoffs):
+    for statement in (billable_from, resets):
         for customer_id, external_id, reducer_id, at in await session.execute(
             statement
         ):
@@ -286,15 +292,18 @@ def _value_column(reducer: Reducer) -> ColumnElement[Any]:
 
 async def _get_billed_at(
     session: AsyncSession, event_ids: Sequence[UUID]
-) -> dict[UUID, datetime]:
-    """The created_at of the order that billed each event, for the events with a
-    metered billing entry linked to an order item."""
+) -> dict[tuple[UUID, UUID], datetime]:
+    """Per event and reducer, the created_at of the order that billed the event
+    for one of the reducer's meters, from its metered billing entries linked to
+    an order item."""
     if not event_ids:
         return {}
     statement = (
-        select(BillingEntry.event_id, Order.created_at)
+        select(BillingEntry.event_id, MeterReducer.reducer_id, Order.created_at)
         .join(BillingEntry.order_item)
         .join(OrderItem.order)
+        .join(ProductPrice, ProductPrice.id == BillingEntry.product_price_id)
+        .join(MeterReducer, MeterReducer.meter_id == ProductPrice.__table__.c.meter_id)
         .where(
             BillingEntry.event_id.in_(event_ids),
             BillingEntry.type == BillingEntryType.metered,
@@ -302,7 +311,10 @@ async def _get_billed_at(
         )
     )
     result = await session.execute(statement)
-    return dict(result.tuples().all())
+    return {
+        (event_id, reducer_id): created_at
+        for event_id, reducer_id, created_at in result.tuples()
+    }
 
 
 def _matched_event_ids(rows: Sequence[Row[Any]]) -> list[UUID]:
@@ -318,14 +330,13 @@ def _add_to_totals(
     totals: Totals,
     reducers: Sequence[Reducer],
     rows: Sequence[Row[Any]],
-    billed_at: dict[UUID, datetime],
+    billed_at: dict[tuple[UUID, UUID], datetime],
     boundaries: Boundaries,
 ) -> None:
     """Adds each event's value to the bucket of every reducer it matches, under
-    the created_at of the order that billed it, or None."""
+    the created_at of the order that billed it for that reducer, or None."""
     for row in rows:
         id, timestamp, customer_id, external_customer_id, *values = row
-        sealed_at = billed_at.get(id)
         bucket_start = get_reducer_bucket_start(timestamp)
         customer_key = customer_id if customer_id is not None else external_customer_id
         for reducer, value in zip(reducers, values, strict=True):
@@ -335,6 +346,7 @@ def _add_to_totals(
                 boundaries.get((customer_key, reducer.id), []), bucket_start, timestamp
             )
             key = (reducer.id, start, end, customer_id, external_customer_id)
+            sealed_at = billed_at.get((id, reducer.id))
             totals.setdefault(key, {}).setdefault(sealed_at, Summary()).add(
                 Decimal(str(value))
             )

@@ -13,7 +13,7 @@ from polar.openapi import APITag, cli_preview
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
-from polar.version import V2026_10
+from polar.version import V2026_10, V2027_01
 
 from .auth import WebhooksRead, WebhooksWrite
 from .schemas import (
@@ -24,6 +24,7 @@ from .schemas import (
 )
 from .schemas import WebhookDelivery as WebhookDeliverySchema
 from .schemas import WebhookEndpoint as WebhookEndpointSchema
+from .service import AmbiguousExternalWebhookEndpointID
 from .service import webhook as webhook_service
 
 router = APIRouter(
@@ -34,6 +35,11 @@ WebhookEndpointID = Annotated[UUID4, Path(description="The webhook endpoint ID."
 WebhookEndpointNotFound = {
     "description": "Webhook endpoint not found.",
     "model": ResourceNotFound.schema(),
+}
+AmbiguousExternalWebhookEndpoint = {
+    "description": "The external ID matches webhook endpoints in several "
+    "accessible organizations.",
+    "model": AmbiguousExternalWebhookEndpointID.schema(),
 }
 
 
@@ -58,6 +64,31 @@ async def list_webhook_endpoints(
         count,
         pagination,
     )
+
+
+@router.get(
+    "/endpoints/external/{external_id}",
+    summary="Get Webhook Endpoint by External ID",
+    response_model=WebhookEndpointSchema,
+    openapi_extra=cli_preview(
+        ("id", "ID"), ("name", "Name"), ("url", "URL"), ("enabled", "Enabled")
+    ),
+    responses={404: WebhookEndpointNotFound, 409: AmbiguousExternalWebhookEndpoint},
+)
+@version(starting_from=V2027_01)
+async def get_external_webhook_endpoint(
+    external_id: str,
+    auth_subject: WebhooksRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> WebhookEndpoint:
+    """Get a webhook endpoint by external ID."""
+    endpoint = await webhook_service.get_external_endpoint(
+        session, auth_subject, external_id
+    )
+    if not endpoint:
+        raise ResourceNotFound()
+
+    return endpoint
 
 
 @router.get(

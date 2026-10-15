@@ -110,7 +110,6 @@ async def apply(
     `external_id`: missing ones are created, changed ones are updated, and ones
     not listed are left untouched.
     Everything is applied in one transaction.
-    The signing `secret` of each created webhook endpoint is returned once.
 
     A `benefits` section also requires the `benefits:write` scope, a
     `products` section the `products:write` scope, a `discounts` section

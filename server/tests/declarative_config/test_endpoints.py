@@ -76,7 +76,6 @@ class TestApply:
                     "resource": "meter",
                     "external_id": "sdk-tool-calls",
                     "action": "created",
-                    "secret": None,
                 }
             ],
         }

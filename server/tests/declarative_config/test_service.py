@@ -997,8 +997,6 @@ class TestApply:
 
         [created_change] = created.changes
         assert created_change.action == ConfigAction.created
-        assert created_change.secret is not None
-        assert created_change.secret.startswith("whsec_")
         [endpoint] = await WebhookEndpointRepository.from_session(
             session
         ).get_all_by_external_ids(organization.id, ["orders"])
@@ -1006,10 +1004,10 @@ class TestApply:
         assert endpoint.format == WebhookFormat.raw
         assert endpoint.events == ["order.created", "order.paid"]
         assert endpoint.api_version == V2026_04
-        assert endpoint.secret == created_change.secret
+        assert endpoint.secret.startswith("whsec_")
         assert [change.action for change in plan.changes] == [ConfigAction.unchanged]
-        assert [(change.action, change.secret) for change in reapplied.changes] == [
-            (ConfigAction.unchanged, None)
+        assert [change.action for change in reapplied.changes] == [
+            ConfigAction.unchanged
         ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -1037,9 +1035,7 @@ class TestApply:
             ),
         )
 
-        assert [(change.action, change.secret) for change in result.changes] == [
-            (ConfigAction.updated, None)
-        ]
+        assert [change.action for change in result.changes] == [ConfigAction.updated]
         assert endpoint.url == "https://example.com/polar"
         assert endpoint.events == ["order.created", "order.paid"]
         assert endpoint.secret == "SECRET"

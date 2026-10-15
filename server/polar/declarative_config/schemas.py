@@ -487,17 +487,8 @@ class ConfigResult(Schema):
     action: ConfigAction = Field(description="What applying the config does.")
 
 
-class ConfigAppliedResult(ConfigResult):
-    secret: str | None = Field(
-        description=(
-            "The signing secret of a webhook endpoint created by apply. "
-            "Only returned once, on creation; `null` otherwise."
-        ),
-    )
-
-
 class ConfigApplyResult(Schema):
-    changes: list[ConfigAppliedResult]
+    changes: list[ConfigResult]
 
 
 class ConfigFieldChange(Schema):

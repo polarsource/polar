@@ -31,7 +31,6 @@ from . import benefits, discounts, products, validation
 from .schemas import (
     MAXIMUM_METERS,
     Config,
-    ConfigAppliedResult,
     ConfigApplyResult,
     ConfigChange,
     ConfigExport,
@@ -42,6 +41,7 @@ from .schemas import (
     ConfigMeter,
     ConfigPlan,
     ConfigResource,
+    ConfigResult,
     ConfigSkippedMeter,
     ConfigSkippedReason,
 )
@@ -327,13 +327,12 @@ class DeclarativeConfigService:
         auth_subject: AuthSubject[User | Organization],
         organization: Organization,
         changes: Sequence[WebhookChange],
-    ) -> list[ConfigAppliedResult]:
+    ) -> list[ConfigResult]:
         repository = WebhookEndpointRepository.from_session(session)
-        results: list[ConfigAppliedResult] = []
+        results: list[ConfigResult] = []
         for change in changes:
             config = change.config
             endpoint = change.existing
-            secret: str | None = None
             if endpoint is None:
                 try:
                     async with session.begin_nested():
@@ -357,7 +356,6 @@ class DeclarativeConfigService:
                     if _constraint_name(e) != _WEBHOOK_EXTERNAL_ID_INDEX:
                         raise
                     raise ConfigWebhookConflict() from e
-                secret = endpoint.secret
             elif change.update_dict:
                 await webhook_service.update_endpoint(
                     session,
@@ -366,11 +364,10 @@ class DeclarativeConfigService:
                     update_schema=WebhookEndpointUpdate(**change.update_dict),
                 )
             results.append(
-                ConfigAppliedResult(
+                ConfigResult(
                     resource=ConfigResource.webhook,
                     external_id=config.external_id,
                     action=change.action,
-                    secret=secret,
                 )
             )
         return results
@@ -380,9 +377,9 @@ class DeclarativeConfigService:
         session: AsyncSession,
         organization: Organization,
         changes: Sequence[MeterChange],
-    ) -> tuple[list[ConfigAppliedResult], dict[str, UUID]]:
+    ) -> tuple[list[ConfigResult], dict[str, UUID]]:
         repository = MeterRepository.from_session(session)
-        results: list[ConfigAppliedResult] = []
+        results: list[ConfigResult] = []
         meter_ids: dict[str, UUID] = {}
         for change in changes:
             meter = change.existing
@@ -400,11 +397,10 @@ class DeclarativeConfigService:
                 await repository.update(meter, update_dict=change.update_dict)
             meter_ids[change.config.external_id] = meter.id
             results.append(
-                ConfigAppliedResult(
+                ConfigResult(
                     resource=ConfigResource.meter,
                     external_id=change.config.external_id,
                     action=change.action,
-                    secret=None,
                 )
             )
         return results, meter_ids
@@ -417,9 +413,9 @@ class DeclarativeConfigService:
         organization: Organization,
         changes: Sequence[BenefitChange],
         meter_ids: dict[str, UUID],
-    ) -> tuple[list[ConfigAppliedResult], dict[str, UUID]]:
+    ) -> tuple[list[ConfigResult], dict[str, UUID]]:
         repository = BenefitRepository.from_session(session)
-        results: list[ConfigAppliedResult] = []
+        results: list[ConfigResult] = []
         benefit_ids: dict[str, UUID] = {}
         for change in changes:
             benefit = change.existing
@@ -456,11 +452,10 @@ class DeclarativeConfigService:
                 )
             benefit_ids[change.config.external_id] = benefit.id
             results.append(
-                ConfigAppliedResult(
+                ConfigResult(
                     resource=ConfigResource.benefit,
                     external_id=change.config.external_id,
                     action=change.action,
-                    secret=None,
                 )
             )
         return results, benefit_ids
@@ -473,14 +468,14 @@ class DeclarativeConfigService:
         changes: Sequence[ProductChange],
         meter_ids: dict[str, UUID],
         benefit_ids: dict[str, UUID],
-    ) -> tuple[list[ConfigAppliedResult], dict[str, UUID]]:
+    ) -> tuple[list[ConfigResult], dict[str, UUID]]:
         repository = ProductRepository.from_session(session)
         external_ids = {
             str(id): external_id
             for ids in (meter_ids, benefit_ids)
             for external_id, id in ids.items()
         }
-        results: list[ConfigAppliedResult] = []
+        results: list[ConfigResult] = []
         product_ids: dict[str, UUID] = {}
         for change in changes:
             config = change.config
@@ -529,11 +524,10 @@ class DeclarativeConfigService:
                 raise products.product_error(e, change.index, external_ids) from e
             product_ids[config.external_id] = product.id
             results.append(
-                ConfigAppliedResult(
+                ConfigResult(
                     resource=ConfigResource.product,
                     external_id=config.external_id,
                     action=change.action,
-                    secret=None,
                 )
             )
         return results, product_ids
@@ -545,9 +539,9 @@ class DeclarativeConfigService:
         organization: Organization,
         changes: Sequence[DiscountChange],
         product_ids: dict[str, UUID],
-    ) -> list[ConfigAppliedResult]:
+    ) -> list[ConfigResult]:
         external_ids = {str(id): external_id for external_id, id in product_ids.items()}
-        results: list[ConfigAppliedResult] = []
+        results: list[ConfigResult] = []
         for change in changes:
             try:
                 if change.existing is None:
@@ -570,11 +564,10 @@ class DeclarativeConfigService:
             except PolarRequestValidationError as e:
                 raise discounts.discount_error(e, change.index, external_ids) from e
             results.append(
-                ConfigAppliedResult(
+                ConfigResult(
                     resource=ConfigResource.discount,
                     external_id=change.config.external_id,
                     action=change.action,
-                    secret=None,
                 )
             )
         return results

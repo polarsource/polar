@@ -2323,6 +2323,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/webhooks/endpoints/external/{external_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Webhook Endpoint by External ID
+     * @description Get a webhook endpoint by external ID.
+     *
+     *     **Scopes**: `webhooks:read` `webhooks:write`
+     */
+    get: operations['webhooks:get_external_webhook_endpoint']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/webhooks/endpoints/{id}': {
     parameters: {
       query?: never
@@ -6080,7 +6102,6 @@ export interface paths {
      *     `external_id`: missing ones are created, changed ones are updated, and ones
      *     not listed are left untouched.
      *     Everything is applied in one transaction.
-     *     The signing `secret` of each created webhook endpoint is returned once.
      *
      *     A `benefits` section also requires the `benefits:write` scope, a
      *     `products` section the `products:write` scope, a `discounts` section
@@ -8329,6 +8350,17 @@ export interface components {
        * @constant
        */
       error: 'AmbiguousExternalMeterID'
+      /** Detail */
+      detail: string
+    }
+    /** AmbiguousExternalWebhookEndpointID */
+    AmbiguousExternalWebhookEndpointID: {
+      /**
+       * Error
+       * @example AmbiguousExternalWebhookEndpointID
+       * @constant
+       */
+      error: 'AmbiguousExternalWebhookEndpointID'
       /** Detail */
       detail: string
     }
@@ -16041,27 +16073,10 @@ export interface components {
      * @enum {string}
      */
     ConfigAction: 'created' | 'updated' | 'unchanged'
-    /** ConfigAppliedResult */
-    ConfigAppliedResult: {
-      /** @description The type of resource. */
-      resource: components['schemas']['ConfigResource']
-      /**
-       * External Id
-       * @description The resource's `external_id`.
-       */
-      external_id: string
-      /** @description What applying the config does. */
-      action: components['schemas']['ConfigAction']
-      /**
-       * Secret
-       * @description The signing secret of a webhook endpoint created by apply. Only returned once, on creation; `null` otherwise.
-       */
-      secret: string | null
-    }
     /** ConfigApplyResult */
     ConfigApplyResult: {
       /** Changes */
-      changes: components['schemas']['ConfigAppliedResult'][]
+      changes: components['schemas']['ConfigResult'][]
     }
     /** ConfigAsCodeNotEnabled */
     ConfigAsCodeNotEnabled: {
@@ -16789,6 +16804,18 @@ export interface components {
      * @enum {string}
      */
     ConfigResource: 'meter' | 'benefit' | 'product' | 'discount' | 'webhook'
+    /** ConfigResult */
+    ConfigResult: {
+      /** @description The type of resource. */
+      resource: components['schemas']['ConfigResource']
+      /**
+       * External Id
+       * @description The resource's `external_id`.
+       */
+      external_id: string
+      /** @description What applying the config does. */
+      action: components['schemas']['ConfigAction']
+    }
     /** ConfigSkippedMeter */
     ConfigSkippedMeter: {
       /** @description The type of resource. */
@@ -41240,6 +41267,12 @@ export interface components {
      */
     WebhookEndpoint: {
       /**
+       * External Id
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @example ext_1337
+       */
+      external_id: string | null
+      /**
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
@@ -47978,6 +48011,55 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['WebhookEndpoint']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'webhooks:get_external_webhook_endpoint': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        external_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['WebhookEndpoint']
+        }
+      }
+      /** @description Webhook endpoint not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The external ID matches webhook endpoints in several accessible organizations. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AmbiguousExternalWebhookEndpointID']
         }
       }
       /** @description Validation Error */

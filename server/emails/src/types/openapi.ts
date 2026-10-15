@@ -3289,6 +3289,32 @@ export interface components {
       previous_billing_provider: string | null
       order: components['schemas']['OrderEmail'] | null
     }
+    /** SubscriptionUsageInvoiceEmail */
+    SubscriptionUsageInvoiceEmail: {
+      /**
+       * Template
+       * @default subscription_usage_invoice
+       * @constant
+       */
+      template: 'subscription_usage_invoice'
+      props: components['schemas']['SubscriptionUsageInvoiceProps']
+    }
+    /** SubscriptionUsageInvoiceProps */
+    SubscriptionUsageInvoiceProps: {
+      /** Email */
+      email: string
+      organization: components['schemas']['Organization']
+      product: components['schemas']['ProductEmail']
+      subscription: components['schemas']['SubscriptionEmail']
+      /** Url */
+      url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
+      order: components['schemas']['OrderEmail']
+    }
     /** SupportCaseOrganizationNewMessageEmail */
     SupportCaseOrganizationNewMessageEmail: {
       /**

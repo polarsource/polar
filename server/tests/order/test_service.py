@@ -19,6 +19,7 @@ from polar.email.schemas import (
     OrderConfirmationEmail,
     SubscriptionConfirmationEmail,
     SubscriptionCycledEmail,
+    SubscriptionUsageInvoiceEmail,
 )
 from polar.enums import (
     InvoiceNumbering,
@@ -3250,6 +3251,67 @@ class TestSendConfirmationEmail:
         email = enqueue_email_mock.call_args[0][0]
         assert isinstance(email, SubscriptionCycledEmail)
         assert email.props.previous_billing_provider == "Stripe"
+
+    async def test_meter_cycle_sends_usage_invoice(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        enqueue_email_mock.assert_called_once()
+        assert isinstance(
+            enqueue_email_mock.call_args[0][0], SubscriptionUsageInvoiceEmail
+        )
+        assert enqueue_email_mock.call_args[1]["subject"].endswith("usage invoice")
+
+    async def test_meter_cycle_respects_subscription_cycled_setting(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        organization.customer_email_settings = {
+            **organization.customer_email_settings,
+            "subscription_cycled": False,
+        }
+        await save_fixture(organization)
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        enqueue_email_mock.assert_not_called()
 
     async def test_subscription_create_with_temporary_discount(
         self,

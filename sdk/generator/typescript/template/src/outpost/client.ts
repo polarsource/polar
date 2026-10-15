@@ -66,7 +66,7 @@ interface LocalState {
   state?: State;
   pending: Promise<unknown>;
   missing: boolean;
-  ready: ReturnType<typeof signal>;
+  changed: ReturnType<typeof signal>;
 }
 interface OutpostRedis extends Redis {
   outpostReadState(key: string, ...args: (string | number)[]): Promise<string[]>;
@@ -104,8 +104,13 @@ const withTimeout = async <T>(promise: Promise<T>): Promise<T> => {
     clearTimeout(timer);
   }
 };
-const settle = (local: LocalState): void => {
-  if (local.missing || local.state?.coldUntil !== undefined) local.ready.resolve();
+const isReady = (local: LocalState, meterIds: readonly string[]): boolean =>
+  local.missing ||
+  (local.state?.coldUntil !== undefined &&
+    meterIds.every((meterId) => meterId in local.state!.credited));
+const notify = (local: LocalState): void => {
+  local.changed.resolve();
+  local.changed = signal();
 };
 const waitAtMost = async (promise: Promise<unknown>, milliseconds: number): Promise<void> => {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -430,7 +435,10 @@ export class Outpost {
       const reducer = this.reducers.find((item) => item.meter_ids?.includes(input.meter_id));
       if (!reducer) return null;
       const local = await this.warmCustomer(customer, reducer);
-      await waitAtMost(this.waitReady(reducer, local), this.options.snapshotTimeout ?? 5_000);
+      await waitAtMost(
+        this.waitReady(reducer, local, [input.meter_id]),
+        this.options.snapshotTimeout ?? 5_000,
+      );
       if (local.missing) return null;
       const state = local.state;
       if (!state || state.coldUntil === undefined)
@@ -453,7 +461,9 @@ export class Outpost {
     return this.trace("outpost.actor", async () => {
       const warmed = await this.warmActor(customerKey(input));
       await waitAtMost(
-        Promise.all(warmed.map(([reducer, local]) => this.waitReady(reducer, local))),
+        Promise.all(
+          warmed.map(([reducer, local]) => this.waitReady(reducer, local, reducer.meter_ids ?? [])),
+        ),
         this.options.snapshotTimeout ?? 5_000,
       );
     });
@@ -467,10 +477,14 @@ export class Outpost {
     return warmed;
   }
 
-  private async waitReady(reducer: Reducer, local: LocalState): Promise<void> {
+  private async waitReady(
+    reducer: Reducer,
+    local: LocalState,
+    meterIds: readonly string[],
+  ): Promise<void> {
     // Polar sends no snapshot for unique reducers, nor without a connection.
     if ((reducer.aggregation.func as string) === "unique" || !this.connected) return;
-    await local.ready.promise;
+    while (!isReady(local, meterIds)) await local.changed.promise;
   }
 
   private requireRedis(): OutpostRedis {
@@ -570,7 +584,7 @@ export class Outpost {
     }
     let local = this.cache.get(identity);
     if (!local) {
-      local = { pending: Promise.resolve(), missing: false, ready: signal() };
+      local = { pending: Promise.resolve(), missing: false, changed: signal() };
       this.cache.set(identity, local);
       if (this.cache.size > CACHE_SIZE) {
         const evicted = this.cache.keys().next().value!;
@@ -585,7 +599,7 @@ export class Outpost {
     await locked(entry, async () => {
       if (!entry.state) {
         entry.state = await this.loadState(identity);
-        settle(entry);
+        notify(entry);
       }
       if (!this.actors.has(identity) && this.websocket?.readyState === WebSocket.OPEN) {
         try {
@@ -621,7 +635,7 @@ export class Outpost {
       if (current.epoch !== state.epoch) state = await this.loadState(customer);
       else if (current.revision >= state.revision) return;
       local.state = state;
-      settle(local);
+      notify(local);
     });
   }
 
@@ -651,7 +665,7 @@ export class Outpost {
           const state = await this.loadState(customer);
           if (generation === this.generation) {
             local.state = state;
-            settle(local);
+            notify(local);
           }
         });
       }
@@ -746,7 +760,7 @@ export class Outpost {
       const local = this.cache.get(identity);
       if (local) {
         local.missing = !snapshot.customer_exists;
-        settle(local);
+        notify(local);
       }
       if (!snapshot.customer_exists) return;
       if (!Number.isSafeInteger(snapshot.version) || !Number.isSafeInteger(snapshot.cold_until))

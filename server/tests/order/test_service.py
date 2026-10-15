@@ -3337,6 +3337,39 @@ class TestSendConfirmationEmail:
 
         enqueue_email_mock.assert_not_called()
 
+    async def test_meter_cycle_fully_discounted_still_sends(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+            subtotal_amount=1000,
+            discount_amount=1000,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        enqueue_email_mock.assert_called_once()
+        assert isinstance(
+            enqueue_email_mock.call_args[0][0], SubscriptionUsageInvoiceEmail
+        )
+
     async def test_subscription_create_with_temporary_discount(
         self,
         mocker: MockerFixture,

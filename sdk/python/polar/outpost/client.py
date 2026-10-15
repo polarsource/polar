@@ -398,39 +398,40 @@ class Outpost:
         customer_id: str | None = None,
         external_customer_id: str | None = None,
     ) -> CustomerMeter | None:
-        customer = self._customer_key(customer_id, external_customer_id)
-        self._require_redis()
-        with anyio.fail_after(5):
-            await self._configured.wait()
-        reducers = self._reducers
-        reducer = next(
-            (
-                reducer
-                for reducer in reducers
-                if meter_id in reducer.get("meter_ids", [])
-            ),
-            None,
-        )
-        if reducer is None:
-            return None
-        local = await self._warm_customer(customer, reducer)
-        state = local.state
-        if state is None or state.cold_until is None:
-            raise PolarOutpostError("Customer snapshot is not ready")
-        combined = dataclasses.replace(state.cold)
-        for bucket_start, statistics in state.buckets.items():
-            if bucket_start >= state.cold_until:
-                combined.add(statistics)
-        consumed = combined.quantity(reducer["aggregation"]["func"])
-        credited = state.credited.get(meter_id, 0)
-        return CustomerMeter(
-            meter_id=meter_id,
-            customer_id=customer_id,
-            external_customer_id=external_customer_id,
-            consumed_units=consumed,
-            credited_units=credited,
-            balance=credited - consumed,
-        )
+        with self._span("outpost.customer_meter"):
+            customer = self._customer_key(customer_id, external_customer_id)
+            self._require_redis()
+            with anyio.fail_after(5):
+                await self._configured.wait()
+            reducers = self._reducers
+            reducer = next(
+                (
+                    reducer
+                    for reducer in reducers
+                    if meter_id in reducer.get("meter_ids", [])
+                ),
+                None,
+            )
+            if reducer is None:
+                return None
+            local = await self._warm_customer(customer, reducer)
+            state = local.state
+            if state is None or state.cold_until is None:
+                raise PolarOutpostError("Customer snapshot is not ready")
+            combined = dataclasses.replace(state.cold)
+            for bucket_start, statistics in state.buckets.items():
+                if bucket_start >= state.cold_until:
+                    combined.add(statistics)
+            consumed = combined.quantity(reducer["aggregation"]["func"])
+            credited = state.credited.get(meter_id, 0)
+            return CustomerMeter(
+                meter_id=meter_id,
+                customer_id=customer_id,
+                external_customer_id=external_customer_id,
+                consumed_units=consumed,
+                credited_units=credited,
+                balance=credited - consumed,
+            )
 
     async def actor(
         self,
@@ -438,11 +439,12 @@ class Outpost:
         customer_id: str | None = None,
         external_customer_id: str | None = None,
     ) -> None:
-        customer = self._customer_key(customer_id, external_customer_id)
-        with anyio.fail_after(5):
-            await self._configured.wait()
-        for reducer in self._reducers:
-            await self._warm_customer(customer, reducer)
+        with self._span("outpost.actor"):
+            customer = self._customer_key(customer_id, external_customer_id)
+            with anyio.fail_after(5):
+                await self._configured.wait()
+            for reducer in self._reducers:
+                await self._warm_customer(customer, reducer)
 
     @contextlib.contextmanager
     def _span(

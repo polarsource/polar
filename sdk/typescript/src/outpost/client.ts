@@ -406,30 +406,34 @@ export class Outpost {
   }
 
   async customerMeter(input: Customer & { meter_id: string }): Promise<CustomerMeter | null> {
-    const customer = customerKey(input);
-    this.requireRedis();
-    await this.waitConfigured();
-    const reducer = this.reducers.find((item) => item.meter_ids?.includes(input.meter_id));
-    if (!reducer) return null;
-    const state = (await this.warmCustomer(customer, reducer)).state;
-    if (!state || state.coldUntil === undefined)
-      throw new PolarError("Customer snapshot is not ready");
-    const combined = { ...state.cold };
-    for (const [start, statistics] of state.buckets)
-      if (start >= state.coldUntil) addStatistics(combined, statistics);
-    const consumed = quantity(combined, reducer.aggregation.func);
-    const credited = state.credited[input.meter_id] ?? 0;
-    return {
-      ...input,
-      consumed_units: consumed,
-      credited_units: credited,
-      balance: credited - consumed,
-    };
+    return this.trace("outpost.customer_meter", async () => {
+      const customer = customerKey(input);
+      this.requireRedis();
+      await this.waitConfigured();
+      const reducer = this.reducers.find((item) => item.meter_ids?.includes(input.meter_id));
+      if (!reducer) return null;
+      const state = (await this.warmCustomer(customer, reducer)).state;
+      if (!state || state.coldUntil === undefined)
+        throw new PolarError("Customer snapshot is not ready");
+      const combined = { ...state.cold };
+      for (const [start, statistics] of state.buckets)
+        if (start >= state.coldUntil) addStatistics(combined, statistics);
+      const consumed = quantity(combined, reducer.aggregation.func);
+      const credited = state.credited[input.meter_id] ?? 0;
+      return {
+        ...input,
+        consumed_units: consumed,
+        credited_units: credited,
+        balance: credited - consumed,
+      };
+    });
   }
 
   async actor(input: Customer): Promise<void> {
-    await this.waitConfigured();
-    for (const reducer of this.reducers) await this.warmCustomer(customerKey(input), reducer);
+    return this.trace("outpost.actor", async () => {
+      await this.waitConfigured();
+      for (const reducer of this.reducers) await this.warmCustomer(customerKey(input), reducer);
+    });
   }
 
   private requireRedis(): OutpostRedis {

@@ -211,12 +211,6 @@ class ProductBuilder<
     })
   }
 
-  /**
-   * Runs metered usage on its own cycle instead of the billing cycle: overage
-   * is settled, meters reset and meter credits are granted on it. It must
-   * evenly divide the billing cycle, and can only be set when the product is
-   * created.
-   */
   meterCycle(
     this: ProductBuilder<Meter, Benefit, P, Recurring>,
     cadence: keyof typeof cadences,

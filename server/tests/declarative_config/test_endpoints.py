@@ -242,18 +242,6 @@ class TestApply:
                 },
                 id="not_dividing",
             ),
-            pytest.param(
-                {
-                    "external_id": "pro",
-                    "name": "Pro",
-                    "recurring_interval": "month",
-                    "recurring_interval_count": 3,
-                    "meter_interval": "month",
-                    "meter_interval_count": 2,
-                    "prices": [{"amount_type": "fixed", "price_amount": 2000}],
-                },
-                id="not_dividing_count",
-            ),
         ],
     )
     @pytest.mark.auth

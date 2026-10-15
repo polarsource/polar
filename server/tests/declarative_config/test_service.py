@@ -2205,7 +2205,7 @@ class TestPlan:
     @pytest.mark.parametrize(
         ("existing", "meter_cycle", "field"),
         [
-            pytest.param(MeterInterval.month, {}, "meter_interval", id="removed"),
+            pytest.param(MeterInterval.month, {}, None, id="omitted"),
             pytest.param(
                 MeterInterval.month,
                 {"meter_interval": "month", "meter_interval_count": 2},

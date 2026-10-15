@@ -395,10 +395,20 @@ def changed_currency(currency: PresentmentCurrency) -> ConfigIssue:
     )
 
 
-_INTERVAL_FIELDS = {
-    "billing interval": ("recurring_interval", "recurring_interval_count"),
-    "meter cycle": ("meter_interval", "meter_interval_count"),
-}
+def _changed_interval(
+    change: ProductChange, product: Product, label: str, names: tuple[str, str]
+) -> ConfigIssue | None:
+    for name in names:
+        value = getattr(change.config, name)
+        if getattr(product, name) != value:
+            return ConfigIssue(
+                severity=ConfigIssueSeverity.error,
+                type=ConfigIssueType.interval_changed,
+                loc=_loc(ConfigResource.product, change.index, name),
+                msg=f"The {label} of an existing product can't be changed.",
+                input=value,
+            )
+    return None
 
 
 def changed_intervals(changes: Sequence[ProductChange]) -> list[ConfigIssue]:
@@ -406,20 +416,17 @@ def changed_intervals(changes: Sequence[ProductChange]) -> list[ConfigIssue]:
     for change in changes:
         if change.existing is None:
             continue
-        for label, names in _INTERVAL_FIELDS.items():
-            for name in names:
-                value = getattr(change.config, name)
-                if getattr(change.existing, name) != value:
-                    issues.append(
-                        ConfigIssue(
-                            severity=ConfigIssueSeverity.error,
-                            type=ConfigIssueType.interval_changed,
-                            loc=_loc(ConfigResource.product, change.index, name),
-                            msg=f"The {label} of an existing product can't be changed.",
-                            input=value,
-                        )
-                    )
-                    break
+        intervals = [
+            ("billing interval", ("recurring_interval", "recurring_interval_count"))
+        ]
+        if change.config.meter_interval is not None:
+            intervals.append(
+                ("meter cycle", ("meter_interval", "meter_interval_count"))
+            )
+        for label, names in intervals:
+            issue = _changed_interval(change, change.existing, label, names)
+            if issue is not None:
+                issues.append(issue)
     return issues
 
 

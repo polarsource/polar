@@ -264,7 +264,8 @@ class ConfigProduct(MetadataInputMixin, TrialConfigurationInputMixin, Schema):
             "Overage settlement, meter resets and meter-credit grants run on it. "
             "It must evenly divide the billing interval. "
             "Leave it empty to follow the billing interval. "
-            "Can only be set when the product is created."
+            "Can't be updated once the product is applied. "
+            "Leaving it empty on an existing product keeps its current cycle."
         ),
     )
     meter_interval_count: int | None = Field(
@@ -309,11 +310,15 @@ class ConfigProduct(MetadataInputMixin, TrialConfigurationInputMixin, Schema):
         else:
             if self.recurring_interval_count is None:
                 self.recurring_interval_count = 1
-            self._validate_meter_cycle(self.recurring_interval)
+            self._validate_meter_cycle(
+                self.recurring_interval, self.recurring_interval_count
+            )
         return self
 
     def _validate_meter_cycle(
-        self, recurring_interval: SubscriptionRecurringInterval
+        self,
+        recurring_interval: SubscriptionRecurringInterval,
+        recurring_interval_count: int,
     ) -> None:
         if self.meter_interval is None:
             if self.meter_interval_count is not None:
@@ -325,7 +330,7 @@ class ConfigProduct(MetadataInputMixin, TrialConfigurationInputMixin, Schema):
             self.meter_interval,
             self.meter_interval_count,
             recurring_interval,
-            self.recurring_interval_count or 1,
+            recurring_interval_count,
         ):
             raise ValueError(
                 "The meter cycle must evenly divide the billing cycle, "

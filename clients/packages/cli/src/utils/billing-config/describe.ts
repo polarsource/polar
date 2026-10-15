@@ -1,5 +1,7 @@
 import * as ui from '@/utils/ui'
 
+export const isSet = (value: unknown) => value !== null && value !== undefined
+
 export const name = (input: unknown) =>
   ui.printable(String(input)).replace(/\s+/g, ' ').trim()
 

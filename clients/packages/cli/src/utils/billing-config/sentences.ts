@@ -3,6 +3,7 @@ import {
   aggregation,
   count,
   filter,
+  isSet,
   money,
   name,
   record,
@@ -25,8 +26,6 @@ export const recurrence = (interval: unknown, count: unknown) => {
     ? `per ${name(interval)}`
     : `per ${times} ${name(interval)}s`
 }
-
-const isSet = (value: unknown) => value !== null && value !== undefined
 
 export const meterCycle = (interval: unknown, count: unknown) =>
   isSet(interval) ? recurrence(interval, count) : 'with billing'

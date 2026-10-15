@@ -2,6 +2,7 @@ import type { AppliedEntry } from '@/schemas/BillingConfig'
 import {
   Rendered,
   describeValue,
+  isSet,
   name,
   priceGroups,
 } from '@/utils/billing-config/describe'
@@ -149,8 +150,6 @@ const mergeRecurrence = (diff: ReadonlyArray<Change>): Change[] => {
     change === interval ? [merged] : change === count ? [] : [change],
   )
 }
-
-const isSet = (value: unknown) => value !== null && value !== undefined
 
 const merge = (
   diff: ReadonlyArray<Change>,

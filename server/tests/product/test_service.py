@@ -1511,40 +1511,8 @@ class TestCreateUnitBasedPrice:
 
 @pytest.mark.anyio
 class TestCreateMeterCycling:
-    """The separate meter cycle is gated behind ``meter_cycling_enabled``."""
-
-    @pytest.fixture
-    async def meter_cycling_enabled(
-        self, session: AsyncSession, organization: Organization
-    ) -> None:
-        organization.feature_settings = {"meter_cycling_enabled": True}
-        session.add(organization)
-        await session.flush()
-
     @pytest.mark.auth
-    async def test_meter_interval_rejected_without_flag(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        with pytest.raises(PolarRequestValidationError):
-            await product_service.create(
-                session,
-                ProductCreateRecurring(
-                    name="Product",
-                    recurring_interval=SubscriptionRecurringInterval.year,
-                    recurring_interval_count=1,
-                    meter_interval=SubscriptionRecurringInterval.month,
-                    prices=[_fixed_price_create()],
-                    organization_id=organization.id,
-                ),
-                auth_subject,
-            )
-
-    @pytest.mark.auth
-    async def test_no_meter_interval_allowed_without_flag(
+    async def test_without_meter_interval(
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
@@ -1564,13 +1532,12 @@ class TestCreateMeterCycling:
         assert product.meter_interval is None
 
     @pytest.mark.auth
-    async def test_meter_interval_allowed_with_flag(
+    async def test_with_meter_interval(
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         organization: Organization,
         user_organization: UserOrganization,
-        meter_cycling_enabled: None,
     ) -> None:
         product = await product_service.create(
             session,

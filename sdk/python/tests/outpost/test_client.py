@@ -28,6 +28,7 @@ from polar.outpost.client import (
 from polar.outpost.reducer import BUCKET_SIZE, get_bucket_start
 from polar.v2026_04.inputs import EventsIngest
 
+CONNECTION_ID = "5b6e1f0c-8f4c-4d2a-9a51-3c7d2e8b1f60"
 TIMESTAMP = "2026-10-12T12:00:00Z"
 BUCKET = get_bucket_start(datetime.datetime.fromisoformat(TIMESTAMP))
 CONFIGURATION: dict[str, typing.Any] = {
@@ -86,6 +87,14 @@ async def polar_client(
         assert (b"authorization", b"Bearer test-token") in scope["headers"]
         assert (await receive())["type"] == "websocket.connect"
         await send({"type": "websocket.accept"})
+        await send(
+            {
+                "type": "websocket.send",
+                "text": json.dumps(
+                    {"type": "connection", "payload": {"id": CONNECTION_ID}}
+                ),
+            }
+        )
         while True:
             message = await receive()
             if message["type"] == "websocket.disconnect":
@@ -166,6 +175,19 @@ async def test_ingest_accepts_raw_sdk_payload(
         and value == b"5"
         for field, value in own.items()
     )
+
+
+@pytest.mark.anyio
+async def test_connection_id_is_retained_while_connected(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+) -> None:
+    url, _ = redis_connection
+    outpost = Outpost(url, client=polar_client)
+    async with outpost:
+        await outpost.ingest(events=[{"name": "call", "external_customer_id": "alice"}])
+        assert outpost.connection_id == CONNECTION_ID
+    assert outpost.connection_id is None
 
 
 @pytest.mark.anyio

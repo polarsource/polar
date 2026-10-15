@@ -202,6 +202,7 @@ class Outpost:
         self._stack = contextlib.AsyncExitStack()
         self._redis: Redis | None = None
         self._websocket: AsyncWebSocketSession | None = None
+        self._connection_id: str | None = None
         self._tasks: anyio.abc.TaskGroup | None = None
         self._reducers: list[Reducer] = []
         self._actors: set[str] = set()
@@ -246,6 +247,7 @@ class Outpost:
             finally:
                 self._redis = None
                 self._websocket = None
+                self._connection_id = None
                 self._tasks = None
                 self._reducers = []
                 self._write_bucket = None
@@ -268,6 +270,7 @@ class Outpost:
         finally:
             self._redis = None
             self._websocket = None
+            self._connection_id = None
             self._tasks = None
             self._reducers = []
             self._actors.clear()
@@ -275,6 +278,10 @@ class Outpost:
             self._apply_snapshot = None
             self._read_state = None
             self._cache.clear()
+
+    @property
+    def connection_id(self) -> str | None:
+        return self._connection_id
 
     async def ingest(
         self, *, events: collections.abc.Sequence[EventInput]
@@ -516,7 +523,9 @@ class Outpost:
         websocket = self._require_websocket()
         while True:
             message = await websocket.receive_json()
-            if message["type"] == "configuration":
+            if message["type"] == "connection":
+                self._connection_id = message["payload"]["id"]
+            elif message["type"] == "configuration":
                 self._reducers = message["payload"]["reducers"]
                 self._configured.set()
             elif message["type"] == "meter_usage":

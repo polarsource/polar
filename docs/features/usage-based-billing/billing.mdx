@@ -78,7 +78,7 @@ The common case is a yearly plan with monthly usage: the customer pays the base 
 
 At the end of each meter period, Polar:
 
-1. Invoices the period's usage as a separate order, with `billing_reason` set to `subscription_meter_cycle`.
+1. Invoices the period's usage as a separate order.
 2. Resets the customer's meters.
 3. Grants the [Credits benefit](/features/benefits/credits) again, applying rollover if it's enabled.
 
@@ -113,7 +113,7 @@ For example, a yearly plan accepts a meter cycle of 1, 2, 3, 4, 6 or 12 months, 
 
 ### Discounts
 
-A percentage [discount](/features/discounts) applies to every meter cycle order. A fixed-amount discount doesn't, because it would be granted again each meter period. It still applies to the renewal order.
+A percentage [discount](/features/discounts) applies to every meter cycle order. A fixed-amount discount doesn't. It still applies to the renewal order.
 
 ### Failed payments
 

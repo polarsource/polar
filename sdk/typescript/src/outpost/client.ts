@@ -271,7 +271,13 @@ export class Outpost {
   }
 
   get connected(): boolean {
-    return !this.failure && this.isConfigured && this.websocket?.readyState === WebSocket.OPEN;
+    return (
+      !this.failure &&
+      this.redis?.status === "ready" &&
+      this.subscriber?.status === "ready" &&
+      this.isConfigured &&
+      this.websocket?.readyState === WebSocket.OPEN
+    );
   }
 
   async start(): Promise<this> {

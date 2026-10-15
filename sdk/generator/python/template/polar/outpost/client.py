@@ -429,6 +429,7 @@ class Outpost:
     def connected(self) -> bool:
         return (
             self._failure is None
+            and self._redis_available
             and self._websocket is not None
             and self._configured.is_set()
         )

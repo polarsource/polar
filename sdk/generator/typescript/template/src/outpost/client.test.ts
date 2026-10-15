@@ -780,6 +780,7 @@ it("fails fast while Redis is unavailable", async () => {
   const outpost = await start();
   outpost["subscriber"]!.disconnect();
   await vi.waitFor(() => expect(outpost["isSynced"]).toBe(false));
+  expect(outpost.connected).toBe(false);
   const started = performance.now();
   await expect(
     outpost.customerMeter({ external_customer_id: "bob", meter_id: "meter" }),

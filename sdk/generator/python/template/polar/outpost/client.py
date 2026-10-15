@@ -492,6 +492,11 @@ class Outpost:
                 for reducer, local in warmed:
                     await self._wait_ready(reducer, local, reducer.get("meter_ids", []))
 
+    async def flush_telemetry(self) -> None:
+        provider = self._tracer_provider
+        if provider is not None:
+            await anyio.to_thread.run_sync(provider.force_flush, 5_000)
+
     async def _warm_actor(self, customer: str) -> list[tuple[Reducer, LocalState]]:
         with anyio.fail_after(5):
             await self._configured.wait()

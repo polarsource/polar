@@ -213,18 +213,9 @@ export const grantSurveyCredits = async (
 ) => {
   log(`Survey answer: ${answer}`)
 
-  const customer = polar.actor({ externalCustomerId: externalId })
-
-  await customer.grant('tool_call', SURVEY_CREDITS)
-
-  // Credits are applied asynchronously, so the customer can't spend them yet
-  const span = log.start('Waiting for survey credits')
-  const start = performance.now()
-  while (!(await customer.balance('tool_call')).pristine) {
-    if (performance.now() - start > 30000) break
-    await wait(1000)
-  }
-  span.end()
+  await polar
+    .actor({ externalCustomerId: externalId })
+    .grant('tool_call', SURVEY_CREDITS)
 }
 
 export const callTool = async (

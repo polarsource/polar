@@ -120,8 +120,7 @@ export type Actor<Config extends RuntimeSDKConfig> = (
     name: Name,
   ) => Promise<BenefitAccess<BenefitMetadata<Config, Name>>>
   balance: (name: MeterName<Config>) => Promise<MeterBalance>
-  // Credits always go to the customer, even on an actor with a member. The
-  // balance updates asynchronously, like it does for tracked events.
+  // Credits always go to the customer, even on an actor with a member
   grant: (
     name: MeterName<Config>,
     units: number,

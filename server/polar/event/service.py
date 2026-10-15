@@ -1180,7 +1180,9 @@ class EventService:
 
         for cm in unactivated_meters:
             if any(
-                cm.meter.filter.matches(event) and cm.meter.aggregation.matches(event)
+                event.organization_id == cm.meter.organization_id
+                and cm.meter.filter.matches(event)
+                and cm.meter.aggregation.matches(event)
                 for event in events_by_customer[cm.customer_id]
             ):
                 cm.activated_at = utc_now()

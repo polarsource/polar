@@ -82742,11 +82742,24 @@
               }
             ],
             "title": "Name"
+          },
+          "resource": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource",
+            "description": "The resource (RFC 8707) the access token was issued for."
           }
         },
         "type": "object",
         "required": [
-          "sub"
+          "sub",
+          "resource"
         ],
         "title": "UserInfoOrganization"
       },
@@ -82788,11 +82801,24 @@
               }
             ],
             "title": "Email Verified"
+          },
+          "resource": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource",
+            "description": "The resource (RFC 8707) the access token was issued for."
           }
         },
         "type": "object",
         "required": [
-          "sub"
+          "sub",
+          "resource"
         ],
         "title": "UserInfoUser"
       },

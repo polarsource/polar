@@ -40210,6 +40210,11 @@ export interface components {
       sub: string
       /** Name */
       name?: string | null
+      /**
+       * Resource
+       * @description The resource (RFC 8707) the access token was issued for.
+       */
+      resource: string | null
     }
     /** UserInfoUser */
     UserInfoUser: {
@@ -40221,6 +40226,11 @@ export interface components {
       email?: string | null
       /** Email Verified */
       email_verified?: boolean | null
+      /**
+       * Resource
+       * @description The resource (RFC 8707) the access token was issued for.
+       */
+      resource: string | null
     }
     /** UserOrganizationNotificationSettings */
     UserOrganizationNotificationSettings: {

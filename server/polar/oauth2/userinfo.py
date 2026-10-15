@@ -3,6 +3,7 @@ import typing
 from authlib.oidc.core import UserInfo
 
 from polar.auth.scope import Scope, scope_to_list
+from polar.models import OAuth2Token
 
 from .sub_type import SubTypeValue, is_sub_organization, is_sub_user
 
@@ -26,4 +27,12 @@ def generate_user_info(sub: SubTypeValue, scope: str) -> UserInfo:
     return UserInfo(**claims)
 
 
-__all__ = ["UserInfo", "generate_user_info"]
+def generate_token_user_info(token: OAuth2Token) -> UserInfo:
+    user_info = generate_user_info(
+        token.get_sub_type_value(), typing.cast(str, token.scope)
+    )
+    user_info["resource"] = token.resource
+    return user_info
+
+
+__all__ = ["UserInfo", "generate_token_user_info", "generate_user_info"]

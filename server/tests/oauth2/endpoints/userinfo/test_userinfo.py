@@ -2,6 +2,7 @@ import pytest
 from httpx import AsyncClient
 
 from polar.models import OAuth2Client, User
+from polar.version import V2027_01
 from tests.fixtures.database import SaveFixture
 
 from ...conftest import create_oauth2_token
@@ -57,3 +58,33 @@ class TestOAuth2UserInfo:
 
         json = response.json()
         assert json["sub"] == str(user.id)
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.parametrize("resource", [None, "https://mcp.polar.sh/mcp/polar-mcp"])
+    async def test_resource(
+        self,
+        method: str,
+        resource: str | None,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token="ACCESS_TOKEN",
+            refresh_token="REFRESH_TOKEN",
+            scopes=[],
+            user=user,
+            resource=resource,
+        )
+
+        response = await client.request(
+            method,
+            "/v1/oauth2/userinfo",
+            headers={"Authorization": "Bearer ACCESS_TOKEN"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["resource"] == resource

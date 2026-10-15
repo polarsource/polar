@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Literal, cast
+from typing import Literal
 
 from fastapi import Depends, Form, HTTPException, Request, Response
 from fastapi.openapi.constants import REF_TEMPLATE
@@ -38,7 +38,7 @@ from ..schemas import (
     UserInfo as UserInfoSchema,
 )
 from ..service.oauth2_client import oauth2_client as oauth2_client_service
-from ..userinfo import UserInfo, generate_user_info
+from ..userinfo import UserInfo, generate_token_user_info
 
 router = APIRouter(prefix="/oauth2", tags=["oauth2"])
 
@@ -327,7 +327,7 @@ async def introspect(
 )
 async def userinfo_get(token: OAuth2Token = Depends(get_token)) -> UserInfo:
     """Get information about the authenticated user."""
-    return generate_user_info(token.get_sub_type_value(), cast(str, token.scope))
+    return generate_token_user_info(token)
 
 
 # Repeat the /userinfo endpoint to support POST requests
@@ -341,4 +341,4 @@ async def userinfo_get(token: OAuth2Token = Depends(get_token)) -> UserInfo:
 )
 async def userinfo_post(token: OAuth2Token = Depends(get_token)) -> UserInfo:
     """Get information about the authenticated user."""
-    return generate_user_info(token.get_sub_type_value(), cast(str, token.scope))
+    return generate_token_user_info(token)

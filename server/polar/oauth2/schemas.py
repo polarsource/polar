@@ -21,6 +21,8 @@ from polar.auth.scope import (
     scope_to_list,
 )
 from polar.kit.schemas import Schema, TimestampedSchema
+from polar.kit.versioning import Version
+from polar.version import V2027_01
 
 from .sub_type import SubType
 
@@ -198,11 +200,21 @@ class UserInfoUser(Schema):
     name: str | None = None
     email: str | None = None
     email_verified: bool | None = None
+    resource: Annotated[
+        str | None,
+        Version(starting_from=V2027_01),
+        Field(description="The resource (RFC 8707) the access token was issued for."),
+    ]
 
 
 class UserInfoOrganization(Schema):
     sub: str
     name: str | None = None
+    resource: Annotated[
+        str | None,
+        Version(starting_from=V2027_01),
+        Field(description="The resource (RFC 8707) the access token was issued for."),
+    ]
 
 
 UserInfo = UserInfoUser | UserInfoOrganization

@@ -78,7 +78,7 @@ async def backfill_organization(
     written = 0
     seen = 0
     async for rows in _iter_events(session, organization_id, reducers, start, end):
-        billed_at = await _get_billed_at(session, [row.id for row in rows])
+        billed_at = await _get_billed_at(session, _matched_event_ids(rows))
         _add_to_totals(totals, reducers, rows, billed_at)
         # The page may end inside a bucket: only the buckets before it are complete.
         flush_until = get_reducer_bucket_start(rows[-1].timestamp)
@@ -222,6 +222,8 @@ async def _get_billed_at(
 ) -> dict[UUID, datetime]:
     """The created_at of the order that billed each event, for the events with a
     metered billing entry linked to an order item."""
+    if not event_ids:
+        return {}
     statement = (
         select(BillingEntry.event_id, Order.created_at)
         .join(BillingEntry.order_item)
@@ -234,6 +236,15 @@ async def _get_billed_at(
     )
     result = await session.execute(statement)
     return dict(result.tuples().all())
+
+
+def _matched_event_ids(rows: Sequence[Row[Any]]) -> list[UUID]:
+    """The events with a value for at least one reducer."""
+    return [
+        id
+        for id, _, _, _, *values in rows
+        if any(value is not None for value in values)
+    ]
 
 
 def _add_to_totals(

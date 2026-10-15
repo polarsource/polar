@@ -26060,6 +26060,12 @@
             ]
           }
         ],
+        "x-tool-name": "customer_meters_credits",
+        "x-tool-title": "Credit Customer Meter",
+        "x-tool-description": "Manually grant credits on a customer meter.\n\nReturns the `meter.credited` event. The customer meter balance is updated\nasynchronously, shortly after the request.",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"

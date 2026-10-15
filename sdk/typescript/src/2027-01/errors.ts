@@ -5,6 +5,7 @@ import type {
   CannotCreateOrganizationError as CannotCreateOrganizationErrorModel,
   CheckoutForbiddenError as CheckoutForbiddenErrorModel,
   CheckoutLocked as CheckoutLockedModel,
+  CustomerMeterCreditExternalIDConflict as CustomerMeterCreditExternalIDConflictModel,
   CustomerNotReady as CustomerNotReadyModel,
   DisputeAutoAcceptNotEnabled as DisputeAutoAcceptNotEnabledModel,
   DisputeNotOpenError as DisputeNotOpenErrorModel,
@@ -1136,5 +1137,21 @@ export class EventTypesUpdate404Error extends PolarClientError<null> {
   ) {
     super(statusCode, error);
     this.name = "EventTypesUpdate404Error";
+  }
+}
+/**
+ * The external_id is already used by a different event, or the external customer ID matches customers in several accessible organizations.
+ */
+export class CustomerMetersCredits409Error extends PolarClientError<
+  CustomerMeterCreditExternalIDConflictModel | AmbiguousExternalCustomerIDModel
+> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error:
+      | CustomerMeterCreditExternalIDConflictModel
+      | AmbiguousExternalCustomerIDModel,
+  ) {
+    super(statusCode, error);
+    this.name = "CustomerMetersCredits409Error";
   }
 }

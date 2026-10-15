@@ -1551,6 +1551,44 @@ You can store up to **50 key-value pairs**."""
     """The email address of the customer. This must be unique within the organization."""
 
 
+class CustomerMeterCreditsExternalIDCreate(typing.TypedDict):
+    """Schema to manually grant credits on a customer meter using external IDs."""
+
+    units: int
+    """The number of units to credit."""
+
+    rollover: typing.NotRequired[bool]
+    """Whether unused credits carry over to the next meter period."""
+
+    external_id: typing.NotRequired[str | None]
+    """Your unique identifier for this credit. Retrying with the same `external_id` doesn't grant the credit twice."""
+
+    external_customer_id: str
+    """The external ID of the customer."""
+
+    external_meter_id: str
+    """The external ID of the meter, as set by config as code."""
+
+
+class CustomerMeterCreditsIDCreate(typing.TypedDict):
+    """Schema to manually grant credits on a customer meter using Polar IDs."""
+
+    units: int
+    """The number of units to credit."""
+
+    rollover: typing.NotRequired[bool]
+    """Whether unused credits carry over to the next meter period."""
+
+    external_id: typing.NotRequired[str | None]
+    """Your unique identifier for this credit. Retrying with the same `external_id` doesn't grant the credit twice."""
+
+    customer_id: str
+    """The ID of the customer."""
+
+    meter_id: str
+    """The ID of the meter."""
+
+
 class CustomerOrderConfirmPayment(typing.TypedDict):
     """Schema to confirm a retry payment using either a saved payment method or a new confirmation token."""
 
@@ -1859,6 +1897,9 @@ You can store up to **50 key-value pairs**."""
 class DiscountFixedCreate(typing.TypedDict):
     """Schema to create a fixed amount discount."""
 
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -1918,6 +1959,9 @@ For example, to apply the discount for 2 years, set this to 24."""
 class DiscountPercentageCreate(typing.TypedDict):
     """Schema to create a percentage discount."""
 
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -1976,6 +2020,9 @@ For example, to create a 25.5% discount, set this to 2550."""
 
 class DiscountUpdate(typing.TypedDict):
     """Schema to update a discount."""
+
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.

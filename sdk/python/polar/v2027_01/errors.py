@@ -20,6 +20,9 @@ from polar.v2027_01.outputs import (
     CheckoutLocked as CheckoutLockedModel,
 )
 from polar.v2027_01.outputs import (
+    CustomerMeterCreditExternalIDConflict as CustomerMeterCreditExternalIDConflictModel,
+)
+from polar.v2027_01.outputs import (
     CustomerNotReady as CustomerNotReadyModel,
 )
 from polar.v2027_01.outputs import (
@@ -988,5 +991,21 @@ class EventTypesUpdate404Error(PolarClientError):
     error: None
 
     def __init__(self, status_code: int, error: None) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class CustomerMetersCredits409Error(PolarClientError):
+    error_type = (
+        CustomerMeterCreditExternalIDConflictModel | AmbiguousExternalCustomerIDModel
+    )
+    error: CustomerMeterCreditExternalIDConflictModel | AmbiguousExternalCustomerIDModel
+
+    def __init__(
+        self,
+        status_code: int,
+        error: CustomerMeterCreditExternalIDConflictModel
+        | AmbiguousExternalCustomerIDModel,
+    ) -> None:
         self.error = error
         super().__init__(status_code, error)

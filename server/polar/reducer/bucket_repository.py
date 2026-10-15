@@ -38,6 +38,17 @@ def _is_customer(
     )
 
 
+def _is_any_customer(
+    identities: Sequence[tuple[UUID | None, str | None]],
+) -> ColumnElement[bool]:
+    return or_(
+        *(
+            _is_customer(ReducerBucket, customer_id, external_customer_id)
+            for customer_id, external_customer_id in identities
+        )
+    )
+
+
 class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
     model = ReducerBucket
 
@@ -194,12 +205,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         ).where(
             ReducerBucket.organization_id == organization_id,
             ReducerBucket.reducer_id == reducer_id,
-            or_(
-                *(
-                    _is_customer(ReducerBucket, customer_id, external_customer_id)
-                    for customer_id, external_customer_id in identities
-                )
-            ),
+            _is_any_customer(identities),
             *clauses,
         )
         result = await self.session.execute(statement)
@@ -284,27 +290,19 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         reducer: Reducer,
         identities: Sequence[tuple[UUID | None, str | None]],
         *,
-        start: datetime,
-        end: datetime,
+        until: datetime,
         sealed_at: datetime,
-    ) -> Sequence[tuple[int, Decimal, Decimal | None, Decimal | None]]:
+    ) -> int:
+        """Seals the identities' unsealed buckets ending by `until`, and returns
+        how many."""
         open_ids = (
             select(ReducerBucket.id)
             .where(
                 ReducerBucket.organization_id == reducer.organization_id,
                 ReducerBucket.reducer_id == reducer.id,
-                or_(
-                    *(
-                        and_(
-                            ReducerBucket.customer_id == customer_id,
-                            ReducerBucket.external_customer_id == external_customer_id,
-                        )
-                        for customer_id, external_customer_id in identities
-                    )
-                ),
+                _is_any_customer(identities),
                 ReducerBucket.sealed_at.is_(None),
-                ReducerBucket.bucket_end > start,
-                ReducerBucket.bucket_end <= end,
+                ReducerBucket.bucket_end <= until,
             )
             .order_by(ReducerBucket.bucket_start)
             .with_for_update()
@@ -313,6 +311,40 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             update(ReducerBucket)
             .where(ReducerBucket.id.in_(open_ids))
             .values(sealed_at=sealed_at, modified_at=sealed_at)
+            .returning(ReducerBucket.id)
+        )
+        return len(result.all())
+
+    async def bill(
+        self,
+        reducer: Reducer,
+        identities: Sequence[tuple[UUID | None, str | None]],
+        order_id: UUID,
+        *,
+        since: datetime,
+        until: datetime,
+        billed_at: datetime,
+    ) -> Sequence[tuple[int, Decimal, Decimal | None, Decimal | None]]:
+        """Marks the identities' sealed, unbilled buckets within [since, until] as
+        billed by the order, and returns their count, sum, min and max."""
+        unbilled_ids = (
+            select(ReducerBucket.id)
+            .where(
+                ReducerBucket.organization_id == reducer.organization_id,
+                ReducerBucket.reducer_id == reducer.id,
+                _is_any_customer(identities),
+                ReducerBucket.sealed_at.is_not(None),
+                ReducerBucket.billed_at.is_(None),
+                ReducerBucket.bucket_start >= since,
+                ReducerBucket.bucket_end <= until,
+            )
+            .order_by(ReducerBucket.bucket_start)
+            .with_for_update()
+        )
+        result = await self.session.execute(
+            update(ReducerBucket)
+            .where(ReducerBucket.id.in_(unbilled_ids))
+            .values(billed_at=billed_at, order_id=order_id, modified_at=billed_at)
             .returning(
                 ReducerBucket.count,
                 ReducerBucket.sum,

@@ -1507,12 +1507,12 @@ class TestCreateOrderItemsFromPending:
             assert entry.order_item_id == order_item.id
 
     @pytest.mark.parametrize(
-        ("include_metered", "sealed"), [(True, True), (False, False)]
+        ("include_metered", "billed"), [(True, True), (False, False)]
     )
-    async def test_seals_reducer_buckets_with_metered_usage(
+    async def test_bills_reducer_buckets_with_metered_usage(
         self,
         include_metered: bool,
-        sealed: bool,
+        billed: bool,
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -1521,8 +1521,8 @@ class TestCreateOrderItemsFromPending:
         product_metered_unit: Product,
         metered_subscription: Subscription,
     ) -> None:
-        seal = mocker.patch(
-            "polar.billing_entry.service.reducer_service.seal",
+        bill = mocker.patch(
+            "polar.billing_entry.service.reducer_service.bill",
             return_value={meter.id: Decimal(10)},
         )
         await create_metered_event_billing_entry(
@@ -1540,17 +1540,18 @@ class TestCreateOrderItemsFromPending:
             include_metered=include_metered,
             cutoff=cutoff,
         ) as order_items:
-            await create_order(
+            order = await create_order(
                 save_fixture, customer=customer, order_items=list(order_items)
             )
 
-        if sealed:
-            seal.assert_called_once_with(
+        if billed:
+            bill.assert_called_once_with(
                 session,
                 customer,
                 {meter.id},
+                order_id=order.id,
                 billable_from=metered_subscription.started_at,
                 cutoff=cutoff,
             )
         else:
-            seal.assert_not_called()
+            bill.assert_not_called()

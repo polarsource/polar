@@ -1,3 +1,4 @@
+import uuid
 from contextlib import aclosing
 
 import structlog
@@ -14,7 +15,12 @@ from polar.routing import APIRouter
 
 from . import stream
 from .auth import authenticate
-from .schemas import OutgoingMessage
+from .schemas import (
+    ConnectionOutgoingMessage,
+    ConnectionOutgoingMessagePayload,
+    OutgoingMessage,
+    OutgoingMessageType,
+)
 from .service import outpost as outpost_service
 
 log: Logger = structlog.get_logger(__name__)
@@ -69,6 +75,8 @@ async def outpost(websocket: WebSocket, redis: Redis = Depends(get_redis)) -> No
         return
 
     sessionmaker: AsyncSessionMaker = websocket.state.async_sessionmaker
+    connection_id = uuid.uuid4()
+    structlog.contextvars.bind_contextvars(outpost_connection_id=str(connection_id))
 
     incoming_send_stream, incoming_receive_stream = create_memory_object_stream[str](16)
     outgoing_send_stream, outgoing_receive_stream = create_memory_object_stream[
@@ -82,6 +90,12 @@ async def outpost(websocket: WebSocket, redis: Redis = Depends(get_redis)) -> No
         create_task_group() as task_group,
     ):
         task_group.start_soon(send_messages, websocket, outgoing_receive_stream)
+        await outgoing_send_stream.send(
+            ConnectionOutgoingMessage(
+                type=OutgoingMessageType.connection,
+                payload=ConnectionOutgoingMessagePayload(id=connection_id),
+            )
+        )
         task_group.start_soon(
             handle_events,
             redis,

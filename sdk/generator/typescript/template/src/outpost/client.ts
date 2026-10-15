@@ -41,6 +41,7 @@ interface Snapshot {
   credited_units: number;
 }
 type Message =
+  | { type: "connection"; payload: { id: string } }
   | { type: "configuration"; payload: { reducers: Reducer[] } }
   | { type: "meter_usage"; payload: Snapshot };
 interface StateUpdate {
@@ -142,6 +143,7 @@ export class Outpost {
   private redis?: OutpostRedis;
   private subscriber?: Redis;
   private websocket?: WebSocket;
+  private _connectionId?: string;
   private reducers: Reducer[] = [];
   private readonly cache = new Map<string, LocalState>();
   private readonly actors = new Set<string>();
@@ -159,6 +161,10 @@ export class Outpost {
     readonly redisUrl: string,
     private readonly options: OutpostOptions,
   ) {}
+
+  get connectionId(): string | undefined {
+    return this._connectionId;
+  }
 
   async start(): Promise<this> {
     if (this.redis) throw new PolarError("Outpost is already connected");
@@ -242,6 +248,7 @@ export class Outpost {
       (redis): redis is Redis => redis !== undefined,
     );
     this.websocket = undefined;
+    this._connectionId = undefined;
     this.subscriber = undefined;
     this.redis = undefined;
     const closed = connections.map((redis) => {
@@ -460,7 +467,9 @@ export class Outpost {
 
   private async receiveWebsocket(data: string): Promise<void> {
     const message: Message = JSON.parse(data);
-    if (message.type === "configuration") {
+    if (message.type === "connection") {
+      this._connectionId = message.payload.id;
+    } else if (message.type === "configuration") {
       this.reducers = message.payload.reducers;
       this.configured.resolve();
     } else if (message.type === "meter_usage") {

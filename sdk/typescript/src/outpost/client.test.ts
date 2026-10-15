@@ -20,6 +20,7 @@ const bucket = getBucketStart(Date.parse(timestamp) * 1000);
 const customer = { external_customer_id: "alice" };
 const meter = { ...customer, meter_id: "meter" };
 const key = "outpost:state:external:alice:tokens";
+const connectionId = "5b6e1f0c-8f4c-4d2a-9a51-3c7d2e8b1f60";
 let directory: string;
 let redisProcess: ChildProcess;
 let redis: Redis;
@@ -63,6 +64,7 @@ beforeAll(async () => {
     expect(request.headers.authorization).toBe("Bearer test-token");
     expect(request.headers["polar-organization"]).toBe("org");
     connections.push(ws);
+    ws.send(JSON.stringify({ type: "connection", payload: { id: connectionId } }));
     ws.on("message", (data) => {
       const message = JSON.parse(data.toString());
       if (message.type === "configuration" && !delayConfiguration)
@@ -153,6 +155,14 @@ it.each([
     expect(commands).not.toHaveBeenCalled();
   },
 );
+
+it("retains the connection ID while connected", async () => {
+  const outpost = await start();
+  await ingest(outpost, 3);
+  expect(outpost.connectionId).toBe(connectionId);
+  await outpost.close();
+  expect(outpost.connectionId).toBeUndefined();
+});
 
 it("handles configuration asynchronously and reports a missing customer snapshot", async () => {
   delayConfiguration = true;

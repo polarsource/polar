@@ -349,7 +349,9 @@ class CustomerMeterService:
         except DBAPIError as e:
             if not is_lock_not_available_error(e):
                 raise
-            # A worker is balancing this meter; the debounced update picks up the credit.
+            # A worker is balancing this meter from a snapshot that predates the
+            # credit, so schedule another pass once this transaction commits.
+            enqueue_job("customer_meter.update_customer", customer.id)
             customer_meter_repository = CustomerMeterRepository.from_session(session)
             customer_meter = await customer_meter_repository.get_by_customer_and_meter(
                 customer.id, meter.id

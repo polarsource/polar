@@ -268,6 +268,7 @@ class TestCreditCustomerMeter:
                 "SELECT", {}, Exception("could not obtain lock on row")
             ),
         )
+        enqueue_job_mock = mocker.patch("polar.customer_meter.service.enqueue_job")
 
         response = await client.post(
             "/v1/customer-meters/credits",
@@ -285,6 +286,9 @@ class TestCreditCustomerMeter:
         assert updated is not None
         assert updated.activated_at is not None
         assert updated.balance == 0
+        enqueue_job_mock.assert_called_once_with(
+            "customer_meter.update_customer", customer.id
+        )
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth

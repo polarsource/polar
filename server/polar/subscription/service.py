@@ -2122,7 +2122,8 @@ class SubscriptionService:
                 # Re-arm the meter clock from the new product's cadence (cleared if
                 # it has none) so it isn't left on a stale boundary. None in a trial.
                 subscription.initialize_meter_period(
-                    None if was_trialing else subscription.current_period_start
+                    None if was_trialing else subscription.current_period_start,
+                    containing=utc_now(),
                 )
                 session.add(subscription)
                 await session.flush()

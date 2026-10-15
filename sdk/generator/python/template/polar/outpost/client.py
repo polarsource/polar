@@ -743,7 +743,9 @@ class Outpost:
             with self._span("outpost.redis.disconnect") as span:
                 span.record_exception(error)
                 span.set_status(StatusCode.ERROR)
-            self._synced = anyio.Event()
+            # Wake the reads waiting on a resync that just failed.
+            stale, self._synced = self._synced, anyio.Event()
+            stale.set()
             self._redis_available = False
             for local in self._cache.values():
                 local.state = None

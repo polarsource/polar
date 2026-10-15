@@ -1389,3 +1389,49 @@ async def test_redis_outage_fails_fast(
                 await outpost.customer_meter(
                     meter_id="meter", external_customer_id="bob"
                 )
+
+
+@pytest.mark.anyio
+async def test_failed_resync_wakes_waiting_reads(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, _ = redis_connection
+    original = PubSub.get_message
+    disconnect = False
+
+    async def get_message(
+        self: PubSub, *args: typing.Any, **kwargs: typing.Any
+    ) -> typing.Any:
+        nonlocal disconnect
+        if disconnect:
+            disconnect = False
+            raise RedisConnectionError("Subscription disconnected")
+        return await original(self, *args, **kwargs)
+
+    monkeypatch.setattr(PubSub, "get_message", get_message)
+    async with Outpost(url, client=polar_client) as outpost:
+        gate = anyio.Event()
+
+        async def refresh_states() -> None:
+            await gate.wait()
+            raise RedisConnectionError("Resync failed")
+
+        monkeypatch.setattr(outpost, "_refresh_states", refresh_states)
+        disconnect = True
+        with anyio.fail_after(3):
+            while outpost._synced.is_set() or not outpost._redis_available:
+                await anyio.sleep(0.01)
+
+        async def read() -> None:
+            with pytest.raises(PolarOutpostError, match="Redis is unavailable"):
+                await outpost.customer_meter(
+                    meter_id="meter", external_customer_id="bob"
+                )
+
+        with anyio.fail_after(1):
+            async with anyio.create_task_group() as tasks:
+                tasks.start_soon(read)
+                await anyio.sleep(0.05)
+                gate.set()

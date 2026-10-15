@@ -1,9 +1,20 @@
 import { Clock, Context, Effect, Layer, Schema } from 'effect'
-import { HttpClient } from 'effect/http'
+import { HttpClient, HttpClientResponse } from 'effect/http'
 
 const OAUTH_ACCESS_TOKEN_PREFIX = 'polar_at_'
 const VALIDATION_TTL_MILLIS = 60_000
 const MAX_CACHED_TOKENS = 1_000
+// The first API version whose userinfo returns the token's resource.
+const USERINFO_API_VERSION = '2027-01'
+
+const UserInfo = Schema.Struct({
+  resource: Schema.optionalKey(Schema.NullOr(Schema.String)),
+})
+
+// A token without a recorded resource predates RFC 8707 support, or its client
+// didn't send one: accept it until every client binds its tokens.
+const isIssuedFor = (tokenResource: string | null, resource: string) =>
+  tokenResource === null || tokenResource === resource
 
 export class AuthUnavailable extends Schema.TaggedError<AuthUnavailable>()(
   'AuthUnavailable',
@@ -16,6 +27,7 @@ export class Auth extends Context.Service<
     readonly isTokenValid: (
       apiUrl: string,
       token: string,
+      resource: string,
     ) => Effect.Effect<boolean, AuthUnavailable>
   }
 >()('mcp/Auth') {
@@ -25,39 +37,60 @@ export class Auth extends Context.Service<
       const client = yield* HttpClient.HttpClient
       // Only settled validations are shared: workerd cancels a request that
       // waits on a lookup still in flight in another request as hung.
-      const validUntil = new Map<string, number>()
+      // The token's recorded resource is cached, not the verdict, so the same
+      // token is checked against whichever resource it is presented to.
+      const validations = new Map<
+        string,
+        { validUntil: number; resource: string | null }
+      >()
 
       const isTokenValid = Effect.fn('Auth.isTokenValid')(function* (
         apiUrl: string,
         token: string,
+        resource: string,
       ) {
         if (!token.startsWith(OAUTH_ACCESS_TOKEN_PREFIX)) {
           return true
         }
         const key = `${apiUrl} ${token}`
         const now = yield* Clock.currentTimeMillis
-        if ((validUntil.get(key) ?? 0) > now) {
-          return true
+        const cached = validations.get(key)
+        if (cached && cached.validUntil > now) {
+          return isIssuedFor(cached.resource, resource)
         }
-        const { status } = yield* client
+        const toAuthUnavailable = Effect.mapError(
+          (cause) => new AuthUnavailable({ cause }),
+        )
+        const response = yield* client
           .get(`${apiUrl}/v1/oauth2/userinfo`, {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Polar-Version': USERINFO_API_VERSION,
+            },
           })
-          .pipe(Effect.mapError((cause) => new AuthUnavailable({ cause })))
-        if (status === 401) {
+          .pipe(toAuthUnavailable)
+        if (response.status === 401) {
           return false
         }
-        if (status < 200 || status >= 300) {
+        if (response.status < 200 || response.status >= 300) {
           return yield* new AuthUnavailable({
-            cause: new Error(`userinfo returned ${status}`),
+            cause: new Error(`userinfo returned ${response.status}`),
           })
         }
-        validUntil.delete(key)
-        if (validUntil.size >= MAX_CACHED_TOKENS) {
-          validUntil.delete(validUntil.keys().next().value!)
+        const userInfo =
+          yield* HttpClientResponse.schemaBodyJson(UserInfo)(response).pipe(
+            toAuthUnavailable,
+          )
+        const tokenResource = userInfo.resource ?? null
+        validations.delete(key)
+        if (validations.size >= MAX_CACHED_TOKENS) {
+          validations.delete(validations.keys().next().value!)
         }
-        validUntil.set(key, now + VALIDATION_TTL_MILLIS)
-        return true
+        validations.set(key, {
+          validUntil: now + VALIDATION_TTL_MILLIS,
+          resource: tokenResource,
+        })
+        return isIssuedFor(tokenResource, resource)
       })
 
       return Auth.of({ isTokenValid })

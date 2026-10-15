@@ -45,6 +45,9 @@ const runtime = ManagedRuntime.make(
   ),
 )
 
+const resourceUrl = (origin: string, server: string) =>
+  `${origin}/mcp/${server}`
+
 const withCors = (response: Response) => {
   const headers = new Headers(response.headers)
   for (const [name, value] of Object.entries(CORS_HEADERS)) {
@@ -67,7 +70,7 @@ const handle = Effect.fn('handle')(function* (request: Request) {
       return new Response('Not Found', { status: 404 })
     }
     return Response.json({
-      resource: `${url.origin}/mcp/${metadataMatch[1]}`,
+      resource: resourceUrl(url.origin, metadataMatch[1]),
       authorization_servers: [apiUrl],
       bearer_methods_supported: ['header'],
       resource_name: 'Polar',
@@ -93,27 +96,30 @@ const handle = Effect.fn('handle')(function* (request: Request) {
     readOnly: props.readOnly,
     userAgent: request.headers.get('User-Agent'),
   }
-  const response = yield* handleMcp(request, url, props, mode).pipe(
-    Effect.provideService(RequestLog, log),
-  )
+  const response = yield* handleMcp(
+    request,
+    resourceUrl(url.origin, server),
+    props,
+    mode,
+  ).pipe(Effect.provideService(RequestLog, log))
   return logOnCompletion(response, log, startedAt)
 })
 
 const handleMcp = Effect.fn('handleMcp')(function* (
   request: Request,
-  url: URL,
+  resource: string,
   { apiUrl, readOnly }: Omit<PolarApiOutboundProps, 'token'>,
   mode: ToolMode,
 ) {
   const resourceMetadataUrl = getOAuthProtectedResourceMetadataUrl(
-    new URL(url.pathname, url.origin),
+    new URL(resource),
   )
   const token = getBearerToken(request)
   if (!token) {
     return unauthorized(resourceMetadataUrl)
   }
   const auth = yield* Auth
-  const rejection = yield* auth.isTokenValid(apiUrl, token).pipe(
+  const rejection = yield* auth.isTokenValid(apiUrl, token, resource).pipe(
     Effect.map((valid) =>
       valid ? undefined : unauthorized(resourceMetadataUrl, 'invalid_token'),
     ),

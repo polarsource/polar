@@ -10,7 +10,9 @@ const fetchMock = vi.fn<typeof fetch>()
 
 beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock)
-  fetchMock.mockReset().mockResolvedValue(Response.json({ items: [] }))
+  fetchMock
+    .mockReset()
+    .mockImplementation(async () => Response.json({ items: [] }))
   evaluate.mockReset().mockResolvedValue({ result: 'sandbox result' })
   get.mockClear()
   exports.PolarApiOutbound.mockClear()
@@ -79,6 +81,56 @@ test('OAuth validates per environment, caches for 60 seconds, and rejects 401s a
     expect(await response.json()).toEqual({ error: 'temporarily_unavailable' })
   }
   expect(fetchMock).toHaveBeenCalledTimes(7)
+})
+
+test('OAuth rejects tokens issued for another resource and accepts tokens without one', async () => {
+  const userInfo = (token: string) => {
+    if (token === 'polar_at_bound') {
+      return { sub: 'user', resource: 'https://mcp.polar.test/mcp/polar-mcp' }
+    }
+    if (token === 'polar_at_unbound') {
+      return { sub: 'user', resource: null }
+    }
+    return { sub: 'user' }
+  }
+  fetchMock.mockImplementation(async (_url, init) => {
+    const authorization = new Headers(init?.headers).get('Authorization')
+    return Response.json(userInfo(authorization!.split(' ')[1]))
+  })
+  const status = async (server: string, token: string) =>
+    (
+      await request(`/mcp/${server}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+    ).status
+  for (const token of ['polar_at_bound', 'polar_at_unbound', 'polar_at_old']) {
+    expect(await status('polar-mcp', token)).not.toBe(401)
+  }
+  for (const token of ['polar_at_unbound', 'polar_at_old']) {
+    expect(await status('polar-sandbox', token)).not.toBe(401)
+  }
+  for (let i = 0; i < 2; i++) {
+    const response = await request('/mcp/polar-sandbox', {
+      headers: { Authorization: 'Bearer polar_at_bound' },
+    })
+    expect(response.status).toBe(401)
+    expect(await response.json()).toEqual({ error: 'invalid_token' })
+    expect(response.headers.get('WWW-Authenticate')).toContain(
+      'error="invalid_token"',
+    )
+  }
+  expect(fetchMock).toHaveBeenCalledTimes(6)
+  expect(
+    new Headers(fetchMock.mock.calls[0][1]?.headers).get('Polar-Version'),
+  ).toBe('2027-01')
+})
+
+test('OAuth treats an unreadable userinfo response as unavailable', async () => {
+  fetchMock.mockImplementation(async () => new Response('not json'))
+  const response = await request('/mcp/polar-mcp', {
+    headers: { Authorization: 'Bearer polar_at_unreadable' },
+  })
+  expect(response.status).toBe(503)
 })
 
 test('code mode is the default for every client; ?codemode=false selects operation mode', async () => {

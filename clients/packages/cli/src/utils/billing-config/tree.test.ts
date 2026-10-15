@@ -278,6 +278,125 @@ describe('formatTree', () => {
     )
   })
 
+  test('shows the tiers of a created seat- or unit-based product', () => {
+    const output = stripAnsi(
+      formatTree(
+        {
+          ...input,
+          products: [
+            {
+              external_id: 'seats',
+              name: 'Seats',
+              recurring_interval: 'month',
+              recurring_interval_count: 1,
+              prices: [
+                {
+                  amount_type: 'seat_based',
+                  price_currency: 'usd',
+                  tax_behavior: 'exclusive',
+                  minimum_units: 2,
+                  tiers: {
+                    type: 'graduated',
+                    tiers: [
+                      { bound: 10, unit_amount: 1000 },
+                      { bound: null, unit_amount: 800 },
+                    ],
+                  },
+                },
+              ],
+              benefits: [],
+            },
+            {
+              external_id: 'credits',
+              name: 'Credits',
+              recurring_interval: null,
+              recurring_interval_count: null,
+              prices: [
+                {
+                  amount_type: 'unit_based',
+                  price_currency: 'eur',
+                  unit_label: { en: { one: 'credit', other: 'credits' } },
+                  tiers: {
+                    type: 'volume',
+                    tiers: [{ bound: null, unit_amount: 50 }],
+                  },
+                },
+              ],
+              benefits: [],
+            },
+          ],
+        },
+        [
+          entry('products', 'seats', 'created', [
+            { field: 'prices', before: null, after: [] },
+          ]),
+          entry('products', 'credits', 'created'),
+        ],
+      ),
+    )
+    expect(output).toBe(
+      [
+        '  products',
+        '  + seats',
+        '      billed per month, tax exclusive',
+        '      USD per seat, graduated, minimum 2',
+        '        1–10  $10',
+        '        11+   $8',
+        '  + credits',
+        '      billed once',
+        '      EUR per credit, volume',
+        '        1+  €0.50',
+      ].join('\n'),
+    )
+  })
+
+  test('lists the tiers of a created product metered in tiers under its meter', () => {
+    const output = stripAnsi(
+      formatTree(
+        {
+          ...input,
+          products: [
+            {
+              external_id: 'usage',
+              name: 'Usage',
+              recurring_interval: 'month',
+              recurring_interval_count: 1,
+              prices: [
+                {
+                  amount_type: 'metered_tiers',
+                  price_currency: 'usd',
+                  meter: 'tool_call',
+                  cap_amount: 10000,
+                  tiers: {
+                    type: 'graduated',
+                    tiers: [
+                      { bound: 1000, unit_amount: 0 },
+                      { bound: null, unit_amount: '0.5' },
+                    ],
+                  },
+                },
+              ],
+              benefits: [],
+            },
+          ],
+        },
+        [entry('products', 'usage', 'created')],
+      ),
+    )
+    expect(output).toBe(
+      [
+        '  products',
+        '  + usage',
+        '      billed per month',
+        '      └ + meter tool_call',
+        '            USD per tool calls, graduated',
+        '              up to 1,000  $0 per 1,000',
+        '              over 1,000   $5 per 1,000',
+        '              capped at $100',
+      ].join('\n'),
+    )
+  })
+
   test('grants every configured benefit anew when a created product has no benefits diff', () => {
     const output = stripAnsi(
       formatTree(input, [

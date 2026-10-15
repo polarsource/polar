@@ -27,6 +27,7 @@ METER: ExternalCustomerMeterRequest = {**CUSTOMER, "meter_id": "meter"}
 INITIAL: Snapshot = {
     **CUSTOMER,
     "customer_id": None,
+    "customer_exists": True,
     "meter_id": "meter",
     "cold_until": BUCKET,
     "version": BUCKET + 1,

@@ -50,13 +50,11 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
-  "dependencies": {
+  "devDependencies": {
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/otlp-transformer": "^0.223.0",
     "@opentelemetry/resources": "^2.12.0",
-    "@opentelemetry/sdk-trace": "^2.12.0"
-  },
-  "devDependencies": {
+    "@opentelemetry/sdk-trace": "^2.12.0",
     "ioredis": "^5.11.0",
     "ws": "^8.21.0",
     "@types/ws": "^8.18.1",
@@ -69,10 +67,18 @@
     "vitest": "^4.1.9"
   },
   "peerDependencies": {
+    "@opentelemetry/api": "^1.9.1",
+    "@opentelemetry/otlp-transformer": "^0.223.0",
+    "@opentelemetry/resources": "^2.12.0",
+    "@opentelemetry/sdk-trace": "^2.12.0",
     "ioredis": "^5.11.0",
     "ws": "^8.21.0"
   },
   "peerDependenciesMeta": {
+    "@opentelemetry/api": { "optional": true },
+    "@opentelemetry/otlp-transformer": { "optional": true },
+    "@opentelemetry/resources": { "optional": true },
+    "@opentelemetry/sdk-trace": { "optional": true },
     "ioredis": { "optional": true },
     "ws": { "optional": true }
   },

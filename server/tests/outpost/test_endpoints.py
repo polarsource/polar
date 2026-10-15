@@ -1,3 +1,4 @@
+import uuid
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
@@ -48,6 +49,14 @@ class TestOutpost:
         assert exc.value.response.status_code == 401
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_connection(self, client: httpx.AsyncClient) -> None:
+        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            message = await websocket.receive_json()
+
+            assert message["type"] == "connection"
+            assert uuid.UUID(message["payload"]["id"])
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_request_configuration(
         self,
         save_fixture: SaveFixture,
@@ -60,6 +69,7 @@ class TestOutpost:
         )
 
         async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await websocket.receive_json()
             await websocket.send_json({"type": "configuration"})
             response = await websocket.receive_json()
 
@@ -108,6 +118,7 @@ class TestOutpost:
         }[customer_key]
 
         async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await websocket.receive_json()
             await websocket.send_json(
                 {
                     "type": "meter_usage",
@@ -190,6 +201,7 @@ class TestOutpost:
             )
 
         async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await websocket.receive_json()
             await publish(
                 redis,
                 organization.id,
@@ -252,6 +264,7 @@ class TestOutpost:
         )
 
         async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await websocket.receive_json()
             await publish(
                 redis,
                 organization.id,

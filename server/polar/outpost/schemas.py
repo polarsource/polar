@@ -79,12 +79,22 @@ IncomingMessageAdapter: TypeAdapter[IncomingMessage] = TypeAdapter(IncomingMessa
 
 
 class OutgoingMessageType(StrEnum):
+    connection = "connection"
     configuration = "configuration"
     meter_usage = "meter_usage"
 
 
 class OutgoingMessageBase(MessageBase):
     type: OutgoingMessageType
+
+
+class ConnectionOutgoingMessagePayload(MessageBase):
+    id: UUID4
+
+
+class ConnectionOutgoingMessage(OutgoingMessageBase):
+    type: typing.Literal[OutgoingMessageType.connection]
+    payload: ConnectionOutgoingMessagePayload
 
 
 class ConfigurationReducer(MessageBase):
@@ -127,7 +137,9 @@ class MeterUsageOutgoingMessage(OutgoingMessageBase):
 
 
 type OutgoingMessage = typing.Annotated[
-    ConfigurationOutgoingMessage | MeterUsageOutgoingMessage,
+    ConnectionOutgoingMessage
+    | ConfigurationOutgoingMessage
+    | MeterUsageOutgoingMessage,
     Discriminator("type"),
 ]
 

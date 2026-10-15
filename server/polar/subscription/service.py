@@ -1027,7 +1027,7 @@ class SubscriptionService:
             subscription.customer_cancellation_reason = customer_cancellation_reason
         subscription.payment_method = payment_method
         subscription.initialize_meter_period(
-            None if trial_end else current_period_start
+            None if trial_end else current_period_start, containing=utc_now()
         )
 
         # Flushed so the returned subscription carries `payment_method_id`, which

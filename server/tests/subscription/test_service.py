@@ -4436,6 +4436,47 @@ class TestActivateImported:
         enqueued = [call.args[0] for call in enqueue_job_mock.call_args_list]
         assert "order.create_subscription_order" not in enqueued
 
+    @freeze_time("2026-06-15")
+    async def test_meter_clock_contains_now_when_period_started_in_past(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        organization: Organization,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        await save_fixture(subscription)
+
+        updated = await subscription_service.activate_imported(
+            session,
+            subscription,
+            current_period_start=datetime(2026, 1, 1, tzinfo=UTC),
+            current_period_end=datetime(2027, 1, 1, tzinfo=UTC),
+            anchor_day=1,
+            trial_end=None,
+            payment_method=payment_method,
+            provider="stripe",
+            provider_subscription_id="sub_1",
+        )
+
+        assert updated.current_meter_period_start == datetime(2026, 6, 1, tzinfo=UTC)
+        assert updated.current_meter_period_end == datetime(2026, 7, 1, tzinfo=UTC)
+        subscription_service.check_meter_cycle_lag(updated)
+
     async def test_does_not_tell_the_customer_anything_resumed(
         self,
         session: AsyncSession,

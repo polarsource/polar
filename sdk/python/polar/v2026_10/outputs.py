@@ -6567,10 +6567,10 @@ class GrantedLicenseKey:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None
+    member_id: str | None = None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None
+    member: LicenseKeyMember | None = None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -6947,10 +6947,10 @@ class LicenseKeyRead:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None
+    member_id: str | None = None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None
+    member: LicenseKeyMember | None = None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -6992,10 +6992,10 @@ class LicenseKeyWithActivations:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None
+    member_id: str | None = None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None
+    member: LicenseKeyMember | None = None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -8819,6 +8819,9 @@ class OrganizationFeatureSettings:
     merchant_migration_enabled: bool = False
     """If this organization can migrate its billing from another provider (e.g. Stripe) to Polar."""
 
+    frame_ancestors_enforced: bool = False
+    """If this organization's checkout tells the browser to refuse framing from any host outside its embed hosts."""
+
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class OrganizationNotReadyForPayments:
@@ -9586,10 +9589,10 @@ class RotatedLicenseKey:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None
+    member_id: str | None = None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None
+    member: LicenseKeyMember | None = None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -11135,10 +11138,10 @@ class ValidatedLicenseKey:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None
+    member_id: str | None = None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None
+    member: LicenseKeyMember | None = None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str

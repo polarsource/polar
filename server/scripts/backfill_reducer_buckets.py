@@ -35,6 +35,7 @@ from polar.models import (
     BillingEntry,
     Customer,
     Event,
+    MeterEvent,
     MeterReducer,
     Order,
     OrderItem,
@@ -53,7 +54,6 @@ BUCKET_SIZE = timedelta(minutes=5)
 WINDOW_SETTINGS = (
     "SET LOCAL work_mem = '256MB'",
     "SET LOCAL enable_sort = off",
-    "SET LOCAL enable_nestloop = off",
     "SET LOCAL jit = off",
 )
 
@@ -212,8 +212,10 @@ def select_event_value(reducer: Reducer) -> ColumnElement[Decimal | None]:
     return cast(get_nested_metadata_attr(Event, prop).astext, Numeric)
 
 
-def select_billing_entries(reducer: Reducer) -> Subquery:
-    """Which events got billed, and on what order."""
+def select_billing_entries(
+    reducer: Reducer, start: datetime, end: datetime
+) -> Subquery:
+    """Which events in [start, end) got billed, and on what order."""
     return (
         select(
             BillingEntry.event_id,
@@ -228,6 +230,8 @@ def select_billing_entries(reducer: Reducer) -> Subquery:
             MeterReducer.reducer_id == reducer.id,
             BillingEntry.type == BillingEntryType.metered,
             BillingEntry.deleted_at.is_(None),
+            BillingEntry.start_timestamp >= start,
+            BillingEntry.start_timestamp < end,
         )
         .subquery()
     )
@@ -243,7 +247,7 @@ def build_bucket_insert(
     events matching `event_clauses`, clipped to [start, end) and numbering
     generations by billing order."""
     value = select_event_value(reducer)
-    billing_entries = select_billing_entries(reducer)
+    billing_entries = select_billing_entries(reducer, start, end)
     is_billed = billing_entries.c.event_id.is_not(None)
     start_literal = literal(start, TIMESTAMP(timezone=True))
     bin_start = func.date_bin(
@@ -268,13 +272,16 @@ def build_bucket_insert(
             func.min(value).label("min"),
             func.max(value).label("max"),
         )
-        .select_from(Event)
+        .select_from(MeterEvent)
+        .join(MeterReducer, MeterReducer.meter_id == MeterEvent.meter_id)
+        .join(Event, Event.id == MeterEvent.event_id)
         .outerjoin(billing_entries, billing_entries.c.event_id == Event.id)
         .where(
+            MeterReducer.reducer_id == reducer.id,
+            MeterEvent.timestamp >= start,
+            MeterEvent.timestamp < end,
             Event.organization_id == reducer.organization_id,
             Event.source == EventSource.user,
-            Event.timestamp >= start,
-            Event.timestamp < end,
             reducer.aggregation.get_sql_clause(Event),
             or_(is_billed, reducer.filter.get_sql_clause(Event)),
             *event_clauses,

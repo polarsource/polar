@@ -4,8 +4,11 @@ import {
   type NestedObject,
   arraysEqual,
   extractPlaceholders,
+  findPluralPaths,
   flattenKeys,
   flattenKeysToStrings,
+  getPluralCategoryKeys,
+  resolveSourceKey,
 } from './utils'
 
 import {
@@ -35,6 +38,7 @@ async function validate() {
 
   const sourceKeys = flattenKeys(defaultLocale)
   const sourceStrings = flattenKeysToStrings(defaultLocale)
+  const pluralPaths = findPluralPaths(defaultLocale as Record<string, unknown>)
   const targetLocales = SUPPORTED_LOCALES.filter(
     (l): l is TranslatedLocale => l !== DEFAULT_LOCALE,
   )
@@ -76,9 +80,10 @@ async function validate() {
       }
     }
 
+    const pluralCategoryKeys = getPluralCategoryKeys(locale)
     const extraKeys: string[] = []
     for (const key of translationKeys.keys()) {
-      if (!sourceKeys.has(key)) {
+      if (!resolveSourceKey(key, sourceKeys, pluralPaths, pluralCategoryKeys)) {
         extraKeys.push(key)
       }
     }
@@ -94,9 +99,15 @@ async function validate() {
     }
 
     const placeholderErrors: string[] = []
-    for (const [key, sourceValue] of sourceStrings) {
-      const translationValue = translationKeys.get(key)
-      if (!translationValue) continue
+    for (const [key, translationValue] of translationKeys) {
+      const sourceKey = resolveSourceKey(
+        key,
+        sourceKeys,
+        pluralPaths,
+        pluralCategoryKeys,
+      )
+      const sourceValue = sourceKey && sourceStrings.get(sourceKey)
+      if (!sourceValue || !translationValue) continue
 
       const sourcePlaceholders = extractPlaceholders(sourceValue)
       const translationPlaceholders = extractPlaceholders(translationValue)

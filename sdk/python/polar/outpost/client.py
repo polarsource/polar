@@ -1,0 +1,597 @@
+import collections
+import collections.abc
+import contextlib
+import dataclasses
+import datetime
+import json
+import math
+import types
+import typing
+import uuid
+
+import anyio
+import httpx
+from httpx_ws import AsyncWebSocketSession, aconnect_ws
+from redis.asyncio import Redis
+from redis.asyncio.retry import Retry
+from redis.backoff import NoBackoff
+from redis.commands.core import AsyncScript
+from redis.exceptions import ConnectionError as RedisConnectionError
+from redis.exceptions import TimeoutError as RedisTimeoutError
+
+from polar.base import PolarError
+from polar.outpost.event import Event, EventInput
+from polar.outpost.reducer import (
+    BucketStatistics,
+    Reducer,
+    get_bucket_start,
+    get_matcher,
+    reduce,
+)
+
+
+class PolarOutpostError(PolarError): ...
+
+
+def _number(value: str | bytes) -> int | float:
+    number: int | float = json.loads(value)
+    if isinstance(number, float) and not math.isfinite(number):
+        raise ValueError("Stored aggregation values must be finite")
+    return number
+
+
+def _generate_epoch() -> str:
+    return uuid.uuid4().hex
+
+
+@contextlib.asynccontextmanager
+async def connect_redis(url: str) -> collections.abc.AsyncGenerator[Redis, None]:
+    async with Redis.from_url(url, retry=Retry(NoBackoff(), 0)) as redis:
+        await redis.ping()
+        yield redis
+
+
+@contextlib.asynccontextmanager
+async def connect_websocket(
+    client: httpx.AsyncClient,
+) -> collections.abc.AsyncGenerator[AsyncWebSocketSession, None]:
+    async with aconnect_ws(
+        str(client.base_url.join("/v1/outpost/")), client
+    ) as websocket:
+        yield websocket
+
+
+CACHE_SIZE = 1024
+SYNC_INTERVAL = 30.0
+
+READ_STATE_SCRIPT = """
+if not redis.call('HGET', KEYS[1], 'epoch') then
+    redis.call('HSET', KEYS[1], 'epoch', ARGV[1], 'revision', '0')
+end
+return redis.call('HGETALL', KEYS[1])
+"""
+
+PUBLISH_STATE_SCRIPT = """
+if not redis.call('HGET', KEYS[1], 'epoch') then
+    redis.call('HSET', KEYS[1], 'epoch', ARGV[3], 'revision', '0')
+end
+redis.call('HINCRBY', KEYS[1], 'revision', 1)
+local state = redis.call('HGETALL', KEYS[1])
+redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], state = state}))
+return state
+"""
+
+WRITE_BUCKET_SCRIPT = (
+    """
+local cutoff = redis.call('HGET', KEYS[1], 'cold_until')
+if cutoff and tonumber(ARGV[4]) < tonumber(cutoff) then
+    return redis.call('HGETALL', KEYS[1])
+end
+local prefix = 'bucket:' .. ARGV[4] .. ':'
+local total = tonumber(redis.call('HGET', KEYS[1], prefix .. 'sum') or '0') + tonumber(ARGV[6])
+assert(total == total and math.abs(total) ~= math.huge, 'Aggregation values must be finite')
+redis.call('HINCRBYFLOAT', KEYS[1], prefix .. 'sum', ARGV[6])
+redis.call('HINCRBY', KEYS[1], prefix .. 'count', ARGV[5])
+for i, func in ipairs({'min', 'max'}) do
+    local raw = ARGV[6 + i]
+    if raw ~= '' then
+        local value = tonumber(raw)
+        assert(value and value == value and math.abs(value) ~= math.huge, 'Invalid value')
+        local stored = redis.call('HGET', KEYS[1], prefix .. func)
+        local previous = stored and tonumber(stored)
+        if not previous or (func == 'min' and value < previous)
+            or (func == 'max' and value > previous) then
+            redis.call('HSET', KEYS[1], prefix .. func, raw)
+        end
+    end
+end
+"""
+    + PUBLISH_STATE_SCRIPT
+)
+
+APPLY_SNAPSHOT_SCRIPT = (
+    """
+local cutoff = tonumber(ARGV[4])
+local current = redis.call('HGET', KEYS[1], 'cold_until')
+if current and tonumber(current) > cutoff then
+    return redis.call('HGETALL', KEYS[1])
+end
+local version = tonumber(ARGV[5])
+local previous = redis.call('HGET', KEYS[1], 'snapshot_version')
+if not previous or version >= tonumber(previous) then
+    for _, field in ipairs(redis.call('HKEYS', KEYS[1])) do
+        if string.sub(field, 1, 5) == 'cold:'
+            or (string.sub(field, 1, 7) == 'bucket:'
+                and tonumber(string.match(field, '^bucket:(%-?%d+):')) < cutoff) then
+            redis.call('HDEL', KEYS[1], field)
+        end
+    end
+    redis.call('HSET', KEYS[1], 'cold_until', ARGV[4], 'snapshot_version', ARGV[5],
+        'cold:count', ARGV[8], 'cold:sum', ARGV[9])
+    if ARGV[10] ~= '' then redis.call('HSET', KEYS[1], 'cold:min', ARGV[10]) end
+    if ARGV[11] ~= '' then redis.call('HSET', KEYS[1], 'cold:max', ARGV[11]) end
+end
+local credit_version = redis.call('HGET', KEYS[1], 'credited_version:' .. ARGV[6])
+if not credit_version or version >= tonumber(credit_version) then
+    redis.call('HSET', KEYS[1], 'credited:' .. ARGV[6], ARGV[7],
+        'credited_version:' .. ARGV[6], ARGV[5])
+end
+"""
+    + PUBLISH_STATE_SCRIPT
+)
+
+
+class StateUpdate(typing.TypedDict):
+    customer: str
+    state: list[str]
+
+
+@dataclasses.dataclass
+class ReducerState:
+    epoch: str
+    revision: int
+    cold_until: int | None
+    cold: BucketStatistics
+    buckets: dict[int, BucketStatistics]
+    credited: dict[str, int | float]
+
+
+@dataclasses.dataclass
+class LocalState:
+    state: ReducerState | None = None
+    lock: anyio.Lock = dataclasses.field(default_factory=anyio.Lock)
+
+
+class Configuration(typing.TypedDict):
+    reducers: list[Reducer]
+
+
+class Snapshot(typing.TypedDict):
+    customer_id: str | None
+    external_customer_id: str | None
+    meter_id: str
+    version: int
+    cold_until: int
+    count: int
+    sum: int | float
+    min: int | float | None
+    max: int | float | None
+    credited_units: int | float
+
+
+@dataclasses.dataclass
+class IngestResult:
+    inserted: int
+    duplicates: int = 0
+
+
+@dataclasses.dataclass(kw_only=True)
+class CustomerMeter:
+    meter_id: str
+    consumed_units: int | float
+    credited_units: int | float
+    balance: int | float
+    customer_id: str | None = None
+    external_customer_id: str | None = None
+
+
+class Outpost:
+    def __init__(self, redis_url: str, *, client: httpx.AsyncClient) -> None:
+        self.redis_url = redis_url
+        self._client = client
+        self._stack = contextlib.AsyncExitStack()
+        self._redis: Redis | None = None
+        self._websocket: AsyncWebSocketSession | None = None
+        self._tasks: anyio.abc.TaskGroup | None = None
+        self._reducers: list[Reducer] = []
+        self._actors: set[str] = set()
+        self._configured = anyio.Event()
+        self._write_bucket: AsyncScript | None = None
+        self._apply_snapshot: AsyncScript | None = None
+        self._read_state: AsyncScript | None = None
+        self._cache: collections.OrderedDict[str, LocalState] = (
+            collections.OrderedDict()
+        )
+        self._synced = anyio.Event()
+        self._channel = ""
+
+    async def __aenter__(self) -> typing.Self:
+        if self._redis is not None:
+            raise RuntimeError("Outpost is already connected")
+        self._configured = anyio.Event()
+        self._synced = anyio.Event()
+        try:
+            self._redis = await self._stack.enter_async_context(
+                connect_redis(self.redis_url)
+            )
+            self._channel = f"outpost:{self._redis.connection_pool.connection_kwargs.get('db', 0)}:updates"
+            self._read_state = self._redis.register_script(READ_STATE_SCRIPT)
+            self._write_bucket = self._redis.register_script(WRITE_BUCKET_SCRIPT)
+            self._apply_snapshot = self._redis.register_script(APPLY_SNAPSHOT_SCRIPT)
+            self._websocket = await self._stack.enter_async_context(
+                connect_websocket(self._client)
+            )
+            self._tasks = await self._stack.enter_async_context(
+                anyio.create_task_group()
+            )
+            with anyio.fail_after(5):
+                await self._tasks.start(self._listen_redis)
+            self._tasks.start_soon(self._listen_websocket)
+            await self._require_websocket().send_json({"type": "configuration"})
+        except BaseException:
+            try:
+                if self._tasks is not None:
+                    self._tasks.cancel_scope.cancel()
+                await self._stack.aclose()
+            finally:
+                self._redis = None
+                self._websocket = None
+                self._tasks = None
+                self._reducers = []
+                self._write_bucket = None
+                self._apply_snapshot = None
+                self._read_state = None
+                self._cache.clear()
+            raise
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None = None,
+        exc_val: BaseException | None = None,
+        exc_tb: types.TracebackType | None = None,
+    ) -> None:
+        try:
+            if self._tasks is not None:
+                self._tasks.cancel_scope.cancel()
+            await self._stack.__aexit__(exc_type, exc_val, exc_tb)
+        finally:
+            self._redis = None
+            self._websocket = None
+            self._tasks = None
+            self._reducers = []
+            self._actors.clear()
+            self._write_bucket = None
+            self._apply_snapshot = None
+            self._read_state = None
+            self._cache.clear()
+
+    async def ingest(
+        self, *, events: collections.abc.Sequence[EventInput]
+    ) -> IngestResult:
+        self._require_redis()
+        if not events:
+            return IngestResult(inserted=0)
+        parsed = [self._parse_event(event) for event in events]
+        with anyio.fail_after(5):
+            await self._configured.wait()
+        reducers = self._reducers
+        updates = reduce(
+            [(reducer, get_matcher(reducer["filter"])) for reducer in reducers],
+            parsed,
+            oldest_bucket_start=min(
+                get_bucket_start(event.timestamp) for event in parsed
+            ),
+        )
+        for customer in {event.external_customer_id for event in parsed}:
+            await self.actor(**self._customer_arguments(customer))
+        assert self._write_bucket is not None
+        for (customer, reducer_id, bucket_start), statistics in updates.items():
+            identity = f"{customer}:{reducer_id}"
+            state = await self._write_bucket(
+                keys=[f"outpost:state:{identity}"],
+                args=[
+                    identity,
+                    self._channel,
+                    _generate_epoch(),
+                    bucket_start,
+                    statistics.count,
+                    statistics.sum,
+                    statistics.min if statistics.min is not None else "",
+                    statistics.max if statistics.max is not None else "",
+                ],
+            )
+            await self._receive_state(identity, self._decode_state(state))
+        return IngestResult(inserted=len(parsed))
+
+    async def customer_meter(
+        self,
+        *,
+        meter_id: str,
+        customer_id: str | None = None,
+        external_customer_id: str | None = None,
+    ) -> CustomerMeter | None:
+        customer = self._customer_key(customer_id, external_customer_id)
+        self._require_redis()
+        with anyio.fail_after(5):
+            await self._configured.wait()
+        reducers = self._reducers
+        reducer = next(
+            (
+                reducer
+                for reducer in reducers
+                if meter_id in reducer.get("meter_ids", [])
+            ),
+            None,
+        )
+        if reducer is None:
+            return None
+        local = await self._warm_customer(customer, reducer)
+        state = local.state
+        if state is None or state.cold_until is None:
+            raise PolarOutpostError("Customer snapshot is not ready")
+        combined = dataclasses.replace(state.cold)
+        for bucket_start, statistics in state.buckets.items():
+            if bucket_start >= state.cold_until:
+                combined.add(statistics)
+        consumed = combined.quantity(reducer["aggregation"]["func"])
+        credited = state.credited.get(meter_id, 0)
+        return CustomerMeter(
+            meter_id=meter_id,
+            customer_id=customer_id,
+            external_customer_id=external_customer_id,
+            consumed_units=consumed,
+            credited_units=credited,
+            balance=credited - consumed,
+        )
+
+    async def actor(
+        self,
+        *,
+        customer_id: str | None = None,
+        external_customer_id: str | None = None,
+    ) -> None:
+        customer = self._customer_key(customer_id, external_customer_id)
+        with anyio.fail_after(5):
+            await self._configured.wait()
+        for reducer in self._reducers:
+            await self._warm_customer(customer, reducer)
+
+    def _customer_arguments(self, customer: str) -> dict[str, str]:
+        kind, identifier = customer.split(":", 1)
+        return {
+            "customer_id" if kind == "customer" else "external_customer_id": identifier
+        }
+
+    def _require_redis(self) -> Redis:
+        if self._redis is None:
+            raise RuntimeError("Use Outpost inside an async with block")
+        return self._redis
+
+    def _require_websocket(self) -> AsyncWebSocketSession:
+        if self._websocket is None:
+            raise RuntimeError("Use Outpost inside an async with block")
+        return self._websocket
+
+    async def _warm_customer(self, customer: str, reducer: Reducer) -> LocalState:
+        identity = f"{customer}:{reducer['id']}"
+        websocket = self._require_websocket()
+        with anyio.fail_after(5):
+            await self._synced.wait()
+        local = self._cache.get(identity)
+        if local is None:
+            local = LocalState()
+            self._cache[identity] = local
+            if len(self._cache) > CACHE_SIZE:
+                evicted, _ = self._cache.popitem(last=False)
+                self._actors.discard(evicted)
+        self._cache.move_to_end(identity)
+        if local.state is not None and identity in self._actors:
+            return local
+        async with local.lock:
+            if local.state is None:
+                local.state = await self._load_state(identity)
+            if identity not in self._actors:
+                for meter_id in reducer.get("meter_ids", []):
+                    await websocket.send_json(
+                        {
+                            "type": "meter_usage",
+                            "payload": {
+                                **self._customer_arguments(customer),
+                                "meter_id": meter_id,
+                            },
+                        }
+                    )
+                self._actors.add(identity)
+        return local
+
+    async def _load_state(self, customer: str) -> ReducerState:
+        assert self._read_state is not None
+        epoch = _generate_epoch()
+        state = await self._read_state(
+            keys=[f"outpost:state:{customer}"],
+            args=[epoch],
+        )
+        return self._decode_state(state)
+
+    def _decode_state(
+        self, values: collections.abc.Sequence[str | bytes]
+    ) -> ReducerState:
+        decoded = [
+            value.decode() if isinstance(value, bytes) else value for value in values
+        ]
+        fields = dict(zip(decoded[::2], decoded[1::2], strict=True))
+        cold = BucketStatistics()
+        buckets: dict[int, BucketStatistics] = {}
+        credited: dict[str, int | float] = {}
+        for field, value in fields.items():
+            if field.startswith("cold:"):
+                statistic = field.split(":")[1]
+                setattr(cold, statistic, _number(value))
+            elif field.startswith("bucket:"):
+                _, timestamp, statistic = field.split(":")
+                bucket = buckets.setdefault(int(timestamp), BucketStatistics())
+                setattr(bucket, statistic, _number(value))
+            elif field.startswith("credited:"):
+                credited[field.removeprefix("credited:")] = _number(value)
+        return ReducerState(
+            epoch=fields["epoch"],
+            revision=int(fields["revision"]),
+            cold_until=int(fields["cold_until"]) if "cold_until" in fields else None,
+            cold=cold,
+            buckets=buckets,
+            credited=credited,
+        )
+
+    async def _receive_state(self, customer: str, state: ReducerState) -> None:
+        local = self._cache.get(customer)
+        if local is None:
+            return
+        async with local.lock:
+            current = local.state
+            if current is None:
+                return
+            if current.epoch != state.epoch:
+                state = await self._load_state(customer)
+            elif current.revision >= state.revision:
+                return
+            local.state = state
+
+    async def _refresh_states(self) -> None:
+        for customer, local in list(self._cache.items()):
+            async with local.lock:
+                local.state = await self._load_state(customer)
+
+    async def _listen_redis(
+        self,
+        *,
+        task_status: anyio.abc.TaskStatus[None] = anyio.TASK_STATUS_IGNORED,
+    ) -> None:
+        started = False
+        while True:
+            async with self._require_redis().pubsub() as pubsub:
+                try:
+                    await pubsub.subscribe(self._channel)
+                    subscribed = await pubsub.get_message(timeout=5)
+                    if subscribed is None or subscribed["type"] != "subscribe":
+                        raise RedisTimeoutError(
+                            "Outpost subscription was not acknowledged"
+                        )
+                    await self._refresh_states()
+                    self._synced.set()
+                    if not started:
+                        task_status.started()
+                        started = True
+                    next_refresh = anyio.current_time() + SYNC_INTERVAL
+                    while True:
+                        message = await pubsub.get_message(
+                            ignore_subscribe_messages=True, timeout=1
+                        )
+                        if message is not None:
+                            update: StateUpdate = json.loads(message["data"])
+                            await self._receive_state(
+                                update["customer"],
+                                self._decode_state(update["state"]),
+                            )
+                        if anyio.current_time() >= next_refresh:
+                            await self._refresh_states()
+                            next_refresh = anyio.current_time() + SYNC_INTERVAL
+                except (RedisConnectionError, RedisTimeoutError):
+                    self._synced = anyio.Event()
+                    for local in self._cache.values():
+                        local.state = None
+            await anyio.sleep(1)
+
+    async def _listen_websocket(self) -> None:
+        websocket = self._require_websocket()
+        while True:
+            message = await websocket.receive_json()
+            if message["type"] == "configuration":
+                self._reducers = message["payload"]["reducers"]
+                self._configured.set()
+            elif message["type"] == "meter_usage":
+                snapshot: Snapshot = message["payload"]
+                reducer = next(
+                    (
+                        reducer
+                        for reducer in self._reducers
+                        if snapshot["meter_id"] in reducer.get("meter_ids", [])
+                    ),
+                    None,
+                )
+                if reducer is None:
+                    continue
+                if (
+                    snapshot["customer_id"] is not None
+                    and snapshot["external_customer_id"] is not None
+                ):
+                    continue
+                customer = self._customer_key(
+                    snapshot["customer_id"], snapshot["external_customer_id"]
+                )
+                identity = f"{customer}:{reducer['id']}"
+                statistics = [
+                    snapshot["count"],
+                    snapshot["sum"],
+                    snapshot["min"],
+                    snapshot["max"],
+                    snapshot["credited_units"],
+                ]
+                if any(
+                    isinstance(value, float) and not math.isfinite(value)
+                    for value in statistics
+                ):
+                    raise ValueError("Snapshot values must be finite")
+                assert self._apply_snapshot is not None
+                state = await self._apply_snapshot(
+                    keys=[f"outpost:state:{identity}"],
+                    args=[
+                        identity,
+                        self._channel,
+                        _generate_epoch(),
+                        snapshot["cold_until"],
+                        snapshot["version"],
+                        snapshot["meter_id"],
+                        snapshot["credited_units"],
+                        snapshot["count"],
+                        snapshot["sum"],
+                        snapshot["min"] if snapshot["min"] is not None else "",
+                        snapshot["max"] if snapshot["max"] is not None else "",
+                    ],
+                )
+                await self._receive_state(identity, self._decode_state(state))
+
+    def _parse_event(self, event: EventInput) -> Event:
+        customer = self._customer_key(
+            event.get("customer_id"), event.get("external_customer_id")
+        )
+        raw_timestamp = event.get("timestamp")
+        if raw_timestamp is not None:
+            timestamp = datetime.datetime.fromisoformat(raw_timestamp)
+        else:
+            timestamp = datetime.datetime.now(datetime.UTC)
+        return Event(
+            name=event["name"],
+            external_customer_id=customer,
+            timestamp=timestamp,
+            metadata=event.get("metadata", {}),
+        )
+
+    def _customer_key(
+        self, customer_id: str | None, external_customer_id: str | None
+    ) -> str:
+        if (customer_id is None) == (external_customer_id is None):
+            raise ValueError("Provide exactly one customer_id or external_customer_id")
+        if customer_id is not None:
+            return f"customer:{customer_id}"
+        return f"external:{external_customer_id}"

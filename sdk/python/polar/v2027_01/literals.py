@@ -1047,6 +1047,7 @@ Scope: typing.TypeAlias = typing.Literal[
     "organization_access_tokens:write",
 ]
 SeatStatus: typing.TypeAlias = typing.Literal["pending", "claimed", "revoked"]
+SeatTierType: typing.TypeAlias = typing.Literal["volume", "graduated"]
 Status: typing.TypeAlias = typing.Literal["granted", "disabled"]
 SubType: typing.TypeAlias = typing.Literal["user", "organization"]
 SubscriptionExportColumn: typing.TypeAlias = typing.Literal[

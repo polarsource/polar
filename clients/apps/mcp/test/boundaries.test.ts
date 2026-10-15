@@ -78,7 +78,9 @@ test('only methods and paths of exposed operations are allowed', () => {
 })
 
 test('operation writes preserve path parameters and JSON body, and read-only tools reject writes', async () => {
-  fetchMock.mockResolvedValueOnce(Response.json({ name: 'Updated' }))
+  fetchMock
+    .mockResolvedValueOnce(Response.json({ items: [] }))
+    .mockResolvedValueOnce(Response.json({ name: 'Updated' }))
   const id = '11111111-1111-4111-8111-111111111111'
   const params = {
     name: 'products_update',
@@ -86,7 +88,7 @@ test('operation writes preserve path parameters and JSON body, and read-only too
   }
   const result = await rpc('tools/call', params, '?codemode=false')
   expect(result.result.content[0].text).toBe('{"name":"Updated"}')
-  const [input, init] = fetchMock.mock.calls[0]
+  const [input, init] = fetchMock.mock.calls[1]
   expect(new URL(input instanceof Request ? input.url : input).href).toBe(
     `https://api.polar.test/v1/products/${id}`,
   )
@@ -104,7 +106,7 @@ test('operation writes preserve path parameters and JSON body, and read-only too
     '?codemode=false&readonly=true',
   )
   expect(rejected.result?.isError ?? !!rejected.error).toBe(true)
-  expect(fetchMock).toHaveBeenCalledTimes(1)
+  expect(fetchMock).toHaveBeenCalledTimes(2)
 })
 
 test('upstream failures remain tool errors and OAuth network failures return 503', async () => {

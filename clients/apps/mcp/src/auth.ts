@@ -1,7 +1,13 @@
 import { Clock, Context, Effect, Layer, Schema } from 'effect'
 import { HttpClient } from 'effect/http'
 
-const OAUTH_ACCESS_TOKEN_PREFIX = 'polar_at_'
+// Organization access tokens can't call userinfo. Any endpoint that accepts
+// them works: invalid tokens get a 401 there, valid ones without the
+// endpoint's scope a 403.
+const VALIDATION_PATHS: ReadonlyArray<readonly [string, string]> = [
+  ['polar_at_', '/v1/oauth2/userinfo'],
+  ['polar_oat_', '/v1/organizations/?limit=1'],
+]
 const VALIDATION_TTL_MILLIS = 60_000
 const MAX_CACHED_TOKENS = 1_000
 
@@ -31,8 +37,11 @@ export class Auth extends Context.Service<
         apiUrl: string,
         token: string,
       ) {
-        if (!token.startsWith(OAUTH_ACCESS_TOKEN_PREFIX)) {
-          return true
+        const path = VALIDATION_PATHS.find(([prefix]) =>
+          token.startsWith(prefix),
+        )?.[1]
+        if (!path) {
+          return false
         }
         const key = `${apiUrl} ${token}`
         const now = yield* Clock.currentTimeMillis
@@ -40,16 +49,16 @@ export class Auth extends Context.Service<
           return true
         }
         const { status } = yield* client
-          .get(`${apiUrl}/v1/oauth2/userinfo`, {
+          .get(`${apiUrl}${path}`, {
             headers: { Authorization: `Bearer ${token}` },
           })
           .pipe(Effect.mapError((cause) => new AuthUnavailable({ cause })))
         if (status === 401) {
           return false
         }
-        if (status < 200 || status >= 300) {
+        if (status !== 403 && (status < 200 || status >= 300)) {
           return yield* new AuthUnavailable({
-            cause: new Error(`userinfo returned ${status}`),
+            cause: new Error(`${path} returned ${status}`),
           })
         }
         validUntil.delete(key)

@@ -85,10 +85,7 @@ from polar.models.product_price import (
 )
 from polar.openapi import destructive_when_equals
 from polar.organization.schemas import OrganizationID
-from polar.product.meter_interval import (
-    meter_interval_divides_billing_interval,
-    meter_interval_equals_billing_interval,
-)
+from polar.product.meter_interval import meter_interval_divides_billing_interval
 from polar.product.tiers import (
     BIGINT_MAX,
     NonContiguousTiersError,
@@ -695,11 +692,9 @@ class ProductCreateRecurring(TrialConfigurationInputMixin, ProductCreateBase):
                 "The meter interval must evenly divide the billing interval, "
                 "so the meter cycle re-aligns with the billing cycle at every renewal."
             )
-        if meter_interval_equals_billing_interval(
-            self.meter_interval,
-            self.meter_interval_count,
-            self.recurring_interval,
-            self.recurring_interval_count,
+        if (
+            self.meter_interval == self.recurring_interval
+            and self.meter_interval_count == self.recurring_interval_count
         ):
             self.meter_interval = None
             self.meter_interval_count = None

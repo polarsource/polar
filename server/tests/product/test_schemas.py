@@ -719,18 +719,6 @@ class TestProductCreateMeterInterval:
                 SubscriptionRecurringInterval.month,
                 3,
             ),
-            (
-                SubscriptionRecurringInterval.year,
-                1,
-                SubscriptionRecurringInterval.month,
-                12,
-            ),
-            (
-                SubscriptionRecurringInterval.week,
-                1,
-                SubscriptionRecurringInterval.day,
-                7,
-            ),
         ],
     )
     def test_equal_to_billing_normalized_to_none(

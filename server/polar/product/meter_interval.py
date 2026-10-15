@@ -1,27 +1,5 @@
 from polar.enums import RecurringInterval
 
-_UNIT_LENGTHS: dict[RecurringInterval, tuple[str, int]] = {
-    RecurringInterval.day: ("day", 1),
-    RecurringInterval.week: ("day", 7),
-    RecurringInterval.month: ("month", 1),
-    RecurringInterval.year: ("month", 12),
-}
-
-
-def meter_interval_equals_billing_interval(
-    meter_interval: RecurringInterval,
-    meter_interval_count: int,
-    billing_interval: RecurringInterval,
-    billing_interval_count: int,
-) -> bool:
-    meter_unit, meter_length = _UNIT_LENGTHS[meter_interval]
-    billing_unit, billing_length = _UNIT_LENGTHS[billing_interval]
-    return (
-        meter_unit == billing_unit
-        and meter_length * meter_interval_count
-        == billing_length * billing_interval_count
-    )
-
 
 def meter_interval_divides_billing_interval(
     meter_interval: RecurringInterval,

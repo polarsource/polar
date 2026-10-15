@@ -32,6 +32,8 @@ const SYNC_INTERVAL = 30_000;
 const TIMEOUT = 5_000;
 const RECONNECT_DELAY = 500;
 const MAX_RECONNECT_DELAY = 30_000;
+const REDIS_RECONNECT_DELAY = 100;
+const MAX_REDIS_RECONNECT_DELAY = 2_000;
 interface State {
   epoch: string;
   revision: bigint;
@@ -288,6 +290,13 @@ export class Outpost {
         maxRetriesPerRequest: 0,
         connectTimeout: TIMEOUT,
         commandTimeout: TIMEOUT,
+        retryStrategy: (attempt) => {
+          const delay = Math.min(
+            MAX_REDIS_RECONNECT_DELAY,
+            REDIS_RECONNECT_DELAY * 2 ** (attempt - 1),
+          );
+          return delay * (0.5 + Math.random() / 2);
+        },
       }) as OutpostRedis;
       this.redis.defineCommand("outpostReadState", { numberOfKeys: 1, lua: READ_STATE_SCRIPT });
       this.redis.defineCommand("outpostWriteBucket", { numberOfKeys: 1, lua: WRITE_BUCKET_SCRIPT });

@@ -74,6 +74,7 @@ SCHEMA >
     `user_metadata` String `json:$.user_metadata`,
     `member_id` Nullable(UUID) `json:$.member_id`,
     `external_member_id` Nullable(String) `json:$.external_member_id`,
+    `billing_reason` LowCardinality(Nullable(String)) `json:$.billing_reason`,
     `ancestors` Array(String) `json:$.ancestors[:]` DEFAULT []
 
 ENGINE MergeTree

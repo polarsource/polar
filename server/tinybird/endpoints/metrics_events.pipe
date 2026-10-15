@@ -80,7 +80,8 @@ SQL >
         argMaxMerge(o.balance_exchange_rate) AS balance_exchange_rate,
         argMaxMerge(o.balance_order_source_fx) AS balance_order_source_fx,
         argMaxMerge(o.balance_fee) AS fee,
-        sumMerge(o.refund_net_amount) AS refund_net_amount
+        sumMerge(o.refund_net_amount) AS refund_net_amount,
+        argMaxMerge(o.billing_reason) AS billing_reason
     FROM orders_updates_by_order_id AS o
     WHERE
         o.organization_id IN (
@@ -125,7 +126,8 @@ SQL >
         argMaxMerge(o.balance_exchange_rate) AS balance_exchange_rate,
         argMaxMerge(o.balance_order_source_fx) AS balance_order_source_fx,
         argMaxMerge(o.balance_fee) AS fee,
-        sumMerge(o.refund_net_amount) AS refund_net_amount
+        sumMerge(o.refund_net_amount) AS refund_net_amount,
+        argMaxMerge(o.billing_reason) AS billing_reason
     FROM orders_updates_by_order_id AS o
     WHERE
         o.organization_id IN (
@@ -235,6 +237,9 @@ SQL >
             nullIf(op.balance_effective_ts, toDateTime64(0, 3, 'UTC'))
         ) AS event_timestamp,
         op.subscription_id AS subscription_id,
+        toUInt8(
+            COALESCE(op.billing_reason, '') NOT IN ('subscription_meter_cycle', 'subscription_update')
+        ) AS is_renewal_billing_reason,
         ss.started_at AS sub_started_at,
         (
             COALESCE(op.settlement_revenue_amount, 0) - if(
@@ -414,6 +419,7 @@ SQL >
                         oe.subscription_id,
                         oe.subscription_id IS NOT NULL
                         AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) != day
+                        AND oe.is_renewal_billing_reason = 1
                     ) AS renewed_subscriptions,
                     COALESCE(
                         sumIf(
@@ -421,6 +427,7 @@ SQL >
                             oe.subscription_id IS NOT NULL
                             AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
                             != day
+                            AND oe.is_renewal_billing_reason = 1
                         ),
                         0
                     ) AS renewed_subscriptions_revenue,
@@ -430,6 +437,7 @@ SQL >
                             oe.subscription_id IS NOT NULL
                             AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
                             != day
+                            AND oe.is_renewal_billing_reason = 1
                         ),
                         0
                     ) AS renewed_subscriptions_net_revenue
@@ -456,6 +464,7 @@ SQL >
                         oe.subscription_id,
                         oe.subscription_id IS NOT NULL
                         AND toStartOfHour(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) != day
+                        AND oe.is_renewal_billing_reason = 1
                     ) AS renewed_subscriptions,
                     COALESCE(
                         sumIf(
@@ -463,6 +472,7 @@ SQL >
                             oe.subscription_id IS NOT NULL
                             AND toStartOfHour(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
                             != day
+                            AND oe.is_renewal_billing_reason = 1
                         ),
                         0
                     ) AS renewed_subscriptions_revenue,
@@ -472,6 +482,7 @@ SQL >
                             oe.subscription_id IS NOT NULL
                             AND toStartOfHour(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
                             != day
+                            AND oe.is_renewal_billing_reason = 1
                         ),
                         0
                     ) AS renewed_subscriptions_net_revenue
@@ -499,6 +510,7 @@ SQL >
                         oe.subscription_id IS NOT NULL
                         AND toStartOfWeek(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}), 1)
                         != day
+                        AND oe.is_renewal_billing_reason = 1
                     ) AS renewed_subscriptions,
                     COALESCE(
                         sumIf(
@@ -506,6 +518,7 @@ SQL >
                             oe.subscription_id IS NOT NULL
                             AND toStartOfWeek(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}), 1)
                             != day
+                            AND oe.is_renewal_billing_reason = 1
                         ),
                         0
                     ) AS renewed_subscriptions_revenue,
@@ -515,6 +528,7 @@ SQL >
                             oe.subscription_id IS NOT NULL
                             AND toStartOfWeek(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}), 1)
                             != day
+                            AND oe.is_renewal_billing_reason = 1
                         ),
                         0
                     ) AS renewed_subscriptions_net_revenue
@@ -542,6 +556,7 @@ SQL >
                         oe.subscription_id IS NOT NULL
                         AND toStartOfMonth(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
                         != day
+                        AND oe.is_renewal_billing_reason = 1
                     ) AS renewed_subscriptions,
                     COALESCE(
                         sumIf(
@@ -549,6 +564,7 @@ SQL >
                             oe.subscription_id IS NOT NULL
                             AND toStartOfMonth(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
                             != day
+                            AND oe.is_renewal_billing_reason = 1
                         ),
                         0
                     ) AS renewed_subscriptions_revenue,
@@ -558,6 +574,7 @@ SQL >
                             oe.subscription_id IS NOT NULL
                             AND toStartOfMonth(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
                             != day
+                            AND oe.is_renewal_billing_reason = 1
                         ),
                         0
                     ) AS renewed_subscriptions_net_revenue
@@ -584,6 +601,7 @@ SQL >
                         oe.subscription_id,
                         oe.subscription_id IS NOT NULL
                         AND toStartOfYear(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) != day
+                        AND oe.is_renewal_billing_reason = 1
                     ) AS renewed_subscriptions,
                     COALESCE(
                         sumIf(
@@ -591,6 +609,7 @@ SQL >
                             oe.subscription_id IS NOT NULL
                             AND toStartOfYear(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
                             != day
+                            AND oe.is_renewal_billing_reason = 1
                         ),
                         0
                     ) AS renewed_subscriptions_revenue,
@@ -600,6 +619,7 @@ SQL >
                             oe.subscription_id IS NOT NULL
                             AND toStartOfYear(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
                             != day
+                            AND oe.is_renewal_billing_reason = 1
                         ),
                         0
                     ) AS renewed_subscriptions_net_revenue
@@ -626,6 +646,7 @@ SQL >
                         oe.subscription_id,
                         oe.subscription_id IS NOT NULL
                         AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) != day
+                        AND oe.is_renewal_billing_reason = 1
                     ) AS renewed_subscriptions,
                     COALESCE(
                         sumIf(
@@ -633,6 +654,7 @@ SQL >
                             oe.subscription_id IS NOT NULL
                             AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
                             != day
+                            AND oe.is_renewal_billing_reason = 1
                         ),
                         0
                     ) AS renewed_subscriptions_revenue,
@@ -642,6 +664,7 @@ SQL >
                             oe.subscription_id IS NOT NULL
                             AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
                             != day
+                            AND oe.is_renewal_billing_reason = 1
                         ),
                         0
                     ) AS renewed_subscriptions_net_revenue

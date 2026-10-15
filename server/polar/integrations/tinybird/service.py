@@ -306,6 +306,7 @@ def _event_to_tinybird(
         billing_period_end=pop("billing_period_end"),
         benefit_type=pop("benefit_type"),
         billing_type=pop("billing_type"),
+        billing_reason=pop("billing_reason"),
         checkout_status=pop("checkout_status"),
         customer_email=pop("customer_email"),
         customer_name=pop("customer_name"),

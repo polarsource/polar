@@ -61,10 +61,11 @@ const SubscriptionInvoicePreview = ({
   const separateUsage = isUsageBilledOnMeterCycle(subscription)
   const hasProrations = (chargePreview?.prorations.length ?? 0) > 0
   const hasBaseCharge = !isCancelingAtPeriodEnd && !isFreeProduct
+  const overageMeters = subscription.meters.filter((meter) => meter.amount > 0)
   const showBase = separateUsage
     ? hasBaseCharge || hasProrations
     : !isFreeProduct || hasMeters
-  const showUsage = separateUsage && hasMeters
+  const showUsage = separateUsage && overageMeters.length > 0
 
   if (!showsCharge || !chargePreview || (!showBase && !showUsage)) {
     return null
@@ -97,7 +98,7 @@ const SubscriptionInvoicePreview = ({
         }))),
   ]
 
-  const usageItems: InvoiceLineItem[] = subscription.meters.map((meter) => ({
+  const usageItems: InvoiceLineItem[] = overageMeters.map((meter) => ({
     id: meter.id,
     label: meter.meter.name,
     amount: meter.amount,
@@ -109,7 +110,7 @@ const SubscriptionInvoicePreview = ({
       ? subscription.resumes_at
       : subscription.current_period_end
 
-  let title = 'Upcoming charge'
+  let title = separateUsage ? 'Next renewal' : 'Upcoming charge'
   let dateLabel = 'Next invoice'
   if (isTrialing) {
     title = 'First charge after trial'
@@ -180,7 +181,7 @@ const SubscriptionInvoicePreview = ({
       )}
       {showUsage && meterCharge && (
         <OrderSection
-          title="Upcoming usage charge"
+          title="Next usage charge"
           description={
             <Box alignItems="center" columnGap="s">
               <Text color="muted">Next invoice</Text>

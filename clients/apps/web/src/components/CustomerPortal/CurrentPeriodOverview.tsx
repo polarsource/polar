@@ -201,11 +201,12 @@ export const CurrentPeriodOverview = ({
     subscriptionPreview.base_amount > 0
 
   const hasBaseCharge = !isCancelingAtPeriodEnd && !isFreeProduct
+  const overageMeters = subscription.meters.filter((meter) => meter.amount > 0)
   const showBaseCard = separateUsage
     ? hasBaseCharge || hasProrations
     : (!isFreeProduct || hasMeters) &&
       !(isCancelingAtPeriodEnd && !hasMeters && !hasProrations)
-  const showUsageCard = separateUsage && hasMeters
+  const showUsageCard = separateUsage && overageMeters.length > 0
 
   if (!showBaseCard && !showUsageCard) {
     return null
@@ -217,7 +218,7 @@ export const CurrentPeriodOverview = ({
       ? subscription.resumes_at
       : subscription.current_period_end
 
-  let headerTitle = 'Next Charge'
+  let headerTitle = separateUsage ? 'Next Renewal' : 'Next Charge'
   let dateLabel = 'Next Invoice'
 
   if (isTrialing) {
@@ -362,10 +363,10 @@ export const CurrentPeriodOverview = ({
 
       {showUsageCard && (
         <OverviewSummaryCard
-          title="Usage Charge"
+          title="Next Usage Charge"
           meta={`Next Invoice — ${formatChargeDate(subscription.current_meter_period_end)}`}
         >
-          {subscription.meters.map((meter) => (
+          {overageMeters.map((meter) => (
             <div key={meter.id} className="flex items-center justify-between">
               <span className="dark:text-polar-400 text-gray-600">
                 {meter.meter.name}

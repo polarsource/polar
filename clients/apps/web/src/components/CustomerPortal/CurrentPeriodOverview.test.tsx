@@ -260,14 +260,44 @@ describe('CurrentPeriodOverview', () => {
     const text = container.textContent ?? ''
     expect(text).toContain(`Next Invoice — ${formatChargeDate(periodEnd)}`)
     expect(text).toContain(`Next Invoice — ${formatChargeDate(meterEnd)}`)
-    expect(text).toContain('Usage Charge')
+    expect(text).toContain('Next Renewal')
+    expect(text).toContain('Next Usage Charge')
     expect(text).toContain('API requests')
     expect(text).toContain(formatCurrency('compact')(10000, 'usd'))
     expect(text).toContain(formatCurrency('compact')(1840, 'usd'))
     expect(text).toMatch(/Discount\s*-\$20/)
-    const usageAt = text.indexOf('Usage Charge')
+    const usageAt = text.indexOf('Next Usage Charge')
     const discountAt = text.indexOf('Discount')
     expect(discountAt).toBeGreaterThan(-1)
     expect(discountAt).toBeLessThan(usageAt)
+  })
+
+  it('hides the usage card when the meter cycle has no overage', () => {
+    const subscription = {
+      ...createSubscription(createFixedPrice(12000), null, 12000),
+      recurring_interval: 'year',
+      current_period_end: '2027-01-01T00:00:00Z',
+      current_meter_period_end: '2026-11-01T00:00:00Z',
+      meters: [
+        {
+          id: 'meter-1',
+          amount: 0,
+          meter: { id: 'meter', name: 'API requests' },
+        },
+      ],
+    } as unknown as schemas['CustomerSubscription']
+
+    const { container } = render(
+      <CurrentPeriodOverview
+        subscription={subscription}
+        products={[createProduct('product-1', createFixedPrice(12000))]}
+        api={{} as Client}
+      />,
+    )
+
+    const text = container.textContent ?? ''
+    expect(text).toContain('Next Renewal')
+    expect(text).not.toContain('Next Usage Charge')
+    expect(text).not.toContain('API requests')
   })
 })

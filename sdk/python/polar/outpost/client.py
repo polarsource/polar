@@ -111,7 +111,12 @@ def _generate_epoch() -> str:
 
 @contextlib.asynccontextmanager
 async def connect_redis(url: str) -> collections.abc.AsyncGenerator[Redis, None]:
-    async with Redis.from_url(url, retry=Retry(NoBackoff(), 0)) as redis:
+    async with Redis.from_url(
+        url,
+        retry=Retry(NoBackoff(), 0),
+        socket_timeout=REDIS_TIMEOUT,
+        socket_connect_timeout=REDIS_TIMEOUT,
+    ) as redis:
         await redis.ping()
         yield redis
 
@@ -127,6 +132,7 @@ async def connect_websocket(
 
 
 CACHE_SIZE = 1024
+REDIS_TIMEOUT = 5.0
 SYNC_INTERVAL = 30.0
 RECONNECT_DELAY = 0.5
 SNAPSHOT_TIMEOUT = 5.0

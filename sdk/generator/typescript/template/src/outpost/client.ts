@@ -44,6 +44,7 @@ type Customer = Parameters<typeof customerKey>[0];
 interface Snapshot {
   customer_id: string | null;
   external_customer_id: string | null;
+  customer_exists: boolean;
   meter_id: string;
   cold_until: number;
   version: number;
@@ -64,6 +65,8 @@ interface StateUpdate {
 interface LocalState {
   state?: State;
   pending: Promise<unknown>;
+  missing: boolean;
+  ready: ReturnType<typeof signal>;
 }
 interface OutpostRedis extends Redis {
   outpostReadState(key: string, ...args: (string | number)[]): Promise<string[]>;
@@ -100,6 +103,19 @@ const withTimeout = async <T>(promise: Promise<T>): Promise<T> => {
   } finally {
     clearTimeout(timer);
   }
+};
+const settle = (local: LocalState): void => {
+  if (local.missing || local.state?.coldUntil !== undefined) local.ready.resolve();
+};
+const waitAtMost = async (promise: Promise<unknown>, milliseconds: number): Promise<void> => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  await Promise.race([
+    promise,
+    new Promise((resolve) => {
+      timer = setTimeout(resolve, milliseconds);
+    }),
+  ]);
+  clearTimeout(timer);
 };
 const locked = <T>(local: LocalState, action: () => Promise<T>): Promise<T> => {
   const result = local.pending.then(action);
@@ -197,6 +213,8 @@ export interface OutpostOptions {
   client: Pick<ClientBase, "buildRequest">;
   /** Send Outpost telemetry to Polar. Also disabled by `POLAR_OUTPOST_TELEMETRY=0`. */
   telemetry?: boolean;
+  /** How long a read of a cold customer waits for its first snapshot, in milliseconds. */
+  snapshotTimeout?: number;
 }
 export interface IngestResult {
   inserted: number;
@@ -380,7 +398,7 @@ export class Outpost {
           ),
         );
         for (const customer of new Set(parsed.map((event) => event.customer)))
-          await this.actor(customerArguments(customer));
+          await this.warmActor(customer);
         for (const update of updates) {
           const identity = `${update.customer}:${update.reducer}`;
           const statistics = update.statistics;
@@ -411,7 +429,10 @@ export class Outpost {
       await this.waitConfigured();
       const reducer = this.reducers.find((item) => item.meter_ids?.includes(input.meter_id));
       if (!reducer) return null;
-      const state = (await this.warmCustomer(customer, reducer)).state;
+      const local = await this.warmCustomer(customer, reducer);
+      await waitAtMost(this.waitReady(reducer, local), this.options.snapshotTimeout ?? 5_000);
+      if (local.missing) return null;
+      const state = local.state;
       if (!state || state.coldUntil === undefined)
         throw new PolarError("Customer snapshot is not ready");
       const combined = { ...state.cold };
@@ -430,9 +451,26 @@ export class Outpost {
 
   async actor(input: Customer): Promise<void> {
     return this.trace("outpost.actor", async () => {
-      await this.waitConfigured();
-      for (const reducer of this.reducers) await this.warmCustomer(customerKey(input), reducer);
+      const warmed = await this.warmActor(customerKey(input));
+      await waitAtMost(
+        Promise.all(warmed.map(([reducer, local]) => this.waitReady(reducer, local))),
+        this.options.snapshotTimeout ?? 5_000,
+      );
     });
+  }
+
+  private async warmActor(customer: string): Promise<[Reducer, LocalState][]> {
+    await this.waitConfigured();
+    const warmed: [Reducer, LocalState][] = [];
+    for (const reducer of this.reducers)
+      warmed.push([reducer, await this.warmCustomer(customer, reducer)]);
+    return warmed;
+  }
+
+  private async waitReady(reducer: Reducer, local: LocalState): Promise<void> {
+    // Polar sends no snapshot for unique reducers, nor without a connection.
+    if ((reducer.aggregation.func as string) === "unique" || !this.connected) return;
+    await local.ready.promise;
   }
 
   private requireRedis(): OutpostRedis {
@@ -532,7 +570,7 @@ export class Outpost {
     }
     let local = this.cache.get(identity);
     if (!local) {
-      local = { pending: Promise.resolve() };
+      local = { pending: Promise.resolve(), missing: false, ready: signal() };
       this.cache.set(identity, local);
       if (this.cache.size > CACHE_SIZE) {
         const evicted = this.cache.keys().next().value!;
@@ -545,7 +583,10 @@ export class Outpost {
     if (local.state && this.actors.has(identity)) return local;
     const entry = local;
     await locked(entry, async () => {
-      if (!entry.state) entry.state = await this.loadState(identity);
+      if (!entry.state) {
+        entry.state = await this.loadState(identity);
+        settle(entry);
+      }
       if (!this.actors.has(identity) && this.websocket?.readyState === WebSocket.OPEN) {
         try {
           for (const meter_id of reducer.meter_ids ?? [])
@@ -580,6 +621,7 @@ export class Outpost {
       if (current.epoch !== state.epoch) state = await this.loadState(customer);
       else if (current.revision >= state.revision) return;
       local.state = state;
+      settle(local);
     });
   }
 
@@ -607,7 +649,10 @@ export class Outpost {
       for (const [customer, local] of entries) {
         await locked(local, async () => {
           const state = await this.loadState(customer);
-          if (generation === this.generation) local.state = state;
+          if (generation === this.generation) {
+            local.state = state;
+            settle(local);
+          }
         });
       }
       if (generation === this.generation) {
@@ -698,6 +743,12 @@ export class Outpost {
         external_customer_id: snapshot.external_customer_id ?? undefined,
       });
       const identity = `${customer}:${reducer.id}`;
+      const local = this.cache.get(identity);
+      if (local) {
+        local.missing = !snapshot.customer_exists;
+        settle(local);
+      }
+      if (!snapshot.customer_exists) return;
       if (!Number.isSafeInteger(snapshot.version) || !Number.isSafeInteger(snapshot.cold_until))
         throw new TypeError("Snapshot timestamps must be safe integer microseconds");
       for (const value of [

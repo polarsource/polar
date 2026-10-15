@@ -101,8 +101,8 @@ async def backfill_organization(
         await session.commit()
         seen += len(rows)
         typer.echo(
-            f"  {seen:,} events, {written:,} buckets, flushed until "
-            f"{flushed_until.isoformat()}"
+            f"{utc_now():%H:%M:%S}  {seen:,} events, {written:,} buckets, "
+            f"flushed until {flushed_until.isoformat()}"
         )
     written += await _flush(session, organization_id, totals, flushed_until, end, end)
     await session.commit()

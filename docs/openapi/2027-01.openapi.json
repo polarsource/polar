@@ -71927,12 +71927,6 @@
             "description": "If this organization can create and finalize draft orders via the API (off-session charges against a saved payment method).",
             "default": false
           },
-          "meter_cycling_enabled": {
-            "type": "boolean",
-            "title": "Meter Cycling Enabled",
-            "description": "If this organization can set a separate meter cycle on recurring products (a meter interval independent of the billing interval).",
-            "default": false
-          },
           "slack_benefit_enabled": {
             "type": "boolean",
             "title": "Slack Benefit Enabled",

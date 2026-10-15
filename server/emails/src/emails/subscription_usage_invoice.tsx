@@ -48,12 +48,33 @@ export function SubscriptionUsageInvoice({
 SubscriptionUsageInvoice.PreviewProps = {
   email: 'john@example.com',
   organization,
-  product,
+  product: { ...product, name: 'API Pro' },
   subscription: {
     id: '12345',
     status: 'active',
   },
-  order,
+  order: {
+    ...order,
+    description: 'API Pro',
+    billing_reason: 'subscription_meter_cycle',
+    subscription_id: '12345',
+    subtotal_amount: 1050,
+    discount_amount: 0,
+    net_amount: 1050,
+    tax_amount: 0,
+    total_amount: 1050,
+    applied_balance_amount: 0,
+    due_amount: 1050,
+    items: [
+      {
+        id: 'item-1',
+        label: 'API requests — (42 consumed units) × $0.25',
+        amount: 1050,
+        proration: false,
+        product_price_id: 'price123',
+      },
+    ],
+  },
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
 }
 

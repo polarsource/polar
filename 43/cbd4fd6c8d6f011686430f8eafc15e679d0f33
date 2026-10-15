@@ -1,0 +1,22 @@
+server/tests/worker/test_asyncio_watchdog.py
+  s_4bca5395a912a9::t_44fe0d23a7baa0 268-305
+server/polar/worker/_asyncio.py
+  s_4bca5395a912a9::t_72fd34fe0a0ce0 22,71,91-106
+  s_4bca5395a912a9::t_a6d0b10ce7235b 107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "43cbd4fd6c8d6f011686430f8eafc15e679d0f33",
+  "prompts": {},
+  "sessions": {
+    "s_4bca5395a912a9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f13a762e-828c-433c-9d2e-af46896de427",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

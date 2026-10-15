@@ -133,6 +133,8 @@ async def connect_websocket(
 
 CACHE_SIZE = 1024
 REDIS_TIMEOUT = 5.0
+REDIS_RECONNECT_DELAY = 0.1
+MAX_REDIS_RECONNECT_DELAY = 2.0
 SYNC_INTERVAL = 30.0
 RECONNECT_DELAY = 0.5
 SNAPSHOT_TIMEOUT = 5.0
@@ -663,6 +665,7 @@ class Outpost:
         task_status: anyio.abc.TaskStatus[None] = anyio.TASK_STATUS_IGNORED,
     ) -> None:
         started = False
+        attempt = 0
         while True:
             async with self._require_redis().pubsub() as pubsub:
                 try:
@@ -675,6 +678,7 @@ class Outpost:
                             )
                         await self._refresh_states()
                         self._synced.set()
+                    attempt = 0
                     if not started:
                         task_status.started()
                         started = True
@@ -700,7 +704,11 @@ class Outpost:
                     self._synced = anyio.Event()
                     for local in self._cache.values():
                         local.state = None
-            await anyio.sleep(1)
+            attempt += 1
+            delay = min(
+                MAX_REDIS_RECONNECT_DELAY, REDIS_RECONNECT_DELAY * 2 ** (attempt - 1)
+            )
+            await anyio.sleep(random.uniform(delay / 2, delay))
 
     async def _run_websocket(
         self,

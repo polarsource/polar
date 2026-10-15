@@ -897,14 +897,21 @@ class SubscriptionCutover:
                 )
                 if payment_method is not None and payment_method.type == CARD_TYPE:
                     return payment_method
-            if customer.default_payment_method_id is None:
-                return None
-            default = await repository.get_by_id_and_customer(
-                customer.default_payment_method_id, customer.id
-            )
-            if default is None or default.type != CARD_TYPE:
-                return None
-            return default
+            if customer.default_payment_method_id is not None:
+                default = await repository.get_by_id_and_customer(
+                    customer.default_payment_method_id, customer.id
+                )
+                if default is not None and default.type == CARD_TYPE:
+                    return default
+            if (
+                isinstance(staged, CanonicalSubscription)
+                and staged.payment_method is not None
+                and staged.payment_method.type.requires_reentry
+            ):
+                for payment_method in await repository.list_by_customer(customer.id):
+                    if payment_method.type == CARD_TYPE:
+                        return payment_method
+            return None
         return await link_payment_method(
             self.session, customer, source_method=source.payment_method
         )

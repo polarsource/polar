@@ -55,8 +55,10 @@ Rules of thumb:
 
 - `run` never prints. In-flight status goes through `withProgress`/`note` from
   `@/utils/progress`, which stay silent under `--json`.
-- Commands that never return (`listen`) use `stream()` instead and emit
+- Commands that never return (`listen`) use `streaming()` instead and emit
   through its `Emit`: human text, or one JSON object per line under `--json`.
+- Commands where JSON makes no sense (e.g. one that opens a browser) use
+  `textOnly()` instead; it refuses `--json` and explains why.
 - `--json` is an output format. A flag that changes behaviour gets its own
   name (`--dry-run`, `--list`).
 - Test with `runCli(command, ['…', '--json'])` from `@/utils/test-utils/cli`

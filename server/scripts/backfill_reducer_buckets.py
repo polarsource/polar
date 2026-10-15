@@ -338,8 +338,12 @@ async def backfill(
     start: datetime, end: datetime, organization_id: UUID | None = None
 ) -> None:
     """Rebuild usage and billing buckets, excluding the latest ten minutes."""
-    start = start.replace(tzinfo=UTC)
-    end = min(end.replace(tzinfo=UTC), utc_now() - timedelta(minutes=10))
+    # Whole buckets only: a window ending inside a bucket would rebuild it from
+    # part of its events.
+    start = get_reducer_bucket_start(start.replace(tzinfo=UTC))
+    end = get_reducer_bucket_start(
+        min(end.replace(tzinfo=UTC), utc_now() - timedelta(minutes=10))
+    )
     configure_script_logging()
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)

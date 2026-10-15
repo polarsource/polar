@@ -76,7 +76,7 @@ async def outpost(websocket: WebSocket, redis: Redis = Depends(get_redis)) -> No
 
     sessionmaker: AsyncSessionMaker = websocket.state.async_sessionmaker
     connection_id = uuid.uuid4()
-    structlog.contextvars.bind_contextvars(outpost_connection_id=connection_id)
+    structlog.contextvars.bind_contextvars(outpost_connection_id=str(connection_id))
 
     incoming_send_stream, incoming_receive_stream = create_memory_object_stream[str](16)
     outgoing_send_stream, outgoing_receive_stream = create_memory_object_stream[

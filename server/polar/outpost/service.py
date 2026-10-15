@@ -104,11 +104,8 @@ class OutpostService:
         }
         for resource_spans in request.resource_spans:
             attributes = resource_spans.resource.attributes
-            kept = [
-                attribute for attribute in attributes if attribute.key not in overrides
-            ]
-            del attributes[:]
-            attributes.extend(kept)
+            for attribute in [a for a in attributes if a.key in overrides]:
+                attributes.remove(attribute)
             attributes.extend(
                 KeyValue(key=key, value=AnyValue(string_value=value))
                 for key, value in overrides.items()

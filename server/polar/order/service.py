@@ -1462,17 +1462,24 @@ class OrderService:
         discount: Discount | None,
         reference: str | None = None,
         product: Product | None = None,
-        customer_balance: int | None = None,
     ) -> Order:
         """Build the subscription order for ``items`` without persisting: no invoice
         number, no side effects. ``lock_balance`` locks the wallet balance (the
         persist path must; a preview must not); ``reference`` keys the tax calc;
-        ``product`` overrides the subscription's current product. ``customer_balance``
-        prices against a known balance instead of reading the wallet, so a preview
-        can apply credit to an earlier charge before a later one."""
+        ``product`` overrides the subscription's current product."""
         order_id = uuid.uuid4()
         customer = subscription.customer
         product = product or subscription.product
+
+        # Fixed discounts are per-order, so applying one per meter-cycle settlement
+        # multiplies the giveaway by cadence; percentage discounts are
+        # cadence-invariant and still apply. See #154.
+        if (
+            billing_reason == OrderBillingReasonInternal.subscription_meter_cycle
+            and discount is not None
+            and discount.type != DiscountType.percentage
+        ):
+            discount = None
 
         amounts = await compute_order_amounts(
             subscription,
@@ -1483,10 +1490,9 @@ class OrderService:
         )
         total_amount = amounts.total_amount
 
-        if customer_balance is None:
-            customer_balance = await wallet_service.get_billing_wallet_balance(
-                session, customer, subscription.currency, for_update=lock_balance
-            )
+        customer_balance = await wallet_service.get_billing_wallet_balance(
+            session, customer, subscription.currency, for_update=lock_balance
+        )
         applied_balance_amount = apply_wallet_balance(total_amount, customer_balance)
 
         return Order(
@@ -1531,24 +1537,13 @@ class OrderService:
         number, balance impact, optional meter reset, then payment."""
         customer = subscription.customer
 
-        # Fixed discounts are per-order, so applying one per meter-cycle settlement
-        # multiplies the giveaway by cadence; percentage discounts are
-        # cadence-invariant and still apply. See #154.
-        discount = subscription.discount
-        if (
-            billing_reason == OrderBillingReasonInternal.subscription_meter_cycle
-            and discount is not None
-            and discount.type != DiscountType.percentage
-        ):
-            discount = None
-
         order = await self.build_subscription_order(
             session,
             subscription,
             items,
             billing_reason,
             lock_balance=True,
-            discount=discount,
+            discount=subscription.discount,
             product=product,
         )
         balance_change = (

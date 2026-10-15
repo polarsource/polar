@@ -5,11 +5,7 @@ import {
   isSeatBasedPrice,
   isUnitBasedPrice,
 } from '@/utils/product'
-import {
-  formatChargeDate,
-  isUsageBilledOnMeterCycle,
-  usageChargeCarriedForward,
-} from '@/utils/subscriptionCharge'
+import { formatChargeDate } from '@/utils/subscriptionCharge'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
@@ -18,103 +14,12 @@ import { useMemo } from 'react'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 import AmountLabel from '../Shared/AmountLabel'
 import { OverviewSummaryCard } from './OverviewSummaryCard'
+import { PreviewTotals } from './PreviewTotals'
 
 interface CurrentPeriodOverviewProps {
   subscription: schemas['CustomerSubscription']
   products: schemas['CustomerProduct'][]
   api: Client
-}
-
-type ChargeAmounts = {
-  subtotal_amount: number
-  discount_amount: number
-  tax_amount: number
-  total_amount: number
-  applied_balance_amount: number
-  due_amount: number
-}
-
-const PreviewTotals = ({
-  preview,
-  currency,
-  estimated,
-  note,
-}: {
-  preview: ChargeAmounts | undefined
-  currency: string
-  estimated: boolean
-  note?: string
-}) => {
-  const hasTaxes = preview != null && preview.tax_amount > 0
-  const hasDiscount = preview != null && preview.discount_amount > 0
-
-  return (
-    <div className="dark:border-polar-700 mt-2 border-t border-gray-200 pt-2">
-      {(hasTaxes || hasDiscount) && preview && (
-        <div className="dark:text-polar-500 mb-1.5 flex items-center justify-between text-gray-500">
-          <span>Subtotal</span>
-          <span>
-            {formatCurrency('compact')(preview.subtotal_amount, currency)}
-          </span>
-        </div>
-      )}
-
-      {hasDiscount && preview && (
-        <div className="dark:text-polar-500 mb-1 flex items-center justify-between text-gray-500">
-          <span>Discount</span>
-          <span>
-            {formatCurrency('compact')(-1 * preview.discount_amount, currency)}
-          </span>
-        </div>
-      )}
-
-      {hasTaxes && preview && (
-        <div className="dark:text-polar-500 mb-1 flex items-center justify-between text-gray-500">
-          <span>Taxes</span>
-          <span>{formatCurrency('compact')(preview.tax_amount, currency)}</span>
-        </div>
-      )}
-
-      <div className="flex items-center justify-between">
-        <span className="font-medium">
-          {estimated ? 'Estimated Total' : 'Total'}
-        </span>
-        <span className="text-lg font-medium">
-          {preview ? (
-            formatCurrency('compact')(preview.total_amount, currency)
-          ) : (
-            <span className="dark:text-polar-500 animate-pulse text-gray-500">
-              Loading…
-            </span>
-          )}
-        </span>
-      </div>
-
-      {preview && preview.applied_balance_amount !== 0 && (
-        <Box flexDirection="column" rowGap="xs" marginTop="xs">
-          <Box justifyContent="between" alignItems="center">
-            <Text variant="body" color="muted">
-              Applied balance
-            </Text>
-            <Text as="span" variant="body" color="muted" tabularNums>
-              {formatCurrency('compact')(
-                preview.applied_balance_amount,
-                currency,
-              )}
-            </Text>
-          </Box>
-          <Box justifyContent="between" alignItems="center">
-            <Text variant="body">To be paid</Text>
-            <Text as="span" variant="body" tabularNums>
-              {formatCurrency('compact')(preview.due_amount, currency)}
-            </Text>
-          </Box>
-        </Box>
-      )}
-
-      {note && <p className="max-w-sm text-xs text-gray-500">{note}</p>}
-    </div>
-  )
 }
 
 export const CurrentPeriodOverview = ({
@@ -151,6 +56,8 @@ export const CurrentPeriodOverview = ({
   }, [subscription])
   const product = products.find((product) => product.id === productId)
 
+  // For seat-based subscriptions, surface the number of seats we'll charge for
+  // next, preferring a pending update if one is scheduled.
   const seats = useMemo(() => {
     if (
       subscription.pending_update &&
@@ -176,7 +83,6 @@ export const CurrentPeriodOverview = ({
   }
 
   const hasMeters = subscription.meters.length > 0
-  const separateUsage = isUsageBilledOnMeterCycle(subscription)
   const prorations = subscriptionPreview?.prorations ?? []
   const hasProrations = prorations.length > 0
 
@@ -194,23 +100,32 @@ export const CurrentPeriodOverview = ({
   const isUnitBasedProduct = unitPrice != null
   const { unitLabel, unitLabelPlural } = getUnitLabels(unitPrice)
 
+  // Use the subscription amount (except when a pending update is scheduled)
+  // instead of the current product price, since we by default grandfather old subscriptions
+  // on their old prices if a product price is updated
   const hasPendingProduct = subscription.pending_update?.product_id != null
   const showLockedBaseAmount =
     !hasPendingProduct &&
     subscriptionPreview != null &&
     subscriptionPreview.base_amount > 0
 
-  const hasBaseCharge = !isCancelingAtPeriodEnd && !isFreeProduct
-  const overageMeters = subscription.meters.filter((meter) => meter.amount > 0)
-  const showBaseCard = separateUsage
-    ? hasBaseCharge || hasProrations
-    : (!isFreeProduct || hasMeters) &&
-      !(isCancelingAtPeriodEnd && !hasMeters && !hasProrations)
-  const showUsageCard = separateUsage && overageMeters.length > 0
-
-  if (!showBaseCard && !showUsageCard) {
+  // For subscriptions set to cancel, only show if there's still something to
+  // bill: metered usage or pending prorations.
+  if (isCancelingAtPeriodEnd && !hasMeters && !hasProrations) {
     return null
   }
+
+  // Don't show for free subscriptions with no meters
+  const hasNextInvoice = !isFreeProduct || hasMeters || hasProrations
+  if (!hasNextInvoice) {
+    return null
+  }
+
+  const meterCharge = subscriptionPreview?.meter_charge
+  const usageSeparate = meterCharge != null
+  const metersOnBase = hasMeters && !usageSeparate
+  const overageMeters = subscription.meters.filter((meter) => meter.amount > 0)
+  const showUsageCard = usageSeparate && overageMeters.length > 0
 
   const chargeDate = isTrialing
     ? subscription.trial_end
@@ -218,7 +133,8 @@ export const CurrentPeriodOverview = ({
       ? subscription.resumes_at
       : subscription.current_period_end
 
-  let headerTitle = separateUsage ? 'Next Renewal' : 'Next Charge'
+  // Determine header and label based on subscription state
+  let headerTitle = usageSeparate ? 'Next Renewal' : 'Next Charge'
   let dateLabel = 'Next Invoice'
 
   if (isTrialing) {
@@ -247,11 +163,11 @@ export const CurrentPeriodOverview = ({
 
   const baseNote = isCancelingAtPeriodEnd
     ? `This will be the final charge before the subscription ends.${
-        !separateUsage && hasMeters
+        metersOnBase
           ? ' Final amount may vary based on usage until the end of the billing period.'
           : ''
       }`
-    : !separateUsage && hasMeters
+    : metersOnBase
       ? isActive
         ? 'Final charges may vary based on usage until the end of the billing period.'
         : isTrialing
@@ -259,114 +175,63 @@ export const CurrentPeriodOverview = ({
           : 'Final charges may vary.'
       : undefined
 
-  const meterPreview = subscriptionPreview?.meter_charge ?? undefined
-  const usageNote = [
-    isTrialing
-      ? 'Final amount may vary based on usage during the trial period.'
-      : 'Final amount may vary based on usage until the end of the usage period.',
-    meterPreview && usageChargeCarriedForward(meterPreview)
-      ? 'This amount is below the minimum charge and is included on the next invoice.'
-      : null,
-  ]
-    .filter((note) => note != null)
-    .join(' ')
+  const baseCard = (
+    <OverviewSummaryCard
+      title={headerTitle}
+      meta={`${dateLabel} — ${formatChargeDate(chargeDate)}`}
+    >
+      {product && subscriptionPreview && (
+        <div className="flex items-center justify-between">
+          <span className="dark:text-polar-400 text-gray-600">
+            {productLabel()}
+          </span>
+          <span
+            className={isCancelingAtPeriodEnd ? 'text-gray-500' : 'font-medium'}
+          >
+            {isCancelingAtPeriodEnd ? (
+              'Canceled'
+            ) : showLockedBaseAmount ? (
+              <AmountLabel
+                amount={subscriptionPreview.base_amount}
+                currency={subscription.currency}
+                interval={subscription.recurring_interval}
+                intervalCount={subscription.recurring_interval_count}
+              />
+            ) : (
+              <ProductPriceLabel
+                product={product}
+                currency={subscription.currency}
+              />
+            )}
+          </span>
+        </div>
+      )}
 
-  const metersOnBaseCard = hasMeters && !separateUsage
+      {hasProrations && (
+        <>
+          <span className="font-medium">Prorations</span>
 
-  return (
-    <div className="flex flex-col gap-4">
-      {showBaseCard && (
-        <OverviewSummaryCard
-          title={headerTitle}
-          meta={`${dateLabel} — ${formatChargeDate(chargeDate)}`}
-        >
-          {product && subscriptionPreview && (
-            <div className="flex items-center justify-between">
+          {prorations.map((proration, index) => (
+            <div key={index} className="flex items-center justify-between">
               <span className="dark:text-polar-400 text-gray-600">
-                {productLabel()}
+                {proration.label}
               </span>
-              <span
-                className={
-                  isCancelingAtPeriodEnd ? 'text-gray-500' : 'font-medium'
-                }
-              >
-                {isCancelingAtPeriodEnd ? (
-                  'Canceled'
-                ) : showLockedBaseAmount ? (
-                  <AmountLabel
-                    amount={subscriptionPreview.base_amount}
-                    currency={subscription.currency}
-                    interval={subscription.recurring_interval}
-                    intervalCount={subscription.recurring_interval_count}
-                  />
-                ) : (
-                  <ProductPriceLabel
-                    product={product}
-                    currency={subscription.currency}
-                  />
+              <span className="font-medium">
+                {formatCurrency('compact')(
+                  proration.amount,
+                  subscription.currency,
                 )}
               </span>
             </div>
-          )}
-
-          {hasProrations && (
-            <>
-              <span className="font-medium">Prorations</span>
-
-              {prorations.map((proration, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <span className="dark:text-polar-400 text-gray-600">
-                    {proration.label}
-                  </span>
-                  <span className="font-medium">
-                    {formatCurrency('compact')(
-                      proration.amount,
-                      subscription.currency,
-                    )}
-                  </span>
-                </div>
-              ))}
-            </>
-          )}
-
-          {metersOnBaseCard && (
-            <>
-              <span className="font-medium">Metered Charges</span>
-
-              {subscription.meters.map((meter) => (
-                <div
-                  key={meter.id}
-                  className="flex items-center justify-between"
-                >
-                  <span className="dark:text-polar-400 text-gray-600">
-                    {meter.meter.name}
-                  </span>
-                  <span className="font-medium">
-                    {formatCurrency('compact')(
-                      meter.amount,
-                      subscription.currency,
-                    )}
-                  </span>
-                </div>
-              ))}
-            </>
-          )}
-
-          <PreviewTotals
-            preview={subscriptionPreview}
-            currency={subscription.currency}
-            estimated={metersOnBaseCard}
-            note={baseNote}
-          />
-        </OverviewSummaryCard>
+          ))}
+        </>
       )}
 
-      {showUsageCard && (
-        <OverviewSummaryCard
-          title="Next Usage Charge"
-          meta={`Next Invoice — ${formatChargeDate(subscription.current_meter_period_end)}`}
-        >
-          {overageMeters.map((meter) => (
+      {metersOnBase && (
+        <>
+          <span className="font-medium">Metered Charges</span>
+
+          {subscription.meters.map((meter) => (
             <div key={meter.id} className="flex items-center justify-between">
               <span className="dark:text-polar-400 text-gray-600">
                 {meter.meter.name}
@@ -376,15 +241,51 @@ export const CurrentPeriodOverview = ({
               </span>
             </div>
           ))}
-
-          <PreviewTotals
-            preview={meterPreview}
-            currency={subscription.currency}
-            estimated
-            note={usageNote}
-          />
-        </OverviewSummaryCard>
+        </>
       )}
-    </div>
+
+      <PreviewTotals
+        preview={subscriptionPreview}
+        currency={subscription.currency}
+        estimated={metersOnBase}
+        note={baseNote}
+      />
+    </OverviewSummaryCard>
+  )
+
+  if (!showUsageCard || meterCharge == null) {
+    return baseCard
+  }
+
+  return (
+    <>
+      {baseCard}
+      <OverviewSummaryCard
+        title="Next Usage Charge"
+        meta={`Next Invoice — ${formatChargeDate(subscription.current_meter_period_end)}`}
+      >
+        {overageMeters.map((meter) => (
+          <Box key={meter.id} justifyContent="between" alignItems="center">
+            <Text as="span" variant="body" color="muted">
+              {meter.meter.name}
+            </Text>
+            <Text as="span" variant="body" tabularNums>
+              {formatCurrency('compact')(meter.amount, subscription.currency)}
+            </Text>
+          </Box>
+        ))}
+
+        <PreviewTotals
+          preview={meterCharge}
+          currency={subscription.currency}
+          estimated
+          note={
+            isTrialing
+              ? 'Final amount may vary based on usage during the trial period.'
+              : 'Final amount may vary based on usage until the end of the usage period.'
+          }
+        />
+      </OverviewSummaryCard>
+    </>
   )
 }

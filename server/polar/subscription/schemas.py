@@ -595,17 +595,10 @@ class SubscriptionMeterChargePreview(Schema):
     net_amount: int = Field(description="Net amount in cents before taxes.")
     tax_amount: int = Field(description="Tax amount in cents.")
     total_amount: int = Field(
-        description="Total amount in cents before applying wallet balance."
-    )
-    applied_balance_amount: int = Field(
         description=(
-            "Wallet balance applied to this usage charge in cents: negative when "
-            "account credit reduces the amount due, positive when the charge clears "
-            "outstanding debt, zero otherwise."
+            "Total amount in cents before the customer's wallet balance. "
+            "Credit is applied on the subscription invoice preview."
         )
-    )
-    due_amount: int = Field(
-        description="Amount actually due in cents for this usage charge."
     )
 
 

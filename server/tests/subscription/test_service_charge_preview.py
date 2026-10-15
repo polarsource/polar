@@ -401,6 +401,40 @@ class TestCalculateChargePreview:
         assert preview.meter_charge.discount_amount == 0
         assert preview.meter_charge.total_amount == 400
 
+    async def test_unset_applied_at_expires_once_discount_on_the_meter_cycle(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=2500,
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+        subscription = await subscription_with_meter_cycle(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            usage=400,
+            period_end=datetime(2027, 1, 1, tzinfo=UTC),
+            meter_end=datetime(2026, 11, 1, tzinfo=UTC),
+            discount=discount,
+        )
+        subscription.discount_applied_at = None
+        await save_fixture(subscription)
+
+        preview = await subscription_service.calculate_charge_preview(
+            session, subscription
+        )
+
+        assert preview.meter_charge is not None
+        assert preview.meter_charge.discount_amount == 0
+        assert preview.meter_charge.total_amount == 400
+
     async def test_repeating_discount_can_cover_usage_and_not_the_renewal(
         self,
         session: AsyncSession,
@@ -436,32 +470,6 @@ class TestCalculateChargePreview:
         assert preview.meter_charge.discount_amount == 100
         assert preview.meter_charge.total_amount == 300
 
-    async def test_subminimum_usage_is_collected_on_the_renewal(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        customer: Customer,
-    ) -> None:
-        subscription = await subscription_with_meter_cycle(
-            save_fixture,
-            organization=organization,
-            customer=customer,
-            usage=40,
-            period_end=datetime(2027, 1, 1, tzinfo=UTC),
-            meter_end=datetime(2026, 11, 1, tzinfo=UTC),
-        )
-
-        preview = await subscription_service.calculate_charge_preview(
-            session, subscription
-        )
-
-        assert preview.meter_charge is not None
-        assert preview.meter_charge.total_amount == 40
-        assert preview.meter_charge.due_amount == 0
-        assert preview.applied_balance_amount == 40
-        assert preview.due_amount == 1040
-
     async def test_zero_usage_does_not_clear_wallet_debt(
         self,
         session: AsyncSession,
@@ -486,39 +494,9 @@ class TestCalculateChargePreview:
         )
 
         assert preview.meter_charge is not None
-        assert preview.meter_charge.due_amount == 0
-        assert preview.meter_charge.applied_balance_amount == 0
+        assert preview.meter_charge.total_amount == 0
         assert preview.applied_balance_amount == 500
         assert preview.due_amount == 1500
-
-    async def test_meter_cycle_consumes_wallet_before_the_renewal(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        customer: Customer,
-    ) -> None:
-        await create_wallet_billing(
-            save_fixture, customer=customer, initial_balance=800
-        )
-        subscription = await subscription_with_meter_cycle(
-            save_fixture,
-            organization=organization,
-            customer=customer,
-            usage=500,
-            period_end=datetime(2027, 1, 1, tzinfo=UTC),
-            meter_end=datetime(2026, 11, 1, tzinfo=UTC),
-        )
-
-        preview = await subscription_service.calculate_charge_preview(
-            session, subscription
-        )
-
-        assert preview.meter_charge is not None
-        assert preview.meter_charge.applied_balance_amount == -500
-        assert preview.meter_charge.due_amount == 0
-        assert preview.applied_balance_amount == -300
-        assert preview.due_amount == 700
 
     async def test_coinciding_meter_period_stays_on_the_renewal(
         self,

@@ -65,7 +65,6 @@ from polar.exceptions import (
     ValidationError,
 )
 from polar.invoice.generator import format_date
-from polar.kit.currency import get_minimum_currency_amount
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
@@ -92,7 +91,6 @@ from polar.models import (
     User,
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
-from polar.models.discount import DiscountType
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import (
     ProductPrice,
@@ -125,7 +123,6 @@ from polar.product.guard import (
 from polar.product.price_set import NoPricesForCurrencies, PriceSet
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
-from polar.wallet.service import wallet as wallet_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
@@ -3167,6 +3164,48 @@ class SubscriptionService:
     ) -> SubscriptionChargePreview:
         next_period_start = subscription.current_period_end
 
+        # The meter cycle settles the current period. A pending update applies
+        # later, on renewal, so price usage before applying it.
+        usage_separate = self._usage_billed_on_meter_cycle(subscription)
+        usage_amount = sum(meter.amount for meter in subscription.meters)
+        meter_charge: SubscriptionMeterChargePreview | None = None
+        if usage_separate:
+            assert subscription.current_meter_period_end is not None
+            meter_discount = None
+            if subscription.discount is not None:
+                discount_applied_at = (
+                    subscription.discount_applied_at
+                    or subscription.current_period_start
+                )
+                if not subscription.discount.is_repetition_expired(
+                    discount_applied_at,
+                    subscription.current_meter_period_end,
+                ):
+                    meter_discount = subscription.discount
+            meter_order = await self._preview_order(
+                session,
+                subscription,
+                [
+                    OrderItem(
+                        label="Metered usage",
+                        amount=usage_amount,
+                        net_amount=usage_amount,
+                        tax_amount=0,
+                        proration=False,
+                    )
+                ],
+                billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+                discount=meter_discount,
+            )
+            meter_charge = SubscriptionMeterChargePreview(
+                metered_amount=usage_amount,
+                subtotal_amount=meter_order.subtotal_amount,
+                discount_amount=meter_order.discount_amount,
+                net_amount=meter_order.net_amount,
+                tax_amount=meter_order.tax_amount,
+                total_amount=meter_order.total_amount,
+            )
+
         # Apply any pending subscription update (product change, seats change)
         pending_update = subscription.pending_update
         if pending_update is not None:
@@ -3198,16 +3237,16 @@ class SubscriptionService:
                     currency=subscription.currency,
                 )
 
-        # If subscription is set to cancel at period end, there's no base charge.
-        # Metered usage still settles: on this invoice when the periods end
-        # together, or on the earlier meter cycle otherwise.
+        # If subscription is set to cancel at period end, there's no base charge
+        # Only metered charges accumulated during the period will be billed
         if subscription.cancel_at_period_end or subscription.ends_at:
             base_price = 0
         else:
             base_price = sum(p.amount for p in subscription.subscription_product_prices)
 
-        metered_amount = sum(meter.amount for meter in subscription.meters)
-        usage_separate = self._usage_billed_on_meter_cycle(subscription)
+        metered_amount = (
+            0 if usage_separate else sum(meter.amount for meter in subscription.meters)
+        )
 
         items = [
             OrderItem(
@@ -3238,78 +3277,27 @@ class SubscriptionService:
         ) = await self._collect_pending_prorations(session, subscription)
         items.extend(proration_items)
 
-        customer_balance: int | None = None
-        meter_charge: SubscriptionMeterChargePreview | None = None
-        billing_metered_amount = metered_amount
-        # cycle_meters stamps an unapplied discount at the current period start
-        # and expires it against the meter boundary before the order. The renewal
-        # then sees whatever discount that left, not a fresh stamp.
-        meter_applied_at = (
-            subscription.discount_applied_at or subscription.current_period_start
-        )
-        billing_discount = self._discount_for_preview(
-            subscription,
-            at=next_period_start,
-            billing_reason=OrderBillingReasonInternal.subscription_cycle,
-            applied_at=meter_applied_at if usage_separate else None,
-        )
-        if usage_separate:
-            assert subscription.current_meter_period_end is not None
-            billing_metered_amount = 0
-            if metered_amount == 0:
-                # No pending usage means no meter order, so wallet debt stays put.
-                meter_charge = self._zero_meter_charge()
-            else:
-                customer_balance = await wallet_service.get_billing_wallet_balance(
-                    session, subscription.customer, subscription.currency
-                )
-                meter_order = await self._preview_order(
-                    session,
-                    subscription,
-                    [
-                        OrderItem(
-                            label="Metered usage",
-                            amount=metered_amount,
-                            net_amount=metered_amount,
-                            tax_amount=0,
-                            proration=False,
-                        )
-                    ],
-                    billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
-                    discount=self._discount_for_preview(
-                        subscription,
-                        at=subscription.current_meter_period_end,
-                        billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
-                        applied_at=meter_applied_at,
-                    ),
-                    reference=f"{subscription.id}:meter",
-                    customer_balance=customer_balance,
-                )
-                # Below the processor minimum the order is marked paid and the
-                # remainder is posted to the wallet for the next charge.
-                carried = meter_order.due_amount
-                if carried <= 0 or carried >= get_minimum_currency_amount(
-                    subscription.currency
-                ):
-                    carried = 0
-                meter_charge = self._meter_charge_preview(
-                    meter_order,
-                    metered_amount,
-                    due_amount=0 if carried else None,
-                )
-                customer_balance += meter_order.applied_balance_amount - carried
+        applicable_discount = None
+        # Ensure the discount has not expired yet for the next charge
+        if subscription.discount is not None:
+            # If discount hasn't been applied yet, it will be applied at the next cycle
+            discount_applied_at = subscription.discount_applied_at or next_period_start
+            if not subscription.discount.is_repetition_expired(
+                discount_applied_at,
+                next_period_start,
+            ):
+                applicable_discount = subscription.discount
 
         return await self._build_preview(
             session,
             subscription,
             items,
             billing_reason=OrderBillingReasonInternal.subscription_cycle,
-            discount=billing_discount,
+            discount=applicable_discount,
             base_amount=base_price,
-            metered_amount=billing_metered_amount,
+            metered_amount=metered_amount,
             prorations=prorations,
             proration_amount=proration_amount,
-            customer_balance=customer_balance,
             meter_charge=meter_charge,
         )
 
@@ -3663,63 +3651,6 @@ class SubscriptionService:
             return False
         return meter_end < subscription.current_period_end
 
-    def _discount_for_preview(
-        self,
-        subscription: Subscription,
-        *,
-        at: datetime | None,
-        billing_reason: OrderBillingReasonInternal,
-        applied_at: datetime | None = None,
-    ) -> Discount | None:
-        discount = subscription.discount
-        if discount is None or at is None:
-            return None
-        stamped_at = (
-            applied_at
-            if applied_at is not None
-            else subscription.discount_applied_at or at
-        )
-        if discount.is_repetition_expired(stamped_at, at):
-            return None
-        # Fixed discounts are per order. A meter cycle would multiply one by
-        # the meter cadence, so meter-cycle orders leave them off.
-        if (
-            billing_reason == OrderBillingReasonInternal.subscription_meter_cycle
-            and discount.type != DiscountType.percentage
-        ):
-            return None
-        return discount
-
-    def _zero_meter_charge(self) -> SubscriptionMeterChargePreview:
-        return SubscriptionMeterChargePreview(
-            metered_amount=0,
-            subtotal_amount=0,
-            discount_amount=0,
-            net_amount=0,
-            tax_amount=0,
-            total_amount=0,
-            applied_balance_amount=0,
-            due_amount=0,
-        )
-
-    def _meter_charge_preview(
-        self,
-        order: Order,
-        metered_amount: int,
-        *,
-        due_amount: int | None = None,
-    ) -> SubscriptionMeterChargePreview:
-        return SubscriptionMeterChargePreview(
-            metered_amount=metered_amount,
-            subtotal_amount=order.subtotal_amount,
-            discount_amount=order.discount_amount,
-            net_amount=order.net_amount,
-            tax_amount=order.tax_amount,
-            total_amount=order.total_amount,
-            applied_balance_amount=order.applied_balance_amount,
-            due_amount=order.due_amount if due_amount is None else due_amount,
-        )
-
     async def _build_preview(
         self,
         session: AsyncSession,
@@ -3732,7 +3663,6 @@ class SubscriptionService:
         metered_amount: int,
         prorations: Sequence[SubscriptionChargePreviewProration],
         proration_amount: int,
-        customer_balance: int | None = None,
         meter_charge: SubscriptionMeterChargePreview | None = None,
     ) -> SubscriptionChargePreview:
         """Price ``items`` through the cycle's builder and read the resulting order.
@@ -3744,8 +3674,6 @@ class SubscriptionService:
             items,
             billing_reason=billing_reason,
             discount=discount,
-            reference=str(subscription.id),
-            customer_balance=customer_balance,
         )
 
         return SubscriptionChargePreview(
@@ -3771,8 +3699,6 @@ class SubscriptionService:
         *,
         billing_reason: OrderBillingReasonInternal,
         discount: Discount | None,
-        reference: str,
-        customer_balance: int | None,
     ) -> Order:
         from polar.order.service import order as order_service
 
@@ -3783,8 +3709,7 @@ class SubscriptionService:
             billing_reason,
             lock_balance=False,
             discount=discount,
-            reference=reference,
-            customer_balance=customer_balance,
+            reference=str(subscription.id),
         )
 
     async def _after_subscription_updated(

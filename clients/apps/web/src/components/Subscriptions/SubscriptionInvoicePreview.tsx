@@ -8,10 +8,6 @@ import { OrderSection } from '@/components/Orders/OrderSection'
 import { useProduct } from '@/hooks/queries'
 import { useSubscriptionChargePreview } from '@/hooks/queries/subscriptions'
 import { isFreePrice, isSeatBasedPrice } from '@/utils/product'
-import {
-  isUsageBilledOnMeterCycle,
-  usageChargeCarriedForward,
-} from '@/utils/subscriptionCharge'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -58,18 +54,17 @@ const SubscriptionInvoicePreview = ({
 
   const isFreeProduct = subscription.prices.some(isFreePrice)
   const hasMeters = subscription.meters.length > 0
-  const separateUsage = isUsageBilledOnMeterCycle(subscription)
   const hasProrations = (chargePreview?.prorations.length ?? 0) > 0
-  const hasBaseCharge = !isCancelingAtPeriodEnd && !isFreeProduct
-  const overageMeters = subscription.meters.filter((meter) => meter.amount > 0)
-  const showBase = separateUsage
-    ? hasBaseCharge || hasProrations
-    : !isFreeProduct || hasMeters
-  const showUsage = separateUsage && overageMeters.length > 0
+  const hasNextInvoice = !isFreeProduct || hasMeters || hasProrations
 
-  if (!showsCharge || !chargePreview || (!showBase && !showUsage)) {
+  if (!showsCharge || !hasNextInvoice || !chargePreview) {
     return null
   }
+
+  const usageSeparate = chargePreview.meter_charge != null
+  const metersOnBase = hasMeters && !usageSeparate
+  const overageMeters = subscription.meters.filter((meter) => meter.amount > 0)
+  const showUsage = usageSeparate && overageMeters.length > 0
 
   const isSeatBasedProduct = product?.prices.some(
     (price) =>
@@ -82,27 +77,21 @@ const SubscriptionInvoicePreview = ({
       ? `${productName} (${seats} ${seats === 1 ? 'seat' : 'seats'})`
       : productName
 
-  const baseItems: InvoiceLineItem[] = [
+  const items: InvoiceLineItem[] = [
     { id: 'base', label: baseLabel, amount: chargePreview.base_amount },
-    ...chargePreview.prorations.map((proration, index) => ({
+    ...(chargePreview.prorations ?? []).map((proration, index) => ({
       id: `proration-${index}`,
       label: proration.label,
       amount: proration.amount,
     })),
-    ...(separateUsage
-      ? []
-      : subscription.meters.map((meter) => ({
+    ...(metersOnBase
+      ? subscription.meters.map((meter) => ({
           id: meter.id,
           label: meter.meter.name,
           amount: meter.amount,
-        }))),
+        }))
+      : []),
   ]
-
-  const usageItems: InvoiceLineItem[] = overageMeters.map((meter) => ({
-    id: meter.id,
-    label: meter.meter.name,
-    amount: meter.amount,
-  }))
 
   const chargeDate = isTrialing
     ? subscription.trial_end
@@ -110,7 +99,7 @@ const SubscriptionInvoicePreview = ({
       ? subscription.resumes_at
       : subscription.current_period_end
 
-  let title = separateUsage ? 'Next renewal' : 'Upcoming charge'
+  let title = usageSeparate ? 'Next renewal' : 'Upcoming charge'
   let dateLabel = 'Next invoice'
   if (isTrialing) {
     title = 'First charge after trial'
@@ -123,13 +112,13 @@ const SubscriptionInvoicePreview = ({
     dateLabel = 'Resumes'
   }
 
-  const baseNote = isCancelingAtPeriodEnd
+  const note = isCancelingAtPeriodEnd
     ? `This will be the final charge when the subscription ends.${
-        !separateUsage && hasMeters
+        metersOnBase
           ? ' Final amount may vary based on usage until the end of the billing period.'
           : ''
       }`
-    : !separateUsage && hasMeters
+    : metersOnBase
       ? 'Final charges may vary based on usage until the end of the billing period.'
       : null
 
@@ -139,46 +128,41 @@ const SubscriptionInvoicePreview = ({
   return (
     <Box
       flexDirection="column"
-      rowGap="4xl"
+      rowGap={showUsage ? '4xl' : undefined}
       borderTopWidth={1}
       borderStyle="solid"
       borderColor="border-primary"
       paddingTop="4xl"
     >
-      {showBase && (
-        <OrderSection
-          title={title}
-          description={
-            <Box alignItems="center" columnGap="s">
-              <Text color="muted">{dateLabel}</Text>
-              {chargeDate && (
-                <>
-                  <Text color="muted">·</Text>
-                  <Text color="muted">
-                    <FormattedDateTime
-                      dateStyle="medium"
-                      datetime={chargeDate}
-                    />
-                  </Text>
-                </>
-              )}
-            </Box>
-          }
-        >
-          <InvoicePreview
-            currency={subscription.currency}
-            items={baseItems}
-            subtotalAmount={chargePreview.subtotal_amount}
-            discountAmount={chargePreview.discount_amount}
-            netAmount={chargePreview.net_amount}
-            taxAmount={chargePreview.tax_amount}
-            totalAmount={chargePreview.total_amount}
-            appliedBalanceAmount={chargePreview.applied_balance_amount}
-            dueAmount={chargePreview.due_amount}
-          />
-          {baseNote && <Text color="muted">{baseNote}</Text>}
-        </OrderSection>
-      )}
+      <OrderSection
+        title={title}
+        description={
+          <Box alignItems="center" columnGap="s">
+            <Text color="muted">{dateLabel}</Text>
+            {chargeDate && (
+              <>
+                <Text color="muted">·</Text>
+                <Text color="muted">
+                  <FormattedDateTime dateStyle="medium" datetime={chargeDate} />
+                </Text>
+              </>
+            )}
+          </Box>
+        }
+      >
+        <InvoicePreview
+          currency={subscription.currency}
+          items={items}
+          subtotalAmount={chargePreview.subtotal_amount}
+          discountAmount={chargePreview.discount_amount}
+          netAmount={chargePreview.net_amount}
+          taxAmount={chargePreview.tax_amount}
+          totalAmount={chargePreview.total_amount}
+          appliedBalanceAmount={chargePreview.applied_balance_amount}
+          dueAmount={chargePreview.due_amount}
+        />
+        {note && <Text color="muted">{note}</Text>}
+      </OrderSection>
       {showUsage && meterCharge && (
         <OrderSection
           title="Next usage charge"
@@ -201,19 +185,20 @@ const SubscriptionInvoicePreview = ({
         >
           <InvoicePreview
             currency={subscription.currency}
-            items={usageItems}
+            items={overageMeters.map((meter) => ({
+              id: meter.id,
+              label: meter.meter.name,
+              amount: meter.amount,
+            }))}
             subtotalAmount={meterCharge.subtotal_amount}
             discountAmount={meterCharge.discount_amount}
             netAmount={meterCharge.net_amount}
             taxAmount={meterCharge.tax_amount}
             totalAmount={meterCharge.total_amount}
-            appliedBalanceAmount={meterCharge.applied_balance_amount}
-            dueAmount={meterCharge.due_amount}
           />
           <Text color="muted">
-            {usageChargeCarriedForward(meterCharge)
-              ? 'Final amount may vary based on usage until the end of the usage period. This amount is below the minimum charge and is included on the next invoice.'
-              : 'Final amount may vary based on usage until the end of the usage period.'}
+            Final amount may vary based on usage until the end of the usage
+            period.
           </Text>
         </OrderSection>
       )}

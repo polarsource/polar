@@ -229,8 +229,6 @@ describe('CurrentPeriodOverview', () => {
           net_amount: 1840,
           tax_amount: 0,
           total_amount: 1840,
-          applied_balance_amount: 0,
-          due_amount: 1840,
         },
       },
     } as unknown as ReturnType<typeof useCustomerSubscriptionChargePreview>)
@@ -273,6 +271,30 @@ describe('CurrentPeriodOverview', () => {
   })
 
   it('hides the usage card when the meter cycle has no overage', () => {
+    vi.mocked(useCustomerSubscriptionChargePreview).mockReturnValue({
+      data: {
+        base_amount: 12000,
+        metered_amount: 0,
+        proration_amount: 0,
+        prorations: [],
+        subtotal_amount: 12000,
+        discount_amount: 0,
+        net_amount: 12000,
+        tax_amount: 0,
+        total_amount: 12000,
+        applied_balance_amount: 0,
+        due_amount: 12000,
+        meter_charge: {
+          metered_amount: 0,
+          subtotal_amount: 0,
+          discount_amount: 0,
+          net_amount: 0,
+          tax_amount: 0,
+          total_amount: 0,
+        },
+      },
+    } as unknown as ReturnType<typeof useCustomerSubscriptionChargePreview>)
+
     const subscription = {
       ...createSubscription(createFixedPrice(12000), null, 12000),
       recurring_interval: 'year',

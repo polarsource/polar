@@ -37764,19 +37764,9 @@ export interface components {
       tax_amount: number
       /**
        * Total Amount
-       * @description Total amount in cents before applying wallet balance.
+       * @description Total amount in cents before the customer's wallet balance. Credit is applied on the subscription invoice preview.
        */
       total_amount: number
-      /**
-       * Applied Balance Amount
-       * @description Wallet balance applied to this usage charge in cents: negative when account credit reduces the amount due, positive when the charge clears outstanding debt, zero otherwise.
-       */
-      applied_balance_amount: number
-      /**
-       * Due Amount
-       * @description Amount actually due in cents for this usage charge.
-       */
-      due_amount: number
     }
     /**
      * SubscriptionMigratedEvent

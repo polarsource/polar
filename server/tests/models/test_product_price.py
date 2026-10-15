@@ -125,6 +125,19 @@ async def test_get_amount_and_label_with_credits(
     assert label == expected_label
 
 
+@pytest.mark.anyio
+async def test_get_amount_and_label_subtracts_credits_exactly(
+    save_fixture: SaveFixture, product: Product, meter: Meter
+) -> None:
+    price = await create_product_price_metered_unit(
+        save_fixture, product=product, meter=meter, unit_amount=Decimal(5)
+    )
+
+    # 100.1 - 100 is 0.0999... in binary floating point, which would round to 0
+    amount, _ = price.get_amount_and_label(100.1, 100)
+    assert amount == 1
+
+
 class TestFixedPriceIsFree:
     """A fixed price with an amount of 0 is the free-pricing representation and must
     behave like a free price (`is_free` is True)."""

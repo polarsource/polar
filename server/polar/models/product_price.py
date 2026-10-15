@@ -364,7 +364,7 @@ class ProductPriceMeteredUnit(MeteredPrice, ProductPrice, NewProductPrice):
     def get_amount_and_label(
         self, units: float, credited_units: int = 0
     ) -> tuple[int, str]:
-        billable_units = Decimal(str(max(0, units - credited_units)))
+        billable_units = max(Decimal(0), Decimal(str(units)) - credited_units)
         label = (
             f"({self._format_units(units, credited_units)}) × "
             f"{format_currency(self.unit_amount, self.price_currency, decimal_quantization=False)}"
@@ -440,7 +440,7 @@ class ProductPriceMeteredTiers(
     def get_amount_and_label(
         self, units: float, credited_units: int = 0
     ) -> tuple[int, str]:
-        billable_units = Decimal(str(max(0, units - credited_units)))
+        billable_units = max(Decimal(0), Decimal(str(units)) - credited_units)
         label = (
             f"({self._format_units(units, credited_units)}, {self.tiers.type} pricing)"
         )

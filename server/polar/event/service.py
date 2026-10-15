@@ -1080,9 +1080,7 @@ class EventService:
         # Temporarily do this sync on ingestion instead
         # await self._create_meter_events(session, events)
 
-        await self._activate_matching_customer_meters(
-            session, repository, complete_ids, customers
-        )
+        await self._activate_matching_customer_meters(session, events, customers)
 
         for customer in customers:
             enqueue_job("customer_meter.update_customer", customer.id)
@@ -1155,8 +1153,7 @@ class EventService:
     async def _activate_matching_customer_meters(
         self,
         session: AsyncSession,
-        event_repository: EventRepository,
-        event_ids: Sequence[uuid.UUID],
+        events: Sequence[Event],
         customers: set[Customer],
     ) -> None:
         if not customers:
@@ -1168,11 +1165,7 @@ class EventService:
         statement = (
             customer_meter_repository.get_base_statement()
             .join(CustomerMeter.meter)
-            .join(CustomerMeter.customer)
-            .options(
-                contains_eager(CustomerMeter.meter),
-                contains_eager(CustomerMeter.customer),
-            )
+            .options(contains_eager(CustomerMeter.meter))
             .where(
                 CustomerMeter.customer_id.in_(customer_ids),
                 CustomerMeter.activated_at.is_(None),
@@ -1180,23 +1173,16 @@ class EventService:
         )
         unactivated_meters = await customer_meter_repository.get_all(statement)
 
-        for cm in unactivated_meters:
-            customer_clause = or_(
-                Event.customer_id == cm.customer_id,
-                Event.external_customer_id == cm.customer.external_id,
-            )
+        events_by_customer: dict[uuid.UUID, list[Event]] = defaultdict(list)
+        for event in events:
+            if event.customer is not None:
+                events_by_customer[event.customer.id].append(event)
 
-            matching_statement = (
-                event_repository.get_base_statement()
-                .where(
-                    Event.id.in_(event_ids),
-                    Event.organization_id == cm.meter.organization_id,
-                    customer_clause,
-                    event_repository.get_meter_clause(cm.meter),
-                )
-                .limit(1)
-            )
-            if await event_repository.get_one_or_none(matching_statement) is not None:
+        for cm in unactivated_meters:
+            if any(
+                cm.meter.filter.matches(event) and cm.meter.aggregation.matches(event)
+                for event in events_by_customer[cm.customer_id]
+            ):
                 cm.activated_at = utc_now()
                 session.add(cm)
         await session.flush()

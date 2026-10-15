@@ -234,13 +234,19 @@ class LocalState:
     state: ReducerState | None = None
     lock: anyio.Lock = dataclasses.field(default_factory=anyio.Lock)
     missing: bool = False
-    ready: anyio.Event = dataclasses.field(default_factory=anyio.Event)
+    changed: anyio.Event = dataclasses.field(default_factory=anyio.Event)
 
-    def settle(self) -> None:
-        if self.missing or (
-            self.state is not None and self.state.cold_until is not None
-        ):
-            self.ready.set()
+    def is_ready(self, meter_ids: collections.abc.Iterable[str]) -> bool:
+        state = self.state
+        return self.missing or (
+            state is not None
+            and state.cold_until is not None
+            and all(meter_id in state.credited for meter_id in meter_ids)
+        )
+
+    def notify(self) -> None:
+        self.changed.set()
+        self.changed = anyio.Event()
 
 
 class Configuration(typing.TypedDict):
@@ -452,7 +458,7 @@ class Outpost:
                 return None
             local = await self._warm_customer(customer, reducer)
             with anyio.move_on_after(SNAPSHOT_TIMEOUT):
-                await self._wait_ready(reducer, local)
+                await self._wait_ready(reducer, local, [meter_id])
             if local.missing:
                 return None
             state = local.state
@@ -484,7 +490,7 @@ class Outpost:
             warmed = await self._warm_actor(customer)
             with anyio.move_on_after(SNAPSHOT_TIMEOUT):
                 for reducer, local in warmed:
-                    await self._wait_ready(reducer, local)
+                    await self._wait_ready(reducer, local, reducer.get("meter_ids", []))
 
     async def _warm_actor(self, customer: str) -> list[tuple[Reducer, LocalState]]:
         with anyio.fail_after(5):
@@ -494,11 +500,14 @@ class Outpost:
             for reducer in self._reducers
         ]
 
-    async def _wait_ready(self, reducer: Reducer, local: LocalState) -> None:
+    async def _wait_ready(
+        self, reducer: Reducer, local: LocalState, meter_ids: list[str]
+    ) -> None:
         # Polar sends no snapshot for unique reducers, nor without a connection.
         if reducer["aggregation"]["func"] == "unique" or not self.connected:
             return
-        await local.ready.wait()
+        while not local.is_ready(meter_ids):
+            await local.changed.wait()
 
     @contextlib.contextmanager
     def _span(
@@ -557,7 +566,7 @@ class Outpost:
         async with local.lock:
             if local.state is None:
                 local.state = await self._load_state(identity)
-                local.settle()
+                local.notify()
             websocket = self._websocket
             if identity not in self._actors and websocket is not None:
                 try:
@@ -628,13 +637,13 @@ class Outpost:
             elif current.revision >= state.revision:
                 return
             local.state = state
-            local.settle()
+            local.notify()
 
     async def _refresh_states(self) -> None:
         for customer, local in list(self._cache.items()):
             async with local.lock:
                 local.state = await self._load_state(customer)
-                local.settle()
+                local.notify()
 
     async def _listen_redis(
         self,
@@ -768,7 +777,7 @@ class Outpost:
                 local = self._cache.get(identity)
                 if local is not None:
                     local.missing = not snapshot["customer_exists"]
-                    local.settle()
+                    local.notify()
                 if not snapshot["customer_exists"]:
                     continue
                 statistics = [

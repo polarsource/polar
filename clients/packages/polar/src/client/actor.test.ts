@@ -278,14 +278,14 @@ describe('actor grants', () => {
         external_meter_id: 'tool_call',
       },
     ],
-  ])('credits the customer %j with rollover', async (identifier, body) => {
+  ])('credits the customer %j without rollover', async (identifier, body) => {
     const { actor, credits } = setup()
 
     await actor(identifier).grant('tool_call', 100)
     expect(credits).toHaveBeenCalledWith({
       ...body,
       units: 100,
-      rollover: true,
+      rollover: false,
     })
   })
 
@@ -300,7 +300,7 @@ describe('actor grants', () => {
       external_customer_id: 'external-customer-id',
       external_meter_id: 'tool_call',
       units: 100,
-      rollover: true,
+      rollover: false,
     })
   })
 
@@ -308,14 +308,14 @@ describe('actor grants', () => {
     const { actor, credits } = setup()
 
     await actor({ customerId: 'customer-id' }).grant('tool_call', 100, {
-      rollover: false,
+      rollover: true,
       idempotencyKey: 'order-1',
     })
     expect(credits).toHaveBeenCalledWith({
       customer_id: 'customer-id',
       meter_id: 'meter-id',
       units: 100,
-      rollover: false,
+      rollover: true,
       external_id: 'order-1',
     })
   })
@@ -349,6 +349,18 @@ describe('actor grants', () => {
     ).rejects.toThrow('Unknown meter: nope')
     expect(credits).not.toHaveBeenCalled()
   })
+
+  it.each([0, -1, 1.5, Number.NaN, 1_000_000_001])(
+    'rejects %d units',
+    async (units) => {
+      const { actor, credits } = setup()
+
+      await expect(
+        actor({ customerId: 'customer-id' }).grant('tool_call', units),
+      ).rejects.toThrow('Units must be a whole number')
+      expect(credits).not.toHaveBeenCalled()
+    },
+  )
 
   it.each([
     { customerId: 'customer-id' },

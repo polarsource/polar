@@ -25,8 +25,11 @@ export type MeterBalance = {
   pristine: boolean
 }
 
+const MAX_GRANT_UNITS = 1_000_000_000
+
 export type GrantOptions = {
-  // Defaults to true, so unused credits carry over to the next meter period
+  // Defaults to false, like the API. True carries unused credits over to the
+  // next meter period.
   rollover?: boolean
   // Retrying with the same key doesn't grant the credits twice
   idempotencyKey?: string
@@ -319,9 +322,14 @@ export const createActor = <Config extends RuntimeSDKConfig>(
       }
     },
 
-    async grant(name, units, { rollover = true, idempotencyKey } = {}) {
+    async grant(name, units, { rollover = false, idempotencyKey } = {}) {
       if (config.meters?.[name] === undefined) {
         throw new Error(`Unknown meter: ${name}`)
+      }
+      if (!Number.isInteger(units) || units < 1 || units > MAX_GRANT_UNITS) {
+        throw new Error(
+          `Units must be a whole number from 1 to ${MAX_GRANT_UNITS}, got ${units}`,
+        )
       }
 
       const event = await creditCustomerMeter(

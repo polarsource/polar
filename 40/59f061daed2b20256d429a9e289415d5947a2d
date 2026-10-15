@@ -1,0 +1,21 @@
+server/polar/order/tasks.py
+  s_e34bc718db772d::t_321082ce02e23b 144-148
+server/tests/order/test_tasks.py
+  s_e34bc718db772d::t_8abeca5bf5ed12 90-121
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4059f061daed2b20256d429a9e289415d5947a2d",
+  "prompts": {},
+  "sessions": {
+    "s_e34bc718db772d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6e1a976a-f67e-4d68-adf5-ef218490d87a",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

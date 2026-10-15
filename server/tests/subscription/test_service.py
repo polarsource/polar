@@ -117,6 +117,8 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.events import get_all_by_name
 from tests.fixtures.random_objects import (
     create_active_subscription,
+    create_benefit,
+    create_benefit_grant,
     create_canceled_subscription,
     create_checkout,
     create_customer,
@@ -8383,6 +8385,68 @@ class TestMarkActive:
         assert updated.status == SubscriptionStatus.active
         settle_mock.assert_called_once()
         reset_mock.assert_called_once()
+
+    async def test_recovery_cycles_grants_kept_through_grace_period(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.status = SubscriptionStatus.past_due
+        subscription.past_due_at = utc_now()
+        await save_fixture(subscription)
+        benefit = await create_benefit(save_fixture, organization=organization)
+        grant = await create_benefit_grant(
+            save_fixture, customer, benefit, granted=True, subscription=subscription
+        )
+
+        await subscription_service.mark_active(session, subscription)
+
+        enqueue_job_mock.assert_any_call("benefit.cycle", benefit_grant_id=grant.id)
+
+    async def test_recovery_does_not_cycle_revoked_grants(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.status = SubscriptionStatus.past_due
+        subscription.past_due_at = utc_now()
+        await save_fixture(subscription)
+        benefit = await create_benefit(save_fixture, organization=organization)
+        await create_benefit_grant(
+            save_fixture, customer, benefit, granted=False, subscription=subscription
+        )
+
+        await subscription_service.mark_active(session, subscription)
+
+        assert "benefit.cycle" not in [
+            call.args[0] for call in enqueue_job_mock.call_args_list
+        ]
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=product.id,
+            subscription_id=subscription.id,
+            delay=None,
+        )
 
     async def test_recovery_skips_meter_settlement_for_non_meter_product(
         self,

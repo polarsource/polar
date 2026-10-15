@@ -64,7 +64,6 @@ const run = async (result: PlanResult, args: string[] = []) => {
           plan: () => Effect.succeed(result),
           apply: () => Effect.die('unused'),
           pull: () => Effect.die('unused'),
-          webhookSecret: () => Effect.die('unused'),
         }),
       ),
       Effect.provideService(Auth, fakeAuth().auth),

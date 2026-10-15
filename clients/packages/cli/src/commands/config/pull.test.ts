@@ -49,7 +49,6 @@ const run = async (args: string[], result: PullResult = written) => {
             calls.push([organization.id, file, force])
             return Effect.succeed({ ...result, file: file ?? result.file })
           },
-          webhookSecret: () => Effect.die('unused'),
         }),
       ),
       Effect.provideService(Auth, fakeAuth().auth),

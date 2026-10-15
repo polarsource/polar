@@ -46,7 +46,7 @@ export const createWebhookRoute = (
     const secret = readEnv(endpoint.secretEnv)
     if (!secret) {
       throw new Error(
-        `Webhook "${key}" needs its signing secret in the ${endpoint.secretEnv} environment variable. Get it with polar webhook secret ${key}.`,
+        `Webhook "${key}" needs its signing secret in the ${endpoint.secretEnv} environment variable.`,
       )
     }
 

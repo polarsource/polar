@@ -128,7 +128,6 @@ const run = async (
   result: ApplyResult,
   args: ReadonlyArray<string> = [],
   options: Parameters<typeof runCli>[2] = {},
-  loaded: LoadedConfig = config,
 ) => {
   const applied = vi.fn(() => Effect.succeed(result))
   const cli = runCli(apply, ['polar.json', ...args], options)
@@ -137,11 +136,10 @@ const run = async (
       Effect.provideService(
         BillingConfig,
         BillingConfig.of({
-          load: () => Effect.succeed(loaded),
+          load: () => Effect.succeed(config),
           plan: () => Effect.succeed(plan),
           apply: applied,
           pull: () => Effect.die('unused'),
-          webhookSecret: () => Effect.die('unused'),
         }),
       ),
       Effect.provideService(Auth, fakeAuth().auth),
@@ -202,44 +200,6 @@ describe('polar config apply', () => {
       expect(applied).toBe(1)
     },
   )
-
-  test('points to polar webhook secret for created webhooks with a handler', async () => {
-    const webhook = (external_id: string, format: string, url: string) => ({
-      external_id,
-      url,
-      format,
-      events: ['order.paid'],
-      api_version: '2027-01',
-    })
-    const loaded: LoadedConfig = {
-      ...config,
-      input: {
-        webhooks: [
-          webhook('app', 'raw', 'https://app.test/hook'),
-          webhook('sales', 'slack', 'https://hooks.slack.com/services/T/B/x'),
-        ],
-      },
-    }
-    const entries = ['app', 'sales'].map(
-      (id): AppliedEntry => ({
-        section: 'webhooks',
-        id,
-        action: 'created',
-        diff: [],
-      }),
-    )
-    const { output } = await run(
-      { entries, issues: [] },
-      { status: 'applied', entries },
-      ['--yes'],
-      {},
-      loaded,
-    )
-    expect(output).toContain(
-      'Get the signing secret of app with polar webhook secret app',
-    )
-    expect(output).not.toContain('polar webhook secret sales')
-  })
 
   test('asks before applying and stops when declined', async () => {
     const { output, terminal, applied, exit } = await run(

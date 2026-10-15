@@ -1,7 +1,7 @@
 ---
 title: "polar webhook"
 sidebarTitle: "webhook"
-description: "Test webhooks against your local server and get signing secrets"
+description: "Test webhooks against your local server"
 ---
 
 {/* Generated from the CLI by `pnpm --filter @polar-sh/cli docs:generate`. Do not edit by hand. */}
@@ -14,7 +14,6 @@ polar webhook <subcommand> [flags]
 
 - [`polar webhook listen`](#polar-webhook-listen) Forward webhook events for an organization to a local URL
 - [`polar webhook trigger`](#polar-webhook-trigger) Send a sample webhook event to your local server
-- [`polar webhook secret`](#polar-webhook-secret) Print the signing secret of a webhook endpoint from your config
 
 ## polar webhook listen
 
@@ -108,36 +107,4 @@ polar webhook trigger order.paid --seed 7
 Print the payload instead of sending it
 ```bash
 polar webhook trigger order.paid --dry-run
-```
-
-## polar webhook secret
-
-Print the signing secret of a webhook endpoint from your config
-
-```bash
-polar webhook secret [flags] <key>
-```
-
-**Arguments**
-
-| Argument | Type | Description |
-| --- | --- | --- |
-| `key` | `string` | Key of the webhook endpoint in the webhooks section of your config |
-
-**Flags**
-
-| Flag | Type | Description |
-| --- | --- | --- |
-| `--org` | `string` | Organization ID or slug for this invocation only |
-
-**Examples**
-
-Print the signing secret of the app endpoint
-```bash
-polar webhook secret app
-```
-
-Store it as an environment variable without displaying it
-```bash
-polar webhook secret app | vercel env add APP_WEBHOOK_SECRET production
 ```

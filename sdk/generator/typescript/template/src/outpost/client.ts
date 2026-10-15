@@ -226,6 +226,7 @@ export class Outpost {
   private channel = "";
   private refreshTimer?: ReturnType<typeof setInterval>;
   private reconnectTimer?: ReturnType<typeof setTimeout>;
+  private reconnectAttempts = 0;
   private failure?: Error;
   private messages: Promise<unknown> = Promise.resolve();
   private synchronizing?: Promise<void>;
@@ -242,6 +243,7 @@ export class Outpost {
   async start(): Promise<this> {
     if (this.redis) throw new PolarError("Outpost is already connected");
     this.failure = undefined;
+    this.reconnectAttempts = 0;
     this.configured = signal();
     this.synced = signal();
     this.messages = Promise.resolve();
@@ -486,20 +488,26 @@ export class Outpost {
       websocket.terminate();
       throw error;
     }
+    // Closed while this reconnection was opening.
+    if (!this.redis) {
+      websocket.terminate();
+      return;
+    }
     this.websocket = websocket;
     this.actors.clear();
     await this.send({ type: "configuration" });
   }
 
-  private reconnect(attempt = 1): void {
+  private reconnect(): void {
     if (!this.redis || this.failure) return;
+    const attempt = ++this.reconnectAttempts;
     const delay = Math.min(MAX_RECONNECT_DELAY, RECONNECT_DELAY * 2 ** (attempt - 1));
     this.reconnectTimer = setTimeout(
       () => {
         this.connectWebsocket(attempt).catch((error: unknown) => {
           if (error instanceof RefusedError && [401, 403].includes(error.status))
             this.fail(new PolarError("Polar refused the Outpost connection"));
-          else this.reconnect(attempt + 1);
+          else this.reconnect();
         });
       },
       delay * (0.5 + Math.random() / 2),
@@ -668,6 +676,8 @@ export class Outpost {
     } else if (message.type === "configuration") {
       this.reducers = message.payload.reducers;
       this.configured.resolve();
+      // A session counts as stable once Polar configured it.
+      this.reconnectAttempts = 0;
     } else if (message.type === "meter_usage") {
       const snapshot = message.payload;
       const reducer = this.reducers.find((item) => item.meter_ids?.includes(snapshot.meter_id));

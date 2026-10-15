@@ -615,18 +615,6 @@ resource "tfe_variable" "vercel_sentry_auth_token_sandbox" {
   }
 }
 
-resource "tfe_variable" "vercel_polar_preview_access_token_sandbox" {
-  key             = "polar_preview_access_token"
-  category        = "terraform"
-  description     = "Polar preview access token for the Vercel sandbox frontend"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.sandbox.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "vercel_next_public_sentry_dsn_sandbox" {
   key             = "next_public_sentry_dsn"
   category        = "terraform"

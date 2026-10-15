@@ -33,7 +33,7 @@ from polar.kit.schemas import (
 from polar.kit.versioning import Version
 from polar.meter.schemas import Meter
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
-from polar.openapi import cli_confirm_equals
+from polar.openapi import destructive_when_equals
 from polar.product.schemas import Product, ProductPrice
 from polar.version import V2027_01
 
@@ -494,7 +494,7 @@ class SubscriptionCancelBase(Schema):
 
 class SubscriptionCancel(SubscriptionCancelBase):
     cancel_at_period_end: bool = Field(
-        json_schema_extra=cli_confirm_equals(True),
+        json_schema_extra=destructive_when_equals(True),
         description=inspect.cleandoc(
             """
         Cancel an active subscription once the current period ends.
@@ -508,7 +508,7 @@ class SubscriptionCancel(SubscriptionCancelBase):
 class SubscriptionRevoke(SubscriptionCancelBase):
     revoke: Literal[True] = Field(
         description="Cancel and revoke an active subscription immediately",
-        json_schema_extra=cli_confirm_equals(True),
+        json_schema_extra=destructive_when_equals(True),
     )
 
 
@@ -516,7 +516,7 @@ class SubscriptionPause(Schema):
     model_config = ConfigDict(extra="forbid")
 
     pause_at_period_end: bool = Field(
-        json_schema_extra=cli_confirm_equals(True),
+        json_schema_extra=destructive_when_equals(True),
         description=inspect.cleandoc(
             """
         Pause an active subscription at the end of the current period.
@@ -547,7 +547,7 @@ class SubscriptionResume(Schema):
             "Resume a paused subscription immediately, "
             "starting a new billing period and charging the customer."
         ),
-        json_schema_extra=cli_confirm_equals(True),
+        json_schema_extra=destructive_when_equals(True),
     )
 
 

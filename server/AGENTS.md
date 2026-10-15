@@ -398,6 +398,14 @@ async def create(...) -> Resource:   # ORM model, not the schema
     return await resource_service.create(...)
 ```
 
+### Destructive MCP and CLI operations
+Write endpoints, or request fields, that delete, revoke, archive, disable, rotate credentials or move
+money must be marked with the helpers in `polar/openapi.py`: `openapi_extra=destructive()` on the
+route, or `json_schema_extra=destructive_when_equals(...)` / `destructive_when_one_of(...)` on the
+field that makes it destructive. `DELETE` routes already are. This sets `destructive` in
+`x-tool-annotations`, which drives both the CLI confirmation prompt and the MCP `destructiveHint`.
+`tests/test_openapi.py` fails until every MCP or CLI write operation is classified.
+
 ## Tax ID Validation
 
 When adding or modifying tax ID validators in `polar/tax/tax_id.py`:

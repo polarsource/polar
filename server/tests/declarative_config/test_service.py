@@ -25,7 +25,7 @@ from polar.declarative_config.service import (
     declarative_config as declarative_config_service,
 )
 from polar.discount.repository import DiscountRepository
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import SubscriptionRecurringInterval, TaxBehaviorOption
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.trial import TrialInterval
 from polar.kit.visibility import Visibility
@@ -123,6 +123,12 @@ PACK_PRODUCT = {
     "external_id": "pack",
     "name": "Pack",
     "prices": [{"amount_type": "fixed", "price_amount": 1000}],
+}
+
+EUR_PACK_PRICE = {
+    "amount_type": "fixed",
+    "price_amount": 900,
+    "price_currency": "eur",
 }
 
 LAUNCH_DISCOUNT = {
@@ -606,6 +612,24 @@ class TestApply:
                 Config.model_validate({"benefits": [BETA_BENEFIT]}),
             )
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.benefits_write})
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_meters_require_meters_scope(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        with pytest.raises(InsufficientScopeError):
+            await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate({"meters": [TOOL_CALLS_METER]}),
+            )
+
     @pytest.mark.parametrize("benefits", [[BETA_BENEFIT], []])
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.meters_write})
@@ -1065,10 +1089,363 @@ class TestApply:
         [error] = exc_info.value.errors()
         assert error["loc"] == ("body", "discounts", 0, "code")
 
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_settings_currency_with_new_products(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "settings": {"payments": {"currency": "eur"}},
+                    "products": [
+                        {
+                            **PACK_PRODUCT,
+                            "prices": [EUR_PACK_PRICE],
+                        }
+                    ],
+                }
+            ),
+        )
+
+        assert result.settings is not None
+        assert result.settings.action == ConfigAction.updated
+        assert organization.default_presentment_currency == "eur"
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pack"])
+        assert [price.price_currency for price in product.prices] == ["eur"]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_settings_tax(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[(1000, "eur")],
+        )
+
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"settings": {"payments": {"tax": "exclusive"}}}),
+        )
+
+        assert result.settings is not None
+        assert result.settings.action == ConfigAction.updated
+        assert organization.default_tax_behavior == TaxBehaviorOption.exclusive
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_settings_currency_switch(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Pack",
+            external_id="pack",
+        )
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "settings": {"payments": {"currency": "eur"}},
+                    "products": [{**PACK_PRODUCT, "prices": [EUR_PACK_PRICE]}],
+                }
+            ),
+        )
+
+        assert organization.default_presentment_currency == "eur"
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pack"])
+        assert [price.price_currency for price in product.prices] == ["eur"]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_settings_currency_missing_on_product(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+
+        with pytest.raises(ConfigInvalid) as exc_info:
+            await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate({"settings": {"payments": {"currency": "eur"}}}),
+            )
+
+        [issue] = exc_info.value.errors
+        assert issue.type == ConfigIssueType.missing_currency
+        assert issue.loc == ["body", "settings", "payments", "currency"]
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.meters_write})
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_settings_require_organizations_scope(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        with pytest.raises(InsufficientScopeError):
+            await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate({"settings": {"payments": {"currency": "eur"}}}),
+            )
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_settings_require_organization_manage(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        user_organization.role = OrganizationRole.member
+        await save_fixture(user_organization)
+
+        with pytest.raises(NotPermitted):
+            await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate(
+                    {
+                        "organization_id": str(organization.id),
+                        "settings": {"payments": {"currency": "usd"}},
+                    }
+                ),
+            )
+
 
 @pytest.mark.anyio
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 class TestPlan:
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_settings_diff(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate({"settings": {"payments": {"currency": "eur"}}}),
+        )
+
+        assert plan.settings is not None
+        assert plan.settings.action == ConfigAction.updated
+        assert [change.model_dump() for change in plan.settings.diff] == [
+            {"field": "payments.currency", "before": "usd", "after": "eur"}
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_settings_tax_diff(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate({"settings": {"payments": {"tax": "inclusive"}}}),
+        )
+
+        assert plan.settings is not None
+        assert [change.model_dump() for change in plan.settings.diff] == [
+            {"field": "payments.tax", "before": "location", "after": "inclusive"}
+        ]
+        assert plan.issues == []
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_settings_unchanged(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate({"settings": {"payments": {"currency": "usd"}}}),
+        )
+
+        assert plan.settings is not None
+        assert plan.settings.action == ConfigAction.unchanged
+        assert plan.settings.diff == []
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_settings_omitted(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate({"meters": []})
+        )
+
+        assert plan.settings is None
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_currency_change_warning(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "settings": {"payments": {"currency": "eur"}},
+                    "products": [{**PACK_PRODUCT, "prices": [EUR_PACK_PRICE]}],
+                }
+            ),
+        )
+
+        assert [(issue.severity, issue.type, issue.loc) for issue in plan.issues] == [
+            (
+                ConfigIssueSeverity.warning,
+                ConfigIssueType.currency_changed,
+                ["body", "settings", "payments", "currency"],
+            )
+        ]
+        assert plan.issues[0].msg == (
+            "New checkouts will use EUR when the product has no price in the "
+            "customer's local currency."
+        )
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_product_missing_new_currency(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "settings": {"payments": {"currency": "eur"}},
+                    "products": [PACK_PRODUCT],
+                }
+            ),
+        )
+
+        [error] = [
+            issue
+            for issue in plan.issues
+            if issue.severity == ConfigIssueSeverity.error
+        ]
+        assert error.type == ConfigIssueType.missing_currency
+        assert error.loc == ["body", "products", 0, "prices"]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_unlisted_product_missing_new_currency(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Legacy",
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate({"settings": {"payments": {"currency": "eur"}}}),
+        )
+
+        [error] = [
+            issue
+            for issue in plan.issues
+            if issue.severity == ConfigIssueSeverity.error
+        ]
+        assert error.type == ConfigIssueType.missing_currency
+        assert error.loc == ["body", "settings", "payments", "currency"]
+        assert "Legacy" in error.msg
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_new_product_missing_default_currency(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {"products": [{**PACK_PRODUCT, "prices": [EUR_PACK_PRICE]}]}
+            ),
+        )
+
+        [error] = plan.issues
+        assert error.type == ConfigIssueType.missing_currency
+        assert error.loc == ["body", "products", 0, "prices"]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_unchanged_product_missing_default_currency(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Pack",
+            external_id="pack",
+            prices=[(900, "eur")],
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "products": [
+                        {
+                            **PACK_PRODUCT,
+                            "description": "Description",
+                            "prices": [EUR_PACK_PRICE],
+                        }
+                    ]
+                }
+            ),
+        )
+
+        assert plan.changes[0].action == ConfigAction.unchanged
+        assert plan.issues == []
+
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.meters_read})
     )

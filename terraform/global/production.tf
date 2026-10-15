@@ -751,18 +751,6 @@ resource "tfe_variable" "vercel_sentry_auth_token_production" {
   }
 }
 
-resource "tfe_variable" "vercel_polar_preview_access_token_production" {
-  key             = "polar_preview_access_token"
-  category        = "terraform"
-  description     = "Polar preview access token for the Vercel production frontend"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.production.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "vercel_next_public_sentry_dsn_production" {
   key             = "next_public_sentry_dsn"
   category        = "terraform"

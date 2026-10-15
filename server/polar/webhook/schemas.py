@@ -24,7 +24,7 @@ from polar.kit.schemas import (
 )
 from polar.kit.versioning import _ACTIVE_API_VERSION, APIVersion
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
-from polar.openapi import cli_confirm_equals
+from polar.openapi import destructive_when_equals
 from polar.organization.schemas import OrganizationID
 from polar.version import CURRENT_API_VERSION, VERSIONS
 from polar.webhook.constants import (
@@ -219,7 +219,7 @@ class WebhookEndpointUpdate(Schema):
     enabled: bool | None = Field(
         default=None,
         description="Whether the webhook endpoint is enabled.",
-        json_schema_extra=cli_confirm_equals(False),
+        json_schema_extra=destructive_when_equals(False),
     )
 
 

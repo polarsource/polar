@@ -1,200 +1,161 @@
 'use client'
 
-import LogoIcon from '@/components/Brand/logos/LogoIcon'
-import { Text } from '@polar-sh/orbit'
+import LogoType from '@/components/Brand/logos/LogoType'
+import { StaticImage } from '@/components/Image/StaticImage'
+import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Check, LoaderCircle } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
+import { EventLog } from './EventLog'
+import { MarginChart } from './MarginChart'
 import { UsageBillingCharge } from './UsageBillingCharge'
-import {
-  count,
-  dollars,
-  PRICE_PER_TOKEN,
-  STARTING_TOKENS,
-  useUsageConversation,
-  VISIBLE_EVENTS,
-} from './useUsageConversation'
+import { useTweenedValues } from './useTweened'
+import { compact, dollars, percent, useUsageStream } from './useUsageStream'
 
-const EventRow = ({
-  tokens,
-  pending = false,
+const Stat = ({
+  label,
+  value,
+  sub,
 }: {
-  tokens: number
-  pending?: boolean
+  label: string
+  value: string
+  sub?: string
 }) => (
-  <Box alignItems="center" justifyContent="between" columnGap="l">
-    <Box alignItems="center" columnGap="s" color="text-secondary">
-      {pending ? (
-        <LoaderCircle size={12} className="animate-spin" />
-      ) : (
-        <Check size={12} />
-      )}
-      <Text variant="caption" monospace color={pending ? 'default' : 'muted'}>
-        ai.tokens
-      </Text>
-    </Box>
-    <Box alignItems="baseline" columnGap="l">
-      <Text variant="caption" color="muted" tabularNums>
-        {count(tokens)}
-      </Text>
-      <Box minWidth={64} justifyContent="end">
-        <Text
-          variant="caption"
-          tabularNums
-          color={pending ? 'muted' : 'default'}
-        >
-          {pending ? 'Metering' : `+${dollars(tokens * PRICE_PER_TOKEN, 4)}`}
+  <Box flexDirection="column" rowGap="xs">
+    <Text variant="caption" color="muted">
+      {label}
+    </Text>
+    <Text variant="heading-xs" tabularNums>
+      {value}
+      {sub ? (
+        <Text as="span" variant="heading-xs" color="muted">
+          {' '}
+          {sub}
         </Text>
-      </Box>
-    </Box>
+      ) : null}
+    </Text>
   </Box>
 )
 
+/** The chrome of the site's modals: a dark frame with a hairline and a 4px inset. The header sits on the frame. */
 const Panel = ({ children }: { children: ReactNode }) => (
-  <Box
-    width="100%"
-    height="100%"
-    flexDirection="column"
-    backgroundColor="background-primary"
-    borderWidth={1}
-    borderStyle="solid"
-    borderColor="border-primary"
-  >
+  <div className="dark:bg-polar-950 dark:border-polar-800 flex h-full w-full flex-col rounded-2xl border border-gray-200 bg-gray-100 p-1 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.75)]">
     {children}
-  </Box>
+  </div>
 )
 
+/** The lighter panel inside the frame, holding the content. */
+const Inner = ({ children }: { children: ReactNode }) => (
+  <div className="dark:bg-polar-900 flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-xl bg-white">
+    {children}
+  </div>
+)
+
+/** One Polar window: the events streaming in on the left, and the unit economics they add up to on the right. */
 export const UsageBillingMock = () => {
-  const { ref, scenario, phase, typed, streamed, settled, billed } =
-    useUsageConversation()
-  const totalTokens = STARTING_TOKENS + billed + streamed
+  const { ref, events, totals, series, margin } = useUsageStream()
+  const [tokens, revenue, cost, marginShown] = useTweenedValues(
+    useMemo(
+      () => [totals.tokens, totals.revenue, totals.cost, margin],
+      [totals, margin],
+    ),
+  )
 
   return (
-    <Box
+    <div
       ref={ref}
-      position="relative"
-      width="100%"
-      flexDirection="column"
-      rowGap="l"
-      overflow="hidden"
-      height={{ md: '34rem' }}
+      className="dark:border-polar-800 relative w-full overflow-hidden rounded-md border border-gray-200 bg-[url(/assets/landing/company/Polar_Flow_03_No_Logo.jpg)] bg-cover bg-center p-4 md:p-12"
     >
-      <Box
-        position={{ base: 'relative', md: 'absolute' }}
-        top={{ md: '3rem' }}
-        left={{ md: 0 }}
-        width={{ base: '100%', md: '60%' }}
-        height={{ md: '38rem' }}
-      >
-        <Panel>
-          <Box alignItems="center" columnGap="s" padding="l">
-            <Box
-              width={20}
-              height={20}
-              alignItems="center"
-              justifyContent="center"
-              backgroundColor="background-card"
-            >
-              <Text variant="caption">L</Text>
-            </Box>
-            <Text variant="body" color="muted">
-              Lumen Assistant
-            </Text>
-          </Box>
-          <Box
-            flexDirection="column"
-            rowGap="l"
-            paddingHorizontal="l"
-            paddingBottom="l"
-            maxWidth={{ md: '58%' }}
-            minHeight={{ base: '13rem', md: 'auto' }}
-          >
-            <Box
-              alignSelf="start"
-              padding="m"
-              backgroundColor="background-card"
-            >
-              <Text variant="body">{scenario.prompt}</Text>
-            </Box>
-            <Text variant="body" color="muted">
-              {scenario.answer.slice(0, typed)}
-              <Box as="span" visibility="hidden">
-                {scenario.answer.slice(typed)}
-              </Box>
-            </Text>
-          </Box>
-        </Panel>
-      </Box>
-
-      <Box
-        position={{ base: 'relative', md: 'absolute' }}
-        top={{ md: 0 }}
-        left={{ md: '38%' }}
-        right={{ md: 0 }}
-        height={{ md: '38rem' }}
-        boxShadow="xl"
-      >
+      <div className="pointer-events-none absolute inset-0 bg-black/20" />
+      <Box position="relative" width="100%">
         <Panel>
           <Box
             alignItems="center"
             justifyContent="between"
-            padding="l"
-            borderBottomWidth={1}
-            borderStyle="solid"
-            borderColor="border-primary"
+            paddingHorizontal="xl"
+            paddingVertical="m"
           >
-            <Box alignItems="center" columnGap="xs">
-              <LogoIcon size={24} />
-              <Text variant="body">Acme Inc</Text>
-              <Text variant="body" color="muted">
-                on Lumen Pro
-              </Text>
-            </Box>
+            <LogoType height={14} />
             <Text variant="caption" color="muted">
               Current cycle
             </Text>
           </Box>
-          <Box flexDirection="column" rowGap="xs" padding="l">
-            <Text variant="heading-s" tabularNums>
-              {count(totalTokens)}
-            </Text>
-            <Text variant="body" color="muted">
-              tokens metered
-            </Text>
-          </Box>
-          <Box
-            flexDirection="column"
-            rowGap="m"
-            padding="l"
-            borderTopWidth={1}
-            borderStyle="solid"
-            borderColor="border-primary"
-          >
-            <Box justifyContent="between">
-              <Text variant="caption" color="muted">
-                Events
-              </Text>
-              <Text variant="caption" color="muted">
-                $2.00 per 1M tokens
-              </Text>
-            </Box>
-            {phase === 'prompt' ? null : (
-              <EventRow tokens={streamed} pending={phase === 'streaming'} />
-            )}
-            {settled
-              .slice(
-                0,
-                phase === 'prompt' ? VISIBLE_EVENTS : VISIBLE_EVENTS - 1,
-              )
-              .map((tokens, position) => (
-                <EventRow key={`${position}-${tokens}`} tokens={tokens} />
-              ))}
-          </Box>
-          <Box paddingHorizontal="l" paddingBottom="l">
-            <UsageBillingCharge usageCharge={totalTokens * PRICE_PER_TOKEN} />
-          </Box>
+          <Grid templateColumns={{ base: '1fr', md: '2fr 3fr' }} gap="xs">
+            <Inner>
+              <Box flexDirection="column" height="100%">
+                <Box
+                  alignItems="center"
+                  justifyContent="between"
+                  columnGap="l"
+                  marginHorizontal="xl"
+                  paddingVertical="l"
+                  borderBottomWidth={1}
+                  borderStyle="solid"
+                  borderColor="border-primary"
+                >
+                  <Box alignItems="center" columnGap="m">
+                    <StaticImage
+                      src="/assets/acme.jpg"
+                      alt="Acme Inc"
+                      width={32}
+                      height={32}
+                      className="size-8 rounded-full object-cover"
+                    />
+                    <Box flexDirection="column">
+                      <Text variant="body">Acme Inc</Text>
+                      <Text variant="caption" color="muted">
+                        joe@acme.com
+                      </Text>
+                    </Box>
+                  </Box>
+                </Box>
+                <Grid
+                  templateColumns="repeat(2, 1fr)"
+                  marginHorizontal="xl"
+                  paddingVertical="l"
+                  borderBottomWidth={1}
+                  borderStyle="solid"
+                  borderColor="border-primary"
+                >
+                  <Stat label="Tokens metered" value={compact(tokens)} />
+                  <Box
+                    paddingLeft="xl"
+                    borderLeftWidth={1}
+                    borderStyle="solid"
+                    borderColor="border-primary"
+                  >
+                    <Stat label="Revenue" value={dollars(revenue, 2)} />
+                  </Box>
+                </Grid>
+                <Box padding="xl">
+                  <EventLog events={events} />
+                </Box>
+                <Box marginTop="auto" flexDirection="column" width="100%">
+                  <UsageBillingCharge usageCharge={totals.revenue} />
+                </Box>
+              </Box>
+            </Inner>
+            <Inner>
+              <Box flexDirection="column" rowGap="l" padding="xl" height="100%">
+                <Box justifyContent="between" alignItems="start" columnGap="l">
+                  <Stat
+                    label="Gross margin"
+                    value={totals.revenue > 0 ? percent(marginShown) : '—'}
+                  />
+                  <Box flexDirection="column" rowGap="xs" alignItems="end">
+                    <Text variant="caption" color="muted">
+                      Inference cost
+                    </Text>
+                    <Text variant="heading-xs" tabularNums>
+                      {dollars(cost, 2)}
+                    </Text>
+                  </Box>
+                </Box>
+                <MarginChart series={series} />
+              </Box>
+            </Inner>
+          </Grid>
         </Panel>
       </Box>
-    </Box>
+    </div>
   )
 }

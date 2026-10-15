@@ -17,6 +17,7 @@ import * as Organizations from '@/services/organizations'
 import * as OAuth from '@/services/oauth'
 import * as Polar from '@/services/polar'
 import * as Telemetry from '@/services/telemetry'
+import * as TokenHandoff from '@/services/token-handoff'
 import * as Trigger from '@/services/trigger'
 import { removeRetiredBinary } from '@/services/update'
 import { availableUpdate, checkForUpdate } from '@/services/update-check'
@@ -63,6 +64,7 @@ const services = Layer.mergeAll(
   polarLayer,
   organizationsLayer,
   triggerLayer,
+  TokenHandoff.layer,
   updaterLayer,
   telemetryLayer,
   BunServices.layer,

@@ -145,6 +145,7 @@ const rows = (
         : field !== 'benefits',
     ),
     entry.action,
+    section,
   )
 
 const GRANT_MARKS: Record<Grant['status'], string> = {
@@ -219,7 +220,13 @@ export const formatTree = (
     ]
   }
 
-  return [...new Set([...SECTIONS, ...entries.map(({ section }) => section)])]
+  return [
+    ...new Set([
+      'settings',
+      ...SECTIONS,
+      ...entries.map(({ section }) => section),
+    ]),
+  ]
     .flatMap((section) => {
       const own = bySection(section)
       if (own.length === 0) return []

@@ -4,6 +4,7 @@ import { auth as authCommand } from '@/commands/auth'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
 import { Organizations } from '@/services/organizations'
+import { TokenHandoff } from '@/services/token-handoff'
 import { keys, runCli, type RunCliOptions } from '@/utils/test-utils/cli'
 import {
   fakeAuth,
@@ -33,6 +34,10 @@ const run = (args: string[], options?: RunCliOptions) => {
     cli.effect.pipe(
       Effect.provideService(Auth, auth.auth),
       Effect.provideService(Organizations, organizations.organizations),
+      Effect.provideService(
+        TokenHandoff,
+        TokenHandoff.of({ receive: () => Effect.die('unused') }),
+      ),
     ),
   )
   return { promise, output: cli.output, terminal: cli.terminal }

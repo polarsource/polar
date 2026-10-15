@@ -443,4 +443,37 @@ describe('formatTree', () => {
       ['  checkout_links', '  + promo', '      label  "Promo"'].join('\n'),
     )
   })
+
+  test('renders settings groups like entries, first', () => {
+    const output = stripAnsi(
+      formatTree({ settings: { payments: { currency: 'eur' } } }, [
+        {
+          section: 'meters',
+          id: 'tool_call',
+          action: 'unchanged',
+          diff: [],
+        },
+        {
+          section: 'settings',
+          id: 'payments',
+          action: 'updated',
+          diff: [
+            { field: 'currency', before: 'usd', after: 'eur' },
+            { field: 'tax', before: 'location', after: 'inclusive' },
+          ],
+        },
+      ]),
+    )
+    expect(
+      output
+        .split('\n')
+        .slice(0, 4)
+        .map((line) => line.trimEnd()),
+    ).toEqual([
+      '  settings',
+      '  ~ payments',
+      '      currency  USD → EUR',
+      '      tax       location → inclusive',
+    ])
+  })
 })

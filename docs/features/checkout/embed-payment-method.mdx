@@ -13,12 +13,12 @@ Let your customers securely add a payment method without leaving your site.
 Every embed is authenticated with a short-lived **customer session token**. Create it **on your server** to keep the Polar access token secret, then hand the token to the client.
 
 ```ts
-import { Polar } from "@polar-sh/sdk";
+import { createPolar } from "@polar-sh/sdk/2026-10";
 
-const polar = new Polar({ accessToken: process.env.POLAR_ACCESS_TOKEN });
+const polar = createPolar({ accessToken: process.env.POLAR_ACCESS_TOKEN! });
 
 const session = await polar.customerSessions.create({
-  customerId: "the-customer-id",
+  customer_id: "the-customer-id",
 });
 ```
 

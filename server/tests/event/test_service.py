@@ -54,8 +54,8 @@ from polar.models.user_organization import OrganizationRole
 from polar.order.service import order as order_service
 from polar.postgres import AsyncSession
 from polar.redis import Redis
-from polar.reducer_bucket.redis_store import get_reducer_bucket_key
-from polar.reducer_bucket.service import (
+from polar.reducer.redis_store import get_reducer_bucket_key
+from polar.reducer.service import (
     REDUCER_BUCKET_SIZE,
     get_reducer_bucket_start,
 )
@@ -854,7 +854,7 @@ class TestIngest:
 
         timestamp = utc_now() - timedelta(minutes=1)
         late_timestamp = timestamp - 2 * REDUCER_BUCKET_SIZE
-        mocker.patch("polar.reducer_bucket.service.utc_now", return_value=timestamp)
+        mocker.patch("polar.reducer.service.utc_now", return_value=timestamp)
         ingest = EventsIngest(
             events=[
                 EventCreateExternalCustomer.model_validate(
@@ -905,7 +905,7 @@ class TestIngest:
         )
 
         timestamp = utc_now() - timedelta(minutes=1)
-        mocker.patch("polar.reducer_bucket.service.utc_now", return_value=timestamp)
+        mocker.patch("polar.reducer.service.utc_now", return_value=timestamp)
 
         def build_ingest() -> EventsIngest:
             return EventsIngest(
@@ -944,7 +944,7 @@ class TestIngest:
         await create_reducer(save_fixture, organization=organization, meters=[meter])
 
         timestamp = utc_now() - timedelta(minutes=1)
-        mocker.patch("polar.reducer_bucket.service.utc_now", return_value=timestamp)
+        mocker.patch("polar.reducer.service.utc_now", return_value=timestamp)
         mocker.patch.object(
             redis, "pipeline", side_effect=RedisConnectionError("Connection refused")
         )
@@ -1000,7 +1000,7 @@ class TestIngest:
         ]
 
         timestamp = utc_now() - timedelta(minutes=1)
-        mocker.patch("polar.reducer_bucket.service.utc_now", return_value=timestamp)
+        mocker.patch("polar.reducer.service.utc_now", return_value=timestamp)
         ingest = EventsIngest(
             events=[
                 EventCreateExternalCustomer(

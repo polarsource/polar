@@ -28,10 +28,12 @@ from polar.models.billing_entry import BillingEntryType
 from polar.models.event import EventSource
 from polar.reducer.service import reducer as reducer_service
 from scripts.backfill_reducer_buckets import (
-    backfill_bucket,
+    DeletedBucket,
+    backfill_buckets,
     bucket_range,
     floor_bucket,
     get_reducers,
+    get_split_intervals,
 )
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -81,6 +83,25 @@ class TestBucketRange:
             bucket_range(
                 datetime(2026, 10, 8, tzinfo=UTC), datetime(2026, 10, 7, tzinfo=UTC)
             )
+
+
+class TestGetSplitIntervals:
+    def test_only_split_identities(self) -> None:
+        start = datetime(2026, 10, 1, tzinfo=UTC)
+        first_cut = start + timedelta(minutes=1)
+        second_cut = start + timedelta(minutes=3)
+        end = start + timedelta(minutes=5)
+        split = (uuid4(), None)
+        unsplit = (None, "external")
+        assert get_split_intervals(
+            start,
+            end,
+            [
+                DeletedBucket(split, (start, first_cut), 1, None),
+                DeletedBucket(split, (second_cut, end), 1, None),
+                DeletedBucket(unsplit, (start, end), 1, None),
+            ],
+        ) == {split: [(start, first_cut), (first_cut, second_cut), (second_cut, end)]}
 
 
 @pytest.mark.anyio
@@ -134,7 +155,7 @@ class TestBackfillBucket:
         start = floor_bucket(timestamp)
         for _ in range(2):
             assert (
-                await backfill_bucket(
+                await backfill_buckets(
                     session, reducer, start, start + timedelta(minutes=5)
                 )
                 == 1
@@ -176,6 +197,7 @@ class TestBackfillBucket:
             events.append(
                 await create_event(
                     save_fixture,
+                    meter=meter,
                     organization=organization,
                     customer=customer,
                     timestamp=start,
@@ -204,9 +226,18 @@ class TestBackfillBucket:
             product_price=price,
             event=events[3],
         )
-        for excluded in ("filter", "system", "before", "after", "organization", "type"):
+        for excluded in (
+            "filter",
+            "system",
+            "before",
+            "after",
+            "organization",
+            "type",
+            "meter_event",
+        ):
             await create_event(
                 save_fixture,
+                meter=None if excluded == "meter_event" else meter,
                 organization=organization_second
                 if excluded == "organization"
                 else organization,
@@ -223,7 +254,7 @@ class TestBackfillBucket:
                 },
             )
         for _ in range(2):
-            await backfill_bucket(session, reducer, start, end)
+            await backfill_buckets(session, reducer, start, end)
             buckets = (
                 await session.scalars(
                     select(ReducerBucket).order_by(ReducerBucket.generation)
@@ -243,7 +274,7 @@ class TestBackfillBucket:
             product_price=price,
             event=events[0],
         )
-        await backfill_bucket(session, reducer, start, end)
+        await backfill_buckets(session, reducer, start, end)
         buckets = (
             await session.scalars(
                 select(ReducerBucket).order_by(ReducerBucket.generation)
@@ -270,6 +301,7 @@ class TestBackfillBucket:
         for external_id in ("known", "unresolved-a", "unresolved-b"):
             await create_event(
                 save_fixture,
+                meter=meter,
                 organization=organization,
                 external_customer_id=external_id,
                 timestamp=start,
@@ -277,11 +309,12 @@ class TestBackfillBucket:
         for event_customer in (customer, customer_second):
             await create_event(
                 save_fixture,
+                meter=meter,
                 organization=organization,
                 customer=event_customer,
                 timestamp=start,
             )
-        assert await backfill_bucket(session, reducer, start, end) == 5
+        assert await backfill_buckets(session, reducer, start, end) == 5
         buckets = (await session.scalars(select(ReducerBucket))).all()
         assert {
             (b.customer_id, b.external_customer_id, b.count, b.generation)
@@ -300,12 +333,15 @@ class TestBackfillBucket:
         }
         await create_event(
             save_fixture,
+            meter=meter,
             organization=organization,
             external_customer_id="known",
             timestamp=start,
         )
         assert (
-            await backfill_bucket(session, reducer, start, end, customer_id=customer.id)
+            await backfill_buckets(
+                session, reducer, start, end, customer_id=customer.id
+            )
             == 2
         )
         buckets = (await session.scalars(select(ReducerBucket))).all()
@@ -347,6 +383,7 @@ class TestBackfillBucket:
         ):
             event = await create_event(
                 save_fixture,
+                meter=meter,
                 organization=organization,
                 timestamp=start,
                 ingested_at=end + timedelta(days=60),
@@ -365,7 +402,7 @@ class TestBackfillBucket:
                 pending.append(entry)
 
         for _ in range(2):
-            await backfill_bucket(session, reducer, start, end)
+            await backfill_buckets(session, reducer, start, end)
             buckets = (
                 await session.scalars(
                     select(ReducerBucket).order_by(ReducerBucket.generation)
@@ -397,7 +434,7 @@ class TestBackfillBucket:
         )
         for index, entry in enumerate(pending):
             entry.order_item = third_order.items[0]
-            await backfill_bucket(session, reducer, start, end)
+            await backfill_buckets(session, reducer, start, end)
             buckets = (
                 await session.scalars(
                     select(ReducerBucket).order_by(ReducerBucket.generation)
@@ -453,6 +490,7 @@ class TestBackfillBucket:
         ):
             event = await create_event(
                 save_fixture,
+                meter=meter,
                 organization=organization,
                 timestamp=(
                     start - timedelta(seconds=1)
@@ -511,7 +549,7 @@ class TestBackfillBucket:
         )
         await save_fixture(untouched)
         await save_fixture(outside_range)
-        await backfill_bucket(session, reducer, start, end, customer_id=customer.id)
+        await backfill_buckets(session, reducer, start, end, customer_id=customer.id)
         await session.refresh(untouched)
         await session.refresh(outside_range)
         assert untouched.count == 50
@@ -556,7 +594,10 @@ class TestBackfillBucket:
         for count, order in enumerate(sorted(orders, key=lambda order: order.id), 1):
             for _ in range(count):
                 event = await create_event(
-                    save_fixture, organization=organization, timestamp=start
+                    save_fixture,
+                    organization=organization,
+                    timestamp=start,
+                    meter=meter,
                 )
                 await create_billing_entry(
                     save_fixture,
@@ -566,7 +607,7 @@ class TestBackfillBucket:
                     event=event,
                     order_item=order.items[0],
                 )
-        await backfill_bucket(session, reducer, start, end)
+        await backfill_buckets(session, reducer, start, end)
         buckets = (
             await session.scalars(
                 select(ReducerBucket).order_by(ReducerBucket.generation)
@@ -577,8 +618,227 @@ class TestBackfillBucket:
             (2, 2, end),
         ]
 
+    async def test_empty_split_side_is_kept(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        meter: Meter,
+        customer: Customer,
+    ) -> None:
+        reducer = await reducer_service.sync_meter(session, meter)
+        start = datetime(2026, 10, 1, tzinfo=UTC)
+        cutoff = start + timedelta(minutes=2)
+        end = start + timedelta(minutes=5)
+        sealed_at = end + timedelta(minutes=15)
+        for bucket_start, bucket_end, bucket_sealed_at in (
+            (start, cutoff, sealed_at),
+            (cutoff, end, None),
+        ):
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    customer=customer,
+                    bucket_start=bucket_start,
+                    bucket_end=bucket_end,
+                    sealed_at=bucket_sealed_at,
+                    count=0,
+                )
+            )
+        await create_event(
+            save_fixture,
+            meter=meter,
+            organization=organization,
+            customer=customer,
+            timestamp=cutoff,
+        )
 
-@pytest.mark.asyncio
+        for _ in range(2):
+            assert await backfill_buckets(session, reducer, start, end) == 2
+            buckets = (
+                await session.scalars(
+                    select(ReducerBucket).order_by(ReducerBucket.bucket_start)
+                )
+            ).all()
+            assert [
+                (b.bucket_start, b.bucket_end, b.generation, b.count, b.sealed_at)
+                for b in buckets
+            ] == [
+                (start, cutoff, 1, 0, sealed_at),
+                (cutoff, end, 1, 1, None),
+            ]
+
+    async def test_sealed_splits_and_reruns(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        meter: Meter,
+        customer: Customer,
+        customer_second: Customer,
+        product: Product,
+    ) -> None:
+        reducer = await reducer_service.sync_meter(session, meter)
+        price = await create_product_price_metered_unit(
+            save_fixture, product=product, meter=meter
+        )
+        start = datetime(2026, 10, 1, tzinfo=UTC)
+        cutoff = start + timedelta(minutes=2)
+        end = start + timedelta(minutes=5)
+        order = await create_order(
+            save_fixture, customer=customer, created_at=end + timedelta(minutes=15)
+        )
+        for bucket_start, bucket_end, sealed_at in (
+            (start, cutoff, order.created_at),
+            (cutoff, end, None),
+        ):
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    customer=customer,
+                    bucket_start=bucket_start,
+                    bucket_end=bucket_end,
+                    sealed_at=sealed_at,
+                    count=100,
+                )
+            )
+        for timestamp, billed in (
+            (start, True),
+            (start, False),
+            (cutoff, False),
+            (cutoff + timedelta(minutes=1), False),
+        ):
+            event = await create_event(
+                save_fixture,
+                meter=meter,
+                organization=organization,
+                customer=customer,
+                timestamp=timestamp,
+            )
+            if billed:
+                await create_billing_entry(
+                    save_fixture,
+                    type=BillingEntryType.metered,
+                    customer=customer,
+                    product_price=price,
+                    event=event,
+                    order_item=order.items[0],
+                )
+        await create_event(
+            save_fixture,
+            meter=meter,
+            organization=organization,
+            customer=customer_second,
+            timestamp=cutoff,
+        )
+
+        for _ in range(2):
+            assert await backfill_buckets(session, reducer, start, end) == 4
+            buckets = (
+                await session.scalars(
+                    select(ReducerBucket).order_by(
+                        ReducerBucket.customer_id == customer.id,
+                        ReducerBucket.bucket_start,
+                        ReducerBucket.generation,
+                    )
+                )
+            ).all()
+            assert [
+                (
+                    b.customer_id,
+                    b.bucket_start,
+                    b.bucket_end,
+                    b.generation,
+                    b.count,
+                    b.sealed_at,
+                )
+                for b in buckets
+            ] == [
+                (customer_second.id, start, end, 1, 1, None),
+                (customer.id, start, cutoff, 1, 1, order.created_at),
+                (customer.id, start, cutoff, 2, 1, None),
+                (customer.id, cutoff, end, 1, 2, None),
+            ]
+
+    async def test_window_with_split_bucket(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        meter: Meter,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        reducer = await reducer_service.sync_meter(session, meter)
+        start = datetime(2026, 10, 1, tzinfo=UTC)
+        split_start = start + timedelta(minutes=5)
+        cutoff = split_start + timedelta(minutes=2)
+        split_end = split_start + timedelta(minutes=5)
+        end = start + timedelta(minutes=15)
+        sealed_at = end + timedelta(minutes=15)
+        for bucket_start, bucket_end, bucket_sealed_at in (
+            (split_start, cutoff, sealed_at),
+            (cutoff, split_end, None),
+        ):
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    customer=customer,
+                    bucket_start=bucket_start,
+                    bucket_end=bucket_end,
+                    sealed_at=bucket_sealed_at,
+                    count=100,
+                )
+            )
+        for event_customer, timestamp in (
+            (customer, start),
+            (customer, start + timedelta(minutes=4)),
+            (customer, split_start),
+            (customer, cutoff),
+            (customer_second, cutoff),
+            (customer, end - timedelta(minutes=1)),
+        ):
+            await create_event(
+                save_fixture,
+                meter=meter,
+                organization=organization,
+                customer=event_customer,
+                timestamp=timestamp,
+            )
+
+        for _ in range(2):
+            assert await backfill_buckets(session, reducer, start, end) == 5
+            buckets = (
+                await session.scalars(
+                    select(ReducerBucket).order_by(
+                        ReducerBucket.customer_id == customer.id,
+                        ReducerBucket.bucket_start,
+                    )
+                )
+            ).all()
+            assert [
+                (
+                    b.customer_id,
+                    b.bucket_start,
+                    b.bucket_end,
+                    b.generation,
+                    b.count,
+                    b.sealed_at,
+                )
+                for b in buckets
+            ] == [
+                (customer_second.id, split_start, split_end, 1, 1, None),
+                (customer.id, start, split_start, 1, 2, None),
+                (customer.id, split_start, cutoff, 1, 1, None),
+                (customer.id, cutoff, split_end, 1, 1, None),
+                (customer.id, split_end, end, 1, 1, None),
+            ]
+
+
+@pytest.mark.anyio
 class TestBackfillScope:
     async def test_organization_and_meter(
         self,

@@ -88,35 +88,35 @@ Required union discriminators must be supplied as a flag or through `--data`.
 For example, `custom_fields update <id> --name="New name" --type=text` requires
 the field's existing type, even when only its name changes.
 
-## Conditional destructive confirmation
+## Destructive confirmation
 
-Annotate a top-level input property with `x-polar-cli-confirm` to require
-confirmation when its value matches a scalar. For example, `ProductUpdate` uses:
+A command requires confirmation when its operation has `destructive` in
+`x-tool-annotations`. The server sets it with the helpers in
+`server/polar/openapi.py`, and the MCP server reads the same annotation for its
+`destructiveHint`.
+
+`DELETE` operations are always destructive. Other operations can be destructive
+whatever their input with `openapi_extra=destructive()`, as license-key rotation
+does.
+
+To require confirmation only when a top-level input property matches a scalar,
+annotate it with `destructive_when_equals`. For example, `ProductUpdate` uses:
 
 ```python
 is_archived: bool | None = Field(
     default=None,
-    json_schema_extra={"x-polar-cli-confirm": {"equals": True}},
+    json_schema_extra=destructive_when_equals(True),
 )
 ```
 
-For multiple matching values, use `one_of` instead of `equals`:
-
-```python
-json_schema_extra={
-    "x-polar-cli-confirm": {"one_of": ["revoked", "disabled"]}
-}
-```
-
-Exactly one of `equals` or a non-empty `one_of` list must be specified. This applies
-to commands consuming that input schema. Query parameter schemas can use the same
-annotation. The generator checks every comparison value against the field schema
-and emits `requiresConfirmation` from the merged request input.
-Any matching annotated field triggers confirmation; DELETE always requires it.
-Nested properties and structured comparison values are not supported.
-
-Operations can require confirmation unconditionally with
-`openapi_extra={"x-polar-cli-confirm": True}`, as license-key rotation does.
+For multiple matching values, use `destructive_when_one_of("revoked", "disabled")`.
+Both emit `x-tool-destructive-when` with either `equals` or a non-empty `one_of`
+list, and make the server add `destructive` to the operation. Query parameter
+schemas can use the same annotation. The generator checks every comparison value
+against the field schema and emits `requiresConfirmation` from the merged request
+input. Any matching annotated field triggers confirmation. A destructive operation
+without annotated fields always requires it. Nested properties and structured
+comparison values are not supported.
 
 ```bash
 polar products update <id> --is-archived=true

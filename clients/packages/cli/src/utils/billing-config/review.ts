@@ -41,7 +41,12 @@ export const found = (config: LoadedConfig) => {
       ? [plural(items.length, noun)]
       : []
   })
-  return counts.length === 0 ? 'nothing to apply' : counts.join(', ')
+  const settings = record(sections['settings'])
+  const all = [
+    ...(settings && Object.keys(settings).length > 0 ? ['settings'] : []),
+    ...counts,
+  ]
+  return all.length === 0 ? 'nothing to apply' : all.join(', ')
 }
 
 const gutter = (text: string) =>

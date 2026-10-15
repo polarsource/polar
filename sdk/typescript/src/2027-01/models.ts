@@ -10566,6 +10566,72 @@ export interface CustomerMeter {
 }
 
 /**
+ * CustomerMeterCreditExternalIDConflict
+ */
+export interface CustomerMeterCreditExternalIDConflict {
+  /**
+   * error
+   */
+  error: "CustomerMeterCreditExternalIDConflict";
+  /**
+   * detail
+   */
+  detail: string;
+}
+
+/**
+ * Schema to manually grant credits on a customer meter using external IDs.
+ */
+export interface CustomerMeterCreditsExternalIDCreate {
+  /**
+   * The number of units to credit.
+   */
+  units: number;
+  /**
+   * Whether unused credits carry over to the next meter period.
+   */
+  rollover?: boolean;
+  /**
+   * Your unique identifier for this credit. Retrying with the same `external_id` doesn't grant the credit twice.
+   */
+  external_id?: string | null;
+  /**
+   * The external ID of the customer.
+   */
+  external_customer_id: string;
+  /**
+   * The external ID of the meter, as set by config as code.
+   */
+  external_meter_id: string;
+}
+
+/**
+ * Schema to manually grant credits on a customer meter using Polar IDs.
+ */
+export interface CustomerMeterCreditsIDCreate {
+  /**
+   * The number of units to credit.
+   */
+  units: number;
+  /**
+   * Whether unused credits carry over to the next meter period.
+   */
+  rollover?: boolean;
+  /**
+   * Your unique identifier for this credit. Retrying with the same `external_id` doesn't grant the credit twice.
+   */
+  external_id?: string | null;
+  /**
+   * The ID of the customer.
+   */
+  customer_id: string;
+  /**
+   * The ID of the meter.
+   */
+  meter_id: string;
+}
+
+/**
  * CustomerNotReady
  */
 export interface CustomerNotReady {
@@ -12905,6 +12971,10 @@ export interface CustomerWallet {
  */
 export interface DiscountFixedCreate {
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
+  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -13018,6 +13088,10 @@ export interface DiscountFixedOnceForeverDuration {
    */
   id: string;
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -13095,6 +13169,10 @@ export interface DiscountFixedOnceForeverDurationBase {
    * The ID of the object.
    */
   id: string;
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
   /**
    * metadata
    */
@@ -13174,6 +13252,10 @@ export interface DiscountFixedRepeatDuration {
    * The ID of the object.
    */
   id: string;
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
   /**
    * metadata
    */
@@ -13257,6 +13339,10 @@ export interface DiscountFixedRepeatDurationBase {
    */
   id: string;
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -13298,6 +13384,10 @@ export interface DiscountFixedRepeatDurationBase {
  * Schema to create a percentage discount.
  */
 export interface DiscountPercentageCreate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -13399,6 +13489,10 @@ export interface DiscountPercentageOnceForeverDuration {
    */
   id: string;
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -13468,6 +13562,10 @@ export interface DiscountPercentageOnceForeverDurationBase {
    * The ID of the object.
    */
   id: string;
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
   /**
    * metadata
    */
@@ -13539,6 +13637,10 @@ export interface DiscountPercentageRepeatDuration {
    * The ID of the object.
    */
   id: string;
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
   /**
    * metadata
    */
@@ -13613,6 +13715,10 @@ export interface DiscountPercentageRepeatDurationBase {
    * The ID of the object.
    */
   id: string;
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
   /**
    * metadata
    */
@@ -13739,6 +13845,10 @@ export interface DiscountRedemptionLimitReached {
  * Schema to update a discount.
  */
 export interface DiscountUpdate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 

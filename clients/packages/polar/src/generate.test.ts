@@ -265,6 +265,12 @@ const cases: [string, PolarConfig][] = [
             .grants(['custom_servers'])
             .metadata({ ['__proto__']: 'pro', constructor: 'x' }),
         }),
+        discounts: ({ discount }) => ({
+          launch: discount('Launch')
+            .metadata({ campaign: 'spring', stackable: false })
+            .percent(20)
+            .once(),
+        }),
       })
       .toJSON(),
   ],

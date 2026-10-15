@@ -1,27 +1,16 @@
 'use client'
 
-import { promptSessionRefresh } from '@/components/SessionRefresh/store'
-import { useAuth } from '@/hooks/auth'
-import { useCreateOrganizationAccessToken } from '@/hooks/queries'
-import {
-  extractApiErrorMessage,
-  isSessionNotFreshError,
-} from '@/utils/api/errors'
 import { InlineModalHeader } from '@polar-sh/orbit'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
-import { toast } from '../Toast/use-toast'
-import {
-  getOrganizationAccessTokenResumePath,
-  savePendingOrganizationAccessTokenCreation,
-} from './organizationAccessTokenContinuation'
 import {
   AccessTokenForm,
   type AccessTokenCreate,
 } from './OrganizationAccessTokensSettings'
+import { useSubmitOrganizationAccessToken } from './useSubmitOrganizationAccessToken'
 
 interface CreateAccessTokenModalProps {
   organization: schemas['Organization']
@@ -36,8 +25,9 @@ export const CreateAccessTokenModal = ({
   onHide,
   title = 'Create Organization Token',
 }: CreateAccessTokenModalProps) => {
-  const { currentUser } = useAuth()
-  const createToken = useCreateOrganizationAccessToken(organization.id)
+  const { submit, isPending } = useSubmitOrganizationAccessToken(
+    organization.id,
+  )
   const form = useForm<AccessTokenCreate>({
     defaultValues: {
       comment: '',
@@ -49,38 +39,13 @@ export const CreateAccessTokenModal = ({
 
   const onCreate = useCallback(
     async (data: AccessTokenCreate) => {
-      const body = {
-        comment: data.comment ? data.comment : '',
-        expires_in:
-          data.expires_in === 'no-expiration' ? null : data.expires_in,
-        scopes: data.scopes,
-      }
-      const { data: created, error } = await createToken.mutateAsync(body)
+      const created = await submit(data)
       if (created) {
         onSuccess(created)
         reset({ scopes: [] })
-        createToken.reset()
-      } else if (error) {
-        if (isSessionNotFreshError(error) && currentUser) {
-          const actionId = savePendingOrganizationAccessTokenCreation(
-            organization.id,
-            currentUser.id,
-            body,
-          )
-          if (actionId) {
-            promptSessionRefresh({
-              returnTo: getOrganizationAccessTokenResumePath(actionId),
-            })
-            return
-          }
-        }
-        toast({
-          title: 'Could not create access token',
-          description: extractApiErrorMessage(error),
-        })
       }
     },
-    [createToken, currentUser, onSuccess, organization.id, reset],
+    [onSuccess, reset, submit],
   )
 
   return (
@@ -97,7 +62,7 @@ export const CreateAccessTokenModal = ({
             className="max-w-[700px] space-y-8"
           >
             <AccessTokenForm />
-            <Button type="submit" loading={createToken.isPending}>
+            <Button type="submit" loading={isPending}>
               Create Token
             </Button>
           </form>

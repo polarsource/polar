@@ -90,4 +90,4 @@ export const command = Command.make(
         invoke: (client) => client.customerSeats.assignSeat(body),
       })
     }),
-).pipe(Command.withDescription('**Scopes**: `customer_seats:write`'))
+).pipe(Command.withDescription('Assign a seat for a subscription or order.'))

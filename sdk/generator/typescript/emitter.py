@@ -111,6 +111,12 @@ class TypeScriptEmitter(EmitterBase):
             src_dir / "index.ts",
             self.get_context(),
         )
+        for outpost_file in (self.templates_dir / "src/outpost").glob("*.ts"):
+            self.render_file(
+                f"src/outpost/{outpost_file.name}",
+                src_dir / "outpost" / outpost_file.name,
+                self.get_context(),
+            )
 
         for api in self.ir.versions:
             version_dir = src_dir / self.get_version_string(api)

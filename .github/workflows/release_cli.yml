@@ -52,7 +52,7 @@ jobs:
         with:
           package_json_file: clients/package.json
 
-      - uses: actions/setup-node@v7.0.0
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -106,7 +106,7 @@ jobs:
         with:
           package_json_file: clients/package.json
 
-      - uses: actions/setup-node@v7.0.0
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -311,7 +311,7 @@ jobs:
         with:
           ref: ${{ needs.prepare.outputs.ref }}
 
-      - uses: actions/setup-node@v7.0.0
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version-file: .nvmrc
           registry-url: https://registry.npmjs.org

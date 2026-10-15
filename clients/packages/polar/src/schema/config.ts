@@ -17,6 +17,7 @@ import {
 import { discount, DiscountConfig, discountConfig } from './discount'
 import type { DiscountDefinition, DiscountHelpers } from './discount'
 import { meter, MeterConfig } from './meter'
+import { Currency } from './money'
 import type { MeterDefinition } from './meter'
 import { fixed, free, metered, seats, tier, units } from './price'
 import { product, ProductConfig, productPrices } from './product'
@@ -32,7 +33,21 @@ import {
 } from './webhook'
 import type { WebhookEntries, WebhookHelpers } from './webhook'
 
+export const SettingsConfig = Schema.Struct({
+  payments: Schema.optionalKey(
+    Schema.Struct({
+      currency: Schema.optionalKey(Currency),
+      tax: Schema.optionalKey(
+        Schema.Literals(['location', 'inclusive', 'exclusive']),
+      ),
+    }),
+  ),
+})
+
+export type SettingsConfig = typeof SettingsConfig.Type
+
 export const PolarConfig = Schema.Struct({
+  settings: Schema.optionalKey(SettingsConfig),
   meters: Schema.Array(MeterConfig),
   benefits: Schema.optionalKey(Schema.Array(BenefitConfig)),
   products: Schema.optionalKey(Schema.Array(ProductConfig)),
@@ -215,6 +230,7 @@ export const defineConfig = <
   Events extends EventDefinitions | undefined = undefined,
   const Webhooks extends WebhookEntries = Record<never, never>,
 >(input: {
+  readonly settings?: SettingsConfig
   readonly events?: Events &
     (Events extends EventDefinitions ? ValidEvents<Events> : unknown)
   readonly meters: (helpers: {
@@ -272,6 +288,7 @@ export const defineConfig = <
     errors: 'all',
     onExcessProperty: 'error',
   })({
+    ...(input.settings !== undefined && { settings: input.settings }),
     meters: entries.map(([external_id, definition]) => {
       const { name } = validateMeterNaming({
         external_id,
@@ -327,7 +344,11 @@ export const defineConfig = <
           name: name ?? external_id,
           ...definition.billing,
           ...definition.trialPeriod,
-          prices: productPrices(external_id, definition),
+          prices: productPrices(
+            external_id,
+            definition,
+            input.settings?.payments?.currency,
+          ),
           benefits: definition.benefits,
           ...(definition[metadataKey] !== undefined && {
             metadata: definition[metadataKey],

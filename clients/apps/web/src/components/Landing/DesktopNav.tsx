@@ -61,7 +61,7 @@ export const LandingPageDesktopNavigation = () => {
       >
         <Box alignItems="center" columnGap="2xl">
           <PolarLogotype logoVariant="icon" size={28} href="/" />
-          <Box as="ul" alignItems="center" columnGap="xl">
+          <Box as="ul" alignItems="center" columnGap="l">
             {navMenus.map((menu) => (
               <Fragment key={menu.id}>
                 <Box as="li">

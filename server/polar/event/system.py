@@ -1,15 +1,18 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, Literal, NotRequired, overload
+from typing import TYPE_CHECKING, Annotated, Any, Literal, NotRequired, overload
 
+from pydantic import Field
 from sqlalchemy.orm import Mapped
 from sqlalchemy.util.typing import TypedDict
 
 from polar.enums import SubscriptionProrationBehavior
 from polar.kit.address import AddressDict
+from polar.kit.versioning import Version
 from polar.models import Customer, Event, Organization
 from polar.models.benefit import BenefitType
 from polar.models.event import EventSource
+from polar.version import V2027_01
 
 
 class SystemEvent(StrEnum):
@@ -97,6 +100,11 @@ class MeterCreditedMetadata(TypedDict):
     meter_id: str
     units: int
     rollover: bool
+    reason: Annotated[
+        NotRequired[Literal["benefit", "manual"]],
+        Field(default="benefit"),
+        Version(starting_from=V2027_01),
+    ]
 
 
 class MeterCreditedEvent(Event):

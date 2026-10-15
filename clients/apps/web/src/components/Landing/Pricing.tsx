@@ -8,7 +8,7 @@ import GetStartedButton from '../Auth/GetStartedButton'
 import { Chapter } from './Chapter'
 import { Sheet, Window } from './story/Frame'
 
-type Tier = {
+export type Tier = {
   name: string
   desc: string
   free?: boolean
@@ -93,7 +93,7 @@ export const Pricing = () => (
 )
 
 /** A tier as a sheet in the Polar window: price and fee as lines, its features anchored at the bottom. */
-const TierSheet = ({ tier }: { tier: Tier }) => (
+export const TierSheet = ({ tier }: { tier: Tier }) => (
   <Sheet
     large
     title={tier.name}
@@ -154,43 +154,4 @@ const TierSheet = ({ tier }: { tier: Tier }) => (
       ))}
     </Box>
   </Sheet>
-)
-
-export const CardSection = ({
-  label,
-  items,
-  check,
-}: {
-  label?: string
-  items: string[]
-  check?: boolean
-}) => (
-  <Box
-    flexDirection="column"
-    rowGap="s"
-    paddingTop="xl"
-    borderTopWidth={1}
-    borderStyle="solid"
-    borderColor="border-primary"
-  >
-    {label ? (
-      <Text variant="body" color="muted">
-        {label}
-      </Text>
-    ) : null}
-    <Box as="ul" flexDirection="column" rowGap="s">
-      {items.map((item) => (
-        <Box
-          as="li"
-          display="flex"
-          key={item}
-          alignItems="center"
-          columnGap="s"
-        >
-          {check ? <CheckOutlined fontSize="inherit" /> : null}
-          <Text variant="body">{item}</Text>
-        </Box>
-      ))}
-    </Box>
-  </Box>
 )

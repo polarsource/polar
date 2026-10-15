@@ -385,7 +385,10 @@ class AuthorizationServer(_AuthorizationServer):
         sub_type, sub = typing.cast(SubTypeValue, request.user)
         client = typing.cast(OAuth2Client, request.client)
         oauth2_token = OAuth2Token(
-            **token_data, client_id=client.client_id, sub_type=sub_type
+            **token_data,
+            client_id=client.client_id,
+            sub_type=sub_type,
+            resource=getattr(request, "resource", None),
         )
         oauth2_token.sub = sub
 

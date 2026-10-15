@@ -34,6 +34,8 @@ from tests.fixtures.database import SaveFixture
 
 from ..conftest import create_oauth2_authorization_code, create_oauth2_token
 
+MCP_RESOURCE = "https://mcp.polar.sh/mcp/polar-mcp"
+
 
 @pytest.fixture
 async def oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2Client:
@@ -1074,6 +1076,68 @@ class TestOAuth2Consent:
         assert response.json()["error"] == "invalid_request"
 
     @pytest.mark.auth
+    async def test_allow_binds_code_to_resource(
+        self,
+        client: AsyncClient,
+        oauth2_client: OAuth2Client,
+        sync_session: Session,
+    ) -> None:
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email",
+            "sub_type": "user",
+            "resource": MCP_RESOURCE,
+        }
+        response = await client.post(
+            "/v1/oauth2/consent", params=params, data={"action": "allow"}
+        )
+
+        assert response.status_code == 302
+        code = parse_qs(urlparse(response.headers["location"]).query)["code"][0]
+        authorization_code = (
+            sync_session.execute(
+                select(OAuth2AuthorizationCode).where(
+                    OAuth2AuthorizationCode.code == get_token_hash(code)
+                )
+            )
+            .unique()
+            .scalar_one()
+        )
+        assert authorization_code.resource == MCP_RESOURCE
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        "resource",
+        [
+            pytest.param(["/mcp/polar-mcp"], id="relative"),
+            pytest.param([f"{MCP_RESOURCE}#fragment"], id="fragment"),
+            pytest.param([MCP_RESOURCE, "https://example.com"], id="multiple"),
+        ],
+    )
+    async def test_invalid_resource(
+        self, resource: list[str], client: AsyncClient, oauth2_client: OAuth2Client
+    ) -> None:
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email",
+            "sub_type": "user",
+            "state": "xyz123",
+            "resource": resource,
+        }
+        response = await client.post(
+            "/v1/oauth2/consent", params=params, data={"action": "allow"}
+        )
+
+        assert response.status_code == 302
+        query = parse_qs(urlparse(response.headers["location"]).query)
+        assert query["error"] == ["invalid_target"]
+        assert query["state"] == ["xyz123"]
+
+    @pytest.mark.auth
     async def test_state_echoed_on_invalid_scope_redirect(
         self, client: AsyncClient, oauth2_client: OAuth2Client
     ) -> None:
@@ -1744,6 +1808,201 @@ class TestOAuth2Token:
         assert access_token.startswith("polar_at_u_")
         refresh_token = json["refresh_token"]
         assert refresh_token.startswith("polar_rt_u_")
+
+    @pytest.mark.parametrize("requested_resource", [None, MCP_RESOURCE])
+    async def test_authorization_code_binds_token_to_resource(
+        self,
+        requested_resource: str | None,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        user: User,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        await create_oauth2_authorization_code(
+            save_fixture,
+            client=oauth2_client,
+            code="CODE",
+            scopes=["openid", "profile", "email"],
+            redirect_uri="http://127.0.0.1:8000/docs/oauth2-redirect",
+            user=user,
+            resource=MCP_RESOURCE,
+        )
+
+        data = {
+            "grant_type": "authorization_code",
+            "code": "CODE",
+            "client_id": oauth2_client.client_id,
+            "client_secret": "polar_cs_123",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+        }
+        if requested_resource is not None:
+            data["resource"] = requested_resource
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 200
+        access_token = response.json()["access_token"]
+        oauth2_token = (
+            sync_session.execute(
+                select(OAuth2Token).where(
+                    OAuth2Token.access_token == get_token_hash(access_token)
+                )
+            )
+            .unique()
+            .scalar_one()
+        )
+        assert oauth2_token.resource == MCP_RESOURCE
+
+    async def test_authorization_code_binds_unbound_code_to_requested_resource(
+        self,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        user: User,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        await create_oauth2_authorization_code(
+            save_fixture,
+            client=oauth2_client,
+            code="CODE",
+            scopes=["openid", "profile", "email"],
+            redirect_uri="http://127.0.0.1:8000/docs/oauth2-redirect",
+            user=user,
+        )
+
+        data = {
+            "grant_type": "authorization_code",
+            "code": "CODE",
+            "client_id": oauth2_client.client_id,
+            "client_secret": "polar_cs_123",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "resource": MCP_RESOURCE,
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 200
+        access_token = response.json()["access_token"]
+        oauth2_token = (
+            sync_session.execute(
+                select(OAuth2Token).where(
+                    OAuth2Token.access_token == get_token_hash(access_token)
+                )
+            )
+            .unique()
+            .scalar_one()
+        )
+        assert oauth2_token.resource == MCP_RESOURCE
+
+    @pytest.mark.parametrize(
+        "requested_resource",
+        [
+            pytest.param("https://example.com/mcp", id="different"),
+            pytest.param("/mcp/polar-mcp", id="relative"),
+        ],
+    )
+    async def test_authorization_code_invalid_resource(
+        self,
+        requested_resource: str,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        await create_oauth2_authorization_code(
+            save_fixture,
+            client=oauth2_client,
+            code="CODE",
+            scopes=["openid", "profile", "email"],
+            redirect_uri="http://127.0.0.1:8000/docs/oauth2-redirect",
+            user=user,
+            resource=MCP_RESOURCE,
+        )
+
+        data = {
+            "grant_type": "authorization_code",
+            "code": "CODE",
+            "client_id": oauth2_client.client_id,
+            "client_secret": "polar_cs_123",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "resource": requested_resource,
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 400
+        assert response.json()["error"] == "invalid_target"
+
+    async def test_refresh_token_preserves_resource(
+        self,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        user: User,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token="ACCESS_TOKEN",
+            refresh_token="REFRESH_TOKEN",
+            scopes=["openid", "profile", "email"],
+            user=user,
+            resource=MCP_RESOURCE,
+        )
+
+        data = {
+            "grant_type": "refresh_token",
+            "refresh_token": "REFRESH_TOKEN",
+            "client_id": oauth2_client.client_id,
+            "client_secret": "polar_cs_123",
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 200
+        access_token = response.json()["access_token"]
+        oauth2_token = (
+            sync_session.execute(
+                select(OAuth2Token).where(
+                    OAuth2Token.access_token == get_token_hash(access_token)
+                )
+            )
+            .unique()
+            .scalar_one()
+        )
+        assert oauth2_token.resource == MCP_RESOURCE
+
+    async def test_refresh_token_resource_mismatch(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token="ACCESS_TOKEN",
+            refresh_token="REFRESH_TOKEN",
+            scopes=["openid", "profile", "email"],
+            user=user,
+            resource=MCP_RESOURCE,
+        )
+
+        data = {
+            "grant_type": "refresh_token",
+            "refresh_token": "REFRESH_TOKEN",
+            "client_id": oauth2_client.client_id,
+            "client_secret": "polar_cs_123",
+            "resource": "https://example.com/mcp",
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 400
+        assert response.json()["error"] == "invalid_target"
 
     @pytest.mark.parametrize(
         "payload",

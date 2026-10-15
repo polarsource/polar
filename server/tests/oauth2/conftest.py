@@ -110,6 +110,7 @@ async def create_oauth2_token(
     refresh_token_revoked_at: int | None = None,
     issued_at: int | None = None,
     expires_in: int | None = None,
+    resource: str | None = None,
 ) -> OAuth2Token:
     extra: dict[str, int] = {}
     if issued_at is not None:
@@ -125,6 +126,7 @@ async def create_oauth2_token(
         scope=" ".join(scopes),
         access_token_revoked_at=access_token_revoked_at,
         refresh_token_revoked_at=refresh_token_revoked_at,
+        resource=resource,
         **extra,
     )
     if user is not None:
@@ -154,12 +156,14 @@ async def create_oauth2_authorization_code(
     organizations: list[Organization] | None = None,
     code_verifier: str | None = None,
     code_challenge_method: Literal["plain", "S256"] | None = None,
+    resource: str | None = None,
 ) -> OAuth2AuthorizationCode:
     authorization_code = OAuth2AuthorizationCode(
         code=get_token_hash(code),
         client_id=client.client_id,
         scope=" ".join(scopes),
         redirect_uri=redirect_uri,
+        resource=resource,
     )
     if organizations is not None:
         authorization_code.organization_scopes = [

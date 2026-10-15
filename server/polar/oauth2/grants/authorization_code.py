@@ -42,6 +42,7 @@ from ..constants import (
     ISSUER,
 )
 from ..requests import StarletteOAuth2Payload, StarletteOAuth2Request
+from ..resource import get_requested_resource, resolve_token_resource
 from ..service.oauth2_grant import oauth2_grant as oauth2_grant_service
 from ..sub_type import SubType, SubTypeValue
 from ..userinfo import UserInfo, generate_user_info
@@ -88,11 +89,14 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
         """
         If no scope is provided in the authorization request,
         default to the client's scope.
+
+        Reject an invalid resource indicator before the consent screen.
         """
         payload = self.request.payload
         scope: str | None = payload.data.get("scope")
         if scope is None:
             self.request.payload.data["scope"] = self.request.client.scope
+        get_requested_resource(payload)
 
     def create_authorization_response(
         self, redirect_uri: str, grant_user: User | None
@@ -109,6 +113,13 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
             "before_create_authorization_response", redirect_uri, grant_user
         )
         return super().create_authorization_response(redirect_uri, grant_user)  # pyright: ignore
+
+    def validate_token_request(self) -> None:
+        super().validate_token_request()
+        authorization_code: OAuth2AuthorizationCode = self.request.authorization_code
+        self.request.resource = resolve_token_resource(
+            authorization_code.resource, self.request.payload
+        )
 
     def generate_authorization_code(self) -> str:
         return generate_token(prefix=AUTHORIZATION_CODE_PREFIX)
@@ -135,6 +146,7 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
             nonce=nonce,
             code_challenge=code_challenge,
             code_challenge_method=code_challenge_method,
+            resource=get_requested_resource(payload),
         )
         authorization_code.sub = self.sub
 

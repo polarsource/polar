@@ -9,6 +9,7 @@ from sqlalchemy import select
 from polar.kit.crypto import get_token_hash_candidates
 from polar.models import OAuth2Token, User, UserOrganization
 
+from ..resource import resolve_token_resource
 from ..sub_type import SubType, SubTypeValue
 
 if typing.TYPE_CHECKING:
@@ -22,6 +23,13 @@ class RefreshTokenGrant(_RefreshTokenGrant):
 
     INCLUDE_NEW_REFRESH_TOKEN = True
     TOKEN_ENDPOINT_AUTH_METHODS = ["client_secret_basic", "client_secret_post", "none"]
+
+    def validate_token_request(self) -> None:
+        super().validate_token_request()
+        refresh_token: OAuth2Token = self.request.refresh_token
+        self.request.resource = resolve_token_resource(
+            refresh_token.resource, self.request.payload
+        )
 
     def authenticate_refresh_token(self, refresh_token: str) -> OAuth2Token | None:
         statement = select(OAuth2Token).where(

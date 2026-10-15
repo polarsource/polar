@@ -1,3 +1,4 @@
+from authlib.oauth2 import OAuth2Error
 from authlib.oauth2.rfc6750 import InvalidTokenError as _InvalidTokenError
 
 from polar.config import settings
@@ -42,4 +43,13 @@ class InsufficientScopeError(_InvalidTokenError):
         )
 
 
-__all__ = ["InsufficientScopeError", "InvalidTokenError"]
+class InvalidTargetError(OAuth2Error):
+    """The requested resource is invalid, unknown, or malformed.
+
+    https://datatracker.ietf.org/doc/html/rfc8707#section-2
+    """
+
+    error = "invalid_target"
+
+
+__all__ = ["InsufficientScopeError", "InvalidTargetError", "InvalidTokenError"]

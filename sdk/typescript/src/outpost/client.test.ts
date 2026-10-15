@@ -1,3 +1,5 @@
+import type { ReadableSpan } from "@opentelemetry/sdk-trace";
+
 import { Redis } from "ioredis";
 import { spawn, type ChildProcess } from "node:child_process";
 import { once } from "node:events";
@@ -14,6 +16,29 @@ import { ClientBase } from "../base";
 import { Outpost } from "./client";
 import { BUCKET_SIZE, getBucketStart, type Reducer } from "./reducer";
 import { APPLY_SNAPSHOT_SCRIPT } from "./scripts";
+import { TELEMETRY_ENV } from "./telemetry";
+
+const { exported } = vi.hoisted(() => ({ exported: [] as ReadableSpan[] }));
+vi.mock("./telemetry", async (importOriginal) => {
+  const { SimpleSpanProcessor, TracerProvider } = await import("@opentelemetry/sdk-trace");
+  return {
+    ...(await importOriginal<typeof import("./telemetry")>()),
+    createTracerProvider: () =>
+      new TracerProvider({
+        spanProcessors: [
+          new SimpleSpanProcessor({
+            exporter: {
+              export: (spans, resultCallback) => {
+                exported.push(...spans);
+                resultCallback({ code: 0 });
+              },
+              shutdown: async () => {},
+            },
+          }),
+        ],
+      }),
+  };
+});
 
 const timestamp = "2026-10-12T12:00:00Z";
 const bucket = getBucketStart(Date.parse(timestamp) * 1000);
@@ -87,10 +112,12 @@ beforeEach(async () => {
   ];
   snapshot = undefined;
   delayConfiguration = false;
+  exported.length = 0;
 });
 
 afterEach(async () => {
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
   vi.useRealTimers();
   await Promise.all(outposts.splice(0).map((outpost) => outpost.close()));
   connections.length = 0;
@@ -511,4 +538,60 @@ it("preserves microsecond cutoffs when removing and rejecting local buckets", as
   expect(await redis.hget(key, `bucket:${bucket + BUCKET_SIZE}:sum`)).toBe("4");
   await ingest(outpost, 999);
   expect((await outpost.customerMeter(meter))?.consumed_units).toBe(6);
+});
+
+it("sends telemetry spans tagged with the connection ID", async () => {
+  snapshot = {
+    ...customer,
+    customer_id: null,
+    meter_id: "meter",
+    cold_until: bucket,
+    version: 1791807000000003,
+    count: 0,
+    sum: 0,
+    min: null,
+    max: null,
+    credited_units: 10,
+  };
+  const outpost = await start();
+  await ingest(outpost, 3);
+  await vi.waitFor(() =>
+    expect(exported.map((span) => span.name)).toEqual(
+      expect.arrayContaining(["outpost.snapshot.received", "outpost.sync.received"]),
+    ),
+  );
+  await outpost.close();
+
+  expect(new Set(exported.map((span) => span.name))).toEqual(
+    new Set([
+      "outpost.redis.connect",
+      "outpost.redis.subscribe",
+      "outpost.websocket.connect",
+      "outpost.ingest",
+      "outpost.snapshot.received",
+      "outpost.sync.received",
+      "outpost.websocket.disconnect",
+      "outpost.redis.disconnect",
+    ]),
+  );
+  const beforeConnection = [
+    "outpost.redis.connect",
+    "outpost.redis.subscribe",
+    "outpost.websocket.connect",
+  ];
+  for (const span of exported.filter((span) => !beforeConnection.includes(span.name)))
+    expect(span.attributes["outpost.connection_id"]).toBe(connectionId);
+});
+
+it.each([
+  ["option", false, undefined],
+  ["environment", true, "0"],
+] as const)("turns telemetry off through the %s", async (_, telemetry, environment) => {
+  if (environment !== undefined) vi.stubEnv(TELEMETRY_ENV, environment);
+  const outpost = new Outpost(join(directory, "redis.sock"), { client: core, telemetry });
+  outposts.push(outpost);
+  await outpost.start();
+  await ingest(outpost, 3);
+  await outpost.close();
+  expect(exported).toEqual([]);
 });

@@ -46,6 +46,47 @@ def _number(value: str | bytes) -> int | float:
     return number
 
 
+def _report_local_value(
+    span: Span, snapshot: "Snapshot", replaced: collections.abc.Sequence[str | bytes]
+) -> None:
+    decoded = [
+        value.decode() if isinstance(value, bytes) else value for value in replaced
+    ]
+    fields = dict(zip(decoded[::2], decoded[1::2], strict=True))
+    if "cold_until" not in fields:
+        return
+    local = BucketStatistics()
+    buckets: dict[str, BucketStatistics] = {}
+    for field, value in fields.items():
+        if field.startswith("cold:"):
+            setattr(local, field.removeprefix("cold:"), _number(value))
+        elif field.startswith("bucket:"):
+            _, start, statistic = field.split(":")
+            setattr(
+                buckets.setdefault(start, BucketStatistics()), statistic, _number(value)
+            )
+    for bucket in buckets.values():
+        local.add(bucket)
+    span.set_attributes(
+        {
+            "outpost.local.cold_until": int(fields["cold_until"]),
+            "outpost.local.count": local.count,
+            "outpost.local.sum": local.sum,
+            "outpost.snapshot.count": snapshot["count"],
+            "outpost.snapshot.sum": snapshot["sum"],
+            "outpost.snapshot.delta": local.count != snapshot["count"]
+            or not math.isclose(local.sum, snapshot["sum"])
+            or local.min != snapshot["min"]
+            or local.max != snapshot["max"],
+        }
+    )
+    for statistic in ("min", "max"):
+        if (value := getattr(local, statistic)) is not None:
+            span.set_attribute(f"outpost.local.{statistic}", value)
+        if (value := snapshot[statistic]) is not None:
+            span.set_attribute(f"outpost.snapshot.{statistic}", value)
+
+
 def _generate_epoch() -> str:
     return uuid.uuid4().hex
 
@@ -84,7 +125,6 @@ end
 redis.call('HINCRBY', KEYS[1], 'revision', 1)
 local state = redis.call('HGETALL', KEYS[1])
 redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], state = state}))
-return state
 """
 
 WRITE_BUCKET_SCRIPT = (
@@ -113,6 +153,7 @@ for i, func in ipairs({'min', 'max'}) do
 end
 """
     + PUBLISH_STATE_SCRIPT
+    + "return state\n"
 )
 
 APPLY_SNAPSHOT_SCRIPT = (
@@ -120,15 +161,19 @@ APPLY_SNAPSHOT_SCRIPT = (
 local cutoff = tonumber(ARGV[4])
 local current = redis.call('HGET', KEYS[1], 'cold_until')
 if current and tonumber(current) > cutoff then
-    return redis.call('HGETALL', KEYS[1])
+    return {redis.call('HGETALL', KEYS[1]), {}}
 end
+local replaced = {}
 local version = tonumber(ARGV[5])
 local previous = redis.call('HGET', KEYS[1], 'snapshot_version')
 if not previous or version >= tonumber(previous) then
+    if current then replaced = {'cold_until', current} end
     for _, field in ipairs(redis.call('HKEYS', KEYS[1])) do
         if string.sub(field, 1, 5) == 'cold:'
             or (string.sub(field, 1, 7) == 'bucket:'
                 and tonumber(string.match(field, '^bucket:(%-?%d+):')) < cutoff) then
+            table.insert(replaced, field)
+            table.insert(replaced, redis.call('HGET', KEYS[1], field))
             redis.call('HDEL', KEYS[1], field)
         end
     end
@@ -144,6 +189,7 @@ if not credit_version or version >= tonumber(credit_version) then
 end
 """
     + PUBLISH_STATE_SCRIPT
+    + "return {state, replaced}\n"
 )
 
 
@@ -627,8 +673,8 @@ class Outpost:
                         "outpost.meter_id": snapshot["meter_id"],
                         "outpost.snapshot_version": snapshot["version"],
                     },
-                ):
-                    state = await self._apply_snapshot(
+                ) as span:
+                    state, replaced = await self._apply_snapshot(
                         keys=[f"outpost:state:{identity}"],
                         args=[
                             identity,
@@ -644,6 +690,7 @@ class Outpost:
                             snapshot["max"] if snapshot["max"] is not None else "",
                         ],
                     )
+                    _report_local_value(span, snapshot, replaced)
                     await self._receive_state(identity, self._decode_state(state))
 
     def _parse_event(self, event: EventInput) -> Event:

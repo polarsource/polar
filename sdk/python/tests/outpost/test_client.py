@@ -1004,3 +1004,64 @@ async def test_telemetry_opt_out(
     async with Outpost(url, client=polar_client, telemetry=telemetry) as outpost:
         await outpost.ingest(events=[{"name": "call", "external_customer_id": "alice"}])
     assert exported_spans == []
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("snapshot_sum", "snapshot_max", "delta"), [(8, 5, False), (9, 6, True)]
+)
+async def test_snapshot_reports_local_value(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+    exported_spans: list[ReadableSpan],
+    snapshot_sum: int,
+    snapshot_max: int,
+    delta: bool,
+) -> None:
+    url, redis = redis_connection
+    await redis.hset(
+        "outpost:state:external:alice:tokens",
+        mapping={
+            "cold_until": BUCKET - BUCKET_SIZE,
+            "cold:count": 1,
+            "cold:sum": 5,
+            "cold:min": 5,
+            "cold:max": 5,
+            f"bucket:{BUCKET - BUCKET_SIZE}:count": 1,
+            f"bucket:{BUCKET - BUCKET_SIZE}:sum": 3,
+            f"bucket:{BUCKET - BUCKET_SIZE}:min": 3,
+            f"bucket:{BUCKET - BUCKET_SIZE}:max": 3,
+        },
+    )
+    snapshots["external:alice"] = {
+        "customer_id": None,
+        "external_customer_id": "alice",
+        "meter_id": "meter",
+        "version": 1791807000000000,
+        "cold_until": BUCKET,
+        "count": 2,
+        "sum": snapshot_sum,
+        "min": 3,
+        "max": snapshot_max,
+        "credited_units": 10,
+    }
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        with anyio.fail_after(1):
+            while not any(
+                span.name == "outpost.snapshot.received" for span in exported_spans
+            ):
+                await anyio.lowlevel.checkpoint()
+
+    [span] = [
+        span for span in exported_spans if span.name == "outpost.snapshot.received"
+    ]
+    assert span.attributes is not None
+    assert span.attributes["outpost.local.cold_until"] == BUCKET - BUCKET_SIZE
+    assert span.attributes["outpost.local.count"] == 2
+    assert span.attributes["outpost.local.sum"] == 8
+    assert span.attributes["outpost.local.min"] == 3
+    assert span.attributes["outpost.local.max"] == 5
+    assert span.attributes["outpost.snapshot.sum"] == snapshot_sum
+    assert span.attributes["outpost.snapshot.delta"] is delta

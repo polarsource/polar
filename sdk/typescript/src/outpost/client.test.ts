@@ -600,3 +600,51 @@ it.each([
   await outpost.close();
   expect(exported).toEqual([]);
 });
+
+it.each([
+  [8, 5, false],
+  [9, 6, true],
+] as const)(
+  "reports the local value a snapshot replaces (sum %d, max %d, delta %s)",
+  async (snapshotSum, snapshotMax, delta) => {
+    await redis.hset(key, {
+      cold_until: bucket - BUCKET_SIZE,
+      "cold:count": 1,
+      "cold:sum": 5,
+      "cold:min": 5,
+      "cold:max": 5,
+      [`bucket:${bucket - BUCKET_SIZE}:count`]: 1,
+      [`bucket:${bucket - BUCKET_SIZE}:sum`]: 3,
+      [`bucket:${bucket - BUCKET_SIZE}:min`]: 3,
+      [`bucket:${bucket - BUCKET_SIZE}:max`]: 3,
+    });
+    snapshot = {
+      ...customer,
+      customer_id: null,
+      meter_id: "meter",
+      cold_until: bucket,
+      version: 1791807000000004,
+      count: 2,
+      sum: snapshotSum,
+      min: 3,
+      max: snapshotMax,
+      credited_units: 10,
+    };
+    const outpost = await start();
+    await outpost.actor(customer);
+    await vi.waitFor(() =>
+      expect(exported.map((span) => span.name)).toContain("outpost.snapshot.received"),
+    );
+
+    const span = exported.find((span) => span.name === "outpost.snapshot.received")!;
+    expect(span.attributes).toMatchObject({
+      "outpost.local.cold_until": bucket - BUCKET_SIZE,
+      "outpost.local.count": 2,
+      "outpost.local.sum": 8,
+      "outpost.local.min": 3,
+      "outpost.local.max": 5,
+      "outpost.snapshot.sum": snapshotSum,
+      "outpost.snapshot.delta": delta,
+    });
+  },
+);

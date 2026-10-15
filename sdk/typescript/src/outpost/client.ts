@@ -66,7 +66,10 @@ interface LocalState {
 interface OutpostRedis extends Redis {
   outpostReadState(key: string, ...args: (string | number)[]): Promise<string[]>;
   outpostWriteBucket(key: string, ...args: (string | number)[]): Promise<string[]>;
-  outpostApplySnapshot(key: string, ...args: (string | number)[]): Promise<string[]>;
+  outpostApplySnapshot(
+    key: string,
+    ...args: (string | number)[]
+  ): Promise<[state: string[], replaced: string[]]>;
 }
 
 const generateEpoch = (): string => randomUUID().replaceAll("-", "");
@@ -125,6 +128,47 @@ const decodeState = (value: string[]): State => {
     } else if (field.startsWith("credited:")) state.credited[field.slice(9)] = number(value);
   }
   return state;
+};
+
+const isClose = (a: number, b: number): boolean =>
+  Math.abs(a - b) <= 1e-9 * Math.max(Math.abs(a), Math.abs(b));
+
+const reportLocalValue = (span: Span, snapshot: Snapshot, replaced: string[]): void => {
+  const fields: Record<string, string> = {};
+  for (let index = 0; index < replaced.length; index += 2)
+    fields[replaced[index]] = replaced[index + 1];
+  if (fields.cold_until === undefined) return;
+  const local = emptyStatistics();
+  const buckets = new Map<string, BucketStatistics>();
+  for (const [field, value] of Object.entries(fields)) {
+    if (field.startsWith("cold:")) {
+      local[field.slice(5) as keyof BucketStatistics] = number(value);
+    } else if (field.startsWith("bucket:")) {
+      const [, start, statistic] = field.split(":");
+      const bucket = buckets.get(start) ?? emptyStatistics();
+      bucket[statistic as keyof BucketStatistics] = number(value);
+      buckets.set(start, bucket);
+    }
+  }
+  for (const bucket of buckets.values()) addStatistics(local, bucket);
+  span.setAttributes({
+    "outpost.local.cold_until": Number(fields.cold_until),
+    "outpost.local.count": local.count,
+    "outpost.local.sum": local.sum,
+    "outpost.snapshot.count": snapshot.count,
+    "outpost.snapshot.sum": snapshot.sum,
+    "outpost.snapshot.delta":
+      local.count !== snapshot.count ||
+      !isClose(local.sum, snapshot.sum) ||
+      local.min !== snapshot.min ||
+      local.max !== snapshot.max,
+  });
+  for (const statistic of ["min", "max"] as const) {
+    const localValue = local[statistic];
+    if (localValue !== null) span.setAttribute(`outpost.local.${statistic}`, localValue);
+    const snapshotValue = snapshot[statistic];
+    if (snapshotValue !== null) span.setAttribute(`outpost.snapshot.${statistic}`, snapshotValue);
+  }
 };
 
 const recordError = (span: Span, error: unknown): void => {
@@ -587,8 +631,8 @@ export class Outpost {
           throw new TypeError("Snapshot values must be finite");
       await this.trace(
         "outpost.snapshot.received",
-        async () => {
-          const state = await this.requireRedis().outpostApplySnapshot(
+        async (span) => {
+          const [state, replaced] = await this.requireRedis().outpostApplySnapshot(
             `outpost:state:${identity}`,
             identity,
             this.channel,
@@ -602,6 +646,7 @@ export class Outpost {
             snapshot.min ?? "",
             snapshot.max ?? "",
           );
+          reportLocalValue(span, snapshot, replaced);
           await this.receiveState(identity, decodeState(state));
         },
         { "outpost.meter_id": snapshot.meter_id, "outpost.snapshot_version": snapshot.version },

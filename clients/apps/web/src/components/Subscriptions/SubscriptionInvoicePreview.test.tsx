@@ -108,4 +108,29 @@ describe('SubscriptionInvoicePreview', () => {
 
     expect(container.textContent).toBe('')
   })
+
+  it('keeps the renewal of a free plan with a scheduled paid plan', () => {
+    const { container } = render(
+      <SubscriptionInvoicePreview
+        subscription={
+          {
+            ...subscription,
+            prices: [
+              { amount_type: 'fixed', price_amount: 0, price_currency: 'usd' },
+            ],
+            current_meter_period_end: '2026-10-01T00:00:00Z',
+            meters: [
+              {
+                id: 'meter-1',
+                amount: 1840,
+                meter: { id: 'meter', name: 'API requests' },
+              },
+            ],
+          } as unknown as schemas['Subscription']
+        }
+      />,
+    )
+
+    expect(container.textContent).toContain('Upcoming renewal')
+  })
 })

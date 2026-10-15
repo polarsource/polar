@@ -119,8 +119,12 @@ export const CurrentPeriodOverview = ({
     return null
   }
 
-  // Don't show for free subscriptions with no meters
-  const hasNextInvoice = !isFreeProduct || hasMeters
+  // Don't show for free subscriptions with nothing to bill
+  const hasNextInvoice =
+    !isFreeProduct ||
+    hasMeters ||
+    hasProrations ||
+    (subscriptionPreview?.base_amount ?? 0) > 0
   if (!hasNextInvoice) {
     return null
   }

@@ -57,9 +57,17 @@ const SubscriptionInvoicePreview = ({
   // Usage settled on an earlier meter cycle is shown by SubscriptionUsageChargePreview
   const usageOnMeterCycle = billsUsageOnMeterCycle(subscription)
   const hasMeters = subscription.meters.length > 0 && !usageOnMeterCycle
-  const hasNextInvoice = !isFreeProduct || hasMeters
 
-  if (!showsCharge || !hasNextInvoice || !chargePreview) {
+  if (!showsCharge || !chargePreview) {
+    return null
+  }
+
+  const hasNextInvoice =
+    !isFreeProduct ||
+    hasMeters ||
+    chargePreview.base_amount > 0 ||
+    chargePreview.prorations.length > 0
+  if (!hasNextInvoice) {
     return null
   }
 

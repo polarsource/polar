@@ -143,6 +143,9 @@ export const useUpdateSubscription = (id: string) =>
         queryKey: ['subscriptions', { id }, 'charge-preview'],
       })
       queryClient.invalidateQueries({
+        queryKey: ['subscriptions', { id }, 'meter-charge-preview'],
+      })
+      queryClient.invalidateQueries({
         queryKey: ['subscriptions', { id }, 'cancel-preview'],
       })
     },
@@ -211,6 +214,9 @@ export const useUncancelSubscription = (id: string) =>
         queryKey: ['subscriptions', { id }, 'charge-preview'],
       })
       queryClient.invalidateQueries({
+        queryKey: ['subscriptions', { id }, 'meter-charge-preview'],
+      })
+      queryClient.invalidateQueries({
         queryKey: ['subscriptions', { id }, 'cancel-preview'],
       })
     },
@@ -251,6 +257,9 @@ const applySubscriptionUpdateToCache = (
   )
   queryClient.invalidateQueries({
     queryKey: ['subscriptions', { id }, 'charge-preview'],
+  })
+  queryClient.invalidateQueries({
+    queryKey: ['subscriptions', { id }, 'meter-charge-preview'],
   })
   queryClient.invalidateQueries({
     queryKey: ['subscriptions', { id }, 'cancel-preview'],
@@ -394,6 +403,9 @@ export const useClearPendingSubscriptionUpdate = (id: string) =>
 
       queryClient.invalidateQueries({
         queryKey: ['subscriptions', { id }, 'charge-preview'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['subscriptions', { id }, 'meter-charge-preview'],
       })
       queryClient.invalidateQueries({
         queryKey: ['subscriptions', { id }, 'cancel-preview'],

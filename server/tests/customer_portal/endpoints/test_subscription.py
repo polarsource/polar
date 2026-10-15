@@ -76,8 +76,28 @@ class TestGetSubscription:
 class TestGetMeterChargePreview:
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_usage_on_renewal_not_found(
-        self, client: AsyncClient, subscription: Subscription
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
     ) -> None:
+        period_end = utc_now() + timedelta(days=30)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_end=period_end,
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_end = period_end
+        meter = await create_meter(save_fixture, organization=organization)
+        await save_fixture(
+            SubscriptionMeter(subscription=subscription, meter=meter, amount=500)
+        )
+
         response = await client.get(
             f"/v1/customer-portal/subscriptions/{subscription.id}/meter-charge-preview"
         )

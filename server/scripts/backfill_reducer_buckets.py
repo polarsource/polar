@@ -6,7 +6,18 @@ from typing import Any
 from uuid import UUID
 
 import typer
-from sqlalchemy import delete, insert, or_, select
+from sqlalchemy import (
+    ColumnElement,
+    Row,
+    and_,
+    case,
+    delete,
+    insert,
+    literal,
+    null,
+    or_,
+    select,
+)
 
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.kit.utils import utc_now
@@ -65,11 +76,11 @@ async def backfill_organization(
     totals: Totals = {}
     flushed_until = start
     written = 0
-    async for events in _iter_events(session, organization_id, start, end):
-        billed_at = await _get_billed_at(session, [event.id for event in events])
-        _add_to_totals(totals, reducers, events, billed_at)
+    async for rows in _iter_events(session, organization_id, reducers, start, end):
+        billed_at = await _get_billed_at(session, [row.id for row in rows])
+        _add_to_totals(totals, reducers, rows, billed_at)
         # The page may end inside a bucket: only the buckets before it are complete.
-        flush_until = get_reducer_bucket_start(events[-1].timestamp)
+        flush_until = get_reducer_bucket_start(rows[-1].timestamp)
         written += await _flush(
             session, organization_id, totals, flushed_until, flush_until, end
         )
@@ -81,17 +92,23 @@ async def backfill_organization(
 
 
 async def _iter_events(
-    session: AsyncSession, organization_id: UUID, start: datetime, end: datetime
-) -> AsyncIterator[Sequence[Event]]:
+    session: AsyncSession,
+    organization_id: UUID,
+    reducers: Sequence[Reducer],
+    start: datetime,
+    end: datetime,
+) -> AsyncIterator[Sequence[Row[Any]]]:
     """Pages of the organization's user events with a timestamp in [start, end),
     in (timestamp, id) order."""
     after: tuple[datetime, UUID] | None = None
     while True:
-        events = await _get_events_page(session, organization_id, start, end, after)
-        if not events:
+        rows = await _get_events_page(
+            session, organization_id, reducers, start, end, after
+        )
+        if not rows:
             return
-        yield events
-        after = (events[-1].timestamp, events[-1].id)
+        yield rows
+        after = (rows[-1].timestamp, rows[-1].id)
 
 
 async def _flush(
@@ -144,14 +161,22 @@ async def _get_reducers(
 async def _get_events_page(
     session: AsyncSession,
     organization_id: UUID,
+    reducers: Sequence[Reducer],
     start: datetime,
     end: datetime,
     after: tuple[datetime, UUID] | None,
-) -> Sequence[Event]:
+) -> Sequence[Row[Any]]:
     """Up to PAGE_SIZE of the organization's user events with a timestamp in
-    [start, end) and (timestamp, id) after `after`, in that order."""
+    [start, end) and (timestamp, id) after `after`, in that order: the event's
+    id, timestamp and customer identity, then its value for each reducer."""
     statement = (
-        select(Event)
+        select(
+            Event.id,
+            Event.timestamp,
+            Event.customer_id,
+            Event.external_customer_id,
+            *(_value_column(reducer) for reducer in reducers),
+        )
         .where(
             Event.organization_id == organization_id,
             Event.source == EventSource.user,
@@ -168,7 +193,22 @@ async def _get_events_page(
             Event.timestamp >= after_timestamp,
             or_(Event.timestamp > after_timestamp, Event.id < after_id),
         )
-    return (await session.scalars(statement)).all()
+    return (await session.execute(statement)).all()
+
+
+def _value_column(reducer: Reducer) -> ColumnElement[Any]:
+    """The event's contribution to the reducer, or NULL if it doesn't match:
+    the same SQL the sync path aggregates with."""
+    aggregation = reducer.aggregation
+    value = (
+        aggregation.get_sql_value(Event)
+        if isinstance(aggregation, PropertyAggregation)
+        else literal(1)
+    )
+    matches = and_(
+        reducer.filter.get_sql_clause(Event), aggregation.get_sql_clause(Event)
+    )
+    return case((matches, value), else_=null())
 
 
 async def _get_billed_at(
@@ -193,34 +233,22 @@ async def _get_billed_at(
 def _add_to_totals(
     totals: Totals,
     reducers: Sequence[Reducer],
-    events: Sequence[Event],
+    rows: Sequence[Row[Any]],
     billed_at: dict[UUID, datetime],
 ) -> None:
     """Adds each event's value to the bucket of every reducer it matches, under
     the created_at of the order that billed it, or None."""
-    for event in events:
-        sealed_at = billed_at.get(event.id)
-        for reducer in reducers:
-            value = _get_value(reducer, event)
+    for row in rows:
+        id, timestamp, customer_id, external_customer_id, *values = row
+        sealed_at = billed_at.get(id)
+        bucket_start = get_reducer_bucket_start(timestamp)
+        for reducer, value in zip(reducers, values, strict=True):
             if value is None:
                 continue
-            key = (
-                reducer.id,
-                get_reducer_bucket_start(event.timestamp),
-                event.customer_id,
-                event.external_customer_id,
+            key = (reducer.id, bucket_start, customer_id, external_customer_id)
+            totals.setdefault(key, {}).setdefault(sealed_at, Summary()).add(
+                Decimal(str(value))
             )
-            totals.setdefault(key, {}).setdefault(sealed_at, Summary()).add(value)
-
-
-def _get_value(reducer: Reducer, event: Event) -> Decimal | None:
-    """The event's contribution to the reducer, as ingestion computes it."""
-    if not reducer.filter.matches(event):
-        return None
-    if isinstance(reducer.aggregation, PropertyAggregation):
-        property_value = reducer.aggregation.get_value(event)
-        return None if property_value is None else Decimal(str(property_value))
-    return Decimal(1)
 
 
 def _pop_totals_before(totals: Totals, end: datetime) -> Totals:

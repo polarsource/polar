@@ -1,0 +1,31 @@
+clients/apps/mcp/package.json
+  s_8113b980a37313::t_132996c5a456aa 1-7,9-10,13-18,20-23,25-26,29-30
+  s_8113b980a37313::t_571e7a7dc997a7 24
+  s_0423d89ed45acf::t_cffa0847f71ddb 11-12,27-28
+  s_0423d89ed45acf::t_c4f28878e23ec0 19
+  s_8113b980a37313::t_8e4d73019d13d0 8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "852232335051558f633f9926ee9bdcb49a9699fa",
+  "prompts": {},
+  "sessions": {
+    "s_0423d89ed45acf": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a11a3e-8340-7732-9012-a8b757d448a3",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    },
+    "s_8113b980a37313": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41aad960-5555-470b-b8d3-68fd0a8ea3d2",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

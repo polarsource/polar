@@ -1,0 +1,23 @@
+clients/apps/mcp/cloudflare.config.ts
+  s_8113b980a37313::t_efc67a7e71e3e0 1-9,11-20,22-32
+  s_8113b980a37313::t_81d8cb709d3513 10
+clients/apps/mcp/vite.config.ts
+  s_8113b980a37313::t_132996c5a456aa 1-5,7
+  s_8113b980a37313::t_e18dcf18c58cc1 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "7d21a0e37f3c44ef9eaa223414eff702bf07430c",
+  "prompts": {},
+  "sessions": {
+    "s_8113b980a37313": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41aad960-5555-470b-b8d3-68fd0a8ea3d2",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

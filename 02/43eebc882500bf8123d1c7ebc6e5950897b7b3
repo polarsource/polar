@@ -1,0 +1,34 @@
+clients/apps/mcp/src/index.ts
+  s_8113b980a37313::t_f5fb0f3613a4c5 1-5,18,20-36,47-59,61-76,80-82,108-114,118,120,132-133,135,139,143-144,87,95,101
+  s_0423d89ed45acf::t_427a722679a743 6-7,19,37,43-46,115,125-126,128,130-131,136,138,140-142,98,100
+  s_8113b980a37313::t_7dc42d1058858d 60,124
+  s_0423d89ed45acf::t_a18edee42f8007 134
+  s_8113b980a37313::t_d09125cbfa5636 129
+  s_8113b980a37313::t_ed2494c539d114 9,17,84-86,88,92-93,96,105-106
+  s_8113b980a37313::t_59e5d0bf5d6d61 11-16,89
+  s_8113b980a37313::t_f485c7a8c94679 77-79,83,90-91,94,97,99,102-104,107,122,127
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "0243eebc882500bf8123d1c7ebc6e5950897b7b3",
+  "prompts": {},
+  "sessions": {
+    "s_0423d89ed45acf": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a11a3e-8340-7732-9012-a8b757d448a3",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    },
+    "s_8113b980a37313": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41aad960-5555-470b-b8d3-68fd0a8ea3d2",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

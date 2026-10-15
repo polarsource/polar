@@ -184,6 +184,7 @@ async def get(
     response_model=CheckoutSchema,
     status_code=201,
     summary="Create Checkout Session",
+    tags=[APITag.cli],
     responses={201: {"description": "Checkout session created."}},
 )
 async def create(
@@ -204,6 +205,7 @@ async def create(
     response_model=CheckoutSchema,
     status_code=201,
     summary="Create Checkout Session",
+    tags=[APITag.cli],
     responses={201: {"description": "Checkout session created."}},
 )
 @version(starting_from=V2027_01)

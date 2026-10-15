@@ -11,8 +11,57 @@ polar checkouts <subcommand> [flags]
 
 **Subcommands**
 
+- [`polar checkouts create`](#polar-checkouts-create) Create a checkout session.
 - [`polar checkouts get`](#polar-checkouts-get) Get a checkout session by ID.
 - [`polar checkouts list`](#polar-checkouts-list) List checkout sessions.
+
+## polar checkouts create
+
+Create a checkout session.
+
+```bash
+polar checkouts create [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--trial-interval` | `choice` | The interval unit for the trial period. (choices: day, week, month, year) |
+| `--trial-interval-count` | `integer` | The number of interval units for the trial period. |
+| `--metadata` | `string` | Key-value object allowing you to store additional information. JSON: &#123;"&lt;key&gt;": string \| integer \| number \| boolean&#125; |
+| `--custom-field-data` | `string` | Key-value object storing custom field values. JSON: &#123;"&lt;key&gt;": string \| integer \| boolean \| null&#125; |
+| `--discount-id` | `string` | ID of the discount to apply to the checkout. |
+| `--allow-discount-codes` | `boolean` | Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it. |
+| `--require-billing-address` | `boolean` | Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`. |
+| `--amount` | `integer` | amount |
+| `--seats` | `integer` | Predefined number of seats (works with seat-based pricing only) |
+| `--min-seats` | `integer` | Minimum number of seats (works with seat-based pricing only) |
+| `--max-seats` | `integer` | Maximum number of seats (works with seat-based pricing only) |
+| `--units` | `integer` | Predefined number of units (works with unit-based pricing only) |
+| `--min-units` | `integer` | Minimum number of units (works with unit-based pricing only) |
+| `--max-units` | `integer` | Maximum number of units (works with unit-based pricing only) |
+| `--allow-trial` | `boolean` | Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured. |
+| `--customer-id` | `string` | ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer. |
+| `--is-business-customer` | `boolean` | Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name. |
+| `--external-customer-id` | `string` | ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set. |
+| `--customer-name` | `string` | customer_name |
+| `--customer-email` | `string` | customer_email |
+| `--customer-ip-address` | `string` | customer_ip_address |
+| `--customer-billing-name` | `string` | customer_billing_name |
+| `--customer-billing-address` | `string` | customer_billing_address JSON: &#123;"country": "AD" \| "AE" \| "AF" \| "AG" \| "AI" \| ..., ...&#125; |
+| `--customer-tax-id` | `string` | customer_tax_id |
+| `--customer-metadata` | `string` | Key-value object allowing you to store additional information that'll be copied to the created customer. JSON: &#123;"&lt;key&gt;": string \| integer \| number \| boolean&#125; |
+| `--subscription-id` | `string` | ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten. |
+| `--success-url` | `string` | URL where the customer will be redirected after a successful payment.You can add the `checkout_id=&#123;CHECKOUT_ID&#125;` query parameter to retrieve the checkout session id. |
+| `--return-url` | `string` | When set, a back button will be shown in the checkout to return to this URL. |
+| `--embed-origin` | `string` | If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page. |
+| `--locale` | `string` | locale |
+| `--currency` | `choice` | currency (choices: aed, all, amd, aoa, ars, aud, awg, azn, bam, bbd, bdt, bif, bmd, bnd, bob, brl, bsd, bwp, bzd, cad, cdf, chf, clp, cny, cop, crc, cve, czk, djf, dkk, dop, dzd, egp, etb, eur, fjd, fkp, gbp, gel, gip, gmd, gnf, gtq, gyd, hkd, hnl, htg, huf, idr, ils, inr, isk, jmd, jpy, kes, kgs, khr, kmf, krw, kyd, kzt, lak, lkr, lrd, lsl, mad, mdl, mga, mkd, mnt, mop, mur, mvr, mwk, mxn, myr, mzn, nad, ngn, nio, nok, npr, nzd, pab, pen, pgk, php, pkr, pln, pyg, qar, ron, rsd, rwf, sar, sbd, scr, sek, sgd, shp, sos, srd, szl, thb, tjs, top, try, ttd, twd, tzs, uah, ugx, usd, uyu, uzs, vnd, vuv, wst, xaf, xcd, xcg, xof, xpf, yer, zar, zmw) |
+| `--products` | `string` | Required. List of product IDs available to select at that checkout. The first one will be selected by default. |
+| `--prices` | `string` | Optional mapping of product IDs to a list of ad-hoc prices to create for that product. If not set, catalog prices of the product will be used. JSON: &#123;"&lt;key&gt;": array of (&#123;"amount_type": "fixed", "price_amount": integer, ...&#125; \| &#123;"amount_type": "custom", ...&#125; \| &#123;"amount_type": "seat_based", "seat_tiers": &#123;...&#125;, ...&#125; \| &#123;"amount_type": "unit_based", "tiers": &#123;...&#125;, ...&#125; \| &#123;"amount_type": "metered_unit", "meter_id": string, "unit_amount": number \| string, ...&#125; \| &#123;"amount_type": "metered_tiers", "meter_id": string, "tiers": &#123;...&#125;, ...&#125;)&#125; |
 
 ## polar checkouts get
 

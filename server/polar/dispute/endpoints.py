@@ -25,7 +25,12 @@ from .service import dispute as dispute_service
 router = APIRouter(prefix="/disputes", tags=["disputes", APITag.public])
 
 
-@router.get("/", summary="List Disputes", response_model=ListResource[DisputeSchema])
+@router.get(
+    "/",
+    summary="List Disputes",
+    tags=[APITag.cli],
+    response_model=ListResource[DisputeSchema],
+)
 async def list(
     auth_subject: auth.DisputesRead,
     pagination: PaginationParamsQuery,
@@ -62,6 +67,7 @@ async def list(
 @router.get(
     "/{id}",
     summary="Get Dispute",
+    tags=[APITag.cli],
     response_model=DisputeSchema,
     responses={404: DisputeNotFound},
 )

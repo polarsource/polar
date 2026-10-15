@@ -6,8 +6,10 @@ import { command as checkouts } from './checkouts'
 import { command as customFields } from './custom_fields'
 import { command as customerMeters } from './customer_meters'
 import { command as customerSeats } from './customer_seats'
+import { command as customerSessions } from './customer_sessions'
 import { command as customers } from './customers'
 import { command as discounts } from './discounts'
+import { command as disputes } from './disputes'
 import { command as eventTypes } from './event_types'
 import { command as events } from './events'
 import { command as files } from './files'
@@ -30,8 +32,10 @@ export {
   customFields,
   customerMeters,
   customerSeats,
+  customerSessions,
   customers,
   discounts,
+  disputes,
   eventTypes,
   events,
   files,
@@ -54,8 +58,10 @@ export const commands = [
   customFields,
   customerMeters,
   customerSeats,
+  customerSessions,
   customers,
   discounts,
+  disputes,
   eventTypes,
   events,
   files,

@@ -76,6 +76,7 @@ type AggregateField = Annotated[
 @router.get(
     "/",
     summary="List Events",
+    tags=[APITag.cli],
     response_model=ListResource[EventSchema]
     | ListResourceWithCursorPagination[EventSchema],
     openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
@@ -598,7 +599,7 @@ async def get(
     return event
 
 
-@router.post("/ingest", summary="Ingest Events")
+@router.post("/ingest", summary="Ingest Events", tags=[APITag.cli])
 async def ingest(
     ingest: EventsIngest,
     auth_subject: auth.EventWrite,
@@ -613,6 +614,7 @@ async def ingest(
     "/ingest",
     name="ingest",
     summary="Ingest Events",
+    tags=[APITag.cli],
     responses={403: {"model": NotPermitted.schema()}},
 )
 @version(starting_from=V2027_01)

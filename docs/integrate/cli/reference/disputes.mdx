@@ -1,0 +1,56 @@
+---
+title: "polar disputes"
+sidebarTitle: "disputes"
+---
+
+{/* Generated from the CLI by `pnpm --filter @polar-sh/cli docs:generate`. Do not edit by hand. */}
+
+```bash
+polar disputes <subcommand> [flags]
+```
+
+**Subcommands**
+
+- [`polar disputes get`](#polar-disputes-get) Get a dispute by ID.
+- [`polar disputes list`](#polar-disputes-list) List disputes.
+
+## polar disputes get
+
+Get a dispute by ID.
+
+```bash
+polar disputes get [flags] <id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
+
+## polar disputes list
+
+List disputes.
+
+```bash
+polar disputes list [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--organization-id`, `--org` | `string` | Filter by organization ID. Defaults to the active organization. |
+| `--order-id` | `string` | Filter by order ID. |
+| `--status` | `choice` | Filter by dispute status. (choices: prevented, early_warning, needs_response, under_review, lost, won) |
+| `--page` | `integer` | Page number, defaults to 1. |
+| `--limit` | `integer` | Size of a page, defaults to 10. Maximum is 100. |
+| `--sorting` | `choice` | Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. (choices: created_at, -created_at, amount, -amount) |

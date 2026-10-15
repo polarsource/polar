@@ -28,6 +28,7 @@ AmbiguousExternalCustomer = {
     response_model=CustomerSessionSchema,
     status_code=201,
     summary="Create Customer Session",
+    tags=[APITag.cli],
     responses={
         201: {"description": "Customer session created."},
         409: AmbiguousExternalCustomer,

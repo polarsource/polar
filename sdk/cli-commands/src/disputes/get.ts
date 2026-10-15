@@ -1,0 +1,27 @@
+// Generated from disputes:get (2026-10). Do not edit.
+import { Effect } from 'effect'
+import { Argument, Command } from 'effect/cli'
+import { ApiRuntime } from '../runtime'
+import { fields } from '../inputs'
+
+export const command = Command.make(
+  'get',
+  {
+    fields,
+    path: {
+      id: Argument.String('id'),
+    },
+  },
+  (config) =>
+    Effect.gen(function* () {
+      const api = yield* ApiRuntime
+      yield* api.execute({
+        operationId: 'disputes:get',
+        method: 'GET',
+        requiresConfirmation: false,
+        confirm: false,
+        fields: config.fields,
+        invoke: (client) => client.disputes.get(config.path.id),
+      })
+    }),
+).pipe(Command.withDescription('Get a dispute by ID.'))

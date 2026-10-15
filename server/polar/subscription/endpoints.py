@@ -388,6 +388,7 @@ async def preview_change(
     response_model=SubscriptionSchema,
     status_code=201,
     summary="Create Subscription",
+    tags=[APITag.cli],
     responses={201: {"description": "Subscription created."}},
 )
 async def create(

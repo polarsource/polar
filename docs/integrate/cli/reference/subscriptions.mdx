@@ -11,10 +11,30 @@ polar subscriptions <subcommand> [flags]
 
 **Subcommands**
 
+- [`polar subscriptions create`](#polar-subscriptions-create) Create a subscription programmatically.
 - [`polar subscriptions get`](#polar-subscriptions-get) Get a subscription by ID.
 - [`polar subscriptions list`](#polar-subscriptions-list) List subscriptions.
 - [`polar subscriptions revoke`](#polar-subscriptions-revoke) Revoke a subscription, i.e cancel immediately.
 - [`polar subscriptions update`](#polar-subscriptions-update) Update a subscription.
+
+## polar subscriptions create
+
+Create a subscription programmatically.
+
+```bash
+polar subscriptions create [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--metadata` | `string` | Key-value object allowing you to store additional information. JSON: &#123;"&lt;key&gt;": string \| integer \| number \| boolean&#125; |
+| `--product-id` | `string` | Required. The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow. |
+| `--customer-id` | `string` | The ID of the customer to create the subscription for. |
+| `--external-customer-id` | `string` | The ID of the customer in your system to create the subscription for. It must already exist in Polar. |
 
 ## polar subscriptions get
 

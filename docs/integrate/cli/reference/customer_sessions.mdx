@@ -1,0 +1,34 @@
+---
+title: "polar customer_sessions"
+sidebarTitle: "customer_sessions"
+---
+
+{/* Generated from the CLI by `pnpm --filter @polar-sh/cli docs:generate`. Do not edit by hand. */}
+
+```bash
+polar customer_sessions <subcommand> [flags]
+```
+
+**Subcommands**
+
+- [`polar customer_sessions create`](#polar-customer_sessions-create) Create a customer session.
+
+## polar customer_sessions create
+
+Create a customer session.
+
+```bash
+polar customer_sessions create [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--member-id` | `string` | ID of the member to create a session for. When not provided and the organization has `member_model_enabled`, the owner member of the customer will be used for individual customers. |
+| `--external-member-id` | `string` | External ID of the member to create a session for. Alternative to `member_id`. |
+| `--return-url` | `string` | When set, a back button will be shown in the customer portal to return to this URL. |
+| `--customer-id` | `string` | ID of the customer to create a session for. |
+| `--external-customer-id` | `string` | External ID of the customer to create a session for. |

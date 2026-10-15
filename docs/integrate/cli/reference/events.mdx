@@ -12,6 +12,8 @@ polar events <subcommand> [flags]
 **Subcommands**
 
 - [`polar events get`](#polar-events-get) Get an event by ID.
+- [`polar events ingest`](#polar-events-ingest) Ingest batch of events.
+- [`polar events list`](#polar-events-list) List events.
 - [`polar events list_names`](#polar-events-list_names) List event names.
 
 ## polar events get
@@ -33,6 +35,53 @@ polar events get [flags] <id>
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
+
+## polar events ingest
+
+Ingest batch of events.
+
+```bash
+polar events ingest [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--events` | `string` | Required. List of events to ingest. JSON: array of (&#123;"name": string, "customer_id": string, ...&#125; \| &#123;"name": string, "external_customer_id": string, ...&#125;) |
+
+## polar events list
+
+List events.
+
+```bash
+polar events list [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--filter` | `string` | Filter events following filter clauses. JSON string following the same schema a meter filter clause.  |
+| `--start-timestamp` | `string` | Filter events after this timestamp. |
+| `--end-timestamp` | `string` | Filter events before this timestamp. |
+| `--organization-id`, `--org` | `string` | Filter by organization ID. Defaults to the active organization. |
+| `--customer-id` | `string` | Filter by customer ID. |
+| `--external-customer-id` | `string` | Filter by external customer ID. |
+| `--meter-id` | `string` | Filter by a meter filter clause. |
+| `--name` | `string` | Filter by event name. |
+| `--source` | `choice` | Filter by event source. (choices: system, user) |
+| `--query` | `string` | Query to filter events. |
+| `--parent-id` | `string` | When combined with depth, use this event as the anchor instead of root events. |
+| `--depth` | `integer` | Fetch descendants up to this depth. When set: 0=root events only, 1=roots+children, etc. Max 5. When not set, returns all events. |
+| `--page` | `integer` | Page number, defaults to 1. |
+| `--limit` | `integer` | Size of a page, defaults to 10. Maximum is 100. |
+| `--sorting` | `choice` | Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. (choices: timestamp, -timestamp) |
+| `--metadata` | `string` | Filter by metadata key-value pairs. JSON: &#123;"&lt;key&gt;": string \| integer \| boolean \| array of string \| array of integer \| array of boolean&#125; |
 
 ## polar events list_names
 

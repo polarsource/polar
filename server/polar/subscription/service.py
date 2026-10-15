@@ -1027,7 +1027,7 @@ class SubscriptionService:
             subscription.customer_cancellation_reason = customer_cancellation_reason
         subscription.payment_method = payment_method
         subscription.initialize_meter_period(
-            None if trial_end else current_period_start
+            None if trial_end else current_period_start, containing=utc_now()
         )
 
         # Flushed so the returned subscription carries `payment_method_id`, which
@@ -2122,7 +2122,8 @@ class SubscriptionService:
                 # Re-arm the meter clock from the new product's cadence (cleared if
                 # it has none) so it isn't left on a stale boundary. None in a trial.
                 subscription.initialize_meter_period(
-                    None if was_trialing else subscription.current_period_start
+                    None if was_trialing else subscription.current_period_start,
+                    containing=utc_now(),
                 )
                 session.add(subscription)
                 await session.flush()

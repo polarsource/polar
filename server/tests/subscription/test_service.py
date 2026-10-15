@@ -1565,6 +1565,44 @@ class TestApplyUpdate:
         assert updated.current_meter_period_end is not None
         assert updated.current_meter_period_end > updated.current_meter_period_start
 
+    @freeze_time("2026-06-15")
+    async def test_meter_clock_contains_now_when_period_started_in_past(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            meter_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_start=datetime(2026, 1, 1, tzinfo=UTC),
+            current_period_end=datetime(2027, 1, 1, tzinfo=UTC),
+        )
+
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.prorate,
+            product=new_product,
+        )
+        updated = subscription_update.apply_update()
+
+        assert updated.current_period_start == datetime(2026, 1, 1, tzinfo=UTC)
+        assert updated.current_meter_period_start == datetime(2026, 6, 1, tzinfo=UTC)
+        assert updated.current_meter_period_end == datetime(2026, 7, 1, tzinfo=UTC)
+        subscription_service.check_meter_cycle_lag(updated)
+
     async def test_clears_meter_clock_changing_to_non_metered_product(
         self,
         save_fixture: SaveFixture,
@@ -4398,6 +4436,47 @@ class TestActivateImported:
         enqueued = [call.args[0] for call in enqueue_job_mock.call_args_list]
         assert "order.create_subscription_order" not in enqueued
 
+    @freeze_time("2026-06-15")
+    async def test_meter_clock_contains_now_when_period_started_in_past(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        organization: Organization,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        await save_fixture(subscription)
+
+        updated = await subscription_service.activate_imported(
+            session,
+            subscription,
+            current_period_start=datetime(2026, 1, 1, tzinfo=UTC),
+            current_period_end=datetime(2027, 1, 1, tzinfo=UTC),
+            anchor_day=1,
+            trial_end=None,
+            payment_method=payment_method,
+            provider="stripe",
+            provider_subscription_id="sub_1",
+        )
+
+        assert updated.current_meter_period_start == datetime(2026, 6, 1, tzinfo=UTC)
+        assert updated.current_meter_period_end == datetime(2026, 7, 1, tzinfo=UTC)
+        subscription_service.check_meter_cycle_lag(updated)
+
     async def test_does_not_tell_the_customer_anything_resumed(
         self,
         session: AsyncSession,
@@ -5876,6 +5955,54 @@ class TestUpdateProduct:
             assert updated_call.kwargs == {"previous_product_name": product.name}
         else:
             assert updated_call.kwargs == {}
+
+    @freeze_time("2026-06-15")
+    async def test_meter_clock_contains_now_when_period_started_in_past(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            meter_interval=SubscriptionRecurringInterval.month,
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            meter_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_start=datetime(2026, 1, 1, tzinfo=UTC),
+            current_period_end=datetime(2027, 1, 1, tzinfo=UTC),
+        )
+        subscription.initialize_meter_period(
+            subscription.current_period_start, containing=utc_now()
+        )
+        await save_fixture(subscription)
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=new_product.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
+
+        assert updated.current_period_start == datetime(2026, 1, 1, tzinfo=UTC)
+        assert updated.current_meter_period_start == datetime(2026, 6, 1, tzinfo=UTC)
+        assert updated.current_meter_period_end == datetime(2026, 7, 1, tzinfo=UTC)
+        subscription_service.check_meter_cycle_lag(updated)
 
     async def test_trial_to_equal_trial_succeeds(
         self,

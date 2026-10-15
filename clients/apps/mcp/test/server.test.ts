@@ -72,13 +72,45 @@ test('OAuth validates per environment, caches for 60 seconds, and rejects 401s a
     )
   }
   expect(fetchMock).toHaveBeenCalledTimes(4)
-  for (const status of [403, 500, 503]) {
+  for (const status of [404, 500, 503]) {
     fetchMock.mockResolvedValue(new Response(null, { status }))
     const response = await request('/mcp/polar-mcp', { headers })
     expect(response.status).toBe(503)
     expect(await response.json()).toEqual({ error: 'temporarily_unavailable' })
   }
   expect(fetchMock).toHaveBeenCalledTimes(7)
+})
+
+test('organization access tokens validate against an endpoint that accepts them, and a 403 means the token is valid', async () => {
+  fetchMock.mockResolvedValueOnce(new Response(null, { status: 403 }))
+  const valid = { Authorization: 'Bearer polar_oat_without_scope' }
+  expect((await request('/mcp/polar-mcp', { headers: valid })).status).not.toBe(
+    401,
+  )
+  const [input, init] = fetchMock.mock.calls[0]
+  expect(new URL(input instanceof Request ? input.url : input).href).toBe(
+    'https://api.polar.test/v1/organizations/?limit=1',
+  )
+  expect(new Headers(init?.headers).get('Authorization')).toBe(
+    'Bearer polar_oat_without_scope',
+  )
+  fetchMock.mockResolvedValueOnce(new Response(null, { status: 401 }))
+  const response = await request('/mcp/polar-mcp', {
+    headers: { Authorization: 'Bearer polar_oat_revoked' },
+  })
+  expect(response.status).toBe(401)
+  expect(await response.json()).toEqual({ error: 'invalid_token' })
+})
+
+test('tokens that are neither OAuth nor organization access tokens are rejected without calling the API', async () => {
+  for (const token of ['garbage', 'polar_pat_test', 'polar_cst_test']) {
+    const response = await request('/mcp/polar-mcp', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    expect(response.status).toBe(401)
+    expect(await response.json()).toEqual({ error: 'invalid_token' })
+  }
+  expect(fetchMock).not.toHaveBeenCalled()
 })
 
 test('code mode is the default for every client; ?codemode=false selects operation mode', async () => {

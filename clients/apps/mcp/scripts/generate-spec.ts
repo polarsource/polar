@@ -9,6 +9,8 @@ const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete'] as const
 const SCHEMA_REF_PREFIX = '#/components/schemas/'
 const TOOL_SCHEMA_REF_PREFIX = '#/$defs/'
 const BODY_ARGUMENT = 'body'
+const OAUTH_SECURITY_SCHEME = 'oidc'
+const WRITE_SCOPE_SUFFIX = ':write'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const sourcePath = resolve(
@@ -40,6 +42,7 @@ interface Operation {
     content: Record<string, { schema: JsonObject }>
   }
   responses: JsonObject
+  security?: Record<string, string[]>[]
   'x-tool-name': string
   'x-tool-title': string
   'x-tool-description': string
@@ -123,6 +126,17 @@ const referencedSchemas = (value: unknown) => {
   )
 }
 
+const leastPrivilegedScopes = (security: Operation['security']) => {
+  const scopes =
+    security?.flatMap(
+      (requirement) => requirement[OAUTH_SECURITY_SCHEME] ?? [],
+    ) ?? []
+  const readScopes = scopes.filter(
+    (scope) => !scope.endsWith(WRITE_SCOPE_SUFFIX),
+  )
+  return readScopes.length > 0 ? readScopes : scopes
+}
+
 const operations = Object.entries(source.paths).flatMap(([path, pathItem]) =>
   HTTP_METHODS.flatMap((method) => {
     const operation = pathItem[method]
@@ -141,6 +155,7 @@ const operations = Object.entries(source.paths).flatMap(([path, pathItem]) =>
       {
         path,
         method,
+        scopes: leastPrivilegedScopes(operation.security),
         tool: {
           name: operation['x-tool-name'],
           title: operation['x-tool-title'],
@@ -226,6 +241,21 @@ const buildTools = () =>
     }
   })
 
+const buildScopes = () => {
+  const read = new Set(
+    operations
+      .filter(({ method }) => method === 'get')
+      .flatMap(({ scopes }) => scopes),
+  )
+  const write = new Set(
+    operations
+      .filter(({ method }) => method !== 'get')
+      .flatMap(({ scopes }) => scopes)
+      .filter((scope) => !read.has(scope)),
+  )
+  return { read: [...read].sort(), write: [...write].sort() }
+}
+
 const write = (fileName: string, value: unknown) => {
   const path = resolve(outputDirectory, fileName)
   writeFileSync(path, JSON.stringify(value))
@@ -234,5 +264,5 @@ const write = (fileName: string, value: unknown) => {
 
 mkdirSync(outputDirectory, { recursive: true })
 console.log(
-  `Generated ${operations.length} operations: ${write('spec.json', buildSpec())}, ${write('tools.json', buildTools())}`,
+  `Generated ${operations.length} operations: ${write('spec.json', buildSpec())}, ${write('tools.json', buildTools())}, ${write('scopes.json', buildScopes())}`,
 )

@@ -1,3 +1,4 @@
+import scopes from './generated/scopes.json'
 import spec from './generated/spec.json'
 
 const operationPatterns = Object.entries(spec.paths).flatMap(
@@ -15,5 +16,8 @@ export const isAllowedOperation = (method: string, pathname: string) =>
     (operation) =>
       operation.method === method && operation.pattern.test(pathname),
   )
+
+export const readScopes = scopes.read
+export const allScopes = [...scopes.read, ...scopes.write]
 
 export { spec }

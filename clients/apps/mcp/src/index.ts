@@ -17,6 +17,7 @@ import {
 import type { PolarApiOutboundProps } from './outbound'
 import { createServer } from './server'
 import { Sandbox } from './sandbox'
+import { allScopes, readScopes } from './spec'
 
 export { PolarApiOutbound } from './outbound'
 
@@ -69,6 +70,7 @@ const handle = Effect.fn('handle')(function* (request: Request) {
     return Response.json({
       resource: `${url.origin}/mcp/${metadataMatch[1]}`,
       authorization_servers: [apiUrl],
+      scopes_supported: allScopes,
       bearer_methods_supported: ['header'],
       resource_name: 'Polar',
     })
@@ -108,14 +110,17 @@ const handleMcp = Effect.fn('handleMcp')(function* (
   const resourceMetadataUrl = getOAuthProtectedResourceMetadataUrl(
     new URL(url.pathname, url.origin),
   )
+  const scopes = readOnly ? readScopes : allScopes
   const token = getBearerToken(request)
   if (!token) {
-    return unauthorized(resourceMetadataUrl)
+    return unauthorized(resourceMetadataUrl, scopes)
   }
   const auth = yield* Auth
   const rejection = yield* auth.isTokenValid(apiUrl, token).pipe(
     Effect.map((valid) =>
-      valid ? undefined : unauthorized(resourceMetadataUrl, 'invalid_token'),
+      valid
+        ? undefined
+        : unauthorized(resourceMetadataUrl, scopes, 'invalid_token'),
     ),
     Effect.catchTag('AuthUnavailable', () => Effect.succeed(authUnavailable())),
   )

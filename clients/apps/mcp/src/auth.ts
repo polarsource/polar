@@ -84,6 +84,7 @@ export const authUnavailable = () =>
 
 export const unauthorized = (
   resourceMetadataUrl: string,
+  scopes: string[],
   error?: 'invalid_token',
 ) =>
   Response.json(
@@ -91,7 +92,7 @@ export const unauthorized = (
     {
       status: 401,
       headers: {
-        'WWW-Authenticate': `Bearer resource_metadata="${resourceMetadataUrl}"${error ? `, error="${error}"` : ''}`,
+        'WWW-Authenticate': `Bearer resource_metadata="${resourceMetadataUrl}", scope="${scopes.join(' ')}"${error ? `, error="${error}"` : ''}`,
       },
     },
   )

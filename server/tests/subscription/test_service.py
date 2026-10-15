@@ -2983,9 +2983,11 @@ class TestCycleMeters:
         self,
         session: AsyncSession,
         enqueue_job_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
+        organization: Organization,
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture,
@@ -3012,6 +3014,14 @@ class TestCycleMeters:
         assert updated.current_period_start == previous_billing_start
         assert updated.current_period_end == previous_billing_end
         assert updated.scheduler_locked_at is None
+
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
+        )
+        enqueue_job_mock.assert_any_call("customer.state_changed", customer.id)
 
         # Meter credits re-granted; no overage means no meter-cycle order enqueued.
         enqueue_job_mock.assert_any_call(
@@ -3275,9 +3285,11 @@ class TestCycleMeters:
         self,
         session: AsyncSession,
         enqueue_job_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
+        organization: Organization,
         mocker: MockerFixture,
     ) -> None:
         subscription = await create_active_subscription(
@@ -3305,6 +3317,12 @@ class TestCycleMeters:
         assert updated.current_meter_period_end is not None
         assert updated.current_meter_period_end > now
         assert updated.scheduler_locked_at is None
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
+        )
         # ...but while frozen nothing is settled, reset, or re-granted.
         settle_mock.assert_not_called()
         reset_mock.assert_not_called()

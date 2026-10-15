@@ -14,6 +14,7 @@ from opentelemetry.proto.common.v1.common_pb2 import AnyValue, KeyValue
 from pydantic import ValidationError
 from sqlalchemy.orm import selectinload
 
+from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.exceptions import BadRequest
@@ -101,6 +102,7 @@ class OutpostService:
         overrides = {
             "polar.organization_id": str(organization.id),
             "service.name": "outpost",
+            "deployment.environment.name": settings.ENV,
         }
         for resource_spans in request.resource_spans:
             attributes = resource_spans.resource.attributes

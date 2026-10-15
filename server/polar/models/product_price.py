@@ -329,6 +329,15 @@ class MeteredPrice:
         """Metered prices are never free: the amount follows usage."""
         return False
 
+    @staticmethod
+    def _format_units(units: float, credited_units: int) -> str:
+        label = f"{format_decimal(max(0, units), locale='en_US')} consumed units"
+        if credited_units > 0:
+            label += (
+                f" - {format_decimal(credited_units, locale='en_US')} credited units"
+            )
+        return label
+
     def _apply_cap(self, raw_amount: Decimal, label: str) -> tuple[int, str]:
         amount = polar_round(raw_amount)
         if self.cap_amount is not None and amount > self.cap_amount:
@@ -352,11 +361,12 @@ class ProductPriceMeteredUnit(MeteredPrice, ProductPrice, NewProductPrice):
         nullable=True,
     )
 
-    def get_amount_and_label(self, units: float) -> tuple[int, str]:
-        billable_units = Decimal(str(max(0, units)))
-        formatted_units = format_decimal(max(0, units), locale="en_US")
+    def get_amount_and_label(
+        self, units: float, credited_units: int = 0
+    ) -> tuple[int, str]:
+        billable_units = Decimal(str(max(0, units - credited_units)))
         label = (
-            f"({formatted_units} consumed units) × "
+            f"({self._format_units(units, credited_units)}) × "
             f"{format_currency(self.unit_amount, self.price_currency, decimal_quantization=False)}"
         )
         return self._apply_cap(self.unit_amount * billable_units, label)
@@ -427,10 +437,13 @@ class ProductPriceMeteredTiers(
         use_existing_column=True, default=ProductPriceAmountType.metered_tiers
     )
 
-    def get_amount_and_label(self, units: float) -> tuple[int, str]:
-        billable_units = Decimal(str(max(0, units)))
-        formatted_units = format_decimal(max(0, units), locale="en_US")
-        label = f"({formatted_units} consumed units, {self.tiers.type} pricing)"
+    def get_amount_and_label(
+        self, units: float, credited_units: int = 0
+    ) -> tuple[int, str]:
+        billable_units = Decimal(str(max(0, units - credited_units)))
+        label = (
+            f"({self._format_units(units, credited_units)}, {self.tiers.type} pricing)"
+        )
         return self._apply_cap(self.get_tiered_amount(billable_units), label)
 
     @property

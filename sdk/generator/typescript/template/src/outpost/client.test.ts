@@ -772,3 +772,8 @@ it("raises Outpost errors when Redis fails", async () => {
   });
   expect(write).toHaveBeenCalled();
 });
+
+it("raises an Outpost error when Redis is unavailable at startup", async () => {
+  const outpost = new Outpost(join(directory, "missing.sock"), { client: core });
+  await expect(outpost.start()).rejects.toThrow("Redis is unavailable");
+}, 10_000);

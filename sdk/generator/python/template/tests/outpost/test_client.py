@@ -1351,3 +1351,15 @@ async def test_redis_errors_raise_outpost_errors(
                     await anyio.sleep(0.05)
     assert meter is not None
     assert meter.balance == 7
+
+
+@pytest.mark.anyio
+async def test_redis_unavailable_at_startup(
+    redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
+) -> None:
+    url, redis = redis_connection
+    server: FakeServer = redis.connection_pool.connection_kwargs["server"]
+    server.connected = False
+    with pytest.raises(PolarOutpostError, match="Redis is unavailable"):
+        async with Outpost(url, client=polar_client):
+            pass

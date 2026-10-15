@@ -346,6 +346,7 @@ class Outpost:
         self._synced = anyio.Event()
         self._channel = ""
 
+    @_raise_redis_unavailable
     async def __aenter__(self) -> typing.Self:
         if self._redis is not None:
             raise RuntimeError("Outpost is already connected")

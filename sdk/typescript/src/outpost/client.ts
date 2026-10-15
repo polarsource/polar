@@ -323,7 +323,9 @@ export class Outpost {
           await redis.ping();
         },
         { "outpost.redis.connection": "primary" },
-      );
+      ).catch((error: unknown) => {
+        throw redisUnavailable(error);
+      });
       this.channel = `outpost:${this.redis.options.db}:updates`;
       this.subscriber = this.redis.duplicate({ lazyConnect: true, autoResubscribe: false });
       const subscriber = this.subscriber;
@@ -341,6 +343,8 @@ export class Outpost {
       });
       await this.trace("outpost.redis.connect", () => withTimeout(subscriber.connect()), {
         "outpost.redis.connection": "subscriber",
+      }).catch((error: unknown) => {
+        throw redisUnavailable(error);
       });
       await withTimeout(this.synced.promise);
       await this.connectWebsocket();

@@ -199,7 +199,7 @@ const CustomerCancellationModal = ({
                         <RadioGroupItem
                           value={value}
                           id={`reason-${value}`}
-                          className="dark:border-polar-600 border-gray-300 text-black dark:text-white"
+                          className="dark:border-polar-600 border-gray-300 text-black data-[state=checked]:border-black dark:text-white dark:data-[state=checked]:border-white"
                         />
                         <PortalText className="text-sm">{label}</PortalText>
                       </Box>

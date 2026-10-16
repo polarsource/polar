@@ -82,7 +82,7 @@ const PlanOption = ({
       <PortalText block className="truncate text-sm">
         {product.name}
       </PortalText>
-      {current ? <Status size="small" status="Current" /> : null}
+      {current ? <Status size="small" color="gray" status="Current" /> : null}
     </Box>
     <PortalText tone="secondary" className="text-sm whitespace-nowrap">
       <ProductPriceLabel product={product} currency={currency} />

@@ -124,7 +124,7 @@ const ClientPage = ({
                 <RadioGroupItem
                   value={customer.id}
                   id={customer.id}
-                  className="dark:border-polar-600 border-gray-300 text-black dark:text-white"
+                  className="dark:border-polar-600 border-gray-300 text-black data-[state=checked]:border-black dark:text-white dark:data-[state=checked]:border-white"
                 />
                 <Box as="span" flex={1} color="text-primary">
                   {customer.name || 'Unnamed account'}

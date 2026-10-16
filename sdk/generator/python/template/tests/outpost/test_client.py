@@ -30,8 +30,9 @@ from polar.outpost.client import (
     WRITE_BUCKET_SCRIPT,
     Outpost,
     PolarOutpostError,
-    ReducerState,
     RedisReconnectBackoff,
+    ReducerState,
+    UnavailableRedisError,
     _backoff_delay,
     connect_websocket,
 )
@@ -1333,9 +1334,9 @@ async def test_redis_errors_raise_outpost_errors(
     snapshots["external:alice"] = ALICE_SNAPSHOT
     async with Outpost(url, client=polar_client) as outpost:
         server.connected = False
-        with pytest.raises(PolarOutpostError, match="Redis is unavailable"):
+        with pytest.raises(UnavailableRedisError):
             await outpost.customer_meter(meter_id="meter", external_customer_id="alice")
-        with pytest.raises(PolarOutpostError, match="Redis is unavailable"):
+        with pytest.raises(UnavailableRedisError):
             await outpost.ingest(
                 events=[{"name": "call", "external_customer_id": "alice"}]
             )
@@ -1360,6 +1361,6 @@ async def test_redis_unavailable_at_startup(
     url, redis = redis_connection
     server: FakeServer = redis.connection_pool.connection_kwargs["server"]
     server.connected = False
-    with pytest.raises(PolarOutpostError, match="Redis is unavailable"):
+    with pytest.raises(UnavailableRedisError):
         async with Outpost(url, client=polar_client):
             pass

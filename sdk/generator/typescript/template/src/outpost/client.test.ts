@@ -13,7 +13,7 @@ import { WebSocketServer, type WebSocket } from "ws";
 import type { EventsIngest } from "../{{ ir.versions[0].version }}/models";
 
 import { ClientBase } from "../base";
-import { Outpost, type OutpostOptions } from "./client";
+import { Outpost, type OutpostOptions, UnavailableRedisError } from "./client";
 import { BUCKET_SIZE, getBucketStart, type Reducer } from "./reducer";
 import { APPLY_SNAPSHOT_SCRIPT } from "./scripts";
 import { TELEMETRY_ENV } from "./telemetry";
@@ -760,20 +760,18 @@ it("raises Outpost errors when Redis fails", async () => {
   const outpost = await start();
   const redisError = new Error("Connection is closed.");
   const read = vi.spyOn(outpost["redis"]!, "outpostReadState").mockRejectedValue(redisError);
-  await expect(outpost.customerMeter(meter)).rejects.toMatchObject({
-    message: "Redis is unavailable",
-    cause: redisError,
-  });
+  const readError = outpost.customerMeter(meter);
+  await expect(readError).rejects.toBeInstanceOf(UnavailableRedisError);
+  await expect(readError).rejects.toMatchObject({ cause: redisError });
   read.mockRestore();
   const write = vi.spyOn(outpost["redis"]!, "outpostWriteBucket").mockRejectedValue(redisError);
-  await expect(ingest(outpost, 3)).rejects.toMatchObject({
-    message: "Redis is unavailable",
-    cause: redisError,
-  });
+  const writeError = ingest(outpost, 3);
+  await expect(writeError).rejects.toBeInstanceOf(UnavailableRedisError);
+  await expect(writeError).rejects.toMatchObject({ cause: redisError });
   expect(write).toHaveBeenCalled();
 });
 
 it("raises an Outpost error when Redis is unavailable at startup", async () => {
   const outpost = new Outpost(join(directory, "missing.sock"), { client: core });
-  await expect(outpost.start()).rejects.toThrow("Redis is unavailable");
+  await expect(outpost.start()).rejects.toBeInstanceOf(UnavailableRedisError);
 }, 10_000);

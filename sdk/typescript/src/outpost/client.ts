@@ -93,8 +93,10 @@ const signal = () => {
   });
   return { promise, resolve };
 };
-const redisUnavailable = (error: unknown): PolarError =>
-  new PolarError("Redis is unavailable", { cause: error });
+export class PolarOutpostError extends PolarError {}
+export class UnavailableRedisError extends PolarOutpostError {}
+const redisUnavailable = (error: unknown): UnavailableRedisError =>
+  new UnavailableRedisError("Redis is unavailable", { cause: error });
 const withTimeout = async <T>(promise: Promise<T>): Promise<T> => {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {

@@ -1,4 +1,4 @@
-export { Outpost } from "./client";
+export { Outpost, PolarOutpostError, UnavailableRedisError } from "./client";
 export type { OutpostOptions, CustomerMeter, IngestResult } from "./client";
 export type { EventInput } from "./event";
 export { getBucketStart, getMatcher, reduce } from "./reducer";

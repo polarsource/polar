@@ -46,6 +46,9 @@ from polar.outpost.telemetry import create_tracer_provider, is_telemetry_enabled
 class PolarOutpostError(PolarError): ...
 
 
+class UnavailableRedisError(PolarOutpostError): ...
+
+
 def _number(value: str | bytes) -> int | float:
     number: int | float = json.loads(value)
     if isinstance(number, float) and not math.isfinite(number):
@@ -121,7 +124,7 @@ def _raise_redis_unavailable(
         try:
             return await method(*args, **kwargs)
         except (RedisConnectionError, RedisTimeoutError) as error:
-            raise PolarOutpostError("Redis is unavailable") from error
+            raise UnavailableRedisError("Redis is unavailable") from error
 
     return wrapper
 
@@ -599,7 +602,7 @@ class Outpost:
         with anyio.move_on_after(REDIS_TIMEOUT):
             await self._synced.wait()
         if not self._synced.is_set():
-            raise PolarOutpostError("Redis is unavailable")
+            raise UnavailableRedisError("Redis is unavailable")
         local = self._cache.get(identity)
         if local is None:
             local = LocalState()

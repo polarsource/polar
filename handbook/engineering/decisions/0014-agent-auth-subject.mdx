@@ -60,8 +60,8 @@ client stays marked as an agent.
   per agent, and limit sign-ups per IP.
 - The claim adds the human as owner and revokes the agent's pre-claim tokens. Nothing moves between
   users.
-- Trade-off: after the claim, endpoints can't tell an agent from the user it acts for by the subject
-  alone; that takes the OAuth client's agent marker.
+- After the claim the agent acts on behalf of the user by design, so endpoints treat it as that user.
+  The OAuth client's agent marker is what still identifies it as an agent, for example in logs.
 
 ## Alternatives considered
 

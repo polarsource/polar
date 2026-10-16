@@ -2,7 +2,7 @@ import itertools
 import uuid
 from collections.abc import AsyncIterator, Iterable, Sequence
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import Any, Literal
 from urllib.parse import urlencode
@@ -3384,17 +3384,47 @@ class OrderService:
         failed_attempts = await payment_repository.count_failed_payments_for_order(
             order.id
         )
+        first_failed_payment = (
+            await payment_repository.get_first_failed_payment_for_order(order.id)
+        )
+
+        now = utc_now()
+        # Mirrors subscription.past_due_deadline, anchored on the first failure
+        # since a meter-cycle failure doesn't mark the subscription past_due.
+        dunning_deadline = (
+            (first_failed_payment.created_at if first_failed_payment else now)
+            + sum(settings.DUNNING_RETRY_INTERVALS, timedelta())
+            + timedelta(minutes=1)
+        )
 
         # failed_attempts includes this failure, so > len(intervals) means retries
         # are exhausted. Void via the canonical path to notify the merchant
         # (order_voided event + order.updated webhook).
-        if failed_attempts > len(settings.DUNNING_RETRY_INTERVALS):
+        if (
+            failed_attempts > len(settings.DUNNING_RETRY_INTERVALS)
+            or dunning_deadline < now
+        ):
             return await self.void(session, order)
+
+        if order.next_payment_attempt_at is None:
+            latest_payment = await payment_repository.get_latest_for_order(order.id)
+            if latest_payment is not None and latest_payment.is_non_recoverable:
+                log.info(
+                    "Non-recoverable decline code detected, "
+                    "scheduling meter-cycle retry at dunning deadline",
+                    order_id=order.id,
+                    decline_reason=latest_payment.decline_reason,
+                )
+                # Same as _handle_first_dunning_attempt: skip the intermediate
+                # retries and let the attempt at the deadline void the order.
+                return await repository.update(
+                    order, update_dict={"next_payment_attempt_at": dunning_deadline}
+                )
 
         next_interval = settings.DUNNING_RETRY_INTERVALS[max(failed_attempts - 1, 0)]
         return await repository.update(
             order,
-            update_dict={"next_payment_attempt_at": utc_now() + next_interval},
+            update_dict={"next_payment_attempt_at": now + next_interval},
         )
 
     async def schedule_retry_for_past_due_orders(

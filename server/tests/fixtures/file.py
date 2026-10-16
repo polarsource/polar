@@ -13,11 +13,12 @@ import pytest
 from botocore.config import Config
 from httpx import AsyncClient, Response
 from minio import Minio
+from pydantic import TypeAdapter
 
 from polar.config import settings
 from polar.file.repository import FileRepository
 from polar.file.s3 import S3_SERVICES
-from polar.file.schemas import DownloadableFileCreate, FileUpload, FileUploadCompleted
+from polar.file.schemas import FileCreate, FileUpload, FileUploadCompleted
 from polar.file.service import file as file_service
 from polar.integrations.aws.s3.schemas import (
     S3FileCreateMultipart,
@@ -80,30 +81,41 @@ class TestFile:
     #####################################################################
 
     async def create(
-        self, session: AsyncSession, organization: Organization, parts: int = 1
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        parts: int = 1,
+        service: FileServiceTypes = FileServiceTypes.downloadable,
     ) -> FileUpload:
         return await file_service.generate_presigned_upload(
             session,
             organization=organization,
-            create_schema=self.build_create(organization.id, parts=parts),
+            create_schema=self.build_create(
+                organization.id, parts=parts, service=service
+            ),
         )
 
     def build_create(
-        self, organization_id: UUID, parts: int = 1
-    ) -> DownloadableFileCreate:
+        self,
+        organization_id: UUID,
+        parts: int = 1,
+        service: FileServiceTypes = FileServiceTypes.downloadable,
+    ) -> FileCreate:
         create_parts = []
         for i in range(parts):
             part = self.build_create_part(i + 1, parts)
             create_parts.append(part)
 
-        return DownloadableFileCreate(
-            service=FileServiceTypes.downloadable,
-            organization_id=organization_id,
-            name=self.name,
-            mime_type=self.mime_type,
-            size=self.size,
-            checksum_sha256_base64=self.base64,
-            upload=S3FileCreateMultipart(parts=create_parts),
+        return TypeAdapter(FileCreate).validate_python(
+            {
+                "service": service,
+                "organization_id": organization_id,
+                "name": self.name,
+                "mime_type": self.mime_type,
+                "size": self.size,
+                "checksum_sha256_base64": self.base64,
+                "upload": S3FileCreateMultipart(parts=create_parts),
+            }
         )
 
     def build_create_part(self, number: int, parts: int) -> S3FileCreatePart:
@@ -320,6 +332,16 @@ def logo_jpg() -> TestFile:
 async def uploaded_logo_jpg(session: AsyncSession, organization: Organization) -> File:
     img = TestFile("logo.jpg")
     return await uploaded_fixture(session, organization, img)
+
+
+@pytest.fixture
+def malicious_svg() -> TestFile:
+    return TestFile("malicious.svg")
+
+
+@pytest.fixture
+def malformed_svg() -> TestFile:
+    return TestFile("malformed.svg")
 
 
 @pytest.fixture

@@ -1,4 +1,5 @@
 import base64
+import hashlib
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, cast
 
@@ -227,6 +228,28 @@ class S3Service:
         head = self.get_head_or_raise(data.path, s3_version_id=version_id)
         file = S3File.from_head(data.path, head)
         return file
+
+    def replace_object(self, file: S3File, data: bytes) -> S3File:
+        digest = hashlib.sha256(data).digest()
+        checksum_sha256_base64 = base64.b64encode(digest).decode("utf-8")
+        file = file.model_copy(
+            update={
+                "size": len(data),
+                "checksum_sha256_base64": checksum_sha256_base64,
+                "checksum_sha256_hex": digest.hex(),
+            }
+        )
+        self.client.put_object(
+            Bucket=self.bucket,
+            Key=file.path,
+            Body=data,
+            ContentType=file.mime_type,
+            ChecksumAlgorithm="SHA256",
+            ChecksumSHA256=checksum_sha256_base64,
+            Metadata=file.to_metadata(),
+        )
+        head = self.get_head_or_raise(file.path)
+        return S3File.from_head(file.path, head)
 
     def generate_presigned_download_url(
         self,

@@ -1,14 +1,18 @@
+import hashlib
 import uuid
 from urllib.parse import parse_qs, urlencode, urlparse
 
 import pytest
 from httpx import AsyncClient, ReadError
 
+from polar.exceptions import BadRequest
 from polar.file.repository import FileRepository
 from polar.file.s3 import S3_SERVICES
+from polar.file.schemas import FileUploadCompleted
+from polar.file.service import file as file_service
 from polar.integrations.aws.s3.exceptions import S3FileError
 from polar.kit.utils import utc_now
-from polar.models import Organization, UserOrganization
+from polar.models import File, Organization, UserOrganization
 from polar.models.file import FileServiceTypes
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
@@ -146,6 +150,56 @@ class TestEndpoints:
         record = await repository.get_by_id(created.id, include_deleted=True)
         assert record
         assert record.is_uploaded is True
+
+
+@pytest.mark.anyio
+class TestSVGSanitization:
+    async def _upload(
+        self, session: AsyncSession, organization: Organization, file: TestFile
+    ) -> tuple[File, FileUploadCompleted]:
+        created = await file.create(
+            session, organization, service=FileServiceTypes.product_media
+        )
+        uploaded = await file.upload(created)
+        repository = FileRepository.from_session(session)
+        record = await repository.get_by_id(created.id)
+        assert record
+        return record, FileUploadCompleted(
+            id=created.upload.id, path=created.path, parts=uploaded
+        )
+
+    async def test_strips_scripts(
+        self, session: AsyncSession, organization: Organization, malicious_svg: TestFile
+    ) -> None:
+        record, completed_schema = await self._upload(
+            session, organization, malicious_svg
+        )
+        completed = await file_service.complete_upload(
+            session, file=record, completed_schema=completed_schema
+        )
+
+        s3_object = S3_SERVICES[completed.service].get_object_or_raise(completed.path)
+        sanitized = s3_object["Body"].read()
+        assert b"<circle" in sanitized
+        for forbidden in (b"<script", b"onload", b"evil.example", b"<form"):
+            assert forbidden not in sanitized
+        assert completed.size == len(sanitized)
+        assert completed.checksum_sha256_hex == hashlib.sha256(sanitized).hexdigest()
+
+    async def test_rejects_malformed(
+        self, session: AsyncSession, organization: Organization, malformed_svg: TestFile
+    ) -> None:
+        record, completed_schema = await self._upload(
+            session, organization, malformed_svg
+        )
+        with pytest.raises(BadRequest):
+            await file_service.complete_upload(
+                session, file=record, completed_schema=completed_schema
+            )
+
+        assert record.is_uploaded is False
+        with pytest.raises(S3FileError):
+            S3_SERVICES[record.service].get_head_or_raise(record.path)
 
 
 @pytest.mark.anyio

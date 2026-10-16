@@ -35,8 +35,10 @@ const meter = {
   aggregation: { func: 'count' },
 }
 
+const settings = { payments: { currency: 'usd', tax: 'location' } }
+
 const exported = (config: unknown, skipped: unknown[] = []) =>
-  Response.json({ config, skipped })
+  Response.json({ config, settings, skipped })
 
 let api: ReturnType<typeof fakeHttp>
 let directory: string
@@ -311,7 +313,7 @@ describe('pull', () => {
 
     expect(error.message).toBe('You do not have access to Acme')
     expect(error.hint).toBe(
-      'The token needs the meters:read, benefits:read, products:read scopes.',
+      'The token needs the organizations:read, meters:read, benefits:read, products:read, discounts:read, webhooks:read scopes.',
     )
   })
 })

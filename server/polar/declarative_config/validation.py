@@ -535,7 +535,7 @@ def _create_update_dict(
     return update_dict
 
 
-def _benefit_properties(
+def benefit_properties(
     benefit: Benefit, meter_external_ids: dict[str, str]
 ) -> dict[str, Any]:
     if benefit.type != BenefitType.meter_credit:
@@ -601,7 +601,7 @@ async def diff_benefits(
                 create_dict["properties"] = create_dict["properties"].model_dump()
             changes.append(BenefitChange(index, benefit_config, None, create_dict))
             continue
-        properties = _benefit_properties(benefit, meter_external_ids)
+        properties = benefit_properties(benefit, meter_external_ids)
         changes.append(
             BenefitChange(
                 index,
@@ -655,7 +655,7 @@ def price_config(
 
     if isinstance(price, ProductPriceMeteredTiers):
         meter_id = str(price.meter_id)
-        if meter_id not in meter_external_ids:
+        if price.tiers is None or meter_id not in meter_external_ids:
             return None
 
         return {

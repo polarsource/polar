@@ -213,6 +213,15 @@ class WebhookEndpointRepository(
             WebhookEndpoint.organization_id.in_(org_ids)
         )
 
+    def get_organization_statement(
+        self, organization_id: UUID
+    ) -> Select[tuple[WebhookEndpoint]]:
+        return (
+            self.get_base_statement()
+            .where(WebhookEndpoint.organization_id == organization_id)
+            .order_by(WebhookEndpoint.created_at, WebhookEndpoint.id)
+        )
+
     async def get_all_by_external_ids(
         self,
         organization_id: UUID,

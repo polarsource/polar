@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import (
     ColumnElement,
     ColumnExpressionArgument,
+    Select,
     distinct,
     func,
     or_,
@@ -76,6 +77,15 @@ class DiscountRepository(RepositoryBase[Discount], RepositoryIDMixin[Discount, U
         if for_update:
             statement = statement.with_for_update(of=Discount, key_share=True)
         return await self.get_all(statement)
+
+    def get_organization_statement(
+        self, organization_id: UUID
+    ) -> Select[tuple[Discount]]:
+        return (
+            select(Discount)
+            .where(Discount.organization_id == organization_id, ~Discount.is_deleted)
+            .order_by(Discount.created_at, Discount.id)
+        )
 
     async def get_all_by_codes(
         self, organization_id: UUID, codes: Sequence[str]

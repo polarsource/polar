@@ -1,9 +1,9 @@
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field, ValidationError, create_model
+from pydantic import BaseModel, Field, create_model
 from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject, is_organization
@@ -30,26 +30,21 @@ from polar.webhook.service import webhook as webhook_service
 
 from . import benefits, discounts, products, validation
 from .auth import SECTION_SCOPES
+from .export import export_config
 from .schemas import (
-    MAXIMUM_METERS,
     Config,
     ConfigAction,
     ConfigApplyResult,
     ConfigChange,
     ConfigExport,
-    ConfigExportDocument,
-    ConfigExportMeter,
     ConfigIssue,
     ConfigIssueSeverity,
     ConfigIssueType,
-    ConfigMeter,
     ConfigPlan,
     ConfigResource,
     ConfigResult,
     ConfigSettingsChange,
     ConfigSettingsResult,
-    ConfigSkippedMeter,
-    ConfigSkippedReason,
 )
 from .validation import (
     BenefitChange,
@@ -68,14 +63,20 @@ _WEBHOOK_EXTERNAL_ID_INDEX = "ix_webhook_endpoints_organization_id_external_id"
 
 
 def _assert_section_scopes(
-    auth_subject: AuthSubject[User | Organization], config: Config, *, write: bool
+    auth_subject: AuthSubject[User | Organization],
+    sections: Iterable[str],
+    *,
+    write: bool,
 ) -> None:
-    for section, (read_scope, write_scope) in SECTION_SCOPES.items():
-        if section not in config.model_fields_set:
-            continue
+    for section in sections:
+        read_scope, write_scope = SECTION_SCOPES[section]
         required = {write_scope} if write else {read_scope, write_scope}
         if not auth_subject.scopes & required:
             raise InsufficientScopeError({str(scope) for scope in required})
+
+
+def _config_sections(config: Config) -> list[str]:
+    return [section for section in SECTION_SCOPES if section in config.model_fields_set]
 
 
 # Webhook endpoints are managed with `organization_manage`, which product
@@ -168,7 +169,7 @@ class DeclarativeConfigService:
         auth_subject: AuthSubject[User | Organization],
         config: Config,
     ) -> ConfigApplyResult:
-        _assert_section_scopes(auth_subject, config, write=True)
+        _assert_section_scopes(auth_subject, _config_sections(config), write=True)
         organization = await self._get_organization(
             session, auth_subject, config, OrganizationPermission.products_manage
         )
@@ -241,7 +242,7 @@ class DeclarativeConfigService:
         auth_subject: AuthSubject[User | Organization],
         config: Config,
     ) -> ConfigPlan:
-        _assert_section_scopes(auth_subject, config, write=False)
+        _assert_section_scopes(auth_subject, _config_sections(config), write=False)
         organization = await self._get_organization(
             session, auth_subject, config, OrganizationPermission.products_read
         )
@@ -271,54 +272,14 @@ class DeclarativeConfigService:
         auth_subject: AuthSubject[User | Organization],
         organization_id: UUID | None,
     ) -> ConfigExport:
+        _assert_section_scopes(auth_subject, SECTION_SCOPES, write=False)
         organization = await self._get_organization(
             session,
             auth_subject,
             _OrganizationTarget(organization_id),
             OrganizationPermission.products_read,
         )
-        repository = MeterRepository.from_session(session)
-        meters: list[ConfigExportMeter] = []
-        skipped: list[ConfigSkippedMeter] = []
-        statement = repository.get_organization_statement(organization.id)
-        async for meter in repository.stream(statement):
-            reason: ConfigSkippedReason | None = None
-            if meter.external_id is None:
-                reason = ConfigSkippedReason.missing_external_id
-            elif meter.archived_at is not None:
-                reason = ConfigSkippedReason.archived
-            elif len(meters) >= MAXIMUM_METERS:
-                reason = ConfigSkippedReason.over_limit
-            else:
-                try:
-                    meter_config = ConfigMeter(
-                        external_id=meter.external_id,
-                        name=meter.name,
-                        unit=meter.unit,
-                        custom_label=meter.custom_label,
-                        custom_multiplier=meter.custom_multiplier,
-                        filter=meter.filter,
-                        aggregation=meter.aggregation,
-                        metadata=meter.user_metadata,
-                    )
-                except ValidationError:
-                    reason = ConfigSkippedReason.invalid
-                else:
-                    meters.append(
-                        ConfigExportMeter.model_validate(
-                            meter_config, from_attributes=True
-                        )
-                    )
-            if reason is not None:
-                skipped.append(
-                    ConfigSkippedMeter(
-                        resource=ConfigResource.meter,
-                        id=meter.id,
-                        name=meter.name,
-                        reason=reason,
-                    )
-                )
-        return ConfigExport(config=ConfigExportDocument(meters=meters), skipped=skipped)
+        return await export_config(session, organization)
 
     def _plan_changes(
         self, resource: ConfigResource, changes: Sequence[ResourceChange[Any, Any]]

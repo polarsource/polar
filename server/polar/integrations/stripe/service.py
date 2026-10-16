@@ -1,7 +1,17 @@
 import json
 import uuid
 from collections.abc import AsyncGenerator, AsyncIterator, Sequence
-from typing import TYPE_CHECKING, Any, Final, Literal, Unpack, cast, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Final,
+    Literal,
+    NotRequired,
+    TypedDict,
+    Unpack,
+    cast,
+    overload,
+)
 from urllib.parse import urlencode
 
 import stripe as stripe_lib
@@ -11,7 +21,10 @@ from stripe.params._customer_create_params import (
     CustomerCreateParamsTaxIdDatum,
 )
 from stripe.params._customer_modify_params import CustomerModifyParams
-from stripe.params._payment_intent_create_params import PaymentIntentCreateParams
+from stripe.params._payment_intent_create_params import (
+    PaymentIntentCreateParams,
+    PaymentIntentCreateParamsPaymentMethodData,
+)
 from stripe.params._payment_intent_modify_params import PaymentIntentModifyParams
 from stripe.params._setup_intent_confirm_params import SetupIntentConfirmParams
 from stripe.params._setup_intent_create_params import SetupIntentCreateParams
@@ -58,6 +71,7 @@ stripe_lib.default_http_client = stripe_http_client
 
 STRIPE_ACCOUNT_SIGNALS_API_VERSION = "2026-08-26.preview"
 FX_QUOTES_API_VERSION = "2026-02-25.preview"
+SHARED_PAYMENT_TOKENS_API_VERSION = "2026-09-30.preview"
 stripe_risk_client = stripe_lib.StripeClient(
     settings.STRIPE_SECRET_KEY, http_client=stripe_http_client
 )
@@ -77,6 +91,19 @@ StripeCancellationReasons = Literal[
 ]
 
 StripeAccountRejectReason = Literal["fraud", "terms_of_service", "other"]
+
+
+class SharedPaymentGrantedTokenUsageLimits(TypedDict):
+    currency: str
+    max_amount: NotRequired[int | None]
+    expires_at: NotRequired[int | None]
+
+
+class SharedPaymentGrantedToken(TypedDict):
+    id: str
+    deactivated_at: int | None
+    deactivated_reason: str | None
+    usage_limits: SharedPaymentGrantedTokenUsageLimits | None
 
 
 class StripeError(PolarError): ...
@@ -391,6 +418,29 @@ class StripeService:
             customer=params.get("customer"),
         )
         return await stripe_lib.PaymentIntent.create_async(**params)
+
+    async def create_payment_intent_from_shared_payment_token(
+        self,
+        shared_payment_token_id: str,
+        **params: Unpack[PaymentIntentCreateParams],
+    ) -> stripe_lib.PaymentIntent:
+        """`shared_payment_granted_token` is preview-only: untyped in the SDK."""
+        params["payment_method_data"] = cast(
+            PaymentIntentCreateParamsPaymentMethodData,
+            {"shared_payment_granted_token": shared_payment_token_id},
+        )
+        params["stripe_version"] = SHARED_PAYMENT_TOKENS_API_VERSION
+        return await self.create_payment_intent(**params)
+
+    async def get_shared_payment_granted_token(
+        self, id: str
+    ) -> SharedPaymentGrantedToken:
+        response = await stripe_risk_client.raw_request_async(
+            "get",
+            f"/v1/shared_payment/granted_tokens/{id}",
+            stripe_version=SHARED_PAYMENT_TOKENS_API_VERSION,
+        )
+        return cast(SharedPaymentGrantedToken, json.loads(response.body))
 
     async def get_payment_intent(self, id: str) -> stripe_lib.PaymentIntent:
         return await stripe_lib.PaymentIntent.retrieve_async(id)

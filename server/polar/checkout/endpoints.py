@@ -58,6 +58,7 @@ from .service import (
     ExpiredCheckoutError,
     NotOpenCheckout,
     PaymentError,
+    SharedPaymentTokenError,
     TrialAlreadyRedeemed,
 )
 from .service import checkout as checkout_service
@@ -80,8 +81,11 @@ CheckoutExpired = {
     "model": ExpiredCheckoutError.schema(),
 }
 CheckoutPaymentError = {
-    "description": "The payment failed.",
-    "model": PaymentError.schema(),
+    "description": "The payment failed or the shared payment token was rejected.",
+    "model": Annotated[
+        PaymentError.schema() | SharedPaymentTokenError.schema(),
+        SetSchemaReference("CheckoutPaymentError"),
+    ],
 }
 CheckoutNotPermitted = {
     "description": "The organization is not allowed to accept payments.",

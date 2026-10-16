@@ -13749,7 +13749,8 @@ export interface components {
     }
     /**
      * CheckoutConfirmStripe
-     * @description Confirm a checkout session using a Stripe confirmation token.
+     * @description Confirm a checkout session using a Stripe confirmation token
+     *     or a Stripe shared payment token.
      */
     CheckoutConfirmStripe: {
       /**
@@ -13812,9 +13813,14 @@ export interface components {
       allow_trial?: false | null
       /**
        * Confirmation Token Id
-       * @description ID of the Stripe confirmation token. Required for fixed prices and custom prices.
+       * @description ID of the Stripe confirmation token. Either this or `shared_payment_token_id` is required for fixed prices and custom prices.
        */
       confirmation_token_id?: string | null
+      /**
+       * Shared Payment Token Id
+       * @description ID of a Stripe shared payment token (`spt_...`) granted by an agent. Only supported for one-time payments. Mutually exclusive with `confirmation_token_id`.
+       */
+      shared_payment_token_id?: string | null
     }
     CheckoutCreate: components['schemas']['CheckoutProductsCreate']
     /**
@@ -14632,6 +14638,9 @@ export interface components {
        */
       allow_customer_updates: boolean
     }
+    CheckoutPaymentError:
+      | components['schemas']['PaymentError']
+      | components['schemas']['SharedPaymentTokenError']
     /**
      * CheckoutPriceCreate
      * @description Create a new checkout session from a product price.
@@ -36289,6 +36298,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** SharedPaymentTokenError */
+    SharedPaymentTokenError: {
+      /**
+       * Error
+       * @example SharedPaymentTokenError
+       * @constant
+       */
+      error: 'SharedPaymentTokenError'
+      /** Detail */
+      detail: string
+    }
     /** SlackIntegration */
     SlackIntegration: {
       /**
@@ -50118,13 +50138,13 @@ export interface operations {
           'application/json': components['schemas']['CheckoutPublicConfirmed']
         }
       }
-      /** @description The payment failed. */
+      /** @description The payment failed or the shared payment token was rejected. */
       400: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['PaymentError']
+          'application/json': components['schemas']['CheckoutPaymentError']
         }
       }
       /** @description The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments. */

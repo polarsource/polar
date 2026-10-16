@@ -256,7 +256,10 @@ class TestApply:
         assert meter.name == "SDK - Tool Calls"
         assert meter.unit == MeterUnit.custom
         assert meter.custom_label == "call"
-        enqueue_job_mock.assert_called_once_with("meter.backfill_events", meter.id)
+        assert enqueue_job_mock.call_args_list == [
+            mocker.call("reducer.invalidate_cache", organization.id),
+            mocker.call("meter.backfill_events", meter.id),
+        ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_unchanged(

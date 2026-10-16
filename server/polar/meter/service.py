@@ -249,6 +249,7 @@ class MeterService:
 
         await reducer_service.sync_meter(session, meter)
 
+        enqueue_job("reducer.invalidate_cache", meter.organization_id)
         enqueue_job("meter.backfill_events", meter.id)
 
         return meter
@@ -316,6 +317,7 @@ class MeterService:
 
         meter = await repository.update(meter, update_dict=update_dict)
         await reducer_service.sync_meter(session, meter)
+        enqueue_job("reducer.invalidate_cache", meter.organization_id)
         return meter
 
     async def archive(self, session: AsyncSession, meter: Meter) -> Meter:

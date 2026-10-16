@@ -31,36 +31,32 @@ const SidebarHeader = ({
   return (
     <Box alignItems="center" columnGap="m" minWidth={0}>
       <Avatar
-        className="h-8 w-8 flex-none text-xs"
+        className="h-10 w-10 flex-none text-sm"
         avatar_url={organization.avatar_url}
         name={organization.name}
       />
-      {session?.return_url ? (
-        <Link
-          href={session.return_url}
-          className="flex min-w-0 items-center gap-x-1.5 text-sm"
-        >
-          <Box
-            as="span"
-            display="inline-flex"
-            alignItems="center"
-            columnGap="xs"
-            minWidth={0}
-            color={{ base: 'text-secondary', hover: 'text-primary' }}
-            transitionProperty="colors"
-            transitionDuration="fast"
-          >
-            <ArrowBackOutlined fontSize="inherit" className="flex-none" />
-            <span className="truncate">Back to {organization.name}</span>
-          </Box>
-        </Link>
-      ) : (
-        <Box display={{ base: 'flex', md: 'none' }} minWidth={0}>
-          <PortalText block className="truncate text-sm">
-            {organization.name}
-          </PortalText>
-        </Box>
-      )}
+      <Box flexDirection="column" minWidth={0}>
+        <PortalText block className="truncate text-base md:text-lg">
+          {organization.name}
+        </PortalText>
+        {session?.return_url ? (
+          <Link href={session.return_url} className="min-w-0 text-sm">
+            <Box
+              as="span"
+              display="inline-flex"
+              alignItems="center"
+              columnGap="xs"
+              minWidth={0}
+              color={{ base: 'text-secondary', hover: 'text-primary' }}
+              transitionProperty="colors"
+              transitionDuration="fast"
+            >
+              <ArrowBackOutlined fontSize="inherit" className="flex-none" />
+              <span className="truncate">Back to {organization.name}</span>
+            </Box>
+          </Link>
+        ) : null}
+      </Box>
     </Box>
   )
 }
@@ -118,14 +114,6 @@ export const PortalShell = ({
       borderColor="border-secondary"
     >
       <SidebarHeader organization={organization} />
-      <Box flexDirection="column" display={{ base: 'none', md: 'flex' }}>
-        <Text variant="heading-xs" as="p">
-          {organization.name}
-        </Text>
-        <Text variant="heading-xs" as="p" color="muted">
-          Customer portal
-        </Text>
-      </Box>
       <Box flexDirection="column" flex={1} rowGap="3xl" minHeight={0}>
         {sidebar}
       </Box>

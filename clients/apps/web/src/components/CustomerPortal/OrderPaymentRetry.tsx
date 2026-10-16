@@ -7,6 +7,8 @@ import {
 import { type Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Button } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
+import { PortalText } from './PortalPrimitives'
 import { PaymentElement } from '@stripe/react-stripe-js'
 import {
   ConfirmationToken,
@@ -14,7 +16,7 @@ import {
   StripeElements,
   StripeError,
 } from '@stripe/stripe-js'
-import { WalletCards } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface OrderPaymentRetryProps {
@@ -371,150 +373,94 @@ export const OrderPaymentRetry = ({
     }
   }, [paymentMethodId, isProcessing, isPolling, handleSavedPaymentMethod])
 
-  return (
-    <div className="space-y-4">
-      {/* Order Summary */}
-      <div className="dark:bg-polar-800 rounded-lg bg-gray-50 p-4">
-        <h3 className="mb-2 font-medium">Order summary</h3>
-        <div className="space-y-1 text-sm">
-          <div className="flex justify-between">
-            <span>Description:</span>
-            <span>{order.description}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Amount:</span>
-            <span>
-              {formatCurrency('accounting')(order.due_amount, order.currency)}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Payment Form or Processing State */}
-      {paymentComplete ? (
-        <div className="py-8 text-center">
-          <div className="mb-4">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-              <svg
-                className="h-8 w-8 text-green-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            </div>
-            <p className="text-lg font-medium">
-              {showRetryButton ? 'Payment failed' : 'Payment Successful!'}
-            </p>
-            <p className="dark:text-polar-500 mt-2 text-sm text-gray-500">
-              {showRetryButton
-                ? 'You can try again or contact support if the issue persists.'
-                : 'Thank you for your payment. You can now close this window.'}
-            </p>
-          </div>
-          {showRetryButton && (
-            <Button
-              onClick={resetProcessingStates}
-              variant="default"
-              className="mr-2"
-            >
-              Try again
-            </Button>
-          )}
-          <Button onClick={onClose} variant="outline">
+  if (paymentComplete) {
+    return (
+      <Box flexDirection="column" rowGap="xl">
+        <Box flexDirection="column" rowGap="xs">
+          <PortalText className="text-base">
+            {showRetryButton ? 'Payment failed' : 'Payment successful'}
+          </PortalText>
+          <PortalText tone="secondary" className="text-sm">
+            {showRetryButton
+              ? 'You can try again or contact support if the issue persists.'
+              : 'Thank you for your payment. You can close this window.'}
+          </PortalText>
+        </Box>
+        <Box justifyContent="end" columnGap="s">
+          <Button
+            onClick={onClose}
+            variant={showRetryButton ? 'ghost' : 'default'}
+          >
             Close
           </Button>
-        </div>
-      ) : isPolling ? (
-        <div className="py-8 text-center">
-          <div
-            className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-            role="status"
-          >
-            <span className="!absolute -m-px! h-px! w-px! overflow-hidden! border-0! p-0! whitespace-nowrap! [clip:rect(0,0,0,0)]!">
-              Loading...
-            </span>
-          </div>
-          <p className="text-lg font-medium">Processing your payment...</p>
-          <p className="mt-2 text-sm text-gray-500">
-            This may take a few moments. Please don&apos;t close this window.
-          </p>
-        </div>
-      ) : paymentMethodId ? (
-        // Using saved payment method
-        <div className="py-8 text-center">
-          <div className="mb-4">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
-              <WalletCards className="h-8 w-8 text-blue-600" />
-            </div>
-            <p className="text-lg font-medium">Processing payment...</p>
-            <p className="mt-2 text-sm text-gray-500">
-              Using your saved payment method
-            </p>
-          </div>
-          {onBack && (
-            <Button onClick={onBack} variant="outline">
-              Back
-            </Button>
+          {showRetryButton && (
+            <Button onClick={resetProcessingStates}>Try again</Button>
           )}
-        </div>
-      ) : (
-        // New payment method form
-        <div className="space-y-4">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="mb-2 block text-sm font-medium">
-                Payment method
-              </label>
-              <div className="rounded-lg border p-3">
-                <PaymentElement
-                  options={{
-                    layout: 'tabs',
-                    fields: {
-                      billingDetails: {
-                        name: 'never',
-                        email: 'never',
-                        phone: 'never',
-                        address: 'never',
-                      },
-                    },
-                  }}
-                />
-              </div>
-            </div>
+        </Box>
+      </Box>
+    )
+  }
 
-            <Button
-              type="submit"
-              loading={isProcessing || isPolling}
-              disabled={
-                !stripe ||
-                !elements ||
-                isProcessing ||
-                isPolling ||
-                hasSubmitted
-              }
-              className="w-full"
-            >
-              {isProcessing
-                ? 'Processing...'
-                : isPolling
-                  ? 'Confirming...'
-                  : 'Pay now'}
-            </Button>
-          </form>
-          {onBack && (
-            <Button onClick={onBack} variant="outline" className="w-full">
+  if (isPolling || paymentMethodId) {
+    return (
+      <Box flexDirection="column" rowGap="xl">
+        <Box alignItems="center" columnGap="m">
+          <PortalText tone="secondary">
+            <Loader2 className="h-5 w-5 animate-spin" />
+          </PortalText>
+          <Box flexDirection="column">
+            <PortalText className="text-base">
+              Processing your payment…
+            </PortalText>
+            <PortalText tone="secondary" className="text-sm">
+              {isPolling
+                ? "This may take a few moments. Please don't close this window."
+                : 'Using your saved payment method'}
+            </PortalText>
+          </Box>
+        </Box>
+        {!isPolling && onBack && (
+          <Box justifyContent="end">
+            <Button onClick={onBack} variant="ghost">
               Back
             </Button>
-          )}
-        </div>
-      )}
-    </div>
+          </Box>
+        )}
+      </Box>
+    )
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-y-6">
+      <PaymentElement
+        options={{
+          layout: 'tabs',
+          fields: {
+            billingDetails: {
+              name: 'never',
+              email: 'never',
+              phone: 'never',
+              address: 'never',
+            },
+          },
+        }}
+      />
+      <Box justifyContent="end" columnGap="s">
+        {onBack && (
+          <Button type="button" onClick={onBack} variant="ghost">
+            Back
+          </Button>
+        )}
+        <Button
+          type="submit"
+          loading={isProcessing}
+          disabled={
+            !stripe || !elements || isProcessing || isPolling || hasSubmitted
+          }
+        >
+          {`Pay ${formatCurrency('compact')(order.due_amount, order.currency)}`}
+        </Button>
+      </Box>
+    </form>
   )
 }

@@ -196,10 +196,12 @@ export const PortalRow = ({
   label,
   value,
   emphasis = false,
+  numeric = false,
 }: {
   label: ReactNode
   value: ReactNode
   emphasis?: boolean
+  numeric?: boolean
 }) => (
   <Box justifyContent="between" alignItems="baseline" columnGap="l">
     <PortalText
@@ -211,7 +213,8 @@ export const PortalRow = ({
     </PortalText>
     <PortalText
       className={twMerge(
-        'text-right tabular-nums',
+        'text-right',
+        numeric && 'tabular-nums',
         emphasis ? 'text-base' : 'text-sm',
       )}
     >

@@ -12,10 +12,10 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import CustomerPortalSubscription from './CustomerPortalSubscription'
-import { ConfirmModal } from '../Modal/ConfirmModal'
 import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '../Modal/useModal'
 import { CurrentPeriodOverview } from './CurrentPeriodOverview'
+import { PortalConfirmDialog, PortalDrawerHeader } from './PortalDialog'
 import { PortalCard, PortalRows } from './PortalPrimitives'
 import { PendingUpdateRows, SubscriptionDateRows } from './SubscriptionDateRows'
 import CustomerChangePlanModal from './CustomerChangePlanModal'
@@ -64,6 +64,12 @@ const CustomerSubscriptionDetails = ({
   const router = useRouter()
 
   const pendingUpdate = subscription.pending_update
+
+  const canUncancel =
+    isCanceled &&
+    subscription.cancel_at_period_end &&
+    !!subscription.current_period_end &&
+    new Date(subscription.current_period_end) > new Date()
 
   if (!organization) {
     return null
@@ -114,18 +120,7 @@ const CustomerSubscriptionDetails = ({
         subscription={subscription}
       />
 
-      <Box columnGap="s" rowGap="s" flexWrap="wrap">
-        <Box display={{ base: 'none', md: 'flex' }}>
-          <Button onClick={showBenefitGrantsModal}>Manage subscription</Button>
-        </Box>
-        <Box display={{ base: 'flex', md: 'none' }}>
-          <Link
-            href={`/${organization.slug}/portal/subscriptions/${subscription.id}?customer_session_token=${customerSessionToken}`}
-          >
-            <Button>Manage subscription</Button>
-          </Link>
-        </Box>
-
+      <Box columnGap="s" rowGap="s" flexWrap="wrap" justifyContent="end">
         {showSubscriptionUpdates && !isCanceled && (
           <Button
             onClick={() => setShowChangePlanModal(true)}
@@ -135,57 +130,75 @@ const CustomerSubscriptionDetails = ({
           </Button>
         )}
 
-        {isCanceled &&
-          subscription.cancel_at_period_end &&
-          subscription.current_period_end &&
-          new Date(subscription.current_period_end) > new Date() && (
-            <UncancelSubscriptionButton
-              api={api}
-              subscription={subscription}
-              customerSessionToken={customerSessionToken}
-              onUncancelled={async () => {
-                await revalidate(`customer_portal`)
-                router.refresh()
-              }}
-            />
-          )}
+        <Box display={{ base: 'none', md: 'flex' }}>
+          <Button
+            variant={canUncancel ? 'secondary' : 'default'}
+            onClick={showBenefitGrantsModal}
+          >
+            Manage subscription
+          </Button>
+        </Box>
+        <Box display={{ base: 'flex', md: 'none' }}>
+          <Link
+            href={`/${organization.slug}/portal/subscriptions/${subscription.id}?customer_session_token=${customerSessionToken}`}
+          >
+            <Button variant={canUncancel ? 'secondary' : 'default'}>
+              Manage subscription
+            </Button>
+          </Link>
+        </Box>
+
+        {canUncancel && (
+          <UncancelSubscriptionButton
+            api={api}
+            subscription={subscription}
+            customerSessionToken={customerSessionToken}
+            onUncancelled={async () => {
+              await revalidate(`customer_portal`)
+              router.refresh()
+            }}
+          />
+        )}
       </Box>
 
-      <InlineModal
+      <CustomerChangePlanModal
         isShown={showChangePlanModal}
+        api={api}
+        organization={organization}
+        products={products}
+        subscription={subscription}
         hide={() => setShowChangePlanModal(false)}
-        modalContent={
-          <CustomerChangePlanModal
-            api={api}
-            organization={organization}
-            products={products}
-            subscription={subscription}
-            hide={() => setShowChangePlanModal(false)}
-            onUserSubscriptionUpdate={onUserSubscriptionUpdate}
-          />
-        }
+        onUserSubscriptionUpdate={onUserSubscriptionUpdate}
       />
 
       <InlineModal
         isShown={isBenefitGrantsModalOpen}
         hide={hideBenefitGrantsModal}
         modalContent={
-          <Box flexDirection="column" overflowY="auto" padding="2xl">
-            <CustomerPortalSubscription
-              api={api}
-              customerSessionToken={customerSessionToken}
-              subscription={subscription}
-              products={products}
+          <>
+            <PortalDrawerHeader
+              title="Subscription"
+              hide={hideBenefitGrantsModal}
             />
-          </Box>
+            <Box flexDirection="column" padding="2xl">
+              <CustomerPortalSubscription
+                api={api}
+                customerSessionToken={customerSessionToken}
+                subscription={subscription}
+                products={products}
+              />
+            </Box>
+          </>
         }
       />
 
-      <ConfirmModal
+      <PortalConfirmDialog
         isShown={showClearPendingUpdateModal}
         hide={() => setShowClearPendingUpdateModal(false)}
-        title="Cancel scheduled change"
-        description="Your subscription will remain unchanged on the next billing cycle. Are you sure you want to cancel this pending update?"
+        title="Cancel scheduled change?"
+        description="Your subscription will stay as it is on the next billing cycle."
+        cancelText="Keep change"
+        confirmText="Cancel change"
         onConfirm={async () => {
           await clearPendingUpdate.mutateAsync(subscription.id)
           await revalidate(`customer_portal`)

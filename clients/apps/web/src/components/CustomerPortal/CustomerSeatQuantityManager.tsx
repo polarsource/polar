@@ -185,12 +185,14 @@ export const CustomerSeatQuantityManager = ({
               {invoicingMessage}
             </PortalText>
           )}
-          <Button
-            loading={updateSubscription.isPending}
-            onClick={handleSubmit(onSubmit)}
-          >
-            Update seats
-          </Button>
+          <Box justifyContent="end">
+            <Button
+              loading={updateSubscription.isPending}
+              onClick={handleSubmit(onSubmit)}
+            >
+              Update seats
+            </Button>
+          </Box>
         </Box>
       )}
     </Box>

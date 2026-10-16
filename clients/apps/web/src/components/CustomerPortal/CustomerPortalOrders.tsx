@@ -13,6 +13,7 @@ import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '../Modal/useModal'
 import { OrderStatus } from '../Orders/OrderStatus'
 import CustomerPortalOrder from './CustomerPortalOrder'
+import { PortalDrawerHeader } from './PortalDialog'
 import {
   PortalCardList,
   PortalEmptyState,
@@ -120,14 +121,17 @@ export const CustomerPortalOrders = ({
         hide={hideOrderModal}
         modalContent={
           selectedOrder ? (
-            <Box flexDirection="column" overflowY="auto" padding="2xl">
-              <CustomerPortalOrder
-                api={api}
-                order={selectedOrder}
-                customerSessionToken={customerSessionToken}
-                themingPreset={themingPreset}
-              />
-            </Box>
+            <>
+              <PortalDrawerHeader title="Order" hide={hideOrderModal} />
+              <Box flexDirection="column" padding="2xl">
+                <CustomerPortalOrder
+                  api={api}
+                  order={selectedOrder}
+                  customerSessionToken={customerSessionToken}
+                  themingPreset={themingPreset}
+                />
+              </Box>
+            </>
           ) : null
         }
       />

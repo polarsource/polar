@@ -281,7 +281,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
           type="submit"
           loading={update.isPending}
           disabled={update.isPending || !isDirty}
-          className="self-start"
+          className="self-end"
         >
           Update billing details
         </Button>

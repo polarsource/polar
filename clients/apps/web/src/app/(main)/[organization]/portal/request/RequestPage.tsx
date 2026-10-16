@@ -121,14 +121,18 @@ const ClientPage = ({
                 transitionProperty="colors"
                 transitionDuration="fast"
               >
-                <RadioGroupItem value={customer.id} id={customer.id} />
+                <RadioGroupItem
+                  value={customer.id}
+                  id={customer.id}
+                  className="dark:border-polar-600 border-gray-300 text-black dark:text-white"
+                />
                 <Box as="span" flex={1} color="text-primary">
                   {customer.name || 'Unnamed account'}
                 </Box>
               </Box>
             ))}
           </RadioGroup>
-          <Box columnGap="s">
+          <Box columnGap="s" justifyContent="end">
             <Button
               variant="ghost"
               size="lg"
@@ -142,7 +146,6 @@ const ClientPage = ({
             </Button>
             <Button
               size="lg"
-              className="flex-1"
               loading={sessionRequest.isPending}
               disabled={sessionRequest.isPending || !selectedCustomerId}
               onClick={handleCustomerSelect}

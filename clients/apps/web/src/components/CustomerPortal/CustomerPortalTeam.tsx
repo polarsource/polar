@@ -29,7 +29,7 @@ import {
 } from '@polar-sh/orbit'
 import { useState } from 'react'
 import { Box } from '@polar-sh/orbit/Box'
-import { ConfirmModal } from '../Modal/ConfirmModal'
+import { PortalConfirmDialog } from './PortalDialog'
 import { toast } from '../Toast/use-toast'
 
 interface CustomerPortalTeamSectionProps {
@@ -286,14 +286,14 @@ export const CustomerPortalTeamSection = ({
         })}
       </PortalCardList>
 
-      <ConfirmModal
+      <PortalConfirmDialog
         isShown={memberToRemove !== null}
         hide={() => setMemberToRemove(null)}
-        title="Remove team member"
-        description={`Are you sure you want to remove ${memberToRemoveData?.name || memberToRemoveData?.email || 'this member'} from the team? They will lose access to all team resources.`}
+        title="Remove team member?"
+        description={`${memberToRemoveData?.name || memberToRemoveData?.email || 'This member'} will lose access to all team resources.`}
         onConfirm={() => memberToRemove && handleRemoveMember(memberToRemove)}
         destructive
-        destructiveText="Remove"
+        confirmText="Remove"
       />
     </Box>
   )

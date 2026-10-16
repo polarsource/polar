@@ -60,10 +60,12 @@ const MeterCard = ({
       )}
       <PortalRows>
         <PortalRow
+          numeric
           label="Consumed"
           value={<FormattedUnits value={consumed_units} />}
         />
         <PortalRow
+          numeric
           label="Credited"
           value={<FormattedUnits value={credited_units} />}
         />

@@ -1,6 +1,5 @@
 'use client'
 
-import { InlineModalHeader } from '@polar-sh/orbit'
 import {
   useCustomerPaymentMethods,
   useCustomerUpdateSubscription,
@@ -8,46 +7,125 @@ import {
 import { hasLegacyRecurringPrices, isFreePrice } from '@/utils/product'
 import { formatTrialEnd, useTrialChangeOutcome } from '@/utils/trial-change'
 import { Client, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
-import { List, ListItem } from '@polar-sh/orbit'
+import { Alert, Button, Status } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import { resolveBenefitIcon } from '../Benefit/utils'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 import { toast } from '../Toast/use-toast'
+import { PortalDialog } from './PortalDialog'
+import { PortalText } from './PortalPrimitives'
 
-const ProductPriceListItem = ({
+const PlanOption = ({
   product,
   currency,
   selected,
+  current,
   onSelect,
 }: {
   product: schemas['CustomerProduct']
   currency: string
   selected: boolean
+  current?: boolean
   onSelect?: () => void
-}) => {
-  return (
-    <ListItem
-      selected={selected}
-      className="flex flex-row items-center justify-between text-sm"
-      onSelect={onSelect}
-      size="small"
-    >
-      <h3 className="font-medium">{product.name}</h3>
+}) => (
+  <Box
+    as="li"
+    display="flex"
+    alignItems="center"
+    justifyContent="between"
+    columnGap="l"
+    paddingHorizontal="l"
+    paddingVertical="m"
+    borderRadius="l"
+    borderWidth={1}
+    borderStyle="solid"
+    borderColor="border-primary"
+    backgroundColor={
+      selected
+        ? 'background-secondary'
+        : current
+          ? 'background-primary'
+          : { base: 'background-primary', hover: 'background-secondary' }
+    }
+    cursor={current ? 'default' : 'pointer'}
+    transitionProperty="colors"
+    transitionDuration="fast"
+    onClick={current ? undefined : onSelect}
+    role={current ? undefined : 'radio'}
+    aria-checked={current ? undefined : selected}
+  >
+    <Box alignItems="center" columnGap="m" minWidth={0}>
+      <Box
+        width={16}
+        height={16}
+        flexShrink={0}
+        alignItems="center"
+        justifyContent="center"
+        borderRadius="full"
+        borderWidth={1}
+        borderStyle="solid"
+        borderColor="border-primary"
+        backgroundColor={selected ? 'background-inverse' : 'background-primary'}
+        opacity={current ? 0 : 1}
+      >
+        {selected ? (
+          <Box
+            width={6}
+            height={6}
+            borderRadius="full"
+            backgroundColor="background-primary"
+          />
+        ) : null}
+      </Box>
+      <PortalText block className="truncate text-sm">
+        {product.name}
+      </PortalText>
+      {current ? <Status size="small" status="Current" /> : null}
+    </Box>
+    <PortalText tone="secondary" className="text-sm whitespace-nowrap">
       <ProductPriceLabel product={product} currency={currency} />
-    </ListItem>
-  )
-}
+    </PortalText>
+  </Box>
+)
+
+const BenefitChanges = ({
+  title,
+  benefits,
+  tone,
+}: {
+  title: string
+  benefits: schemas['CustomerProduct']['benefits']
+  tone: 'primary' | 'secondary'
+}) => (
+  <Box flexDirection="column" rowGap="s">
+    <PortalText tone="secondary" className="text-sm">
+      {title}
+    </PortalText>
+    {benefits.map((benefit) => (
+      <Box key={benefit.id} alignItems="center" columnGap="s">
+        <PortalText tone={tone}>
+          {resolveBenefitIcon(benefit.type, 'h-3 w-3')}
+        </PortalText>
+        <PortalText tone={tone} className="text-sm">
+          {benefit.description}
+        </PortalText>
+      </Box>
+    ))}
+  </Box>
+)
 
 const CustomerChangePlanModal = ({
   api,
   organization,
   products: _products,
   subscription,
+  isShown,
   hide,
   onUserSubscriptionUpdate,
 }: {
+  isShown: boolean
   api: Client
   organization: schemas['CustomerOrganization']
   products: schemas['CustomerProduct'][]
@@ -211,7 +289,7 @@ const CustomerChangePlanModal = ({
     if (data) {
       toast({
         title: 'Subscription updated',
-        description: `Subscription was updated successfully`,
+        description: 'Your plan has been updated.',
       })
       onUserSubscriptionUpdate(data)
       router.refresh()
@@ -237,98 +315,77 @@ const CustomerChangePlanModal = ({
   )
 
   return (
-    <div className="flex flex-col overflow-y-auto">
-      <InlineModalHeader hide={hide}>
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-xl">Change plan</h2>
-        </div>
-      </InlineModalHeader>
-      <div className="flex flex-col gap-y-8 p-8">
-        <h3 className="font-medium">Current plan</h3>
-        <List size="small">
-          <ProductPriceListItem
-            product={subscription.product}
+    <PortalDialog
+      isShown={isShown}
+      hide={hide}
+      title="Change plan"
+      description={`You're currently on ${subscription.product.name}.`}
+      actions={
+        <>
+          <Button variant="ghost" onClick={hide}>
+            Cancel
+          </Button>
+          <Button
+            disabled={!canChangePlan}
+            loading={updateSubscription.isPending}
+            onClick={onConfirm}
+          >
+            {trialOutcome?.kind === 'ends'
+              ? 'Change plan and end trial'
+              : 'Change plan'}
+          </Button>
+        </>
+      }
+    >
+      <Box as="ul" flexDirection="column" rowGap="s" role="radiogroup">
+        <PlanOption
+          product={subscription.product}
+          currency={subscription.currency}
+          selected={false}
+          current
+        />
+        {availableProducts.map((product) => (
+          <PlanOption
+            key={product.id}
+            product={product}
             currency={subscription.currency}
-            selected
+            selected={selectedProduct?.id === product.id}
+            onSelect={() => setSelectedProduct(product)}
           />
-        </List>
-        <h3 className="font-medium">Available plans</h3>
-        {availableProducts.length === 0 ? (
-          <p className="dark:text-polar-500 dark:bg-polar-800 rounded-2xl bg-gray-50 p-3 text-center text-sm text-gray-500">
-            No other plans available
-          </p>
-        ) : (
-          <List size="small">
-            {availableProducts.map((product) => (
-              <ProductPriceListItem
-                key={product.id}
-                product={product}
-                currency={subscription.currency}
-                selected={selectedProduct?.id === product.id}
-                onSelect={() => setSelectedProduct(product)}
-              />
-            ))}
-          </List>
-        )}
-        <div className="flex flex-col gap-y-6">
-          {addedBenefits.length > 0 && (
-            <div className="flex flex-col gap-y-4">
-              <h3 className="text-sm font-medium text-green-400">
-                You&apos;ll get access to the following benefits
-              </h3>
-              <div className="flex flex-col gap-y-2">
-                {addedBenefits.map((benefit) => (
-                  <div key={benefit.id} className="flex flex-row align-middle">
-                    <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-2xl text-blue-500 dark:text-white">
-                      {resolveBenefitIcon(benefit.type, 'h-3 w-3')}
-                    </span>
-                    <span className="ml-2 text-sm">{benefit.description}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {removedBenefits.length > 0 && (
-            <div className="flex flex-col gap-y-4">
-              <h3 className="text-sm font-medium text-red-400">
-                You&apos;ll lose access to the following benefits
-              </h3>
-              <div className="flex flex-col gap-y-2">
-                {removedBenefits.map((benefit) => (
-                  <div key={benefit.id} className="flex flex-row align-middle">
-                    <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-2xl text-blue-500 dark:text-white">
-                      {resolveBenefitIcon(benefit.type, 'h-3 w-3')}
-                    </span>
-                    <span className="ml-2 text-sm">{benefit.description}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {invoicingMessage && (
-            <span className="dark:text-polar-500 text-sm text-pretty text-gray-500">
-              {invoicingMessage}
-            </span>
-          )}
-        </div>
-        {needToAddPaymentMethod && (
-          <p className="dark:text-polar-500 text-sm text-gray-500">
-            You need to add a payment method before updating your plan. Head to
-            the billing page to add a payment method.
-          </p>
-        )}
-        <Button
-          disabled={!canChangePlan}
-          loading={updateSubscription.isPending}
-          onClick={onConfirm}
-          size="lg"
-        >
-          {trialOutcome?.kind === 'ends'
-            ? 'Change Plan & End Trial'
-            : 'Change plan'}
-        </Button>
-      </div>
-    </div>
+        ))}
+      </Box>
+      {availableProducts.length === 0 && (
+        <PortalText tone="secondary" className="text-sm">
+          No other plans are available.
+        </PortalText>
+      )}
+      {addedBenefits.length > 0 && (
+        <BenefitChanges
+          title="You'll get access to"
+          benefits={addedBenefits}
+          tone="primary"
+        />
+      )}
+      {removedBenefits.length > 0 && (
+        <BenefitChanges
+          title="You'll lose access to"
+          benefits={removedBenefits}
+          tone="secondary"
+        />
+      )}
+      {invoicingMessage && (
+        <PortalText tone="secondary" className="text-sm text-pretty">
+          {invoicingMessage}
+        </PortalText>
+      )}
+      {needToAddPaymentMethod && (
+        <Alert
+          variant="warning"
+          title="Payment method required"
+          description="Add a payment method on the billing page before switching to a paid plan."
+        />
+      )}
+    </PortalDialog>
   )
 }
 

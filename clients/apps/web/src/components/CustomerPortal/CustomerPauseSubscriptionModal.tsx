@@ -4,8 +4,7 @@ import { toast } from '@/components/Toast/use-toast'
 import { useCustomerPauseSubscription } from '@/hooks/queries/customerPortal'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { Client, schemas } from '@polar-sh/client'
-import { Button, Text } from '@polar-sh/orbit'
-import { Box } from '@polar-sh/orbit/Box'
+import { Button } from '@polar-sh/orbit'
 import DatePicker from '@polar-sh/ui/components/atoms/DateTimePicker'
 import {
   Form,
@@ -16,14 +15,19 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
+import { PortalDialog } from './PortalDialog'
 
 interface CustomerPauseSubscriptionModalProps {
+  isShown: boolean
+  hide: () => void
   api: Client
   subscription: schemas['CustomerSubscription']
   onPause?: () => void
 }
 
 const CustomerPauseSubscriptionModal = ({
+  isShown,
+  hide,
   api,
   subscription,
   onPause,
@@ -61,26 +65,27 @@ const CustomerPauseSubscriptionModal = ({
   }
 
   return (
-    <Box
-      flexDirection="column"
-      rowGap="xl"
-      padding="2xl"
-      height="100%"
-      overflowY="auto"
+    <PortalDialog
+      isShown={isShown}
+      hide={hide}
+      title="Pause subscription"
+      description="Your subscription stays active until the end of the current period. While paused you won't be charged and benefits are revoked until it resumes."
+      actions={
+        <>
+          <Button variant="ghost" onClick={hide}>
+            Keep active
+          </Button>
+          <Button
+            onClick={form.handleSubmit(onSubmit)}
+            loading={pauseSubscription.isPending}
+          >
+            Pause subscription
+          </Button>
+        </>
+      }
     >
-      <Text variant="heading-xs" as="h2">
-        Pause subscription
-      </Text>
-      <Text color="muted">
-        Your subscription stays active until the end of the current period. At
-        the next renewal it is paused — you are not charged and benefits are
-        revoked until it resumes.
-      </Text>
       <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="flex flex-col gap-y-6"
-        >
+        <form onSubmit={form.handleSubmit(onSubmit)}>
           <FormField
             control={form.control}
             name="resumes_at"
@@ -95,18 +100,15 @@ const CustomerPauseSubscriptionModal = ({
                   }
                 />
                 <FormDescription>
-                  Leave empty to pause indefinitely until you resume manually.
-                  Must be after the current period ends.
+                  Leave empty to pause until you resume manually. Must be after
+                  the current period ends.
                 </FormDescription>
               </FormItem>
             )}
           />
-          <Button type="submit" loading={pauseSubscription.isPending}>
-            Pause subscription
-          </Button>
         </form>
       </Form>
-    </Box>
+    </PortalDialog>
   )
 }
 

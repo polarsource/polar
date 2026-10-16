@@ -18,16 +18,15 @@ import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { InlineModal } from '@polar-sh/orbit'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { ConfirmModal } from '../Modal/ConfirmModal'
 import { useModal } from '../Modal/useModal'
 import { DownloadInvoicePortal } from '../Orders/DownloadInvoice'
 import CustomerCancellationModal from './CustomerCancellationModal'
 import CustomerPauseSubscriptionModal from './CustomerPauseSubscriptionModal'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
+import { PortalConfirmDialog } from './PortalDialog'
 import { CustomerSubscriptionHeader } from './CustomerSubscriptionHeader'
 import { CustomerUnitQuantityManager } from './CustomerUnitQuantityManager'
 import {
@@ -165,13 +164,19 @@ const CustomerPortalSubscription = ({
                 </span>
               }
               value={subscription.units}
+              numeric
             />
           )}
           <SubscriptionDateRows subscription={subscription} />
         </PortalRows>
 
         {(showCancelAction || showPauseAction) && (
-          <Box columnGap="s" rowGap="s" flexWrap="wrap">
+          <Box columnGap="s" rowGap="s" flexWrap="wrap" justifyContent="end">
+            {showCancelAction && (
+              <Button variant="secondary" onClick={showCancelModal}>
+                Cancel subscription
+              </Button>
+            )}
             {showPauseAction &&
               (pauseAction === 'resume' ? (
                 <Button
@@ -198,11 +203,6 @@ const CustomerPortalSubscription = ({
                   Pause subscription
                 </Button>
               ))}
-            {showCancelAction && (
-              <Button variant="secondary" onClick={showCancelModal}>
-                Cancel subscription
-              </Button>
-            )}
           </Box>
         )}
       </Box>
@@ -299,23 +299,21 @@ const CustomerPortalSubscription = ({
         cancelSubscription={cancelSubscription}
       />
 
-      <InlineModal
+      <CustomerPauseSubscriptionModal
         isShown={pauseModalIsShown}
         hide={hidePauseModal}
-        modalContent={
-          <CustomerPauseSubscriptionModal
-            api={api}
-            subscription={subscription}
-            onPause={hidePauseModal}
-          />
-        }
+        api={api}
+        subscription={subscription}
+        onPause={hidePauseModal}
       />
 
-      <ConfirmModal
+      <PortalConfirmDialog
         isShown={showClearPendingUpdateModal}
         hide={() => setShowClearPendingUpdateModal(false)}
-        title="Cancel scheduled change"
-        description="Your subscription will remain unchanged on the next billing cycle. Are you sure you want to cancel this pending update?"
+        title="Cancel scheduled change?"
+        description="Your subscription will stay as it is on the next billing cycle."
+        cancelText="Keep change"
+        confirmText="Cancel change"
         onConfirm={async () => {
           await clearPendingUpdate.mutateAsync(subscription.id)
           refetchOrders()

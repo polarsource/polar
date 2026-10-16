@@ -14,6 +14,7 @@ import { useModal } from '../Modal/useModal'
 import CustomerSubscriptionDetails from './CustomerSubscriptionDetails'
 import CustomerPortalSubscription from './CustomerPortalSubscription'
 import { OrderPaymentRetryModal } from './OrderPaymentRetryModal'
+import { PortalDrawerHeader } from './PortalDialog'
 import {
   PortalCardList,
   PortalEmptyState,
@@ -181,14 +182,20 @@ export const InactiveSubscriptionsOverview = ({
         hide={hideSubscriptionModal}
         modalContent={
           selectedSubscription ? (
-            <Box flexDirection="column" overflowY="auto" padding="2xl">
-              <CustomerPortalSubscription
-                api={api}
-                customerSessionToken={customerSessionToken}
-                subscription={selectedSubscription}
-                products={products}
+            <>
+              <PortalDrawerHeader
+                title="Subscription"
+                hide={hideSubscriptionModal}
               />
-            </Box>
+              <Box flexDirection="column" padding="2xl">
+                <CustomerPortalSubscription
+                  api={api}
+                  customerSessionToken={customerSessionToken}
+                  subscription={selectedSubscription}
+                  products={products}
+                />
+              </Box>
+            </>
           ) : null
         }
       />

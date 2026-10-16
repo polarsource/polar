@@ -222,12 +222,14 @@ export const CustomerUnitQuantityManager = ({
               {invoicingMessage}
             </Text>
           )}
-          <Button
-            loading={updateSubscription.isPending}
-            onClick={handleSubmit(onSubmit)}
-          >
-            Update units
-          </Button>
+          <Box justifyContent="end">
+            <Button
+              loading={updateSubscription.isPending}
+              onClick={handleSubmit(onSubmit)}
+            >
+              Update units
+            </Button>
+          </Box>
         </Box>
       )}
     </Box>

@@ -206,6 +206,7 @@ export const CurrentPeriodOverview = ({
       <PortalRows>
         {product && subscriptionPreview && (
           <PortalRow
+            numeric
             label={productLabel()}
             value={
               isCancelingAtPeriodEnd ? (
@@ -228,6 +229,7 @@ export const CurrentPeriodOverview = ({
         )}
         {prorations.map((proration, index) => (
           <PortalRow
+            numeric
             key={index}
             label={proration.label}
             value={format(proration.amount)}
@@ -235,6 +237,7 @@ export const CurrentPeriodOverview = ({
         ))}
         {subscription.meters.map((meter) => (
           <PortalRow
+            numeric
             key={meter.id}
             label={meter.meter.name}
             value={format(meter.amount)}
@@ -247,18 +250,21 @@ export const CurrentPeriodOverview = ({
       <PortalRows>
         {(hasTaxes || hasDiscount) && (
           <PortalRow
+            numeric
             label="Subtotal"
             value={format(subscriptionPreview.subtotal_amount)}
           />
         )}
         {hasDiscount && (
           <PortalRow
+            numeric
             label="Discount"
             value={format(-1 * subscriptionPreview.discount_amount)}
           />
         )}
         {hasTaxes && (
           <PortalRow
+            numeric
             label="Taxes"
             value={format(subscriptionPreview.tax_amount)}
           />
@@ -280,10 +286,12 @@ export const CurrentPeriodOverview = ({
           subscriptionPreview.applied_balance_amount !== 0 && (
             <>
               <PortalRow
+                numeric
                 label="Applied balance"
                 value={format(subscriptionPreview.applied_balance_amount)}
               />
               <PortalRow
+                numeric
                 emphasis
                 label="To be paid"
                 value={format(subscriptionPreview.due_amount)}

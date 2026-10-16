@@ -1,7 +1,6 @@
 'use client'
 
 import revalidate from '@/app/actions'
-import { Modal, ModalProps } from '@polar-sh/orbit'
 import {
   useCustomerCancelSubscription,
   useCustomerRevokeSubscription,
@@ -11,6 +10,7 @@ import { setValidationErrors } from '@/utils/api/errors'
 import { Client, isValidationError, schemas } from '@polar-sh/client'
 import { Alert, Button } from '@polar-sh/orbit'
 import { TextArea } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   Form,
   FormControl,
@@ -18,7 +18,6 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { Label } from '@polar-sh/ui/components/ui/label'
 import {
   RadioGroup,
   RadioGroupItem,
@@ -27,28 +26,26 @@ import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
+import { PortalDialog } from './PortalDialog'
+import { PortalText } from './PortalPrimitives'
 
-const CancellationReasonRadio = ({
-  value,
-  label,
-}: {
+const CANCELLATION_REASONS: {
   value: schemas['CustomerCancellationReason']
   label: string
-}) => {
-  return (
-    <div className="flex flex-row">
-      <RadioGroupItem value={value} id={`reason-${value}`} />
-      <Label className="ml-4 grow" htmlFor={`reason-${value}`}>
-        {label}
-      </Label>
-    </div>
-  )
-}
+}[] = [
+  { value: 'unused', label: 'Not using it enough' },
+  { value: 'too_expensive', label: 'Too expensive' },
+  { value: 'missing_features', label: 'Missing features' },
+  { value: 'switched_service', label: 'Switched to another service' },
+  { value: 'customer_service', label: 'Customer service' },
+  { value: 'low_quality', label: 'Not satisfied with the quality' },
+  { value: 'too_complex', label: 'Too complicated' },
+  { value: 'other', label: 'Other' },
+]
 
-interface CustomerCancellationModalProps extends Omit<
-  ModalProps,
-  'title' | 'modalContent'
-> {
+interface CustomerCancellationModalProps {
+  isShown: boolean
+  hide: () => void
   api: Client
   subscription: schemas['CustomerSubscription']
   cancelSubscription: ReturnType<typeof useCustomerCancelSubscription>
@@ -123,7 +120,7 @@ const CustomerCancellationModal = ({
       }
       toast({
         title: 'Subscription canceled',
-        description: `Subscription was cancelled successfully`,
+        description: 'Your subscription has been canceled.',
       })
       router.refresh()
       props.hide()
@@ -144,111 +141,99 @@ const CustomerCancellationModal = ({
   }
 
   return (
-    <Modal
-      {...props}
+    <PortalDialog
+      isShown={props.isShown}
+      hide={props.hide}
       title="Cancel subscription"
-      className="md:min-w-[600px]"
-      modalContent={
-        <div className="flex flex-col gap-y-6 p-6 sm:p-12">
-          <div className="flex flex-col gap-y-2">
-            <h3 className="text-2xl">We&apos;re sorry to see you go!</h3>
-            <p className="dark:text-polar-500 leading-relaxed text-balance text-gray-500">
-              You&apos;re always welcome back! Let us know why you&apos;re
-              leaving to help us improve our product.
-            </p>
-          </div>
-          {subscription.status === 'past_due' &&
-            cancelPreview?.stops_collection && (
-              <Alert
-                variant="warning"
-                title="Your latest payment didn't go through"
-                description="Cancelling now ends your subscription immediately and stops any further payment attempts."
-              />
-            )}
-          <Form {...form}>
-            <form onSubmit={handleSubmit(handleCancellation)}>
-              <FormField
-                control={control}
-                name="cancellation_reason"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <RadioGroup
-                        value={field.value ?? undefined}
-                        onValueChange={onReasonSelect}
-                      >
-                        <CancellationReasonRadio
-                          value="unused"
-                          label="Not using it enough"
-                        />
-                        <CancellationReasonRadio
-                          value="too_expensive"
-                          label="Too expensive"
-                        />
-                        <CancellationReasonRadio
-                          value="missing_features"
-                          label="Missing features"
-                        />
-                        <CancellationReasonRadio
-                          value="switched_service"
-                          label="Switched to another service"
-                        />
-                        <CancellationReasonRadio
-                          value="customer_service"
-                          label="Customer service"
-                        />
-                        <CancellationReasonRadio
-                          value="low_quality"
-                          label="Not satisfied with the quality"
-                        />
-                        <CancellationReasonRadio
-                          value="too_complex"
-                          label="Too complicated"
-                        />
-                        <CancellationReasonRadio
-                          value="other"
-                          label="Other (please share below)"
-                        />
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={control}
-                name="cancellation_comment"
-                render={({ field }) => (
-                  <FormItem className="mt-6">
-                    <FormControl>
-                      <TextArea
-                        {...field}
-                        value={field.value || ''}
-                        placeholder="Anything else you want to share? (Optional)"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="flex flex-col gap-4 pt-6 sm:flex-row">
-                <Button
-                  type="submit"
-                  variant="destructive"
-                  loading={isPending}
-                  disabled={isPending || previewPending}
-                >
-                  {stopsCollection ? 'Cancel now' : 'Cancel subscription'}
-                </Button>
-                <Button variant="ghost" onClick={handleCancel}>
-                  I&apos;ve changed my mind
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </div>
+      description="We're sorry to see you go. Let us know why you're leaving so we can improve."
+      actions={
+        <>
+          <Button variant="ghost" onClick={handleCancel}>
+            Keep subscription
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleSubmit(handleCancellation)}
+            loading={isPending}
+            disabled={isPending || previewPending}
+          >
+            {stopsCollection ? 'Cancel now' : 'Cancel subscription'}
+          </Button>
+        </>
       }
-    />
+    >
+      {subscription.status === 'past_due' &&
+        cancelPreview?.stops_collection && (
+          <Alert
+            variant="warning"
+            title="Your latest payment didn't go through"
+            description="Cancelling now ends your subscription immediately and stops any further payment attempts."
+          />
+        )}
+      <Form {...form}>
+        <form
+          className="flex flex-col gap-y-6"
+          onSubmit={handleSubmit(handleCancellation)}
+        >
+          <FormField
+            control={control}
+            name="cancellation_reason"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <RadioGroup
+                    value={field.value ?? undefined}
+                    onValueChange={onReasonSelect}
+                    className="gap-y-3"
+                  >
+                    {CANCELLATION_REASONS.map(({ value, label }) => (
+                      <Box
+                        as="label"
+                        key={value}
+                        htmlFor={`reason-${value}`}
+                        display="flex"
+                        alignItems="center"
+                        columnGap="m"
+                        cursor="pointer"
+                      >
+                        <RadioGroupItem
+                          value={value}
+                          id={`reason-${value}`}
+                          className="dark:border-polar-600 border-gray-300 text-black dark:text-white"
+                        />
+                        <PortalText className="text-sm">{label}</PortalText>
+                      </Box>
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name="cancellation_comment"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <TextArea
+                    {...field}
+                    value={field.value || ''}
+                    placeholder="Anything else you want to share? (optional)"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          {form.formState.errors.root && (
+            <PortalText tone="danger" className="text-sm">
+              {form.formState.errors.root.message}
+            </PortalText>
+          )}
+        </form>
+      </Form>
+    </PortalDialog>
   )
 }
 

@@ -460,18 +460,27 @@ export class Outpost {
   }
 
   async customerMeter(input: Customer & { meter_id: string }): Promise<CustomerMeter | null> {
-    return this.trace("outpost.customer_meter", async () => {
+    return this.traceRead("outpost.customer_meter", async (span) => {
       const customer = customerKey(input);
       this.requireRedis();
       await this.waitConfigured();
       const reducer = this.reducers.find((item) => item.meter_ids?.includes(input.meter_id));
-      if (!reducer) return null;
+      if (!reducer) {
+        span.setAttribute("outpost.read.outcome", "unknown_meter");
+        return null;
+      }
       const local = await this.warmCustomer(customer, reducer);
       await this.waitReady(reducer, local, [input.meter_id]);
-      if (local.missing) return null;
+      if (local.missing) {
+        span.setAttribute("outpost.read.outcome", "unknown_customer");
+        return null;
+      }
       const state = local.state;
-      if (!state || state.coldUntil === undefined)
+      if (!state || state.coldUntil === undefined) {
+        span.setAttribute("outpost.read.outcome", "not_ready");
         throw new PolarError("Customer snapshot is not ready");
+      }
+      span.setAttribute("outpost.read.outcome", "ready");
       const combined = { ...state.cold };
       for (const [start, statistics] of state.buckets)
         if (start >= state.coldUntil) addStatistics(combined, statistics);
@@ -487,10 +496,22 @@ export class Outpost {
   }
 
   async actor(input: Customer): Promise<void> {
-    return this.trace("outpost.actor", async () => {
+    return this.traceRead("outpost.actor", async (span) => {
       const warmed = await this.warmActor(customerKey(input));
       await Promise.all(
         warmed.map(([reducer, local]) => this.waitReady(reducer, local, reducer.meter_ids ?? [])),
+      );
+      // Polar sends no snapshot for unique reducers.
+      const snapshotted = warmed.filter(
+        ([reducer]) => (reducer.aggregation.func as string) !== "unique",
+      );
+      span.setAttribute(
+        "outpost.read.outcome",
+        !snapshotted.every(([reducer, local]) => isReady(local, reducer.meter_ids ?? []))
+          ? "not_ready"
+          : snapshotted.some(([, local]) => local.missing)
+            ? "unknown_customer"
+            : "ready",
       );
     });
   }
@@ -770,6 +791,18 @@ export class Outpost {
     } finally {
       span.end();
     }
+  }
+
+  private traceRead<T>(name: string, run: (span: Span) => Promise<T>): Promise<T> {
+    return this.trace(name, async (span) => {
+      try {
+        return await run(span);
+      } catch (error) {
+        if (error instanceof UnavailableRedisError)
+          span.setAttribute("outpost.read.outcome", "redis_unavailable");
+        throw error;
+      }
+    });
   }
 
   private event(name: string, error?: Error): void {

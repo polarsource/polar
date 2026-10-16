@@ -167,6 +167,10 @@ const seed = async (cold = 10): Promise<void> => {
     "credited:meter": 100,
   });
 };
+const readOutcomes = () =>
+  exported
+    .filter((span) => ["outpost.actor", "outpost.customer_meter"].includes(span.name))
+    .map((span) => [span.name, span.attributes["outpost.read.outcome"]]);
 const ingest = (outpost: Outpost, tokens: number) => {
   const payload: EventsIngest = {
     events: [{ ...customer, name: "api_call", timestamp, metadata: { tokens } }],
@@ -717,7 +721,18 @@ const aliceSnapshot = {
 it("waits for the first snapshot on a cold read", async () => {
   snapshot = aliceSnapshot;
   const outpost = await start();
+  await outpost.actor(customer);
   expect((await outpost.customerMeter(meter))?.balance).toBe(7);
+  expect(readOutcomes()).toEqual([
+    ["outpost.actor", "ready"],
+    ["outpost.customer_meter", "ready"],
+  ]);
+});
+
+it("reads null for a meter Outpost does not know", async () => {
+  const outpost = await start();
+  expect(await outpost.customerMeter({ ...customer, meter_id: "other" })).toBeNull();
+  expect(readOutcomes()).toEqual([["outpost.customer_meter", "unknown_meter"]]);
 });
 
 it("reads null for a customer Polar does not know", async () => {
@@ -725,6 +740,20 @@ it("reads null for a customer Polar does not know", async () => {
   const outpost = await start();
   await outpost.actor(customer);
   expect(await outpost.customerMeter(meter)).toBeNull();
+  expect(readOutcomes()).toEqual([
+    ["outpost.actor", "unknown_customer"],
+    ["outpost.customer_meter", "unknown_customer"],
+  ]);
+});
+
+it("reports a read whose snapshot never arrives as not ready", async () => {
+  const outpost = await start();
+  await outpost.actor(customer);
+  await expect(outpost.customerMeter(meter)).rejects.toThrow("snapshot is not ready");
+  expect(readOutcomes()).toEqual([
+    ["outpost.actor", "not_ready"],
+    ["outpost.customer_meter", "not_ready"],
+  ]);
 });
 
 it("waits for the snapshot of the meter it reads", async () => {
@@ -763,6 +792,7 @@ it("raises Outpost errors when Redis fails", async () => {
   const readError = outpost.customerMeter(meter);
   await expect(readError).rejects.toBeInstanceOf(UnavailableRedisError);
   await expect(readError).rejects.toMatchObject({ cause: redisError });
+  expect(readOutcomes()).toEqual([["outpost.customer_meter", "redis_unavailable"]]);
   read.mockRestore();
   const write = vi.spyOn(outpost["redis"]!, "outpostWriteBucket").mockRejectedValue(redisError);
   const writeError = ingest(outpost, 3);
@@ -786,4 +816,5 @@ it("fails fast while Redis is unavailable", async () => {
     outpost.customerMeter({ external_customer_id: "bob", meter_id: "meter" }),
   ).rejects.toBeInstanceOf(UnavailableRedisError);
   expect(performance.now() - started).toBeLessThan(500);
+  expect(readOutcomes()).toEqual([["outpost.customer_meter", "redis_unavailable"]]);
 });

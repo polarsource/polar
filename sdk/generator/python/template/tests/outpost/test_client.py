@@ -31,6 +31,7 @@ from polar.outpost.client import (
     Outpost,
     PolarOutpostError,
     ReducerState,
+    RedisReconnectBackoff,
     _backoff_delay,
     connect_websocket,
 )
@@ -1186,6 +1187,10 @@ async def test_refused_reconnection_fails_outpost(
 
 def test_backoff_delay_stays_bounded() -> None:
     assert 15 <= _backoff_delay(5000, 0.5, 30) <= 30
+
+
+def test_redis_reconnect_backoff_stays_bounded() -> None:
+    assert 1 <= RedisReconnectBackoff().compute(5000) <= 2
 
 
 ALICE_SNAPSHOT: dict[str, typing.Any] = {

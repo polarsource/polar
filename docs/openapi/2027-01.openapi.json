@@ -39992,12 +39992,25 @@
               }
             ],
             "title": "Confirmation Token Id",
-            "description": "ID of the Stripe confirmation token. Required for fixed prices and custom prices."
+            "description": "ID of the Stripe confirmation token. Either this or `shared_payment_token_id` is required for fixed prices and custom prices."
+          },
+          "shared_payment_token_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^spt_[A-Za-z0-9_]+$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shared Payment Token Id",
+            "description": "ID of a Stripe shared payment token (`spt_...`) granted by an agent. Only supported for one-time payments. Mutually exclusive with `confirmation_token_id`."
           }
         },
         "type": "object",
         "title": "CheckoutConfirmStripe",
-        "description": "Confirm a checkout session using a Stripe confirmation token."
+        "description": "Confirm a checkout session using a Stripe confirmation token\nor a Stripe shared payment token."
       },
       "CheckoutCreate": {
         "$ref": "#/components/schemas/CheckoutProductsCreate"

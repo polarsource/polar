@@ -488,15 +488,40 @@ class CheckoutConfirmBase(CheckoutUpdatePublic): ...
 
 
 class CheckoutConfirmStripe(CheckoutConfirmBase):
-    """Confirm a checkout session using a Stripe confirmation token."""
+    """
+    Confirm a checkout session using a Stripe confirmation token
+    or a Stripe shared payment token.
+    """
 
     confirmation_token_id: str | None = Field(
         None,
         description=(
             "ID of the Stripe confirmation token. "
-            "Required for fixed prices and custom prices."
+            "Either this or `shared_payment_token_id` is required "
+            "for fixed prices and custom prices."
         ),
     )
+    shared_payment_token_id: str | None = Field(
+        None,
+        pattern=r"^spt_[A-Za-z0-9_]+$",
+        description=(
+            "ID of a Stripe shared payment token (`spt_...`) granted by an agent. "
+            "Only supported for one-time payments. "
+            "Mutually exclusive with `confirmation_token_id`."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def _validate_payment_token(self) -> "CheckoutConfirmStripe":
+        if (
+            self.confirmation_token_id is not None
+            and self.shared_payment_token_id is not None
+        ):
+            raise ValueError(
+                "Only one of confirmation_token_id or shared_payment_token_id "
+                "can be provided"
+            )
+        return self
 
 
 CheckoutConfirm = CheckoutConfirmStripe

@@ -1207,6 +1207,7 @@ class CheckoutService:
         if (
             checkout.is_payment_form_required
             and checkout_confirm.confirmation_token_id is None
+            and checkout_confirm.shared_payment_token_id is None
         ):
             errors.append(
                 {
@@ -1219,6 +1220,11 @@ class CheckoutService:
 
         if len(errors) > 0:
             raise PolarRequestValidationError(errors)
+
+        if checkout_confirm.shared_payment_token_id is not None:
+            await self._validate_shared_payment_token(
+                checkout, checkout_confirm.shared_payment_token_id
+            )
 
         if checkout.payment_processor == PaymentProcessor.stripe:
             async with self._create_or_update_customer(
@@ -1267,7 +1273,6 @@ class CheckoutService:
 
                 intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent | None = None
                 if checkout.is_payment_form_required:
-                    assert checkout_confirm.confirmation_token_id is not None
                     assert checkout.customer_billing_address is not None
                     intent_metadata: dict[str, str] = {
                         "organization_id": str(checkout.organization_id),
@@ -1292,7 +1297,6 @@ class CheckoutService:
                                 "currency": checkout.currency,
                                 "automatic_payment_methods": {"enabled": True},
                                 "confirm": True,
-                                "confirmation_token": checkout_confirm.confirmation_token_id,
                                 "customer": stripe_customer_id,
                                 "statement_descriptor_suffix": checkout.organization.statement_descriptor(),
                                 "description": checkout.description,
@@ -1319,10 +1323,23 @@ class CheckoutService:
                                     payment_method_options
                                 )
 
-                            intent = await stripe_service.create_payment_intent(
-                                **payment_intent_params
-                            )
+                            if checkout_confirm.shared_payment_token_id is not None:
+                                intent = await stripe_service.create_payment_intent_from_shared_payment_token(
+                                    checkout_confirm.shared_payment_token_id,
+                                    **payment_intent_params,
+                                )
+                            else:
+                                assert (
+                                    checkout_confirm.confirmation_token_id is not None
+                                )
+                                payment_intent_params["confirmation_token"] = (
+                                    checkout_confirm.confirmation_token_id
+                                )
+                                intent = await stripe_service.create_payment_intent(
+                                    **payment_intent_params
+                                )
                         else:
+                            assert checkout_confirm.confirmation_token_id is not None
                             setup_intent_params: SetupIntentCreateParams = {
                                 "automatic_payment_methods": {"enabled": True},
                                 "confirm": True,
@@ -1356,6 +1373,26 @@ class CheckoutService:
                             "intent_client_secret": intent.client_secret,
                             "intent_status": intent.status,
                         }
+
+                    if (
+                        checkout_confirm.shared_payment_token_id is not None
+                        and intent.status == "requires_action"
+                    ):
+                        try:
+                            await stripe_service.cancel_payment_intent(intent.id)
+                        except stripe_lib.StripeError as e:
+                            log.warning(
+                                "Failed to cancel shared payment token intent",
+                                checkout_id=str(checkout.id),
+                                intent_id=intent.id,
+                                error=str(e),
+                            )
+                        raise PaymentError(
+                            checkout,
+                            "authentication_required",
+                            "The payment requires additional authentication, "
+                            "which isn't supported with shared payment tokens.",
+                        )
 
                 # Check for trial abuse
                 # Skip for team customers without email — no email to check against
@@ -1418,6 +1455,62 @@ class CheckoutService:
             checkout.customer_session_token = None
 
         return checkout
+
+    async def _validate_shared_payment_token(
+        self, checkout: Checkout, shared_payment_token_id: str
+    ) -> None:
+        if not checkout.is_payment_required or checkout.should_save_payment_method:
+            raise PaymentError(
+                checkout,
+                "shared_payment_token_unsupported",
+                "Shared payment tokens are only supported for one-time payments.",
+            )
+
+        try:
+            token = await stripe_service.get_shared_payment_granted_token(
+                shared_payment_token_id
+            )
+        except stripe_lib.InvalidRequestError as e:
+            raise PaymentError(
+                checkout,
+                "shared_payment_token_invalid",
+                "Shared payment token not found.",
+            ) from e
+
+        if token["deactivated_at"] is not None:
+            raise PaymentError(
+                checkout,
+                "shared_payment_token_invalid",
+                "Shared payment token is deactivated.",
+            )
+
+        usage_limits = token["usage_limits"]
+        if usage_limits is None:
+            return
+
+        expires_at = usage_limits.get("expires_at")
+        if expires_at is not None and expires_at <= utc_now().timestamp():
+            raise PaymentError(
+                checkout,
+                "shared_payment_token_invalid",
+                "Shared payment token is expired.",
+            )
+
+        if usage_limits["currency"].lower() != checkout.currency.lower():
+            raise PaymentError(
+                checkout,
+                "shared_payment_token_invalid",
+                "Shared payment token currency doesn't match the checkout currency.",
+            )
+
+        max_amount = usage_limits.get("max_amount")
+        if max_amount is not None and max_amount < checkout.total_amount:
+            raise PaymentError(
+                checkout,
+                "shared_payment_token_invalid",
+                "Shared payment token maximum amount is lower than "
+                "the checkout total amount.",
+            )
 
     async def handle_success(
         self,

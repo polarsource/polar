@@ -310,6 +310,41 @@ async def client_update(
 )
 async def client_confirm(
     client_secret: CheckoutClientSecret,
+    checkout_confirm: legacy_schemas.CheckoutConfirm,
+    auth_subject: auth.CheckoutWeb,
+    session: AsyncSession = Depends(get_db_session),
+) -> Checkout:
+    """
+    Confirm a checkout session by client secret.
+
+    Orders and subscriptions will be processed.
+    """
+    checkout = await checkout_service.get_by_client_secret(
+        session, client_secret, for_update=True
+    )
+
+    return await checkout_service.confirm(
+        session, auth_subject, checkout, checkout_confirm
+    )
+
+
+@inner_router.post(
+    "/client/{client_secret}/confirm",
+    response_model=CheckoutPublicConfirmed,
+    name="client_confirm",
+    summary="Confirm Checkout Session from Client",
+    responses={
+        200: {"description": "Checkout session confirmed."},
+        400: CheckoutPaymentError,
+        404: CheckoutNotFound,
+        403: CheckoutForbiddenError,
+        409: CheckoutLockedError,
+        410: CheckoutExpired,
+    },
+)
+@version(starting_from=V2027_01)
+async def client_confirm_v2027_01(
+    client_secret: CheckoutClientSecret,
     checkout_confirm: CheckoutConfirm,
     auth_subject: auth.CheckoutWeb,
     session: AsyncSession = Depends(get_db_session),

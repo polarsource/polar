@@ -1008,6 +1008,76 @@ class TestClientConfirm:
         json = response.json()
         assert "customer_session_token" in json
 
+    @pytest.mark.api_version(V2027_01)
+    async def test_shared_payment_token(
+        self,
+        api_prefix: str,
+        stripe_service_mock: MagicMock,
+        client: AsyncClient,
+        checkout_open: Checkout,
+    ) -> None:
+        stripe_service_mock.get_shared_payment_granted_token.return_value = {
+            "id": "spt_123",
+            "deactivated_at": None,
+            "deactivated_reason": None,
+            "usage_limits": None,
+        }
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent_from_shared_payment_token.return_value = SimpleNamespace(
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
+        )
+        response = await client.post(
+            f"{api_prefix}/client/{checkout_open.client_secret}/confirm",
+            json={
+                "customer_name": "Customer Name",
+                "customer_email": "customer@example.com",
+                "customer_billing_address": {"country": "FR"},
+                "shared_payment_token_id": "spt_123",
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json()["status"] == "confirmed"
+
+    @pytest.mark.api_version(V2027_01)
+    async def test_shared_payment_token_with_confirmation_token(
+        self, api_prefix: str, client: AsyncClient, checkout_open: Checkout
+    ) -> None:
+        response = await client.post(
+            f"{api_prefix}/client/{checkout_open.client_secret}/confirm",
+            json={
+                "customer_name": "Customer Name",
+                "customer_email": "customer@example.com",
+                "customer_billing_address": {"country": "FR"},
+                "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                "shared_payment_token_id": "spt_123",
+            },
+        )
+
+        assert response.status_code == 422
+
+    async def test_shared_payment_token_before_2027_01(
+        self,
+        api_prefix: str,
+        stripe_service_mock: MagicMock,
+        client: AsyncClient,
+        checkout_open: Checkout,
+    ) -> None:
+        response = await client.post(
+            f"{api_prefix}/client/{checkout_open.client_secret}/confirm",
+            json={
+                "customer_name": "Customer Name",
+                "customer_email": "customer@example.com",
+                "customer_billing_address": {"country": "FR"},
+                "shared_payment_token_id": "spt_123",
+            },
+        )
+
+        assert response.status_code == 422
+        stripe_service_mock.get_shared_payment_granted_token.assert_not_called()
+
     async def test_confirm_with_discount_code(
         self,
         api_prefix: str,

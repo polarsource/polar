@@ -4,22 +4,154 @@ import typing
 from unittest.mock import AsyncMock
 
 import anyio
+import anyio.lowlevel
 import httpx
 import pytest
 
-from polar import PolarClientError, PolarError
+from polar import PolarClientError, PolarError, PolarNetworkError
 from polar.base import AsyncClientBase
 from polar.ingestion import (
+    BufferedIngestionOptions,
     CustomerMeter,
     EventInput,
     Ingestion,
     IngestionError,
+    IngestionOutpostOptions,
     IngestionStrategyProtocol,
     InvalidActorError,
 )
 from polar.ingestion.buffered import BufferedIngestionStrategy
 from polar.outpost import Outpost
 from polar.{{ ir.versions[0] | format_version }} import PolarAsync
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "environment, outpost_options, expected_url",
+    [
+        (None, None, None),
+        ("", None, None),
+        ("redis://environment:6379", None, "redis://environment:6379"),
+        ("redis://environment:6379", {}, "redis://environment:6379"),
+        ("redis://environment:6379", False, None),
+        (None, {"redis_url": "redis://explicit:6379"}, "redis://explicit:6379"),
+        (
+            "redis://environment:6379",
+            {"redis_url": "redis://explicit:6379"},
+            "redis://explicit:6379",
+        ),
+    ],
+)
+async def test_factory_outpost_configuration(
+    monkeypatch: pytest.MonkeyPatch,
+    environment: str | None,
+    outpost_options: IngestionOutpostOptions | typing.Literal[False] | None,
+    expected_url: str | None,
+) -> None:
+    if environment is not None:
+        monkeypatch.setenv("REDIS_URL", environment)
+    enter = AsyncMock()
+    exit = AsyncMock()
+    monkeypatch.setattr(Outpost, "__aenter__", enter)
+    monkeypatch.setattr(Outpost, "__aexit__", exit)
+    async with PolarAsync("token") as polar:
+        ingestion = polar.ingestion(outpost=outpost_options)
+        monkeypatch.setenv("REDIS_URL", "redis://changed:6379")
+        async with ingestion:
+            assert isinstance(ingestion.strategies[0], BufferedIngestionStrategy)
+            assert len(ingestion.strategies) == (2 if expected_url else 1)
+            if expected_url:
+                outpost = ingestion.strategies[1]
+                assert isinstance(outpost, Outpost)
+                assert outpost.redis_url == expected_url
+                assert outpost._client is polar._client._client
+    assert enter.await_count == (1 if expected_url else 0)
+    assert exit.await_count == (1 if expected_url else 0)
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("outpost", [{}, {"redis_url": ""}])
+async def test_factory_requires_outpost_url(outpost: IngestionOutpostOptions) -> None:
+    async with PolarAsync("token") as polar:
+        with pytest.raises(
+            IngestionError, match="Outpost requires redis_url or REDIS_URL"
+        ):
+            polar.ingestion(outpost=outpost)
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("options", [{"buffered": {}}, {"outpost": False}])
+async def test_factory_rejects_mixed_configuration(
+    options: dict[str, typing.Any],
+) -> None:
+    async with PolarAsync("token") as polar:
+        with pytest.raises(IngestionError, match="Cannot combine strategies"):
+            polar.ingestion(strategies=[], **options)
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("empty", [False, True])
+async def test_factory_explicit_strategies(
+    monkeypatch: pytest.MonkeyPatch, empty: bool
+) -> None:
+    monkeypatch.setenv("REDIS_URL", "redis://environment:6379")
+    strategy = AsyncMock(spec=IngestionStrategyProtocol)
+    strategies: list[IngestionStrategyProtocol] = [] if empty else [strategy]
+    async with (
+        PolarAsync("token") as polar,
+        polar.ingestion(strategies=strategies) as ingestion,
+    ):
+        assert ingestion.strategies == strategies
+        assert ingestion._client is polar._client
+        await ingestion.ingest(name="usage", external_customer_id="customer")
+    assert strategy.__aenter__.await_count == (0 if empty else 1)
+    assert strategy.ingest.await_count == (0 if empty else 1)
+    assert strategy.__aexit__.await_count == (0 if empty else 1)
+
+
+@pytest.mark.anyio
+async def test_factory_buffer_options(monkeypatch: pytest.MonkeyPatch) -> None:
+    on_dropped = AsyncMock()
+    async with PolarAsync("token") as polar:
+        send = AsyncMock(side_effect=PolarNetworkError("offline"))
+        monkeypatch.setattr(polar.events, "ingest", send)
+        async with polar.ingestion(
+            buffered=BufferedIngestionOptions(
+                batch_size=1, batch_interval=60, max_attempts=1, on_dropped=on_dropped
+            )
+        ) as ingestion:
+            await ingestion.ingest(name="usage", external_customer_id="customer")
+            with anyio.fail_after(1):
+                while not on_dropped.await_count:
+                    await anyio.lowlevel.checkpoint()
+        send.assert_awaited_once()
+        on_dropped.assert_awaited_once_with(
+            [{"name": "usage", "external_customer_id": "customer"}], "retry_exhausted"
+        )
+
+
+@pytest.mark.anyio
+async def test_factory_outpost_options_and_startup_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    enter = AsyncMock(side_effect=RuntimeError("Redis unavailable"))
+    monkeypatch.setattr(Outpost, "__aenter__", enter)
+    async with PolarAsync("token") as polar:
+        ingestion = polar.ingestion(
+            outpost=IngestionOutpostOptions(
+                redis_url="redis://localhost:6379", telemetry=False
+            )
+        )
+        outpost = ingestion.strategies[1]
+        assert isinstance(outpost, Outpost)
+        assert not outpost._telemetry
+        with pytest.raises(RuntimeError, match="Redis unavailable"):
+            async with ingestion:
+                pytest.fail("Startup should have failed")
+        with pytest.raises(anyio.ClosedResourceError):
+            await ingestion.strategies[0].ingest(
+                {"name": "usage", "external_customer_id": "customer"}
+            )
 
 
 @pytest.mark.anyio

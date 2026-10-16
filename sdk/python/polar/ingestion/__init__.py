@@ -1,9 +1,13 @@
 import contextlib
+import os
 import types
 import typing
 
 from polar import PolarError
 from polar.base import AsyncClientBase, parse_response_json
+from polar.ingestion.buffered import (
+    BufferedIngestionOptions as BufferedIngestionOptions,
+)
 from polar.ingestion.buffered import (
     BufferedIngestionStrategy as BufferedIngestionStrategy,
 )
@@ -24,6 +28,11 @@ class IngestionError(PolarError): ...
 
 
 class InvalidActorError(IngestionError): ...
+
+
+class IngestionOutpostOptions(typing.TypedDict, total=False):
+    redis_url: str
+    telemetry: bool
 
 
 class IngestionStrategyProtocol(
@@ -204,13 +213,37 @@ class Ingestion:
 
     @classmethod
     def create(
-        cls, polar: PolarClient, outpost_redis_url: str | None = None
+        cls,
+        polar: PolarClient,
+        *,
+        buffered: BufferedIngestionOptions | None = None,
+        outpost: IngestionOutpostOptions | typing.Literal[False] | None = None,
+        strategies: list[IngestionStrategyProtocol] | None = None,
     ) -> typing.Self:
-        strategies: list[IngestionStrategyProtocol] = [BufferedIngestionStrategy(polar)]
-        if outpost_redis_url is not None:
-            from polar.outpost import Outpost
+        if strategies is not None:
+            if buffered is not None or outpost is not None:
+                raise IngestionError(
+                    "Cannot combine strategies with buffered or outpost options"
+                )
+            return cls(strategies=strategies, client=polar._client)
+        strategies = [BufferedIngestionStrategy(polar, **(buffered or {}))]
+        if outpost is not False:
+            outpost_options = (
+                outpost if outpost is not None else IngestionOutpostOptions()
+            )
+            redis_url = outpost_options.get("redis_url", os.environ.get("REDIS_URL"))
+            if outpost is not None and not redis_url:
+                raise IngestionError("Outpost requires redis_url or REDIS_URL")
+            if redis_url:
+                from polar.outpost import Outpost
 
-            strategies.append(Outpost.create(polar, outpost_redis_url))
+                strategies.append(
+                    Outpost.create(
+                        polar,
+                        redis_url,
+                        telemetry=outpost_options.get("telemetry", True),
+                    )
+                )
         return cls(strategies=strategies, client=polar._client)
 
 
@@ -233,12 +266,16 @@ def _validate_actor(
 __all__ = [
     "ActorIngestion",
     "ActorWarmupProtocol",
+    "BufferedIngestionOptions",
+    "BufferedIngestionStrategy",
     "ContextualEventInput",
     "CustomerMeter",
     "EventInput",
     "Ingestion",
     "IngestionClient",
     "IngestionError",
+    "IngestionOutpostOptions",
+    "IngestionStrategyProtocol",
     "InvalidActorError",
     "MeterProtocol",
     "PolarClient",

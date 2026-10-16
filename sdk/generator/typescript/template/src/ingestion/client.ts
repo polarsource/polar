@@ -1,3 +1,4 @@
+import type { OutpostOptions } from "../outpost/client";
 import type {
   ContextualEventInput,
   EventCustomerInput,
@@ -7,7 +8,11 @@ import type {
 import type { CustomerMeter, MeterInput } from "./meter";
 
 import { PolarError, type ClientBase } from "../base";
-import { BufferedIngestionStrategy, type IngestionClient } from "./buffered";
+import {
+  BufferedIngestionStrategy,
+  type BufferedIngestionOptions,
+  type IngestionClient,
+} from "./buffered";
 
 export class IngestionError extends PolarError {}
 export class InvalidActorError extends IngestionError {}
@@ -35,9 +40,21 @@ export interface IngestionStrategy {
   close(): Promise<void>;
 }
 
-export interface IngestionOptions {
-  outpostRedisUrl?: string;
-}
+export type IngestionOutpostOptions = Omit<OutpostOptions, "client"> & {
+  redisUrl?: string;
+};
+
+export type IngestionOptions =
+  | {
+      buffered?: BufferedIngestionOptions;
+      outpost?: false | IngestionOutpostOptions;
+      strategies?: never;
+    }
+  | {
+      strategies: readonly IngestionStrategy[];
+      buffered?: never;
+      outpost?: never;
+    };
 
 export class Ingestion {
   readonly strategies: readonly IngestionStrategy[];
@@ -181,14 +198,24 @@ export const createIngestion = (
   client: ClientBase,
   options: IngestionOptions = {},
 ): Ingestion => {
-  const strategies: IngestionStrategy[] = [new BufferedIngestionStrategy(polar)];
-  const redisUrl = options.outpostRedisUrl;
-  if (redisUrl !== undefined) {
+  if (options.strategies !== undefined) {
+    if (options.buffered !== undefined || options.outpost !== undefined) {
+      throw new IngestionError("Cannot combine strategies with buffered or outpost options");
+    }
+    return new Ingestion({ strategies: options.strategies, client });
+  }
+  const strategies: IngestionStrategy[] = [new BufferedIngestionStrategy(polar, options.buffered)];
+  const { redisUrl: configuredRedisUrl, ...outpostOptions } = options.outpost || {};
+  const redisUrl = configuredRedisUrl ?? process.env.REDIS_URL;
+  if (options.outpost !== undefined && options.outpost !== false && !redisUrl) {
+    throw new IngestionError("Outpost requires redisUrl or REDIS_URL");
+  }
+  if (options.outpost !== false && redisUrl) {
     let outpost: import("../outpost/client").Outpost | undefined;
     strategies.push({
       async start() {
         const { Outpost } = await import("../outpost/client");
-        outpost = new Outpost(redisUrl, { client });
+        outpost = new Outpost(redisUrl, { ...outpostOptions, client });
         await outpost.start();
       },
       async ingest(event) {

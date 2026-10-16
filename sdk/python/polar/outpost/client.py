@@ -358,8 +358,12 @@ class Outpost:
         self._sync_applied = 0
 
     @classmethod
-    def create(cls, polar: PolarClient, redis_url: str) -> typing.Self:
-        return cls(redis_url=redis_url, client=polar._client._client)
+    def create(
+        cls, polar: PolarClient, redis_url: str, *, telemetry: bool = True
+    ) -> typing.Self:
+        return cls(
+            redis_url=redis_url, client=polar._client._client, telemetry=telemetry
+        )
 
     @_raise_redis_unavailable
     async def __aenter__(self) -> typing.Self:

@@ -1,18 +1,20 @@
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import type { EventInput } from "./event";
 import type { CustomerMeter } from "./meter";
 
 import { createPolar } from "../{{ (ir.versions[-2] | default(ir.versions[0])).version }}/client";
-import { ClientBase, PolarError } from "../base";
+import { ClientBase, PolarError, PolarNetworkError } from "../base";
+import { BufferedIngestionStrategy } from "./buffered";
 import {
   Ingestion,
   IngestionError,
   InvalidActorError,
   type ActorInput,
   type IngestionStrategy,
+  type IngestionOutpostOptions,
 } from "./client";
 
 const client = new ClientBase({
@@ -23,7 +25,11 @@ const client = new ClientBase({
 
 const event = { name: "usage", external_customer_id: "alice" };
 
-afterEach(() => vi.restoreAllMocks());
+beforeEach(() => vi.stubEnv("REDIS_URL", undefined));
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllEnvs();
+});
 
 it("starts and ingests in order, then closes in reverse order", async () => {
   const calls: string[] = [];
@@ -235,7 +241,107 @@ it("creates buffered ingestion using the configured HTTP client", async () => {
   expect(JSON.parse(request!.body as string)).toEqual({ events: [event] });
 });
 
-it("forwards actor warmup and meter reads to the configured Outpost", async () => {
+it.each<[string | undefined, false | IngestionOutpostOptions | undefined, string | undefined]>([
+  [undefined, undefined, undefined],
+  ["", undefined, undefined],
+  ["redis://environment:6379", undefined, "redis://environment:6379"],
+  ["redis://environment:6379", {}, "redis://environment:6379"],
+  ["redis://environment:6379", false, undefined],
+  [undefined, { redisUrl: "redis://explicit:6379" }, "redis://explicit:6379"],
+  ["redis://environment:6379", { redisUrl: "redis://explicit:6379" }, "redis://explicit:6379"],
+])("resolves Outpost configuration: %s, %j", async (environment, outpost, expectedUrl) => {
+  vi.stubEnv("REDIS_URL", environment);
+  const { Outpost } = await import("../outpost/client");
+  const start = vi
+    .spyOn(Outpost.prototype, "start")
+    .mockImplementation(async function (this: InstanceType<typeof Outpost>) {
+      return this;
+    });
+  const close = vi.spyOn(Outpost.prototype, "close").mockResolvedValue(undefined);
+  const ingestion = createPolar({ accessToken: "token" }).ingestion({ outpost });
+  vi.stubEnv("REDIS_URL", "redis://changed:6379");
+  await ingestion.start();
+  await ingestion.close();
+  expect(ingestion.strategies[0]).toBeInstanceOf(BufferedIngestionStrategy);
+  expect(ingestion.strategies).toHaveLength(expectedUrl ? 2 : 1);
+  if (expectedUrl) {
+    expect(start.mock.instances[0]).toMatchObject({ redisUrl: expectedUrl });
+    expect(close).toHaveBeenCalledOnce();
+  } else {
+    expect(start).not.toHaveBeenCalled();
+  }
+});
+
+it.each([{}, { redisUrl: "" }])("rejects Outpost without a Redis URL: %j", (outpost) => {
+  expect(() => createPolar({ accessToken: "token" }).ingestion({ outpost })).toThrow(
+    "Outpost requires redisUrl or REDIS_URL",
+  );
+});
+
+it.each([{ buffered: {} }, { outpost: false as const }])(
+  "rejects combining strategies with built-in options: %j",
+  (options) => {
+    expect(() =>
+      // @ts-expect-error Explicit strategies exclude built-in configuration.
+      createPolar({ accessToken: "token" }).ingestion({ strategies: [], ...options }),
+    ).toThrow("Cannot combine strategies");
+  },
+);
+
+it.each([false, true])(
+  "uses only explicit strategies, including an empty list: %s",
+  async (empty) => {
+    vi.stubEnv("REDIS_URL", "redis://environment:6379");
+    const strategy = {
+      start: vi.fn().mockResolvedValue(undefined),
+      ingest: vi.fn().mockResolvedValue(undefined),
+      close: vi.fn().mockResolvedValue(undefined),
+    };
+    const strategies = empty ? [] : [strategy];
+    {
+      await using ingestion = await createPolar({ accessToken: "token" })
+        .ingestion({ strategies })
+        .start();
+      expect(ingestion.strategies).toEqual(strategies);
+      await ingestion.ingest(event);
+    }
+    expect(strategy.start).toHaveBeenCalledTimes(empty ? 0 : 1);
+    expect(strategy.ingest).toHaveBeenCalledTimes(empty ? 0 : 1);
+    expect(strategy.close).toHaveBeenCalledTimes(empty ? 0 : 1);
+  },
+);
+
+it("forwards buffer options and reports failed delivery", async () => {
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+  const polar = createPolar({ accessToken: "token" });
+  const send = vi.spyOn(polar.events, "ingest").mockRejectedValue(new PolarNetworkError("offline"));
+  const onDropped = vi.fn();
+  {
+    await using ingestion = await polar
+      .ingestion({
+        buffered: { batchSize: 1, batchIntervalMs: 60_000, maxAttempts: 1, onDropped },
+      })
+      .start();
+    await ingestion.ingest(event);
+    await vi.waitFor(() =>
+      expect(onDropped).toHaveBeenCalledExactlyOnceWith([event], "retry_exhausted"),
+    );
+  }
+  expect(send).toHaveBeenCalledOnce();
+});
+
+it("propagates Outpost startup failures and closes the buffer", async () => {
+  vi.stubEnv("REDIS_URL", "redis://environment:6379");
+  const { Outpost } = await import("../outpost/client");
+  vi.spyOn(Outpost.prototype, "start").mockRejectedValue(new Error("Redis unavailable"));
+  const close = vi.spyOn(BufferedIngestionStrategy.prototype, "close");
+  await expect(createPolar({ accessToken: "token" }).ingestion().start()).rejects.toThrow(
+    "Redis unavailable",
+  );
+  expect(close).toHaveBeenCalledOnce();
+});
+
+it("forwards Outpost options and actor warmup", async () => {
   const { Outpost } = await import("../outpost/client");
   vi.spyOn(Outpost.prototype, "start").mockImplementation(
     async function (this: InstanceType<typeof Outpost>) {
@@ -247,8 +353,13 @@ it("forwards actor warmup and meter reads to the configured Outpost", async () =
   const meter = vi.spyOn(Outpost.prototype, "meter").mockResolvedValue(null);
   const polar = createPolar({ accessToken: "token" });
   await using ingestion = await polar
-    .ingestion({ outpostRedisUrl: "redis://localhost:6379" })
+    .ingestion({
+      outpost: { redisUrl: "redis://localhost:6379", telemetry: false, snapshotTimeout: 250 },
+    })
     .start();
+  expect(vi.mocked(Outpost.prototype.start).mock.instances[0]).toMatchObject({
+    options: { telemetry: false, snapshotTimeout: 250 },
+  });
   const actor = await ingestion.actor({ external_customer_id: "alice" });
   expect(await actor.meter("meter")).toBeNull();
   expect(meter).toHaveBeenCalledExactlyOnceWith(

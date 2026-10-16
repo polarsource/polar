@@ -888,7 +888,7 @@ it("composes buffered Polar delivery with Outpost through the client factory", a
   const reader = await start();
   {
     await using ingestion = await polar
-      .ingestion({ outpostRedisUrl: join(directory, "redis.sock") })
+      .ingestion({ outpost: { redisUrl: join(directory, "redis.sock") } })
       .start();
     await ingestion.ingest({ ...customer, name: "api", timestamp, metadata: { tokens: 2 } });
     expect((await reader.meter(meter))?.consumed_units).toBe(12);

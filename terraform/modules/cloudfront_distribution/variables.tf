@@ -35,6 +35,12 @@ variable "cors_allowed_origins" {
   default     = []
 }
 
+variable "content_security_policy" {
+  description = "Content-Security-Policy header value, requires cors_allowed_origins"
+  type        = string
+  default     = null
+}
+
 variable "price_class" {
   description = "CloudFront price class"
   type        = string

@@ -96,6 +96,19 @@ resource "aws_cloudfront_response_headers_policy" "cors" {
     access_control_allow_credentials = false
     origin_override                  = true
   }
+
+  dynamic "security_headers_config" {
+    for_each = var.content_security_policy != null ? [var.content_security_policy] : []
+    content {
+      content_security_policy {
+        content_security_policy = security_headers_config.value
+        override                = true
+      }
+      content_type_options {
+        override = true
+      }
+    }
+  }
 }
 
 resource "aws_cloudfront_distribution" "this" {

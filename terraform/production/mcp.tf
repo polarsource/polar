@@ -1,6 +1,6 @@
 import {
   to = cloudflare_dns_record.mcp
-  id = "22bcd1b07ec25452aab472486bc8df94/REPLACE_WITH_MCP_RECORD_ID"
+  id = "22bcd1b07ec25452aab472486bc8df94/6161a4321f54135274d694198f0762be"
 }
 
 # The route sends every request to the MCP Worker, so the CNAME target is never

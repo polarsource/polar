@@ -123,22 +123,6 @@ class PaymentRepository(
         result = await self.session.execute(statement)
         return result.scalar() or 0
 
-    async def get_first_failed_payment_for_order(
-        self, order_id: UUID
-    ) -> Payment | None:
-        """Get the earliest failed payment counting toward the dunning ceiling."""
-        statement = (
-            select(Payment)
-            .where(
-                Payment.order_id == order_id,
-                Payment.status == PaymentStatus.failed,
-                Payment.trigger.in_(DUNNING_COUNTING_TRIGGERS),
-            )
-            .order_by(Payment.created_at.asc())
-            .limit(1)
-        )
-        return await self.get_one_or_none(statement)
-
     async def count_customer_retry_payments_for_order(self, order_id: UUID) -> int:
         """Count all payments triggered by manual customer retry for an order.
 

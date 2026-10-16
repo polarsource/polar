@@ -4139,23 +4139,23 @@ class TestHandlePaymentFailure:
             product=product,
             customer=customer,
         )
-        order = await create_order(
-            save_fixture,
-            product=product,
-            customer=customer,
-            subscription=subscription,
-            status=OrderStatus.pending,
-            billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
-        )
-        first_failure_at = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
+        created_at = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
         dunning_deadline = (
-            first_failure_at
+            created_at
             + sum(settings.DUNNING_RETRY_INTERVALS, timedelta())
             + timedelta(minutes=1)
         )
-        order.next_payment_attempt_at = dunning_deadline
-        await save_fixture(order)
-        with freeze_time(first_failure_at):
+        with freeze_time(created_at):
+            order = await create_order(
+                save_fixture,
+                product=product,
+                customer=customer,
+                subscription=subscription,
+                status=OrderStatus.pending,
+                billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+            )
+            order.next_payment_attempt_at = dunning_deadline
+            await save_fixture(order)
             await create_payment(
                 save_fixture,
                 order.organization,
@@ -4181,6 +4181,58 @@ class TestHandlePaymentFailure:
             result_order = await order_service.handle_payment_failure(session, order)
 
         mock_mark_past_due.assert_not_called()
+        assert result_order.status == OrderStatus.void
+        assert result_order.next_payment_attempt_at is None
+
+    async def test_meter_cycle_order_without_payment_method_voids_after_deadline(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """Failures without a payment method leave no Payment row, but the
+        order is still voided once the dunning window has passed."""
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        created_at = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
+        with freeze_time(created_at):
+            order = await create_order(
+                save_fixture,
+                product=product,
+                customer=customer,
+                subscription=subscription,
+                status=OrderStatus.pending,
+                billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+            )
+            result_order = await order_service.handle_payment_failure(session, order)
+
+        assert result_order.status == OrderStatus.pending
+        assert (
+            result_order.next_payment_attempt_at
+            == created_at + settings.DUNNING_RETRY_INTERVALS[0]
+        )
+
+        retry_at = created_at + settings.DUNNING_RETRY_INTERVALS[0]
+        with freeze_time(retry_at):
+            result_order = await order_service.handle_payment_failure(session, order)
+
+        assert result_order.status == OrderStatus.pending
+        assert (
+            result_order.next_payment_attempt_at
+            == retry_at + settings.DUNNING_RETRY_INTERVALS[1]
+        )
+
+        with freeze_time(
+            created_at
+            + sum(settings.DUNNING_RETRY_INTERVALS, timedelta())
+            + timedelta(minutes=2)
+        ):
+            result_order = await order_service.handle_payment_failure(session, order)
+
         assert result_order.status == OrderStatus.void
         assert result_order.next_payment_attempt_at is None
 

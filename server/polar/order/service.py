@@ -3170,7 +3170,7 @@ class OrderService:
             failed_attempts = max(
                 failed_attempts,
                 self._scheduled_dunning_attempts(
-                    subscription, order.next_payment_attempt_at
+                    subscription.past_due_at, order.next_payment_attempt_at
                 )
                 - 1,
             )
@@ -3312,7 +3312,8 @@ class OrderService:
         # Payment row, so the schedule is the floor for the attempt count.
         if subscription is not None:
             failed_attempts = max(
-                failed_attempts, self._scheduled_dunning_attempts(subscription, now)
+                failed_attempts,
+                self._scheduled_dunning_attempts(subscription.past_due_at, now),
             )
 
         # failed_attempts includes the current failure (upserted by the Stripe
@@ -3356,12 +3357,12 @@ class OrderService:
         return order
 
     def _scheduled_dunning_attempts(
-        self, subscription: Subscription, now: datetime
+        self, dunning_started_at: datetime | None, now: datetime
     ) -> int:
         """Counts the initial failure, like `count_failed_payments_for_order`."""
-        if subscription.past_due_at is None:
+        if dunning_started_at is None:
             return 1
-        elapsed = now - subscription.past_due_at
+        elapsed = now - dunning_started_at
         return 1 + sum(
             1
             for retry_offset in itertools.accumulate(settings.DUNNING_RETRY_INTERVALS)
@@ -3381,18 +3382,17 @@ class OrderService:
             )
 
         payment_repository = PaymentRepository.from_session(session)
-        failed_attempts = await payment_repository.count_failed_payments_for_order(
-            order.id
-        )
-        first_failed_payment = (
-            await payment_repository.get_first_failed_payment_for_order(order.id)
-        )
-
         now = utc_now()
-        # Mirrors subscription.past_due_deadline, anchored on the first failure
-        # since a meter-cycle failure doesn't mark the subscription past_due.
+        # A failure without a payment method leaves no Payment row, so the
+        # schedule is the floor for the attempt count, as for subscriptions.
+        failed_attempts = max(
+            await payment_repository.count_failed_payments_for_order(order.id),
+            self._scheduled_dunning_attempts(order.created_at, now),
+        )
+        # Mirrors subscription.past_due_deadline, anchored on the order since a
+        # meter-cycle failure doesn't mark the subscription past_due.
         dunning_deadline = (
-            (first_failed_payment.created_at if first_failed_payment else now)
+            order.created_at
             + sum(settings.DUNNING_RETRY_INTERVALS, timedelta())
             + timedelta(minutes=1)
         )

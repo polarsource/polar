@@ -2,15 +2,20 @@ import { setTimeout } from 'node:timers/promises';
 import { buildEnvironmentUpdates } from './messages.mjs';
 import { postReplyOnce } from './replies.mjs';
 
+const reactions = { test: 'baby_chick', sandbox: 'child', production: 'older_woman' };
+
 export async function postEnvironmentUpdates({ run, jobs, slack, botUser, parent, parentPayload }) {
   const prefix = `${parentPayload.blocks[0].block_id}-progress-`;
   const marker = parent.blocks?.find(block => block.block_id?.startsWith(prefix))?.block_id;
   const reported = new Set(marker ? marker.slice(prefix.length).split(',') : []);
-  for (const { environment, message } of buildEnvironmentUpdates({ run, jobs, channel: parentPayload.channel })) {
+  for (const { environment, succeeded, message } of buildEnvironmentUpdates({ run, jobs, channel: parentPayload.channel })) {
     if (reported.has(environment)) continue;
     await postReplyOnce({ slack, botUser, parent, message, replyId: `${prefix}${environment}` });
+    if (succeeded) {
+      await slack('reactions.add', { channel: parentPayload.channel, timestamp: parent.ts, name: reactions[environment] });
+    }
     reported.add(environment);
-    const blocks = [{ ...parentPayload.blocks[0], block_id: `${prefix}${[...reported].join(',')}` }];
+    const blocks = [{ ...parentPayload.blocks[0], block_id: `${prefix}${[...reported].join(',')}` }, ...parentPayload.blocks.slice(1)];
     await slack('chat.update', {
       channel: parentPayload.channel, ts: parent.ts, text: parentPayload.text, blocks,
     });

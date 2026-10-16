@@ -107,7 +107,7 @@ export async function notifyDeployment({ github, context, core, slack = slackCli
   if (!attributionError) {
     await slack('chat.update', {
       channel, ts: parent.ts, text: parentPayload.text,
-      blocks: [{ ...parentPayload.blocks[0], block_id: completedBlockId }],
+      blocks: [{ ...parentPayload.blocks[0], block_id: completedBlockId }, ...parentPayload.blocks.slice(1)],
     });
   }
   await slack('reactions.add', { channel, timestamp: parent.ts, name: reaction });

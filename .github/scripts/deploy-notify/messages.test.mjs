@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { buildMessage, prepareNotification } from './messages.mjs';
+import { buildEnvironmentUpdates, buildMessage, buildParentMessage, prepareNotification } from './messages.mjs';
 
 const run = {
   conclusion: 'success',
@@ -19,82 +19,83 @@ const input = { run, jobs: [], pullRequests: [], channel: 'CDEPLOY' };
 const backend = {
   name: 'Deploy to Test 🧰 / Backend: Deploy to test',
   html_url: `${run.html_url}/job/456`,
+  status: 'completed',
   conclusion: 'success',
 };
 
-test('reports each environment and links to its telemetry and Render service', () => {
-  const message = buildMessage({ ...input, jobs: [backend] });
-  assert.equal(message.channel, 'CDEPLOY');
-  assert.match(message.text, /Run #42, attempt 2/);
-  assert.match(message.text, /Render: :white_check_mark: <[^>]+\|success>/);
-  assert.match(message.text, /Frontend build: not run in this attempt/);
-  const deployWorkflow = readFileSync(new URL('../../workflows/deploy.yml', import.meta.url), 'utf8');
-  for (const environment of ['production', 'sandbox', 'test']) {
-    assert.ok(message.text.includes(`*${environment}*`));
-    assert.ok(message.text.includes(`deployment_environment+%3D+%27${environment}%27`));
-    assert.ok(message.text.includes(`https://polar-sh.sentry.io/issues/?environment=${environment}`));
-    const section = deployWorkflow.split(`  deploy-${environment}:`)[1].split('\n  deploy-')[0];
-    const service = section.match(/render-api-service-id: "([^"]+)"/)[1];
-    assert.ok(message.text.includes(`https://dashboard.render.com/web/${service}`));
-  }
-  assert.ok(message.text.includes('since=2026-10-16T08%3A13%3A17Z'));
-  assert.equal(message.unfurl_links, false);
+test('parent message shows the commit title with run, commit and PR links', () => {
+  const parent = buildParentMessage({ run: { ...run, id: 7, head_commit: { message: 'Ship a change (#15571)' } }, channel: 'CDEPLOY' });
+  assert.equal(parent.blocks[0].text.text, 'Deploying: Ship a change (#15571)');
+  assert.equal(parent.blocks[0].block_id, 'deployment-7-2');
+  assert.equal(
+    parent.blocks[1].elements[0].text,
+    `<${run.html_url}|Workflow run (attempt 2)>  ·  <${run.repository.html_url}/commit/${run.head_sha}|abc1234>  ·  <${run.repository.html_url}/pull/15571|PR #15571>`,
+  );
+  const first = buildParentMessage({ run: { ...run, run_attempt: 1, head_commit: { message: 'Hotfix' } }, channel: 'CDEPLOY' });
+  assert.equal(first.blocks[1].elements[0].text, `<${run.html_url}|Workflow run>  ·  <${run.repository.html_url}/commit/${run.head_sha}|abc1234>`);
 });
 
-test('reports test, Lambda and build failures even when production succeeds', () => {
-  const message = buildMessage({
+const completed = { ...run, status: 'completed' };
+const environmentText = jobs => buildEnvironmentUpdates({ run: completed, jobs, channel: 'CDEPLOY' }).map(update => update.message.text).join('\n');
+
+test('environment replies link to telemetry and the Render service', () => {
+  const text = environmentText([backend]);
+  assert.match(text, /Render: :white_check_mark: <[^>]+\|success>/);
+  assert.match(text, /Frontend build: not run in this attempt/);
+  assert.ok(text.includes('*test*'));
+  assert.ok(text.includes("deployment_environment+%3D+%27test%27"));
+  assert.ok(text.includes('https://polar-sh.sentry.io/issues/?environment=test'));
+  assert.ok(text.includes('since=2026-10-16T08%3A13%3A17Z'));
+  const deployWorkflow = readFileSync(new URL('../../workflows/deploy.yml', import.meta.url), 'utf8');
+  const section = deployWorkflow.split('  deploy-test:')[1].split('\n  deploy-')[0];
+  const service = section.match(/render-api-service-id: "([^"]+)"/)[1];
+  assert.ok(text.includes(`https://dashboard.render.com/web/${service}`));
+});
+
+test('the final reply is only the outcome, plus failed jobs when there are any', () => {
+  const success = buildMessage({ ...input, jobs: [backend] });
+  assert.equal(success.text, '*Deployment run: success*');
+  assert.equal(success.channel, 'CDEPLOY');
+  assert.equal(success.unfurl_links, false);
+  const failure = buildMessage({
     ...input,
     run: { ...run, conclusion: 'failure' },
     jobs: [
       { ...backend, conclusion: 'failure' },
-      { ...backend, name: 'Deploy Lambda Worker to Sandbox 🧪', conclusion: 'failure' },
       { ...backend, name: 'Build Lambda Worker Image (ECR) λ', conclusion: 'timed_out' },
       { ...backend, name: 'Deploy to Production 🚀 / Backend: Deploy to production' },
     ],
   });
-  assert.match(message.text, /Deployment run: failure/);
-  assert.match(message.text, /Lambda update request: :x:/);
-  assert.match(message.text, /\*Failed jobs\*[\s\S]*Backend: Deploy to test/);
-  assert.match(message.text, /Build Lambda Worker Image \(ECR\) λ>: timed_out/);
+  assert.match(failure.text, /^\*Deployment run: failure\*\n\n\*Failed jobs\*\n/);
+  assert.match(failure.text, /Backend: Deploy to test>: failure/);
+  assert.match(failure.text, /Build Lambda Worker Image \(ECR\) λ>: timed_out/);
+  assert.doesNotMatch(failure.text, /production>/);
+  const cancelled = buildMessage({ ...input, run: { ...run, conclusion: 'cancelled' }, jobs: [{ ...backend, conclusion: 'cancelled' }] });
+  assert.equal(cancelled.text, '*Deployment run: cancelled*');
 });
 
-test('distinguishes a built frontend from a failed promotion and skipped backend', () => {
-  const message = buildMessage({
-    ...input,
-    jobs: [
-      { ...backend, conclusion: 'skipped' },
-      { ...backend, name: 'Deploy to Test 🧰 / Frontend: Build' },
-      { ...backend, name: 'Deploy to Test 🧰 / Frontend: Promote to Production', conclusion: 'failure' },
-    ],
-  });
-  assert.match(message.text, /Render: :fast_forward: <[^>]+\|skipped>/);
-  assert.match(message.text, /Frontend build: :white_check_mark:/);
-  assert.match(message.text, /Frontend promotion: :x:/);
+test('environment replies distinguish skipped, failed, cancelled and unknown components', () => {
+  const text = environmentText([
+    { ...backend, conclusion: 'skipped' },
+    { ...backend, name: 'Deploy to Test 🧰 / Frontend: Build' },
+    { ...backend, name: 'Deploy to Test 🧰 / Frontend: Promote to Production', conclusion: 'failure' },
+    { ...backend, name: 'Deploy Lambda Worker to Test 🧰', conclusion: 'cancelled' },
+  ]);
+  assert.match(text, /Render: :fast_forward: <[^>]+\|skipped>/);
+  assert.match(text, /Frontend build: :white_check_mark:/);
+  assert.match(text, /Frontend promotion: :x:/);
+  assert.match(text, /Lambda update request: :no_entry_sign:/);
+  assert.match(environmentText([{ ...backend, conclusion: null }]), /Render: :grey_question: <[^>]+\|unknown>/);
 });
 
-test('reports cancellations and unknown outcomes without claiming success', () => {
+test('escapes job names and conclusions in the failed jobs list', () => {
   const message = buildMessage({
     ...input,
-    run: { ...run, conclusion: 'cancelled' },
-    jobs: [{ ...backend, conclusion: 'cancelled' }],
+    run: { ...run, conclusion: 'failure' },
+    jobs: [{ ...backend, name: 'Deploy <!channel> & co', conclusion: 'failure' }],
   });
-  assert.match(message.text, /Deployment run: cancelled/);
-  assert.match(message.text, /Render: :no_entry_sign:/);
-  assert.doesNotMatch(message.text, /white_check_mark/);
-  const unknown = buildMessage({ ...input, jobs: [{ ...backend, conclusion: null }] });
-  assert.match(unknown.text, /Render: :grey_question: <[^>]+\|unknown>/);
-});
-
-test('escapes commit text and branch names and links the head commit PR', () => {
-  const message = buildMessage({
-    ...input,
-    run: { ...run, head_commit: { message: 'Fix <!channel> & <https://example.com|fake>\nignored' }, head_branch: '<!here>' },
-    pullRequests: [{ number: 123, html_url: 'https://github.com/polarsource/polar/pull/123' }],
-  });
-  assert.ok(message.text.includes('&lt;!channel&gt; &amp; &lt;https://example.com|fake&gt;'));
-  assert.ok(message.text.includes('&lt;!here&gt;'));
-  assert.doesNotMatch(message.text, /ignored|<!channel>|<!here>/);
-  assert.match(message.text, /Head commit PR: <https:\/\/github.com\/polarsource\/polar\/pull\/123\|#123>/);
+  assert.ok(message.text.includes('Deploy &lt;!channel&gt; &amp; co>: failure'));
+  assert.doesNotMatch(message.text, /<!channel>/);
 });
 
 test('uses the completed attempt and still prepares a notification if PR lookup fails', async () => {
@@ -122,7 +123,7 @@ test('uses the completed attempt and still prepares a notification if PR lookup 
     },
   });
   assert.match(message.text, /Deployment run: failure/);
-  assert.match(message.text, /Render: :x:/);
-  assert.match(summary, /\[failure\]\(https:\/\/github.com\//);
+  assert.match(message.text, /Backend: Deploy to test>: failure/);
+  assert.match(summary, /\[Deploy to Test 🧰 \/ Backend: Deploy to test\]\(https:\/\/github.com\//);
   assert.deepEqual(warnings, ['Could not look up head commit PRs: PR lookup unavailable']);
 });

@@ -93,7 +93,8 @@ test('posts each environment into the original thread before the run ends, witho
   assert.equal(messages[4].thread_ts, parent.ts);
   assert.match(messages[4].text, /Deployment run: success/);
   assert.ok(reactions.length > 0);
-  assert.ok(reactions.every(reaction => reaction.name === 'white_check_mark' && reaction.timestamp === parent.ts));
+  assert.ok(reactions.every(reaction => reaction.timestamp === parent.ts));
+  assert.deepEqual(reactions.map(reaction => reaction.name).filter(name => name !== 'white_check_mark'), ['baby_chick', 'child', 'older_woman']);
   await notifyDeployment({ github: {}, slack, core, context: { repo, payload: { action: 'in_progress', workflow_run: run } }, watch: true });
   assert.equal(messages.length, 5);
 });
@@ -112,11 +113,13 @@ test('waits for frontend promotion and Lambda, and reports skipped, failed and c
     assert.equal(updates.length, 1);
     assert.match(updates[0].message.text, new RegExp(`Render: .*\\|${conclusion}>`));
     assert.doesNotMatch(updates[0].message.text, /white_check_mark/);
+    assert.equal(updates[0].succeeded, false);
   }
+  const frontendOnly = jobs.slice(0, 4).map((job, i) => i === 0 || i === 3 ? { ...job, conclusion: 'skipped' } : job);
+  assert.equal(buildEnvironmentUpdates({ run, jobs: frontendOnly })[0].succeeded, true);
   assert.deepEqual(buildEnvironmentUpdates({ run, jobs: [jobs[0]] }), []);
   const [partial] = buildEnvironmentUpdates({ run: { ...run, status: 'completed' }, jobs: [jobs[0]] });
   assert.match(partial.message.text, /Frontend promotion: not run in this attempt/);
-  assert.match(partial.message.text, /not run does not mean deployed/);
 });
 
 test('a missed start event is recovered with environment replies and the final summary in one thread', async () => {
@@ -166,6 +169,7 @@ test('retry after a failed parent update reuses the environment reply and repair
   const parentPayload = buildParentMessage({ run, channel: 'CDEPLOY' });
   const parent = { ...structuredClone(parentPayload), ts: 'parent' };
   const messages = [];
+  const reactions = [];
   let updates = 0;
   const slack = async (method, payload) => {
     if (method === 'conversations.replies') return { messages };
@@ -173,6 +177,7 @@ test('retry after a failed parent update reuses the environment reply and repair
       messages.push({ ...structuredClone(payload), ts: 'reply', user: 'BOT' });
       return { ts: 'reply' };
     }
+    if (method === 'reactions.add') { reactions.push(payload); return { ok: true }; }
     assert.equal(method, 'chat.update');
     if (++updates === 1) throw new Error('parent update failed');
     Object.assign(parent, structuredClone(payload));
@@ -184,5 +189,6 @@ test('retry after a failed parent update reuses the environment reply and repair
   await postEnvironmentUpdates({ ...args, parent: structuredClone(parent) });
   assert.equal(messages.length, 1);
   assert.equal(messages[0].thread_ts, parent.ts);
+  assert.deepEqual(reactions, Array(2).fill({ channel: 'CDEPLOY', timestamp: 'parent', name: 'baby_chick' }));
   assert.match(parent.blocks[0].block_id, /-progress-test$/);
 });

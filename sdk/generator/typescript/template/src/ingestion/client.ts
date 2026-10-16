@@ -18,6 +18,8 @@ export class Ingestion {
   private stack?: AsyncDisposableStack;
   private started = false;
   private closing?: Promise<void>;
+  private activeIngests = 0;
+  private onDrained?: () => void;
 
   constructor({ strategies }: { strategies: readonly IngestionStrategy[] }) {
     this.strategies = strategies;
@@ -34,24 +36,42 @@ export class Ingestion {
       this.started = true;
       return this;
     } catch (error) {
-      await this.close();
+      try {
+        await this.close();
+      } catch (cleanupError) {
+        throw new AggregateError([error, cleanupError], "Ingestion startup and cleanup failed");
+      }
       throw error;
     }
   }
 
   async ingest(event: EventInput): Promise<void> {
     if (!this.started) throw new PolarError("Ingestion is not running");
-    for (const strategy of this.strategies) await strategy.ingest(event);
+    this.activeIngests++;
+    try {
+      for (const strategy of this.strategies) await strategy.ingest(event);
+    } finally {
+      if (--this.activeIngests === 0) this.onDrained?.();
+    }
   }
 
   async close(): Promise<void> {
     this.started = false;
-    this.closing ??= this.stack?.disposeAsync() ?? Promise.resolve();
+    this.closing ??= this.drain();
     await this.closing;
   }
 
   async [Symbol.asyncDispose](): Promise<void> {
     await this.close();
+  }
+
+  private async drain(): Promise<void> {
+    if (this.activeIngests > 0) {
+      await new Promise<void>((resolve) => {
+        this.onDrained = resolve;
+      });
+    }
+    await this.stack?.disposeAsync();
   }
 }
 

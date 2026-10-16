@@ -37,19 +37,35 @@ it("starts and ingests in order, then closes in reverse order", async () => {
   ]);
 });
 
-it("cleans up when startup fails and closes every strategy despite cleanup errors", async () => {
-  const first = {
-    start: vi.fn().mockResolvedValue(undefined),
-    ingest: vi.fn(),
-    close: vi.fn().mockRejectedValue(new Error("close failed")),
-  };
-  const second = { ...first, close: vi.fn().mockResolvedValue(undefined) };
-  const third = { ...second, start: vi.fn().mockRejectedValue(new Error("start failed")) };
-  const ingestion = new Ingestion({ strategies: [first, second, third] });
-  await expect(ingestion.start()).rejects.toThrow("close failed");
-  expect(second.close).toHaveBeenCalledOnce();
-  expect(first.close).toHaveBeenCalledOnce();
-});
+it.each([false, true])(
+  "preserves the startup failure when cleanup fails: %s",
+  async (failCleanup) => {
+    const startupError = new Error("start failed");
+    const cleanupError = new Error("close failed");
+    const first = {
+      start: vi.fn().mockResolvedValue(undefined),
+      ingest: vi.fn(),
+      close: vi.fn().mockResolvedValue(undefined),
+    };
+    const second = {
+      ...first,
+      close: vi.fn(async () => {
+        if (failCleanup) throw cleanupError;
+      }),
+    };
+    const third = { ...second, start: vi.fn().mockRejectedValue(startupError) };
+    const ingestion = new Ingestion({ strategies: [first, second, third] });
+    const started = ingestion.start();
+    if (failCleanup) {
+      await expect(started).rejects.toBeInstanceOf(AggregateError);
+      await expect(started).rejects.toMatchObject({ errors: [startupError, cleanupError] });
+    } else {
+      await expect(started).rejects.toBe(startupError);
+    }
+    expect(second.close).toHaveBeenCalledOnce();
+    expect(first.close).toHaveBeenCalledOnce();
+  },
+);
 
 it("stops at the failing strategy and rejects ingestion outside its lifecycle", async () => {
   const first = {
@@ -141,3 +157,62 @@ it("uses buffered ingestion without loading optional Outpost dependencies", () =
   expect(child.stderr).toBe("");
   expect(child.status).toBe(0);
 });
+
+it.each([false, true])(
+  "waits for every active ingest before closing, including failed ingests: %s",
+  async (failIngest) => {
+    let releaseFirst!: () => void;
+    let releaseSecond!: () => void;
+    const firstGate = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+    const secondGate = new Promise<void>((resolve) => {
+      releaseSecond = resolve;
+    });
+    const error = new Error("ingest failed");
+    const first = {
+      start: vi.fn().mockResolvedValue(undefined),
+      ingest: vi
+        .fn()
+        .mockImplementationOnce(async () => {
+          await firstGate;
+          if (failIngest) throw error;
+        })
+        .mockImplementationOnce(() => secondGate),
+      close: vi.fn().mockResolvedValue(undefined),
+    };
+    const second = {
+      ...first,
+      ingest: vi.fn().mockResolvedValue(undefined),
+      close: vi.fn().mockResolvedValue(undefined),
+    };
+    const ingestion = await new Ingestion({ strategies: [first, second] }).start();
+    const firstIngest = ingestion.ingest(event);
+    const secondIngest = ingestion.ingest(event);
+    const results = Promise.allSettled([firstIngest, secondIngest]);
+    const closing = ingestion.close();
+    const closingAgain = ingestion.close();
+
+    await expect(ingestion.ingest(event)).rejects.toThrow("not running");
+    expect(second.close).not.toHaveBeenCalled();
+    expect(first.close).not.toHaveBeenCalled();
+
+    releaseFirst();
+    await Promise.allSettled([firstIngest]);
+    expect(second.close).not.toHaveBeenCalled();
+    expect(first.close).not.toHaveBeenCalled();
+
+    releaseSecond();
+    const settled = await results;
+    await Promise.all([closing, closingAgain]);
+    expect(settled[0]).toEqual(
+      failIngest
+        ? { status: "rejected", reason: error }
+        : { status: "fulfilled", value: undefined },
+    );
+    expect(settled[1].status).toBe("fulfilled");
+    expect(second.ingest).toHaveBeenCalledTimes(failIngest ? 1 : 2);
+    expect(second.close).toHaveBeenCalledOnce();
+    expect(first.close).toHaveBeenCalledOnce();
+  },
+);

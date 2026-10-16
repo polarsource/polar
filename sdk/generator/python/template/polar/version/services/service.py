@@ -84,7 +84,7 @@ class {{ service.name }}Sync(SyncServiceBase):
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
         **kwargs: typing.Unpack[{{ variant.name }}],
-    ) -> {{ method.response | type_annotation }}: ...
+    ) -> {{ method.response | type_annotation }}{% if method.pending_response %} | None{% endif %}: ...
 
 {% endif %}
 {% endfor %}
@@ -111,7 +111,7 @@ class {{ service.name }}Sync(SyncServiceBase):
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
         **kwargs: typing.Unpack[{{ variant.name }}],
-    ) -> {{ method.response | type_annotation }}: ...
+    ) -> {{ method.response | type_annotation }}{% if method.pending_response %} | None{% endif %}: ...
 
 {% endif %}
 {% endfor %}
@@ -141,7 +141,7 @@ class {{ service.name }}Sync(SyncServiceBase):
         **kwargs: typing.Unpack[{{ method.body | type_annotation }}],
         {% endif %}
 {% if method.response_type == 'json' %}
-    ) -> {{ method.response | type_annotation }}:
+    ) -> {{ method.response | type_annotation }}{% if method.pending_response %} | None{% endif %}:
 {% elif method.response_type == 'text' %}
     ) -> str:
 {% elif method.response_type == 'none' %}
@@ -167,6 +167,10 @@ Args:
 {% if method.body %}
     **kwargs: {% if method.body.description %}{{ method.body.description }}{% else %}Request body parameters{% endif %}
 
+{% endif %}{% if method.pending_response %}
+
+Returns:
+    {{ method.response | type_annotation }}. None means the receipt is still being generated.
 {% endif %}
 
 Raises:
@@ -375,7 +379,7 @@ class {{ service.name }}Async(AsyncServiceBase):
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
         **kwargs: typing.Unpack[{{ variant.name }}],
-    ) -> {{ method.response | type_annotation }}: ...
+    ) -> {{ method.response | type_annotation }}{% if method.pending_response %} | None{% endif %}: ...
 
 {% endif %}
 {% endfor %}
@@ -402,7 +406,7 @@ class {{ service.name }}Async(AsyncServiceBase):
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
         **kwargs: typing.Unpack[{{ variant.name }}],
-    ) -> {{ method.response | type_annotation }}: ...
+    ) -> {{ method.response | type_annotation }}{% if method.pending_response %} | None{% endif %}: ...
 
 {% endif %}
 {% endfor %}
@@ -432,7 +436,7 @@ class {{ service.name }}Async(AsyncServiceBase):
         **kwargs: typing.Unpack[{{ method.body | type_annotation }}],
         {% endif %}
 {% if method.response_type == 'json' %}
-    ) -> {{ method.response | type_annotation }}:
+    ) -> {{ method.response | type_annotation }}{% if method.pending_response %} | None{% endif %}:
 {% elif method.response_type == 'text' %}
     ) -> str:
 {% elif method.response_type == 'none' %}
@@ -458,6 +462,10 @@ Args:
 {% if method.body %}
     **kwargs: {% if method.body.description %}{{ method.body.description }}{% else %}Request body parameters{% endif %}
 
+{% endif %}{% if method.pending_response %}
+
+Returns:
+    {{ method.response | type_annotation }}. None means the receipt is still being generated.
 {% endif %}
 
 Raises:

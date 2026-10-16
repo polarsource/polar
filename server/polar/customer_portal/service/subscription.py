@@ -19,6 +19,7 @@ from polar.models import (
     Subscription,
     SubscriptionMeter,
 )
+from polar.models.discount import DiscountDuration, DiscountPercentage
 from polar.models.subscription import CustomerCancellationReason
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.subscription.schemas import SubscriptionChargePreview
@@ -407,7 +408,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
     async def _require_payment_method(
         self, session: AsyncSession, subscription: Subscription, action: str
     ) -> None:
-        if all(price.is_free for price in subscription.prices):
+        if not _is_payment_setup_required(subscription):
             return
 
         payment_method = await payment_method_service.get_customer_payment_method(
@@ -423,6 +424,31 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
             ~Subscription.is_deleted,
             Subscription.customer_id == get_customer_id(auth_subject),
         )
+
+
+def _is_payment_setup_required(subscription: Subscription) -> bool:
+    """Mirrors checkout's setup-intent rules."""
+    prices = subscription.prices
+    if prices and all(price.is_free for price in prices):
+        return False
+
+    upfront_amount = sum(
+        subscription_price.amount
+        for subscription_price in subscription.subscription_product_prices
+    )
+    if upfront_amount == 0 and not any(price.is_metered for price in prices):
+        return False
+
+    discount = subscription.discount
+    if (
+        discount is not None
+        and discount.duration == DiscountDuration.forever
+        and isinstance(discount, DiscountPercentage)
+        and discount.basis_points == 10_000
+    ):
+        return False
+
+    return subscription.product.is_recurring
 
 
 customer_subscription = CustomerSubscriptionService(Subscription)

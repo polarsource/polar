@@ -7,7 +7,7 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
-from polar.models import Customer, Member, Organization, Product, Subscription
+from polar.models import Customer, Discount, Member, Organization, Product, Subscription
 from polar.models.order import OrderStatus
 from polar.models.product_price import ProductPriceSeatUnit
 from polar.models.subscription import SubscriptionStatus
@@ -26,6 +26,7 @@ from tests.fixtures.random_objects import (
     create_order,
     create_payment_method,
     create_product,
+    create_subscription,
     create_subscription_with_seats,
     set_product_benefits,
 )
@@ -472,6 +473,117 @@ class TestSubscriptionUpdateUncancel:
         )
 
         assert response.status_code == 409
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_uncancel_forever_free_discount_without_payment_method(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        product: Product,
+        customer: Customer,
+        discount_percentage_100_forever: Discount,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            started_at=utc_now(),
+            cancel_at_period_end=True,
+            discount=discount_percentage_100_forever,
+        )
+
+        response = await client.patch(
+            f"/v1/customer-portal/subscriptions/{subscription.id}",
+            json={"cancel_at_period_end": False},
+        )
+
+        assert response.status_code == 200
+        updated_subscription = response.json()
+        assert updated_subscription["cancel_at_period_end"] is False
+        assert updated_subscription["ends_at"] is None
+        assert updated_subscription["discount"]["type"] == "percentage"
+        assert updated_subscription["discount"]["duration"] == "forever"
+        assert updated_subscription["discount"]["basis_points"] == 10_000
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_uncancel_once_free_discount_without_payment_method(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        product: Product,
+        customer: Customer,
+        discount_percentage_100: Discount,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            started_at=utc_now(),
+            cancel_at_period_end=True,
+            discount=discount_percentage_100,
+        )
+
+        response = await client.patch(
+            f"/v1/customer-portal/subscriptions/{subscription.id}",
+            json={"cancel_at_period_end": False},
+        )
+
+        assert response.status_code == 409
+        assert response.json()["error"] == "PaymentMethodRequired"
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_uncancel_metered_forever_free_discount_without_payment_method(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        product_recurring_metered: Product,
+        customer: Customer,
+        discount_percentage_100_forever: Discount,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product_recurring_metered,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            started_at=utc_now(),
+            cancel_at_period_end=True,
+            discount=discount_percentage_100_forever,
+        )
+
+        response = await client.patch(
+            f"/v1/customer-portal/subscriptions/{subscription.id}",
+            json={"cancel_at_period_end": False},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["cancel_at_period_end"] is False
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_uncancel_metered_without_payment_method(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        product_recurring_metered: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product_recurring_metered,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            started_at=utc_now(),
+            cancel_at_period_end=True,
+        )
+
+        response = await client.patch(
+            f"/v1/customer-portal/subscriptions/{subscription.id}",
+            json={"cancel_at_period_end": False},
+        )
+
+        assert response.status_code == 409
+        assert response.json()["error"] == "PaymentMethodRequired"
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_valid(

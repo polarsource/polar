@@ -118,6 +118,15 @@ class TestFile:
             }
         )
 
+    def build_product_media_create(
+        self, organization_id: UUID
+    ) -> ProductMediaFileCreate:
+        create = self.build_create(organization_id)
+        return ProductMediaFileCreate(
+            service=FileServiceTypes.product_media,
+            **create.model_dump(exclude={"service"}),
+        )
+
     def build_create_part(self, number: int, parts: int) -> S3FileCreatePart:
         chunk_size = self.size // parts
         chunk_start = (number - 1) * chunk_size
@@ -332,6 +341,16 @@ def logo_jpg() -> TestFile:
 async def uploaded_logo_jpg(session: AsyncSession, organization: Organization) -> File:
     img = TestFile("logo.jpg")
     return await uploaded_fixture(session, organization, img)
+
+
+@pytest.fixture
+def malicious_svg() -> TestFile:
+    return TestFile("malicious.svg")
+
+
+@pytest.fixture
+def malformed_svg() -> TestFile:
+    return TestFile("malformed.svg")
 
 
 @pytest.fixture

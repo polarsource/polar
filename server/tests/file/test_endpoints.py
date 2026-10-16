@@ -157,8 +157,10 @@ class TestSVGSanitization:
     async def _upload(
         self, session: AsyncSession, organization: Organization, file: TestFile
     ) -> tuple[File, FileUploadCompleted]:
-        created = await file.create(
-            session, organization, service=FileServiceTypes.product_media
+        created = await file_service.generate_presigned_upload(
+            session,
+            organization=organization,
+            create_schema=file.build_product_media_create(organization.id),
         )
         uploaded = await file.upload(created)
         repository = FileRepository.from_session(session)

@@ -2,6 +2,12 @@ import { defineConfig, eur, perThousand, usd } from '@polar-sh/polar'
 import { z } from 'zod'
 
 export default defineConfig({
+  settings: {
+    payments: {
+      currency: 'eur',
+      tax: 'location',
+    },
+  },
   events: {
     tool_call: z.object({
       tool: z.string(),

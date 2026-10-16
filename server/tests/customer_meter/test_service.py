@@ -890,7 +890,7 @@ class TestUpdateCustomerMeter:
 
 @pytest.mark.anyio
 class TestGetRolloverUnits:
-    async def test_excludes_usage_at_or_after_cutoff(
+    async def test_excludes_usage_ingested_at_or_after_cutoff(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -901,6 +901,7 @@ class TestGetRolloverUnits:
         await create_event(
             save_fixture,
             timestamp=cutoff - timedelta(seconds=2),
+            ingested_at=cutoff - timedelta(seconds=2),
             organization=customer.organization,
             customer=customer,
             source=EventSource.system,
@@ -910,13 +911,15 @@ class TestGetRolloverUnits:
         await create_event(
             save_fixture,
             timestamp=cutoff - timedelta(seconds=1),
+            ingested_at=cutoff - timedelta(seconds=1),
             organization=customer.organization,
             customer=customer,
             metadata={"tokens": 20, "model": "lite"},
         )
         await create_event(
             save_fixture,
-            timestamp=cutoff,
+            timestamp=cutoff - timedelta(seconds=1),
+            ingested_at=cutoff,
             organization=customer.organization,
             customer=customer,
             metadata={"tokens": 30, "model": "lite"},

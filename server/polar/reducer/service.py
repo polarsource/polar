@@ -125,6 +125,10 @@ class ReducerService:
         try:
             async with session.begin_nested():
                 reducers = await self._get_reducers(session, meter_ids)
+                # The meter.reset at `cutoff` should have sealed this usage already.
+                # That task and this run at roughly the same time, so if it
+                # hasn't run already we seal it here. The one that runs
+                # afterward becomes a no-op.
                 await self._seal_buckets(
                     session,
                     list(reducers.values()),

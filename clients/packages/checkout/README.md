@@ -13,12 +13,12 @@ A customer session token authenticates every embed. Create it **on your server**
 A full-screen overlay the SDK creates and tears down for you — open it on demand, e.g. from a button click.
 
 ```ts
-import { Polar } from '@polar-sh/sdk'
+import { createPolar } from '@polar-sh/sdk/2026-10'
 import { PolarEmbedPaymentMethod } from '@polar-sh/checkout/payment-method'
 
-const polar = new Polar({ accessToken: process.env.POLAR_ACCESS_TOKEN })
+const polar = createPolar({ accessToken: process.env.POLAR_ACCESS_TOKEN })
 const session = await polar.customerSessions.create({
-  customerId: 'ABC-123',
+  customer_id: 'ABC-123',
 })
 
 const embed = await PolarEmbedPaymentMethod.create({
@@ -46,12 +46,12 @@ embed.addEventListener('success', (event) => {
 A chrome-less, auto-resizing iframe mounted into an element you control — compose it into your own layout.
 
 ```ts
-import { Polar } from '@polar-sh/sdk'
+import { createPolar } from '@polar-sh/sdk/2026-10'
 import { PolarEmbedPaymentMethod } from '@polar-sh/checkout/payment-method'
 
-const polar = new Polar({ accessToken: process.env.POLAR_ACCESS_TOKEN })
+const polar = createPolar({ accessToken: process.env.POLAR_ACCESS_TOKEN })
 const session = await polar.customerSessions.create({
-  customerId: 'ABC-123',
+  customer_id: 'ABC-123',
 })
 
 const embed = PolarEmbedPaymentMethod.createInline({
@@ -117,7 +117,7 @@ It strips the status param from the URL so a refresh won't resurface a stale res
 Open the full-screen modal with `PolarEmbedPaymentMethod.create()` — the same API as vanilla JS, called from a Client Component event handler.
 
 ```tsx
-import { Polar } from '@polar-sh/sdk'
+import { createPolar } from '@polar-sh/sdk/2026-10'
 import { PolarEmbedPaymentMethod } from '@polar-sh/checkout/payment-method'
 
 export function AddPaymentMethodButton({
@@ -125,9 +125,9 @@ export function AddPaymentMethodButton({
 }: {
   sessionToken: string
 }) {
-  const polar = new Polar({ accessToken: process.env.POLAR_ACCESS_TOKEN })
+  const polar = createPolar({ accessToken: process.env.POLAR_ACCESS_TOKEN })
   const session = await polar.customerSessions.create({
-    customerId: 'ABC-123',
+    customer_id: 'ABC-123',
   })
 
   const openEmbed = async () => {
@@ -146,12 +146,12 @@ export function AddPaymentMethodButton({
 Render `<PolarPaymentMethod />` for a chrome-less, auto-resizing embed inside your own layout.
 
 ```tsx
-import { Polar } from '@polar-sh/sdk'
+import { createPolar } from '@polar-sh/sdk/2026-10'
 import { PolarPaymentMethod } from '@polar-sh/checkout/react/payment-method'
 
-const polar = new Polar({ accessToken: process.env.POLAR_ACCESS_TOKEN })
+const polar = createPolar({ accessToken: process.env.POLAR_ACCESS_TOKEN })
 const session = await polar.customerSessions.create({
-  customerId: 'ABC-123',
+  customer_id: 'ABC-123',
 })
 
 return (
@@ -195,11 +195,11 @@ It reads the result once on mount and strips the status param from the URL. Card
 ### Code snippet
 
 ```ts
-import { Polar } from '@polar-sh/sdk'
+import { createPolar } from '@polar-sh/sdk/2026-10'
 
-const polar = new Polar({ accessToken: process.env.POLAR_ACCESS_TOKEN })
+const polar = createPolar({ accessToken: process.env.POLAR_ACCESS_TOKEN })
 const session = await polar.customerSessions.create({
-  customerId: 'ABC-123',
+  customer_id: 'ABC-123',
 })
 ```
 

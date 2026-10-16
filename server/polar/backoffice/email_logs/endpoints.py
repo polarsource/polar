@@ -75,9 +75,7 @@ async def list_email_logs(
             )
         except ValueError:
             if "@" in query:
-                statement = statement.where(
-                    EmailLog.to_email_addr.in_({query, query.lower()})
-                )
+                statement = statement.where(EmailLog.to_email_addr.ilike(f"%{query}%"))
             else:
                 statement = statement.where(
                     or_(

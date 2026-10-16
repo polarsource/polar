@@ -46,7 +46,12 @@ class TestListEmailLogs:
 
     @pytest.mark.parametrize(
         "query",
-        ["customer@example.com", "Customer@Example.com", " customer@example.com "],
+        [
+            "customer@example.com",
+            "Customer@Example.com",
+            " customer@example.com ",
+            "@example.com",
+        ],
     )
     async def test_search_by_email(
         self,

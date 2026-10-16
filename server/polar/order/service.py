@@ -2,7 +2,7 @@ import itertools
 import uuid
 from collections.abc import AsyncIterator, Iterable, Sequence
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import Any, Literal
 from urllib.parse import urlencode
@@ -3186,7 +3186,7 @@ class OrderService:
             failed_attempts = max(
                 failed_attempts,
                 self._scheduled_dunning_attempts(
-                    subscription, order.next_payment_attempt_at
+                    subscription.past_due_at, order.next_payment_attempt_at
                 )
                 - 1,
             )
@@ -3328,7 +3328,8 @@ class OrderService:
         # Payment row, so the schedule is the floor for the attempt count.
         if subscription is not None:
             failed_attempts = max(
-                failed_attempts, self._scheduled_dunning_attempts(subscription, now)
+                failed_attempts,
+                self._scheduled_dunning_attempts(subscription.past_due_at, now),
             )
 
         # failed_attempts includes the current failure (upserted by the Stripe
@@ -3372,12 +3373,12 @@ class OrderService:
         return order
 
     def _scheduled_dunning_attempts(
-        self, subscription: Subscription, now: datetime
+        self, dunning_started_at: datetime | None, now: datetime
     ) -> int:
         """Counts the initial failure, like `count_failed_payments_for_order`."""
-        if subscription.past_due_at is None:
+        if dunning_started_at is None:
             return 1
-        elapsed = now - subscription.past_due_at
+        elapsed = now - dunning_started_at
         return 1 + sum(
             1
             for retry_offset in itertools.accumulate(settings.DUNNING_RETRY_INTERVALS)
@@ -3397,20 +3398,49 @@ class OrderService:
             )
 
         payment_repository = PaymentRepository.from_session(session)
-        failed_attempts = await payment_repository.count_failed_payments_for_order(
-            order.id
+        now = utc_now()
+        # A failure without a payment method leaves no Payment row, so the
+        # schedule is the floor for the attempt count, as for subscriptions.
+        failed_attempts = max(
+            await payment_repository.count_failed_payments_for_order(order.id),
+            self._scheduled_dunning_attempts(order.created_at, now),
+        )
+        # Mirrors subscription.past_due_deadline, anchored on the order since a
+        # meter-cycle failure doesn't mark the subscription past_due.
+        dunning_deadline = (
+            order.created_at
+            + sum(settings.DUNNING_RETRY_INTERVALS, timedelta())
+            + timedelta(minutes=1)
         )
 
         # failed_attempts includes this failure, so > len(intervals) means retries
         # are exhausted. Void via the canonical path to notify the merchant
         # (order_voided event + order.updated webhook).
-        if failed_attempts > len(settings.DUNNING_RETRY_INTERVALS):
+        if (
+            failed_attempts > len(settings.DUNNING_RETRY_INTERVALS)
+            or dunning_deadline < now
+        ):
             return await self.void(session, order)
+
+        if order.next_payment_attempt_at is None:
+            latest_payment = await payment_repository.get_latest_for_order(order.id)
+            if latest_payment is not None and latest_payment.is_non_recoverable:
+                log.info(
+                    "Non-recoverable decline code detected, "
+                    "scheduling meter-cycle retry at dunning deadline",
+                    order_id=order.id,
+                    decline_reason=latest_payment.decline_reason,
+                )
+                # Same as _handle_first_dunning_attempt: skip the intermediate
+                # retries and let the attempt at the deadline void the order.
+                return await repository.update(
+                    order, update_dict={"next_payment_attempt_at": dunning_deadline}
+                )
 
         next_interval = settings.DUNNING_RETRY_INTERVALS[max(failed_attempts - 1, 0)]
         return await repository.update(
             order,
-            update_dict={"next_payment_attempt_at": utc_now() + next_interval},
+            update_dict={"next_payment_attempt_at": now + next_interval},
         )
 
     async def schedule_retry_for_past_due_orders(

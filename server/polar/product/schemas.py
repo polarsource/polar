@@ -692,6 +692,12 @@ class ProductCreateRecurring(TrialConfigurationInputMixin, ProductCreateBase):
                 "The meter interval must evenly divide the billing interval, "
                 "so the meter cycle re-aligns with the billing cycle at every renewal."
             )
+        if (
+            self.meter_interval == self.recurring_interval
+            and self.meter_interval_count == self.recurring_interval_count
+        ):
+            self.meter_interval = None
+            self.meter_interval_count = None
         return self
 
 

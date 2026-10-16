@@ -8,6 +8,7 @@ const generated: LoadedConfig = {
   source: '{\n  "meters": []\n}',
   input: { meters: [] },
   generated: true,
+  issues: [],
 }
 
 const warning: ConfigIssue = {

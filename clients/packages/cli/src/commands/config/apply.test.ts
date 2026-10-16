@@ -29,6 +29,7 @@ const config: LoadedConfig = {
   source,
   input: JSON.parse(source),
   generated: false,
+  issues: [],
 }
 
 const location = { line: 3, column: 5, length: 1 }

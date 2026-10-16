@@ -127,6 +127,61 @@ describe('plan', () => {
     ])
   })
 
+  test('warns about source that reads the world before the server issues', async () => {
+    api.routes[`POST ${planUrl}`] = Response.json({
+      changes: [],
+      issues: [
+        {
+          severity: 'warning',
+          type: 'unknown_event',
+          loc: ['body', 'meters', 0, 'filter', 'clauses', 0, 'value'],
+          msg: 'No events with this name have been received yet.',
+          input: 'tool_call',
+        },
+      ],
+    })
+
+    const result = await run(
+      await write(
+        [
+          "const name = process.env.METER_NAME ?? 'Tool calls'",
+          'export default { meters: [{ external_id: name }] }',
+        ].join('\n'),
+        'polar.config.ts',
+      ),
+    )
+
+    expect(result.issues.map((issue) => issue.code)).toEqual([
+      'reads_environment',
+      'unknown_event',
+    ])
+    expect(result.issues[0]).toEqual({
+      severity: 'warning',
+      code: 'reads_environment',
+      path: 'process.env',
+      message: 'Reads an environment variable',
+      location: { line: 1, column: 14, length: 11 },
+    })
+  })
+
+  test('stops at lint errors without asking the server', async () => {
+    const result = await run(
+      await write(
+        [
+          'const seed = Math.random()',
+          "export default { meters: [{ external_id: 'tool-calls', name: String(seed) }] }",
+        ].join('\n'),
+        'polar.config.ts',
+      ),
+    )
+
+    expect(api.urls()).toEqual([])
+    expect(result.entries).toEqual([])
+    expect(result.issues.map((issue) => [issue.severity, issue.code])).toEqual([
+      ['error', 'reads_random'],
+    ])
+  })
+
   test('turns 422 structural errors into issues with no changes', async () => {
     api.routes[`POST ${planUrl}`] = Response.json(
       {

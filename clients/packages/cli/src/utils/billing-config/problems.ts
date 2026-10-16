@@ -18,6 +18,12 @@ interface Problem {
   readonly path: string
 }
 
+const LINT_HELP =
+  'A config should describe the same billing every time it runs. Put the value in the file, or review the plan right before applying.'
+
+const LINT_ERROR_HELP =
+  'A config must describe the same billing every time it runs. Put the value in the file, disable this line if it is intentional.'
+
 const lowercaseFirst = (text: string) =>
   text.charAt(0).toLowerCase() + text.slice(1)
 
@@ -49,7 +55,9 @@ const describe = (issue: ConfigIssue): Problem => {
       help:
         issue.code === 'unknown_event'
           ? `The meter counts events with this name, so it stays at zero until your app sends one. Fine for a new event; if the name looks wrong, compare it with ${ui.command('polar events list_names')}.`
-          : undefined,
+          : issue.code.startsWith('reads_')
+            ? LINT_HELP
+            : undefined,
     }
   }
   const base = {
@@ -92,6 +100,15 @@ const describe = (issue: ConfigIssue): Problem => {
         ...base,
         title: `Duplicate external_id ${issue.got ?? quote(key)}`,
         label: 'already used by another entry',
+      }
+    case 'reads_clock':
+    case 'reads_random':
+    case 'reads_network':
+      return {
+        ...base,
+        title: message,
+        label: lowercaseFirst(message),
+        help: LINT_ERROR_HELP,
       }
     case 'missing_currency':
     case 'not_supported':

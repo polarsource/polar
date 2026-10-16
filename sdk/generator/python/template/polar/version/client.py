@@ -2,7 +2,12 @@ import types
 import typing
 
 from polar.base import AsyncClientBase, RequestTimeout, SyncClientBase, resolve_base_url
-from polar.ingestion import Ingestion
+from polar.ingestion import (
+    BufferedIngestionOptions,
+    Ingestion,
+    IngestionOutpostOptions,
+    IngestionStrategyProtocol,
+)
 
 {% for service in api.services %}
 from polar.{{ version }}.services.{{ service.name | service_name }} import {{ service.name }}Async
@@ -82,7 +87,28 @@ class PolarAsync:
     ) -> None:
         await self._client.__aexit__(exc_type, exc_val, exc_tb)
 
-    def ingestion(self, outpost_redis_url: str | None = None) -> Ingestion:
-        return Ingestion.create(self, outpost_redis_url)
+    @typing.overload
+    def ingestion(
+        self,
+        *,
+        buffered: BufferedIngestionOptions | None = None,
+        outpost: IngestionOutpostOptions | typing.Literal[False] | None = None,
+    ) -> Ingestion: ...
+
+    @typing.overload
+    def ingestion(
+        self, *, strategies: list[IngestionStrategyProtocol]
+    ) -> Ingestion: ...
+
+    def ingestion(
+        self,
+        *,
+        buffered: BufferedIngestionOptions | None = None,
+        outpost: IngestionOutpostOptions | typing.Literal[False] | None = None,
+        strategies: list[IngestionStrategyProtocol] | None = None,
+    ) -> Ingestion:
+        return Ingestion.create(
+            self, buffered=buffered, outpost=outpost, strategies=strategies
+        )
 
 __all__ = ["Environment", "Polar", "PolarAsync"]

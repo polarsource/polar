@@ -22,22 +22,30 @@ access token.
 
 ## Decision
 
-**Before the claim, an agent is an `Agent` auth subject.** It authenticates as itself, owns its org
-through an agent–organization link (not a `UserOrganization` membership), and can only reach endpoints
-whose `Authenticator` lists `Agent` in `allowed_subjects`. **After the claim, it acts for the claiming
-user with ordinary user OAuth tokens**, and its OAuth client stays marked as an agent.
+**Before the claim, an agent is an `Agent` auth subject.** Its identity is a row in one `agents` table,
+created at sign-up, which also holds its OAuth client, its status and who claimed it. It authenticates
+as itself, owns its org through an agent–organization link (not a `UserOrganization` membership), and
+can only reach endpoints whose `Authenticator` lists `Agent` in `allowed_subjects`. **After the claim,
+it acts for the claiming user with ordinary user OAuth tokens**, and its OAuth client stays marked as
+an agent.
 
 ## Consequences
 
-- Agents are explicit: an endpoint is open to unclaimed agents only if it says so, and everything else
-  fails closed (ADR-0005). Opt in only build endpoints (orgs, products, meters, benefits, discounts,
-  events, config). Never opt in endpoints that move real money or manage members and payouts.
+- New rule: to open an endpoint to unclaimed agents, add `Agent` to that module's `Authenticator`,
+  handle `is_agent` in the service's subject branches, and test it with
+  `@pytest.mark.auth(AuthSubjectFixture(subject="agent"))`. Check the existing `if is_user(...) else`
+  branches: code that treats every non-user as an `Organization` will misread an `Agent`.
+- Opt in only build endpoints (orgs, products, meters, benefits, discounts, events, config). Never opt
+  in endpoints that move real money or manage members and payouts. A test pins the list of
+  authenticators that accept `Agent`, so every new opt-in shows up in review.
+- Unclaimed agent tokens also carry only the build scopes. The allowlist is the guard; scopes are a
+  second layer, so one wrong opt-in doesn't open a money endpoint by itself.
 - No placeholder users. The users table, login, emails and user metrics only ever see people.
 - The org-access helpers (`get_accessible_org_ids`, `get_accessible_organization`,
   `get_payload_organization`, the authz policies) resolve an `Agent` to the orgs it owns.
-- When opting a module in, check its `if is_user(...) else` branches: code that treats every non-user
-  as an `Organization` will misread an `Agent`.
-- OAuth tokens gain a third sub type, `agent`, with its own token prefix.
+- OAuth tokens gain a third sub type, `SubType.agent`, with its own access-token prefix
+  (`polar_at_a_`). Agent tokens have no refresh token: the agent renews by exchanging its identity
+  assertion.
 - An org owned by an agent has no human owner until the claim. Code that looks up the owner must
   handle that, and the org can't go live before then.
 - The claim adds the human as owner and revokes the agent's pre-claim tokens. Nothing moves between

@@ -34,7 +34,7 @@ export const CustomerSubscriptionHeader = ({
         </Text>
         <SubscriptionStatusPill subscription={subscription} />
       </Box>
-      <PortalText tone="secondary" className="tabular-nums">
+      <PortalText tone="secondary">
         {subscription.amount && subscription.currency ? (
           <>
             {showBasePrice && (

@@ -6,7 +6,7 @@ from polar.ingestion.buffered import (
     BufferedIngestionStrategy as BufferedIngestionStrategy,
 )
 from polar.ingestion.client import IngestionClient, PolarClient
-from polar.ingestion.events import EventInput
+from polar.ingestion.events import ContextualEventInput, EventInput
 from polar.logging import get_logger
 
 log = get_logger(__name__)
@@ -56,4 +56,10 @@ class Ingestion:
         return cls(strategies=strategies)
 
 
-__all__ = ["EventInput", "Ingestion", "IngestionClient", "PolarClient"]
+__all__ = [
+    "ContextualEventInput",
+    "EventInput",
+    "Ingestion",
+    "IngestionClient",
+    "PolarClient",
+]

@@ -71,9 +71,11 @@ class Summary:
         self.max = value if self.max is None else max(self.max, value)
 
 
-type Totals = dict[BucketKey, dict[datetime | None, Summary]]
-"""Per bucket, the summary of its usage per created_at of the order that billed it,
-with the unbilled usage under None."""
+type Billing = tuple[datetime, UUID]
+"""created_at and id of the order that billed some usage"""
+type Totals = dict[BucketKey, dict[Billing | None, Summary]]
+"""Per bucket, the summary of its usage per order that billed it, with the
+unbilled usage under None."""
 
 
 async def backfill_organization(
@@ -270,14 +272,15 @@ def _value_column(reducer: Reducer) -> ColumnElement[Any]:
 
 async def _get_billed_at(
     session: AsyncSession, event_ids: Sequence[UUID]
-) -> dict[tuple[UUID, UUID], datetime]:
-    """Per event and reducer, the created_at of the order that billed the event
-    for one of the reducer's meters, from its metered billing entries linked to
-    an order item."""
+) -> dict[tuple[UUID, UUID], Billing]:
+    """Per event and reducer, the order that billed the event for one of the
+    reducer's meters, from its metered billing entries linked to an order item."""
     if not event_ids:
         return {}
     statement = (
-        select(BillingEntry.event_id, MeterReducer.reducer_id, Order.created_at)
+        select(
+            BillingEntry.event_id, MeterReducer.reducer_id, Order.created_at, Order.id
+        )
         .join(BillingEntry.order_item)
         .join(OrderItem.order)
         .join(ProductPrice, ProductPrice.id == BillingEntry.product_price_id)
@@ -290,8 +293,8 @@ async def _get_billed_at(
     )
     result = await session.execute(statement)
     return {
-        (event_id, reducer_id): created_at
-        for event_id, reducer_id, created_at in result.tuples()
+        (event_id, reducer_id): (created_at, order_id)
+        for event_id, reducer_id, created_at, order_id in result.tuples()
     }
 
 
@@ -308,11 +311,11 @@ def _add_to_totals(
     totals: Totals,
     reducers: Sequence[Reducer],
     rows: Sequence[Row[Any]],
-    billed_at: dict[tuple[UUID, UUID], datetime],
+    billed_at: dict[tuple[UUID, UUID], Billing],
     boundaries: Boundaries,
 ) -> None:
     """Adds each event's value to the bucket of every reducer it matches, under
-    the created_at of the order that billed it for that reducer, or None."""
+    the order that billed it for that reducer, or None."""
     for row in rows:
         id, timestamp, customer_id, external_customer_id, *values = row
         bucket_start = get_reducer_bucket_start(timestamp)
@@ -324,8 +327,8 @@ def _add_to_totals(
                 boundaries.get((customer_key, reducer.id), []), bucket_start, timestamp
             )
             key = (reducer.id, start, end, customer_id, external_customer_id)
-            sealed_at = billed_at.get((id, reducer.id))
-            totals.setdefault(key, {}).setdefault(sealed_at, Summary()).add(
+            billing = billed_at.get((id, reducer.id))
+            totals.setdefault(key, {}).setdefault(billing, Summary()).add(
                 Decimal(str(value))
             )
 
@@ -340,8 +343,8 @@ def _to_buckets(
     organization_id: UUID, totals: Totals, synced_at: datetime
 ) -> list[BucketValues]:
     """Bucket rows to insert: each bucket gets one generation per billing order
-    in order of billing, sealed at the order's created_at, then the unbilled
-    usage last, unsealed."""
+    in order of billing, sealed and billed at the order's created_at, then the
+    unbilled usage last, unsealed."""
     buckets: list[BucketValues] = []
     for (
         reducer_id,
@@ -350,8 +353,9 @@ def _to_buckets(
         customer_id,
         external_customer_id,
     ), summaries in totals.items():
-        for generation, sealed_at in enumerate(_generation_order(summaries), 1):
-            summary = summaries[sealed_at]
+        for generation, billing in enumerate(_generation_order(summaries), 1):
+            summary = summaries[billing]
+            sealed_at, order_id = billing if billing is not None else (None, None)
             buckets.append(
                 {
                     "organization_id": organization_id,
@@ -362,6 +366,8 @@ def _to_buckets(
                     "bucket_end": bucket_end,
                     "generation": generation,
                     "sealed_at": sealed_at,
+                    "billed_at": sealed_at,
+                    "order_id": order_id,
                     "synced_at": synced_at,
                     "count": summary.count,
                     "sum": summary.sum,
@@ -372,9 +378,9 @@ def _to_buckets(
     return buckets
 
 
-def _generation_order(sealed_ats: Collection[datetime | None]) -> list[datetime | None]:
-    billed = sorted(sealed_at for sealed_at in sealed_ats if sealed_at is not None)
-    return [*billed, None] if None in sealed_ats else [*billed]
+def _generation_order(billings: Collection[Billing | None]) -> list[Billing | None]:
+    billed = sorted(billing for billing in billings if billing is not None)
+    return [*billed, None] if None in billings else [*billed]
 
 
 async def _delete_buckets(
@@ -398,6 +404,8 @@ BUCKET_COLUMNS = [
     "bucket_end",
     "generation",
     "sealed_at",
+    "billed_at",
+    "order_id",
     "synced_at",
     "count",
     "sum",

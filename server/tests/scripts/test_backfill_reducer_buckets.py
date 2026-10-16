@@ -143,6 +143,8 @@ class TestBackfillBuckets:
                 b.customer_id == customer.id
                 and b.external_customer_id is None
                 and b.synced_at == END
+                and b.billed_at == b.sealed_at
+                and b.order_id == (order.id if b.sealed_at else None)
                 for b in buckets
             )
             assert [
@@ -233,13 +235,6 @@ class TestBackfillBuckets:
             ).all()
             assert sum(b.count for b in count_buckets) == 6
             assert all(b.sealed_at is None for b in count_buckets)
-
-        # Until the backfill sets them, mark the billed generations as billed.
-        for bucket in buckets:
-            if bucket.sealed_at is not None:
-                bucket.billed_at = bucket.sealed_at
-                bucket.order_id = order.id
-                await save_fixture(bucket)
 
         # The next billing bills everything still open since the subscription
         # started: the late event, the pending one and the unbilled one. Usage

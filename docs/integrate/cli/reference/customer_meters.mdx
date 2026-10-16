@@ -11,8 +11,32 @@ polar customer_meters <subcommand> [flags]
 
 **Subcommands**
 
+- [`polar customer_meters credits`](#polar-customer_meters-credits) Manually grant credits on a customer meter. (preview, API 2027-01)
 - [`polar customer_meters get`](#polar-customer_meters-get) Get a customer meter by ID.
 - [`polar customer_meters list`](#polar-customer_meters-list) List customer meters.
+
+## polar customer_meters credits
+
+Manually grant credits on a customer meter. (preview, API 2027-01)
+
+```bash
+polar customer_meters credits [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--confirm`, `-c` | `boolean` | Skip the confirmation prompt for destructive requests |
+| `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--units` | `integer` | Required. The number of units to credit. |
+| `--rollover` | `boolean` | Whether unused credits carry over to the next meter period. |
+| `--external-id` | `string` | Your unique identifier for this credit. Retrying with the same `external_id` doesn't grant the credit twice. |
+| `--customer-id` | `string` | The ID of the customer. |
+| `--meter-id` | `string` | The ID of the meter. |
+| `--external-customer-id` | `string` | The external ID of the customer. |
+| `--external-meter-id` | `string` | The external ID of the meter, as set by config as code. |
 
 ## polar customer_meters get
 

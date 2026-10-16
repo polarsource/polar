@@ -1283,13 +1283,13 @@ importers:
         version: 2.1.0
       '@polar-sh/cli-commands':
         specifier: file:../../../sdk/cli-commands
-        version: file:../sdk/cli-commands(@polar-sh/sdk@1.0.2)(effect@4.0.1)
+        version: file:../sdk/cli-commands(@polar-sh/sdk@1.0.3-alpha.4(ioredis@5.11.1(supports-color@10.2.2))(ws@8.22.0))(effect@4.0.1)
       '@polar-sh/polar':
         specifier: workspace:*
         version: link:../polar
       '@polar-sh/sdk':
-        specifier: 1.0.2
-        version: 1.0.2
+        specifier: 1.0.3-alpha.4
+        version: 1.0.3-alpha.4(ioredis@5.11.1(supports-color@10.2.2))(ws@8.22.0)
       effect:
         specifier: 'catalog:'
         version: 4.0.1
@@ -4606,7 +4606,7 @@ packages:
   '@polar-sh/cli-commands@file:../sdk/cli-commands':
     resolution: {directory: ../sdk/cli-commands, type: directory}
     peerDependencies:
-      '@polar-sh/sdk': 1.0.2
+      '@polar-sh/sdk': 1.0.3-alpha.4
       effect: 4.0.1
 
   '@polar-sh/sdk@0.46.7':
@@ -18028,9 +18028,9 @@ snapshots:
       '@pnpm/network.ca-file': 1.0.2
       config-chain: 1.1.13
 
-  '@polar-sh/cli-commands@file:../sdk/cli-commands(@polar-sh/sdk@1.0.2)(effect@4.0.1)':
+  '@polar-sh/cli-commands@file:../sdk/cli-commands(@polar-sh/sdk@1.0.3-alpha.4(ioredis@5.11.1(supports-color@10.2.2))(ws@8.22.0))(effect@4.0.1)':
     dependencies:
-      '@polar-sh/sdk': 1.0.2
+      '@polar-sh/sdk': 1.0.3-alpha.4(ioredis@5.11.1(supports-color@10.2.2))(ws@8.22.0)
       effect: 4.0.1
 
   '@polar-sh/sdk@0.46.7':

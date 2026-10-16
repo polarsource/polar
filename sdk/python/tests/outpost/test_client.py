@@ -1053,6 +1053,56 @@ async def test_flush_telemetry_reports_sync_counts(
 
 
 @pytest.mark.anyio
+async def test_sync_report_does_not_split_a_message_in_flight(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    exported_spans: list[ReadableSpan],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, _ = redis_connection
+    async with (
+        Outpost(url, client=polar_client) as writer,
+        Outpost(url, client=polar_client) as reader,
+    ):
+        receiving = anyio.Event()
+        release = anyio.Event()
+
+        async def receive_state(customer: str, state: ReducerState) -> bool:
+            receiving.set()
+            await release.wait()
+            return True
+
+        monkeypatch.setattr(reader, "_receive_state", receive_state)
+        await writer.ingest(
+            events=[
+                {
+                    "name": "call",
+                    "external_customer_id": "alice",
+                    "metadata": {"tokens": 1},
+                }
+            ]
+        )
+        with anyio.fail_after(1):
+            await receiving.wait()
+        await reader.flush_telemetry()
+        release.set()
+        with anyio.fail_after(1):
+            while reader._sync_applied == 0:
+                await anyio.lowlevel.checkpoint()
+        exported_spans.clear()
+        await reader.flush_telemetry()
+        assert [
+            span.attributes for span in exported_spans if span.name == "outpost.sync"
+        ] == [
+            {
+                "outpost.connection_id": CONNECTION_ID,
+                "outpost.sync.received": 1,
+                "outpost.sync.applied": 1,
+            }
+        ]
+
+
+@pytest.mark.anyio
 async def test_sync_counts_are_reported_periodically(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,

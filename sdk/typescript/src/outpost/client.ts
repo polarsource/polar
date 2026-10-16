@@ -688,8 +688,9 @@ export class Outpost {
 
   private async receiveRedis(data: string): Promise<void> {
     const update: StateUpdate = JSON.parse(data);
+    const applied = await this.receiveState(update.customer, decodeState(update.state));
     this.syncReceived += 1;
-    if (await this.receiveState(update.customer, decodeState(update.state))) this.syncApplied += 1;
+    if (applied) this.syncApplied += 1;
   }
 
   private reportSync(): void {

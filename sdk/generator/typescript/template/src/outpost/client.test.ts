@@ -772,6 +772,35 @@ it("reports sync counts when telemetry is flushed", async () => {
   ]);
 });
 
+it("does not split a message in flight across sync reports", async () => {
+  const writer = await start();
+  const reader = await start();
+  let receiving = false;
+  let release!: () => void;
+  const released = new Promise<void>((resolve) => (release = resolve));
+  reader["receiveState"] = async () => {
+    receiving = true;
+    await released;
+    return true;
+  };
+  await ingest(writer, 1);
+  await vi.waitFor(() => expect(receiving).toBe(true));
+  await reader.flushTelemetry();
+  release();
+  await vi.waitFor(() => expect(reader["syncApplied"]).toBe(1));
+  exported.length = 0;
+  await reader.flushTelemetry();
+  expect(
+    exported.filter((span) => span.name === "outpost.sync").map((span) => span.attributes),
+  ).toEqual([
+    {
+      "outpost.connection_id": connectionId,
+      "outpost.sync.received": 1,
+      "outpost.sync.applied": 1,
+    },
+  ]);
+});
+
 it("flushes buffered telemetry on demand", async () => {
   const outpost = await start();
   const forceFlush = vi.spyOn(outpost["tracerProvider"]!, "forceFlush");

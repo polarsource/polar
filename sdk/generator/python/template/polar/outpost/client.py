@@ -751,10 +751,11 @@ class Outpost:
                     )
                     if message is not None:
                         update: StateUpdate = json.loads(message["data"])
-                        self._sync_received += 1
-                        if await self._receive_state(
+                        applied = await self._receive_state(
                             update["customer"], self._decode_state(update["state"])
-                        ):
+                        )
+                        self._sync_received += 1
+                        if applied:
                             self._sync_applied += 1
                     if anyio.current_time() >= next_refresh:
                         self._report_sync()

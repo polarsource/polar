@@ -2,8 +2,17 @@ import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { afterEach, expect, it, vi } from "vitest";
 
+import type { EventInput } from "./event";
+
 import { createPolar } from "../2026-10/client";
-import { Ingestion, type IngestionStrategy } from "./client";
+import { PolarError } from "../base";
+import {
+  Ingestion,
+  IngestionError,
+  InvalidActorError,
+  type ActorInput,
+  type IngestionStrategy,
+} from "./client";
 
 const event = { name: "usage", external_customer_id: "alice" };
 
@@ -76,13 +85,125 @@ it("stops at the failing strategy and rejects ingestion outside its lifecycle", 
   const second = { ...first, ingest: vi.fn() };
   const ingestion = new Ingestion({ strategies: [first, second] });
   await expect(ingestion.ingest(event)).rejects.toThrow("not running");
+  await expect(ingestion.actor({ external_customer_id: "alice" })).rejects.toThrow("not running");
   await ingestion.start();
   await expect(ingestion.start()).rejects.toThrow("already started");
   await expect(ingestion.ingest(event)).rejects.toThrow("ingest failed");
   expect(second.ingest).not.toHaveBeenCalled();
   await ingestion.close();
   await expect(ingestion.ingest(event)).rejects.toThrow("not running");
+  await expect(ingestion.actor({ external_customer_id: "alice" })).rejects.toThrow("not running");
 });
+
+it.each<ActorInput>([
+  { customer_id: "customer" },
+  { customer_id: "customer", member_id: "member" },
+  { external_customer_id: "customer" },
+  { external_customer_id: "customer", external_member_id: "member" },
+])("warms and binds an actor: %j", async (input) => {
+  const ordinary = {
+    start: vi.fn().mockResolvedValue(undefined),
+    ingest: vi.fn().mockResolvedValue(undefined),
+    close: vi.fn().mockResolvedValue(undefined),
+  };
+  const warmup = {
+    ...ordinary,
+    actor: vi.fn().mockResolvedValue(undefined),
+    ingest: vi.fn().mockResolvedValue(undefined),
+  };
+  await using ingestion = await new Ingestion({ strategies: [ordinary, warmup] }).start();
+  const actor = await ingestion.actor(input);
+  expect(warmup.actor).toHaveBeenCalledExactlyOnceWith(input);
+  const payload = { name: "usage", metadata: { tokens: 3 } };
+  await actor.ingest(payload);
+  expect(ordinary.ingest).toHaveBeenNthCalledWith(
+    1,
+    expect.objectContaining({ ...payload, ...input }),
+  );
+  expect(ordinary.ingest).toHaveBeenCalledOnce();
+  expect(warmup.ingest).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({ ...payload, ...input }),
+  );
+  expect(payload).toEqual({ name: "usage", metadata: { tokens: 3 } });
+});
+
+it.each([
+  {},
+  { customer_id: "customer", external_customer_id: "customer" },
+  { member_id: "member" },
+  { external_member_id: "member" },
+  { customer_id: "customer", external_member_id: "member" },
+  { external_customer_id: "customer", member_id: "member" },
+])("rejects an invalid actor before warmup or ingestion: %j", async (input) => {
+  const strategy = {
+    start: vi.fn().mockResolvedValue(undefined),
+    actor: vi.fn().mockResolvedValue(undefined),
+    ingest: vi.fn().mockResolvedValue(undefined),
+    close: vi.fn().mockResolvedValue(undefined),
+  };
+  await using ingestion = await new Ingestion({ strategies: [strategy] }).start();
+  const result = ingestion.actor(input as unknown as ActorInput);
+  await expect(result).rejects.toBeInstanceOf(InvalidActorError);
+  await expect(result).rejects.toBeInstanceOf(IngestionError);
+  await expect(result).rejects.toBeInstanceOf(PolarError);
+  await expect(ingestion.ingest({ name: "usage", ...input } as EventInput)).rejects.toBeInstanceOf(
+    InvalidActorError,
+  );
+  expect(strategy.actor).not.toHaveBeenCalled();
+  expect(strategy.ingest).not.toHaveBeenCalled();
+});
+
+it("captures the actor identity before awaiting warmup", async () => {
+  const input = { external_customer_id: "alice" };
+  const strategy = {
+    start: vi.fn().mockResolvedValue(undefined),
+    actor: vi.fn(async () => {
+      input.external_customer_id = "bob";
+    }),
+    ingest: vi.fn().mockResolvedValue(undefined),
+    close: vi.fn().mockResolvedValue(undefined),
+  };
+  await using ingestion = await new Ingestion({ strategies: [strategy] }).start();
+  const actor = await ingestion.actor(input);
+  await actor.ingest({ name: "usage", external_customer_id: "carol" } as EventInput);
+  expect(strategy.ingest).toHaveBeenCalledExactlyOnceWith({
+    name: "usage",
+    external_customer_id: "alice",
+    external_member_id: undefined,
+  });
+});
+
+it.each([false, true])(
+  "waits for actor warmup before closing, including failures: %s",
+  async (failWarmup) => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const error = new Error("warmup failed");
+    const strategy = {
+      start: vi.fn().mockResolvedValue(undefined),
+      actor: vi.fn(async () => {
+        await gate;
+        if (failWarmup) throw error;
+      }),
+      ingest: vi.fn().mockResolvedValue(undefined),
+      close: vi.fn().mockResolvedValue(undefined),
+    };
+    const ingestion = await new Ingestion({ strategies: [strategy] }).start();
+    const actor = ingestion.actor({ external_customer_id: "alice" });
+    const result = Promise.allSettled([actor]);
+    const closing = ingestion.close();
+    expect(strategy.close).not.toHaveBeenCalled();
+    release();
+    const [settled] = await result;
+    expect(settled.status).toBe(failWarmup ? "rejected" : "fulfilled");
+    if (settled.status === "rejected") expect(settled.reason).toBe(error);
+    else await expect(settled.value.ingest({ name: "usage" })).rejects.toThrow("not running");
+    await closing;
+    expect(strategy.close).toHaveBeenCalledOnce();
+  },
+);
 
 it("creates buffered ingestion using the configured HTTP client", async () => {
   const fetch = vi
@@ -105,6 +226,26 @@ it("creates buffered ingestion using the configured HTTP client", async () => {
   expect(headers.get("Polar-Organization")).toBe("org");
   expect(headers.get("Polar-Version")).toBe("2026-10");
   expect(JSON.parse(request!.body as string)).toEqual({ events: [event] });
+});
+
+it("forwards actor warmup to the configured Outpost", async () => {
+  const { Outpost } = await import("../outpost/client");
+  vi.spyOn(Outpost.prototype, "start").mockImplementation(
+    async function (this: InstanceType<typeof Outpost>) {
+      return this;
+    },
+  );
+  vi.spyOn(Outpost.prototype, "close").mockResolvedValue(undefined);
+  const warmup = vi.spyOn(Outpost.prototype, "actor").mockResolvedValue(undefined);
+  const polar = createPolar({ accessToken: "token" });
+  await using ingestion = await polar
+    .ingestion({ outpostRedisUrl: "redis://localhost:6379" })
+    .start();
+  await ingestion.actor({ external_customer_id: "alice" });
+  expect(warmup).toHaveBeenCalledExactlyOnceWith({
+    external_customer_id: "alice",
+    external_member_id: undefined,
+  });
 });
 
 it("aborts an in-flight HTTP delivery on shutdown", async () => {
@@ -150,6 +291,7 @@ it("uses buffered ingestion without loading optional Outpost dependencies", () =
     }});
     const { createPolar } = await import("@polar-sh/sdk/2026-10");
     await using ingestion = await createPolar({ accessToken: "token" }).ingestion().start();
+    await ingestion.actor({ external_customer_id: "alice" });
   `,
     ],
     { encoding: "utf8" },

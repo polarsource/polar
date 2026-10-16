@@ -26,10 +26,10 @@ const trialIntervalValueDisplayNames: Record<
   schemas['TrialInterval'],
   [string, string]
 > = {
-  day: ['Day', 'Days'],
-  week: ['Week', 'Weeks'],
-  month: ['Month', 'Months'],
-  year: ['Year', 'Years'],
+  day: ['day', 'days'],
+  week: ['week', 'weeks'],
+  month: ['month', 'months'],
+  year: ['year', 'years'],
 }
 
 export const TrialConfigurationForm = ({

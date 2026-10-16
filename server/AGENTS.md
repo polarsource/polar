@@ -15,7 +15,7 @@ uv run task lint_types   # Type checking with mypy
 # Database migrations
 uv run alembic revision --autogenerate -m "description"  # Create migration
 uv run alembic upgrade head                              # Apply migrations
-uv run task check_migrations                             # single Alembic head + later filename
+uv run task check_migrations                             # Check that the migration is fine to apply (single Alembic head, filename later, column drops are marked)
 ```
 
 When rebasing a PR that adds a migration, rename the file so its `YYYY-MM-DD-HHMM` prefix is after the latest migration on the target branch (`uv run task db_reparent` only updates `down_revision`).

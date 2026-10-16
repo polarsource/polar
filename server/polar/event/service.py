@@ -965,6 +965,9 @@ class EventService:
         event_ids, duplicates_count = await repository.insert_batch(
             events, render_nulls=True
         )
+        trace.get_current_span().set_attributes(
+            {"inserted_events": len(event_ids), "skipped_duplicates": duplicates_count}
+        )
 
         # Temporarily: fetch inserted events and create meter_events
         with logfire.span("create_meter_events", event_count=len(event_ids)):
@@ -987,14 +990,16 @@ class EventService:
                 "rollup_reducer_buckets",
                 organization_count=len(events_by_organization),
                 event_count=len(inserted_ids),
-            ):
+            ) as span:
+                bucket_count = 0
                 for (
                     organization_id,
                     organization_events,
                 ) in events_by_organization.items():
-                    await reducer_service.rollup(
+                    bucket_count += await reducer_service.rollup(
                         session, redis, organization_id, organization_events
                     )
+                span.set_attribute("rolled_up_buckets", bucket_count)
 
         # Parent resolution and root_id propagation run out-of-band in the
         # `event.ingested` task — they're not needed on the request path and

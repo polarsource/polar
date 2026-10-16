@@ -11,16 +11,20 @@ import { PolarEmbedPaymentMethod } from '@polar-sh/checkout/payment-method'
 import { usePaymentMethodRedirectResult } from '@polar-sh/checkout/react/payment-method'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
-import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
-import { Well, WellContent, WellHeader } from '../Shared/Well'
 import ChangeEmailForm from './ChangeEmailForm'
 import { CustomerPortalTeamSection } from './CustomerPortalTeam'
 import EditBillingDetails from './EditBillingDetails'
 import PaymentMethod from './PaymentMethod'
+import {
+  PortalCardList,
+  PortalEmptyState,
+  PortalPageHeader,
+  PortalSection,
+} from './PortalPrimitives'
 
 interface CustomerPortalSettingsProps {
   customerSessionToken?: string
@@ -101,109 +105,94 @@ export const CustomerPortalSettings = ({
     return null
   }
 
+  const hasPaymentMethods = (paymentMethods?.items.length ?? 0) > 0
+
   return (
-    <div className="flex flex-col gap-y-8">
-      <h3 className="text-2xl">Billing Settings</h3>
-      <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
-        <WellHeader className="flex-row items-start justify-between">
-          <div className="flex flex-col gap-y-2">
-            <h3 className="text-xl">Payment Methods</h3>
-            <p className="dark:text-polar-500 text-gray-500">
-              Methods used for subscriptions & one-time purchases
-            </p>
-          </div>
-          <Button onClick={onAddPaymentMethod}>Add Payment Method</Button>
-        </WellHeader>
-        <WellContent className="gap-y-4">
-          {paymentMethods?.items.map((pm) => (
-            <PaymentMethod
-              key={pm.id}
-              customer={customer}
-              paymentMethod={pm}
-              api={api}
-              deletable={true}
-            />
-          ))}
-        </WellContent>
-      </Well>
-      <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
-        <WellHeader className="flex-row items-center justify-between">
-          <div className="flex flex-col gap-y-2">
-            <h3 className="text-xl">Billing Details</h3>
-            <p className="dark:text-polar-500 text-gray-500">
-              Update your billing details
-            </p>
-          </div>
-        </WellHeader>
-        <Separator className="dark:bg-polar-700" />
-        <WellContent>
-          <EditBillingDetails
-            onSuccess={() => {
-              revalidate(`customer_portal`)
-              router.refresh()
-            }}
+    <>
+      <PortalPageHeader
+        title="Billing"
+        description="Payment methods, billing details and account settings"
+      />
+
+      <PortalSection
+        title="Payment methods"
+        description="Used for subscriptions and one-time purchases"
+        actions={
+          <Button variant="secondary" size="sm" onClick={onAddPaymentMethod}>
+            Add payment method
+          </Button>
+        }
+      >
+        {hasPaymentMethods ? (
+          <PortalCardList>
+            {paymentMethods?.items.map((pm) => (
+              <PaymentMethod
+                key={pm.id}
+                customer={customer}
+                paymentMethod={pm}
+                api={api}
+                deletable={true}
+              />
+            ))}
+          </PortalCardList>
+        ) : (
+          <PortalEmptyState
+            title="No payment methods"
+            description="Add a payment method to use it for future charges."
           />
-        </WellContent>
-      </Well>
+        )}
+      </PortalSection>
+
+      <PortalSection
+        title="Billing details"
+        description="Shown on your invoices and receipts"
+      >
+        <EditBillingDetails
+          onSuccess={() => {
+            revalidate(`customer_portal`)
+            router.refresh()
+          }}
+        />
+      </PortalSection>
 
       {customer.type !== 'team' &&
         customer.email &&
         organization.customer_portal_settings.customer?.allow_email_change ===
           true && (
-          <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
-            <WellHeader className="flex-row items-center justify-between">
-              <div className="flex flex-col gap-y-2">
-                <h3 className="text-xl">Email Address</h3>
-                <p className="dark:text-polar-500 text-gray-500">
-                  Change the email associated with your account
-                </p>
-              </div>
-            </WellHeader>
-            <Separator className="dark:bg-polar-700" />
-            <WellContent>
-              <ChangeEmailForm customer={customer} />
-            </WellContent>
-          </Well>
+          <PortalSection
+            title="Email address"
+            description="The email you use to sign in to this portal"
+          >
+            <ChangeEmailForm customer={customer} />
+          </PortalSection>
         )}
 
       {customer.type === 'team' && (
-        <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
-          <WellHeader className="flex-row items-start justify-between">
-            <div className="flex flex-col gap-y-2">
-              <h3 className="text-xl">Billing Managers</h3>
-              <p className="dark:text-polar-500 text-gray-500">
-                Billing Managers can manage billing details, payment methods,
-                and subscriptions.
-              </p>
-            </div>
-          </WellHeader>
-          <Separator className="dark:bg-polar-700" />
-          <WellContent>
-            <CustomerPortalTeamSection
-              api={api}
-              organizationSlug={organization.slug}
-            />
-          </WellContent>
-        </Well>
+        <PortalSection
+          title="Billing managers"
+          description="Billing managers can manage billing details, payment methods and subscriptions."
+        >
+          <CustomerPortalTeamSection
+            api={api}
+            organizationSlug={organization.slug}
+          />
+        </PortalSection>
       )}
 
-      <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
-        <WellHeader className="flex-row items-start justify-between">
-          <div className="flex flex-col gap-y-2">
-            <h3 className="text-xl">Privacy</h3>
-            <p className="dark:text-polar-500 text-gray-500">
-              Download a copy of all your personal data
-            </p>
-          </div>
+      <PortalSection
+        title="Privacy"
+        description="Download a copy of all your personal data"
+        actions={
           <Button
             onClick={handleExportData}
             loading={isExporting}
             variant="secondary"
+            size="sm"
           >
-            Export Data
+            Export data
           </Button>
-        </WellHeader>
-      </Well>
-    </div>
+        }
+      />
+    </>
   )
 }

@@ -13,13 +13,13 @@ import {
   Text,
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { PortalText } from '@/components/CustomerPortal/PortalPrimitives'
 import {
   DEFAULT_LOCALE,
   useTranslations,
   type AcceptedLocale,
   type TranslationKey,
 } from '@polar-sh/i18n'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import Markdown from 'markdown-to-jsx'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -59,11 +59,11 @@ const BenefitGrantCustom = ({
     return null
   }
   return (
-    <ShadowBox className="dark:bg-polar-800 bg-white p-6 lg:rounded-3xl">
+    <Box display="block">
       <div className="prose dark:prose-invert prose-headings:font-medium prose-headings:text-black prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-h4:text-sm prose-h5:text-sm prose-h6:text-sm dark:prose-headings:text-white dark:text-polar-300 prose-p:text-sm leading-normal text-gray-800 [&>*>*:first-child]:mt-0">
         <Markdown options={markdownOptions}>{note}</Markdown>
       </div>
-    </ShadowBox>
+    </Box>
   )
 }
 
@@ -507,20 +507,29 @@ export const BenefitGrant = ({
   const { benefit } = benefitGrant
 
   return (
-    <div className="flex w-full flex-col gap-4">
-      <div className="flex flex-row items-center gap-x-4">
-        <div className="flex flex-row items-center gap-x-2 text-xs text-gray-500 dark:text-white">
-          <span className="dark:bg-polar-700 flex h-8 w-8 flex-row items-center justify-center rounded-full bg-gray-50 text-sm">
-            {resolveBenefitIcon(benefit.type, 'h-3 w-3')}
-          </span>
-        </div>
-        <div className="flex flex-col">
-          <h3 className="text-sm font-medium">{benefit.description}</h3>
-          <p className="dark:text-polar-500 flex flex-row gap-x-1 truncate text-sm text-gray-500">
+    <Box width="100%" flexDirection="column" rowGap="l">
+      <Box alignItems="center" columnGap="m">
+        <Box
+          width={36}
+          height={36}
+          flexShrink={0}
+          alignItems="center"
+          justifyContent="center"
+          borderRadius="full"
+          backgroundColor="background-secondary"
+          color="text-secondary"
+        >
+          {resolveBenefitIcon(benefit.type, 'h-3.5 w-3.5')}
+        </Box>
+        <Box flexDirection="column" minWidth={0}>
+          <Box as="span" color="text-primary">
+            {benefit.description}
+          </Box>
+          <PortalText tone="secondary" className="truncate text-sm">
             {t(benefitTypeTranslationKeys[benefit.type])}
-          </p>
-        </div>
-      </div>
+          </PortalText>
+        </Box>
+      </Box>
       {benefit.type === 'custom' && (
         <BenefitGrantCustom
           benefitGrant={benefitGrant as schemas['CustomerBenefitGrantCustom']}
@@ -569,6 +578,6 @@ export const BenefitGrant = ({
           locale={locale}
         />
       )}
-    </div>
+    </Box>
   )
 }

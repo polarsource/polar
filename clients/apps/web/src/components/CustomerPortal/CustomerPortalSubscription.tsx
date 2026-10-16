@@ -17,7 +17,7 @@ import { getPauseAction } from '@/utils/subscription'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Button } from '@polar-sh/orbit'
-import { DataTable } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { InlineModal } from '@polar-sh/orbit'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
@@ -25,13 +25,20 @@ import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { useModal } from '../Modal/useModal'
 import { DownloadInvoicePortal } from '../Orders/DownloadInvoice'
-import AmountLabel from '../Shared/AmountLabel'
-import { DetailRow } from '../Shared/DetailRow'
 import CustomerCancellationModal from './CustomerCancellationModal'
 import CustomerPauseSubscriptionModal from './CustomerPauseSubscriptionModal'
-import { SubscriptionStatusLabel } from '../Subscriptions/utils'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
+import { CustomerSubscriptionHeader } from './CustomerSubscriptionHeader'
 import { CustomerUnitQuantityManager } from './CustomerUnitQuantityManager'
+import {
+  PortalCardList,
+  PortalListItem,
+  PortalRow,
+  PortalRows,
+  PortalSection,
+  PortalText,
+} from './PortalPrimitives'
+import { PendingUpdateRows, SubscriptionDateRows } from './SubscriptionDateRows'
 import { SeatManagementTable } from './SeatManagementTable'
 
 const CustomerPortalSubscription = ({
@@ -80,9 +87,6 @@ const CustomerPortalSubscription = ({
     useRequirePaymentMethod(api, customerSessionToken, subscription)
 
   const pendingUpdate = subscription.pending_update
-  const pendingProduct = products.find(
-    (product) => product.id === pendingUpdate?.product_id,
-  )
 
   const hasInvoices = orders?.items && orders.items.length > 0
 
@@ -119,7 +123,7 @@ const CustomerPortalSubscription = ({
       })
       router.refresh()
       toast({
-        title: 'Scheduled Pause Canceled',
+        title: 'Scheduled pause canceled',
         description:
           'Your subscription will no longer be paused at the end of the period.',
       })
@@ -137,7 +141,7 @@ const CustomerPortalSubscription = ({
         await resumeSubscription.mutateAsync({ id: subscription.id })
         router.refresh()
         toast({
-          title: 'Subscription Resumed',
+          title: 'Subscription resumed',
           description: 'Your subscription has been resumed.',
         })
       } catch (error) {
@@ -149,207 +153,83 @@ const CustomerPortalSubscription = ({
     })
 
   return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h3 className="text-xl">{subscription.product.name}</h3>
-      </div>
-
-      <div className="flex flex-col text-sm">
-        <DetailRow
-          label="Amount"
-          value={
-            subscription.amount && subscription.currency ? (
-              <AmountLabel
-                amount={subscription.amount}
-                currency={subscription.currency}
-                interval={subscription.recurring_interval}
-                intervalCount={subscription.recurring_interval_count}
-              />
-            ) : (
-              'Free'
-            )
-          }
-        />
-        {subscription.units !== null && (
-          <DetailRow
-            label={subscription.units === 1 ? unitLabel : unitLabelPlural}
-            labelClassName="capitalize"
-            value={subscription.units}
-          />
-        )}
-        <DetailRow
-          label="Status"
-          value={<SubscriptionStatusLabel subscription={subscription} />}
-        />
-        {subscription.started_at && (
-          <DetailRow
-            label="Start Date"
-            value={
-              <FormattedDateTime
-                datetime={subscription.started_at}
-                dateStyle="long"
-                resolution="day"
-              />
-            }
-          />
-        )}
-        {!subscription.ended_at &&
-          subscription.status !== 'paused' &&
-          subscription.current_period_end && (
-            <DetailRow
+    <Box flexDirection="column" rowGap="3xl">
+      <Box flexDirection="column" rowGap="xl">
+        <CustomerSubscriptionHeader subscription={subscription} />
+        <PortalRows>
+          {subscription.units !== null && (
+            <PortalRow
               label={
-                subscription.cancel_at_period_end
-                  ? 'Expiry Date'
-                  : subscription.pause_at_period_end
-                    ? 'Pauses on'
-                    : 'Renewal Date'
+                <span className="capitalize">
+                  {subscription.units === 1 ? unitLabel : unitLabelPlural}
+                </span>
               }
-              value={
-                <FormattedDateTime
-                  datetime={subscription.current_period_end}
-                  dateStyle="long"
-                  resolution="day"
-                />
-              }
+              value={subscription.units}
             />
           )}
-        {subscription.status === 'paused' && subscription.paused_at && (
-          <DetailRow
-            label="Paused on"
-            value={
-              <FormattedDateTime
-                datetime={subscription.paused_at}
-                dateStyle="long"
-                resolution="day"
-              />
-            }
-          />
-        )}
-        {(subscription.status === 'paused' ||
-          subscription.pause_at_period_end) && (
-          <DetailRow
-            label="Resumes on"
-            value={
-              subscription.resumes_at ? (
-                <FormattedDateTime
-                  datetime={subscription.resumes_at}
-                  dateStyle="long"
-                  resolution="day"
-                />
+          <SubscriptionDateRows subscription={subscription} />
+        </PortalRows>
+
+        {(showCancelAction || showPauseAction) && (
+          <Box columnGap="s" rowGap="s" flexWrap="wrap">
+            {showPauseAction &&
+              (pauseAction === 'resume' ? (
+                <Button
+                  onClick={handleResume}
+                  loading={
+                    resumeSubscription.isPending || paymentMethodsPending
+                  }
+                  disabled={
+                    resumeSubscription.isPending || paymentMethodsPending
+                  }
+                >
+                  Resume subscription
+                </Button>
+              ) : pauseAction === 'cancel_scheduled_pause' ? (
+                <Button
+                  variant="secondary"
+                  onClick={handleCancelScheduledPause}
+                  loading={pauseSubscription.isPending}
+                >
+                  Cancel scheduled pause
+                </Button>
               ) : (
-                'Until resumed'
-              )
-            }
-          />
+                <Button variant="secondary" onClick={showPauseModal}>
+                  Pause subscription
+                </Button>
+              ))}
+            {showCancelAction && (
+              <Button variant="secondary" onClick={showCancelModal}>
+                Cancel subscription
+              </Button>
+            )}
+          </Box>
         )}
-        {subscription.ended_at && (
-          <DetailRow
-            label="Expired"
-            value={
-              <FormattedDateTime
-                datetime={subscription.ended_at}
-                dateStyle="long"
-                resolution="day"
-              />
-            }
-          />
-        )}
-      </div>
+      </Box>
 
       {pendingUpdate && (
-        <div className="flex flex-col gap-y-2">
-          <div className="flex flex-row items-center justify-between">
-            <h3>Pending Update</h3>
+        <PortalSection
+          title="Scheduled change"
+          actions={
             <Button
-              variant="secondary"
+              variant="ghost"
               size="sm"
               onClick={() => setShowClearPendingUpdateModal(true)}
               loading={clearPendingUpdate.isPending}
             >
-              Cancel scheduled change
+              Cancel change
             </Button>
-          </div>
-          <div className="flex flex-col">
-            {pendingProduct && (
-              <DetailRow
-                label="New Product"
-                value={`${subscription.product.name} -> ${pendingProduct?.name}`}
-              />
-            )}
-            {pendingUpdate.seats !== null && (
-              <DetailRow
-                label="Seats"
-                value={`${subscription.seats} -> ${pendingUpdate.seats}`}
-              />
-            )}
-            {pendingUpdate.units !== null && (
-              <DetailRow
-                label="Units"
-                value={`${subscription.units} -> ${pendingUpdate.units}`}
-              />
-            )}
-            <DetailRow
-              label="Update in effect from"
-              value={
-                <FormattedDateTime
-                  datetime={pendingUpdate.applies_at}
-                  dateStyle="long"
-                />
-              }
+          }
+        >
+          <PortalRows>
+            <PendingUpdateRows
+              subscription={subscription}
+              products={products}
             />
-          </div>
-        </div>
+          </PortalRows>
+        </PortalSection>
       )}
 
-      {/* Cancel + pause/resume actions, gated by billing permissions */}
-      {(showCancelAction || showPauseAction) && (
-        <div className="flex flex-col gap-2">
-          {showCancelAction && (
-            <Button
-              variant="secondary"
-              fullWidth
-              onClick={showCancelModal}
-              aria-label="Cancel subscription"
-            >
-              Cancel Subscription
-            </Button>
-          )}
-          {showPauseAction &&
-            (pauseAction === 'resume' ? (
-              <Button
-                variant="secondary"
-                fullWidth
-                onClick={handleResume}
-                loading={resumeSubscription.isPending || paymentMethodsPending}
-                disabled={resumeSubscription.isPending || paymentMethodsPending}
-                aria-label="Resume subscription"
-              >
-                Resume Subscription
-              </Button>
-            ) : pauseAction === 'cancel_scheduled_pause' ? (
-              <Button
-                variant="secondary"
-                fullWidth
-                onClick={handleCancelScheduledPause}
-                loading={pauseSubscription.isPending}
-                aria-label="Cancel scheduled pause"
-              >
-                Cancel Scheduled Pause
-              </Button>
-            ) : (
-              <Button
-                variant="secondary"
-                fullWidth
-                onClick={showPauseModal}
-                aria-label="Pause subscription"
-              >
-                Pause Subscription
-              </Button>
-            ))}
-        </div>
-      )}
-
-      {/* Seat management - only shown for users with billing permissions */}
       {hasSeatBasedPricing && showSeatManagement && canManageBilling && (
         <SeatManagementTable
           api={api}
@@ -375,56 +255,41 @@ const CustomerPortalSubscription = ({
 
       <CustomerPortalGrants api={api} subscriptionId={subscription.id} />
 
-      <div className="flex w-full flex-col gap-4">
-        {hasInvoices && (
-          <div className="flex flex-col gap-y-4">
-            <h3 className="text-lg">Invoices</h3>
-            <DataTable
-              data={orders.items ?? []}
-              isLoading={false}
-              columns={[
-                {
-                  accessorKey: 'created_at',
-                  header: 'Date',
-                  cell: ({ row }) => (
-                    <FormattedDateTime
-                      datetime={row.original.created_at}
-                      dateStyle="medium"
-                      resolution="day"
-                    />
-                  ),
-                },
-                {
-                  accessorKey: 'amount',
-                  header: 'Amount',
-                  cell: ({ row }) => (
-                    <span className="dark:text-polar-500 text-sm text-gray-500">
-                      {formatCurrency('compact')(
-                        row.original.total_amount,
-                        row.original.currency,
-                      )}
-                    </span>
-                  ),
-                },
-                {
-                  accessorKey: 'id',
-                  header: '',
-                  cell: ({ row }) => (
-                    <span className="flex justify-end">
-                      <DownloadInvoicePortal
-                        customerSessionToken={customerSessionToken}
-                        order={row.original}
-                        onInvoiceGenerated={refetchOrders}
-                        dropdown
-                      />
-                    </span>
-                  ),
-                },
-              ]}
-            />
-          </div>
-        )}
-      </div>
+      {hasInvoices && (
+        <PortalSection title="Invoices">
+          <PortalCardList>
+            {orders.items.map((order) => (
+              <PortalListItem
+                key={order.id}
+                title={
+                  <FormattedDateTime
+                    datetime={order.created_at}
+                    dateStyle="medium"
+                    resolution="day"
+                  />
+                }
+                subtitle={order.invoice_number}
+                meta={
+                  <PortalText tone="primary" className="tabular-nums">
+                    {formatCurrency('compact')(
+                      order.total_amount,
+                      order.currency,
+                    )}
+                  </PortalText>
+                }
+                actions={
+                  <DownloadInvoicePortal
+                    customerSessionToken={customerSessionToken}
+                    order={order}
+                    onInvoiceGenerated={refetchOrders}
+                    dropdown
+                  />
+                }
+              />
+            ))}
+          </PortalCardList>
+        </PortalSection>
+      )}
 
       <CustomerCancellationModal
         api={api}
@@ -456,7 +321,7 @@ const CustomerPortalSubscription = ({
           refetchOrders()
         }}
       />
-    </div>
+    </Box>
   )
 }
 

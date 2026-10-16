@@ -59,7 +59,7 @@ export const OrderPaymentRetryModal = ({
 
   const handlePaymentSuccess = () => {
     toast({
-      title: 'Payment Successful',
+      title: 'Payment successful',
       description: 'Your payment has been processed successfully!',
     })
     onSuccess?.(order)
@@ -71,7 +71,7 @@ export const OrderPaymentRetryModal = ({
     setUseNewCard(false)
     setSelectedPaymentMethodId(null)
     toast({
-      title: 'Payment Failed',
+      title: 'Payment failed',
       description: error,
       variant: 'error',
     })
@@ -81,7 +81,7 @@ export const OrderPaymentRetryModal = ({
 
   return (
     <Modal
-      title="Update Payment Method"
+      title="Update payment method"
       isShown={isOpen}
       hide={handleClose}
       modalContent={
@@ -95,7 +95,7 @@ export const OrderPaymentRetryModal = ({
                   setError('')
                 }}
               >
-                Try Again
+                Try again
               </Button>
             </div>
           )}

@@ -210,7 +210,7 @@ const CustomerChangePlanModal = ({
     }
     if (data) {
       toast({
-        title: 'Subscription Updated',
+        title: 'Subscription updated',
         description: `Subscription was updated successfully`,
       })
       onUserSubscriptionUpdate(data)
@@ -240,11 +240,11 @@ const CustomerChangePlanModal = ({
     <div className="flex flex-col overflow-y-auto">
       <InlineModalHeader hide={hide}>
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-xl">Change Plan</h2>
+          <h2 className="text-xl">Change plan</h2>
         </div>
       </InlineModalHeader>
       <div className="flex flex-col gap-y-8 p-8">
-        <h3 className="font-medium">Current Plan</h3>
+        <h3 className="font-medium">Current plan</h3>
         <List size="small">
           <ProductPriceListItem
             product={subscription.product}
@@ -252,7 +252,7 @@ const CustomerChangePlanModal = ({
             selected
           />
         </List>
-        <h3 className="font-medium">Available Plans</h3>
+        <h3 className="font-medium">Available plans</h3>
         {availableProducts.length === 0 ? (
           <p className="dark:text-polar-500 dark:bg-polar-800 rounded-2xl bg-gray-50 p-3 text-center text-sm text-gray-500">
             No other plans available
@@ -314,7 +314,7 @@ const CustomerChangePlanModal = ({
         {needToAddPaymentMethod && (
           <p className="dark:text-polar-500 text-sm text-gray-500">
             You need to add a payment method before updating your plan. Head to
-            the Customer Portal Settings to add a payment method.
+            the billing page to add a payment method.
           </p>
         )}
         <Button
@@ -325,7 +325,7 @@ const CustomerChangePlanModal = ({
         >
           {trialOutcome?.kind === 'ends'
             ? 'Change Plan & End Trial'
-            : 'Change Plan'}
+            : 'Change plan'}
         </Button>
       </div>
     </div>

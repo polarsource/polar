@@ -46,7 +46,7 @@ const CustomerPauseSubscriptionModal = ({
       })
       router.refresh()
       toast({
-        title: 'Subscription Paused',
+        title: 'Subscription paused',
         description: resumes_at
           ? 'Your subscription will be paused at the end of the current period and resume automatically on the selected date.'
           : 'Your subscription will be paused at the end of the current period.',
@@ -69,7 +69,7 @@ const CustomerPauseSubscriptionModal = ({
       overflowY="auto"
     >
       <Text variant="heading-xs" as="h2">
-        Pause Subscription
+        Pause subscription
       </Text>
       <Text color="muted">
         Your subscription stays active until the end of the current period. At
@@ -102,7 +102,7 @@ const CustomerPauseSubscriptionModal = ({
             )}
           />
           <Button type="submit" loading={pauseSubscription.isPending}>
-            Pause Subscription
+            Pause subscription
           </Button>
         </form>
       </Form>

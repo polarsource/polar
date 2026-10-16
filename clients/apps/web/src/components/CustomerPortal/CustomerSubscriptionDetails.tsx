@@ -1,16 +1,13 @@
 'use client'
 
 import revalidate from '@/app/actions'
-import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import {
   useCustomerClearPendingSubscriptionUpdate,
   useCustomerCancelSubscription,
 } from '@/hooks/queries/customerPortal'
 import { Client, schemas } from '@polar-sh/client'
-import { formatCurrency } from '@polar-sh/currency'
 import { Button } from '@polar-sh/orbit'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
@@ -18,7 +15,9 @@ import CustomerPortalSubscription from './CustomerPortalSubscription'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '../Modal/useModal'
-import { DetailRow } from '../Shared/DetailRow'
+import { CurrentPeriodOverview } from './CurrentPeriodOverview'
+import { PortalCard, PortalRows } from './PortalPrimitives'
+import { PendingUpdateRows, SubscriptionDateRows } from './SubscriptionDateRows'
 import CustomerChangePlanModal from './CustomerChangePlanModal'
 import { CustomerSubscriptionHeader } from './CustomerSubscriptionHeader'
 import UncancelSubscriptionButton from './UncancelSubscriptionButton'
@@ -65,161 +64,77 @@ const CustomerSubscriptionDetails = ({
   const router = useRouter()
 
   const pendingUpdate = subscription.pending_update
-  const pendingProduct = products.find(
-    (product) => product.id === pendingUpdate?.product_id,
-  )
 
   if (!organization) {
     return null
   }
 
   return (
-    <ShadowBox className="dark:bg-polar-900 flex w-full flex-col gap-y-6 bg-gray-50 dark:border-transparent">
+    <PortalCard rowGap="xl">
       <CustomerSubscriptionHeader subscription={subscription} />
-      <div className="flex flex-col text-sm">
-        <DetailRow
-          label="Status"
-          value={<SubscriptionStatusLabel subscription={subscription} />}
-        />
-        {subscription.started_at && (
-          <DetailRow
-            label="Start Date"
-            value={
-              <FormattedDateTime
-                datetime={subscription.started_at}
-                dateStyle="long"
-              />
-            }
-          />
-        )}
-        {subscription.trial_end && subscription.status === 'trialing' ? (
-          <DetailRow
-            label="Trial Ends"
-            value={
-              <FormattedDateTime
-                datetime={subscription.trial_end}
-                dateStyle="long"
-              />
-            }
-          />
-        ) : (
-          !subscription.ended_at &&
-          subscription.status !== 'paused' &&
-          subscription.current_period_end && (
-            <DetailRow
-              label={
-                subscription.cancel_at_period_end
-                  ? 'Expiry Date'
-                  : subscription.pause_at_period_end
-                    ? 'Pauses on'
-                    : 'Renewal Date'
-              }
-              value={
-                <FormattedDateTime
-                  datetime={subscription.current_period_end}
-                  dateStyle="long"
-                />
-              }
+
+      <PortalRows>
+        <SubscriptionDateRows subscription={subscription} />
+      </PortalRows>
+
+      {pendingUpdate && (
+        <Box
+          flexDirection="column"
+          rowGap="m"
+          paddingTop="l"
+          borderTopWidth={1}
+          borderStyle="solid"
+          borderColor="border-primary"
+        >
+          <Box justifyContent="between" alignItems="center" columnGap="l">
+            <Box as="span" color="text-primary">
+              Scheduled change
+            </Box>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowClearPendingUpdateModal(true)}
+              loading={clearPendingUpdate.isPending}
+            >
+              Cancel change
+            </Button>
+          </Box>
+          <PortalRows>
+            <PendingUpdateRows
+              subscription={subscription}
+              products={products}
             />
-          )
-        )}
-        {subscription.status === 'paused' && subscription.paused_at && (
-          <DetailRow
-            label="Paused on"
-            value={
-              <FormattedDateTime
-                datetime={subscription.paused_at}
-                dateStyle="long"
-              />
-            }
-          />
-        )}
-        {(subscription.status === 'paused' ||
-          subscription.pause_at_period_end) && (
-          <DetailRow
-            label="Resumes on"
-            value={
-              subscription.resumes_at ? (
-                <FormattedDateTime
-                  datetime={subscription.resumes_at}
-                  dateStyle="long"
-                />
-              ) : (
-                'Until resumed'
-              )
-            }
-          />
-        )}
-        {subscription.meters.length > 0 && (
-          <div className="flex flex-col gap-y-4 py-2">
-            <span className="text-lg">Metered Usage</span>
-            <div className="flex flex-col gap-y-2">
-              {subscription.meters.map((subscriptionMeter) => (
-                <DetailRow
-                  key={subscriptionMeter.meter.id}
-                  label={subscriptionMeter.meter.name}
-                  value={formatCurrency('compact')(
-                    subscriptionMeter.amount,
-                    subscription.currency,
-                  )}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-        {subscription.ended_at && (
-          <DetailRow
-            label="Expired"
-            value={
-              <FormattedDateTime
-                datetime={subscription.ended_at}
-                dateStyle="long"
-              />
-            }
-          />
+          </PortalRows>
+        </Box>
+      )}
+
+      <CurrentPeriodOverview
+        api={api}
+        products={products}
+        subscription={subscription}
+      />
+
+      <Box columnGap="s" rowGap="s" flexWrap="wrap">
+        <Box display={{ base: 'none', md: 'flex' }}>
+          <Button onClick={showBenefitGrantsModal}>Manage subscription</Button>
+        </Box>
+        <Box display={{ base: 'flex', md: 'none' }}>
+          <Link
+            href={`/${organization.slug}/portal/subscriptions/${subscription.id}?customer_session_token=${customerSessionToken}`}
+          >
+            <Button>Manage subscription</Button>
+          </Link>
+        </Box>
+
+        {showSubscriptionUpdates && !isCanceled && (
+          <Button
+            onClick={() => setShowChangePlanModal(true)}
+            variant="secondary"
+          >
+            Change plan
+          </Button>
         )}
 
-        {pendingUpdate && (
-          <div className="mt-4 flex flex-col gap-y-2">
-            <div className="flex flex-row items-center justify-between">
-              <h3>Pending Update</h3>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setShowClearPendingUpdateModal(true)}
-                loading={clearPendingUpdate.isPending}
-              >
-                Cancel scheduled change
-              </Button>
-            </div>
-            <div className="flex flex-col">
-              {pendingProduct && (
-                <DetailRow
-                  label="New Product"
-                  value={`${subscription.product.name} -> ${pendingProduct?.name}`}
-                />
-              )}
-              {pendingUpdate.seats !== null && (
-                <DetailRow
-                  label="Seats"
-                  value={`${subscription.seats} -> ${pendingUpdate.seats}`}
-                />
-              )}
-              <DetailRow
-                label="Update in effect from"
-                value={
-                  <FormattedDateTime
-                    datetime={pendingUpdate.applies_at}
-                    dateStyle="long"
-                  />
-                }
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-row gap-4">
         {isCanceled &&
           subscription.cancel_at_period_end &&
           subscription.current_period_end &&
@@ -234,26 +149,7 @@ const CustomerSubscriptionDetails = ({
               }}
             />
           )}
-
-        <Button className="hidden md:flex" onClick={showBenefitGrantsModal}>
-          Manage subscription
-        </Button>
-        <Link
-          className="md:hidden"
-          href={`/${organization.slug}/portal/subscriptions/${subscription.id}?customer_session_token=${customerSessionToken}`}
-        >
-          <Button>Manage subscription</Button>
-        </Link>
-
-        {showSubscriptionUpdates && !isCanceled && (
-          <Button
-            onClick={() => setShowChangePlanModal(true)}
-            variant="secondary"
-          >
-            Change plan
-          </Button>
-        )}
-      </div>
+      </Box>
 
       <InlineModal
         isShown={showChangePlanModal}
@@ -274,14 +170,14 @@ const CustomerSubscriptionDetails = ({
         isShown={isBenefitGrantsModalOpen}
         hide={hideBenefitGrantsModal}
         modalContent={
-          <div className="flex flex-col overflow-y-auto p-8">
+          <Box flexDirection="column" overflowY="auto" padding="2xl">
             <CustomerPortalSubscription
               api={api}
               customerSessionToken={customerSessionToken}
               subscription={subscription}
               products={products}
             />
-          </div>
+          </Box>
         }
       />
 
@@ -296,7 +192,7 @@ const CustomerSubscriptionDetails = ({
           router.refresh()
         }}
       />
-    </ShadowBox>
+    </PortalCard>
   )
 }
 

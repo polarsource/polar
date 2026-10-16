@@ -7,12 +7,16 @@ import {
 } from '@/utils/product'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useMemo } from 'react'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 import AmountLabel from '../Shared/AmountLabel'
-import { OverviewSummaryCard } from './OverviewSummaryCard'
+import {
+  PortalDivider,
+  PortalRow,
+  PortalRows,
+  PortalText,
+} from './PortalPrimitives'
 
 interface CurrentPeriodOverviewProps {
   subscription: schemas['CustomerSubscription']
@@ -129,17 +133,17 @@ export const CurrentPeriodOverview = ({
       : subscription.current_period_end
 
   // Determine header and label based on subscription state
-  let headerTitle = 'Next Charge'
-  let dateLabel = 'Next Invoice'
+  let headerTitle = 'Next charge'
+  let dateLabel = 'Due'
 
   if (isTrialing) {
-    headerTitle = 'First Charge After Trial'
-    dateLabel = 'Trial Ends'
+    headerTitle = 'First charge after trial'
+    dateLabel = 'Trial ends'
   } else if (isCancelingAtPeriodEnd) {
-    headerTitle = 'Final Charge'
-    dateLabel = 'Subscription Ends'
+    headerTitle = 'Final charge'
+    dateLabel = 'Ends'
   } else if (isResumingCharge) {
-    headerTitle = 'Charge on Resume'
+    headerTitle = 'Charge on resume'
     dateLabel = 'Resumes'
   }
 
@@ -156,7 +160,7 @@ export const CurrentPeriodOverview = ({
     return product.name
   }
 
-  const chargeDateLabel = `${dateLabel} — ${
+  const chargeDateLabel = `${dateLabel} ${
     chargeDate
       ? new Date(chargeDate).toLocaleDateString('en-US', {
           dateStyle: 'medium',
@@ -164,171 +168,135 @@ export const CurrentPeriodOverview = ({
       : 'N/A'
   }`
 
+  const format = (amount: number) =>
+    formatCurrency('compact')(amount, subscription.currency)
+
+  const footnote = isCancelingAtPeriodEnd
+    ? `This will be the final charge before the subscription ends.${
+        hasMeters
+          ? ' Final amount may vary based on usage until the end of the billing period.'
+          : ''
+      }`
+    : hasMeters
+      ? isActive
+        ? 'Final charges may vary based on usage until the end of the billing period.'
+        : isTrialing
+          ? 'Final charges may vary based on usage during the trial period.'
+          : 'Final charges may vary.'
+      : null
+
   return (
-    <OverviewSummaryCard title={headerTitle} meta={chargeDateLabel}>
-      {product && subscriptionPreview && (
-        <div className="flex items-center justify-between">
-          <span className="dark:text-polar-400 text-gray-600">
-            {productLabel()}
-          </span>
-          <span
-            className={isCancelingAtPeriodEnd ? 'text-gray-500' : 'font-medium'}
-          >
-            {isCancelingAtPeriodEnd ? (
-              'Canceled'
-            ) : showLockedBaseAmount ? (
-              <AmountLabel
-                amount={subscriptionPreview.base_amount}
-                currency={subscription.currency}
-                interval={subscription.recurring_interval}
-                intervalCount={subscription.recurring_interval_count}
-              />
-            ) : (
-              <ProductPriceLabel
-                product={product}
-                currency={subscription.currency}
-              />
-            )}
-          </span>
-        </div>
-      )}
+    <Box
+      flexDirection="column"
+      rowGap="m"
+      paddingTop="l"
+      borderTopWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
+    >
+      <Box justifyContent="between" alignItems="baseline" columnGap="l">
+        <Box as="span" color="text-primary">
+          {headerTitle}
+        </Box>
+        <PortalText tone="secondary" className="text-sm">
+          {chargeDateLabel}
+        </PortalText>
+      </Box>
 
-      {hasProrations && (
-        <>
-          <span className="font-medium">Prorations</span>
-
-          {prorations.map((proration, index) => (
-            <div key={index} className="flex items-center justify-between">
-              <span className="dark:text-polar-400 text-gray-600">
-                {proration.label}
-              </span>
-              <span className="font-medium">
-                {formatCurrency('compact')(
-                  proration.amount,
-                  subscription.currency,
-                )}
-              </span>
-            </div>
-          ))}
-        </>
-      )}
-
-      {hasMeters && (
-        <>
-          <span className="font-medium">Metered Charges</span>
-
-          {subscription.meters.map((meter) => (
-            <div key={meter.id} className="flex items-center justify-between">
-              <span className="dark:text-polar-400 text-gray-600">
-                {meter.meter.name}
-              </span>
-              <span className="font-medium">
-                {formatCurrency('compact')(meter.amount, subscription.currency)}
-              </span>
-            </div>
-          ))}
-        </>
-      )}
-
-      <div className="dark:border-polar-700 mt-2 border-t border-gray-200 pt-2">
-        {(hasTaxes || hasDiscount) && (
-          <div className="dark:text-polar-500 mb-1.5 flex items-center justify-between text-gray-500">
-            <span>Subtotal</span>
-            <span>
-              {formatCurrency('compact')(
-                subscriptionPreview.subtotal_amount,
-                subscription.currency,
-              )}
-            </span>
-          </div>
-        )}
-
-        {hasDiscount && (
-          <div className="dark:text-polar-500 mb-1 flex items-center justify-between text-gray-500">
-            <span>Discount</span>
-            <span>
-              {formatCurrency('compact')(
-                -1 * subscriptionPreview.discount_amount,
-                subscription.currency,
-              )}
-            </span>
-          </div>
-        )}
-
-        {hasTaxes && (
-          <div className="dark:text-polar-500 mb-1 flex items-center justify-between text-gray-500">
-            <span>Taxes</span>
-            <span>
-              {formatCurrency('compact')(
-                subscriptionPreview.tax_amount,
-                subscription.currency,
-              )}
-            </span>
-          </div>
-        )}
-
-        <div className="flex items-center justify-between">
-          <span className="font-medium">
-            {hasMeters ? 'Estimated Total' : 'Total'}
-          </span>
-          <span className="text-lg font-medium">
-            {subscriptionPreview ? (
-              formatCurrency('compact')(
-                subscriptionPreview.total_amount,
-                subscription.currency,
+      <PortalRows>
+        {product && subscriptionPreview && (
+          <PortalRow
+            label={productLabel()}
+            value={
+              isCancelingAtPeriodEnd ? (
+                'Canceled'
+              ) : showLockedBaseAmount ? (
+                <AmountLabel
+                  amount={subscriptionPreview.base_amount}
+                  currency={subscription.currency}
+                  interval={subscription.recurring_interval}
+                  intervalCount={subscription.recurring_interval_count}
+                />
+              ) : (
+                <ProductPriceLabel
+                  product={product}
+                  currency={subscription.currency}
+                />
               )
-            ) : (
-              <span className="dark:text-polar-500 animate-pulse text-gray-500">
-                Loading…
-              </span>
-            )}
-          </span>
-        </div>
+            }
+          />
+        )}
+        {prorations.map((proration, index) => (
+          <PortalRow
+            key={index}
+            label={proration.label}
+            value={format(proration.amount)}
+          />
+        ))}
+        {subscription.meters.map((meter) => (
+          <PortalRow
+            key={meter.id}
+            label={meter.meter.name}
+            value={format(meter.amount)}
+          />
+        ))}
+      </PortalRows>
 
+      <PortalDivider />
+
+      <PortalRows>
+        {(hasTaxes || hasDiscount) && (
+          <PortalRow
+            label="Subtotal"
+            value={format(subscriptionPreview.subtotal_amount)}
+          />
+        )}
+        {hasDiscount && (
+          <PortalRow
+            label="Discount"
+            value={format(-1 * subscriptionPreview.discount_amount)}
+          />
+        )}
+        {hasTaxes && (
+          <PortalRow
+            label="Taxes"
+            value={format(subscriptionPreview.tax_amount)}
+          />
+        )}
+        <PortalRow
+          emphasis
+          label={hasMeters ? 'Estimated total' : 'Total'}
+          value={
+            subscriptionPreview ? (
+              format(subscriptionPreview.total_amount)
+            ) : (
+              <PortalText tone="tertiary" className="animate-pulse">
+                Loading…
+              </PortalText>
+            )
+          }
+        />
         {subscriptionPreview &&
           subscriptionPreview.applied_balance_amount !== 0 && (
-            <Box flexDirection="column" rowGap="xs" marginTop="xs">
-              <Box justifyContent="between" alignItems="center">
-                <Text variant="body" color="muted">
-                  Applied balance
-                </Text>
-                <Text as="span" variant="body" color="muted" tabularNums>
-                  {formatCurrency('compact')(
-                    subscriptionPreview.applied_balance_amount,
-                    subscription.currency,
-                  )}
-                </Text>
-              </Box>
-              <Box justifyContent="between" alignItems="center">
-                <Text variant="body">To be paid</Text>
-                <Text as="span" variant="body" tabularNums>
-                  {formatCurrency('compact')(
-                    subscriptionPreview.due_amount,
-                    subscription.currency,
-                  )}
-                </Text>
-              </Box>
-            </Box>
+            <>
+              <PortalRow
+                label="Applied balance"
+                value={format(subscriptionPreview.applied_balance_amount)}
+              />
+              <PortalRow
+                emphasis
+                label="To be paid"
+                value={format(subscriptionPreview.due_amount)}
+              />
+            </>
           )}
+      </PortalRows>
 
-        {isCancelingAtPeriodEnd && (
-          <p className="max-w-sm text-xs text-gray-500">
-            This will be the final charge before the subscription ends.
-            {hasMeters &&
-              ' Final amount may vary based on usage until the end of the billing period.'}
-          </p>
-        )}
-
-        {!isCancelingAtPeriodEnd && hasMeters && (
-          <p className="max-w-sm text-xs text-gray-500">
-            {isActive
-              ? 'Final charges may vary based on usage until the end of the billing period.'
-              : isTrialing
-                ? 'Final charges may vary based on usage during the trial period.'
-                : 'Final charges may vary.'}
-          </p>
-        )}
-      </div>
-    </OverviewSummaryCard>
+      {footnote && (
+        <PortalText tone="tertiary" className="text-xs">
+          {footnote}
+        </PortalText>
+      )}
+    </Box>
   )
 }

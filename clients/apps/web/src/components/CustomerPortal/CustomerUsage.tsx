@@ -2,14 +2,74 @@
 
 import { useCustomerCustomerMeters } from '@/hooks/queries/customerPortal'
 import Search from '@mui/icons-material/Search'
-import { Client } from '@polar-sh/client'
-import { DataTable } from '@polar-sh/orbit'
-import { Input } from '@polar-sh/orbit'
-import { Tabs, TabsContent } from '@polar-sh/orbit'
+import { Client, schemas } from '@polar-sh/client'
+import { Grid, Input, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { useMemo, useState } from 'react'
 import FormattedUnits from '../Meter/FormattedUnits'
+import {
+  PortalCard,
+  PortalEmptyState,
+  PortalPageHeader,
+  PortalRow,
+  PortalRows,
+  PortalText,
+} from './PortalPrimitives'
+
 export interface CustomerUsageProps {
   api: Client
+}
+
+const MeterCard = ({
+  customerMeter,
+}: {
+  customerMeter: schemas['CustomerCustomerMeter']
+}) => {
+  const { meter, consumed_units, credited_units, balance } = customerMeter
+  const consumedRatio =
+    credited_units > 0 ? Math.min(consumed_units / credited_units, 1) : null
+
+  return (
+    <PortalCard>
+      <Box flexDirection="column" rowGap="xs">
+        <PortalText tone="secondary" className="truncate text-sm">
+          {meter.name}
+        </PortalText>
+        <Text variant="heading-xs" as="p" tabularNums>
+          <FormattedUnits value={balance} />
+        </Text>
+        <PortalText tone="tertiary" className="text-xs">
+          Remaining balance
+        </PortalText>
+      </Box>
+      {consumedRatio !== null && (
+        <Box
+          height={4}
+          width="100%"
+          borderRadius="full"
+          overflow="hidden"
+          backgroundColor="background-card"
+        >
+          <Box
+            height="100%"
+            borderRadius="full"
+            backgroundColor="background-inverse"
+            width={`${consumedRatio * 100}%`}
+          />
+        </Box>
+      )}
+      <PortalRows>
+        <PortalRow
+          label="Consumed"
+          value={<FormattedUnits value={consumed_units} />}
+        />
+        <PortalRow
+          label="Credited"
+          value={<FormattedUnits value={credited_units} />}
+        />
+      </PortalRows>
+    </PortalCard>
+  )
 }
 
 export const CustomerUsage = ({ api }: CustomerUsageProps) => {
@@ -18,97 +78,47 @@ export const CustomerUsage = ({ api }: CustomerUsageProps) => {
   const customerMeters = useMemo(() => data?.items ?? [], [data])
 
   return (
-    <div className="flex flex-col">
-      <Tabs defaultValue="meters">
-        <div className="flex flex-row items-center justify-between gap-x-12">
-          <h3 className="text-2xl">Usage</h3>
-        </div>
-        <TabsContent className="flex flex-col gap-y-12 pt-4" value="meters">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col items-center gap-4 lg:flex-row">
-              <div className="w-full lg:w-1/3">
-                <Input
-                  className="w-full bg-white shadow-xs"
-                  preSlot={<Search fontSize="inherit" />}
-                  placeholder="Search Usage Meter"
-                  value={query || ''}
-                  onChange={(e) => setQuery(e.target.value)}
+    <>
+      <PortalPageHeader
+        title="Usage"
+        description="Consumption and remaining balance per meter"
+      />
+      <Box flexDirection="column" rowGap="l">
+        <Input
+          preSlot={<Search fontSize="inherit" />}
+          placeholder="Search meters"
+          value={query || ''}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        {isLoading ? (
+          <Grid templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)' }} gap="s">
+            {[0, 1].map((i) => (
+              <div key={i} className="animate-pulse">
+                <Box
+                  height={180}
+                  borderRadius="l"
+                  backgroundColor="background-secondary"
                 />
               </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-6">
-            <h3 className="text-xl">Overview</h3>
-            <DataTable
-              isLoading={isLoading}
-              columns={[
-                {
-                  header: 'Name',
-                  accessorKey: 'meter_name',
-                  cell: ({
-                    row: {
-                      original: { meter },
-                    },
-                  }) => {
-                    return (
-                      <div className="flex items-center gap-2">
-                        <div className="relative h-3 w-3">
-                          <div className="dark:border-polar-700 absolute h-full w-full rounded-full border-2 border-gray-200" />
-                          <div
-                            className="absolute h-full w-full rounded-full border-2 border-blue-500"
-                            style={{
-                              clipPath:
-                                'polygon(0 0, 100% 0, 100% 100%, 0% 100%)',
-                              transform: 'rotate(-90deg)',
-                              transition: 'all 0.3s ease',
-                            }}
-                          />
-                        </div>
-                        <span>{meter.name}</span>
-                      </div>
-                    )
-                  },
-                },
-                {
-                  header: 'Consumed',
-                  accessorKey: 'consumed_units',
-                  cell: ({
-                    row: {
-                      original: { consumed_units },
-                    },
-                  }) => {
-                    return <FormattedUnits value={consumed_units} />
-                  },
-                },
-                {
-                  header: 'Credited',
-                  accessorKey: 'credited_units',
-                  cell: ({
-                    row: {
-                      original: { credited_units },
-                    },
-                  }) => {
-                    return <FormattedUnits value={credited_units} />
-                  },
-                },
-                {
-                  header: 'Balance',
-                  accessorKey: 'balance',
-                  cell: ({
-                    row: {
-                      original: { balance },
-                    },
-                  }) => {
-                    return <FormattedUnits value={balance} />
-                  },
-                },
-              ]}
-              data={customerMeters}
-            />
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
+            ))}
+          </Grid>
+        ) : customerMeters.length > 0 ? (
+          <Grid templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)' }} gap="s">
+            {customerMeters.map((customerMeter) => (
+              <MeterCard key={customerMeter.id} customerMeter={customerMeter} />
+            ))}
+          </Grid>
+        ) : (
+          <PortalEmptyState
+            title="No usage yet"
+            description={
+              query
+                ? 'No meters match your search.'
+                : 'Usage will appear here once you start consuming metered features.'
+            }
+          />
+        )}
+      </Box>
+    </>
   )
 }

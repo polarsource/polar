@@ -3,17 +3,22 @@
 import { usePortalAuthenticatedUser } from '@/hooks/queries/customerPortal'
 import { createClientSideAPI } from '@/utils/client'
 import { hasBillingPermission } from '@/utils/customerPortal'
-import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
 import { schemas } from '@polar-sh/client'
-import { CurrentPeriodOverview } from './CurrentPeriodOverview'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
 import { CustomerPortalOrders } from './CustomerPortalOrders'
 import {
   ActiveSubscriptionsOverview,
   InactiveSubscriptionsOverview,
 } from './CustomerPortalSubscriptions'
-import { EmptyState } from '../Shared/EmptyState'
 import { LatestPurchaseOverview } from './LatestPurchaseOverview'
+import {
+  PortalCardList,
+  PortalEmptyState,
+  PortalListItem,
+  PortalPageHeader,
+  PortalSection,
+} from './PortalPrimitives'
+
 export interface CustomerPortalProps {
   organization: schemas['CustomerOrganization']
   products: schemas['CustomerProduct'][]
@@ -57,61 +62,41 @@ export const CustomerPortalOverview = ({
     activeOwnedSubscriptions.length > 0 || activeClaimedSubscriptions.length > 0
 
   return (
-    <div className="flex flex-col gap-y-12">
-      {/* Billing sections - only visible to users with billing permissions */}
+    <>
+      <PortalPageHeader
+        title="Overview"
+        description={
+          authenticatedUser?.name
+            ? `Welcome back, ${authenticatedUser.name}`
+            : 'Your subscriptions, orders and benefits'
+        }
+      />
+
       {canManageBilling && activeOwnedSubscriptions.length > 0 && (
-        <div className="flex flex-col gap-y-12">
-          <div className="flex flex-col gap-y-4">
-            {activeOwnedSubscriptions.map((s) => (
-              <CurrentPeriodOverview
-                key={s.id}
-                products={products}
-                subscription={s}
-                api={api}
-              />
-            ))}
-          </div>
-          <ActiveSubscriptionsOverview
-            api={api}
-            organization={organization}
-            products={products}
-            subscriptions={activeOwnedSubscriptions}
-            customerSessionToken={customerSessionToken}
-          />
-        </div>
-      )}
-
-      {/* Team Seat Access - visible to all users */}
-      {activeClaimedSubscriptions.length > 0 && (
-        <div className="flex flex-col gap-y-4">
-          <div className="flex flex-col gap-y-2">
-            <h3 className="text-xl">Team Seat Access</h3>
-            <p className="dark:text-polar-500 text-gray-500">
-              Access provided through team subscription
-            </p>
-          </div>
-          {activeClaimedSubscriptions.map((s) => (
-            <div
-              key={s.id}
-              className="dark:bg-polar-900 flex justify-between rounded-2xl bg-gray-50 px-6 py-4"
-            >
-              <div className="flex flex-col gap-1">
-                <span>{s.product.name}</span>
-                <span className="dark:text-polar-500 text-sm text-gray-500">
-                  {s.product.organization.name}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {hasAnyActiveSubscriptions && canManageBilling && orders.length > 0 && (
-        <CustomerPortalOrders
+        <ActiveSubscriptionsOverview
+          api={api}
           organization={organization}
-          orders={orders}
+          products={products}
+          subscriptions={activeOwnedSubscriptions}
           customerSessionToken={customerSessionToken}
         />
+      )}
+
+      {activeClaimedSubscriptions.length > 0 && (
+        <PortalSection
+          title="Team access"
+          description="Access provided through a team subscription"
+        >
+          <PortalCardList>
+            {activeClaimedSubscriptions.map((s) => (
+              <PortalListItem
+                key={s.id}
+                title={s.product.name}
+                subtitle={s.product.organization.name}
+              />
+            ))}
+          </PortalCardList>
+        </PortalSection>
       )}
 
       {!hasAnyActiveSubscriptions && canManageBilling && latestOrder && (
@@ -120,10 +105,9 @@ export const CustomerPortalOverview = ({
 
       {!hasAnyActiveSubscriptions &&
         !(canManageBilling && orders.length > 0) && (
-          <EmptyState
-            icon={<AllInclusiveOutlined />}
+          <PortalEmptyState
             title={
-              canManageBilling ? 'No Active Subscriptions' : 'No Team Access'
+              canManageBilling ? 'No active subscriptions' : 'No team access'
             }
             description={
               canManageBilling
@@ -133,10 +117,17 @@ export const CustomerPortalOverview = ({
           />
         )}
 
-      {/* Benefit Grants - visible to all users */}
       <CustomerPortalGrants api={api} />
 
-      {/* Inactive subscriptions - only visible to users with billing permissions */}
+      {hasAnyActiveSubscriptions && canManageBilling && orders.length > 0 && (
+        <CustomerPortalOrders
+          organization={organization}
+          orders={orders}
+          customerSessionToken={customerSessionToken}
+          limit={5}
+        />
+      )}
+
       {canManageBilling && inactiveOwnedSubscriptions.length > 0 && (
         <InactiveSubscriptionsOverview
           organization={organization}
@@ -146,6 +137,6 @@ export const CustomerPortalOverview = ({
           products={products}
         />
       )}
-    </div>
+    </>
   )
 }

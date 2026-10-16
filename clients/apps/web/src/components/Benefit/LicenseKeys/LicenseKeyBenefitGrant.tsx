@@ -44,14 +44,14 @@ const LicenseKey = ({
     const { error } = await rotateLicenseKey.mutateAsync()
     if (error) {
       toast({
-        title: 'License Key Rotation Failed',
+        title: 'License key rotation failed',
         description: extractApiErrorMessage(error),
       })
       return
     }
 
     toast({
-      title: 'License Key Rotated',
+      title: 'License key rotated',
       description:
         'The previous key no longer validates. Copy your new key below.',
     })

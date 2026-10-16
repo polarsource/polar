@@ -9,7 +9,7 @@ export const OrderStatusDisplayTitle: Record<
   paid: 'Paid',
   pending: 'Pending',
   refunded: 'Refunded',
-  partially_refunded: 'Partially Refunded',
+  partially_refunded: 'Partially refunded',
   void: 'Void',
 }
 

@@ -70,7 +70,7 @@ export const LicenseKeysList = ({
       id: 'license_key',
       enableSorting: false,
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="License Key" />
+        <DataTableColumnHeader column={column} title="License key" />
       ),
       cell: ({ row: { original: licenseKey } }) => {
         return (

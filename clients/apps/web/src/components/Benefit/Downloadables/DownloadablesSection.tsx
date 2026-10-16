@@ -29,7 +29,7 @@ const DownloadFileButton = ({
   const onDownload = useCallback(() => {
     const showFailure = (reason: string) =>
       toast({
-        title: 'File Download Failed',
+        title: 'File download failed',
         description: `Error downloading file ${file.name}: ${reason}`,
       })
 

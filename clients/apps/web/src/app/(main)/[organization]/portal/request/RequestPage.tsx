@@ -4,7 +4,7 @@ import { useCustomerPortalSessionRequest } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
 
 import { api } from '@/utils/client'
@@ -16,12 +16,12 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { Label } from '@polar-sh/ui/components/ui/label'
 import {
   RadioGroup,
   RadioGroupItem,
 } from '@polar-sh/ui/components/ui/radio-group'
 import { useCallback, useState } from 'react'
+import { PortalAuthHeader, PortalAuthShell } from '../PortalShell'
 import { useForm } from 'react-hook-form'
 
 interface CustomerSelectionOption {
@@ -89,38 +89,46 @@ const ClientPage = ({
 
   if (showCustomerPicker) {
     return (
-      <ShadowBox className="flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24">
-        <div className="flex w-full flex-col gap-y-6 md:max-w-sm">
-          <div className="flex flex-col gap-4">
-            <h2 className="text-2xl text-black dark:text-white">
-              Select an account
-            </h2>
-            <p className="dark:text-polar-400 text-gray-500">
-              Multiple accounts are associated with this email. Please select
-              the account you want to access.
-            </p>
-          </div>
+      <PortalAuthShell organization={organization}>
+        <Box flexDirection="column" rowGap="xl">
+          <PortalAuthHeader
+            title="Select an account"
+            description="Multiple accounts are associated with this email. Select the account you want to access."
+          />
           <RadioGroup
             value={selectedCustomerId}
             onValueChange={setSelectedCustomerId}
             className="flex flex-col gap-3"
           >
             {customers.map((customer) => (
-              <div
+              <Box
+                as="label"
                 key={customer.id}
-                className="dark:hover:bg-polar-800 flex items-center space-x-3 rounded-lg border p-4 hover:bg-gray-50"
+                htmlFor={customer.id}
+                display="flex"
+                alignItems="center"
+                columnGap="m"
+                padding="l"
+                borderRadius="l"
+                borderWidth={1}
+                borderStyle="solid"
+                borderColor="border-primary"
+                backgroundColor={{
+                  base: 'background-primary',
+                  hover: 'background-secondary',
+                }}
+                cursor="pointer"
+                transitionProperty="colors"
+                transitionDuration="fast"
               >
                 <RadioGroupItem value={customer.id} id={customer.id} />
-                <Label
-                  htmlFor={customer.id}
-                  className="flex-1 cursor-pointer font-medium"
-                >
+                <Box as="span" flex={1} color="text-primary">
                   {customer.name || 'Unnamed account'}
-                </Label>
-              </div>
+                </Box>
+              </Box>
             ))}
           </RadioGroup>
-          <div className="flex gap-3">
+          <Box columnGap="s">
             <Button
               variant="ghost"
               size="lg"
@@ -141,25 +149,22 @@ const ClientPage = ({
             >
               Continue
             </Button>
-          </div>
-        </div>
-      </ShadowBox>
+          </Box>
+        </Box>
+      </PortalAuthShell>
     )
   }
 
   return (
-    <ShadowBox className="flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24">
-      <div className="flex w-full flex-col gap-y-6 md:max-w-sm">
-        <div className="flex flex-col gap-4">
-          <h2 className="text-2xl text-black dark:text-white">Sign in</h2>
-          <p className="dark:text-polar-400 text-gray-500">
-            Enter your email address to access your purchases. A verification
-            code will be sent to you.
-          </p>
-        </div>
+    <PortalAuthShell organization={organization}>
+      <Box flexDirection="column" rowGap="xl">
+        <PortalAuthHeader
+          title="Sign in"
+          description="Enter your email address to access your purchases. We'll send you a verification code."
+        />
         <Form {...form}>
           <form
-            className="flex w-full flex-col gap-y-6"
+            className="flex w-full flex-col gap-y-4"
             onSubmit={handleSubmit((data) => onSubmit(data))}
           >
             <FormField
@@ -177,7 +182,6 @@ const ClientPage = ({
                         required
                         placeholder="Email address"
                         autoComplete="email"
-                        className="bg-white shadow-xs"
                         {...field}
                       />
                     </FormControl>
@@ -196,8 +200,8 @@ const ClientPage = ({
             </Button>
           </form>
         </Form>
-      </div>
-    </ShadowBox>
+      </Box>
+    </PortalAuthShell>
   )
 }
 

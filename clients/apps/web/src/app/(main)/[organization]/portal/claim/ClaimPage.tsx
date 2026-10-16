@@ -5,8 +5,10 @@ import { CONFIG } from '@/utils/config'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import ErrorOutlined from '@mui/icons-material/ErrorOutlined'
 import { schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+import { Alert, Button } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
+import { PortalText } from '@/components/CustomerPortal/PortalPrimitives'
+import { PortalAuthHeader, PortalAuthShell } from '../PortalShell'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -140,115 +142,90 @@ export default function ClientPage({
     }
   }, [claimInfo?.product_id, claimMutation, organization.slug, router])
 
-  if (!invitationToken) {
-    return (
-      <div className="flex flex-col items-center">
-        <ShadowBox className="flex w-full max-w-2xl flex-col items-center gap-6 p-12">
-          <ErrorOutlined fontSize="large" />
-          <div className="flex flex-col items-center gap-2 text-center">
-            <h2 className="text-xl">Missing Invitation Token</h2>
-            <p className="dark:text-polar-500 text-gray-500">
-              This page requires a valid invitation token in the URL.
-            </p>
-          </div>
-        </ShadowBox>
-      </div>
-    )
-  }
+  const content = (() => {
+    if (!invitationToken) {
+      return (
+        <ClaimStatus
+          icon={<ErrorOutlined fontSize="inherit" />}
+          title="Missing invitation token"
+          description="This page requires a valid invitation token in the URL."
+        />
+      )
+    }
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center">
-        <ShadowBox className="flex w-full max-w-2xl flex-col items-center gap-6 p-12">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <p className="dark:text-polar-400 text-gray-500">
-            Loading invitation details...
-          </p>
-        </ShadowBox>
-      </div>
-    )
-  }
+    if (isLoading) {
+      return (
+        <ClaimStatus
+          icon={<Loader2 className="h-6 w-6 animate-spin" />}
+          title="Loading invitation"
+          description="Fetching your invitation details…"
+        />
+      )
+    }
 
-  if (fetchError || !claimInfo) {
-    return (
-      <div className="flex flex-col items-center">
-        <ShadowBox className="flex w-full max-w-2xl flex-col items-center gap-6 p-12">
-          <ErrorOutlined fontSize="large" />
-          <div className="flex flex-col items-center gap-4 text-center">
-            <h2 className="text-xl">Invalid Invitation</h2>
-            <p className="dark:text-polar-500 text-gray-500">
-              This invitation link is invalid, has expired, or has already been
-              claimed. Contact the person who invited you to resend the
-              invitation.
-            </p>
-          </div>
-        </ShadowBox>
-      </div>
-    )
-  }
+    if (fetchError || !claimInfo) {
+      return (
+        <ClaimStatus
+          icon={<ErrorOutlined fontSize="inherit" />}
+          title="Invalid invitation"
+          description="This invitation link is invalid, has expired, or has already been claimed. Contact the person who invited you to resend the invitation."
+        />
+      )
+    }
 
-  if (claimingState !== 'idle') {
-    const isRedirecting = claimingState === 'redirecting'
+    if (claimingState !== 'idle') {
+      return claimingState === 'redirecting' ? (
+        <ClaimStatus
+          icon={<CheckOutlined fontSize="inherit" />}
+          title="Seat claimed"
+          description="Redirecting to your portal…"
+        />
+      ) : (
+        <ClaimStatus
+          icon={<Loader2 className="h-6 w-6 animate-spin" />}
+          title={fulfillmentLabel || 'Claiming benefits…'}
+          description="Please wait while we set up your access."
+        />
+      )
+    }
 
     return (
-      <div className="flex flex-col items-center">
-        <ShadowBox className="flex w-full max-w-2xl flex-col items-center gap-6 p-12">
-          {isRedirecting ? (
-            <>
-              <CheckOutlined fontSize="large" />
-              <div className="flex flex-col items-center gap-2 text-center">
-                <h2 className="text-xl font-medium">Success!</h2>
-                <p className="dark:text-polar-500 text-gray-500">
-                  Redirecting to your portal...
-                </p>
-              </div>
-            </>
-          ) : (
-            <>
-              <Loader2 className="h-8 w-8 animate-spin" />
-              <div className="flex flex-col items-center gap-2 text-center">
-                <h2 className="text-xl">
-                  {fulfillmentLabel || 'Claiming benefits...'}
-                </h2>
-                <p className="dark:text-polar-500 text-sm text-gray-500">
-                  Please wait while we set up your access
-                </p>
-              </div>
-            </>
-          )}
-        </ShadowBox>
-      </div>
+      <Box flexDirection="column" rowGap="xl">
+        <PortalAuthHeader
+          title="Claim your seat"
+          description={`You've been invited to ${claimInfo.product_name} on ${claimInfo.organization_name}.`}
+        />
+        <Button onClick={handleClaim} size="lg" fullWidth>
+          Claim seat
+        </Button>
+        {(claimError || claimMutation.error) && (
+          <Alert
+            variant="danger"
+            title={claimError || claimMutation.error?.message || ''}
+          />
+        )}
+      </Box>
     )
-  }
+  })()
 
   return (
-    <div className="flex flex-col items-center">
-      <ShadowBox className="flex w-full max-w-2xl flex-col gap-8 p-8 md:p-12">
-        <div className="flex flex-col gap-4">
-          <h2 className="text-xl">Claim your seat</h2>
-          <p className="dark:text-polar-500 text-gray-500">
-            You&apos;ve been invited to {claimInfo.product_name} on{' '}
-            {claimInfo.organization_name}.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <Button
-            onClick={handleClaim}
-            loading={claimingState !== 'idle'}
-            disabled={claimingState !== 'idle'}
-            size="lg"
-          >
-            {claimingState !== 'idle' ? 'Claiming...' : 'Claim seat'}
-          </Button>
-
-          {(claimError || claimMutation.error) && (
-            <div className="rounded-lg bg-red-50 p-4 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-              {claimError || claimMutation.error?.message}
-            </div>
-          )}
-        </div>
-      </ShadowBox>
-    </div>
+    <PortalAuthShell organization={organization}>{content}</PortalAuthShell>
   )
 }
+
+const ClaimStatus = ({
+  icon,
+  title,
+  description,
+}: {
+  icon: React.ReactNode
+  title: string
+  description: string
+}) => (
+  <Box flexDirection="column" rowGap="l">
+    <PortalText tone="secondary" className="text-2xl">
+      {icon}
+    </PortalText>
+    <PortalAuthHeader title={title} description={description} />
+  </Box>
+)

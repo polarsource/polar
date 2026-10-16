@@ -7,6 +7,7 @@ import {
   useRemoveCustomerPortalMember,
   useUpdateCustomerPortalMember,
 } from '@/hooks/queries/customerPortal'
+import { PortalCardList, PortalListItem, PortalText } from './PortalPrimitives'
 import { useCopyMemberLoginLink } from '@/hooks/useCopyMemberLoginLink'
 import { validateEmail } from '@/utils/validation'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
@@ -27,6 +28,7 @@ import {
   SelectValue,
 } from '@polar-sh/orbit'
 import { useState } from 'react'
+import { Box } from '@polar-sh/orbit/Box'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { toast } from '../Toast/use-toast'
 
@@ -37,13 +39,13 @@ interface CustomerPortalTeamSectionProps {
 
 const roleDisplayNames: Record<string, string> = {
   owner: 'Owner',
-  billing_manager: 'Billing Manager',
+  billing_manager: 'Billing manager',
   member: 'Member',
 }
 
 const availableRoles = [
   { value: 'owner', label: 'Owner' },
-  { value: 'billing_manager', label: 'Billing Manager' },
+  { value: 'billing_manager', label: 'Billing manager' },
   { value: 'member', label: 'Member' },
 ] as const
 
@@ -171,146 +173,128 @@ export const CustomerPortalTeamSection = ({
   const memberToRemoveData = membersList.find((m) => m.id === memberToRemove)
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-y-4">
-        <div className="flex items-start gap-4">
-          <div className="flex-1">
-            <Input
-              type="email"
-              placeholder="email@example.com"
-              value={newMemberEmail}
-              onChange={(e) => {
-                setNewMemberEmail(e.target.value)
-                setAddMemberError(undefined)
-              }}
-              disabled={isAddingMember}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleAddMember()
-                }
-              }}
+    <Box flexDirection="column" rowGap="l">
+      <Box
+        flexDirection={{ base: 'column', sm: 'row' }}
+        alignItems={{ base: 'stretch', sm: 'start' }}
+        gap="s"
+      >
+        <Box flexDirection="column" flex={1} rowGap="xs">
+          <Input
+            type="email"
+            placeholder="email@example.com"
+            value={newMemberEmail}
+            onChange={(e) => {
+              setNewMemberEmail(e.target.value)
+              setAddMemberError(undefined)
+            }}
+            disabled={isAddingMember}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleAddMember()
+              }
+            }}
+          />
+          {addMemberError && (
+            <PortalText tone="danger" className="text-xs">
+              {addMemberError}
+            </PortalText>
+          )}
+        </Box>
+        <Button
+          onClick={handleAddMember}
+          disabled={!newMemberEmail.trim() || isAddingMember}
+          loading={isAddingMember}
+        >
+          Invite billing manager
+        </Button>
+      </Box>
+
+      <PortalCardList>
+        {membersList.map((member) => {
+          const isCurrentUser = member.id === currentMemberId
+          const isLoading = loadingMembers.has(member.id)
+
+          return (
+            <PortalListItem
+              key={member.id}
+              title={
+                <>
+                  {member.name || member.email}
+                  {isCurrentUser && (
+                    <PortalText tone="tertiary" className="ml-2">
+                      You
+                    </PortalText>
+                  )}
+                </>
+              }
+              subtitle={member.name ? member.email : undefined}
+              actions={
+                <>
+                  <Select
+                    value={member.role}
+                    onValueChange={(newRole) =>
+                      handleRoleChange(member.id, member.name, newRole)
+                    }
+                    disabled={isCurrentUser || isLoading}
+                  >
+                    <SelectTrigger className="w-[160px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableRoles.map((role) => (
+                        <SelectItem key={role.value} value={role.value}>
+                          {role.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {isCurrentUser ? (
+                    <Box width={40} />
+                  ) : (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild disabled={isLoading}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Member actions"
+                        >
+                          <MoreVertOutlined fontSize="inherit" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => copyMemberLoginLink(member.email)}
+                          disabled={isLoading}
+                        >
+                          Copy login link
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setMemberToRemove(member.id)}
+                          disabled={isLoading}
+                          className="text-red-500 focus:text-red-500"
+                        >
+                          Remove from team
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </>
+              }
             />
-            {addMemberError && (
-              <p className="mt-1 text-xs text-red-500">{addMemberError}</p>
-            )}
-          </div>
-          <Button
-            onClick={handleAddMember}
-            disabled={!newMemberEmail.trim() || isAddingMember}
-            loading={isAddingMember}
-          >
-            Invite billing manager
-          </Button>
-        </div>
-      </div>
-
-      <div className="dark:border-polar-700 overflow-hidden rounded-2xl border border-gray-200">
-        <table className="w-full table-fixed caption-bottom text-sm">
-          <thead className="[&_tr]:border-b">
-            <tr className="dark:bg-polar-800 border-b bg-gray-50 transition-colors">
-              <th className="text-muted-foreground h-12 px-4 text-left align-middle font-medium">
-                Member
-              </th>
-              <th className="text-muted-foreground h-12 w-[180px] px-4 text-left align-middle font-medium">
-                Role
-              </th>
-              <th className="text-muted-foreground h-12 w-[60px] px-4 text-left align-middle font-medium" />
-            </tr>
-          </thead>
-          <tbody className="[&_tr:last-child]:border-0">
-            {membersList.map((member) => {
-              const isCurrentUser = member.id === currentMemberId
-              const isLoading = loadingMembers.has(member.id)
-
-              return (
-                <tr key={member.id} className="border-b transition-colors">
-                  <td className="p-4 align-middle">
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">
-                          {member.name || member.email}
-                        </span>
-                        {isCurrentUser && (
-                          <span className="dark:text-polar-500 text-xs text-gray-500">
-                            (you)
-                          </span>
-                        )}
-                      </div>
-                      {member.name && (
-                        <span className="dark:text-polar-500 text-xs text-gray-500">
-                          {member.email}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="p-4 align-middle">
-                    <Select
-                      value={member.role}
-                      onValueChange={(newRole) =>
-                        handleRoleChange(member.id, member.name, newRole)
-                      }
-                      disabled={isCurrentUser || isLoading}
-                    >
-                      <SelectTrigger className="w-[160px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableRoles.map((role) => (
-                          <SelectItem key={role.value} value={role.value}>
-                            {role.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </td>
-                  <td className="p-4 align-middle">
-                    {!isCurrentUser && (
-                      <div className="flex justify-end">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild disabled={isLoading}>
-                            <Button
-                              className="h-8 w-8"
-                              variant="ghost"
-                              size="icon"
-                            >
-                              <MoreVertOutlined fontSize="inherit" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => copyMemberLoginLink(member.email)}
-                              disabled={isLoading}
-                            >
-                              Copy login link
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => setMemberToRemove(member.id)}
-                              disabled={isLoading}
-                              className="text-red-500 focus:text-red-500"
-                            >
-                              Remove from Team
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
+          )
+        })}
+      </PortalCardList>
 
       <ConfirmModal
         isShown={memberToRemove !== null}
         hide={() => setMemberToRemove(null)}
-        title="Remove Team Member"
+        title="Remove team member"
         description={`Are you sure you want to remove ${memberToRemoveData?.name || memberToRemoveData?.email || 'this member'} from the team? They will lose access to all team resources.`}
         onConfirm={() => memberToRemove && handleRemoveMember(memberToRemove)}
         destructive
         destructiveText="Remove"
       />
-    </div>
+    </Box>
   )
 }

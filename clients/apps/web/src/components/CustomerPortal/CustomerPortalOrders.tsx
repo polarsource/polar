@@ -1,29 +1,40 @@
 import { createClientSideAPI } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
-import { DataTable } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
+import { formatCurrency } from '@polar-sh/currency'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '../Modal/useModal'
 import { OrderStatus } from '../Orders/OrderStatus'
 import CustomerPortalOrder from './CustomerPortalOrder'
+import {
+  PortalCardList,
+  PortalEmptyState,
+  PortalListItem,
+  PortalSection,
+} from './PortalPrimitives'
 
 export interface CustomerPortalOrdersProps {
   organization: schemas['CustomerOrganization']
   orders: schemas['CustomerOrder'][]
   customerSessionToken: string
+  limit?: number
 }
 
 export const CustomerPortalOrders = ({
   organization,
   orders,
   customerSessionToken,
+  limit,
 }: CustomerPortalOrdersProps) => {
   const api = createClientSideAPI(customerSessionToken)
+  const router = useRouter()
 
   const [selectedOrder, setSelectedOrder] = useState<
     schemas['CustomerOrder'] | null
@@ -38,88 +49,88 @@ export const CustomerPortalOrders = ({
     show: showOrderModal,
   } = useModal()
 
-  return (
-    <div className="flex flex-col gap-y-4">
-      <div className="flex flex-row items-center justify-between">
-        <h3 className="text-xl">Order History</h3>
-      </div>
-      <DataTable
-        data={orders ?? []}
-        isLoading={false}
-        columns={[
-          {
-            accessorKey: 'description',
-            header: 'Description',
-          },
-          {
-            accessorKey: 'status',
-            header: 'Status',
-            cell: ({ row }) => (
-              <span className="flex shrink">
-                <OrderStatus status={row.original.status} />
-              </span>
-            ),
-          },
-          {
-            accessorKey: 'created_at',
-            header: 'Date',
-            cell: ({ row }) => (
-              <FormattedDateTime
-                datetime={row.original.created_at}
-                dateStyle="medium"
-                resolution="day"
-              />
-            ),
-          },
-          {
-            accessorKey: 'id',
-            header: '',
-            cell: ({ row }) => {
-              const order = row.original
+  const visibleOrders = limit ? orders.slice(0, limit) : orders
+  const ordersHref = `/${organization.slug}/portal/orders?customer_session_token=${customerSessionToken}`
 
-              return (
-                <span className="flex justify-end gap-2">
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      setSelectedOrder(order)
-                      showOrderModal()
-                    }}
-                    className="hidden md:flex"
-                    size="sm"
+  const openOrder = (order: schemas['CustomerOrder']) => {
+    if (window.matchMedia('(min-width: 768px)').matches) {
+      setSelectedOrder(order)
+      showOrderModal()
+    } else {
+      router.push(
+        `/${organization.slug}/portal/orders/${order.id}?customer_session_token=${customerSessionToken}`,
+      )
+    }
+  }
+
+  return (
+    <PortalSection
+      title={limit ? 'Recent orders' : 'All orders'}
+      actions={
+        limit && orders.length > limit ? (
+          <Link href={ordersHref}>
+            <Button variant="ghost" size="sm">
+              View all
+            </Button>
+          </Link>
+        ) : undefined
+      }
+    >
+      {visibleOrders.length > 0 ? (
+        <PortalCardList>
+          {visibleOrders.map((order) => (
+            <PortalListItem
+              key={order.id}
+              onClick={() => openOrder(order)}
+              title={order.description}
+              subtitle={
+                <FormattedDateTime
+                  datetime={order.created_at}
+                  dateStyle="medium"
+                  resolution="day"
+                />
+              }
+              meta={
+                <>
+                  <OrderStatus status={order.status} size="small" />
+                  <Box
+                    as="span"
+                    color="text-primary"
+                    minWidth={72}
+                    textAlign="right"
                   >
-                    View Order
-                  </Button>
-                  <Link
-                    className="md:hidden"
-                    href={`/${organization.slug}/portal/orders/${order.id}?customer_session_token=${customerSessionToken}`}
-                  >
-                    <Button variant="secondary" size="sm">
-                      View Order
-                    </Button>
-                  </Link>
-                </span>
-              )
-            },
-          },
-        ]}
-      />
+                    {formatCurrency('compact')(
+                      order.total_amount,
+                      order.currency,
+                    )}
+                  </Box>
+                </>
+              }
+            />
+          ))}
+        </PortalCardList>
+      ) : (
+        <PortalEmptyState
+          title="No orders yet"
+          description="Your purchases will show up here."
+        />
+      )}
       <InlineModal
         isShown={isOrderModalOpen}
         hide={hideOrderModal}
         modalContent={
           selectedOrder ? (
-            <div className="flex flex-col overflow-y-auto p-8">
+            <Box flexDirection="column" overflowY="auto" padding="2xl">
               <CustomerPortalOrder
                 api={api}
                 order={selectedOrder}
                 customerSessionToken={customerSessionToken}
                 themingPreset={themingPreset}
               />
-            </div>
+            </Box>
           ) : null
         }
       />
-    </div>
+    </PortalSection>
   )
 }

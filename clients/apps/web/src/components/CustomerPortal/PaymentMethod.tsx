@@ -11,6 +11,7 @@ import {
   PaymentMethodDisplay,
   getPaymentMethodCardInfo,
 } from '../PaymentMethodDisplay'
+import { PortalListItem } from './PortalPrimitives'
 
 type PaymentMethodType =
   operations['customer_portal:customers:list_payment_methods']['responses']['200']['content']['application/json']['items'][number]
@@ -71,39 +72,42 @@ const PaymentMethod = ({
   }
 
   return (
-    <div className="flex items-center justify-between gap-2">
-      <PaymentMethodDisplay
-        type={paymentMethod.type}
-        card={getPaymentMethodCardInfo(paymentMethod)}
-      />
-      <div className="flex flex-row items-center gap-x-4">
-        {isDefault ? (
-          <Status status="Default Method" color="green" />
-        ) : (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={onSetDefaultPaymentMethod}
-            loading={updateCustomer.isPending}
-            disabled={updateCustomer.isPending}
-          >
-            Make default
-          </Button>
-        )}
-        {deletable && (
-          <Button
-            variant="secondary"
-            size="sm"
-            className="h-8 w-8"
-            onClick={onDeletePaymentMethod}
-            loading={deletePaymentMethod.isPending}
-            disabled={deletePaymentMethod.isPending}
-          >
-            <X className="size-4" />
-          </Button>
-        )}
-      </div>
-    </div>
+    <PortalListItem
+      title={
+        <PaymentMethodDisplay
+          type={paymentMethod.type}
+          card={getPaymentMethodCardInfo(paymentMethod)}
+        />
+      }
+      meta={isDefault ? <Status size="small" status="Default" /> : undefined}
+      actions={
+        <>
+          {!isDefault && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onSetDefaultPaymentMethod}
+              loading={updateCustomer.isPending}
+              disabled={updateCustomer.isPending}
+            >
+              Make default
+            </Button>
+          )}
+          {deletable && (
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Remove payment method"
+              onClick={onDeletePaymentMethod}
+              loading={deletePaymentMethod.isPending}
+              disabled={deletePaymentMethod.isPending}
+            >
+              <X className="size-4" />
+            </Button>
+          )}
+        </>
+      }
+    />
   )
 }
 

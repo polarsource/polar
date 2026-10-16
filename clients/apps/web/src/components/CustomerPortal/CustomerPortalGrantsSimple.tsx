@@ -1,8 +1,9 @@
 'use client'
 
 import { Client, schemas } from '@polar-sh/client'
-import { List, ListItem } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { BenefitGrant } from '../Benefit/BenefitGrant'
+import { PortalCard, PortalCardList, PortalSection } from './PortalPrimitives'
 
 export interface CustomerPortalGrantsSimpleProps {
   benefitGrants: schemas['CustomerBenefitGrant'][]
@@ -14,24 +15,20 @@ export const CustomerPortalGrantsSimple = ({
   benefitGrants,
 }: CustomerPortalGrantsSimpleProps) => {
   return (
-    <div className="flex w-full flex-col gap-4">
-      <h3 className="text-xl">Benefit Grants</h3>
-      <div className="flex flex-col gap-4">
-        <List>
-          {benefitGrants?.map((benefitGrant) => (
-            <ListItem
-              key={benefitGrant.id}
-              className="py-6 hover:bg-transparent dark:hover:bg-transparent"
-            >
+    <PortalSection title="Benefits">
+      <PortalCardList>
+        {benefitGrants.map((benefitGrant) => (
+          <Box as="li" display="block" key={benefitGrant.id}>
+            <PortalCard>
               <BenefitGrant
                 api={api}
                 benefitGrant={benefitGrant}
                 allowLicenseKeyRotation={true}
               />
-            </ListItem>
-          ))}
-        </List>
-      </div>
-    </div>
+            </PortalCard>
+          </Box>
+        ))}
+      </PortalCardList>
+    </PortalSection>
   )
 }

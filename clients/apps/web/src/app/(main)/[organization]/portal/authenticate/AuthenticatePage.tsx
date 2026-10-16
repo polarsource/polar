@@ -11,7 +11,8 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from '@polar-sh/ui/components/atoms/InputOTP'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+import { Box } from '@polar-sh/orbit/Box'
+import { PortalText } from '@/components/CustomerPortal/PortalPrimitives'
 import {
   Form,
   FormControl,
@@ -23,6 +24,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
+import { PortalAuthHeader, PortalAuthShell } from '../PortalShell'
+
 const ClientPage = ({
   organization,
 }: {
@@ -67,19 +70,15 @@ const ClientPage = ({
   )
 
   return (
-    <ShadowBox className="flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24">
-      <div className="flex w-full flex-col gap-y-6 md:max-w-sm">
-        <div className="flex flex-col gap-4">
-          <h2 className="text-2xl text-black dark:text-white">
-            Verification code
-          </h2>
-          <p className="dark:text-polar-500 text-gray-500">
-            Enter the verification code sent to your email address.
-          </p>
-        </div>
+    <PortalAuthShell organization={organization}>
+      <Box flexDirection="column" rowGap="xl">
+        <PortalAuthHeader
+          title="Check your email"
+          description="Enter the verification code we sent to your email address."
+        />
         <Form {...form}>
           <form
-            className="flex w-full flex-col items-center gap-y-6"
+            className="flex w-full flex-col gap-y-6"
             onSubmit={handleSubmit(onSubmit)}
           >
             <FormField
@@ -104,7 +103,7 @@ const ClientPage = ({
                             <InputOTPSlot
                               key={index}
                               index={index}
-                              className="dark:border-polar-600 h-12 w-12 border-gray-300 text-xl md:h-16 md:w-16 md:text-2xl"
+                              className="h-12 w-12 text-xl md:h-14 md:w-14"
                             />
                           ))}
                         </InputOTPGroup>
@@ -117,9 +116,9 @@ const ClientPage = ({
             />
 
             {form.formState.errors.root && (
-              <p className="text-sm font-medium text-red-500 dark:text-red-400">
+              <PortalText tone="danger" className="text-sm">
                 {form.formState.errors.root.message}
-              </p>
+              </PortalText>
             )}
 
             <Button
@@ -132,17 +131,16 @@ const ClientPage = ({
               Access my purchases
             </Button>
 
-            <p className="dark:text-polar-400 text-sm text-gray-500">
-              Don&apos;t have a code?{' '}
+            <PortalText tone="secondary" className="text-sm">
+              Didn&apos;t get a code?{' '}
               <Link href="request" className="underline hover:no-underline">
                 Request a new one
               </Link>
-              .
-            </p>
+            </PortalText>
           </form>
         </Form>
-      </div>
-    </ShadowBox>
+      </Box>
+    </PortalAuthShell>
   )
 }
 

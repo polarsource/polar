@@ -1,13 +1,8 @@
 'use client'
 
 import { CustomerPortalProvider } from '@/components/CustomerPortal/CustomerPortalProvider'
-import { useCustomerPortalSession } from '@/hooks/queries/customerPortal'
-import { createClientSideAPI } from '@/utils/client'
-import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import { schemas } from '@polar-sh/client'
-import { Avatar } from '@polar-sh/orbit'
 import { TooltipProvider } from '@polar-sh/orbit'
-import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 
 interface CustomerPortalLayoutWrapperProps {
@@ -25,8 +20,6 @@ export function CustomerPortalLayoutWrapper({
     searchParams.get('member_session_token') ??
     ''
 
-  const { data: session } = useCustomerPortalSession(createClientSideAPI(token))
-
   return (
     <CustomerPortalProvider
       token={token}
@@ -34,27 +27,7 @@ export function CustomerPortalLayoutWrapper({
       organizationSlug={organization.slug}
       baseUrl={process.env.NEXT_PUBLIC_API_URL}
     >
-      <TooltipProvider>
-        <div className="flex flex-row items-center gap-x-3 px-4 py-4 lg:px-8 lg:py-8">
-          <Avatar
-            className="h-8 w-8 flex-none"
-            avatar_url={organization.avatar_url}
-            name={organization.name}
-          />
-          {session?.return_url && (
-            <Link
-              href={session.return_url}
-              className="dark:text-polar-500 flex min-w-0 flex-row items-center gap-x-1 text-xs text-gray-500"
-            >
-              <ArrowBackOutlined fontSize="inherit" className="flex-none" />
-              <span className="truncate">Back to {organization.name}</span>
-            </Link>
-          )}
-        </div>
-        <div className="w-full px-4 py-8 md:mx-auto md:max-w-5xl lg:px-0">
-          {children}
-        </div>
-      </TooltipProvider>
+      <TooltipProvider>{children}</TooltipProvider>
     </CustomerPortalProvider>
   )
 }

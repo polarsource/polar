@@ -122,7 +122,7 @@ const CustomerCancellationModal = ({
         return
       }
       toast({
-        title: 'Subscription Cancelled',
+        title: 'Subscription canceled',
         description: `Subscription was cancelled successfully`,
       })
       router.refresh()
@@ -146,7 +146,7 @@ const CustomerCancellationModal = ({
   return (
     <Modal
       {...props}
-      title="Cancel Subscription"
+      title="Cancel subscription"
       className="md:min-w-[600px]"
       modalContent={
         <div className="flex flex-col gap-y-6 p-6 sm:p-12">
@@ -238,7 +238,7 @@ const CustomerCancellationModal = ({
                   loading={isPending}
                   disabled={isPending || previewPending}
                 >
-                  {stopsCollection ? 'Cancel now' : 'Cancel Subscription'}
+                  {stopsCollection ? 'Cancel now' : 'Cancel subscription'}
                 </Button>
                 <Button variant="ghost" onClick={handleCancel}>
                   I&apos;ve changed my mind

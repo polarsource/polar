@@ -284,11 +284,11 @@ const DownloadInvoice = ({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={onDownload} disabled={loading}>
-              Download Invoice
+              Download invoice
             </DropdownMenuItem>
             {order.is_invoice_generated && (
               <DropdownMenuItem onClick={() => show()}>
-                Edit Invoice
+                Edit invoice
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
@@ -304,7 +304,7 @@ const DownloadInvoice = ({
             size={size}
             className={twMerge('w-full', className)}
           >
-            Download Invoice
+            Download invoice
           </Button>
           {order.is_invoice_generated && !hideEditButton && (
             <Button
@@ -316,7 +316,7 @@ const DownloadInvoice = ({
               onClick={() => show()}
               className={twMerge('w-full', className)}
             >
-              Edit Invoice
+              Edit invoice
             </Button>
           )}
         </div>
@@ -345,8 +345,8 @@ const DownloadInvoice = ({
             <InlineModalHeader hide={hide}>
               <h2 className="text-xl">
                 {order.is_invoice_generated
-                  ? 'Edit Invoice'
-                  : 'Generate Invoice'}
+                  ? 'Edit invoice'
+                  : 'Generate invoice'}
               </h2>
             </InlineModalHeader>
             <Form {...form}>

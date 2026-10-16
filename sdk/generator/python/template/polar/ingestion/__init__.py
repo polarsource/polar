@@ -24,8 +24,12 @@ class Ingestion:
         self._stack = contextlib.AsyncExitStack()
 
     async def __aenter__(self) -> typing.Self:
-        for strategy in self.strategies:
-            await self._stack.enter_async_context(strategy)
+        try:
+            for strategy in self.strategies:
+                await self._stack.enter_async_context(strategy)
+        except BaseException:
+            await self._stack.aclose()
+            raise
         return self
 
     async def __aexit__(
@@ -44,7 +48,7 @@ class Ingestion:
     def create(
         cls, polar: PolarClient, outpost_redis_url: str | None = None
     ) -> typing.Self:
-        strategies = [BufferedIngestionStrategy(polar)]
+        strategies: list[IngestionStrategyProtocol] = [BufferedIngestionStrategy(polar)]
         if outpost_redis_url is not None:
             from polar.outpost import Outpost
 

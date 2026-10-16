@@ -141,6 +141,8 @@ class PythonEmitter(EmitterBase):
             ("tests", "__init__.py"),
             ("tests", "test_base.py"),
             ("tests", "ingestion", "__init__.py"),
+            ("tests", "ingestion", "conftest.py"),
+            ("tests", "ingestion", "test_ingestion.py"),
             ("tests", "ingestion", "test_buffered.py"),
             ("tests", "test_webhooks.py"),
             ("tests", "outpost", "__init__.py"),

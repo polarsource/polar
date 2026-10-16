@@ -34,6 +34,8 @@ class BufferedIngestionStrategy:
         ]
         | None = None,
     ) -> None:
+        if batch_size <= 0:
+            raise ValueError("batch_size must be greater than zero")
         self.polar = polar
         self.batch_size = batch_size
         self.batch_interval = batch_interval

@@ -8,7 +8,7 @@ from polar import PolarNetworkError
 from polar.ingestion import IngestionClient
 from polar.ingestion.buffered import BufferedIngestionStrategy, DropReason
 from polar.ingestion.events import EventInput
-from polar.v2026_10 import PolarAsync
+from polar.v2026_04 import PolarAsync
 
 
 @pytest.mark.anyio
@@ -157,3 +157,9 @@ async def test_structural_ingestion_client() -> None:
         await strategy.ingest(event)
 
     assert received == [event]
+
+
+@pytest.mark.parametrize("batch_size", [0, -1])
+def test_rejects_non_positive_batch_size(batch_size: int) -> None:
+    with pytest.raises(ValueError, match="batch_size must be greater than zero"):
+        BufferedIngestionStrategy(AsyncMock(), batch_size=batch_size)

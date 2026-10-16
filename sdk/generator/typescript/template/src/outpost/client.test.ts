@@ -238,10 +238,15 @@ it.each([
     ).toBe("1");
   }
   if (fail) {
+    outpost["channel"] = "outpost:test:unsubscribed";
     await redis.hset("outpost:state:external:alice:tokens-1", `bucket:${bucket}:sum`, "invalid");
     await expect(ingest(outpost, 2)).rejects.toBeInstanceOf(UnavailableRedisError);
     expect(execute).toHaveBeenCalledTimes(2);
     for (const i of [0, 2]) {
+      expect(await outpost.customerMeter({ ...customer, meter_id: `meter-${i}` })).toMatchObject({
+        consumed_units: 5,
+        balance: 95,
+      });
       expect(
         await redis.hget(`outpost:state:external:alice:tokens-${i}`, `bucket:${bucket}:sum`),
       ).toBe("5");

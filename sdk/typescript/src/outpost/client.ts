@@ -445,12 +445,17 @@ export class Outpost {
           throw redisUnavailable(error);
         });
         if (results === null) throw new UnavailableRedisError();
+        let firstError: Error | undefined;
         for (const [index, [error, state]] of results.entries()) {
-          if (error) throw redisUnavailable(error);
+          if (error) {
+            firstError ??= error;
+            continue;
+          }
           const update = updates[index];
           const identity = `${update.customer}:${update.reducer}`;
           await this.receiveState(identity, decodeState(state as string[]));
         }
+        if (firstError) throw redisUnavailable(firstError);
         span.setAttribute("outpost.buckets", updates.length);
       },
       { "outpost.events": 1 },

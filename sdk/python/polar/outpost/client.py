@@ -484,9 +484,16 @@ class Outpost:
                         statistics.min if statistics.min is not None else "",
                         statistics.max if statistics.max is not None else "",
                     )
-                states = await pipeline.execute()
+                states = await pipeline.execute(raise_on_error=False)
+            first_error: Exception | None = None
             for identity, state in zip(identities, states, strict=True):
+                if isinstance(state, Exception):
+                    if first_error is None:
+                        first_error = state
+                    continue
                 await self._receive_state(identity, self._decode_state(state))
+            if first_error is not None:
+                raise first_error
             span.set_attribute("outpost.buckets", len(updates))
 
     @_raise_redis_unavailable

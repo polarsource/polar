@@ -267,6 +267,7 @@ async def test_ingest_pipelines_buckets(
                 == b"1"
             )
         if fail:
+            monkeypatch.setattr(outpost, "_channel", "outpost:test:unsubscribed")
             await redis.hset(
                 "outpost:state:external:alice:tokens-1",
                 f"bucket:{BUCKET}:sum",
@@ -283,6 +284,12 @@ async def test_ingest_pipelines_buckets(
                 )
             assert execute.await_count == 2
             for i in (0, 2):
+                meter = await outpost.customer_meter(
+                    meter_id=f"meter-{i}", external_customer_id="alice"
+                )
+                assert meter is not None
+                assert meter.consumed_units == 5
+                assert meter.balance == 95
                 assert (
                     await redis.hget(
                         f"outpost:state:external:alice:tokens-{i}",

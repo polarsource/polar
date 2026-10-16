@@ -475,33 +475,13 @@ class ReducerService:
 
         for reducer in sorted(reducers, key=lambda reducer: str(reducer.id)):
             for customer_id, external_customer_id in identities:
-                for at in boundaries:
-                    with logfire.span(
-                        "Split reducer buckets",
-                        organization_id=str(customer.organization_id),
-                        reducer_id=str(reducer.id),
-                        customer_id=str(customer.id),
-                        bucket_customer_id=customer_id is not None,
-                        bucket_external_customer_id=external_customer_id is not None,
-                        at=at,
-                    ) as span:
-                        start, end = await self._get_interval_containing(
-                            repository, reducer, customer_id, external_customer_id, at
-                        )
-                        split = False
-                        if start != at:
-                            split = await self._split(
-                                repository,
-                                reducer,
-                                customer_id,
-                                external_customer_id,
-                                (start, end),
-                                split_at=at,
-                            )
-                        span.set_attribute(
-                            "interval", [start.isoformat(), end.isoformat()]
-                        )
-                        span.set_attribute("split", split)
+                await self._split_at(
+                    repository,
+                    reducer,
+                    customer,
+                    (customer_id, external_customer_id),
+                    boundaries,
+                )
             with logfire.span(
                 "Seal reducer buckets",
                 organization_id=str(customer.organization_id),
@@ -513,6 +493,42 @@ class ReducerService:
                     reducer, identities, since=since, until=until, sealed_at=utc_now()
                 )
                 span.set_attribute("sealed_buckets", sealed)
+
+    async def _split_at(
+        self,
+        repository: ReducerBucketRepository,
+        reducer: Reducer,
+        customer: Customer,
+        identity: tuple[UUID | None, str | None],
+        boundaries: Sequence[datetime],
+    ) -> None:
+        """Makes each boundary a bucket boundary of the customer identity."""
+        customer_id, external_customer_id = identity
+        for at in boundaries:
+            with logfire.span(
+                "Split reducer buckets",
+                organization_id=str(customer.organization_id),
+                reducer_id=str(reducer.id),
+                customer_id=str(customer.id),
+                bucket_customer_id=customer_id is not None,
+                bucket_external_customer_id=external_customer_id is not None,
+                at=at,
+            ) as span:
+                start, end = await self._get_interval_containing(
+                    repository, reducer, customer_id, external_customer_id, at
+                )
+                split = False
+                if start != at:
+                    split = await self._split(
+                        repository,
+                        reducer,
+                        customer_id,
+                        external_customer_id,
+                        (start, end),
+                        split_at=at,
+                    )
+                span.set_attribute("interval", [start.isoformat(), end.isoformat()])
+                span.set_attribute("split", split)
 
     async def _bill_buckets(
         self,

@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { ChatMessageBubble } from './ChatMessageBubble'
 import { EscalationCard } from './EscalationCard'
-import { buildTranscript, extractText } from './messages'
+import { buildEscalationMessage, extractText } from './messages'
 
 interface QuestionFlowProps {
   question: string
@@ -19,6 +19,7 @@ interface QuestionFlowProps {
   onEscalate: (message: string, type: schemas['FeedbackType']) => void
   onCancel: () => void
   isEscalating: boolean
+  escalationFailed: boolean
 }
 
 const isPendingToolState = (state: unknown): boolean =>
@@ -89,6 +90,7 @@ export const QuestionFlow = ({
   onEscalate,
   onCancel,
   isEscalating,
+  escalationFailed,
 }: QuestionFlowProps) => {
   const hasSentRef = useRef(false)
   const scrollerRef = useRef<HTMLDivElement>(null)
@@ -145,12 +147,7 @@ export const QuestionFlow = ({
 
   const handleEscalateSubmit = useCallback(
     (note: string, type: schemas['FeedbackType']) => {
-      const transcript = buildTranscript(messages)
-      const trimmed = note.trim()
-      const message = trimmed
-        ? `${trimmed}\n\n---\n\n## Transcript\n\n${transcript}`
-        : `## Transcript\n\n${transcript}`
-      onEscalate(message, type)
+      onEscalate(buildEscalationMessage(note, messages), type)
     },
     [messages, onEscalate],
   )
@@ -214,6 +211,7 @@ export const QuestionFlow = ({
           onSubmit={handleEscalateSubmit}
           onCancel={onCancel}
           isSubmitting={isEscalating}
+          hasFailed={escalationFailed}
         />
       ) : (
         <Box flexDirection="column" rowGap="s">

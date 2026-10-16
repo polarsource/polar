@@ -1,0 +1,37 @@
+name: Deployment Notifications
+
+on:
+  workflow_run:
+    workflows: [Build and Deploy]
+    types: [in_progress, completed]
+
+concurrency:
+  group: deployment-notification-${{ github.event.workflow_run.id }}-${{ github.event.workflow_run.run_attempt }}
+  cancel-in-progress: false
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+
+jobs:
+  notify:
+    if: github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ github.event.action == 'in_progress' && 360 || 5 }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Update deployment thread
+        uses: actions/github-script@v9
+        env:
+          DEPLOY_SLACK_CHANNEL_ID: ${{ vars.DEPLOY_SLACK_CHANNEL_ID }}
+          SLACK_BOT_TOKEN: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
+          SLACK_USERS_JSON: ${{ vars.SLACK_USERS_JSON }}
+        with:
+          script: |
+            const { notifyDeployment } = await import(`${process.env.GITHUB_WORKSPACE}/.github/scripts/deploy-notify/slack.mjs`);
+            await notifyDeployment({ github, context, core, watch: true });

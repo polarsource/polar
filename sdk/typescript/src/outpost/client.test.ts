@@ -756,18 +756,25 @@ it("reports a read whose snapshot never arrives as not ready", async () => {
   ]);
 });
 
-it("waits for the snapshot of the meter it reads", async () => {
-  reducers[0].meter_ids = ["meter", "shared"];
-  snapshot = aliceSnapshot;
-  meterSnapshots = {
-    meter: { credited_units: 100, delay: 0 },
-    shared: { credited_units: 200, delay: 50 },
-  };
-  const outpost = await start();
-  expect((await outpost.customerMeter({ ...customer, meter_id: "shared" }))?.credited_units).toBe(
-    200,
-  );
-});
+it.each([
+  [50, 200, "ready"],
+  [500, 0, "not_ready"],
+])(
+  "waits for the snapshot of the meter it reads (delay %i ms)",
+  async (delay, credited, outcome) => {
+    reducers[0].meter_ids = ["meter", "shared"];
+    snapshot = aliceSnapshot;
+    meterSnapshots = {
+      meter: { credited_units: 100, delay: 0 },
+      shared: { credited_units: 200, delay },
+    };
+    const outpost = await start();
+    expect((await outpost.customerMeter({ ...customer, meter_id: "shared" }))?.credited_units).toBe(
+      credited,
+    );
+    expect(readOutcomes()).toEqual([["outpost.customer_meter", outcome]]);
+  },
+);
 
 it("reads the value of a customer created after a miss", async () => {
   snapshot = { ...aliceSnapshot, customer_exists: false };

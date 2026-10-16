@@ -524,7 +524,13 @@ class Outpost:
             if state is None or state.cold_until is None:
                 span.set_attribute("outpost.read.outcome", "not_ready")
                 raise PolarOutpostError("Customer snapshot is not ready")
-            span.set_attribute("outpost.read.outcome", "ready")
+            span.set_attribute(
+                "outpost.read.outcome",
+                "ready"
+                if reducer["aggregation"]["func"] == "unique"
+                or meter_id in state.credited
+                else "not_ready",
+            )
             combined = dataclasses.replace(state.cold)
             for bucket_start, statistics in state.buckets.items():
                 if bucket_start >= state.cold_until:

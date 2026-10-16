@@ -1299,8 +1299,15 @@ async def test_missing_snapshot_times_out(
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("delay", "credited", "outcome"), [(0.05, 200, "ready"), (0.5, 0, "not_ready")]
+)
 async def test_cold_read_waits_for_its_own_meter(
     redis_connection: tuple[str, Redis],
+    exported_spans: list[ReadableSpan],
+    delay: float,
+    credited: int,
+    outcome: str,
 ) -> None:
     url, _ = redis_connection
     configuration = copy.deepcopy(CONFIGURATION)
@@ -1320,7 +1327,7 @@ async def test_cold_read_waits_for_its_own_meter(
             else:
                 meter_id = request["payload"]["meter_id"]
                 if meter_id == "shared":
-                    await anyio.sleep(0.05)
+                    await anyio.sleep(delay)
                 payload = {
                     **ALICE_SNAPSHOT,
                     "customer_exists": True,
@@ -1344,7 +1351,8 @@ async def test_cold_read_waits_for_its_own_meter(
             meter_id="shared", external_customer_id="alice"
         )
     assert meter is not None
-    assert meter.credited_units == 200
+    assert meter.credited_units == credited
+    assert read_outcomes(exported_spans) == [("outpost.customer_meter", outcome)]
 
 
 @pytest.mark.anyio

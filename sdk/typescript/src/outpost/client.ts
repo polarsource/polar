@@ -480,7 +480,12 @@ export class Outpost {
         span.setAttribute("outpost.read.outcome", "not_ready");
         throw new PolarError("Customer snapshot is not ready");
       }
-      span.setAttribute("outpost.read.outcome", "ready");
+      span.setAttribute(
+        "outpost.read.outcome",
+        (reducer.aggregation.func as string) === "unique" || input.meter_id in state.credited
+          ? "ready"
+          : "not_ready",
+      );
       const combined = { ...state.cold };
       for (const [start, statistics] of state.buckets)
         if (start >= state.coldUntil) addStatistics(combined, statistics);

@@ -1033,7 +1033,7 @@ async def test_flush_telemetry_exports_buffered_spans(
     async with Outpost(url, client=polar_client) as outpost:
         await outpost.ingest(events=[{"name": "call", "external_customer_id": "alice"}])
         assert exported_spans == []
-        await outpost.flush_telemetry()
+        assert await outpost.flush_telemetry()
         assert "outpost.ingest" in {span.name for span in exported_spans}
 
 

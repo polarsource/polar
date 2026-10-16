@@ -24,8 +24,8 @@ access token.
 
 **Before the claim, an agent is an `Agent` auth subject.** Its identity is a row in one `agents` table,
 created at sign-up, which also holds its OAuth client, its status and who claimed it. It authenticates
-as itself, owns its org through an agent–organization link (not a `UserOrganization` membership), and
-can only reach endpoints whose `Authenticator` lists `Agent` in `allowed_subjects`. **After the claim,
+as itself, owns exactly one org through an agent–organization link (not a `UserOrganization`
+membership), and can only reach endpoints whose `Authenticator` lists `Agent` in `allowed_subjects`. **After the claim,
 it acts for the claiming user with ordinary user OAuth tokens**, and its OAuth client stays marked as
 an agent.
 
@@ -44,7 +44,10 @@ an agent.
   second layer, so one wrong opt-in doesn't open a money endpoint by itself.
 - No placeholder users. The users table, login, emails and user metrics only ever see people.
 - The org-access helpers (`get_accessible_org_ids`, `get_accessible_organization`,
-  `get_payload_organization`, the authz policies) resolve an `Agent` to the orgs it owns.
+  `get_payload_organization`, the authz policies) resolve an `Agent` to its one org, so it
+  behaves like a single-organization credential (single-org event ingest, config apply without an
+  `organization_id`). An agent that wants a second org signs up again: parallel sessions are separate
+  agents.
 - Inside its own org, an agent has a fixed permission set, like a role: it may manage the org's
   settings and build resources, never members or finance.
 - OAuth tokens, grants and authorization codes gain a third sub type, `SubType.agent`, and agent

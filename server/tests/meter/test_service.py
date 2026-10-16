@@ -75,6 +75,7 @@ class TestCreate:
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_last_billed_event_set(
         self,
+        enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         auth_subject: AuthSubject[Organization],
@@ -128,6 +129,7 @@ class TestCreate:
         assert reducer.organization_id == meter.organization_id
         assert reducer.filter == meter.filter
         assert reducer.aggregation == meter.aggregation
+        enqueue_job_mock.assert_any_call("reducer.invalidate_cache", organization.id)
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_default_unit_is_scalar(
@@ -309,6 +311,7 @@ class TestUpdate:
     @pytest.mark.parametrize("has_reducer", [False, True])
     async def test_sensitive_update_allowed(
         self,
+        enqueue_job_mock: AsyncMock,
         auth_subject: AuthSubject[User],
         user_organization: UserOrganization,
         meter_update: MeterUpdate,
@@ -348,6 +351,7 @@ class TestUpdate:
         assert reducer.organization_id == meter.organization_id
         assert reducer.filter == updated_meter.filter
         assert reducer.aggregation == updated_meter.aggregation
+        enqueue_job_mock.assert_any_call("reducer.invalidate_cache", organization.id)
         if original_reducer is not None:
             assert reducer.id == original_reducer.id
 

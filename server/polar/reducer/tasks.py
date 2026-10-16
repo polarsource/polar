@@ -7,10 +7,12 @@ from polar.exceptions import PolarTaskError
 from polar.observability.task_logging import LoggableField
 from polar.worker import (
     AsyncSessionMaker,
+    RedisMiddleware,
     TaskPriority,
     actor,
 )
 
+from . import cache
 from .redis_store import get_reducer_bucket_key
 from .service import reducer as reducer_service
 
@@ -19,6 +21,13 @@ class CustomerDoesNotExist(PolarTaskError):
     def __init__(self, customer_id: uuid.UUID) -> None:
         self.customer_id = customer_id
         super().__init__(f"The customer with id {customer_id} does not exist.")
+
+
+@actor(actor_name="reducer.invalidate_cache", priority=TaskPriority.HIGH)
+async def invalidate_cache(
+    organization_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
+    await cache.invalidate(RedisMiddleware.get(), organization_id)
 
 
 @actor(actor_name="reducer.seal", priority=TaskPriority.LOW)

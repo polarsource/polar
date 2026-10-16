@@ -34,7 +34,7 @@ from polar.postgres import AsyncSession
 from polar.redis import Redis
 from polar.worker import enqueue_job
 
-from . import redis_store
+from . import cache, redis_store
 from .bucket_repository import ReducerBucketRepository
 from .repository import ReducerRepository
 
@@ -190,9 +190,9 @@ class ReducerService:
         """Returns the number of reducer buckets the events contributed to."""
         reducers = [
             reducer
-            for reducer in await ReducerRepository.from_session(
-                session
-            ).get_all_active_by_organization(organization_id)
+            for reducer in await cache.get_active_reducers(
+                session, redis, organization_id
+            )
             if not isinstance(reducer.aggregation, UniqueAggregation)
         ]
         if not reducers:

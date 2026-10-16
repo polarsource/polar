@@ -430,6 +430,13 @@ class StripeService:
             {"shared_payment_granted_token": shared_payment_token_id},
         )
         params["stripe_version"] = SHARED_PAYMENT_TOKENS_API_VERSION
+        # Stripe rejects return_url on SPT-backed intents: the agent owns it.
+        params.pop("return_url", None)
+        if "automatic_payment_methods" in params:
+            params["automatic_payment_methods"] = {
+                **params["automatic_payment_methods"],
+                "allow_redirects": "never",
+            }
         return await self.create_payment_intent(**params)
 
     async def get_shared_payment_granted_token(

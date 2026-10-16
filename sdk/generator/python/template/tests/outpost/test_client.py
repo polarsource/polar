@@ -30,8 +30,9 @@ from polar.outpost.client import (
     WRITE_BUCKET_SCRIPT,
     Outpost,
     PolarOutpostError,
-    ReducerState,
     RedisReconnectBackoff,
+    ReducerState,
+    UnavailableRedisError,
     _backoff_delay,
     connect_websocket,
 )
@@ -1318,3 +1319,48 @@ async def test_unknown_customer_reads_its_value_once_created(
             while (meter := await read()) is None:
                 await anyio.sleep(0.01)
     assert meter.balance == 7
+
+
+@pytest.mark.anyio
+async def test_redis_errors_raise_outpost_errors(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("polar.outpost.client.REDIS_TIMEOUT", 0.2)
+    url, redis = redis_connection
+    server: FakeServer = redis.connection_pool.connection_kwargs["server"]
+    snapshots["external:alice"] = ALICE_SNAPSHOT
+    async with Outpost(url, client=polar_client) as outpost:
+        server.connected = False
+        with pytest.raises(UnavailableRedisError):
+            await outpost.customer_meter(meter_id="meter", external_customer_id="alice")
+        with pytest.raises(UnavailableRedisError):
+            await outpost.ingest(
+                events=[{"name": "call", "external_customer_id": "alice"}]
+            )
+        server.connected = True
+        with anyio.fail_after(3):
+            while True:
+                try:
+                    meter = await outpost.customer_meter(
+                        meter_id="meter", external_customer_id="alice"
+                    )
+                    break
+                except PolarOutpostError:
+                    await anyio.sleep(0.05)
+    assert meter is not None
+    assert meter.balance == 7
+
+
+@pytest.mark.anyio
+async def test_redis_unavailable_at_startup(
+    redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
+) -> None:
+    url, redis = redis_connection
+    server: FakeServer = redis.connection_pool.connection_kwargs["server"]
+    server.connected = False
+    with pytest.raises(UnavailableRedisError):
+        async with Outpost(url, client=polar_client):
+            pass

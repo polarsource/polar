@@ -93,6 +93,10 @@ const signal = () => {
   });
   return { promise, resolve };
 };
+export class PolarOutpostError extends PolarError {}
+export class UnavailableRedisError extends PolarOutpostError {}
+const redisUnavailable = (error: unknown): UnavailableRedisError =>
+  new UnavailableRedisError("Redis is unavailable", { cause: error });
 const withTimeout = async <T>(promise: Promise<T>): Promise<T> => {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -321,7 +325,9 @@ export class Outpost {
           await redis.ping();
         },
         { "outpost.redis.connection": "primary" },
-      );
+      ).catch((error: unknown) => {
+        throw redisUnavailable(error);
+      });
       this.channel = `outpost:${this.redis.options.db}:updates`;
       this.subscriber = this.redis.duplicate({ lazyConnect: true, autoResubscribe: false });
       const subscriber = this.subscriber;
@@ -339,6 +345,8 @@ export class Outpost {
       });
       await this.trace("outpost.redis.connect", () => withTimeout(subscriber.connect()), {
         "outpost.redis.connection": "subscriber",
+      }).catch((error: unknown) => {
+        throw redisUnavailable(error);
       });
       await withTimeout(this.synced.promise);
       await this.connectWebsocket();
@@ -417,17 +425,21 @@ export class Outpost {
         for (const update of updates) {
           const identity = `${update.customer}:${update.reducer}`;
           const statistics = update.statistics;
-          const state = await redis.outpostWriteBucket(
-            `outpost:state:${identity}`,
-            identity,
-            this.channel,
-            generateEpoch(),
-            update.bucketStart,
-            statistics.count,
-            statistics.sum,
-            statistics.min ?? "",
-            statistics.max ?? "",
-          );
+          const state = await redis
+            .outpostWriteBucket(
+              `outpost:state:${identity}`,
+              identity,
+              this.channel,
+              generateEpoch(),
+              update.bucketStart,
+              statistics.count,
+              statistics.sum,
+              statistics.min ?? "",
+              statistics.max ?? "",
+            )
+            .catch((error: unknown) => {
+              throw redisUnavailable(error);
+            });
           await this.receiveState(identity, decodeState(state));
         }
         span.setAttribute("outpost.buckets", updates.length);
@@ -589,7 +601,9 @@ export class Outpost {
     const identity = `${customer}:${reducer.id}`;
     this.requireRedis();
     while (!this.isSynced) {
-      await withTimeout(this.synced.promise);
+      await withTimeout(this.synced.promise).catch((error: unknown) => {
+        throw redisUnavailable(error);
+      });
       this.requireRedis();
     }
     let local = this.cache.get(identity);
@@ -632,7 +646,11 @@ export class Outpost {
   private async loadState(customer: string): Promise<State> {
     const epoch = generateEpoch();
     return decodeState(
-      await this.requireRedis().outpostReadState(`outpost:state:${customer}`, epoch),
+      await this.requireRedis()
+        .outpostReadState(`outpost:state:${customer}`, epoch)
+        .catch((error: unknown) => {
+          throw redisUnavailable(error);
+        }),
     );
   }
 

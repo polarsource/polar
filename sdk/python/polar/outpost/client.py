@@ -3,6 +3,7 @@ import collections.abc
 import contextlib
 import dataclasses
 import datetime
+import functools
 import json
 import math
 import random
@@ -27,6 +28,7 @@ from redis.asyncio import Redis
 from redis.asyncio.retry import Retry
 from redis.backoff import EqualJitterBackoff, NoBackoff
 from redis.commands.core import AsyncScript
+from redis.exceptions import ConnectionError as RedisConnectionError
 from redis.exceptions import TimeoutError as RedisTimeoutError
 
 from polar.base import PolarError
@@ -42,6 +44,9 @@ from polar.outpost.telemetry import create_tracer_provider, is_telemetry_enabled
 
 
 class PolarOutpostError(PolarError): ...
+
+
+class UnavailableRedisError(PolarOutpostError): ...
 
 
 def _number(value: str | bytes) -> int | float:
@@ -105,6 +110,23 @@ class RedisReconnectBackoff(EqualJitterBackoff):
     def compute(self, failures: int) -> float:
         # Bounded exponent: a long outage would overflow the float otherwise.
         return super().compute(min(failures, 16))
+
+
+_P = typing.ParamSpec("_P")
+_R = typing.TypeVar("_R")
+
+
+def _raise_redis_unavailable(
+    method: collections.abc.Callable[_P, collections.abc.Awaitable[_R]],
+) -> collections.abc.Callable[_P, collections.abc.Awaitable[_R]]:
+    @functools.wraps(method)
+    async def wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
+        try:
+            return await method(*args, **kwargs)
+        except (RedisConnectionError, RedisTimeoutError) as error:
+            raise UnavailableRedisError("Redis is unavailable") from error
+
+    return wrapper
 
 
 def _is_connection_error(error: BaseException) -> bool:
@@ -327,6 +349,7 @@ class Outpost:
         self._synced = anyio.Event()
         self._channel = ""
 
+    @_raise_redis_unavailable
     async def __aenter__(self) -> typing.Self:
         if self._redis is not None:
             raise RuntimeError("Outpost is already connected")
@@ -409,6 +432,7 @@ class Outpost:
             and self._configured.is_set()
         )
 
+    @_raise_redis_unavailable
     async def ingest(
         self, *, events: collections.abc.Sequence[EventInput]
     ) -> IngestResult:
@@ -449,6 +473,7 @@ class Outpost:
             span.set_attribute("outpost.buckets", len(updates))
             return IngestResult(inserted=len(parsed))
 
+    @_raise_redis_unavailable
     async def customer_meter(
         self,
         *,
@@ -495,6 +520,7 @@ class Outpost:
                 balance=credited - consumed,
             )
 
+    @_raise_redis_unavailable
     async def actor(
         self,
         *,
@@ -573,8 +599,10 @@ class Outpost:
     async def _warm_customer(self, customer: str, reducer: Reducer) -> LocalState:
         identity = f"{customer}:{reducer['id']}"
         self._require_redis()
-        with anyio.fail_after(5):
+        with anyio.move_on_after(REDIS_TIMEOUT):
             await self._synced.wait()
+        if not self._synced.is_set():
+            raise UnavailableRedisError("Redis is unavailable")
         local = self._cache.get(identity)
         if local is None:
             local = LocalState()

@@ -2,6 +2,8 @@ from polar.outpost.client import (
     CustomerMeter,
     IngestResult,
     Outpost,
+    PolarOutpostError,
+    UnavailableRedisError,
     connect_redis,
     connect_websocket,
 )
@@ -30,7 +32,9 @@ __all__ = [
     "FilterClause",
     "IngestResult",
     "Outpost",
+    "PolarOutpostError",
     "Reducer",
+    "UnavailableRedisError",
     "Updates",
     "connect_redis",
     "connect_websocket",

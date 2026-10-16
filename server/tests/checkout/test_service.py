@@ -32,7 +32,6 @@ from polar.checkout.service import (
     ExpiredCheckoutError,
     NotConfirmedCheckout,
     NotOpenCheckout,
-    PaymentError,
     SharedPaymentTokenError,
     TrialAlreadyRedeemed,
 )
@@ -7357,7 +7356,7 @@ class TestConfirm:
                 ),
             )
 
-    async def test_shared_payment_token_requires_redirect_action(
+    async def test_shared_payment_token_requires_action(
         self,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
@@ -7377,7 +7376,6 @@ class TestConfirm:
             id="STRIPE_INTENT_ID",
             client_secret="CLIENT_SECRET",
             status="requires_action",
-            next_action=SimpleNamespace(type="redirect_to_url"),
         )
 
         checkout = await checkout_service.confirm(
@@ -7399,48 +7397,6 @@ class TestConfirm:
             "requires_action"
         )
         stripe_service_mock.cancel_payment_intent.assert_not_called()
-
-    async def test_shared_payment_token_requires_stripe_sdk_action(
-        self,
-        stripe_service_mock: MagicMock,
-        session: AsyncSession,
-        auth_subject: AuthSubject[Anonymous],
-        checkout_one_time_fixed: Checkout,
-    ) -> None:
-        stripe_service_mock.get_shared_payment_granted_token.return_value = {
-            "id": "spt_123",
-            "deactivated_at": None,
-            "deactivated_reason": None,
-            "usage_limits": None,
-        }
-        stripe_service_mock.create_customer.return_value = SimpleNamespace(
-            id="STRIPE_CUSTOMER_ID"
-        )
-        stripe_service_mock.create_payment_intent_from_shared_payment_token.return_value = SimpleNamespace(
-            id="STRIPE_INTENT_ID",
-            client_secret="CLIENT_SECRET",
-            status="requires_action",
-            next_action=SimpleNamespace(type="use_stripe_sdk"),
-        )
-
-        with pytest.raises(PaymentError):
-            await checkout_service.confirm(
-                session,
-                auth_subject,
-                checkout_one_time_fixed,
-                CheckoutConfirmStripe.model_validate(
-                    {
-                        "shared_payment_token_id": "spt_123",
-                        "customer_name": "Customer Name",
-                        "customer_email": "customer@example.com",
-                        "customer_billing_address": {"country": "FR"},
-                    }
-                ),
-            )
-
-        stripe_service_mock.cancel_payment_intent.assert_awaited_once_with(
-            "STRIPE_INTENT_ID"
-        )
 
 
 @pytest.mark.anyio

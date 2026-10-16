@@ -1384,31 +1384,6 @@ class CheckoutService:
                             "intent_status": intent.status,
                         }
 
-                    if (
-                        checkout_confirm.shared_payment_token_id is not None
-                        and intent.status == "requires_action"
-                        and (
-                            intent.next_action is None
-                            or intent.next_action.type != "redirect_to_url"
-                        )
-                    ):
-                        try:
-                            await stripe_service.cancel_payment_intent(intent.id)
-                        except stripe_lib.StripeError as e:
-                            log.warning(
-                                "Failed to cancel shared payment token intent",
-                                checkout_id=str(checkout.id),
-                                intent_id=intent.id,
-                                error=str(e),
-                            )
-                        raise PaymentError(
-                            checkout,
-                            "authentication_required",
-                            "The payment requires additional authentication. "
-                            "Mint the shared payment token with "
-                            "`use_stripe_sdk` set to `false` and a `return_url`.",
-                        )
-
                 # Check for trial abuse
                 # Skip for team customers without email — no email to check against
                 if (

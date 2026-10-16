@@ -30,6 +30,8 @@ import { createTracerProvider, isTelemetryEnabled } from "./telemetry";
 const CACHE_SIZE = 1024;
 const SYNC_INTERVAL = 30_000;
 const TIMEOUT = 5_000;
+const RECONNECT_DELAY = 500;
+const MAX_RECONNECT_DELAY = 30_000;
 interface State {
   epoch: string;
   revision: bigint;
@@ -171,6 +173,12 @@ const reportLocalValue = (span: Span, snapshot: Snapshot, replaced: string[]): v
   }
 };
 
+class RefusedError extends PolarError {
+  constructor(readonly status: number) {
+    super(`Outpost connection refused with ${status}`);
+  }
+}
+
 const recordError = (span: Span, error: unknown): void => {
   span.recordException(error instanceof Error ? error : String(error));
   span.setStatus({ code: SpanStatusCode.ERROR });
@@ -217,6 +225,8 @@ export class Outpost {
   private generation = 0;
   private channel = "";
   private refreshTimer?: ReturnType<typeof setInterval>;
+  private reconnectTimer?: ReturnType<typeof setTimeout>;
+  private reconnectAttempts = 0;
   private failure?: Error;
   private messages: Promise<unknown> = Promise.resolve();
   private synchronizing?: Promise<void>;
@@ -233,6 +243,7 @@ export class Outpost {
   async start(): Promise<this> {
     if (this.redis) throw new PolarError("Outpost is already connected");
     this.failure = undefined;
+    this.reconnectAttempts = 0;
     this.configured = signal();
     this.synced = signal();
     this.messages = Promise.resolve();
@@ -291,29 +302,7 @@ export class Outpost {
         "outpost.redis.connection": "subscriber",
       });
       await withTimeout(this.synced.promise);
-      const [url, request] = this.options.client.buildRequest("GET", "/v1/outpost/");
-      const endpoint = new URL(url);
-      endpoint.protocol = endpoint.protocol === "https:" ? "wss:" : "ws:";
-      this.websocket = new WebSocket(endpoint, {
-        headers: Object.fromEntries(new Headers(request.headers)),
-        handshakeTimeout: TIMEOUT,
-      });
-      this.websocket.on("error", (error) => this.fail(error));
-      this.websocket.on("close", () => {
-        if (!this.websocket) return;
-        const error = new PolarError("Outpost WebSocket disconnected");
-        this.event("outpost.websocket.disconnect", error);
-        this.fail(error);
-      });
-      this.websocket.on("message", (data) => {
-        this.messages = this.messages
-          .then(() => this.receiveWebsocket(data.toString()))
-          .catch((error: unknown) => this.fail(error));
-      });
-      await this.trace("outpost.websocket.connect", () =>
-        withTimeout(once(this.websocket!, "open")),
-      );
-      await this.send({ type: "configuration" });
+      await this.connectWebsocket();
       this.refreshTimer = setInterval(() => {
         if (this.synchronizing) return;
         void this.synchronize();
@@ -328,6 +317,7 @@ export class Outpost {
 
   async close(): Promise<void> {
     clearInterval(this.refreshTimer);
+    clearTimeout(this.reconnectTimer);
     const websocket = this.websocket;
     const connections = [this.subscriber, this.redis].filter(
       (redis): redis is Redis => redis !== undefined,
@@ -339,7 +329,10 @@ export class Outpost {
     this.subscriber = undefined;
     this.redis = undefined;
     const closed = connections.map((redis) => {
-      const ended = redis.status === "end" ? Promise.resolve() : once(redis, "end");
+      // disconnect() stops a connection that is not up without ever emitting "end".
+      const ended = ["end", "reconnecting", "wait"].includes(redis.status)
+        ? Promise.resolve()
+        : once(redis, "end");
       redis.disconnect();
       return ended;
     });
@@ -456,6 +449,74 @@ export class Outpost {
     );
   }
 
+  private async connectWebsocket(attempt = 0): Promise<void> {
+    const [url, request] = this.options.client.buildRequest("GET", "/v1/outpost/");
+    const endpoint = new URL(url);
+    endpoint.protocol = endpoint.protocol === "https:" ? "wss:" : "ws:";
+    const websocket = new WebSocket(endpoint, {
+      headers: Object.fromEntries(new Headers(request.headers)),
+      handshakeTimeout: TIMEOUT,
+    });
+    websocket.on("error", () => {});
+    websocket.on("message", (data) => {
+      this.messages = this.messages
+        .then(() => this.receiveWebsocket(data.toString()))
+        .catch((error: unknown) => this.fail(error));
+    });
+    websocket.on("close", () => {
+      if (this.websocket !== websocket) return;
+      this.websocket = undefined;
+      this._connectionId = undefined;
+      this.event("outpost.websocket.disconnect", new PolarError("Outpost WebSocket disconnected"));
+      this.reconnect();
+    });
+    try {
+      await this.trace(
+        "outpost.websocket.connect",
+        () =>
+          withTimeout(
+            new Promise<void>((resolve, reject) => {
+              websocket.once("open", resolve);
+              websocket.once("error", reject);
+              websocket.once("close", () => reject(new PolarError("Outpost WebSocket closed")));
+              websocket.once("unexpected-response", (_request, response) => {
+                reject(new RefusedError(response.statusCode ?? 0));
+                websocket.terminate();
+              });
+            }),
+          ),
+        attempt ? { "outpost.reconnect.attempt": attempt } : undefined,
+      );
+    } catch (error) {
+      websocket.terminate();
+      throw error;
+    }
+    // Closed while this reconnection was opening.
+    if (!this.redis) {
+      websocket.terminate();
+      return;
+    }
+    this.websocket = websocket;
+    this.actors.clear();
+    await this.send({ type: "configuration" });
+  }
+
+  private reconnect(): void {
+    if (!this.redis || this.failure) return;
+    const attempt = ++this.reconnectAttempts;
+    const delay = Math.min(MAX_RECONNECT_DELAY, RECONNECT_DELAY * 2 ** (attempt - 1));
+    this.reconnectTimer = setTimeout(
+      () => {
+        this.connectWebsocket(attempt).catch((error: unknown) => {
+          if (error instanceof RefusedError && [401, 403].includes(error.status))
+            this.fail(new PolarError("Polar refused the Outpost connection"));
+          else this.reconnect();
+        });
+      },
+      delay * (0.5 + Math.random() / 2),
+    );
+  }
+
   private async warmCustomer(customer: string, reducer: Reducer): Promise<LocalState> {
     const identity = `${customer}:${reducer.id}`;
     this.requireRedis();
@@ -479,12 +540,18 @@ export class Outpost {
     const entry = local;
     await locked(entry, async () => {
       if (!entry.state) entry.state = await this.loadState(identity);
-      if (!this.actors.has(identity)) {
-        for (const meter_id of reducer.meter_ids ?? [])
-          await this.send({
-            type: "meter_usage",
-            payload: { ...customerArguments(customer), meter_id },
-          });
+      if (!this.actors.has(identity) && this.websocket?.readyState === WebSocket.OPEN) {
+        try {
+          for (const meter_id of reducer.meter_ids ?? [])
+            await this.send({
+              type: "meter_usage",
+              payload: { ...customerArguments(customer), meter_id },
+            });
+        } catch (error) {
+          if (this.failure) throw error;
+          // Requested again once reconnected.
+          return;
+        }
         this.actors.add(identity);
       }
     });
@@ -612,6 +679,8 @@ export class Outpost {
     } else if (message.type === "configuration") {
       this.reducers = message.payload.reducers;
       this.configured.resolve();
+      // A session counts as stable once Polar configured it.
+      this.reconnectAttempts = 0;
     } else if (message.type === "meter_usage") {
       const snapshot = message.payload;
       const reducer = this.reducers.find((item) => item.meter_ids?.includes(snapshot.meter_id));

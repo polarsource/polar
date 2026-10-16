@@ -25,9 +25,9 @@ access token.
 **Before the claim, an agent is an `Agent` auth subject.** Its identity is a row in one `agents` table,
 created at sign-up, which also holds its OAuth client, its status and who claimed it. It authenticates
 as itself, owns exactly one org through an agent–organization link (not a `UserOrganization`
-membership), and can only reach endpoints whose `Authenticator` lists `Agent` in `allowed_subjects`. **After the claim,
-it acts for the claiming user with ordinary user OAuth tokens**, and its OAuth client stays marked as
-an agent.
+membership), and can only reach endpoints whose `Authenticator` lists `Agent` in `allowed_subjects`.
+**After the claim, it acts for the claiming user with ordinary user OAuth tokens**, and its OAuth
+client stays marked as an agent.
 
 ## Consequences
 

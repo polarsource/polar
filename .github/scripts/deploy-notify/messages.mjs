@@ -84,8 +84,10 @@ export function buildEnvironmentUpdates({ run, jobs, channel }) {
     const present = components.filter(Boolean);
     if (!present.length || present.some(job => job.status !== 'completed')) return [];
     if (run.status !== 'completed' && present.length !== components.length) return [];
+    const conclusions = present.map(job => job.conclusion);
     return [{
       environment,
+      succeeded: conclusions.includes('success') && conclusions.every(conclusion => ['success', 'skipped'].includes(conclusion)),
       message: {
         channel, unfurl_links: false, unfurl_media: false,
         text: [

@@ -603,7 +603,7 @@ class Outpost:
         self._require_redis()
         # Fail fast during an outage; only wait for a resync in progress.
         if not self._synced.is_set() and not self._redis_available:
-            raise PolarOutpostError("Redis is unavailable")
+            raise UnavailableRedisError("Redis is unavailable")
         with anyio.move_on_after(REDIS_TIMEOUT):
             await self._synced.wait()
         if not self._synced.is_set():

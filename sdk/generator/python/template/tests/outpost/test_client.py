@@ -1385,7 +1385,7 @@ async def test_redis_outage_fails_fast(
                 await anyio.sleep(0.01)
         assert not outpost.connected
         with anyio.fail_after(0.5):
-            with pytest.raises(PolarOutpostError, match="Redis is unavailable"):
+            with pytest.raises(UnavailableRedisError):
                 await outpost.customer_meter(
                     meter_id="meter", external_customer_id="bob"
                 )
@@ -1425,7 +1425,7 @@ async def test_failed_resync_wakes_waiting_reads(
                 await anyio.sleep(0.01)
 
         async def read() -> None:
-            with pytest.raises(PolarOutpostError, match="Redis is unavailable"):
+            with pytest.raises(UnavailableRedisError):
                 await outpost.customer_meter(
                     meter_id="meter", external_customer_id="bob"
                 )

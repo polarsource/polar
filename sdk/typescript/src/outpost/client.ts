@@ -609,7 +609,7 @@ export class Outpost {
     while (!this.isSynced) {
       // Fail fast during an outage; only wait for a resync in progress.
       if (this.redis?.status !== "ready" || this.subscriber?.status !== "ready")
-        throw new PolarError("Redis is unavailable");
+        throw new UnavailableRedisError("Redis is unavailable");
       await withTimeout(this.synced.promise).catch((error: unknown) => {
         throw redisUnavailable(error);
       });

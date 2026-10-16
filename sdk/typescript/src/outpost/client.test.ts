@@ -784,6 +784,6 @@ it("fails fast while Redis is unavailable", async () => {
   const started = performance.now();
   await expect(
     outpost.customerMeter({ external_customer_id: "bob", meter_id: "meter" }),
-  ).rejects.toThrow("Redis is unavailable");
+  ).rejects.toBeInstanceOf(UnavailableRedisError);
   expect(performance.now() - started).toBeLessThan(500);
 });

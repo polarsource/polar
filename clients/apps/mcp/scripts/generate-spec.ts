@@ -2,7 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const API_VERSION = '2026-10'
+const API_VERSION = '2027-01'
 const MCP_TAG = 'mcp'
 const META_TAGS = new Set(['public', 'mcp', 'cli'])
 const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete'] as const

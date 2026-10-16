@@ -6,6 +6,8 @@ import {
   changes,
   errors,
   found,
+  linted,
+  summary,
   target,
   unchanged,
 } from '@/utils/billing-config/review'
@@ -43,19 +45,21 @@ const applied = (
 
 const render = (
   config: LoadedConfig,
-  organization: ActiveOrganization,
+  organization: ActiveOrganization | undefined,
   result: ApplyResult,
-) =>
-  result.status === 'rejected'
-    ? [
-        ui.blank,
-        formatProblems(config, result.issues),
-        ui.blank,
-        `${ui.INDENT}Found ${plural(result.issues.length, 'error')}.`,
-      ]
-    : unchanged(result.entries)
-      ? [ui.blank, applied(config, organization, result.entries)]
-      : [applied(config, organization, result.entries)]
+) => {
+  if (result.status === 'rejected') {
+    return [
+      ui.blank,
+      formatProblems(config, result.issues),
+      ui.blank,
+      summary(result.issues),
+    ]
+  }
+  if (organization === undefined) return []
+  const line = applied(config, organization, result.entries)
+  return unchanged(result.entries) ? [ui.blank, line] : [line]
+}
 
 const interactive = Effect.gen(function* () {
   const stdio = yield* Stdio.Stdio
@@ -125,12 +129,25 @@ export const apply = Command.make('apply', { file, org, yes }).pipe(
               yield* progress.start('Reading')
               const config = yield* billing.load(Option.getOrUndefined(file))
               yield* progress.finish(config.file)
+              yield* progress.start('Linting')
+              yield* progress.finish(linted(config))
+              const organizations = yield* Organizations
+              if (errors(config.issues) > 0) {
+                return {
+                  config,
+                  organization: undefined,
+                  result: {
+                    status: 'rejected',
+                    issues: config.issues,
+                  } as const,
+                }
+              }
               yield* progress.start('Found')
               yield* progress.finish(found(config))
               yield* progress.start('Comparing')
               const [planned, { organization, plan }] = yield* Effect.timed(
                 Effect.gen(function* () {
-                  const organization = yield* (yield* Organizations).resolve(
+                  const organization = yield* organizations.resolve(
                     Option.getOrUndefined(org),
                   )
                   const plan = yield* billing.plan(config, organization)

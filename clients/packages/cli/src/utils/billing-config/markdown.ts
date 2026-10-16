@@ -136,7 +136,7 @@ export const planMarkdown = (
             (entry) =>
               entry.section === section && entry.action !== 'unchanged',
           )
-          return changed.length === 0
+          return changed.length === 0 || errors(result.issues) > 0
             ? []
             : [
                 `#### ${escape(heading(section))}`,

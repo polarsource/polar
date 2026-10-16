@@ -64,7 +64,7 @@ const github = (
 
 const post = (env: Record<string, string>, body: string | undefined) =>
   Effect.runPromiseExit(
-    commentOnPullRequest('config plan org-1', body).pipe(
+    commentOnPullRequest('config plan org-1', Effect.succeed(body)).pipe(
       Effect.provideService(Environment, env),
       Effect.provide(FetchHttpClient.layer),
       Effect.provide(BunServices.layer),

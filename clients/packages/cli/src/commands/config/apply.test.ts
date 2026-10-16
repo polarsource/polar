@@ -287,7 +287,7 @@ describe('polar config apply', () => {
     expect(failed).toBe(true)
     expect(applied).toBe(0)
     expect(output).toContain('Error: Cannot change "filter" of meters.0')
-    expect(output).toContain('Found 1 error.')
+    expect(output).toContain('Found 1 error and 0 warnings.')
     expect(output).not.toContain('applied')
   })
 })

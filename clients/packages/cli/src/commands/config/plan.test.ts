@@ -54,14 +54,18 @@ const locked = {
   location: { line: 3, column: 5, length: 1 },
 }
 
-const run = async (result: PlanResult, args: string[] = []) => {
+const run = async (
+  result: PlanResult,
+  args: string[] = [],
+  loaded: LoadedConfig = config,
+) => {
   const cli = runCli(plan, ['polar.json', ...args])
   const exit = await Effect.runPromiseExit(
     cli.effect.pipe(
       Effect.provideService(
         BillingConfig,
         BillingConfig.of({
-          load: () => Effect.succeed(config),
+          load: () => Effect.succeed(loaded),
           plan: () => Effect.succeed(result),
           apply: () => Effect.die('unused'),
           pull: () => Effect.die('unused'),
@@ -103,7 +107,7 @@ describe('polar config plan', () => {
     )
     expect(output).toContain('Found 0 errors and 1 warning.')
     expect(output).toMatch(
-      /^ {2}Reading {4}polar\.json\n {2}Found {6}1 meter\n {2}Comparing {2}\d+ms$/m,
+      /^ {2}Reading {4}polar\.json\n {2}Linting {4}no issues\n {2}Found {6}1 meter\n {2}Comparing {2}\d+ms$/m,
     )
   })
 
@@ -115,18 +119,37 @@ describe('polar config plan', () => {
     )
   })
 
-  test('fails on errors but still shows the changes and warnings', async () => {
+  test('fails on errors and shows only the problems', async () => {
     const { output, failed } = await run({
       entries,
       issues: [locked, warning],
     })
     expect(failed).toBe(true)
-    expect(output).toContain(
-      '  │ + tool-calls\n  │     events       all events\n  │     aggregation  count',
-    )
+    expect(output).not.toContain('Changes Acme (sandbox)')
+    expect(output).not.toContain('+ tool-calls')
     expect(output).toContain('Error: Cannot change "filter" of meters.0')
     expect(output).toContain('Warning:')
     expect(output).toContain('Found 1 error and 1 warning.')
+  })
+
+  test('stops after linting when the source has errors', async () => {
+    const clock = {
+      severity: 'error' as const,
+      code: 'reads_clock',
+      path: 'Date.now',
+      message: 'Reads the clock',
+      location: { line: 1, column: 1, length: 8 },
+    }
+    const { output, failed } = await run({ entries, issues: [] }, [], {
+      ...config,
+      issues: [clock],
+    })
+    expect(failed).toBe(true)
+    expect(output).toContain('Linting    1 error and 0 warnings')
+    expect(output).not.toContain('Comparing')
+    expect(output).not.toContain('Changes Acme (sandbox)')
+    expect(output).toContain('Error: Reads the clock')
+    expect(output).toContain('Found 1 error and 0 warnings.')
   })
 
   test('skips --pr-comment outside a pull request', async () => {

@@ -128,14 +128,9 @@ Polar exposes more than a hundred API operations. Instead of sending every opera
 
 Code runs in an isolated sandbox. It can only call the Polar operations listed below, with the access you granted when you authorized the client, and it cannot reach any other host.
 
-## Options
+## Read-only mode
 
-Add query parameters to the server URL to change how it behaves. Combine them with `&`, for example `https://mcp.polar.sh/mcp/polar-mcp?readonly=true&codemode=false`.
-
-| Parameter | Effect |
-| --- | --- |
-| `readonly=true` | Only read operations are available, and the agent asks for read-only access when you authorize it. Use it for agents that should look up data but never change it. |
-| `codemode=false` | Exposes each operation below as its own tool instead of `search` and `execute`. Use it if your client approves tool calls one tool at a time and you want to allow reads while approving each change. |
+For agents that should look up data but never change it, add `?readonly=true` to the server URL, for example `https://mcp.polar.sh/mcp/polar-mcp?readonly=true`. Only read operations are available, and the agent asks for read-only access when you authorize it.
 
 ## Available operations
 

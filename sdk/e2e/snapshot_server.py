@@ -36,12 +36,22 @@ class SnapshotServer:
                 message = await websocket.receive_json()
                 if message["type"] == "configuration":
                     await self._send(websocket, "configuration", self.configuration)
-                    for snapshot in list(self.snapshots.values()):
-                        await self._send(websocket, "meter_usage", snapshot)
                 elif message["type"] == "meter_usage":
-                    snapshot = self.snapshots.get(customer_key(message["payload"]))
-                    if snapshot is not None:
-                        await self._send(websocket, "meter_usage", snapshot)
+                    payload = message["payload"]
+                    snapshot = self.snapshots.get(customer_key(payload)) or {
+                        "customer_id": payload.get("customer_id"),
+                        "external_customer_id": payload.get("external_customer_id"),
+                        "customer_exists": False,
+                        "meter_id": payload["meter_id"],
+                        "version": 0,
+                        "cold_until": 0,
+                        "count": 0,
+                        "sum": 0,
+                        "min": None,
+                        "max": None,
+                        "credited_units": 0,
+                    }
+                    await self._send(websocket, "meter_usage", snapshot)
                 else:
                     await websocket.close(code=1008, reason="Unknown message")
                     return
@@ -57,6 +67,8 @@ class SnapshotServer:
             self.configuration = arguments["configuration"]
             for snapshot in arguments["snapshots"]:
                 self.snapshots[customer_key(snapshot)] = snapshot
+        elif operation == "disconnect":
+            await self.close(code=1012)
         elif operation == "snapshot":
             snapshot = typing.cast(Snapshot, arguments)
             self.snapshots[customer_key(snapshot)] = snapshot
@@ -65,11 +77,11 @@ class SnapshotServer:
         else:
             raise ValueError(f"Unknown operation: {operation}")
 
-    async def close(self) -> None:
+    async def close(self, code: int = 1001) -> None:
         for websocket, lock in list(self.clients.items()):
             async with lock:
                 if websocket.application_state == WebSocketState.CONNECTED:
-                    await websocket.close(code=1001)
+                    await websocket.close(code=code)
 
     async def _send(
         self, websocket: WebSocket, type: str, payload: Configuration | Snapshot

@@ -118,6 +118,7 @@ class MeterUsageOutgoingMessagePayload(MessageBase):
     # The bucket identity as events carry it: a customer can have several.
     customer_id: UUID4 | None
     external_customer_id: str | None
+    customer_exists: bool
     # Database time of the read: keep the payload with the highest version.
     version: EpochMicroseconds
     # Temporary: the customer's credits, the same for each of its identities,

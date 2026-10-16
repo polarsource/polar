@@ -146,6 +146,7 @@ class TestOutpost:
             (str(customer.id), customer.external_id),
         }
         assert all(p["credited_units"] == 100 for p in payloads.values())
+        assert all(p["customer_exists"] for p in payloads.values())
         external = payloads[(None, customer.external_id)]
         assert external["cold_until"] == to_epoch_microseconds(bucket_end)
         assert (external["count"], external["sum"]) == (1, 4.0)
@@ -155,6 +156,32 @@ class TestOutpost:
             get_reducer_bucket_start(version - SYNCED_LOOKBACK)
         )
         assert (internal["count"], internal["sum"]) == (0, 0.0)
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_request_meter_usage_unknown_customer(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx.AsyncClient,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        await create_reducer(save_fixture, organization=organization, meters=[meter])
+
+        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await websocket.receive_json()
+            await websocket.send_json(
+                {
+                    "type": "meter_usage",
+                    "payload": {
+                        "external_customer_id": "unknown",
+                        "meter_id": str(meter.id),
+                    },
+                }
+            )
+            response = await websocket.receive_json()
+
+        assert response["payload"]["external_customer_id"] == "unknown"
+        assert response["payload"]["customer_exists"] is False
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_event_reducer_bucket(
@@ -229,6 +256,7 @@ class TestOutpost:
                 "meter_id": str(customer_meter.meter_id),
                 "customer_id": None,
                 "external_customer_id": external_id,
+                "customer_exists": True,
                 "credited_units": 100,
                 "cold_until": to_epoch_microseconds(cold_until),
                 "count": 2,

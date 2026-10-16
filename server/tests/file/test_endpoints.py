@@ -193,6 +193,13 @@ class TestSVGSanitization:
         assert completed.size == len(sanitized)
         assert completed.checksum_sha256_hex == hashlib.sha256(sanitized).hexdigest()
 
+    async def test_downloadable_untouched(
+        self, session: AsyncSession, organization: Organization, malicious_svg: TestFile
+    ) -> None:
+        created = await malicious_svg.create(session, organization)
+        uploaded = await malicious_svg.upload(created)
+        await malicious_svg.complete(session, created, uploaded)
+
     async def test_rejects_malformed(
         self, session: AsyncSession, organization: Organization, malformed_svg: TestFile
     ) -> None:

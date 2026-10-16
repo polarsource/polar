@@ -6,6 +6,7 @@ Dry-run by default. Rejected files are reported, not touched. Invalidate
 """
 
 import typer
+from botocore.exceptions import ClientError
 from py_svg_hush import filter_svg
 from rich.console import Console
 from sqlalchemy import select
@@ -60,7 +61,13 @@ async def sanitize(
                 s3_service = S3_SERVICES[file.service]
                 try:
                     s3_object = s3_service.get_object_or_raise(file.path)
-                except S3FileError:
+                except S3FileError as e:
+                    cause = e.__cause__
+                    if not (
+                        isinstance(cause, ClientError)
+                        and cause.response["Error"]["Code"] == "NoSuchKey"
+                    ):
+                        raise
                     missing += 1
                     console.print(f"[yellow]{file.id} {file.path}: missing on S3")
                     continue

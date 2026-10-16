@@ -36,7 +36,7 @@ variable "cors_allowed_origins" {
 }
 
 variable "content_security_policy" {
-  description = "Content-Security-Policy header value, requires cors_allowed_origins"
+  description = "Content-Security-Policy header value"
   type        = string
   default     = null
 }

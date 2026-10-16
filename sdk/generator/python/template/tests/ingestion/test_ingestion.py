@@ -1,10 +1,20 @@
+import subprocess
+import sys
+import typing
 from unittest.mock import AsyncMock
 
 import anyio
 import httpx
 import pytest
 
-from polar.ingestion import EventInput, Ingestion
+from polar import PolarError
+from polar.ingestion import (
+    EventInput,
+    Ingestion,
+    IngestionError,
+    IngestionStrategyProtocol,
+    InvalidActorError,
+)
 from polar.ingestion.buffered import BufferedIngestionStrategy
 from polar.outpost import Outpost
 from polar.{{ ir.versions[0] | format_version }} import PolarAsync
@@ -34,7 +44,7 @@ async def test_ingestion_enters_and_calls_both_strategies(
                 exit.assert_not_awaited()
                 ingest.assert_not_awaited()
 
-            await ingestion.ingest(event)
+            await ingestion.ingest(**event)
 
             for _, _, ingest in mocks:
                 ingest.assert_awaited_once_with(event)
@@ -67,3 +77,92 @@ async def test_failed_strategy_startup_closes_buffered_strategy(
         ingest.assert_awaited_once_with(events=[event])
         with pytest.raises(anyio.ClosedResourceError):
             await buffered.ingest(event)
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "identity",
+    [
+        {"customer_id": "customer", "member_id": None},
+        {"customer_id": "customer", "member_id": "member"},
+        {"external_customer_id": "customer", "external_member_id": None},
+        {"external_customer_id": "customer", "external_member_id": "member"},
+    ],
+)
+async def test_actor_ingestion(identity: dict[str, typing.Any]) -> None:
+    strategy = AsyncMock(spec=IngestionStrategyProtocol)
+    strategy.actor = AsyncMock()
+    ordinary_strategy = AsyncMock(spec=IngestionStrategyProtocol)
+    async with Ingestion(strategies=[ordinary_strategy, strategy]) as ingestion:
+        actor = await ingestion.actor(**identity)
+        strategy.actor.assert_awaited_once_with(
+            customer_id=identity.get("customer_id"),
+            external_customer_id=identity.get("external_customer_id"),
+        )
+        await actor.ingest(name="usage", metadata={"tokens": 3})
+        expected_event = {**identity, "name": "usage", "metadata": {"tokens": 3}}
+        strategy.ingest.assert_awaited_once_with(expected_event)
+        ordinary_strategy.ingest.assert_awaited_once_with(expected_event)
+
+        strategy.ingest.reset_mock()
+        await ingestion.ingest(name="usage", metadata={"tokens": 3}, **identity)
+        strategy.ingest.assert_awaited_once_with(expected_event)
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "identity",
+    [
+        {},
+        {"customer_id": "customer", "external_customer_id": "customer"},
+        {"member_id": "member"},
+        {"external_member_id": "member"},
+        {"customer_id": "customer", "external_member_id": "member"},
+        {"external_customer_id": "customer", "member_id": "member"},
+    ],
+)
+async def test_invalid_actor(identity: dict[str, typing.Any]) -> None:
+    strategy = AsyncMock(spec=IngestionStrategyProtocol)
+    strategy.actor = AsyncMock()
+    async with Ingestion(strategies=[strategy]) as ingestion:
+        with pytest.raises(InvalidActorError) as exc_info:
+            await ingestion.actor(**identity)
+        assert isinstance(exc_info.value, IngestionError)
+        assert isinstance(exc_info.value, PolarError)
+
+        with pytest.raises(InvalidActorError):
+            await ingestion.ingest(name="usage", **identity)
+        strategy.ingest.assert_not_awaited()
+        strategy.actor.assert_not_awaited()
+
+
+def test_actor_without_outpost_dependencies() -> None:
+    subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            """
+import asyncio
+import sys
+from unittest.mock import AsyncMock
+
+sys.modules["polar.outpost"] = None
+sys.modules["redis"] = None
+sys.modules["httpx_ws"] = None
+sys.modules["opentelemetry"] = None
+
+from polar.ingestion import Ingestion
+from polar.ingestion.buffered import BufferedIngestionStrategy
+
+async def main():
+    async with Ingestion(strategies=[BufferedIngestionStrategy(AsyncMock())]) as ingestion:
+        actor = await ingestion.actor(external_customer_id="customer")
+        await actor.ingest(name="usage")
+
+asyncio.run(main())
+""",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )

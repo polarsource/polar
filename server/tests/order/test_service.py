@@ -5251,6 +5251,93 @@ class TestScheduleRetryForPastDueOrders:
         # Then — no retry scheduled (subscription is active, not past_due)
         enqueue_job_mock.assert_not_called()
 
+    @freeze_time("2024-01-15 12:00:00")
+    async def test_schedules_retry_for_meter_cycle_order_in_dunning(
+        self,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """Meter-cycle orders dun without marking the subscription past_due,
+        so they should be retried even on an active subscription."""
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+            next_payment_attempt_at=datetime(2024, 1, 17, 0, 0, 0, tzinfo=UTC),
+        )
+
+        new_payment_method = await create_payment_method(
+            save_fixture, customer=customer
+        )
+
+        # When
+        await order_service.schedule_retry_for_past_due_orders(
+            session, customer, new_payment_method
+        )
+
+        # Then
+        enqueue_job_mock.assert_called_once_with(
+            "order.trigger_payment",
+            order_id=order.id,
+            payment_method_id=new_payment_method.id,
+            payment_trigger="retry_payment_method_update",
+        )
+
+        await session.refresh(subscription)
+        assert subscription.payment_method_id == new_payment_method.id
+
+    @freeze_time("2024-01-15 12:00:00")
+    async def test_skips_meter_cycle_order_not_in_dunning(
+        self,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """Should NOT retry a meter-cycle order whose first charge hasn't failed."""
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
+        )
+        await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+            next_payment_attempt_at=None,
+        )
+
+        new_payment_method = await create_payment_method(
+            save_fixture, customer=customer
+        )
+
+        # When
+        await order_service.schedule_retry_for_past_due_orders(
+            session, customer, new_payment_method
+        )
+
+        # Then
+        enqueue_job_mock.assert_not_called()
+
 
 @pytest.mark.anyio
 class TestTriggerPayment:

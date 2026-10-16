@@ -3,7 +3,16 @@ from datetime import datetime
 from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
-from sqlalchemy import CursorResult, Select, case, func, select, update
+from sqlalchemy import (
+    CursorResult,
+    Select,
+    and_,
+    case,
+    func,
+    or_,
+    select,
+    update,
+)
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.auth.models import (
@@ -335,11 +344,15 @@ class OrderRepository(
         )
         return await self.get_all(statement)
 
-    async def get_pending_orders_for_past_due_subscriptions(
+    async def get_pending_orders_to_retry_for_customer(
         self, customer_id: UUID
     ) -> Sequence[Order]:
-        """Get pending subscription orders where the subscription is past_due
-        and still within the dunning window (past_due_deadline not yet expired)."""
+        """Get pending subscription orders to retry on a new payment method.
+
+        Either the subscription is past_due and still within the dunning window
+        (past_due_deadline not yet expired), or the order is a meter-cycle order
+        in dunning — those never mark the subscription past_due.
+        """
         statement = (
             self.get_base_statement()
             .join(Subscription, Order.subscription_id == Subscription.id)
@@ -347,10 +360,20 @@ class OrderRepository(
                 Order.customer_id == customer_id,
                 Order.status == OrderStatus.pending,
                 Order.subscription_id.is_not(None),
-                Subscription.status == SubscriptionStatus.past_due,
-                Subscription.canceled_at.is_(None),
-                Subscription.past_due_deadline.is_not(None),
-                Subscription.past_due_deadline > utc_now(),
+                or_(
+                    and_(
+                        Subscription.status == SubscriptionStatus.past_due,
+                        Subscription.canceled_at.is_(None),
+                        Subscription.past_due_deadline.is_not(None),
+                        Subscription.past_due_deadline > utc_now(),
+                    ),
+                    and_(
+                        Order.billing_reason
+                        == OrderBillingReasonInternal.subscription_meter_cycle,
+                        Order.next_payment_attempt_at.is_not(None),
+                        Subscription.status != SubscriptionStatus.canceled,
+                    ),
+                ),
             )
             .options(joinedload(Order.subscription))
         )

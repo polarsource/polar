@@ -3403,16 +3403,15 @@ class OrderService:
         customer: Customer,
         payment_method: PaymentMethod,
     ) -> None:
-        """Schedule immediate dunning retry for past_due subscriptions when a
-        customer saves a new default payment method.
+        """Schedule immediate dunning retry for past_due subscriptions and
+        meter-cycle orders in dunning when a customer saves a new default
+        payment method.
 
         This handles the case where automatic retries were stopped (e.g., due to
         a non-recoverable decline code) but the customer later adds a new card.
         """
         repository = OrderRepository.from_session(session)
-        orders = await repository.get_pending_orders_for_past_due_subscriptions(
-            customer.id
-        )
+        orders = await repository.get_pending_orders_to_retry_for_customer(customer.id)
 
         for order in orders:
             assert order.subscription is not None

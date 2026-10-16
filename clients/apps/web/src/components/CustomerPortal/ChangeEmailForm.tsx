@@ -102,7 +102,7 @@ const ChangeEmailForm = ({ customer }: ChangeEmailFormProps) => {
             loading={emailUpdateRequest.isPending}
             disabled={emailUpdateRequest.isPending}
           >
-            Send Verification
+            Send verification
           </Button>
           <Button
             type="button"
@@ -112,7 +112,7 @@ const ChangeEmailForm = ({ customer }: ChangeEmailFormProps) => {
               reset()
             }}
           >
-            Nevermind
+            Cancel
           </Button>
         </div>
       </form>
@@ -133,7 +133,7 @@ const ChangeEmailForm = ({ customer }: ChangeEmailFormProps) => {
           variant="secondary"
           onClick={() => setIsEditing(true)}
         >
-          Request Email Change
+          Change email
         </Button>
       </div>
     </div>

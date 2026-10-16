@@ -147,7 +147,7 @@ const DownloadReceipt = ({
       className={twMerge('w-full', className)}
       variant={variant}
     >
-      Download Receipt
+      Download receipt
     </Button>
   )
 }

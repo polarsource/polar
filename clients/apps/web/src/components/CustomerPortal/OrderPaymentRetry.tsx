@@ -375,7 +375,7 @@ export const OrderPaymentRetry = ({
     <div className="space-y-4">
       {/* Order Summary */}
       <div className="dark:bg-polar-800 rounded-lg bg-gray-50 p-4">
-        <h3 className="mb-2 font-medium">Order Summary</h3>
+        <h3 className="mb-2 font-medium">Order summary</h3>
         <div className="space-y-1 text-sm">
           <div className="flex justify-between">
             <span>Description:</span>
@@ -410,7 +410,7 @@ export const OrderPaymentRetry = ({
               </svg>
             </div>
             <p className="text-lg font-medium">
-              {showRetryButton ? 'Payment Failed' : 'Payment Successful!'}
+              {showRetryButton ? 'Payment failed' : 'Payment Successful!'}
             </p>
             <p className="dark:text-polar-500 mt-2 text-sm text-gray-500">
               {showRetryButton
@@ -424,7 +424,7 @@ export const OrderPaymentRetry = ({
               variant="default"
               className="mr-2"
             >
-              Try Again
+              Try again
             </Button>
           )}
           <Button onClick={onClose} variant="outline">
@@ -469,7 +469,7 @@ export const OrderPaymentRetry = ({
         <div className="space-y-4">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <p className="mb-2 block text-sm font-medium">Payment Method</p>
+              <p className="mb-2 block text-sm font-medium">Payment method</p>
               <div className="rounded-lg border p-3">
                 <PaymentElement
                   options={{
@@ -503,7 +503,7 @@ export const OrderPaymentRetry = ({
                 ? 'Processing...'
                 : isPolling
                   ? 'Confirming...'
-                  : 'Pay Now'}
+                  : 'Pay now'}
             </Button>
           </form>
           {onBack && (

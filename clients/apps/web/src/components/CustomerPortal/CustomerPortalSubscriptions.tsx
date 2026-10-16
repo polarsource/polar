@@ -2,7 +2,8 @@ import revalidate from '@/app/actions'
 import { useCustomerOrders } from '@/hooks/queries/customerPortal'
 import { Client, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
-import { DataTable } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
+import { subscriptionStatusDisplayNames } from '@/components/Subscriptions/utils'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { useTheme } from 'next-themes'
@@ -13,6 +14,13 @@ import { useModal } from '../Modal/useModal'
 import CustomerSubscriptionDetails from './CustomerSubscriptionDetails'
 import CustomerPortalSubscription from './CustomerPortalSubscription'
 import { OrderPaymentRetryModal } from './OrderPaymentRetryModal'
+import {
+  PortalCardList,
+  PortalEmptyState,
+  PortalListItem,
+  PortalSection,
+} from './PortalPrimitives'
+import { SubscriptionStatusPill } from './SubscriptionStatusPill'
 
 interface SubscriptionsOverviewProps {
   organization: schemas['CustomerOrganization']
@@ -33,11 +41,10 @@ export const ActiveSubscriptionsOverview = ({
   }, [])
 
   return (
-    <div className="flex flex-col gap-y-4">
-      <h3 className="text-xl">Subscriptions</h3>
-      <div className="flex flex-col gap-y-4">
-        {subscriptions.length > 0 ? (
-          subscriptions.map((s) => (
+    <PortalSection title="Subscriptions">
+      {subscriptions.length > 0 ? (
+        <Box flexDirection="column" rowGap="l">
+          {subscriptions.map((s) => (
             <CustomerSubscriptionDetails
               key={s.id}
               api={api}
@@ -46,14 +53,12 @@ export const ActiveSubscriptionsOverview = ({
               onUserSubscriptionUpdate={onSubscriptionUpdate}
               customerSessionToken={customerSessionToken}
             />
-          ))
-        ) : (
-          <div className="dark:border-polar-700 flex flex-col items-center justify-center rounded-2xl border border-gray-200 p-12 text-gray-500">
-            <p>No Subscriptions Found</p>
-          </div>
-        )}
-      </div>
-    </div>
+          ))}
+        </Box>
+      ) : (
+        <PortalEmptyState title="No subscriptions found" />
+      )}
+    </PortalSection>
   )
 }
 
@@ -135,82 +140,55 @@ export const InactiveSubscriptionsOverview = ({
   }, [retryPaymentSubscription, orderItems])
 
   return (
-    <div className="flex flex-col gap-y-4">
-      <div className="flex flex-row items-center justify-between">
-        <h3 className="text-xl">Inactive Subscriptions</h3>
-      </div>
-      <DataTable
-        data={subscriptions ?? []}
-        isLoading={false}
-        columns={[
-          {
-            accessorKey: 'product.name',
-            header: 'Product',
-            cell: ({ row }) => row.original.product.name,
-          },
-          {
-            accessorKey: 'status',
-            header: 'Status',
-            cell: ({ row }) => (
-              <span className="capitalize">
-                {row.original.status.split('_').join(' ')}
-              </span>
-            ),
-          },
-          {
-            accessorKey: 'ended_at',
-            header: 'Ended At',
-            cell: ({ row }) =>
-              row.original.ended_at ? (
-                <FormattedDateTime
-                  datetime={row.original.ended_at}
-                  dateStyle="medium"
-                  resolution="day"
-                />
+    <PortalSection title="Past subscriptions">
+      <PortalCardList>
+        {subscriptions.map((subscription) => (
+          <PortalListItem
+            key={subscription.id}
+            onClick={() => openSubscriptionModal(subscription)}
+            title={subscription.product.name}
+            subtitle={
+              subscription.ended_at ? (
+                <>
+                  Ended{' '}
+                  <FormattedDateTime
+                    datetime={subscription.ended_at}
+                    dateStyle="medium"
+                    resolution="day"
+                  />
+                </>
               ) : (
-                '—'
-              ),
-          },
-          {
-            accessorKey: 'id',
-            header: '',
-            cell: ({ row }) => (
-              <span className="flex justify-end gap-2">
-                {row.original.status === 'past_due' && (
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => openRetryPaymentModal(row.original)}
-                  >
-                    Retry payment
-                  </Button>
-                )}
+                subscriptionStatusDisplayNames[subscription.status]
+              )
+            }
+            meta={<SubscriptionStatusPill subscription={subscription} />}
+            actions={
+              subscription.status === 'past_due' ? (
                 <Button
-                  variant="secondary"
                   size="sm"
-                  onClick={() => openSubscriptionModal(row.original)}
+                  onClick={() => openRetryPaymentModal(subscription)}
                 >
-                  Manage subscription
+                  Retry payment
                 </Button>
-              </span>
-            ),
-          },
-        ]}
-      />
+              ) : undefined
+            }
+          />
+        ))}
+      </PortalCardList>
 
       <InlineModal
         isShown={isSubscriptionModalOpen}
         hide={hideSubscriptionModal}
         modalContent={
           selectedSubscription ? (
-            <div className="flex flex-col overflow-y-auto p-8">
+            <Box flexDirection="column" overflowY="auto" padding="2xl">
               <CustomerPortalSubscription
                 api={api}
                 customerSessionToken={customerSessionToken}
                 subscription={selectedSubscription}
                 products={products}
               />
-            </div>
+            </Box>
           ) : null
         }
       />
@@ -229,6 +207,6 @@ export const InactiveSubscriptionsOverview = ({
           themingPreset={themingPreset}
         />
       )}
-    </div>
+    </PortalSection>
   )
 }

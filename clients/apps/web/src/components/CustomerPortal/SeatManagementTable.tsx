@@ -19,13 +19,18 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/atoms/DropdownMenu'
 import { Status } from '@polar-sh/orbit'
-import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useState } from 'react'
 import { toast } from '../Toast/use-toast'
 import { seatStatusDisplayConfig } from '../Seats/seatStatus'
 import { CustomerSeatQuantityManager } from './CustomerSeatQuantityManager'
-import { InlineEditTableRow } from './InlineEditTableRow'
+import { InlineEditRow } from './InlineEditRow'
+import {
+  PortalCardList,
+  PortalListItem,
+  PortalSection,
+  PortalText,
+} from './PortalPrimitives'
 
 type CustomerSeat = schemas['CustomerSeat']
 
@@ -197,11 +202,14 @@ export const SeatManagementTable = ({
   const isSubscription = isSeatBasedSubscription(identifier)
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-y-2">
-        <h3 className="text-lg">Seat Management</h3>
-      </div>
-
+    <PortalSection
+      title="Seats"
+      description={
+        !isLoadingSeats
+          ? `${totalSeats - availableSeats} of ${totalSeats} seats assigned`
+          : undefined
+      }
+    >
       {isSubscription && !isLoadingSeats && (
         <CustomerSeatQuantityManager
           api={api}
@@ -213,164 +221,143 @@ export const SeatManagementTable = ({
       )}
 
       {!isLoadingSeats && (seats.length > 0 || availableSeats > 0) && (
-        <div className="dark:border-polar-700 overflow-hidden rounded-2xl border border-gray-200">
-          <table className="w-full caption-bottom text-sm">
-            <thead className="[&_tr]:border-b">
-              <tr className="dark:bg-polar-800 border-b bg-gray-50">
-                <th className="text-muted-foreground h-12 px-4 text-left align-middle font-medium">
-                  Member
-                </th>
-                <th className="text-muted-foreground h-12 px-4 text-left align-middle font-medium">
-                  Status
-                </th>
-                <th className="text-muted-foreground h-12 px-4 text-left align-middle font-medium" />
-              </tr>
-            </thead>
-            <tbody className="[&_tr:last-child]:border-0">
-              {seats
-                .sort((a, b) => {
-                  const order = ['claimed', 'pending', 'revoked']
-                  return order.indexOf(a.status) - order.indexOf(b.status)
-                })
-                .map((seat) => {
-                  const [label, color] = seatStatusDisplayConfig[seat.status]
-                  const isSeatLoading = loadingSeats.has(seat.id)
+        <PortalCardList>
+          {seats
+            .sort((a, b) => {
+              const order = ['claimed', 'pending', 'revoked']
+              return order.indexOf(a.status) - order.indexOf(b.status)
+            })
+            .map((seat) => {
+              const [label, color] = seatStatusDisplayConfig[seat.status]
+              const isSeatLoading = loadingSeats.has(seat.id)
+              const memberName = seat.member?.name
+              const memberEmail =
+                seat.member?.email || seat.customer_email || '—'
 
-                  const isEditingName = editingSeatId === seat.id
-                  const memberName = seat.member?.name
-                  const memberEmail =
-                    seat.member?.email || seat.customer_email || '—'
-
-                  if (isEditingName) {
-                    return (
-                      <InlineEditTableRow
-                        key={seat.id}
-                        value={editName}
-                        placeholder="Member name"
-                        loading={updateMember.isPending}
-                        error={editError}
-                        onChange={(value) => {
-                          setEditName(value)
-                          setEditError(undefined)
-                        }}
-                        onSave={() => handleSaveName(seat)}
-                        onCancel={cancelEditingName}
-                      />
-                    )
-                  }
-
-                  return (
-                    <tr key={seat.id} className="border-b transition-colors">
-                      <td className="p-4 align-middle">
-                        <Box flexDirection="column">
-                          {memberName && <Text>{memberName}</Text>}
-                          <Text color={memberName ? 'muted' : undefined}>
-                            {memberEmail}
-                          </Text>
-                        </Box>
-                      </td>
-                      <td className="p-4 align-middle">
-                        <Status color={color} status={label} />
-                      </td>
-                      <td className="p-4 align-middle">
-                        {seat.status !== 'revoked' && (
-                          <div className="flex justify-end">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger
-                                asChild
-                                disabled={isSeatLoading}
-                              >
-                                <Button variant="ghost" size="icon">
-                                  <MoreVertOutlined fontSize="inherit" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                {seat.status === 'claimed' &&
-                                  memberEmail !== '—' && (
-                                    <DropdownMenuItem
-                                      onClick={() =>
-                                        copyMemberLoginLink(memberEmail)
-                                      }
-                                      disabled={isSeatLoading}
-                                    >
-                                      Copy login link
-                                    </DropdownMenuItem>
-                                  )}
-                                {seat.member?.id && (
-                                  <DropdownMenuItem
-                                    onClick={() => startEditingName(seat)}
-                                    disabled={isSeatLoading}
-                                  >
-                                    Edit name
-                                  </DropdownMenuItem>
-                                )}
-                                {seat.status === 'pending' && (
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      handleResendInvitation(seat.id)
-                                    }
-                                    disabled={isSeatLoading}
-                                  >
-                                    Resend Invitation
-                                  </DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem
-                                  onClick={() => handleRevokeSeat(seat.id)}
-                                  disabled={isSeatLoading}
-                                >
-                                  Revoke Seat
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              {availableSeats > 0 &&
-                (isInviting ? (
-                  <InlineEditTableRow
-                    type="email"
-                    value={email}
-                    placeholder="email@example.com"
-                    submitLabel="Invite"
-                    loading={assignSeat.isPending}
-                    error={error}
+              if (editingSeatId === seat.id) {
+                return (
+                  <InlineEditRow
+                    key={seat.id}
+                    value={editName}
+                    placeholder="Member name"
+                    loading={updateMember.isPending}
+                    error={editError}
                     onChange={(value) => {
-                      setEmail(value)
-                      setError(undefined)
+                      setEditName(value)
+                      setEditError(undefined)
                     }}
-                    onSave={handleAssignSeat}
-                    onCancel={() => {
-                      setIsInviting(false)
-                      setEmail('')
-                      setError(undefined)
-                    }}
+                    onSave={() => handleSaveName(seat)}
+                    onCancel={cancelEditingName}
                   />
-                ) : (
-                  <tr className="border-b transition-colors">
-                    <td colSpan={3} className="p-0">
-                      <Box alignItems="center" justifyContent="between" p="l">
-                        <Text color="muted">
-                          {availableSeats === 1
-                            ? 'One more seat available'
-                            : `${availableSeats} more seats available`}
-                        </Text>
-                        <Button
-                          variant="secondary"
-                          onClick={() => setIsInviting(true)}
-                        >
-                          Invite member
-                        </Button>
-                      </Box>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
+                )
+              }
+
+              return (
+                <PortalListItem
+                  key={seat.id}
+                  title={memberName ?? memberEmail}
+                  subtitle={memberName ? memberEmail : undefined}
+                  meta={<Status size="small" color={color} status={label} />}
+                  actions={
+                    seat.status !== 'revoked' ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild disabled={isSeatLoading}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Seat actions"
+                          >
+                            <MoreVertOutlined fontSize="inherit" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {seat.status === 'claimed' && memberEmail !== '—' && (
+                            <DropdownMenuItem
+                              onClick={() => copyMemberLoginLink(memberEmail)}
+                              disabled={isSeatLoading}
+                            >
+                              Copy login link
+                            </DropdownMenuItem>
+                          )}
+                          {seat.member?.id && (
+                            <DropdownMenuItem
+                              onClick={() => startEditingName(seat)}
+                              disabled={isSeatLoading}
+                            >
+                              Edit name
+                            </DropdownMenuItem>
+                          )}
+                          {seat.status === 'pending' && (
+                            <DropdownMenuItem
+                              onClick={() => handleResendInvitation(seat.id)}
+                              disabled={isSeatLoading}
+                            >
+                              Resend invitation
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
+                            onClick={() => handleRevokeSeat(seat.id)}
+                            disabled={isSeatLoading}
+                          >
+                            Revoke seat
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : undefined
+                  }
+                />
+              )
+            })}
+          {availableSeats > 0 &&
+            (isInviting ? (
+              <InlineEditRow
+                type="email"
+                value={email}
+                placeholder="email@example.com"
+                submitLabel="Invite"
+                loading={assignSeat.isPending}
+                error={error}
+                onChange={(value) => {
+                  setEmail(value)
+                  setError(undefined)
+                }}
+                onSave={handleAssignSeat}
+                onCancel={() => {
+                  setIsInviting(false)
+                  setEmail('')
+                  setError(undefined)
+                }}
+              />
+            ) : (
+              <Box
+                as="li"
+                display="flex"
+                alignItems="center"
+                justifyContent="between"
+                columnGap="l"
+                paddingHorizontal={{ base: 'l', md: 'xl' }}
+                paddingVertical="m"
+                borderRadius="l"
+                borderWidth={1}
+                borderStyle="dashed"
+                borderColor="border-primary"
+              >
+                <PortalText tone="secondary" className="text-sm">
+                  {availableSeats === 1
+                    ? 'One more seat available'
+                    : `${availableSeats} more seats available`}
+                </PortalText>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setIsInviting(true)}
+                >
+                  Invite member
+                </Button>
+              </Box>
+            ))}
+        </PortalCardList>
       )}
-    </div>
+    </PortalSection>
   )
 }

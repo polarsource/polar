@@ -100,7 +100,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
           name="billing_name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Billing Name</FormLabel>
+              <FormLabel>Billing name</FormLabel>
               <FormControl>
                 <Input
                   type="text"
@@ -280,7 +280,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
           disabled={update.isPending || !isDirty}
           className="self-start"
         >
-          Update Billing Details
+          Update billing details
         </Button>
       </form>
     </Form>

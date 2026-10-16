@@ -8,6 +8,7 @@ import {
 } from '@polar-sh/i18n'
 import { headers } from 'next/headers'
 import { Navigation } from './Navigation'
+import { PortalShell } from './PortalShell'
 
 async function getCustomerLocale(token: string): Promise<string | null> {
   const api = await getServerSideAPI(token)
@@ -58,13 +59,17 @@ export async function CustomerPortalPage({
   }
 
   return (
-    <div className="flex w-full flex-col items-stretch gap-6 md:flex-row md:gap-12">
-      <Navigation
-        organization={organization}
-        locale={locale}
-        localizationEnabled={localizationEnabled}
-      />
-      <div className="flex w-full flex-col md:py-12">{children}</div>
-    </div>
+    <PortalShell
+      organization={organization}
+      sidebar={
+        <Navigation
+          organization={organization}
+          locale={locale}
+          localizationEnabled={localizationEnabled}
+        />
+      }
+    >
+      {children}
+    </PortalShell>
   )
 }

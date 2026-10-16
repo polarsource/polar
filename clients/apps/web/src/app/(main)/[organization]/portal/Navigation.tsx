@@ -5,16 +5,10 @@ import { createClientSideAPI } from '@/utils/client'
 import { hasBillingPermission } from '@/utils/customerPortal'
 import { Client, schemas } from '@polar-sh/client'
 import { type AcceptedLocale } from '@polar-sh/i18n'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
+import { PortalText } from '@/components/CustomerPortal/PortalPrimitives'
 import Link from 'next/link'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { twMerge } from 'tailwind-merge'
+import { usePathname, useSearchParams } from 'next/navigation'
 
 const links = (
   organization: schemas['CustomerOrganization'],
@@ -70,7 +64,6 @@ const NavigationContent = ({
   currentPath: string
   searchParams: URLSearchParams
 }) => {
-  const router = useRouter()
   const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
 
   const buildPath = (path: string) => {
@@ -81,57 +74,59 @@ const NavigationContent = ({
 
   return (
     <>
-      <nav className="sticky top-0 hidden h-fit w-40 flex-none flex-col gap-y-6 py-12 md:flex lg:w-64">
-        <div className="flex flex-col">
-          {authenticatedUser?.name ? <h3>{authenticatedUser?.name}</h3> : null}
-          <span
-            className={twMerge(
-              authenticatedUser?.name
-                ? 'dark:text-polar-500 text-gray-500'
-                : null,
-            )}
-          >
-            {authenticatedUser?.email ?? '—'}
-          </span>
-        </div>
-        <div className="flex flex-col gap-y-1">
-          {filteredLinks.map((link) => (
+      <Box
+        as="nav"
+        flexDirection={{ base: 'row', md: 'column' }}
+        columnGap="xl"
+        rowGap="s"
+        overflowX={{ base: 'auto', md: 'visible' }}
+        paddingBottom={{ base: 'l', md: 'none' }}
+      >
+        {filteredLinks.map((link) => {
+          const isActive = link.isActive(currentPath)
+          return (
             <Link
               key={link.href}
               href={buildPath(link.href)}
-              className={twMerge(
-                'dark:text-polar-500 dark:hover:bg-polar-800 rounded-lg border border-transparent px-3 py-1.5 text-sm font-medium text-gray-500 transition-colors duration-75 hover:bg-gray-100',
-                link.isActive(currentPath) &&
-                  'dark:bg-polar-800 dark:border-polar-700 bg-gray-100 text-black dark:text-white',
-              )}
+              className="shrink-0 text-sm md:text-lg"
+              aria-current={isActive ? 'page' : undefined}
               prefetch
             >
-              {link.label}
+              <Box
+                as="span"
+                color={
+                  isActive
+                    ? 'text-primary'
+                    : { base: 'text-secondary', hover: 'text-primary' }
+                }
+                transitionProperty="colors"
+                transitionDuration="fast"
+              >
+                {link.label}
+              </Box>
             </Link>
-          ))}
-        </div>
-      </nav>
-      <Select
-        value={filteredLinks.find(({ href }) => href === currentPath)?.label}
-        onValueChange={(value) => {
-          router.push(
-            buildPath(
-              filteredLinks.find(({ label }) => label === value)?.href ?? '',
-            ),
           )
-        }}
-      >
-        <SelectTrigger className="md:hidden">
-          <SelectValue placeholder="Select page" />
-        </SelectTrigger>
-        <SelectContent>
-          {filteredLinks.map((link) => (
-            <SelectItem key={link.href} value={link.label}>
-              {link.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        })}
+      </Box>
+      {authenticatedUser ? (
+        <Box
+          flexDirection="column"
+          marginTop="auto"
+          display={{ base: 'none', md: 'flex' }}
+        >
+          <PortalText tone="tertiary" className="text-xs">
+            Signed in as
+          </PortalText>
+          {authenticatedUser.name ? (
+            <PortalText tone="primary" block className="truncate text-sm">
+              {authenticatedUser.name}
+            </PortalText>
+          ) : null}
+          <PortalText tone="secondary" block className="truncate text-sm">
+            {authenticatedUser.email}
+          </PortalText>
+        </Box>
+      ) : null}
     </>
   )
 }

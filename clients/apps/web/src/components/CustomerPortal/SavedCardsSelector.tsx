@@ -47,7 +47,7 @@ export const SavedCardsSelector = ({
           disabled={disabled}
           className="w-full"
         >
-          Add New Card
+          Add new card
         </Button>
       </div>
     )
@@ -56,7 +56,7 @@ export const SavedCardsSelector = ({
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <h4 className="font-medium">Saved Payment Methods</h4>
+        <h4 className="font-medium">Saved payment methods</h4>
         <div className="space-y-2">
           {paymentMethods.map((paymentMethod) => {
             const card = getPaymentMethodCardInfo(paymentMethod)
@@ -114,7 +114,7 @@ export const SavedCardsSelector = ({
           variant="outline"
           className="w-full"
         >
-          Use a Different Card
+          Use a different card
         </Button>
       </div>
     </div>

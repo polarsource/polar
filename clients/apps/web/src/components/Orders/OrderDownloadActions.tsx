@@ -1,6 +1,7 @@
 'use client'
 
 import type { schemas } from '@polar-sh/client'
+import { Box } from '@polar-sh/orbit/Box'
 import { useIsMobile } from '@polar-sh/ui/hooks/use-mobile'
 import { DownloadInvoicePortal } from './DownloadInvoice'
 import { DownloadReceiptPortal } from './DownloadReceipt'
@@ -19,7 +20,7 @@ export const OrderDownloadActions = ({
 
   if (isMobile) {
     return (
-      <div className="flex flex-col gap-4">
+      <Box flexDirection="column" rowGap="s">
         {hasReceipt && <DownloadReceiptPortal order={order} />}
         <DownloadInvoicePortal
           customerSessionToken={customerSessionToken}
@@ -27,12 +28,12 @@ export const OrderDownloadActions = ({
           onInvoiceGenerated={() => {}}
           variant={hasReceipt ? 'secondary' : undefined}
         />
-      </div>
+      </Box>
     )
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <Box columnGap="s" rowGap="s" flexWrap="wrap">
       {hasReceipt ? (
         <>
           <DownloadReceiptPortal order={order} className="w-auto" />
@@ -51,6 +52,6 @@ export const OrderDownloadActions = ({
           className="w-auto"
         />
       )}
-    </div>
+    </Box>
   )
 }

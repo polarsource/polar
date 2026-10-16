@@ -4,6 +4,7 @@ import type {
   EventExternalCustomerInput,
   EventInput,
 } from "./event";
+import type { CustomerMeter, MeterInput } from "./meter";
 
 import { PolarError, type ClientBase } from "../base";
 import { BufferedIngestionStrategy, type IngestionClient } from "./buffered";
@@ -23,11 +24,13 @@ export type ActorInput =
 
 export interface ActorIngestion {
   ingest(event: ContextualEventInput): Promise<void>;
+  meter(meterId: string): Promise<CustomerMeter | null>;
 }
 
 export interface IngestionStrategy {
   start(): Promise<IngestionStrategy | void>;
   actor?(input: ActorInput): Promise<void>;
+  meter?(input: MeterInput): Promise<CustomerMeter | null>;
   ingest(event: EventInput): Promise<void>;
   close(): Promise<void>;
 }
@@ -43,9 +46,17 @@ export class Ingestion {
   private closing?: Promise<void>;
   private activeOperations = 0;
   private onDrained?: () => void;
+  private readonly client: ClientBase;
 
-  constructor({ strategies }: { strategies: readonly IngestionStrategy[] }) {
+  constructor({
+    strategies,
+    client,
+  }: {
+    strategies: readonly IngestionStrategy[];
+    client: ClientBase;
+  }) {
     this.strategies = strategies;
+    this.client = client;
   }
 
   async start(): Promise<this> {
@@ -92,7 +103,37 @@ export class Ingestion {
     this.activeOperations++;
     try {
       for (const strategy of this.strategies) await strategy.actor?.(identity);
-      return { ingest: (event) => this.ingest({ ...event, ...identity }) };
+      return {
+        ingest: (event) => this.ingest({ ...event, ...identity }),
+        meter: (meterId) => this.meter({ ...identity, meter_id: meterId }),
+      };
+    } finally {
+      if (--this.activeOperations === 0) this.onDrained?.();
+    }
+  }
+
+  async meter(input: MeterInput): Promise<CustomerMeter | null> {
+    if (!this.started) throw new IngestionError("Ingestion is not running");
+    validateActor(input);
+    this.activeOperations++;
+    try {
+      for (const strategy of this.strategies) {
+        if (strategy.meter) return await strategy.meter(input);
+      }
+      const request = this.client.buildRequest(
+        "GET",
+        "/v1/customer-meters/",
+        {},
+        {
+          meter_id: input.meter_id,
+          customer_id: input.customer_id,
+          external_customer_id: input.external_customer_id,
+          limit: 1,
+        },
+      );
+      const response = await this.client.sendRequest(request);
+      const result = await this.client.parseResponse<{ items: CustomerMeter[] }>(response, "json");
+      return result.items[0] ?? null;
     } finally {
       if (--this.activeOperations === 0) this.onDrained?.();
     }
@@ -137,7 +178,7 @@ const validateActor = (input: {
 
 export const createIngestion = (
   polar: IngestionClient,
-  client: Pick<ClientBase, "buildRequest">,
+  client: ClientBase,
   options: IngestionOptions = {},
 ): Ingestion => {
   const strategies: IngestionStrategy[] = [new BufferedIngestionStrategy(polar)];
@@ -156,10 +197,13 @@ export const createIngestion = (
       async actor(input) {
         await outpost!.actor(input);
       },
+      async meter(input) {
+        return outpost!.meter(input);
+      },
       async close() {
         await outpost?.close();
       },
     });
   }
-  return new Ingestion({ strategies });
+  return new Ingestion({ strategies, client });
 };

@@ -131,6 +131,7 @@ class PythonEmitter(EmitterBase):
             ("polar", "logging.py"),
             ("polar", "ingestion", "__init__.py"),
             ("polar", "ingestion", "events.py"),
+            ("polar", "ingestion", "meter.py"),
             ("polar", "ingestion", "client.py"),
             ("polar", "ingestion", "buffered.py"),
             ("polar", "outpost", "__init__.py"),

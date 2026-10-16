@@ -14,6 +14,7 @@ import { once } from "node:events";
 import WebSocket from "ws";
 
 import type { EventInput } from "../ingestion/event";
+import type { CustomerMeter } from "../ingestion/meter";
 
 import { ClientBase, PolarError } from "../base";
 import { customerKey, parseEvent } from "./event";
@@ -233,13 +234,6 @@ export interface OutpostOptions {
   /** How long a read of a cold customer waits for its first snapshot, in milliseconds. */
   snapshotTimeout?: number;
 }
-export interface CustomerMeter extends Customer {
-  meter_id: string;
-  consumed_units: number;
-  credited_units: number;
-  balance: number;
-}
-
 export class Outpost {
   private redis?: OutpostRedis;
   private subscriber?: Redis;
@@ -451,7 +445,7 @@ export class Outpost {
     );
   }
 
-  async customerMeter(input: Customer & { meter_id: string }): Promise<CustomerMeter | null> {
+  async meter(input: Customer & { meter_id: string }): Promise<CustomerMeter | null> {
     return this.traceRead("outpost.customer_meter", async (span) => {
       const customer = customerKey(input);
       this.requireRedis();

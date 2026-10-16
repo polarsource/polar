@@ -25,9 +25,8 @@ from opentelemetry.trace import Span, StatusCode
 from opentelemetry.util.types import AttributeValue
 from redis.asyncio import Redis
 from redis.asyncio.retry import Retry
-from redis.backoff import NoBackoff
+from redis.backoff import EqualJitterBackoff, NoBackoff
 from redis.commands.core import AsyncScript
-from redis.exceptions import ConnectionError as RedisConnectionError
 from redis.exceptions import TimeoutError as RedisTimeoutError
 
 from polar.base import PolarError
@@ -99,6 +98,15 @@ def _backoff_delay(attempt: int, base: float, cap: float) -> float:
     return random.uniform(delay / 2, delay)
 
 
+class RedisReconnectBackoff(EqualJitterBackoff):
+    def __init__(self) -> None:
+        super().__init__(cap=MAX_REDIS_RECONNECT_DELAY, base=REDIS_RECONNECT_DELAY)
+
+    def compute(self, failures: int) -> float:
+        # Bounded exponent: a long outage would overflow the float otherwise.
+        return super().compute(min(failures, 16))
+
+
 def _is_connection_error(error: BaseException) -> bool:
     if isinstance(error, BaseExceptionGroup):
         return all(_is_connection_error(inner) for inner in error.exceptions)
@@ -133,6 +141,8 @@ async def connect_websocket(
 
 CACHE_SIZE = 1024
 REDIS_TIMEOUT = 5.0
+REDIS_RECONNECT_DELAY = 0.1
+MAX_REDIS_RECONNECT_DELAY = 2.0
 SYNC_INTERVAL = 30.0
 RECONNECT_DELAY = 0.5
 SNAPSHOT_TIMEOUT = 5.0
@@ -663,44 +673,49 @@ class Outpost:
         task_status: anyio.abc.TaskStatus[None] = anyio.TASK_STATUS_IGNORED,
     ) -> None:
         started = False
-        while True:
+
+        async def listen() -> None:
+            nonlocal started
             async with self._require_redis().pubsub() as pubsub:
-                try:
-                    with self._span("outpost.redis.subscribe"):
-                        await pubsub.subscribe(self._channel)
-                        subscribed = await pubsub.get_message(timeout=5)
-                        if subscribed is None or subscribed["type"] != "subscribe":
-                            raise RedisTimeoutError(
-                                "Outpost subscription was not acknowledged"
-                            )
-                        await self._refresh_states()
-                        self._synced.set()
-                    if not started:
-                        task_status.started()
-                        started = True
-                    next_refresh = anyio.current_time() + SYNC_INTERVAL
-                    while True:
-                        message = await pubsub.get_message(
-                            ignore_subscribe_messages=True, timeout=1
+                with self._span("outpost.redis.subscribe"):
+                    await pubsub.subscribe(self._channel)
+                    subscribed = await pubsub.get_message(timeout=5)
+                    if subscribed is None or subscribed["type"] != "subscribe":
+                        raise RedisTimeoutError(
+                            "Outpost subscription was not acknowledged"
                         )
-                        if message is not None:
-                            update: StateUpdate = json.loads(message["data"])
-                            with self._span("outpost.sync.received"):
-                                await self._receive_state(
-                                    update["customer"],
-                                    self._decode_state(update["state"]),
-                                )
-                        if anyio.current_time() >= next_refresh:
-                            await self._refresh_states()
-                            next_refresh = anyio.current_time() + SYNC_INTERVAL
-                except (RedisConnectionError, RedisTimeoutError) as error:
-                    with self._span("outpost.redis.disconnect") as span:
-                        span.record_exception(error)
-                        span.set_status(StatusCode.ERROR)
-                    self._synced = anyio.Event()
-                    for local in self._cache.values():
-                        local.state = None
-            await anyio.sleep(1)
+                    await self._refresh_states()
+                    self._synced.set()
+                if not started:
+                    task_status.started()
+                    started = True
+                next_refresh = anyio.current_time() + SYNC_INTERVAL
+                while True:
+                    message = await pubsub.get_message(
+                        ignore_subscribe_messages=True, timeout=1
+                    )
+                    if message is not None:
+                        update: StateUpdate = json.loads(message["data"])
+                        with self._span("outpost.sync.received"):
+                            await self._receive_state(
+                                update["customer"],
+                                self._decode_state(update["state"]),
+                            )
+                    if anyio.current_time() >= next_refresh:
+                        await self._refresh_states()
+                        next_refresh = anyio.current_time() + SYNC_INTERVAL
+
+        async def disconnect(error: Exception) -> None:
+            with self._span("outpost.redis.disconnect") as span:
+                span.record_exception(error)
+                span.set_status(StatusCode.ERROR)
+            self._synced = anyio.Event()
+            for local in self._cache.values():
+                local.state = None
+
+        # the failure count never resets, so after earlier outages
+        # the first retry waits up to the 2s cap instead of the base delay.
+        await Retry(RedisReconnectBackoff(), -1).call_with_retry(listen, disconnect)
 
     async def _run_websocket(
         self,

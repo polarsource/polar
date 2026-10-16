@@ -5,11 +5,17 @@ const plugins = [
   [
     'expo-splash-screen',
     {
-      image: './assets/images/splash-icon.png',
-      imageWidth: 120,
-      resizeMode: 'contain',
       // oxlint-disable-next-line @polar/no-hardcoded-colors
-      backgroundColor: '#0D0E10',
+      backgroundColor: '#000000',
+      ios: {
+        image: './assets/images/splash.jpg',
+        resizeMode: 'cover',
+        enableFullScreenImage_legacy: true,
+      },
+      android: {
+        image: './assets/images/splash-android.jpg',
+        imageWidth: 288,
+      },
     },
   ],
   'expo-secure-store',
@@ -18,7 +24,7 @@ const plugins = [
   [
     'expo-asset',
     {
-      assets: ['./assets/images/login-background.jpg'],
+      assets: ['./assets/images/splash.jpg'],
     },
   ],
   'expo-web-browser',
@@ -74,7 +80,7 @@ module.exports = {
       adaptiveIcon: {
         foregroundImage: './assets/images/adaptive-icon.png',
         // oxlint-disable-next-line @polar/no-hardcoded-colors
-        backgroundColor: '#0D0E10',
+        backgroundColor: '#000000',
       },
       package: 'com.polarsource.Polar',
       scheme: 'polar',

@@ -1,3 +1,4 @@
+import { resolveFontStyle } from '@/design-system/fonts'
 import { useTheme } from '@/design-system/useTheme'
 import { TextInput, TextInputProps } from 'react-native'
 
@@ -20,6 +21,7 @@ export const Input = (props: TextInputProps) => {
           borderColor: theme.colors.border,
         },
         props.style,
+        resolveFontStyle(props.style, { fontSize: 16 }),
       ]}
     />
   )

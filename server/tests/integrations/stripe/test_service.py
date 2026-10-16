@@ -78,13 +78,19 @@ class TestCreatePaymentIntentFromSharedPaymentToken:
         create = mocker.patch("stripe.PaymentIntent.create_async")
 
         await stripe_service.create_payment_intent_from_shared_payment_token(
-            "spt_123", amount=1000, currency="usd", confirm=True
+            "spt_123",
+            amount=1000,
+            currency="usd",
+            confirm=True,
+            automatic_payment_methods={"enabled": True},
+            return_url="https://polar.sh/checkout/confirmation",
         )
 
         create.assert_awaited_once_with(
             amount=1000,
             currency="usd",
             confirm=True,
+            automatic_payment_methods={"enabled": True, "allow_redirects": "never"},
             payment_method_data={"shared_payment_granted_token": "spt_123"},
             stripe_version=SHARED_PAYMENT_TOKENS_API_VERSION,
         )

@@ -1387,6 +1387,10 @@ class CheckoutService:
                     if (
                         checkout_confirm.shared_payment_token_id is not None
                         and intent.status == "requires_action"
+                        and (
+                            intent.next_action is None
+                            or intent.next_action.type != "redirect_to_url"
+                        )
                     ):
                         try:
                             await stripe_service.cancel_payment_intent(intent.id)
@@ -1400,8 +1404,9 @@ class CheckoutService:
                         raise PaymentError(
                             checkout,
                             "authentication_required",
-                            "The payment requires additional authentication, "
-                            "which isn't supported with shared payment tokens.",
+                            "The payment requires additional authentication. "
+                            "Mint the shared payment token with "
+                            "`use_stripe_sdk` set to `false` and a `return_url`.",
                         )
 
                 # Check for trial abuse

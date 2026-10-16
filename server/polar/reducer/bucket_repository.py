@@ -285,7 +285,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             )
         )
 
-    async def seal(
+    async def mark_as_sealed(
         self,
         reducer: Reducer,
         identities: Sequence[tuple[UUID | None, str | None]],
@@ -315,7 +315,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         )
         return len(result.all())
 
-    async def bill(
+    async def mark_as_billed(
         self,
         reducer: Reducer,
         identities: Sequence[tuple[UUID | None, str | None]],

@@ -500,7 +500,7 @@ class ReducerService:
                 customer_id=str(customer.id),
                 at=at,
             ) as span:
-                sealed = await repository.seal(
+                sealed = await repository.mark_as_sealed(
                     reducer, identities, until=at, sealed_at=utc_now()
                 )
                 span.set_attribute("sealed_buckets", sealed)
@@ -530,7 +530,7 @@ class ReducerService:
                 since=since,
                 until=until,
             ) as span:
-                billed = await repository.bill(
+                billed = await repository.mark_as_billed(
                     reducer,
                     identities,
                     order_id,

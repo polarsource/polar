@@ -232,9 +232,6 @@ export const PortalDrawerHeader = ({
     paddingHorizontal="2xl"
     paddingVertical="l"
     backgroundColor="background-primary"
-    borderBottomWidth={1}
-    borderStyle="solid"
-    borderColor="border-primary"
   >
     <PortalText tone="secondary" className="text-sm">
       {title}

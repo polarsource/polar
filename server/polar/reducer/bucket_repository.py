@@ -291,10 +291,14 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         identities: Sequence[tuple[UUID | None, str | None]],
         *,
         until: datetime,
+        since: datetime | None = None,
         sealed_at: datetime,
     ) -> int:
-        """Seals the identities' unsealed buckets ending by `until`, and returns
-        how many."""
+        """Seals the identities' unsealed buckets ending by `until`, after `since`
+        if given, and returns how many."""
+        clauses = [ReducerBucket.bucket_end <= until]
+        if since is not None:
+            clauses.append(ReducerBucket.bucket_end > since)
         open_ids = (
             select(ReducerBucket.id)
             .where(
@@ -302,7 +306,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
                 ReducerBucket.reducer_id == reducer.id,
                 _is_any_customer(identities),
                 ReducerBucket.sealed_at.is_(None),
-                ReducerBucket.bucket_end <= until,
+                *clauses,
             )
             .order_by(ReducerBucket.bucket_start)
             .with_for_update()

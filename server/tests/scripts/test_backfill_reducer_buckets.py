@@ -242,7 +242,8 @@ class TestBackfillBuckets:
                 await save_fixture(bucket)
 
         # The next billing bills everything still open since the subscription
-        # started: the late event, the pending one and the unbilled one.
+        # started: the late event, the pending one and the unbilled one. Usage
+        # before the subscription stays open.
         next_order = await create_order(save_fixture, customer=customer)
         quantities = await reducer_service.bill(
             session,
@@ -260,7 +261,7 @@ class TestBackfillBuckets:
                 .order_by(ReducerBucket.bucket_start, ReducerBucket.generation)
             )
         ).all()
-        assert all(b.sealed_at is not None for b in buckets)
+        assert [b.sealed_at is None for b in buckets] == [True] + [False] * 5
         assert [b.order_id for b in buckets] == [
             None,
             order.id,

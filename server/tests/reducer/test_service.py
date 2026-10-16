@@ -659,7 +659,7 @@ class TestSealBuckets:
             session,
             [max_reducer],
             external_customer,
-            at=CUTOFF,
+            until=CUTOFF,
         )
 
         assert await get_intervals(session) == [
@@ -711,7 +711,7 @@ class TestSealBuckets:
             session,
             [max_reducer],
             external_customer,
-            at=NEXT_BUCKET_START,
+            until=NEXT_BUCKET_START,
         )
 
         buckets = sorted(
@@ -751,7 +751,7 @@ class TestSealBuckets:
             session,
             [max_reducer],
             external_customer,
-            at=CUTOFF,
+            until=CUTOFF,
         )
 
         assert await get_intervals(session) == [
@@ -768,7 +768,7 @@ class TestSealBuckets:
         organization: Organization,
     ) -> None:
         await reducer_service._seal_buckets(
-            session, [max_reducer], external_customer, at=CUTOFF
+            session, [max_reducer], external_customer, until=CUTOFF
         )
         await create_tokens_event(
             save_fixture,
@@ -805,11 +805,11 @@ class TestSealBuckets:
             session,
             [max_reducer],
             external_customer,
-            at=NEXT_BUCKET_START,
+            until=NEXT_BUCKET_START,
         )
 
         await reducer_service._seal_buckets(
-            session, [max_reducer], external_customer, at=CUTOFF
+            session, [max_reducer], external_customer, until=CUTOFF
         )
 
         assert await get_intervals(session) == [
@@ -834,7 +834,7 @@ class TestSealBuckets:
             session,
             [max_reducer],
             external_customer,
-            at=NEXT_BUCKET_START,
+            until=NEXT_BUCKET_START,
         )
         await create_tokens_event(
             save_fixture,
@@ -848,7 +848,7 @@ class TestSealBuckets:
         )
 
         await reducer_service._seal_buckets(
-            session, [max_reducer], external_customer, at=CUTOFF
+            session, [max_reducer], external_customer, until=CUTOFF
         )
 
         assert await get_intervals(session) == [
@@ -883,7 +883,7 @@ class TestSealBuckets:
                 session,
                 [max_reducer],
                 external_customer,
-                at=cutoff,
+                until=cutoff,
             )
 
         assert await get_intervals(session) == [
@@ -917,7 +917,7 @@ class TestSealBuckets:
             session,
             [max_reducer],
             external_customer,
-            at=CUTOFF,
+            until=CUTOFF,
         )
 
         await reducer_service.rollup(
@@ -985,7 +985,7 @@ class TestBillBuckets:
                 "external",
             )
         await reducer_service._seal_buckets(
-            session, [max_reducer], external_customer, at=NEXT_BUCKET_START
+            session, [max_reducer], external_customer, until=NEXT_BUCKET_START
         )
 
         quantities = await reducer_service._bill_buckets(
@@ -1029,7 +1029,7 @@ class TestBillBuckets:
         )
         for at in (CUTOFF, NEXT_BUCKET_START):
             await reducer_service._seal_buckets(
-                session, [max_reducer], external_customer, at=at
+                session, [max_reducer], external_customer, until=at
             )
 
         quantities = await reducer_service._bill_buckets(
@@ -1067,7 +1067,7 @@ class TestBillBuckets:
             session, max_reducer.id, BUCKET_START, None, "external"
         )
         await reducer_service._seal_buckets(
-            session, [max_reducer], external_customer, at=NEXT_BUCKET_START
+            session, [max_reducer], external_customer, until=NEXT_BUCKET_START
         )
 
         quantities = [
@@ -1143,7 +1143,7 @@ class TestBillBuckets:
             )
 
         await reducer_service._seal_buckets(
-            session, [reducer], external_customer, at=NEXT_BUCKET_START
+            session, [reducer], external_customer, until=NEXT_BUCKET_START
         )
 
         quantities = await reducer_service._bill_buckets(
@@ -1204,7 +1204,7 @@ class TestSeal:
 
         await reducer_service.seal(session, customer, meter.id, at=CUTOFF)
 
-        seal.assert_called_once_with(session, [reducer], customer, at=CUTOFF)
+        seal.assert_called_once_with(session, [reducer], customer, until=CUTOFF)
 
     async def test_logs_failures_without_raising(
         self,
@@ -1253,10 +1253,9 @@ class TestBill:
         )
 
         assert quantities == {meter.id: Decimal(3)}
-        assert seal.call_args_list == [
-            mocker.call(session, [reducer], customer, at=START),
-            mocker.call(session, [reducer], customer, at=CUTOFF),
-        ]
+        seal.assert_called_once_with(
+            session, [reducer], customer, since=START, until=CUTOFF
+        )
         bill.assert_called_once_with(
             session, [reducer], customer, order_id=order_id, since=START, until=CUTOFF
         )

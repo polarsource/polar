@@ -14,6 +14,7 @@ from fakeredis import FakeAsyncRedis, FakeServer
 from httpx_ws.transport import ASGIWebSocketTransport
 from opentelemetry.sdk.trace import ReadableSpan
 from opentelemetry.sdk.trace.export import (
+    BatchSpanProcessor,
     SimpleSpanProcessor,
     SpanExporter,
     SpanExportResult,
@@ -1014,7 +1015,26 @@ async def test_telemetry_opt_out(
     url, _ = redis_connection
     async with Outpost(url, client=polar_client, telemetry=telemetry) as outpost:
         await outpost.ingest(events=[{"name": "call", "external_customer_id": "alice"}])
+        await outpost.flush_telemetry()
     assert exported_spans == []
+
+
+@pytest.mark.anyio
+async def test_flush_telemetry_exports_buffered_spans(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    exported_spans: list[ReadableSpan],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "polar.outpost.telemetry.BatchSpanProcessor", BatchSpanProcessor
+    )
+    url, _ = redis_connection
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.ingest(events=[{"name": "call", "external_customer_id": "alice"}])
+        assert exported_spans == []
+        assert await outpost.flush_telemetry()
+        assert "outpost.ingest" in {span.name for span in exported_spans}
 
 
 @pytest.mark.anyio

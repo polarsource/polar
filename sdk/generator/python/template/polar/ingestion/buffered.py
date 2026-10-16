@@ -7,7 +7,8 @@ import typing
 import anyio
 
 from polar import PolarError, PolarNetworkError, PolarRateLimitError, PolarServerError
-from polar.ingestion.alias import EventInput, PolarAsync
+from polar.ingestion.client import IngestionClient
+from polar.ingestion.events import EventInput
 from polar.logging import get_logger
 
 log = get_logger(__name__)
@@ -23,7 +24,7 @@ DropReason = typing.Literal["retry_exhausted", "shutdown_timeout", "permanent_er
 class BufferedIngestionStrategy:
     def __init__(
         self,
-        polar: PolarAsync,
+        polar: IngestionClient,
         batch_size: int = 100,
         batch_interval: float = 1.0,
         shutdown_timeout: float = 5.0,

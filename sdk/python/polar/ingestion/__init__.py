@@ -2,10 +2,11 @@ import contextlib
 import types
 import typing
 
-from polar.ingestion.alias import EventInput, PolarAsync
 from polar.ingestion.buffered import (
     BufferedIngestionStrategy as BufferedIngestionStrategy,
 )
+from polar.ingestion.client import IngestionClient, PolarClient
+from polar.ingestion.events import EventInput
 from polar.logging import get_logger
 
 log = get_logger(__name__)
@@ -41,7 +42,7 @@ class Ingestion:
 
     @classmethod
     def create(
-        cls, polar: PolarAsync, outpost_redis_url: str | None = None
+        cls, polar: PolarClient, outpost_redis_url: str | None = None
     ) -> typing.Self:
         strategies = [BufferedIngestionStrategy(polar)]
         if outpost_redis_url is not None:
@@ -51,4 +52,4 @@ class Ingestion:
         return cls(strategies=strategies)
 
 
-__all__ = ["EventInput", "Ingestion", "PolarAsync"]
+__all__ = ["EventInput", "Ingestion", "IngestionClient", "PolarClient"]

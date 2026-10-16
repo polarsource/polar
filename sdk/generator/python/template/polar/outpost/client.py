@@ -32,7 +32,8 @@ from redis.exceptions import ConnectionError as RedisConnectionError
 from redis.exceptions import TimeoutError as RedisTimeoutError
 
 from polar.base import PolarError
-from polar.ingestion import EventInput, PolarAsync
+from polar.ingestion.client import PolarClient
+from polar.ingestion.events import EventInput
 from polar.outpost.event import Event
 from polar.outpost.reducer import (
     BucketStatistics,
@@ -366,7 +367,7 @@ class Outpost:
         self._sync_applied = 0
 
     @classmethod
-    def create(cls, polar: PolarAsync, redis_url: str) -> typing.Self:
+    def create(cls, polar: PolarClient, redis_url: str) -> typing.Self:
         return cls(redis_url=redis_url, client=polar._client._client)
 
     @_raise_redis_unavailable

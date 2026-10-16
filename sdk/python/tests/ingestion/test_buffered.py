@@ -5,8 +5,9 @@ import anyio.lowlevel
 import pytest
 
 from polar import PolarNetworkError
-from polar.ingestion.alias import EventInput
+from polar.ingestion import IngestionClient
 from polar.ingestion.buffered import BufferedIngestionStrategy, DropReason
+from polar.ingestion.events import EventInput
 from polar.v2026_10 import PolarAsync
 
 
@@ -137,3 +138,22 @@ async def test_shutdown_reports_only_unfinished_events(
     if drop_first:
         expected.insert(0, (events[:1], "retry_exhausted"))
     assert dropped == expected
+
+
+@pytest.mark.anyio
+async def test_structural_ingestion_client() -> None:
+    received: list[EventInput] = []
+
+    class Events:
+        async def ingest(self, *, events: list[EventInput]) -> None:
+            received.extend(events)
+
+    class Client:
+        events = Events()
+
+    client: IngestionClient = Client()
+    event: EventInput = {"name": "usage", "external_customer_id": "customer"}
+    async with BufferedIngestionStrategy(client, batch_interval=60) as strategy:
+        await strategy.ingest(event)
+
+    assert received == [event]

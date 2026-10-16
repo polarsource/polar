@@ -155,12 +155,17 @@ class TestEndpoints:
 @pytest.mark.anyio
 class TestSVGSanitization:
     async def _upload(
-        self, session: AsyncSession, organization: Organization, file: TestFile
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        file: TestFile,
+        declared_size: int | None = None,
     ) -> tuple[File, FileUploadCompleted]:
+        create_schema = file.build_product_media_create(organization.id)
+        if declared_size is not None:
+            create_schema = create_schema.model_copy(update={"size": declared_size})
         created = await file_service.generate_presigned_upload(
-            session,
-            organization=organization,
-            create_schema=file.build_product_media_create(organization.id),
+            session, organization=organization, create_schema=create_schema
         )
         uploaded = await file.upload(created)
         repository = FileRepository.from_session(session)
@@ -193,6 +198,21 @@ class TestSVGSanitization:
     ) -> None:
         record, completed_schema = await self._upload(
             session, organization, malformed_svg
+        )
+        with pytest.raises(BadRequest):
+            await file_service.complete_upload(
+                session, file=record, completed_schema=completed_schema
+            )
+
+        assert record.is_uploaded is False
+        with pytest.raises(S3FileError):
+            S3_SERVICES[record.service].get_head_or_raise(record.path)
+
+    async def test_rejects_larger_than_declared(
+        self, session: AsyncSession, organization: Organization, malicious_svg: TestFile
+    ) -> None:
+        record, completed_schema = await self._upload(
+            session, organization, malicious_svg, declared_size=1
         )
         with pytest.raises(BadRequest):
             await file_service.complete_upload(

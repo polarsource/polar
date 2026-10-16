@@ -39,7 +39,7 @@ async def sanitize(
 ) -> None:
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
-    changed = repaired = rejected = missing = 0
+    changed = repaired = rejected = missing = oversized = 0
 
     try:
         async with sessionmaker() as session:
@@ -63,6 +63,11 @@ async def sanitize(
                 except S3FileError:
                     missing += 1
                     console.print(f"[yellow]{file.id} {file.path}: missing on S3")
+                    continue
+
+                if s3_object["ContentLength"] > file.size:
+                    oversized += 1
+                    console.print(f"[red]{file.id} {file.path}: larger than declared")
                     continue
 
                 original = s3_object["Body"].read()
@@ -102,7 +107,7 @@ async def sanitize(
     verb = "Rewrote" if execute else "Would rewrite"
     console.print(
         f"[green]{verb} {changed} file(s), repair {repaired} record(s); "
-        f"{rejected} rejected, {missing} missing."
+        f"{rejected} rejected, {oversized} oversized, {missing} missing."
     )
 
 

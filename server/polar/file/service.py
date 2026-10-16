@@ -176,6 +176,9 @@ class FileService:
 
     def _sanitize_svg(self, s3_service: S3Service, s3file: S3File) -> S3File:
         s3_object = s3_service.get_object_or_raise(s3file.path)
+        if s3_object["ContentLength"] > s3file.size:
+            s3_service.delete_file(s3file.path)
+            raise BadRequest("Uploaded file is larger than its declared size")
         try:
             sanitized = filter_svg(s3_object["Body"].read(), SVG_DATA_URL_MIME_TYPES)
         except ValueError as e:

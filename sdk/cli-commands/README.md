@@ -1,9 +1,8 @@
 # Polar CLI commands prototype
 
-Private package generated from Polar's Current (`2026-10`) OpenAPI snapshot, plus
-the operations that only exist in Next (`2027-01`). It is not published to npm.
-The CLI consumes it through a local `file:` dependency, imports TypeScript
-directly, and bundles it.
+Private package generated from Polar's `2026-10` and `2027-01` OpenAPI snapshots.
+It is not published to npm. The CLI consumes it through a local `file:` dependency,
+imports TypeScript directly, and bundles it.
 
 The package deliberately is not a member of `clients/pnpm-workspace.yaml`: Turbo
 rejects workspace packages outside the `clients/` root. A `file:` dependency keeps
@@ -27,18 +26,10 @@ const main = Command.make('polar').pipe(
 
 ## API versions
 
-Every command sends the `Polar-Version` it was generated from. Commands come from
-Current, which is frozen. An operation (method and path) that exists only in Next
-is added to the same command tree, calls the Next SDK, and its description ends
-with `(preview, API 2027-01)`: Next is still open, so these commands can change
-before Next becomes Current. Changes Next makes to an operation Current already
-has are not exposed until the rotation. Generation fails if a Next-only operation
-reuses the name of a Current command.
-
-At each quarterly rotation, point `pnpm generate` and `just generate-cli` at the
-new Current and Next specs and regenerate. `clients/packages/cli/src/services/polar.ts`
-maps each version to its SDK entry point, and fails to type-check until the new
-version is added there.
+Commands come from Current. Operations that exist only in Next are added too,
+call the Next SDK, and are labelled `(preview, API 2027-01)` since Next can still
+change. At each rotation, update the specs in `pnpm generate` and the version map
+in `clients/packages/cli/src/services/polar.ts`.
 
 The generator lives in `sdk/generator/cli_commands/`. Change the emitter or its
 runtime/input templates, not generated files. The package never imports the CLI.
@@ -176,7 +167,7 @@ Protected inputs include:
 - No dry-run, response-header output, automatic pagination, or custom help renderer.
 - Generation is explicit (`pnpm generate`), not yet enforced in every release path.
   CI path filters and generated-package cache invalidation still need hardening.
-- Uses SDK `1.0.3-alpha.4`, which has the Next-only endpoints. `pnpm generate` and `just generate-cli` pin the `2026-10` (Current) and `2027-01` (Next) specs.
+- Uses SDK `1.0.3-alpha.4`. `pnpm generate` and `just generate-cli` pin the `2026-10` and `2027-01` specs.
 
 ## Checks and builds
 

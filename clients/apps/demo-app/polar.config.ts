@@ -14,14 +14,14 @@ export default defineConfig({
     }),
   },
   meters: ({ meter, events }) => ({
-    tool_call: meter('Tool calls!')
+    tool_call: meter('Tool calls')
       .on(events.tool_call)
       .unit('custom', 'tool calls')
       .count(),
   }),
   benefits: ({ flag, credits }) => ({
     custom_servers: flag('Custom servers').metadata({ tag: 'primary' }),
-    tool_calls: credits('Included tool calls').meter('tool_call').units(1200),
+    tool_calls: credits('Included tool calls').meter('tool_call').units(1500),
     free_tool_calls: credits('Free tool calls').meter('tool_call').units(5),
     // Rollover keeps purchased credits across the Pro billing cycle reset
     topup_100: credits('100 extra tool calls')
@@ -58,7 +58,7 @@ export default defineConfig({
       .prices(
         units()
           .volume(
-            tier().max(10).amount(usd(19), eur(14)),
+            tier().max(10).amount(usd(21), eur(14)),
             tier().amount(usd(8), eur(7)),
           )
           .min(2)
@@ -69,7 +69,7 @@ export default defineConfig({
       .prices(
         meter('tool_call')
           .graduated(
-            tier().included(1000),
+            tier().included(2000),
             tier()
               .max(10000)
               .amount(perThousand(usd(2)), perThousand(eur(1.8))),

@@ -575,11 +575,10 @@ it("sends telemetry spans tagged with the connection ID", async () => {
   const outpost = await start();
   await vi.waitFor(() => expect(outpost.connectionId).toBe(connectionId));
   await ingest(outpost, 3);
-  await vi.waitFor(() =>
-    expect(exported.map((span) => span.name)).toEqual(
-      expect.arrayContaining(["outpost.snapshot.received", "outpost.sync.received"]),
-    ),
-  );
+  await vi.waitFor(() => {
+    expect(exported.map((span) => span.name)).toContain("outpost.snapshot.received");
+    expect(outpost["syncReceived"]).toBeGreaterThan(0);
+  });
   await outpost.customerMeter(meter);
   await outpost.close();
 
@@ -591,7 +590,7 @@ it("sends telemetry spans tagged with the connection ID", async () => {
       "outpost.ingest",
       "outpost.customer_meter",
       "outpost.snapshot.received",
-      "outpost.sync.received",
+      "outpost.sync",
       "outpost.websocket.disconnect",
       "outpost.redis.disconnect",
     ]),
@@ -746,6 +745,31 @@ it("reads the value of a customer created after a miss", async () => {
   expect(await outpost.customerMeter(meter)).toBeNull();
   snapshot = aliceSnapshot;
   await vi.waitFor(async () => expect((await outpost.customerMeter(meter))?.balance).toBe(7));
+});
+
+it("reports sync counts when telemetry is flushed", async () => {
+  const writer = await start();
+  const reader = await start();
+  await reader.actor(customer);
+  await writer.ingest({
+    events: [
+      { ...customer, name: "api_call", timestamp, metadata: { tokens: 1 } },
+      { external_customer_id: "bob", name: "api_call", timestamp, metadata: { tokens: 1 } },
+    ],
+  });
+  await vi.waitFor(() => expect(reader["syncReceived"]).toBe(2));
+  exported.length = 0;
+  await reader.flushTelemetry();
+  await reader.flushTelemetry();
+  expect(
+    exported.filter((span) => span.name === "outpost.sync").map((span) => span.attributes),
+  ).toEqual([
+    {
+      "outpost.connection_id": connectionId,
+      "outpost.sync.received": 2,
+      "outpost.sync.applied": 1,
+    },
+  ]);
 });
 
 it("flushes buffered telemetry on demand", async () => {

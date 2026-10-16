@@ -338,6 +338,10 @@ class UrlRedirectInfo(Schema):
     original_url: str
     final_url: str | None = None
     final_domain: str | None = None
+    hops: list[str] = Field(
+        default_factory=list,
+        description="URLs visited between the original and final URL.",
+    )
     redirected: bool = False
     error: str | None = None
 
@@ -394,6 +398,14 @@ class SetupData(Schema):
             "when it differs from the declared website host and is not on the "
             "known-integration-platform whitelist. None when the webhook host "
             "matches the declared host, is a known service, or no webhooks exist."
+        ),
+    )
+    checkout_url_hosts: list[WebsiteData] = Field(
+        default_factory=list,
+        description=(
+            "Summaries of the public sites on the hosts of checkout success and "
+            "return URLs, and of where they redirect to, when those hosts differ "
+            "from the declared website host and are not known services."
         ),
     )
 

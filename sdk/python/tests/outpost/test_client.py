@@ -353,13 +353,13 @@ async def test_customer_meter_reads_cold_and_shared_buckets(
                     "metadata": {"tokens": value},
                 }
             )
-        own_meter = await writer.customer_meter(
+        own_meter = await writer.meter(
             external_customer_id="alice", meter_id="meter"
         )
         assert own_meter is not None and own_meter.consumed_units == expected
         with anyio.fail_after(1):
             while True:
-                meter = await reader.customer_meter(
+                meter = await reader.meter(
                     external_customer_id="alice", meter_id="meter"
                 )
                 if meter is not None and meter.consumed_units == expected:
@@ -406,7 +406,7 @@ async def test_bucket_ownership_and_internal_customer(
         ]
         for event in events:
             await outpost.ingest(event)
-        meter = await outpost.customer_meter(customer_id="alice", meter_id="meter")
+        meter = await outpost.meter(customer_id="alice", meter_id="meter")
     assert meter is not None
     assert meter.customer_id == "alice"
     assert meter.consumed_units == 12
@@ -429,13 +429,13 @@ async def test_actor_is_idempotent_and_missing_snapshot_is_not_zero(
         await outpost.actor(external_customer_id="alice")
         await outpost.actor(external_customer_id="alice")
         assert (
-            await outpost.customer_meter(
+            await outpost.meter(
                 external_customer_id="alice", meter_id="unknown"
             )
             is None
         )
         with pytest.raises(PolarOutpostError, match="snapshot is not ready"):
-            await outpost.customer_meter(external_customer_id="alice", meter_id="meter")
+            await outpost.meter(external_customer_id="alice", meter_id="meter")
     assert [
         message for message in websocket_requests if message["type"] == "meter_usage"
     ] == [
@@ -545,7 +545,7 @@ async def test_snapshot_arrives_over_websocket(
         await owner.actor(external_customer_id="alice")
         with anyio.fail_after(1):
             while True:
-                meter = await reader.customer_meter(
+                meter = await reader.meter(
                     external_customer_id="alice", meter_id="meter"
                 )
                 if meter is not None and meter.balance == 89:
@@ -614,7 +614,7 @@ async def test_warmed_reads_do_not_use_redis(
 
         assert outpost._redis is not None
         monkeypatch.setattr(outpost._redis, "execute_command", unexpected_command)
-        meter = await outpost.customer_meter(
+        meter = await outpost.meter(
             external_customer_id="alice", meter_id="meter"
         )
         assert meter is not None and meter.consumed_units == 13
@@ -672,7 +672,7 @@ async def test_old_messages_and_redis_reset_do_not_roll_back_cache(
         await redis.publish("outpost:0:updates", json.dumps(old))
         with anyio.fail_after(1):
             await received.wait()
-        meter = await outpost.customer_meter(
+        meter = await outpost.meter(
             external_customer_id="alice", meter_id="meter"
         )
         assert meter is not None and meter.consumed_units == 13
@@ -691,7 +691,7 @@ async def test_old_messages_and_redis_reset_do_not_roll_back_cache(
         await redis.publish("outpost:0:updates", json.dumps(old))
         with anyio.fail_after(1):
             await received.wait()
-        meter = await outpost.customer_meter(
+        meter = await outpost.meter(
             external_customer_id="alice", meter_id="meter"
         )
         assert meter is not None and meter.consumed_units == 22
@@ -713,7 +713,7 @@ async def test_background_refresh_repairs_missed_notification(
         await redis.hincrby(key, "revision", 1)
         with anyio.fail_after(2):
             while True:
-                meter = await outpost.customer_meter(
+                meter = await outpost.meter(
                     external_customer_id="alice", meter_id="meter"
                 )
                 if meter is not None and meter.consumed_units == 2:
@@ -752,7 +752,7 @@ async def test_pubsub_reconnect_reloads_state(
                 await anyio.lowlevel.checkpoint()
             while True:
                 try:
-                    meter = await outpost.customer_meter(
+                    meter = await outpost.meter(
                         external_customer_id="alice", meter_id="meter"
                     )
                     break
@@ -776,7 +776,7 @@ async def test_evicted_customer_is_reloaded(
         await outpost.actor(external_customer_id="bob")
         await outpost.actor(external_customer_id="carol")
         await redis.hset(key, "cold:sum", 2)
-        meter = await outpost.customer_meter(
+        meter = await outpost.meter(
             external_customer_id="alice", meter_id="meter"
         )
         assert meter is not None and meter.consumed_units == 2
@@ -896,13 +896,13 @@ async def test_independent_reducers_concurrent_statistics_and_meter_credits(
             tasks.start_soon(emit, first, 2)
             tasks.start_soon(emit, second, 8)
         await first._refresh_states()
-        meter = await first.customer_meter(
+        meter = await first.meter(
             external_customer_id="alice", meter_id="meter"
         )
-        shared = await first.customer_meter(
+        shared = await first.meter(
             external_customer_id="alice", meter_id="shared"
         )
-        average = await first.customer_meter(
+        average = await first.meter(
             external_customer_id="alice", meter_id="average-meter"
         )
         assert (
@@ -959,13 +959,13 @@ async def test_independent_reducers_concurrent_statistics_and_meter_credits(
             )
             == b"100"
         )
-        meter = await first.customer_meter(
+        meter = await first.meter(
             external_customer_id="alice", meter_id="meter"
         )
-        average = await first.customer_meter(
+        average = await first.meter(
             external_customer_id="alice", meter_id="average-meter"
         )
-        shared = await first.customer_meter(
+        shared = await first.meter(
             external_customer_id="alice", meter_id="shared"
         )
         assert meter is not None and meter.consumed_units == 124 and meter.balance == 26
@@ -1042,7 +1042,7 @@ async def test_telemetry_spans(
                 or outpost._sync_received == 0
             ):
                 await anyio.lowlevel.checkpoint()
-        await outpost.customer_meter(meter_id="meter", external_customer_id="alice")
+        await outpost.meter(meter_id="meter", external_customer_id="alice")
 
     names = {span.name for span in exported_spans}
     assert names == {
@@ -1413,7 +1413,7 @@ async def test_cold_read_waits_for_the_snapshot(
     snapshots["external:alice"] = ALICE_SNAPSHOT
     async with Outpost(url, client=polar_client) as outpost:
         await outpost.actor(external_customer_id="alice")
-        meter = await outpost.customer_meter(
+        meter = await outpost.meter(
             meter_id="meter", external_customer_id="alice"
         )
     assert meter is not None
@@ -1433,7 +1433,7 @@ async def test_unknown_meter_reads_none(
     url, _ = redis_connection
     async with Outpost(url, client=polar_client) as outpost:
         assert (
-            await outpost.customer_meter(meter_id="other", external_customer_id="alice")
+            await outpost.meter(meter_id="other", external_customer_id="alice")
             is None
         )
     assert read_outcomes(exported_spans) == [
@@ -1463,7 +1463,7 @@ async def test_reads_without_configuration_are_not_ready(
         with pytest.raises(TimeoutError):
             await outpost.actor(external_customer_id="alice")
         with pytest.raises(TimeoutError):
-            await outpost.customer_meter(meter_id="meter", external_customer_id="alice")
+            await outpost.meter(meter_id="meter", external_customer_id="alice")
     assert read_outcomes(exported_spans) == [
         ("outpost.actor", "not_ready"),
         ("outpost.customer_meter", "not_ready"),
@@ -1482,7 +1482,7 @@ async def test_unknown_customer_reads_none(
     async with Outpost(url, client=polar_client) as outpost:
         await outpost.actor(external_customer_id="alice")
         assert (
-            await outpost.customer_meter(meter_id="meter", external_customer_id="alice")
+            await outpost.meter(meter_id="meter", external_customer_id="alice")
             is None
         )
     assert read_outcomes(exported_spans) == [
@@ -1501,7 +1501,7 @@ async def test_missing_snapshot_times_out(
     async with Outpost(url, client=polar_client) as outpost:
         await outpost.actor(external_customer_id="alice")
         with pytest.raises(PolarOutpostError, match="not ready"):
-            await outpost.customer_meter(meter_id="meter", external_customer_id="alice")
+            await outpost.meter(meter_id="meter", external_customer_id="alice")
     assert read_outcomes(exported_spans) == [
         ("outpost.actor", "not_ready"),
         ("outpost.customer_meter", "not_ready"),
@@ -1557,7 +1557,7 @@ async def test_cold_read_waits_for_its_own_meter(
         ) as client,
         Outpost(url, client=client) as outpost,
     ):
-        meter = await outpost.customer_meter(
+        meter = await outpost.meter(
             meter_id="shared", external_customer_id="alice"
         )
     assert meter is not None
@@ -1575,7 +1575,7 @@ async def test_unknown_customer_reads_its_value_once_created(
     snapshots["external:alice"] = {**ALICE_SNAPSHOT, "customer_exists": False}
     async with Outpost(url, client=polar_client) as outpost:
         read = functools.partial(
-            outpost.customer_meter, meter_id="meter", external_customer_id="alice"
+            outpost.meter, meter_id="meter", external_customer_id="alice"
         )
         assert await read() is None
         snapshots["external:alice"] = ALICE_SNAPSHOT
@@ -1600,7 +1600,7 @@ async def test_redis_errors_raise_outpost_errors(
     async with Outpost(url, client=polar_client) as outpost:
         server.connected = False
         with pytest.raises(UnavailableRedisError):
-            await outpost.customer_meter(meter_id="meter", external_customer_id="alice")
+            await outpost.meter(meter_id="meter", external_customer_id="alice")
         assert read_outcomes(exported_spans) == [
             ("outpost.customer_meter", "redis_unavailable")
         ]
@@ -1610,7 +1610,7 @@ async def test_redis_errors_raise_outpost_errors(
         with anyio.fail_after(3):
             while True:
                 try:
-                    meter = await outpost.customer_meter(
+                    meter = await outpost.meter(
                         meter_id="meter", external_customer_id="alice"
                     )
                     break
@@ -1648,7 +1648,7 @@ async def test_redis_outage_fails_fast(
         assert not outpost.connected
         with anyio.fail_after(0.5):
             with pytest.raises(UnavailableRedisError):
-                await outpost.customer_meter(
+                await outpost.meter(
                     meter_id="meter", external_customer_id="bob"
                 )
     assert read_outcomes(exported_spans) == [
@@ -1691,7 +1691,7 @@ async def test_failed_resync_wakes_waiting_reads(
 
         async def read() -> None:
             with pytest.raises(UnavailableRedisError):
-                await outpost.customer_meter(
+                await outpost.meter(
                     meter_id="meter", external_customer_id="bob"
                 )
 

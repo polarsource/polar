@@ -3,6 +3,7 @@ import types
 import typing
 
 from polar import PolarError
+from polar.base import AsyncClientBase, parse_response_json
 from polar.ingestion.buffered import (
     BufferedIngestionStrategy as BufferedIngestionStrategy,
 )
@@ -13,6 +14,7 @@ from polar.ingestion.events import (
     EventExternalCustomerInput,
     EventInput,
 )
+from polar.ingestion.meter import CustomerMeter, CustomerMeterList, MeterProtocol
 from polar.logging import get_logger
 
 log = get_logger(__name__)
@@ -69,10 +71,26 @@ class ActorIngestion:
                 **event,
             )
 
+    async def meter(self, meter_id: str) -> CustomerMeter | None:
+        if self.customer_id is not None:
+            return await self.ingestion.meter(
+                meter_id=meter_id, customer_id=self.customer_id
+            )
+        assert self.external_customer_id is not None
+        return await self.ingestion.meter(
+            meter_id=meter_id, external_customer_id=self.external_customer_id
+        )
+
 
 class Ingestion:
-    def __init__(self, strategies: list[IngestionStrategyProtocol]) -> None:
+    def __init__(
+        self,
+        strategies: list[IngestionStrategyProtocol],
+        *,
+        client: AsyncClientBase,
+    ) -> None:
         self.strategies = strategies
+        self._client = client
         self._stack = contextlib.AsyncExitStack()
 
     async def __aenter__(self) -> typing.Self:
@@ -145,6 +163,45 @@ class Ingestion:
             external_member_id=external_member_id,
         )
 
+    @typing.overload
+    async def meter(
+        self, *, meter_id: str, customer_id: str
+    ) -> CustomerMeter | None: ...
+
+    @typing.overload
+    async def meter(
+        self, *, meter_id: str, external_customer_id: str
+    ) -> CustomerMeter | None: ...
+
+    async def meter(
+        self,
+        *,
+        meter_id: str,
+        customer_id: str | None = None,
+        external_customer_id: str | None = None,
+    ) -> CustomerMeter | None:
+        _validate_actor(customer_id, None, external_customer_id, None)
+        for strategy in self.strategies:
+            if isinstance(strategy, MeterProtocol):
+                return await strategy.meter(
+                    meter_id=meter_id,
+                    customer_id=customer_id,
+                    external_customer_id=external_customer_id,
+                )
+        request = self._client.build_request(
+            method="GET",
+            url="/v1/customer-meters/",
+            query_params={
+                "meter_id": meter_id,
+                "customer_id": customer_id,
+                "external_customer_id": external_customer_id,
+                "limit": 1,
+            },
+        )
+        response = await self._client.send_request(request)
+        result: CustomerMeterList = parse_response_json(response, CustomerMeterList)
+        return result.items[0] if result.items else None
+
     @classmethod
     def create(
         cls, polar: PolarClient, outpost_redis_url: str | None = None
@@ -154,7 +211,7 @@ class Ingestion:
             from polar.outpost import Outpost
 
             strategies.append(Outpost.create(polar, outpost_redis_url))
-        return cls(strategies=strategies)
+        return cls(strategies=strategies, client=polar._client)
 
 
 def _validate_actor(
@@ -177,10 +234,12 @@ __all__ = [
     "ActorIngestion",
     "ActorWarmupProtocol",
     "ContextualEventInput",
+    "CustomerMeter",
     "EventInput",
     "Ingestion",
     "IngestionClient",
     "IngestionError",
     "InvalidActorError",
+    "MeterProtocol",
     "PolarClient",
 ]

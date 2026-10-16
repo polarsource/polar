@@ -46,7 +46,7 @@ async def main() -> None:
                     print(json.dumps({"result": None}), flush=True)
                     continue
                 methods = {
-                    "read": outpost.customer_meter,
+                    "read": outpost.meter,
                     "actor": outpost.actor,
                 }
                 result = await methods[operation](**command["arguments"])

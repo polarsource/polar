@@ -89,7 +89,9 @@ const reportError = (cause: Cause.Cause<unknown>) => {
 }
 
 const instrumented = Effect.gen(function* () {
-  const args = yield* (yield* Stdio.Stdio).args
+  const stdio = yield* Stdio.Stdio
+  const args = yield* stdio.args
+  const tty = yield* stdio.stdoutIsTerminal
   const telemetry = yield* Telemetry.Telemetry
   const startedAt = performance.now()
   return yield* cli.pipe(
@@ -100,6 +102,7 @@ const instrumented = Effect.gen(function* () {
         flags: Telemetry.flagNames(args),
         ...Telemetry.outcomeOf(exit),
         durationMs: performance.now() - startedAt,
+        tty,
       }),
     ),
   )

@@ -5,6 +5,7 @@ import datetime
 import functools
 import json
 import typing
+from unittest.mock import AsyncMock
 
 import anyio
 import anyio.lowlevel
@@ -22,6 +23,7 @@ from opentelemetry.sdk.trace.export import (
 from redis.asyncio import Redis
 from redis.asyncio.client import PubSub
 from redis.exceptions import ConnectionError as RedisConnectionError
+from redis.exceptions import ResponseError
 
 from polar import __version__
 from polar.ingestion import EventInput
@@ -213,6 +215,81 @@ async def test_ingest_accepts_single_events(
         and value == b"5"
         for field, value in own.items()
     )
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(("bucket_count", "fail"), [(0, False), (3, False), (3, True)])
+async def test_ingest_pipelines_buckets(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    configuration: dict[str, typing.Any],
+    monkeypatch: pytest.MonkeyPatch,
+    bucket_count: int,
+    fail: bool,
+) -> None:
+    url, redis = redis_connection
+    reducer = configuration["reducers"][0]
+    configuration["reducers"] = [
+        {**reducer, "id": f"tokens-{i}", "meter_ids": [f"meter-{i}"]}
+        for i in range(bucket_count)
+    ]
+    for i in range(bucket_count):
+        await redis.hset(
+            f"outpost:state:external:alice:tokens-{i}",
+            mapping={"cold_until": BUCKET, f"credited:meter-{i}": 100},
+        )
+    async with Outpost(url, client=polar_client) as outpost:
+        assert outpost._redis is not None
+        pipeline = outpost._redis.pipeline(transaction=False)
+        execute = AsyncMock(wraps=pipeline.execute)
+        monkeypatch.setattr(pipeline, "execute", execute)
+        monkeypatch.setattr(outpost._redis, "pipeline", lambda **kwargs: pipeline)
+        await outpost.ingest(
+            {
+                "name": "call",
+                "external_customer_id": "alice",
+                "timestamp": TIMESTAMP,
+                "metadata": {"tokens": 3},
+            }
+        )
+        execute.assert_awaited_once()
+        for i in range(bucket_count):
+            meter = await outpost.customer_meter(
+                meter_id=f"meter-{i}", external_customer_id="alice"
+            )
+            assert meter is not None
+            assert meter.consumed_units == 3
+            assert meter.balance == 97
+            assert (
+                await redis.hget(
+                    f"outpost:state:external:alice:tokens-{i}", f"bucket:{BUCKET}:count"
+                )
+                == b"1"
+            )
+        if fail:
+            await redis.hset(
+                "outpost:state:external:alice:tokens-1",
+                f"bucket:{BUCKET}:sum",
+                "invalid",
+            )
+            with pytest.raises(ResponseError):
+                await outpost.ingest(
+                    {
+                        "name": "call",
+                        "external_customer_id": "alice",
+                        "timestamp": TIMESTAMP,
+                        "metadata": {"tokens": 2},
+                    }
+                )
+            assert execute.await_count == 2
+            for i in (0, 2):
+                assert (
+                    await redis.hget(
+                        f"outpost:state:external:alice:tokens-{i}",
+                        f"bucket:{BUCKET}:sum",
+                    )
+                    == b"5"
+                )
 
 
 @pytest.mark.anyio

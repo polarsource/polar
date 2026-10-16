@@ -509,7 +509,7 @@ class BillingEntryService:
         credited_units = non_negative_running_sum(
             event.user_metadata["units"] for event in credit_events
         )
-        amount, amount_label = price.get_amount_and_label(units - credited_units)
+        amount, amount_label = price.get_amount_and_label(units, credited_units)
         label = f"{meter.name} — {amount_label}"
 
         return MeteredLineItem(
@@ -567,7 +567,7 @@ class BillingEntryService:
         credited_units = non_negative_running_sum(
             event.user_metadata["units"] for event in credit_events
         )
-        amount, amount_label = price.get_amount_and_label(units - credited_units)
+        amount, amount_label = price.get_amount_and_label(units, credited_units)
         label = f"{meter.name} — {amount_label}"
 
         return MeteredLineItem(

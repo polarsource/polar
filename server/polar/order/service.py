@@ -2522,6 +2522,7 @@ class OrderService:
             "subscription_cycled_after_trial",
             "subscription_final_invoice",
             "subscription_updated",
+            "subscription_usage_invoice",
         ]
         subject_template: str
         url_path_template: str
@@ -2582,7 +2583,7 @@ class OrderService:
                     "email": "{email}",
                 }
             case OrderBillingReasonInternal.subscription_meter_cycle:
-                template_name = "subscription_cycled"
+                template_name = "subscription_usage_invoice"
                 subject_template = "Your {description} usage invoice"
                 url_path_template = "/{organization}/portal"
                 url_params = {
@@ -2591,12 +2592,19 @@ class OrderService:
                     "email": "{email}",
                 }
 
-        # Final invoice uses the same email setting as subscription_cycled
-        email_setting_name = (
-            "subscription_cycled"
-            if template_name == "subscription_final_invoice"
-            else template_name
-        )
+        # Final and usage invoices use the same email setting as subscription_cycled
+        email_setting_name: Literal[
+            "order_confirmation",
+            "subscription_confirmation",
+            "subscription_cycled",
+            "subscription_cycled_after_trial",
+            "subscription_updated",
+        ]
+        match template_name:
+            case "subscription_final_invoice" | "subscription_usage_invoice":
+                email_setting_name = "subscription_cycled"
+            case _:
+                email_setting_name = template_name
         if not organization.customer_email_settings[email_setting_name]:
             return
 
@@ -2614,6 +2622,14 @@ class OrderService:
                 )
                 if is_free_product_price:
                     return
+
+        # Skip usage invoices fully covered by meter credits. The subtotal is
+        # net of credits but not of discounts, which still warrant an invoice.
+        if (
+            order.billing_reason == OrderBillingReasonInternal.subscription_meter_cycle
+            and order.subtotal_amount == 0
+        ):
+            return
 
         product = order.product
         customer = order.customer

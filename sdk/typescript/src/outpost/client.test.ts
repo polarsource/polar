@@ -775,3 +775,15 @@ it("raises an Outpost error when Redis is unavailable at startup", async () => {
   const outpost = new Outpost(join(directory, "missing.sock"), { client: core });
   await expect(outpost.start()).rejects.toBeInstanceOf(UnavailableRedisError);
 }, 10_000);
+
+it("fails fast while Redis is unavailable", async () => {
+  const outpost = await start();
+  outpost["subscriber"]!.disconnect();
+  await vi.waitFor(() => expect(outpost["isSynced"]).toBe(false));
+  expect(outpost.connected).toBe(false);
+  const started = performance.now();
+  await expect(
+    outpost.customerMeter({ external_customer_id: "bob", meter_id: "meter" }),
+  ).rejects.toBeInstanceOf(UnavailableRedisError);
+  expect(performance.now() - started).toBeLessThan(500);
+});

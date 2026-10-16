@@ -347,6 +347,7 @@ class Outpost:
             collections.OrderedDict()
         )
         self._synced = anyio.Event()
+        self._redis_available = False
         self._channel = ""
 
     @_raise_redis_unavailable
@@ -428,6 +429,7 @@ class Outpost:
     def connected(self) -> bool:
         return (
             self._failure is None
+            and self._redis_available
             and self._websocket is not None
             and self._configured.is_set()
         )
@@ -599,6 +601,9 @@ class Outpost:
     async def _warm_customer(self, customer: str, reducer: Reducer) -> LocalState:
         identity = f"{customer}:{reducer['id']}"
         self._require_redis()
+        # Fail fast during an outage; only wait for a resync in progress.
+        if not self._synced.is_set() and not self._redis_available:
+            raise UnavailableRedisError("Redis is unavailable")
         with anyio.move_on_after(REDIS_TIMEOUT):
             await self._synced.wait()
         if not self._synced.is_set():
@@ -712,6 +717,7 @@ class Outpost:
                         raise RedisTimeoutError(
                             "Outpost subscription was not acknowledged"
                         )
+                    self._redis_available = True
                     await self._refresh_states()
                     self._synced.set()
                 if not started:
@@ -737,7 +743,10 @@ class Outpost:
             with self._span("outpost.redis.disconnect") as span:
                 span.record_exception(error)
                 span.set_status(StatusCode.ERROR)
-            self._synced = anyio.Event()
+            # Wake the reads waiting on a resync that just failed.
+            stale, self._synced = self._synced, anyio.Event()
+            stale.set()
+            self._redis_available = False
             for local in self._cache.values():
                 local.state = None
 

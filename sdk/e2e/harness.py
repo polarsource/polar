@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import typing
+import urllib.parse
 import uuid
 
 import anyio
@@ -18,6 +19,7 @@ from redis.asyncio import Redis
 from redis.exceptions import ConnectionError as RedisConnectionError
 
 ROOT = pathlib.Path(__file__).resolve().parent
+RETRYABLE_READ_ERRORS = ("Customer snapshot is not ready", "Redis is unavailable")
 
 
 class CustomerID(typing.TypedDict):
@@ -47,6 +49,12 @@ class MeterValues(typing.TypedDict, total=False):
 
 
 @dataclasses.dataclass(frozen=True)
+class Failure:
+    message: str
+    within: float
+
+
+@dataclasses.dataclass(frozen=True)
 class TimelineStep:
     at: float
 
@@ -59,6 +67,7 @@ class TimelineStep:
 class IngestStep(TimelineStep):
     client: str
     arguments: IngestArguments
+    failure: Failure | None = None
     operation: typing.ClassVar[typing.Literal["ingest"]] = "ingest"
 
 
@@ -68,6 +77,7 @@ class ReadStep(TimelineStep):
     arguments: CustomerMeterRequest | ExternalCustomerMeterRequest
     expected: MeterValues | None
     within: float = 0
+    failure: Failure | None = None
     operation: typing.ClassVar[typing.Literal["read"]] = "read"
 
     def __post_init__(self) -> None:
@@ -97,6 +107,14 @@ class DisconnectStep(TimelineStep):
 
 
 @dataclasses.dataclass(frozen=True)
+class RedisStep(TimelineStep):
+    available: bool
+    arguments: dict[str, object] = dataclasses.field(default_factory=dict)
+    client: typing.ClassVar[typing.Literal["redis"]] = "redis"
+    operation: typing.ClassVar[typing.Literal["redis"]] = "redis"
+
+
+@dataclasses.dataclass(frozen=True)
 class SnapshotStep(TimelineStep):
     arguments: Snapshot
     client: typing.ClassVar[typing.Literal["polar"]] = "polar"
@@ -104,7 +122,13 @@ class SnapshotStep(TimelineStep):
 
 
 Step: typing.TypeAlias = (
-    IngestStep | ReadStep | ActorStep | RestartStep | DisconnectStep | SnapshotStep
+    IngestStep
+    | ReadStep
+    | ActorStep
+    | RestartStep
+    | DisconnectStep
+    | RedisStep
+    | SnapshotStep
 )
 
 
@@ -229,6 +253,60 @@ async def local_redis():
             await stop(process)
 
 
+class RedisProxy:
+    """Stands between the clients and Redis, so a scenario can cut Redis off."""
+
+    def __init__(self, url: str) -> None:
+        parsed = urllib.parse.urlsplit(url)
+        self.target = (parsed.hostname or "127.0.0.1", parsed.port or 6379)
+        # Clients authenticate through the proxy, which only relays bytes.
+        self.credentials = parsed.netloc.rpartition("@")[0]
+        self.path = parsed.path
+        self.available = True
+        self.streams: set[anyio.abc.SocketStream] = set()
+        self.url = ""
+
+    async def serve(
+        self, *, task_status: anyio.abc.TaskStatus[None] = anyio.TASK_STATUS_IGNORED
+    ) -> None:
+        listener = await anyio.create_tcp_listener(local_host="127.0.0.1")
+        port = listener.extra(anyio.abc.SocketAttribute.local_port)
+        credentials = f"{self.credentials}@" if self.credentials else ""
+        self.url = f"redis://{credentials}127.0.0.1:{port}{self.path}"
+        task_status.started()
+        await listener.serve(self.handle)
+
+    async def handle(self, client: anyio.abc.SocketStream) -> None:
+        if not self.available:
+            await client.aclose()
+            return
+        async with client, await anyio.connect_tcp(*self.target) as upstream:
+            self.streams |= {client, upstream}
+            try:
+                async with anyio.create_task_group() as tasks:
+                    tasks.start_soon(self.pipe, client, upstream)
+                    tasks.start_soon(self.pipe, upstream, client)
+            finally:
+                self.streams -= {client, upstream}
+
+    async def pipe(
+        self, source: anyio.abc.SocketStream, target: anyio.abc.SocketStream
+    ) -> None:
+        with contextlib.suppress(
+            anyio.EndOfStream, anyio.BrokenResourceError, anyio.ClosedResourceError
+        ):
+            async for chunk in source:
+                await target.send(chunk)
+        with contextlib.suppress(anyio.BrokenResourceError, anyio.ClosedResourceError):
+            await target.aclose()
+
+    async def set_available(self, available: bool) -> None:
+        self.available = available
+        if not available:
+            for stream in list(self.streams):
+                await stream.aclose()
+
+
 async def run(
     scenario: Scenario, language: typing.Literal["python", "typescript"]
 ) -> None:
@@ -239,7 +317,7 @@ async def run(
     for step in scenario.steps:
         if isinstance(step, IngestStep):
             payloads.extend(step.arguments["events"])
-        elif not isinstance(step, RestartStep):
+        elif not isinstance(step, RestartStep | RedisStep):
             payloads.append(step.arguments)
     for payload in {id(payload): payload for payload in payloads}.values():
         customer_payload = typing.cast(dict[str, object], payload)
@@ -254,6 +332,10 @@ async def run(
     async with contextlib.AsyncExitStack() as stack:
         redis_url = await stack.enter_async_context(local_redis())
         redis = await stack.enter_async_context(Redis.from_url(redis_url))
+        proxy = RedisProxy(redis_url)
+        proxy_tasks = await stack.enter_async_context(anyio.create_task_group())
+        stack.callback(proxy_tasks.cancel_scope.cancel)
+        await proxy_tasks.start(proxy.serve)
         keys = [
             f"outpost:state:{customer}:{reducer['id']}"
             for customer in customers
@@ -274,9 +356,11 @@ async def run(
         clients: dict[str, Process] = {}
         contexts: dict[str, typing.Any] = {}
         client_names = dict.fromkeys(
-            step.client for step in scenario.steps if step.client != "polar"
+            step.client
+            for step in scenario.steps
+            if step.client not in ("polar", "redis")
         )
-        locks = {name: anyio.Lock() for name in [*client_names, "polar"]}
+        locks = {name: anyio.Lock() for name in [*client_names, "polar", "redis"]}
 
         async def start_client(name: str) -> None:
             if language == "python":
@@ -285,7 +369,7 @@ async def run(
                 command = ("node", str(ROOT / "typescript_client.ts"))
             else:
                 raise ValueError(f"Unknown SDK language: {language}")
-            context = launch(*command, redis_url, base_url)
+            context = launch(*command, proxy.url, base_url)
             client, _ = await context.__aenter__()
             contexts[name] = context
             clients[name] = client
@@ -301,11 +385,30 @@ async def run(
                     await contexts[step.client].__aexit__(None, None, None)
                     await start_client(step.client)
                     return None
+                if isinstance(step, RedisStep):
+                    await proxy.set_available(step.available)
+                    return None
                 target = server if step.client == "polar" else clients[step.client]
                 return await target.request(step.operation, step.arguments)
 
         async def execute(step: Step) -> None:
             await anyio.sleep_until(started + step.at)
+            failure = step.failure if isinstance(step, IngestStep | ReadStep) else None
+            if failure is not None:
+                began = anyio.current_time()
+                try:
+                    result = await command(step)
+                except ClientError as error:
+                    elapsed = anyio.current_time() - began
+                    if failure.message in str(error) and elapsed <= failure.within:
+                        return
+                    raise AssertionError(
+                        f"{scenario.name}/{step.client}: expected {failure} after "
+                        f"at most {failure.within}s, got {error} after {elapsed:.2f}s"
+                    ) from error
+                raise AssertionError(
+                    f"{scenario.name}/{step.client}: expected {failure}, got {result}"
+                )
             read = isinstance(step, ReadStep)
             expected = step.expected if isinstance(step, ReadStep) else None
             deadline = anyio.current_time() + (
@@ -315,7 +418,9 @@ async def run(
                 try:
                     result = await command(step)
                 except ClientError as error:
-                    if not read or "Customer snapshot is not ready" not in str(error):
+                    if not read or not any(
+                        message in str(error) for message in RETRYABLE_READ_ERRORS
+                    ):
                         raise
                     result = str(error)
                 transcript.append(

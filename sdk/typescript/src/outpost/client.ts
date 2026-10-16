@@ -271,7 +271,13 @@ export class Outpost {
   }
 
   get connected(): boolean {
-    return !this.failure && this.isConfigured && this.websocket?.readyState === WebSocket.OPEN;
+    return (
+      !this.failure &&
+      this.redis?.status === "ready" &&
+      this.subscriber?.status === "ready" &&
+      this.isConfigured &&
+      this.websocket?.readyState === WebSocket.OPEN
+    );
   }
 
   async start(): Promise<this> {
@@ -601,6 +607,9 @@ export class Outpost {
     const identity = `${customer}:${reducer.id}`;
     this.requireRedis();
     while (!this.isSynced) {
+      // Fail fast during an outage; only wait for a resync in progress.
+      if (this.redis?.status !== "ready" || this.subscriber?.status !== "ready")
+        throw new UnavailableRedisError("Redis is unavailable");
       await withTimeout(this.synced.promise).catch((error: unknown) => {
         throw redisUnavailable(error);
       });

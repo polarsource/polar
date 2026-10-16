@@ -10,7 +10,7 @@ export async function postEnvironmentUpdates({ run, jobs, slack, botUser, parent
     if (reported.has(environment)) continue;
     await postReplyOnce({ slack, botUser, parent, message, replyId: `${prefix}${environment}` });
     reported.add(environment);
-    const blocks = [{ ...parentPayload.blocks[0], block_id: `${prefix}${[...reported].join(',')}` }];
+    const blocks = [{ ...parentPayload.blocks[0], block_id: `${prefix}${[...reported].join(',')}` }, ...parentPayload.blocks.slice(1)];
     await slack('chat.update', {
       channel: parentPayload.channel, ts: parent.ts, text: parentPayload.text, blocks,
     });

@@ -26,18 +26,25 @@ function jobStatus(job) {
 }
 
 export function buildParentMessage({ run, channel }) {
-  const text = [
-    `:rocket: *Deployment #${run.run_number}, attempt ${run.run_attempt}*`,
-    `${link(run.html_url, 'Workflow')} · ${link(`${run.repository.html_url}/commit/${run.head_sha}`, run.head_sha.slice(0, 7))} · ${escapeText(run.head_branch)}`,
-    escapeText((run.head_commit?.message ?? '').split('\n')[0].slice(0, 200)),
-  ].join('\n');
+  const title = escapeText((run.head_commit?.message ?? '').split('\n')[0].slice(0, 200));
+  const pullRequest = title.match(/\(#(\d+)\)$/)?.[1];
+  const attempt = run.run_attempt > 1 ? ` (attempt ${run.run_attempt})` : '';
+  const meta = [
+    link(run.html_url, `Workflow run${attempt}`),
+    link(`${run.repository.html_url}/commit/${run.head_sha}`, run.head_sha.slice(0, 7)),
+    pullRequest && link(`${run.repository.html_url}/pull/${pullRequest}`, `PR #${pullRequest}`),
+  ].filter(Boolean).join('  ·  ');
   return {
-    channel, text, unfurl_links: false, unfurl_media: false,
-    blocks: [{
-      type: 'section',
-      block_id: `deployment-${run.id}-${run.run_attempt}`,
-      text: { type: 'mrkdwn', text },
-    }],
+    channel, unfurl_links: false, unfurl_media: false,
+    text: `Deploying: ${title}`,
+    blocks: [
+      {
+        type: 'section',
+        block_id: `deployment-${run.id}-${run.run_attempt}`,
+        text: { type: 'mrkdwn', text: `Deploying: ${title}` },
+      },
+      { type: 'context', elements: [{ type: 'mrkdwn', text: meta }] },
+    ],
   };
 }
 

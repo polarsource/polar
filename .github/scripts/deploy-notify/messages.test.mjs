@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { buildMessage, prepareNotification } from './messages.mjs';
+import { buildMessage, buildParentMessage, prepareNotification } from './messages.mjs';
 
 const run = {
   conclusion: 'success',
@@ -21,6 +21,18 @@ const backend = {
   html_url: `${run.html_url}/job/456`,
   conclusion: 'success',
 };
+
+test('parent message shows the commit title with run, commit and PR links', () => {
+  const parent = buildParentMessage({ run: { ...run, id: 7, head_commit: { message: 'Ship a change (#15571)' } }, channel: 'CDEPLOY' });
+  assert.equal(parent.blocks[0].text.text, 'Deploying: Ship a change (#15571)');
+  assert.equal(parent.blocks[0].block_id, 'deployment-7-2');
+  assert.equal(
+    parent.blocks[1].elements[0].text,
+    `<${run.html_url}|Workflow run (attempt 2)>  ·  <${run.repository.html_url}/commit/${run.head_sha}|abc1234>  ·  <${run.repository.html_url}/pull/15571|PR #15571>`,
+  );
+  const first = buildParentMessage({ run: { ...run, run_attempt: 1, head_commit: { message: 'Hotfix' } }, channel: 'CDEPLOY' });
+  assert.equal(first.blocks[1].elements[0].text, `<${run.html_url}|Workflow run>  ·  <${run.repository.html_url}/commit/${run.head_sha}|abc1234>`);
+});
 
 test('reports each environment and links to its telemetry and Render service', () => {
   const message = buildMessage({ ...input, jobs: [backend] });

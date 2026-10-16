@@ -3,14 +3,15 @@
 import { toast } from '@/components/Toast/use-toast'
 import { useCustomerPaymentMethods } from '@/hooks/queries/customerPortal'
 import { type Client, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { formatCurrency } from '@polar-sh/currency'
+import { Alert, Button } from '@polar-sh/orbit'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { Elements, ElementsConsumer } from '@stripe/react-stripe-js'
 import { Stripe } from '@stripe/stripe-js'
 import { useEffect, useMemo, useState } from 'react'
 import { loadPolarStripe } from '@/utils/stripe'
-import { Modal } from '@polar-sh/orbit'
 import { OrderPaymentRetry } from './OrderPaymentRetry'
+import { PortalDialog } from './PortalDialog'
 import { SavedCardsSelector } from './SavedCardsSelector'
 
 interface OrderPaymentRetryModalProps {
@@ -80,89 +81,87 @@ export const OrderPaymentRetryModal = ({
   if (!isOpen) return null
 
   return (
-    <Modal
-      title="Update payment method"
+    <PortalDialog
       isShown={isOpen}
       hide={handleClose}
-      modalContent={
-        <div className="space-y-4 p-6">
-          {/* Error State */}
-          {error && (
-            <div className="py-4 text-center">
-              <p className="mb-4 text-red-600">{error}</p>
-              <Button
-                onClick={() => {
-                  setError('')
-                }}
-              >
-                Try again
-              </Button>
-            </div>
-          )}
-
-          {/* Payment Method Selection or Payment Form */}
-          {!error && (
-            <>
-              {!useNewCard && !selectedPaymentMethodId && (
-                <SavedCardsSelector
-                  paymentMethods={cardPaymentMethods}
-                  onSelectPaymentMethod={setSelectedPaymentMethodId}
-                  onAddNewCard={() => setUseNewCard(true)}
-                />
-              )}
-
-              {selectedPaymentMethodId && stripe && (
-                <OrderPaymentRetry
-                  order={order}
-                  api={api}
-                  stripe={stripe}
-                  paymentMethodId={selectedPaymentMethodId}
-                  onSuccess={handlePaymentSuccess}
-                  onError={handlePaymentError}
-                  onClose={handleClose}
-                  onBack={() => setSelectedPaymentMethodId(null)}
-                />
-              )}
-
-              {useNewCard && stripePromise && (
-                <Elements
-                  stripe={stripePromise}
-                  options={{
-                    locale: 'en',
-                    mode: 'payment',
-                    amount: order.due_amount,
-                    currency: order.currency,
-                    setupFutureUsage: 'off_session',
-                    excludedPaymentMethodTypes: [
-                      'bancontact',
-                      'ideal',
-                      'sepa_debit',
-                      'sofort',
-                    ],
-                    paymentMethodCreation: 'manual',
-                    appearance: themingPreset.stripe,
-                  }}
-                >
-                  <ElementsConsumer>
-                    {({ stripe, elements }) => (
-                      <OrderPaymentRetry
-                        order={order}
-                        stripe={stripe}
-                        elements={elements}
-                        api={api}
-                        onSuccess={handlePaymentSuccess}
-                        onError={handlePaymentError}
-                        onClose={handleClose}
-                        onBack={() => setUseNewCard(false)}
-                      />
-                    )}
-                  </ElementsConsumer>
-                </Elements>
-              )}
-            </>
-          )}
-        </div>
+      title="Retry payment"
+      description={`${order.description} · ${formatCurrency('compact')(order.due_amount, order.currency)}`}
+      actions={
+        error ? (
+          <>
+            <Button variant="ghost" onClick={handleClose}>
+              Close
+            </Button>
+            <Button onClick={() => setError('')}>Try again</Button>
+          </>
+        ) : undefined
       }
-    />
+    >
+      {error && (
+        <Alert variant="danger" title="Payment failed" description={error} />
+      )}
+
+      {/* Payment Method Selection or Payment Form */}
+      {!error && (
+        <>
+          {!useNewCard && !selectedPaymentMethodId && (
+            <SavedCardsSelector
+              paymentMethods={cardPaymentMethods}
+              onSelectPaymentMethod={setSelectedPaymentMethodId}
+              onAddNewCard={() => setUseNewCard(true)}
+            />
+          )}
+
+          {selectedPaymentMethodId && stripe && (
+            <OrderPaymentRetry
+              order={order}
+              api={api}
+              stripe={stripe}
+              paymentMethodId={selectedPaymentMethodId}
+              onSuccess={handlePaymentSuccess}
+              onError={handlePaymentError}
+              onClose={handleClose}
+              onBack={() => setSelectedPaymentMethodId(null)}
+            />
+          )}
+
+          {useNewCard && stripePromise && (
+            <Elements
+              stripe={stripePromise}
+              options={{
+                locale: 'en',
+                mode: 'payment',
+                amount: order.due_amount,
+                currency: order.currency,
+                setupFutureUsage: 'off_session',
+                excludedPaymentMethodTypes: [
+                  'bancontact',
+                  'ideal',
+                  'sepa_debit',
+                  'sofort',
+                ],
+                paymentMethodCreation: 'manual',
+                appearance: themingPreset.stripe,
+              }}
+            >
+              <ElementsConsumer>
+                {({ stripe, elements }) => (
+                  <OrderPaymentRetry
+                    order={order}
+                    stripe={stripe}
+                    elements={elements}
+                    api={api}
+                    onSuccess={handlePaymentSuccess}
+                    onError={handlePaymentError}
+                    onClose={handleClose}
+                    onBack={() => setUseNewCard(false)}
+                  />
+                )}
+              </ElementsConsumer>
+            </Elements>
+          )}
+        </>
+      )}
+    </PortalDialog>
   )
 }

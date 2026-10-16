@@ -73,6 +73,7 @@ const immediateCycleNotice =
 const renderAndSelectSeatPlan = () => {
   render(
     <CustomerChangePlanModal
+      isShown
       api={{} as Client}
       organization={organization}
       products={[currentProduct, seatOnlyYearlyProduct]}

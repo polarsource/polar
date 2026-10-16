@@ -104,6 +104,7 @@ const CustomerPortalOrder = ({
           <PortalRows>
             {order.items.map((item) => (
               <PortalRow
+                numeric
                 key={item.id}
                 label={item.label}
                 value={format(item.amount)}
@@ -115,16 +116,26 @@ const CustomerPortalOrder = ({
         <PortalDivider />
 
         <PortalRows>
-          <PortalRow label="Subtotal" value={format(order.subtotal_amount)} />
+          <PortalRow
+            numeric
+            label="Subtotal"
+            value={format(order.subtotal_amount)}
+          />
           {order.discount_amount ? (
             <PortalRow
+              numeric
               label="Discount"
               value={format(-order.discount_amount)}
             />
           ) : null}
-          <PortalRow label="Net amount" value={format(order.net_amount)} />
-          <PortalRow label="Tax" value={format(order.tax_amount)} />
           <PortalRow
+            numeric
+            label="Net amount"
+            value={format(order.net_amount)}
+          />
+          <PortalRow numeric label="Tax" value={format(order.tax_amount)} />
+          <PortalRow
+            numeric
             emphasis
             label="Total"
             value={format(order.total_amount)}
@@ -132,10 +143,12 @@ const CustomerPortalOrder = ({
           {order.applied_balance_amount !== 0 && (
             <>
               <PortalRow
+                numeric
                 label="Applied balance"
                 value={format(order.applied_balance_amount)}
               />
               <PortalRow
+                numeric
                 emphasis
                 label="To be paid"
                 value={format(order.due_amount)}
@@ -143,7 +156,11 @@ const CustomerPortalOrder = ({
             </>
           )}
           {isPartiallyOrFullyRefunded && (
-            <PortalRow label="Refunded" value={format(order.refunded_amount)} />
+            <PortalRow
+              numeric
+              label="Refunded"
+              value={format(order.refunded_amount)}
+            />
           )}
         </PortalRows>
 

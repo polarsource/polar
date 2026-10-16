@@ -1,6 +1,6 @@
 'use client'
 
-import { ConfirmModal } from '@/components/Modal/ConfirmModal'
+import { PortalConfirmDialog } from '@/components/CustomerPortal/PortalDialog'
 import { toast } from '@/components/Toast/use-toast'
 import {
   useCustomerLicenseKey,
@@ -90,13 +90,13 @@ const LicenseKey = ({
         licenseKey={licenseKey}
         locale={locale}
       />
-      <ConfirmModal
+      <PortalConfirmDialog
         isShown={showRotateConfirm}
         hide={() => setShowRotateConfirm(false)}
         title="Rotate this license key?"
         description="A new key will be generated. The previous key stops validating immediately. Copy the new key after rotating."
         destructive
-        destructiveText="Rotate"
+        confirmText="Rotate key"
         onConfirm={handleRotate}
       />
     </>

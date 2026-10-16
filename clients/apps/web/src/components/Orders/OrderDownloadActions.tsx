@@ -33,16 +33,16 @@ export const OrderDownloadActions = ({
   }
 
   return (
-    <Box columnGap="s" rowGap="s" flexWrap="wrap">
+    <Box columnGap="s" rowGap="s" flexWrap="wrap" justifyContent="end">
       {hasReceipt ? (
         <>
-          <DownloadReceiptPortal order={order} className="w-auto" />
           <DownloadInvoicePortal
             customerSessionToken={customerSessionToken}
             order={order}
             onInvoiceGenerated={() => {}}
             variant="secondary"
           />
+          <DownloadReceiptPortal order={order} className="w-auto" />
         </>
       ) : (
         <DownloadInvoicePortal

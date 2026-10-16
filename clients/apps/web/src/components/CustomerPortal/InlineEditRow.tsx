@@ -61,16 +61,16 @@ export const InlineEditRow = ({
           </Text>
         )}
       </Box>
-      <Box columnGap="s">
+      <Box columnGap="s" justifyContent="end">
+        <Button variant="ghost" onClick={onCancel} disabled={loading}>
+          Cancel
+        </Button>
         <Button
           onClick={onSave}
           loading={loading}
           disabled={loading || saveDisabled}
         >
           {submitLabel}
-        </Button>
-        <Button variant="ghost" onClick={onCancel} disabled={loading}>
-          Cancel
         </Button>
       </Box>
     </Box>

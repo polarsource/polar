@@ -10,11 +10,6 @@ from polar.ingestion.buffered import BufferedIngestionStrategy, DropReason
 from polar.v2026_10 import PolarAsync
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 @pytest.mark.anyio
 @pytest.mark.parametrize("event_count", [0, 1, 5])
 async def test_exit_drains_batches(

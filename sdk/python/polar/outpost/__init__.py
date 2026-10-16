@@ -1,3 +1,4 @@
+from polar.ingestion import EventInput
 from polar.outpost.client import (
     CustomerMeter,
     IngestResult,
@@ -7,7 +8,7 @@ from polar.outpost.client import (
     connect_redis,
     connect_websocket,
 )
-from polar.outpost.event import Event, EventInput
+from polar.outpost.event import Event
 from polar.outpost.reducer import (
     Aggregation,
     BucketStatistics,

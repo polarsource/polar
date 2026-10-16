@@ -5,16 +5,6 @@ import typing
 
 import typing_extensions
 
-{% for api in ir.versions %}
-from polar.{{ api | format_version }}.inputs import EventCreateCustomer as EventCreateCustomer{{ api | format_version }}, EventCreateExternalCustomer as EventCreateExternalCustomer{{ api | format_version }}
-{% endfor %}
-
-EventInput: typing.TypeAlias = typing.Union[
-    {% for api in ir.versions %}
-    EventCreateCustomer{{ api | format_version }},
-    EventCreateExternalCustomer{{ api | format_version }},
-    {% endfor %}
-]
 
 @dataclasses.dataclass
 class Event:

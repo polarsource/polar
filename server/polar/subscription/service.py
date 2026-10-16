@@ -1617,7 +1617,7 @@ class SubscriptionService:
         # Settlement stops at the boundary, so it excludes the reset and re-grant below.
         self._enqueue_meter_cycle_order(subscription, boundary)
 
-        await self.reset_meters(session, subscription, reset_at=boundary)
+        await self.reset_meters(session, subscription)
         enqueue_job(
             "benefit.enqueue_benefit_grant_cycles", subscription_id=subscription.id
         )
@@ -4611,9 +4611,8 @@ class SubscriptionService:
             )
             assert loaded is not None
             subscription = loaded
-            now = utc_now()
-            self._enqueue_meter_cycle_order(subscription, now)
-            await self.reset_meters(session, subscription, reset_at=now)
+            self._enqueue_meter_cycle_order(subscription, utc_now())
+            await self.reset_meters(session, subscription)
 
             # Grants kept through the revocation grace period are skipped by the
             # grant below, so the reset would leave them without credits: cycle

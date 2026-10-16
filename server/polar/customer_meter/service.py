@@ -495,7 +495,7 @@ class CustomerMeterService:
             )
 
         if cutoff is not None:
-            statement = statement.where(Event.ingested_at < cutoff)
+            statement = statement.where(Event.timestamp < cutoff)
 
         if by_external_id or not include_system_events:
             statement = statement.where(event_repository.get_meter_clause(meter))

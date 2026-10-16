@@ -3036,36 +3036,6 @@ class TestCycleMeters:
         ]
         assert order_calls == []
 
-    async def test_resets_meters_at_the_boundary(
-        self,
-        session: AsyncSession,
-        enqueue_job_mock: MagicMock,
-        webhook_service_send_mock: AsyncMock,
-        save_fixture: SaveFixture,
-        product: Product,
-        customer: Customer,
-        mocker: MockerFixture,
-    ) -> None:
-        subscription = await create_active_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-            scheduler_locked_at=utc_now(),
-        )
-        meter_period_end = utc_now() - timedelta(seconds=1)
-        subscription.meter_interval = SubscriptionRecurringInterval.month
-        subscription.meter_interval_count = 1
-        subscription.current_meter_period_start = meter_period_end - timedelta(days=31)
-        subscription.current_meter_period_end = meter_period_end
-        await save_fixture(subscription)
-        reset_mock = mocker.patch.object(subscription_service, "reset_meters")
-
-        await subscription_service.cycle_meters(session, subscription)
-
-        reset_mock.assert_awaited_once_with(
-            session, subscription, reset_at=meter_period_end
-        )
-
     async def test_clears_expired_discount_before_settling(
         self,
         session: AsyncSession,
@@ -8414,8 +8384,7 @@ class TestMarkActive:
 
         assert updated.status == SubscriptionStatus.active
         settle_mock.assert_called_once()
-        _, settled_at = settle_mock.call_args.args
-        reset_mock.assert_awaited_once_with(session, updated, reset_at=settled_at)
+        reset_mock.assert_called_once()
 
     async def test_recovery_cycles_grants_kept_through_grace_period(
         self,

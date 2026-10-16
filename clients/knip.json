@@ -11,6 +11,10 @@
     "packages/cli": {
       "entry": ["lint/polar.js", "scripts/npm-postinstall.mjs"],
       "ignoreDependencies": ["@effect/tsgo"]
+    },
+    "apps/mcp": {
+      "entry": ["cloudflare.config.ts", "scripts/generate-spec.ts"],
+      "ignoreDependencies": ["cloudflare"]
     }
   }
 }

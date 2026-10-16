@@ -134,16 +134,19 @@ class BillingEntryService:
 
         billable_from = subscription.trial_end or subscription.started_at
         if consumed_units and billable_from is not None:
+            order_id = next(iter(item_entries_map)).order_id
             with logfire.span(
-                "Seal and compare billed usage",
+                "Bill and compare reducer usage",
                 organization_id=str(subscription.customer.organization_id),
                 subscription_id=str(subscription.id),
+                order_id=str(order_id),
                 cutoff=cutoff,
             ) as span:
-                quantities = await reducer_service.seal(
+                quantities = await reducer_service.bill(
                     session,
                     subscription.customer,
                     set(consumed_units),
+                    order_id=order_id,
                     billable_from=billable_from,
                     cutoff=cutoff,
                 )

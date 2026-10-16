@@ -7,6 +7,7 @@ import { schemas } from '@polar-sh/client'
 import { Avatar, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { PortalText } from '@/components/CustomerPortal/PortalPrimitives'
+import LogoType from '@/components/Brand/logos/LogoType'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import type { ReactNode } from 'react'
@@ -29,12 +30,20 @@ const SidebarHeader = ({
   const { data: session } = useCustomerPortalSession(createClientSideAPI(token))
 
   return (
-    <Box alignItems="center" columnGap="m" minWidth={0}>
-      <Avatar
-        className="h-10 w-10 flex-none text-sm"
-        avatar_url={organization.avatar_url}
-        name={organization.name}
-      />
+    <Box
+      alignItems={{ base: 'center', md: 'start' }}
+      columnGap="m"
+      minWidth={0}
+      position="relative"
+      top={{ base: 0, md: 11 }}
+    >
+      <Box marginTop={{ base: 'none', md: '-xs' }} flexShrink={0}>
+        <Avatar
+          className="h-9 w-9 flex-none text-xs"
+          avatar_url={organization.avatar_url}
+          name={organization.name}
+        />
+      </Box>
       <Box flexDirection="column" minWidth={0}>
         <PortalText block className="truncate text-base md:text-lg">
           {organization.name}
@@ -62,17 +71,24 @@ const SidebarHeader = ({
 }
 
 const PoweredByPolar = () => (
-  <PortalText tone="tertiary" className="text-xs">
-    Powered by{' '}
-    <a
-      href="https://polar.sh"
-      target="_blank"
-      rel="noopener noreferrer"
-      className="underline-offset-2 hover:underline"
+  <a
+    href="https://polar.sh?utm_source=customer_portal"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    <Box
+      as="span"
+      display="inline-flex"
+      alignItems="center"
+      columnGap="s"
+      color={{ base: 'text-tertiary', hover: 'text-secondary' }}
+      transitionProperty="colors"
+      transitionDuration="fast"
     >
-      Polar
-    </a>
-  </PortalText>
+      <span className="text-xs">Powered by</span>
+      <LogoType className="h-3.5" />
+    </Box>
+  </a>
 )
 
 export const PortalShell = ({
@@ -96,17 +112,15 @@ export const PortalShell = ({
       as="aside"
       flexDirection="column"
       flexShrink={0}
-      width={{ base: '100%', md: '36%' }}
-      minWidth={{ md: 280 }}
-      maxWidth={{ md: 480 }}
+      width={{ base: '100%', md: 260, lg: 300, xl: 340 }}
       height={{ md: '100vh' }}
       position={{ md: 'sticky' }}
       top={0}
       overflowY={{ md: 'auto' }}
       rowGap={{ base: 'xl', md: '3xl' }}
-      paddingHorizontal={{ base: 'l', md: '2xl', lg: '3xl' }}
-      paddingTop={{ base: 'l', md: '2xl', lg: '3xl' }}
-      paddingBottom={{ base: 'none', md: '2xl', lg: '3xl' }}
+      paddingHorizontal={{ base: 'l', md: 'xl', lg: '2xl' }}
+      paddingTop={{ base: 'l', md: '2xl' }}
+      paddingBottom={{ base: 'none', md: 'xl' }}
       backgroundColor="background-secondary"
       borderBottomWidth={{ base: 1, md: 0 }}
       borderRightWidth={{ base: 0, md: 1 }}
@@ -128,13 +142,14 @@ export const PortalShell = ({
       justifyContent="center"
       alignItems={centered ? { md: 'center' } : 'start'}
       paddingHorizontal={{ base: 'l', md: '2xl', lg: '4xl' }}
-      paddingVertical={{ base: '2xl', md: '4xl' }}
+      paddingTop={{ base: 'xl', md: '2xl' }}
+      paddingBottom={{ base: '2xl', md: '3xl' }}
     >
       <Box
         width="100%"
         maxWidth={centered ? 400 : 720}
         flexDirection="column"
-        rowGap={{ base: '3xl', md: '4xl' }}
+        rowGap={{ base: '2xl', md: '3xl' }}
       >
         {children}
         <Box display={{ base: 'flex', md: 'none' }} justifyContent="center">

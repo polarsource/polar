@@ -114,9 +114,11 @@ const NavigationContent = ({
           marginTop="auto"
           display={{ base: 'none', md: 'flex' }}
         >
-          <PortalText tone="tertiary" className="text-xs">
-            Signed in as
-          </PortalText>
+          <Box paddingBottom="xs">
+            <PortalText tone="tertiary" className="text-xs">
+              Signed in as
+            </PortalText>
+          </Box>
           {authenticatedUser.name ? (
             <PortalText tone="primary" block className="truncate text-sm">
               {authenticatedUser.name}

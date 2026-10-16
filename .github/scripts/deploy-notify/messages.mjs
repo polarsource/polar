@@ -90,31 +90,14 @@ export function buildEnvironmentUpdates({ run, jobs, channel }) {
       succeeded: conclusions.includes('success') && conclusions.every(conclusion => ['success', 'skipped'].includes(conclusion)),
       message: {
         channel, unfurl_links: false, unfurl_media: false,
-        text: [
-          ...environmentLines(run, environment, jobs),
-          'Deployment jobs finished. Skipped / not run does not mean deployed. Lambda reports the update request, not rollout health.',
-        ].join('\n'),
+        text: environmentLines(run, environment, jobs).join('\n'),
       },
     }];
   });
 }
 
-export function buildMessage({ run, jobs, pullRequests, channel }) {
-  const title = escapeText((run.head_commit?.message ?? '').split('\n')[0].slice(0, 200));
-  const lines = [
-    `*Deployment run: ${escapeText(run.conclusion ?? 'unknown')}*`,
-    `${link(run.html_url, `Run #${run.run_number}, attempt ${run.run_attempt}`)} · ${link(`${run.repository.html_url}/commit/${run.head_sha}`, run.head_sha.slice(0, 7))} · ${escapeText(run.head_branch)} · ${escapeText((run.triggering_actor ?? run.actor).login)}`,
-    title,
-  ];
-
-  if (pullRequests.length) {
-    lines.push(`Head commit PR: ${pullRequests.slice(0, 5).map(pr => link(pr.html_url, `#${pr.number}`)).join(', ')}`);
-  }
-
-  for (const environment of Object.keys(environments)) {
-    lines.push('', ...environmentLines(run, environment, jobs));
-  }
-
+export function buildMessage({ run, jobs, channel }) {
+  const lines = [`*Deployment run: ${escapeText(run.conclusion ?? 'unknown')}*`];
   const failedJobs = jobs.filter(job => ['failure', 'timed_out', 'action_required', 'startup_failure'].includes(job.conclusion));
   if (failedJobs.length) {
     lines.push('', '*Failed jobs*');
@@ -123,8 +106,6 @@ export function buildMessage({ run, jobs, pullRequests, channel }) {
     }
     if (failedJobs.length > 10) lines.push(`See workflow for ${failedJobs.length - 10} more failed jobs.`);
   }
-
-  lines.push('', 'Skipped / not run does not mean deployed. Lambda reports the update request, not rollout health.');
   return { channel, text: lines.join('\n'), unfurl_links: false, unfurl_media: false };
 }
 
@@ -146,7 +127,7 @@ export async function prepareNotification({ github, context, core }) {
   } catch (error) {
     core.warning(`Could not look up head commit PRs: ${error.message}`);
   }
-  const message = buildMessage({ run, jobs, pullRequests, channel: process.env.DEPLOY_SLACK_CHANNEL_ID });
+  const message = buildMessage({ run, jobs, channel: process.env.DEPLOY_SLACK_CHANNEL_ID });
   await core.summary.addRaw(message.text.replace(/<(https:\/\/[^|]+)\|([^>]+)>/g, '[$2]($1)')).write();
   return { message, pullRequests, jobs };
 }

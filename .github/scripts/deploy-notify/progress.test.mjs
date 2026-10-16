@@ -120,7 +120,6 @@ test('waits for frontend promotion and Lambda, and reports skipped, failed and c
   assert.deepEqual(buildEnvironmentUpdates({ run, jobs: [jobs[0]] }), []);
   const [partial] = buildEnvironmentUpdates({ run: { ...run, status: 'completed' }, jobs: [jobs[0]] });
   assert.match(partial.message.text, /Frontend promotion: not run in this attempt/);
-  assert.match(partial.message.text, /not run does not mean deployed/);
 });
 
 test('a missed start event is recovered with environment replies and the final summary in one thread', async () => {

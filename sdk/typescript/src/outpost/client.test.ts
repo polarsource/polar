@@ -1,6 +1,6 @@
 import type { ReadableSpan } from "@opentelemetry/sdk-trace";
 
-import { Redis } from "ioredis";
+import { Pipeline, Redis } from "ioredis";
 import { spawn, type ChildProcess } from "node:child_process";
 import { once } from "node:events";
 import { mkdtemp, access, rm } from "node:fs/promises";
@@ -205,6 +205,53 @@ it("retains the connection ID while connected", async () => {
   expect(outpost.connectionId).toBe(connectionId);
   await outpost.close();
   expect(outpost.connectionId).toBeUndefined();
+});
+
+it.each([
+  [0, false],
+  [3, false],
+  [3, true],
+] as const)("pipelines %i bucket writes (failure: %s)", async (bucketCount, fail) => {
+  const reducer = reducers[0];
+  reducers = Array.from({ length: bucketCount }, (_, i) => ({
+    ...reducer,
+    id: `tokens-${i}`,
+    meter_ids: [`meter-${i}`],
+  }));
+  for (let i = 0; i < bucketCount; i++) {
+    await redis.hset(`outpost:state:external:alice:tokens-${i}`, {
+      cold_until: bucket,
+      [`credited:meter-${i}`]: 100,
+    });
+  }
+  const outpost = await start();
+  const execute = vi.spyOn(Pipeline.prototype, "exec");
+  await ingest(outpost, 3);
+  expect(execute).toHaveBeenCalledOnce();
+  for (let i = 0; i < bucketCount; i++) {
+    expect(await outpost.customerMeter({ ...customer, meter_id: `meter-${i}` })).toMatchObject({
+      consumed_units: 3,
+      balance: 97,
+    });
+    expect(
+      await redis.hget(`outpost:state:external:alice:tokens-${i}`, `bucket:${bucket}:count`),
+    ).toBe("1");
+  }
+  if (fail) {
+    outpost["channel"] = "outpost:test:unsubscribed";
+    await redis.hset("outpost:state:external:alice:tokens-1", `bucket:${bucket}:sum`, "invalid");
+    await expect(ingest(outpost, 2)).rejects.toBeInstanceOf(UnavailableRedisError);
+    expect(execute).toHaveBeenCalledTimes(2);
+    for (const i of [0, 2]) {
+      expect(await outpost.customerMeter({ ...customer, meter_id: `meter-${i}` })).toMatchObject({
+        consumed_units: 5,
+        balance: 95,
+      });
+      expect(
+        await redis.hget(`outpost:state:external:alice:tokens-${i}`, `bucket:${bucket}:sum`),
+      ).toBe("5");
+    }
+  }
 });
 
 it("handles configuration asynchronously and reports a missing customer snapshot", async () => {
@@ -863,7 +910,9 @@ it("raises Outpost errors when Redis fails", async () => {
   await expect(readError).rejects.toMatchObject({ cause: redisError });
   expect(readOutcomes()).toEqual([["outpost.customer_meter", "redis_unavailable"]]);
   read.mockRestore();
-  const write = vi.spyOn(outpost["redis"]!, "outpostWriteBucket").mockRejectedValue(redisError);
+  const pipeline = outpost["redis"]!.pipeline();
+  vi.spyOn(outpost["redis"]!, "pipeline").mockReturnValue(pipeline);
+  const write = vi.spyOn(pipeline, "exec").mockRejectedValue(redisError);
   const writeError = ingest(outpost, 3);
   await expect(writeError).rejects.toBeInstanceOf(UnavailableRedisError);
   await expect(writeError).rejects.toMatchObject({ cause: redisError });

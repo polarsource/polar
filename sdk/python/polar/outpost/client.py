@@ -354,7 +354,6 @@ class Outpost:
         self._reducers: list[Reducer] = []
         self._actors: set[str] = set()
         self._configured = anyio.Event()
-        self._write_bucket: AsyncScript | None = None
         self._apply_snapshot: AsyncScript | None = None
         self._read_state: AsyncScript | None = None
         self._cache: collections.OrderedDict[str, LocalState] = (
@@ -387,7 +386,6 @@ class Outpost:
                 )
             self._channel = f"outpost:{self._redis.connection_pool.connection_kwargs.get('db', 0)}:updates"
             self._read_state = self._redis.register_script(READ_STATE_SCRIPT)
-            self._write_bucket = self._redis.register_script(WRITE_BUCKET_SCRIPT)
             self._apply_snapshot = self._redis.register_script(APPLY_SNAPSHOT_SCRIPT)
             self._tasks = await self._stack.enter_async_context(
                 anyio.create_task_group()
@@ -406,7 +404,6 @@ class Outpost:
                 self._connection_id = None
                 self._tasks = None
                 self._reducers = []
-                self._write_bucket = None
                 self._apply_snapshot = None
                 self._read_state = None
                 self._cache.clear()
@@ -436,7 +433,6 @@ class Outpost:
             self._tasks = None
             self._reducers = []
             self._actors.clear()
-            self._write_bucket = None
             self._apply_snapshot = None
             self._read_state = None
             self._cache.clear()
@@ -469,12 +465,16 @@ class Outpost:
                 oldest_bucket_start=get_bucket_start(parsed.timestamp),
             )
             await self._warm_actor(parsed.external_customer_id)
-            assert self._write_bucket is not None
-            for (customer, reducer_id, bucket_start), statistics in updates.items():
-                identity = f"{customer}:{reducer_id}"
-                state = await self._write_bucket(
-                    keys=[f"outpost:state:{identity}"],
-                    args=[
+            assert self._redis is not None
+            identities = []
+            async with self._redis.pipeline(transaction=False) as pipeline:
+                for (customer, reducer_id, bucket_start), statistics in updates.items():
+                    identity = f"{customer}:{reducer_id}"
+                    identities.append(identity)
+                    pipeline.eval(
+                        WRITE_BUCKET_SCRIPT,
+                        1,
+                        f"outpost:state:{identity}",
                         identity,
                         self._channel,
                         _generate_epoch(),
@@ -483,9 +483,17 @@ class Outpost:
                         statistics.sum,
                         statistics.min if statistics.min is not None else "",
                         statistics.max if statistics.max is not None else "",
-                    ],
-                )
+                    )
+                states = await pipeline.execute(raise_on_error=False)
+            first_error: Exception | None = None
+            for identity, state in zip(identities, states, strict=True):
+                if isinstance(state, Exception):
+                    if first_error is None:
+                        first_error = state
+                    continue
                 await self._receive_state(identity, self._decode_state(state))
+            if first_error is not None:
+                raise first_error
             span.set_attribute("outpost.buckets", len(updates))
 
     @_raise_redis_unavailable

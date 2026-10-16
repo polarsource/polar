@@ -74,7 +74,6 @@ interface LocalState {
 }
 interface OutpostRedis extends Redis {
   outpostReadState(key: string, ...args: (string | number)[]): Promise<string[]>;
-  outpostWriteBucket(key: string, ...args: (string | number)[]): Promise<string[]>;
   outpostApplySnapshot(
     key: string,
     ...args: (string | number)[]
@@ -313,7 +312,6 @@ export class Outpost {
         },
       }) as OutpostRedis;
       this.redis.defineCommand("outpostReadState", { numberOfKeys: 1, lua: READ_STATE_SCRIPT });
-      this.redis.defineCommand("outpostWriteBucket", { numberOfKeys: 1, lua: WRITE_BUCKET_SCRIPT });
       this.redis.defineCommand("outpostApplySnapshot", {
         numberOfKeys: 1,
         lua: APPLY_SNAPSHOT_SCRIPT,
@@ -425,26 +423,39 @@ export class Outpost {
         await this.waitConfigured();
         const updates = reduce(this.reducers, [parsed], getBucketStart(parsed.timestamp));
         await this.warmActor(parsed.customer);
+        const pipeline = redis.pipeline();
         for (const update of updates) {
           const identity = `${update.customer}:${update.reducer}`;
           const statistics = update.statistics;
-          const state = await redis
-            .outpostWriteBucket(
-              `outpost:state:${identity}`,
-              identity,
-              this.channel,
-              generateEpoch(),
-              update.bucketStart,
-              statistics.count,
-              statistics.sum,
-              statistics.min ?? "",
-              statistics.max ?? "",
-            )
-            .catch((error: unknown) => {
-              throw redisUnavailable(error);
-            });
-          await this.receiveState(identity, decodeState(state));
+          pipeline.eval(
+            WRITE_BUCKET_SCRIPT,
+            1,
+            `outpost:state:${identity}`,
+            identity,
+            this.channel,
+            generateEpoch(),
+            update.bucketStart,
+            statistics.count,
+            statistics.sum,
+            statistics.min ?? "",
+            statistics.max ?? "",
+          );
         }
+        const results = await pipeline.exec().catch((error: unknown) => {
+          throw redisUnavailable(error);
+        });
+        if (results === null) throw new UnavailableRedisError();
+        let firstError: Error | undefined;
+        for (const [index, [error, state]] of results.entries()) {
+          if (error) {
+            firstError ??= error;
+            continue;
+          }
+          const update = updates[index];
+          const identity = `${update.customer}:${update.reducer}`;
+          await this.receiveState(identity, decodeState(state as string[]));
+        }
+        if (firstError) throw redisUnavailable(firstError);
         span.setAttribute("outpost.buckets", updates.length);
       },
       { "outpost.events": 1 },

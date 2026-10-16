@@ -962,7 +962,9 @@ class EventService:
             raise PolarRequestValidationError(errors)
 
         repository = EventRepository.from_session(session)
-        event_ids, duplicates_count = await repository.insert_batch(events)
+        event_ids, duplicates_count = await repository.insert_batch(
+            events, render_nulls=True
+        )
 
         # Temporarily: fetch inserted events and create meter_events
         with logfire.span("create_meter_events", event_count=len(event_ids)):

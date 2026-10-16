@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime, timedelta
+from typing import Any
 
 import pytest
+from sqlalchemy import event as sqlalchemy_event
 from sqlalchemy import select
 
 from polar.event.repository import EventRepository
@@ -386,3 +388,51 @@ class TestGetRecentBalanceOrderExchangeRate:
         )
 
         assert result is None
+
+
+@pytest.mark.anyio
+class TestInsertBatch:
+    async def test_mixed_keys_insert_in_one_statement(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        base: dict[str, Any] = {
+            "organization_id": organization.id,
+            "source": EventSource.user,
+            "name": "test",
+            "timestamp": utc_now(),
+            "user_metadata": {},
+            "external_customer_id": "ext",
+        }
+        events = [
+            {**base},
+            {**base, "pending_parent_external_id": "parent"},
+            {**base, "external_id": "event-1", "external_member_id": "member"},
+        ]
+        statements: list[str] = []
+
+        def capture(_conn: Any, _cursor: Any, statement: str, *args: Any) -> None:
+            statements.append(statement)
+
+        bind = session.sync_session.bind
+        assert bind is not None
+        sqlalchemy_event.listen(bind, "before_cursor_execute", capture)
+        try:
+            inserted_ids, duplicates = await EventRepository.from_session(
+                session
+            ).insert_batch(events, render_nulls=True)
+        finally:
+            sqlalchemy_event.remove(bind, "before_cursor_execute", capture)
+
+        assert len(inserted_ids) == 3
+        assert duplicates == 0
+        assert len([s for s in statements if s.startswith("INSERT INTO events")]) == 1
+
+        inserted = {
+            event.id: event
+            for event in await session.scalars(
+                select(Event).where(Event.id.in_(inserted_ids))
+            )
+        }
+        assert inserted[events[0]["id"]].root_id == events[0]["id"]
+        assert inserted[events[1]["id"]].root_id is None
+        assert inserted[events[2]["id"]].external_id == "event-1"

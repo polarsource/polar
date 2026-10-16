@@ -99,6 +99,15 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             if event.get("pending_parent_external_id") is None:
                 event["root_id"] = event["id"]
 
+        # Ensure all event dicts have the same keys; add left out keys with None values.
+        # We do this so SQLAlchemy bulk inserts these rows instead of doing separate
+        # inserts for each event. Requires `render_nulls=True`, otherwise the None keys
+        # are dropped again.
+        keys = set().union(*events)
+        for event in events:
+            for key in keys:
+                event.setdefault(key, None)
+
         statement = (
             insert(Event)
             .on_conflict_do_nothing(index_elements=["organization_id", "external_id"])

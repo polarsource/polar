@@ -72,7 +72,10 @@ export const logOnCompletion = (
   startedAt: number,
 ) => {
   const write = () =>
-    console.log({
+    console.info({
+      message: [entry.server, entry.rpcMethod, entry.tool, response.status]
+        .filter(Boolean)
+        .join(' '),
       ...entry,
       status: response.status,
       durationMs: Date.now() - startedAt,

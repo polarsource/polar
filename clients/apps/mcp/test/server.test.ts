@@ -346,7 +346,7 @@ test('operation results are not truncated and the text is the serialized structu
 })
 
 test('every MCP request logs one line without the token, arguments or results', async () => {
-  const log = vi.spyOn(console, 'log').mockImplementation(() => {})
+  const log = vi.spyOn(console, 'info').mockImplementation(() => {})
   fetchMock.mockResolvedValueOnce(
     Response.json({ detail: 'jane@example.com not found' }, { status: 404 }),
   )
@@ -381,6 +381,7 @@ test('every MCP request logs one line without the token, arguments or results', 
       mode: 'operations',
       readOnly: true,
       userAgent: 'claude-code/3.0',
+      message: 'polar-mcp tools/call customers_get 200',
       tool: 'customers_get',
       isError: true,
       errorKind: 'api',
@@ -391,6 +392,7 @@ test('every MCP request logs one line without the token, arguments or results', 
       mode: 'codemode',
       readOnly: false,
       userAgent: null,
+      message: 'polar-mcp tools/call execute 200',
       tool: 'execute',
       client: { name: 'codex', version: '1.2' },
       isError: false,
@@ -403,6 +405,7 @@ test('every MCP request logs one line without the token, arguments or results', 
       mode: 'codemode',
       readOnly: false,
       userAgent: null,
+      message: 'polar-mcp tools/call execute 200',
       tool: 'execute',
       isError: true,
       errorKind: 'sandbox',

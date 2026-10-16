@@ -16,8 +16,14 @@ export const errors = (issues: ReadonlyArray<ConfigIssue>) =>
 const warnings = (issues: ReadonlyArray<ConfigIssue>) =>
   issues.filter((issue) => issue.severity === 'warning').length
 
+export const counts = (issues: ReadonlyArray<ConfigIssue>) =>
+  `${plural(errors(issues), 'error')} and ${plural(warnings(issues), 'warning')}`
+
+export const linted = (config: LoadedConfig) =>
+  config.issues.length === 0 ? 'no issues' : counts(config.issues)
+
 export const summary = (issues: ReadonlyArray<ConfigIssue>) =>
-  `${ui.INDENT}Found ${plural(errors(issues), 'error')} and ${plural(warnings(issues), 'warning')}.`
+  `${ui.INDENT}Found ${counts(issues)}.`
 
 export const unchanged = (entries: ReadonlyArray<AppliedEntry>) =>
   entries.every((entry) => entry.action === 'unchanged')

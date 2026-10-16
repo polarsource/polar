@@ -92,13 +92,17 @@ const Comment = Schema.Struct({
   html_url: Schema.String,
 })
 
-export const commentOnPullRequest = (key: string, body: string | undefined) =>
+type PullRequest = NonNullable<
+  ReturnType<typeof gitHubActions> | ReturnType<typeof buildkite>
+>
+
+const post = (
+  env: Env,
+  pullRequest: PullRequest,
+  key: string,
+  body: string | undefined,
+) =>
   Effect.gen(function* () {
-    const env = yield* Environment
-    const pullRequest = gitHubActions(env) ?? buildkite(env)
-    if (pullRequest === undefined) {
-      return { action: 'skipped' } satisfies CommentResult
-    }
     const token = env['GITHUB_TOKEN']
     if (!token) {
       return yield* new PullRequestCommentError({
@@ -167,3 +171,17 @@ export const commentOnPullRequest = (key: string, body: string | undefined) =>
           }),
     ),
   )
+
+export const commentOnPullRequest = <E, R>(
+  key: string,
+  markdown: Effect.Effect<string | undefined, E, R>,
+) =>
+  Effect.gen(function* () {
+    const env = yield* Environment
+    const pullRequest = gitHubActions(env) ?? buildkite(env)
+    if (pullRequest === undefined) {
+      return { action: 'skipped' } satisfies CommentResult
+    }
+    const body = yield* markdown
+    return yield* post(env, pullRequest, key, body)
+  })

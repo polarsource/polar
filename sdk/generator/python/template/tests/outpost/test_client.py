@@ -1261,6 +1261,35 @@ async def test_unknown_meter_reads_none(
 
 
 @pytest.mark.anyio
+async def test_reads_without_configuration_are_not_ready(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    exported_spans: list[ReadableSpan],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class Unconfigured:
+        def set(self) -> None: ...
+
+        def is_set(self) -> bool:
+            return False
+
+        async def wait(self) -> None:
+            raise TimeoutError
+
+    url, _ = redis_connection
+    async with Outpost(url, client=polar_client) as outpost:
+        monkeypatch.setattr(outpost, "_configured", Unconfigured())
+        with pytest.raises(TimeoutError):
+            await outpost.actor(external_customer_id="alice")
+        with pytest.raises(TimeoutError):
+            await outpost.customer_meter(meter_id="meter", external_customer_id="alice")
+    assert read_outcomes(exported_spans) == [
+        ("outpost.actor", "not_ready"),
+        ("outpost.customer_meter", "not_ready"),
+    ]
+
+
+@pytest.mark.anyio
 async def test_unknown_customer_reads_none(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,

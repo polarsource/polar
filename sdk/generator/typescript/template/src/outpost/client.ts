@@ -476,10 +476,8 @@ export class Outpost {
         return null;
       }
       const state = local.state;
-      if (!state || state.coldUntil === undefined) {
-        span.setAttribute("outpost.read.outcome", "not_ready");
+      if (!state || state.coldUntil === undefined)
         throw new PolarError("Customer snapshot is not ready");
-      }
       span.setAttribute(
         "outpost.read.outcome",
         (reducer.aggregation.func as string) === "unique" || input.meter_id in state.credited
@@ -800,6 +798,7 @@ export class Outpost {
 
   private traceRead<T>(name: string, run: (span: Span) => Promise<T>): Promise<T> {
     return this.trace(name, async (span) => {
+      span.setAttribute("outpost.read.outcome", "not_ready");
       try {
         return await run(span);
       } catch (error) {

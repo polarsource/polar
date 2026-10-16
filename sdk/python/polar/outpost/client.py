@@ -132,7 +132,8 @@ def _raise_redis_unavailable(
 
 
 @contextlib.contextmanager
-def _tag_redis_unavailable(span: Span) -> collections.abc.Generator[None]:
+def _tag_read_outcome(span: Span) -> collections.abc.Generator[None]:
+    span.set_attribute("outpost.read.outcome", "not_ready")
     try:
         yield
     except (UnavailableRedisError, RedisConnectionError, RedisTimeoutError):
@@ -496,7 +497,7 @@ class Outpost:
     ) -> CustomerMeter | None:
         with (
             self._span("outpost.customer_meter") as span,
-            _tag_redis_unavailable(span),
+            _tag_read_outcome(span),
         ):
             customer = self._customer_key(customer_id, external_customer_id)
             self._require_redis()
@@ -522,7 +523,6 @@ class Outpost:
                 return None
             state = local.state
             if state is None or state.cold_until is None:
-                span.set_attribute("outpost.read.outcome", "not_ready")
                 raise PolarOutpostError("Customer snapshot is not ready")
             span.set_attribute(
                 "outpost.read.outcome",
@@ -553,7 +553,7 @@ class Outpost:
         customer_id: str | None = None,
         external_customer_id: str | None = None,
     ) -> None:
-        with self._span("outpost.actor") as span, _tag_redis_unavailable(span):
+        with self._span("outpost.actor") as span, _tag_read_outcome(span):
             customer = self._customer_key(customer_id, external_customer_id)
             warmed = await self._warm_actor(customer)
             with anyio.move_on_after(SNAPSHOT_TIMEOUT):

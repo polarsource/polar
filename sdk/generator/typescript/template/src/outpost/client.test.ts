@@ -735,6 +735,18 @@ it("reads null for a meter Outpost does not know", async () => {
   expect(readOutcomes()).toEqual([["outpost.customer_meter", "unknown_meter"]]);
 });
 
+it("reports reads without configuration as not ready", async () => {
+  const outpost = await start();
+  const timedOut = new Error("Outpost operation timed out");
+  outpost["waitConfigured"] = () => Promise.reject(timedOut);
+  await expect(outpost.actor(customer)).rejects.toBe(timedOut);
+  await expect(outpost.customerMeter(meter)).rejects.toBe(timedOut);
+  expect(readOutcomes()).toEqual([
+    ["outpost.actor", "not_ready"],
+    ["outpost.customer_meter", "not_ready"],
+  ]);
+});
+
 it("reads null for a customer Polar does not know", async () => {
   snapshot = { ...aliceSnapshot, customer_exists: false };
   const outpost = await start();

@@ -131,6 +131,15 @@ def _raise_redis_unavailable(
     return wrapper
 
 
+@contextlib.contextmanager
+def _tag_redis_unavailable(span: Span) -> collections.abc.Generator[None]:
+    try:
+        yield
+    except (UnavailableRedisError, RedisConnectionError, RedisTimeoutError):
+        span.set_attribute("outpost.read.outcome", "redis_unavailable")
+        raise
+
+
 def _is_connection_error(error: BaseException) -> bool:
     if isinstance(error, BaseExceptionGroup):
         return all(_is_connection_error(inner) for inner in error.exceptions)
@@ -485,7 +494,10 @@ class Outpost:
         customer_id: str | None = None,
         external_customer_id: str | None = None,
     ) -> CustomerMeter | None:
-        with self._span("outpost.customer_meter"):
+        with (
+            self._span("outpost.customer_meter") as span,
+            _tag_redis_unavailable(span),
+        ):
             customer = self._customer_key(customer_id, external_customer_id)
             self._require_redis()
             with anyio.fail_after(5):
@@ -500,15 +512,19 @@ class Outpost:
                 None,
             )
             if reducer is None:
+                span.set_attribute("outpost.read.outcome", "unknown_meter")
                 return None
             local = await self._warm_customer(customer, reducer)
             with anyio.move_on_after(SNAPSHOT_TIMEOUT):
                 await self._wait_ready(reducer, local, [meter_id])
             if local.missing:
+                span.set_attribute("outpost.read.outcome", "unknown_customer")
                 return None
             state = local.state
             if state is None or state.cold_until is None:
+                span.set_attribute("outpost.read.outcome", "not_ready")
                 raise PolarOutpostError("Customer snapshot is not ready")
+            span.set_attribute("outpost.read.outcome", "ready")
             combined = dataclasses.replace(state.cold)
             for bucket_start, statistics in state.buckets.items():
                 if bucket_start >= state.cold_until:
@@ -531,12 +547,28 @@ class Outpost:
         customer_id: str | None = None,
         external_customer_id: str | None = None,
     ) -> None:
-        with self._span("outpost.actor"):
+        with self._span("outpost.actor") as span, _tag_redis_unavailable(span):
             customer = self._customer_key(customer_id, external_customer_id)
             warmed = await self._warm_actor(customer)
             with anyio.move_on_after(SNAPSHOT_TIMEOUT):
                 for reducer, local in warmed:
                     await self._wait_ready(reducer, local, reducer.get("meter_ids", []))
+            # Polar sends no snapshot for unique reducers.
+            snapshotted = [
+                (reducer, local)
+                for reducer, local in warmed
+                if reducer["aggregation"]["func"] != "unique"
+            ]
+            if not all(
+                local.is_ready(reducer.get("meter_ids", []))
+                for reducer, local in snapshotted
+            ):
+                outcome = "not_ready"
+            elif any(local.missing for _, local in snapshotted):
+                outcome = "unknown_customer"
+            else:
+                outcome = "ready"
+            span.set_attribute("outpost.read.outcome", outcome)
 
     async def flush_telemetry(self) -> bool:
         provider = self._tracer_provider

@@ -9,16 +9,19 @@ import {
   meterUnit,
   productMeters,
   productSentence,
+  shownDiff,
+  webhookSentence,
 } from '@/utils/billing-config/sentences'
 import * as ui from '@/utils/ui'
 
-type Section = 'meters' | 'benefits' | 'products' | 'discounts'
+type Section = 'meters' | 'benefits' | 'products' | 'discounts' | 'webhooks'
 
 const SECTIONS: ReadonlyArray<Section> = [
   'meters',
   'benefits',
   'products',
   'discounts',
+  'webhooks',
 ]
 
 type Sentence = ReadonlyArray<string>
@@ -31,6 +34,7 @@ const SENTENCES: Record<Section, (input: unknown) => Sentence | undefined> = {
   benefits: benefitSentence,
   products: productSentence,
   discounts: discountSentence,
+  webhooks: webhookSentence,
 }
 
 const COVERED: Record<Section, ReadonlySet<string>> = {
@@ -58,6 +62,7 @@ const COVERED: Record<Section, ReadonlySet<string>> = {
     'starts_at',
     'ends_at',
   ]),
+  webhooks: new Set(['url', 'format', 'events', 'api_version']),
 }
 
 const TOP = ui.INDENT
@@ -126,10 +131,15 @@ const meterUse = ({ id, facts }: MeterUse): Block => ({
   body: facts,
 })
 
-const rows = (indent: string, entry: AppliedEntry, section: string) =>
+const rows = (
+  indent: string,
+  entry: AppliedEntry,
+  section: string,
+  document: unknown,
+) =>
   formatRows(
     indent,
-    entry.diff.filter(({ field }) =>
+    shownDiff(section, entry.diff, document).filter(({ field }) =>
       entry.action === 'created'
         ? !(isSection(section) && COVERED[section].has(field))
         : field !== 'benefits',
@@ -161,6 +171,7 @@ export const formatTree = (
     benefits: documents(input, 'benefits'),
     products: documents(input, 'products'),
     discounts: documents(input, 'discounts'),
+    webhooks: documents(input, 'webhooks'),
   }
 
   const product = (entry: AppliedEntry) => {
@@ -186,25 +197,26 @@ export const formatTree = (
     return [
       `${TOP}${own.head}`,
       ...own.body.map((line) => `${NESTED}${line}`),
-      ...rows(NESTED, entry, 'products'),
+      ...rows(NESTED, entry, 'products', document),
       ...branches(children),
     ]
   }
 
   const plain = (entry: AppliedEntry, section: string) => {
     if (entry.action === 'unchanged') return undefined
+    const document = isSection(section)
+      ? docs[section].get(entry.id)
+      : undefined
     const own = describe(
       MARKS[entry.action],
       entry.id,
-      isSection(section)
-        ? SENTENCES[section](docs[section].get(entry.id))
-        : undefined,
+      isSection(section) ? SENTENCES[section](document) : undefined,
       entry.action === 'created',
     )
     return [
       `${TOP}${own.head}`,
       ...own.body.map((line) => `${NESTED}${line}`),
-      ...rows(NESTED, entry, section),
+      ...rows(NESTED, entry, section, document),
     ]
   }
 

@@ -225,6 +225,21 @@ describe('apply', () => {
     )
   })
 
+  test('asks for the webhooks scope when the config declares webhooks', async () => {
+    api.routes[`POST ${applyUrl}`] = Response.json(
+      { error: 'NotPermitted', detail: 'Not permitted' },
+      { status: 403 },
+    )
+
+    const error = await failure(
+      run(await write(JSON.stringify({ meters: [], webhooks: [] }))),
+    )
+
+    expect(error.hint).toBe(
+      'The token needs the meters:write, webhooks:write scopes.',
+    )
+  })
+
   test('reports other API failures', async () => {
     api.routes[`POST ${applyUrl}`] = new Response(null, { status: 500 })
 

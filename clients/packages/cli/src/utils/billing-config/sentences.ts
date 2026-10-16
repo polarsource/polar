@@ -1,5 +1,7 @@
+import type { AppliedEntry } from '@/schemas/BillingConfig'
 import {
   ALL_EVENTS,
+  Rendered,
   aggregation,
   count,
   filter,
@@ -11,6 +13,7 @@ import {
   unitScale,
 } from '@/utils/billing-config/describe'
 import * as ui from '@/utils/ui'
+import { redactUrl } from '@/utils/url'
 
 const fields = (pairs: ReadonlyArray<readonly [string, string]>) => {
   const width = Math.max(...pairs.map(([label]) => label.length))
@@ -159,6 +162,54 @@ export const benefitSentence = (input: unknown) => {
         : name(benefit['type']),
     ],
     ...visibility,
+  ])
+}
+
+// Slack and Discord carry their credential in the path, so only the host is shown.
+export const webhookUrl = (url: unknown, format: unknown) => {
+  const shown = redactUrl(name(url))
+  if (format === 'raw') return shown
+  const parsed = URL.parse(shown)
+  return parsed ? `${parsed.origin}/***` : shown
+}
+
+const shownUrl = (url: unknown, format: unknown) =>
+  url === undefined || url === null
+    ? url
+    : new Rendered(webhookUrl(url, format))
+
+// Webhook URLs in a diff are redacted by the format on their own side.
+export const shownDiff = (
+  section: string,
+  diff: AppliedEntry['diff'],
+  document: unknown,
+): AppliedEntry['diff'] => {
+  if (section !== 'webhooks') return diff
+  const format = diff.find((change) => change.field === 'format')
+  const before =
+    format === undefined ? record(document)?.['format'] : format.before
+  const after = record(document)?.['format']
+  return diff.map((change) =>
+    change.field === 'url'
+      ? {
+          ...change,
+          before: shownUrl(change.before, before),
+          after: shownUrl(change.after, after),
+        }
+      : change,
+  )
+}
+
+export const webhookSentence = (input: unknown) => {
+  const webhook = record(input)
+  if (webhook === undefined) return undefined
+  const events = Array.isArray(webhook['events']) ? webhook['events'] : []
+  return fields([
+    ['url', webhookUrl(webhook['url'], webhook['format'])],
+    ...(webhook['format'] !== 'raw'
+      ? [['format', name(webhook['format'])] as const]
+      : []),
+    ['events', events.map((event) => name(event)).join(', ')],
   ])
 }
 

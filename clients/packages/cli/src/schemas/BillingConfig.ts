@@ -44,6 +44,7 @@ export const ConfigResource = Schema.Literals([
   'benefit',
   'product',
   'discount',
+  'webhook',
 ])
 
 export const EntryResult = Schema.Struct({

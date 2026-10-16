@@ -61,6 +61,7 @@ const SECTIONS = [
   'benefits',
   'products',
   'discounts',
+  'webhooks',
 ]
 
 const columnOf = (source: string, offset: number) =>

@@ -23,6 +23,15 @@ import { fixed, free, metered, seats, TaxBehavior, tier, units } from './price'
 import { product, ProductConfig, productPrices } from './product'
 import type { ProductDefinition, ProductHelpers } from './product'
 import { visibilityKey } from './visibility'
+import {
+  discord,
+  endpoint,
+  HandledWebhookEndpoint,
+  slack,
+  WEBHOOK_API_VERSION,
+  WebhookEndpointConfig,
+} from './webhook'
+import type { WebhookEntries, WebhookHelpers } from './webhook'
 
 export const SettingsConfig = Schema.Struct({
   payments: Schema.optionalKey(
@@ -41,6 +50,7 @@ export const PolarConfig = Schema.Struct({
   benefits: Schema.optionalKey(Schema.Array(BenefitConfig)),
   products: Schema.optionalKey(Schema.Array(ProductConfig)),
   discounts: Schema.optionalKey(Schema.Array(DiscountConfig)),
+  webhooks: Schema.optionalKey(Schema.Array(WebhookEndpointConfig)),
 })
 
 export type PolarConfig = typeof PolarConfig.Type
@@ -161,6 +171,7 @@ type ConnectedConfig<
   Meters extends MeterEntries,
   Benefits extends BenefitEntries,
   Events extends EventDefinitions | undefined,
+  Webhooks extends WebhookEntries,
 > = {
   readonly meters: Readonly<Record<MeterKey<Meters>, MeterConfig>>
   readonly benefits: {
@@ -168,6 +179,7 @@ type ConnectedConfig<
       BenefitAt<Benefits, Key>
     >
   }
+  readonly webhooks: Webhooks
 } & (Events extends EventDefinitions
   ? { readonly events: Extract<Events, EventSchemas> }
   : unknown)
@@ -176,9 +188,15 @@ export interface Config<
   Meters extends MeterEntries = MeterEntries,
   Benefits extends BenefitEntries = BenefitEntries,
   Events extends EventDefinitions | undefined = undefined,
+  Webhooks extends WebhookEntries = Record<never, never>,
 > {
   readonly toJSON: () => PolarConfig
-  readonly [runtimeConfig]: () => ConnectedConfig<Meters, Benefits, Events>
+  readonly [runtimeConfig]: () => ConnectedConfig<
+    Meters,
+    Benefits,
+    Events,
+    Webhooks
+  >
 }
 
 const byExternalId = <Resource extends { readonly external_id: string }>(
@@ -208,6 +226,7 @@ export const defineConfig = <
   > = never,
   const Discounts extends DiscountEntries<ProductKey<Products>> = never,
   Events extends EventDefinitions | undefined = undefined,
+  const Webhooks extends WebhookEntries = Record<never, never>,
 >(input: {
   readonly settings?: SettingsConfig
   readonly events?: Events &
@@ -223,7 +242,8 @@ export const defineConfig = <
   readonly discounts?: (
     helpers: DiscountHelpers<ProductKey<Products>>,
   ) => Discounts
-}): Config<Meters, Benefits, Events> => {
+  readonly webhooks?: (helpers: WebhookHelpers) => Webhooks
+}): Config<Meters, Benefits, Events, Webhooks> => {
   const events = input.events as Events
   const entries = toEntries(
     input.meters({
@@ -249,6 +269,19 @@ export const defineConfig = <
     products === undefined ? [] : toEntries<ProductDefinition>(products)
   const productIds = new Set(productEntries.map(([external_id]) => external_id))
   const discounts = input.discounts?.({ discount })
+  const webhooks = input.webhooks?.({ endpoint, slack, discord })
+  const webhookEntries = Object.entries(webhooks ?? {})
+  const secretEnvs = webhookEntries.flatMap(([, webhook]) =>
+    webhook instanceof HandledWebhookEndpoint ? [webhook.secretEnv] : [],
+  )
+  const sharedSecret = secretEnvs.find(
+    (env, index) => secretEnvs.indexOf(env) !== index,
+  )
+  if (sharedSecret !== undefined) {
+    throw new Error(
+      `Webhooks with handlers each get their own signing secret, but more than one reads ${sharedSecret}. Give each a different .secret().`,
+    )
+  }
   const config = Schema.decodeUnknownSync(PolarConfig, {
     errors: 'all',
     onExcessProperty: 'error',
@@ -340,9 +373,20 @@ export const defineConfig = <
         },
       ),
     }),
+    ...(webhooks !== undefined && {
+      webhooks: webhookEntries.map(
+        ([external_id, { url, format, events }]) => ({
+          external_id,
+          url,
+          format,
+          events,
+          api_version: WEBHOOK_API_VERSION,
+        }),
+      ),
+    }),
   })
 
-  type Connected = ConnectedConfig<Meters, Benefits, Events>
+  type Connected = ConnectedConfig<Meters, Benefits, Events, Webhooks>
   return {
     toJSON: () => structuredClone(config),
     [runtimeConfig]: () =>
@@ -350,6 +394,7 @@ export const defineConfig = <
         ...(events !== undefined && { events }),
         meters: byExternalId('meter', config.meters),
         benefits: byExternalId('benefit', config.benefits ?? []),
+        webhooks: Object.fromEntries(webhookEntries),
       }) as Connected,
   }
 }

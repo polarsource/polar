@@ -190,3 +190,45 @@ test('Slack API errors fail notification; an existing reaction is safe to retry'
   await existing('reactions.add');
   await assert.rejects(existing('chat.postMessage'), /already_reacted/);
 });
+
+test('Slack conversation reads send thread and pagination arguments as GET query parameters', async () => {
+  const requests = [];
+  const slack = slackClient('test-token', async (url, options) => {
+    requests.push({ url: new URL(url), options });
+    return { ok: true, json: async () => ({ ok: true, messages: [] }) };
+  });
+  const payloads = {
+    'conversations.history': { channel: 'CDEPLOY', oldest: '1792152000.000001', limit: 100 },
+    'conversations.replies': {
+      channel: 'CDEPLOY', ts: '1792152000.000001', limit: 100,
+      include_all_metadata: true, cursor: 'next+page/=',
+    },
+  };
+  for (const [method, payload] of Object.entries(payloads)) {
+    await slack(method, payload);
+    const { url, options } = requests.at(-1);
+    assert.equal(url.pathname, `/api/${method}`);
+    assert.equal(options.method, 'GET');
+    assert.equal(options.body, undefined);
+    assert.equal(options.headers.Authorization, 'Bearer test-token');
+    assert.deepEqual(Object.fromEntries(url.searchParams),
+      Object.fromEntries(Object.entries(payload).map(([key, value]) => [key, String(value)])));
+  }
+});
+
+test('Slack message writes preserve JSON metadata and expose validation errors', async () => {
+  const payload = {
+    channel: 'CDEPLOY', thread_ts: '1792152000.000001', text: 'Deployed',
+    metadata: { event_type: 'polar_deployment_reply', event_payload: { id: 'deployment-123-1' } },
+  };
+  const slack = slackClient('test-token', async (url, options) => {
+    assert.equal(String(url), 'https://slack.com/api/chat.postMessage');
+    assert.equal(options.method, 'POST');
+    assert.deepEqual(JSON.parse(options.body), payload);
+    return { ok: true, json: async () => ({
+      ok: false, error: 'invalid_arguments',
+      response_metadata: { messages: ['[ERROR] missing required field: ts'] },
+    }) };
+  });
+  await assert.rejects(slack('chat.postMessage', payload), /invalid_arguments.*missing required field: ts/);
+});

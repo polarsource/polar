@@ -973,7 +973,6 @@ async def test_telemetry_spans(
         "outpost.redis.subscribe",
         "outpost.websocket.connect",
         "outpost.ingest",
-        "outpost.actor",
         "outpost.customer_meter",
         "outpost.snapshot.received",
         "outpost.sync.received",

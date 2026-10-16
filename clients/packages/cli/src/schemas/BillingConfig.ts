@@ -168,6 +168,7 @@ export interface LoadedConfig {
   readonly source: string
   readonly input: unknown
   readonly generated: boolean
+  readonly issues: ReadonlyArray<ConfigIssue>
 }
 
 export class BillingConfigError extends Data.TaggedError('BillingConfigError')<{

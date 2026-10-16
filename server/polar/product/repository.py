@@ -162,6 +162,23 @@ class ProductRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def lock_for_update(self, product: Product) -> Product:
+        """
+        Lock the product row until the end of the transaction and reload it,
+        along with its eager relationships, from the database.
+
+        Concurrent updates of the same product are serialized this way: once the
+        lock is acquired, the product reflects whatever the previous update committed.
+        """
+        statement = (
+            self.get_base_statement()
+            .where(Product.id == product.id)
+            .options(*self.get_eager_options())
+            .with_for_update(of=Product)
+            .execution_options(populate_existing=True)
+        )
+        return await self.get_one(statement)
+
     def get_eager_options(self) -> Options:
         return (
             joinedload(Product.organization),

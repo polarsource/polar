@@ -1,14 +1,5 @@
 import type { schemas } from '@polar-sh/client'
 
-export const isLegacyRecurringPrice = (
-  price: schemas['ProductPrice'] | schemas['LegacyRecurringProductPrice'],
-): price is schemas['LegacyRecurringProductPrice'] => 'legacy' in price
-
-export const hasLegacyRecurringPrices = (
-  prices: schemas['ProductPrice'][],
-): prices is schemas['LegacyRecurringProductPrice'][] =>
-  prices.some(isLegacyRecurringPrice)
-
 export type MeteredPrice =
   | schemas['ProductPriceMeteredUnit']
   | schemas['ProductPriceMeteredTiers']
@@ -17,7 +8,7 @@ export type MeteredTier =
   schemas['ProductPriceMeteredTiers']['tiers']['tiers'][number]
 
 export const isMeteredPrice = (
-  price: schemas['ProductPrice'] | schemas['LegacyRecurringProductPrice'],
+  price: schemas['CheckoutProduct']['prices'][number],
 ): price is MeteredPrice =>
   price.amount_type === 'metered_unit' || price.amount_type === 'metered_tiers'
 

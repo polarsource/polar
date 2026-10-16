@@ -12,6 +12,8 @@ test('a product needs prices and a billing cycle', () => {
   const unpriced: ProductDefinition = product().recurring('monthly')
   // @ts-expect-error trials only apply to recurring products
   product().prices(free()).once().trial(1, 'month')
+  // @ts-expect-error meter cycles only apply to recurring products
+  product().prices(free()).once().meterCycle('monthly')
   expect([unbilled, unpriced]).toHaveLength(2)
 })
 
@@ -28,6 +30,73 @@ test('recurring accepts a cadence or an interval count', () => {
     trial_interval: 'week',
     trial_interval_count: 1,
   })
+})
+
+test('meterCycle accepts a cadence or an interval count', () => {
+  expect(
+    product().recurring('yearly').meterCycle('monthly').meterPeriod,
+  ).toEqual({ meter_interval: 'month', meter_interval_count: 1 })
+  expect(
+    product().recurring(2, 'weeks').meterCycle(7, 'days').meterPeriod,
+  ).toEqual({ meter_interval: 'day', meter_interval_count: 7 })
+  expect(
+    product().recurring('yearly').meterCycle('monthly').once().meterPeriod,
+  ).toBeUndefined()
+})
+
+test('the meter cycle must evenly divide the billing cycle', () => {
+  const decode = (definition: ProductDefinition) =>
+    Schema.decodeUnknownSync(ProductConfig)({
+      external_id: 'pro',
+      name: 'Pro',
+      ...definition.billing,
+      ...definition.meterPeriod,
+      prices: productPrices('pro', definition),
+      benefits: [],
+    })
+  const base = product().prices(metered('calls').flat().amount(usd(0.01)))
+  const divides = 'The meter cycle must evenly divide the billing cycle'
+  for (const valid of [
+    base.recurring('yearly').meterCycle(3, 'months'),
+    base.recurring(2, 'weeks').meterCycle(7, 'days'),
+    base.recurring('monthly').meterCycle('daily'),
+    base.recurring(6, 'months').meterCycle(2, 'months'),
+  ]) {
+    expect(() => decode(valid)).not.toThrow()
+  }
+  for (const invalid of [
+    base.recurring('yearly').meterCycle(5, 'months'),
+    base.recurring('monthly').meterCycle('weekly'),
+    base.recurring('monthly').meterCycle('yearly'),
+    base.recurring('yearly').meterCycle('monthly').recurring('weekly'),
+  ]) {
+    expect(() => decode(invalid)).toThrow(divides)
+  }
+})
+
+test('meter cycles the builder cannot produce are rejected', () => {
+  const decode = (fields: object) =>
+    Schema.decodeUnknownSync(ProductConfig)({
+      external_id: 'pro',
+      name: 'Pro',
+      prices: productPrices('pro', product().prices(free()).once()),
+      benefits: [],
+      ...fields,
+    })
+  expect(() =>
+    decode({
+      recurring_interval: 'month',
+      recurring_interval_count: 1,
+      meter_interval_count: 2,
+    }),
+  ).toThrow('A meter interval count requires a meter interval.')
+  expect(() =>
+    decode({
+      recurring_interval: null,
+      recurring_interval_count: null,
+      meter_interval: 'day',
+    }),
+  ).toThrow('A meter cycle is only supported on recurring products.')
 })
 
 test('free prices follow the currencies of the other prices', () => {

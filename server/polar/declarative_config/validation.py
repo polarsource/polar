@@ -400,27 +400,84 @@ def changed_currency(currency: PresentmentCurrency) -> ConfigIssue:
     )
 
 
+def _changed_interval(
+    change: ProductChange, product: Product, label: str, names: tuple[str, str]
+) -> ConfigIssue | None:
+    for name in names:
+        value = getattr(change.config, name)
+        if getattr(product, name) != value:
+            return ConfigIssue(
+                severity=ConfigIssueSeverity.error,
+                type=ConfigIssueType.interval_changed,
+                loc=_loc(ConfigResource.product, change.index, name),
+                msg=f"The {label} of an existing product can't be changed.",
+                input=value,
+            )
+    return None
+
+
 def changed_intervals(changes: Sequence[ProductChange]) -> list[ConfigIssue]:
     issues: list[ConfigIssue] = []
     for change in changes:
         if change.existing is None:
             continue
-        for name in ("recurring_interval", "recurring_interval_count"):
-            value = getattr(change.config, name)
-            if getattr(change.existing, name) != value:
-                issues.append(
-                    ConfigIssue(
-                        severity=ConfigIssueSeverity.error,
-                        type=ConfigIssueType.interval_changed,
-                        loc=_loc(ConfigResource.product, change.index, name),
-                        msg=(
-                            "The billing interval of an existing product "
-                            "can't be changed."
-                        ),
-                        input=value,
-                    )
+        intervals = [
+            ("billing interval", ("recurring_interval", "recurring_interval_count"))
+        ]
+        if change.config.meter_interval is not None:
+            intervals.append(
+                ("meter cycle", ("meter_interval", "meter_interval_count"))
+            )
+        for label, names in intervals:
+            issue = _changed_interval(change, change.existing, label, names)
+            if issue is not None:
+                issues.append(issue)
+    return issues
+
+
+def new_meter_cycles(
+    organization: Organization, config: Config, changes: Sequence[ProductChange]
+) -> list[ConfigIssue]:
+    meter_credit_benefits = {
+        benefit.external_id
+        for benefit in config.benefits
+        if isinstance(benefit, ConfigBenefitMeterCredit)
+    }
+    enabled = organization.feature_settings.get("meter_cycling_enabled", False)
+    issues: list[ConfigIssue] = []
+    for change in changes:
+        product = change.config
+        if change.existing is not None or product.meter_interval is None:
+            continue
+        loc = _loc(ConfigResource.product, change.index, "meter_interval")
+        if not enabled:
+            issues.append(
+                ConfigIssue(
+                    severity=ConfigIssueSeverity.error,
+                    type=ConfigIssueType.not_supported,
+                    loc=loc,
+                    msg="Separate meter cycles aren't enabled for this organization.",
+                    input=product.meter_interval,
                 )
-                break
+            )
+        elif not any(
+            isinstance(
+                price, (ConfigProductPriceMeteredUnit, ConfigProductPriceMeteredTiers)
+            )
+            for price in product.prices
+        ) and meter_credit_benefits.isdisjoint(product.benefits):
+            issues.append(
+                ConfigIssue(
+                    severity=ConfigIssueSeverity.error,
+                    type=ConfigIssueType.meter_cycle_unused,
+                    loc=loc,
+                    msg=(
+                        "A meter cycle needs a metered price "
+                        "or a meter credit benefit on the product."
+                    ),
+                    input=product.meter_interval,
+                )
+            )
     return issues
 
 
@@ -1056,6 +1113,7 @@ async def check(
         *benefit_type_changes(benefits),
         *unsupported_prices(products),
         *changed_intervals(products),
+        *new_meter_cycles(organization, config, products),
         *immutable_discount_fields(discounts),
         *await duplicate_codes(session, organization, discounts),
     ]

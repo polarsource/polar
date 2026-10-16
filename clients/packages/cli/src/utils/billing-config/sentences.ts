@@ -3,6 +3,7 @@ import {
   aggregation,
   count,
   filter,
+  isSet,
   money,
   name,
   record,
@@ -26,6 +27,9 @@ export const recurrence = (interval: unknown, count: unknown) => {
     ? `per ${name(interval)}`
     : `per ${times} ${name(interval)}s`
 }
+
+export const meterCycle = (interval: unknown, count: unknown) =>
+  isSet(interval) ? recurrence(interval, count) : 'with billing'
 
 const CURRENCIES = ' / '
 
@@ -54,7 +58,10 @@ const pricing = (product: Record<string, unknown>) => {
     .join(CURRENCIES)
   const billed = amounts === '' ? `billed ${cycle}` : `${amounts} ${cycle}`
   const shared = uniform ? taxes[0] : undefined
-  return shared === undefined ? billed : `${billed}, ${shared}`
+  const billing = shared === undefined ? billed : `${billed}, ${shared}`
+  return isSet(product['meter_interval'])
+    ? `${billing}, metered ${meterCycle(product['meter_interval'], product['meter_interval_count'])}`
+    : billing
 }
 
 const taxFact = (items: ReadonlyArray<Record<string, unknown>>) => {

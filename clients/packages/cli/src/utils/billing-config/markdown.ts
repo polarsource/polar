@@ -4,7 +4,7 @@ import type {
   LoadedConfig,
   PlanResult,
 } from '@/schemas/BillingConfig'
-import { name } from '@/utils/billing-config/describe'
+import { isSet, name } from '@/utils/billing-config/describe'
 import {
   type Mark,
   fieldChanges,
@@ -28,8 +28,6 @@ const heading = (section: string) => {
     HEADINGS[section] ?? `${words.charAt(0).toUpperCase()}${words.slice(1)}`
   )
 }
-
-const isSet = (value: unknown) => value !== null && value !== undefined
 
 const escape = (text: string) => text.replace(/[\\`*_[\]|<>]/g, '\\$&')
 

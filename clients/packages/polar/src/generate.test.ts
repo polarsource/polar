@@ -203,6 +203,7 @@ const cases: [string, PolarConfig][] = [
                   .cap(api.usd(500)),
               )
               .recurring(3, 'months')
+              .meterCycle('monthly')
               .trial(1, 'month')
               .grants(['custom_servers']),
             starter: product('Starter')
@@ -220,7 +221,8 @@ const cases: [string, PolarConfig][] = [
                   tier().amount(api.usd(0)),
                 ),
               )
-              .recurring('monthly'),
+              .recurring('yearly')
+              .meterCycle(2, 'months'),
             devices: product('Devices')
               .prices(
                 units()

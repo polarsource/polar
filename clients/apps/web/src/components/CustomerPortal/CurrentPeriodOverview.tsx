@@ -270,6 +270,7 @@ export const CurrentPeriodOverview = ({
           />
         )}
         <PortalRow
+          numeric
           emphasis
           label={hasMeters ? 'Estimated total' : 'Total'}
           value={

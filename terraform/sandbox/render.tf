@@ -181,7 +181,8 @@ module "pgbouncer" {
 
   pool_config = {
     max_client_conn   = "1000"
-    default_pool_size = "20"
+    default_pool_size = "50"
+    reserve_pool_size = "10"
   }
 
   depends_on = [render_registry_credential.ghcr, data.render_postgres.db]

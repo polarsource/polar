@@ -94,9 +94,13 @@ const signal = () => {
   return { promise, resolve };
 };
 export class PolarOutpostError extends PolarError {}
-export class UnavailableRedisError extends PolarOutpostError {}
+export class UnavailableRedisError extends PolarOutpostError {
+  constructor(options?: ErrorOptions) {
+    super("Redis is unavailable", options);
+  }
+}
 const redisUnavailable = (error: unknown): UnavailableRedisError =>
-  new UnavailableRedisError("Redis is unavailable", { cause: error });
+  new UnavailableRedisError({ cause: error });
 const withTimeout = async <T>(promise: Promise<T>): Promise<T> => {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -609,7 +613,7 @@ export class Outpost {
     while (!this.isSynced) {
       // Fail fast during an outage; only wait for a resync in progress.
       if (this.redis?.status !== "ready" || this.subscriber?.status !== "ready")
-        throw new UnavailableRedisError("Redis is unavailable");
+        throw new UnavailableRedisError();
       await withTimeout(this.synced.promise).catch((error: unknown) => {
         throw redisUnavailable(error);
       });

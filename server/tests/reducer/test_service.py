@@ -1164,7 +1164,7 @@ class TestEnqueueSeal:
     @pytest.mark.parametrize(
         ("now", "delay"),
         [
-            (CUTOFF + timedelta(minutes=5), 10 * 60 * 1000),
+            (CUTOFF + timedelta(minutes=5), 6 * 60 * 1000),
             (CUTOFF + timedelta(minutes=20), 0),
         ],
     )

@@ -41,8 +41,9 @@ from .repository import ReducerRepository
 log: Logger = structlog.get_logger()
 
 REDUCER_BUCKET_SIZE = timedelta(minutes=5)
-# Same as the subscription order grace period: buckets are in Postgres by then.
-SEAL_DELAY = timedelta(minutes=15)
+# Buckets are in Postgres after 10 minutes, and billing waits 15: sealing
+# normally runs in between.
+SEAL_DELAY = timedelta(minutes=11)
 
 type Contributions = dict[redis_store.BucketId, list[tuple[datetime, Decimal]]]
 
@@ -76,7 +77,7 @@ def _get_identities(
 class ReducerService:
     def enqueue_seal(self, customer_id: UUID, meter_id: UUID, *, at: datetime) -> None:
         """Seals the customer's usage before `at` once it has all reached Postgres,
-        like billing waits for it."""
+        before billing gets to it."""
         delay = at + SEAL_DELAY - utc_now()
         enqueue_job(
             "reducer.seal",

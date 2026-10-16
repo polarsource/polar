@@ -18,7 +18,8 @@ SCHEMA >
     `balance_exchange_rate` AggregateFunction(argMax, Nullable(Float64), Tuple(Int8, DateTime64(3), Nullable(Int64))),
     `balance_fee` AggregateFunction(argMax, Nullable(Int64), Tuple(Int8, DateTime64(3), Nullable(Int64))),
     `balance_order_source_fx` AggregateFunction(argMax, Nullable(Float64), Tuple(UInt8, DateTime64(3), DateTime64(3))),
-    `refund_net_amount` AggregateFunction(sum, Int64)
+    `refund_net_amount` AggregateFunction(sum, Int64),
+    `billing_reason` AggregateFunction(argMax, Nullable(String), Tuple(UInt8, DateTime64(3), DateTime64(3)))
 
 ENGINE AggregatingMergeTree
 ENGINE_SORTING_KEY organization_id, order_id

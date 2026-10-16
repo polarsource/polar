@@ -68,6 +68,7 @@ class TinybirdEvent(TypedDict):
     # Type/enum fields
     benefit_type: str | None
     billing_type: str | None
+    billing_reason: str | None
     checkout_status: str | None
     # Customer fields
     customer_email: str | None

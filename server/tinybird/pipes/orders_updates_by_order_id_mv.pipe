@@ -218,7 +218,11 @@ SQL >
                 ),
                 0
             )
-        ) AS refund_net_amount
+        ) AS refund_net_amount,
+        argMaxState(
+            if(e.name = 'order.paid', e.billing_reason, CAST(NULL, 'Nullable(String)')),
+            tuple(toUInt8(if(e.name = 'order.paid', 1, 0)), e.timestamp, e.ingested_at)
+        ) AS billing_reason
     FROM events_by_ingested_at AS e
     WHERE
         e.source = 'system'

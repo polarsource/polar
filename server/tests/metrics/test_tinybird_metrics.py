@@ -38,7 +38,7 @@ from polar.models import (
     Subscription,
 )
 from polar.models.event import EventSource
-from polar.models.order import OrderStatus
+from polar.models.order import OrderBillingReason, OrderStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.postgres import AsyncSession
@@ -109,6 +109,7 @@ class OrderScenario:
     amount: int
     applied_balance_amount: int = 0
     emit_balance_credit_order: bool = False
+    billing_reason: OrderBillingReason | None = None
     created_at: datetime | None = None
     order_paid_at: datetime | None = None
     balance_at: datetime | None = None
@@ -517,6 +518,45 @@ def _build_alpha_customers() -> tuple[CustomerScenario, ...]:
             ),
         ),
         CustomerScenario(
+            key="meter_cycle_and_update_orders",
+            subscriptions=(
+                SubscriptionScenario(
+                    product_key="monthly",
+                    order_timestamps=(),
+                    amount=MONTHLY_PRICE,
+                    canceled_at=_dt(date(2025, 9, 20)),
+                    ends_at=_dt(date(2025, 9, 30)),
+                    cancellation_reason=CustomerCancellationReason.other,
+                    orders=(
+                        OrderScenario(
+                            product_key="monthly",
+                            ordered_at=_dt(date(2025, 8, 10), 10, 0),
+                            amount=MONTHLY_PRICE,
+                            billing_reason=OrderBillingReason.subscription_create,
+                        ),
+                        OrderScenario(
+                            product_key="monthly",
+                            ordered_at=_dt(date(2025, 9, 1), 10, 0),
+                            amount=1_200,
+                            billing_reason=OrderBillingReason.subscription_meter_cycle,
+                        ),
+                        OrderScenario(
+                            product_key="monthly",
+                            ordered_at=_dt(date(2025, 9, 5), 10, 0),
+                            amount=800,
+                            billing_reason=OrderBillingReason.subscription_update,
+                        ),
+                        OrderScenario(
+                            product_key="monthly",
+                            ordered_at=_dt(date(2025, 9, 10), 10, 0),
+                            amount=MONTHLY_PRICE,
+                            billing_reason=OrderBillingReason.subscription_cycle,
+                        ),
+                    ),
+                ),
+            ),
+        ),
+        CustomerScenario(
             key="trial_subscription_no_balance",
             subscriptions=(
                 SubscriptionScenario(
@@ -899,6 +939,19 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         metrics=("renewed_subscriptions", "renewed_subscriptions_net_revenue"),
     ),
     QueryCase(
+        label="alpha_daily_meter_cycle_and_update_orders",
+        organization_key="alpha",
+        start_date=date(2025, 9, 1),
+        end_date=date(2025, 9, 15),
+        interval=TimeInterval.day,
+        customer_keys=("meter_cycle_and_update_orders",),
+        metrics=(
+            "revenue",
+            "renewed_subscriptions",
+            "renewed_subscriptions_revenue",
+        ),
+    ),
+    QueryCase(
         label="alpha_daily_trial_subscription_mrr",
         organization_key="alpha",
         start_date=date(2026, 1, 15),
@@ -1096,6 +1149,7 @@ async def _create_paid_order_events(
     amount: int,
     applied_balance_amount: int = 0,
     emit_balance_credit_order: bool = False,
+    billing_reason: OrderBillingReason | None = None,
     subscription: Subscription | None = None,
     created_at: datetime | None = None,
     order_paid_at: datetime | None = None,
@@ -1159,6 +1213,8 @@ async def _create_paid_order_events(
         common_metadata["order_created_at"] = order.created_at.isoformat()
     if subscription is not None:
         common_metadata["subscription_id"] = str(subscription.id)
+    if billing_reason is not None:
+        common_metadata["billing_reason"] = billing_reason.value
 
     balance_amount_value = (
         balance_amount if balance_amount is not None else order.net_amount
@@ -1370,6 +1426,7 @@ async def _seed_customer_scenario(
                     amount=subscription_order.amount,
                     applied_balance_amount=subscription_order.applied_balance_amount,
                     emit_balance_credit_order=subscription_order.emit_balance_credit_order,
+                    billing_reason=subscription_order.billing_reason,
                     created_at=subscription_order.created_at,
                     order_paid_at=subscription_order.order_paid_at,
                     balance_at=subscription_order.balance_at,
@@ -1931,6 +1988,23 @@ class TestTinybirdMetrics:
 
         assert period.renewed_subscriptions == 1
         assert period.renewed_subscriptions_net_revenue == 14_900
+
+    def test_meter_cycle_and_update_orders_are_not_renewals(
+        self, metrics_harness: MetricsHarness
+    ) -> None:
+        snapshot = metrics_harness.snapshots[
+            "alpha_daily_meter_cycle_and_update_orders"
+        ]
+        periods = {p.timestamp.date(): p for p in snapshot.periods}
+
+        for day, revenue in ((date(2025, 9, 1), 1_200), (date(2025, 9, 5), 800)):
+            assert periods[day].revenue == revenue
+            assert periods[day].renewed_subscriptions == 0
+            assert periods[day].renewed_subscriptions_revenue == 0
+
+        renewal = periods[date(2025, 9, 10)]
+        assert renewal.renewed_subscriptions == 1
+        assert renewal.renewed_subscriptions_revenue == MONTHLY_PRICE
 
     def test_trial_subscription_mrr_uses_subscription_created_amount(
         self, metrics_harness: MetricsHarness

@@ -3060,6 +3060,9 @@ class OrderService:
             billing_type=order.product.billing_type.value
             if order.product
             else "one_time",
+            billing_reason=OrderBillingReasonInternal.to_public(
+                order.billing_reason
+            ).value,
             amount=order.total_amount,
             currency=order.currency,
             net_amount=order.net_amount,

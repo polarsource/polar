@@ -6,11 +6,17 @@ import { postReplyOnce } from './replies.mjs';
 
 export function slackClient(token, fetchResponse = fetch) {
   return async (method, payload = {}) => {
+    const read = method === 'conversations.history' || method === 'conversations.replies';
+    const url = new URL(`https://slack.com/api/${method}`);
+    if (read) url.search = new URLSearchParams(payload).toString();
     for (let attempt = 0; attempt < 3; attempt++) {
-      const response = await fetchResponse(`https://slack.com/api/${method}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json; charset=utf-8' },
-        body: JSON.stringify(payload),
+      const response = await fetchResponse(url, {
+        method: read ? 'GET' : 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(!read ? { 'Content-Type': 'application/json; charset=utf-8' } : {}),
+        },
+        ...(!read ? { body: JSON.stringify(payload) } : {}),
         signal: AbortSignal.timeout(30_000),
       });
       if (response.status === 429 && attempt < 2) {
@@ -24,7 +30,8 @@ export function slackClient(token, fetchResponse = fetch) {
       if (!response.ok) throw new Error(`Slack ${method}: HTTP ${response.status}`);
       const result = await response.json();
       if (!result.ok && !(method === 'reactions.add' && result.error === 'already_reacted')) {
-        throw new Error(`Slack ${method}: ${result.error}`);
+        const details = result.response_metadata?.messages?.join('; ');
+        throw new Error(`Slack ${method}: ${result.error}${details ? ` (${details})` : ''}`);
       }
       return result;
     }

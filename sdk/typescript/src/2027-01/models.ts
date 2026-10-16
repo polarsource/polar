@@ -1211,6 +1211,10 @@ export type Scope =
  */
 export type SeatStatus = "pending" | "claimed" | "revoked";
 /**
+ * SeatTierType
+ */
+export type SeatTierType = "volume" | "graduated";
+/**
  * Status
  */
 export type Status = "granted" | "disabled";
@@ -2100,20 +2104,6 @@ export interface AmbiguousExternalCustomerID {
 }
 
 /**
- * AmbiguousExternalMeterID
- */
-export interface AmbiguousExternalMeterID {
-  /**
-   * error
-   */
-  error: "AmbiguousExternalMeterID";
-  /**
-   * detail
-   */
-  detail: string;
-}
-
-/**
  * Schema of a custom field attached to a resource.
  */
 export interface AttachedCustomField {
@@ -2930,10 +2920,6 @@ export interface BenefitCustom {
    */
   organization_id: string;
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
-  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -2955,10 +2941,6 @@ export interface BenefitCustom {
  * Schema to create a benefit of type `custom`.
  */
 export interface BenefitCustomCreate {
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -3122,10 +3104,6 @@ export interface BenefitCustomSubscriberProperties {
  */
 export interface BenefitCustomUpdate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id?: string | null;
-  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -3262,10 +3240,6 @@ export interface BenefitDiscord {
    */
   organization_id: string;
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
-  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -3287,10 +3261,6 @@ export interface BenefitDiscord {
  * BenefitDiscordCreate
  */
 export interface BenefitDiscordCreate {
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -3470,10 +3440,6 @@ export interface BenefitDiscordSubscriberProperties {
  */
 export interface BenefitDiscordUpdate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id?: string | null;
-  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -3624,10 +3590,6 @@ export interface BenefitDownloadables {
    */
   organization_id: string;
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
-  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -3649,10 +3611,6 @@ export interface BenefitDownloadables {
  * BenefitDownloadablesCreate
  */
 export interface BenefitDownloadablesCreate {
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -3824,10 +3782,6 @@ export interface BenefitDownloadablesSubscriberProperties {
  */
 export interface BenefitDownloadablesUpdate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id?: string | null;
-  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -3899,10 +3853,6 @@ export interface BenefitFeatureFlag {
    */
   organization_id: string;
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
-  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -3924,10 +3874,6 @@ export interface BenefitFeatureFlag {
  * Schema to create a benefit of type `feature_flag`.
  */
 export interface BenefitFeatureFlagCreate {
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -4076,10 +4022,6 @@ export interface BenefitFeatureFlagSubscriberProperties extends Record<string, n
  */
 export interface BenefitFeatureFlagUpdate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id?: string | null;
-  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -4154,10 +4096,6 @@ export interface BenefitGitHubRepository {
    */
   organization_id: string;
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
-  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -4179,10 +4117,6 @@ export interface BenefitGitHubRepository {
  * BenefitGitHubRepositoryCreate
  */
 export interface BenefitGitHubRepositoryCreate {
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -4365,10 +4299,6 @@ export interface BenefitGitHubRepositorySubscriberProperties {
  * BenefitGitHubRepositoryUpdate
  */
 export interface BenefitGitHubRepositoryUpdate {
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -5421,10 +5351,6 @@ export interface BenefitLicenseKeys {
    */
   organization_id: string;
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
-  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -5446,10 +5372,6 @@ export interface BenefitLicenseKeys {
  * BenefitLicenseKeysCreate
  */
 export interface BenefitLicenseKeysCreate {
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -5649,10 +5571,6 @@ export interface BenefitLicenseKeysSubscriberProperties {
  */
 export interface BenefitLicenseKeysUpdate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id?: string | null;
-  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -5727,10 +5645,6 @@ export interface BenefitMeterCredit {
    */
   organization_id: string;
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
-  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -5752,10 +5666,6 @@ export interface BenefitMeterCredit {
  * Schema to create a benefit of type `meter_unit`.
  */
 export interface BenefitMeterCreditCreate {
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -5963,10 +5873,6 @@ export interface BenefitMeterCreditSubscriberProperties {
  */
 export interface BenefitMeterCreditUpdate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id?: string | null;
-  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -6101,10 +6007,6 @@ export interface BenefitSlackSharedChannel {
    */
   organization_id: string;
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
-  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -6126,10 +6028,6 @@ export interface BenefitSlackSharedChannel {
  * BenefitSlackSharedChannelCreate
  */
 export interface BenefitSlackSharedChannelCreate {
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -6327,10 +6225,6 @@ export interface BenefitSlackSharedChannelSubscriberProperties extends Record<st
  * BenefitSlackSharedChannelUpdate
  */
 export interface BenefitSlackSharedChannelUpdate {
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -10566,72 +10460,6 @@ export interface CustomerMeter {
 }
 
 /**
- * CustomerMeterCreditExternalIDConflict
- */
-export interface CustomerMeterCreditExternalIDConflict {
-  /**
-   * error
-   */
-  error: "CustomerMeterCreditExternalIDConflict";
-  /**
-   * detail
-   */
-  detail: string;
-}
-
-/**
- * Schema to manually grant credits on a customer meter using external IDs.
- */
-export interface CustomerMeterCreditsExternalIDCreate {
-  /**
-   * The number of units to credit.
-   */
-  units: number;
-  /**
-   * Whether unused credits carry over to the next meter period.
-   */
-  rollover?: boolean;
-  /**
-   * Your unique identifier for this credit. Retrying with the same `external_id` doesn't grant the credit twice.
-   */
-  external_id?: string | null;
-  /**
-   * The external ID of the customer.
-   */
-  external_customer_id: string;
-  /**
-   * The external ID of the meter, as set by config as code.
-   */
-  external_meter_id: string;
-}
-
-/**
- * Schema to manually grant credits on a customer meter using Polar IDs.
- */
-export interface CustomerMeterCreditsIDCreate {
-  /**
-   * The number of units to credit.
-   */
-  units: number;
-  /**
-   * Whether unused credits carry over to the next meter period.
-   */
-  rollover?: boolean;
-  /**
-   * Your unique identifier for this credit. Retrying with the same `external_id` doesn't grant the credit twice.
-   */
-  external_id?: string | null;
-  /**
-   * The ID of the customer.
-   */
-  customer_id: string;
-  /**
-   * The ID of the meter.
-   */
-  meter_id: string;
-}
-
-/**
  * CustomerNotReady
  */
 export interface CustomerNotReady {
@@ -11151,6 +10979,10 @@ export interface CustomerOrganizationData {
  * Feature flags exposed to the customer portal.
  */
 export interface CustomerOrganizationFeatureSettings {
+  /**
+   * Whether the member model is enabled for this organization.
+   */
+  member_model_enabled?: boolean;
   /**
    * Whether localization is enabled for this organization.
    */
@@ -12971,10 +12803,6 @@ export interface CustomerWallet {
  */
 export interface DiscountFixedCreate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id?: string | null;
-  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -13088,10 +12916,6 @@ export interface DiscountFixedOnceForeverDuration {
    */
   id: string;
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
-  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -13169,10 +12993,6 @@ export interface DiscountFixedOnceForeverDurationBase {
    * The ID of the object.
    */
   id: string;
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
   /**
    * metadata
    */
@@ -13252,10 +13072,6 @@ export interface DiscountFixedRepeatDuration {
    * The ID of the object.
    */
   id: string;
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
   /**
    * metadata
    */
@@ -13339,10 +13155,6 @@ export interface DiscountFixedRepeatDurationBase {
    */
   id: string;
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
-  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -13384,10 +13196,6 @@ export interface DiscountFixedRepeatDurationBase {
  * Schema to create a percentage discount.
  */
 export interface DiscountPercentageCreate {
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -13489,10 +13297,6 @@ export interface DiscountPercentageOnceForeverDuration {
    */
   id: string;
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
-  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -13562,10 +13366,6 @@ export interface DiscountPercentageOnceForeverDurationBase {
    * The ID of the object.
    */
   id: string;
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
   /**
    * metadata
    */
@@ -13637,10 +13437,6 @@ export interface DiscountPercentageRepeatDuration {
    * The ID of the object.
    */
   id: string;
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
   /**
    * metadata
    */
@@ -13715,10 +13511,6 @@ export interface DiscountPercentageRepeatDurationBase {
    * The ID of the object.
    */
   id: string;
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
   /**
    * metadata
    */
@@ -13845,10 +13637,6 @@ export interface DiscountRedemptionLimitReached {
  * Schema to update a discount.
  */
 export interface DiscountUpdate {
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -14834,11 +14622,11 @@ export interface GrantedLicenseKey {
   /**
    * The ID of the seat member holding this key, if any.
    */
-  member_id: string | null;
+  member_id?: string | null;
   /**
    * The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly.
    */
-  member: LicenseKeyMember | null;
+  member?: LicenseKeyMember | null;
   /**
    * The benefit ID.
    */
@@ -14879,22 +14667,6 @@ export interface GrantedLicenseKey {
    * expires_at
    */
   expires_at: string | null;
-  /**
-   * The ID of the subscription granting the license key.
-   */
-  subscription_id: string | null;
-  /**
-   * The subscription granting the license key, if any.
-   */
-  subscription: LicenseKeySubscription | null;
-  /**
-   * The ID of the one-time order granting the license key.
-   */
-  order_id: string | null;
-  /**
-   * The one-time order granting the license key, if any.
-   */
-  order: LicenseKeyOrder | null;
 }
 
 /**
@@ -15480,28 +15252,6 @@ export interface LicenseKeyMember {
 }
 
 /**
- * LicenseKeyOrder
- */
-export interface LicenseKeyOrder {
-  /**
-   * The ID of the object.
-   */
-  id: string;
-  /**
-   * Creation timestamp of the object.
-   */
-  created_at: string;
-  /**
-   * status
-   */
-  status: OrderStatus;
-  /**
-   * Whether the order has been paid for.
-   */
-  paid: boolean;
-}
-
-/**
  * LicenseKeyRead
  */
 export interface LicenseKeyRead {
@@ -15532,11 +15282,11 @@ export interface LicenseKeyRead {
   /**
    * The ID of the seat member holding this key, if any.
    */
-  member_id: string | null;
+  member_id?: string | null;
   /**
    * The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly.
    */
-  member: LicenseKeyMember | null;
+  member?: LicenseKeyMember | null;
   /**
    * The benefit ID.
    */
@@ -15577,36 +15327,6 @@ export interface LicenseKeyRead {
    * expires_at
    */
   expires_at: string | null;
-}
-
-/**
- * LicenseKeySubscription
- */
-export interface LicenseKeySubscription {
-  /**
-   * The ID of the object.
-   */
-  id: string;
-  /**
-   * The status of the subscription.
-   */
-  status: SubscriptionStatus;
-  /**
-   * The start timestamp of the current billing period.
-   */
-  current_period_start: string;
-  /**
-   * The end timestamp of the current billing period.
-   */
-  current_period_end: string;
-  /**
-   * Whether the subscription will be canceled at the end of the current period.
-   */
-  cancel_at_period_end: boolean;
-  /**
-   * The timestamp when the subscription will end.
-   */
-  ends_at: string | null;
 }
 
 /**
@@ -15710,11 +15430,11 @@ export interface LicenseKeyWithActivations {
   /**
    * The ID of the seat member holding this key, if any.
    */
-  member_id: string | null;
+  member_id?: string | null;
   /**
    * The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly.
    */
-  member: LicenseKeyMember | null;
+  member?: LicenseKeyMember | null;
   /**
    * The benefit ID.
    */
@@ -16373,10 +16093,6 @@ export type MetadataOutputType = Record<string, string | number | boolean>;
  */
 export interface Meter {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
-  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -16430,10 +16146,6 @@ export interface Meter {
  * MeterCreate
  */
 export interface MeterCreate {
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -16662,10 +16374,6 @@ export interface MeterResetMetadata {
  * MeterUpdate
  */
 export interface MeterUpdate {
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -19246,6 +18954,10 @@ export interface OrganizationFeatureSettings {
    */
   wallets_enabled?: boolean;
   /**
+   * If this organization has the Member model enabled
+   */
+  member_model_enabled?: boolean;
+  /**
    * If this organization has checkout localization enabled
    */
   checkout_localization_enabled?: boolean;
@@ -19294,9 +19006,9 @@ export interface OrganizationFeatureSettings {
    */
   merchant_migration_enabled?: boolean;
   /**
-   * If this organization can manage its configuration from a declarative config document.
+   * If this organization's checkout tells the browser to refuse framing from any host outside its embed hosts.
    */
-  config_as_code_enabled?: boolean;
+  frame_ancestors_enforced?: boolean;
 }
 
 /**
@@ -19306,6 +19018,10 @@ Other feature settings are managed by Polar staff: they're ignored if
 provided and keep their current value.
  */
 export interface OrganizationFeatureSettingsUpdate {
+  /**
+   * If this organization has the Member model enabled
+   */
+  member_model_enabled?: boolean;
   /**
    * If this organization has checkout localization enabled
    */
@@ -19760,14 +19476,6 @@ export interface PendingSubscriptionUpdate {
    * Number of units to apply to the subscription. If `null`, the number of units won't be changed.
    */
   units: number | null;
-  /**
-   * ID of the new discount to apply to the subscription. If `null`, the subscription keeps its current discount.
-   */
-  discount_id: string | null;
-  /**
-   * Whether the subscription's current discount will be removed.
-   */
-  discount_unset: boolean;
 }
 
 /**
@@ -19865,10 +19573,6 @@ export interface Product {
    */
   organization_id: string;
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id: string | null;
-  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -19908,10 +19612,6 @@ export interface ProductBenefitsUpdate {
  * ProductCreateOneTime
  */
 export interface ProductCreateOneTime {
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -19975,10 +19675,6 @@ You can store up to **50 key-value pairs**.
  * ProductCreateRecurring
  */
 export interface ProductCreateRecurring {
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -20973,17 +20669,9 @@ export interface ProductPriceSeatBased {
    */
   product_id: string;
   /**
-   * Tiered pricing based on the purchased seat quantity.
+   * Tiered pricing based on seat quantity
    */
-  tiers: Tiers;
-  /**
-   * The minimum purchasable seat quantity (inclusive).
-   */
-  minimum_units: number | null;
-  /**
-   * The maximum purchasable seat quantity, from the last tier's bound. `null` for unlimited.
-   */
-  maximum_units: number | null;
+  seat_tiers: ProductPriceSeatTiersOutput;
 }
 
 /**
@@ -21003,13 +20691,71 @@ export interface ProductPriceSeatBasedCreate {
    */
   tax_behavior?: TaxBehaviorOption | null;
   /**
-   * Tiered pricing based on the purchased seat quantity.
+   * Tiered pricing based on seat quantity
    */
-  tiers: TiersInput;
+  seat_tiers: ProductPriceSeatTiersInput;
+}
+
+/**
+ * A pricing tier for seat-based pricing.
+ */
+export interface ProductPriceSeatTier {
   /**
-   * The minimum purchasable seat quantity (inclusive). Defaults to 1 when not set.
+   * Minimum number of seats (inclusive)
    */
-  minimum_units?: number | null;
+  min_seats: number;
+  /**
+   * Maximum number of seats (inclusive). None for unlimited.
+   */
+  max_seats?: number | null;
+  /**
+   * Price per seat in cents for this tier
+   */
+  price_per_seat: number;
+}
+
+/**
+ * List of pricing tiers for seat-based pricing.
+
+The minimum and maximum seat limits are derived from the tiers:
+- minimum_seats = first tier's min_seats
+- maximum_seats = last tier's max_seats (None for unlimited)
+ */
+export interface ProductPriceSeatTiersInput {
+  /**
+   * How tiers are applied. 'volume' prices all seats at the matching tier's rate. 'graduated' prices each tier's range independently.
+   */
+  seat_tier_type?: SeatTierType;
+  /**
+   * List of pricing tiers
+   */
+  tiers: ProductPriceSeatTier[];
+}
+
+/**
+ * List of pricing tiers for seat-based pricing.
+
+The minimum and maximum seat limits are derived from the tiers:
+- minimum_seats = first tier's min_seats
+- maximum_seats = last tier's max_seats (None for unlimited)
+ */
+export interface ProductPriceSeatTiersOutput {
+  /**
+   * How tiers are applied. 'volume' prices all seats at the matching tier's rate. 'graduated' prices each tier's range independently.
+   */
+  seat_tier_type?: SeatTierType;
+  /**
+   * List of pricing tiers
+   */
+  tiers: ProductPriceSeatTier[];
+  /**
+   * Minimum number of seats required for purchase, derived from first tier.
+   */
+  minimum_seats: number;
+  /**
+   * Maximum number of seats allowed for purchase, derived from last tier. None for unlimited.
+   */
+  maximum_seats: number | null;
 }
 
 /**
@@ -21106,10 +20852,6 @@ export interface ProductPriceUnitBasedCreate {
  * Schema to update a product.
  */
 export interface ProductUpdate {
-  /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-   */
-  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -21448,11 +21190,11 @@ export interface RotatedLicenseKey {
   /**
    * The ID of the seat member holding this key, if any.
    */
-  member_id: string | null;
+  member_id?: string | null;
   /**
    * The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly.
    */
-  member: LicenseKeyMember | null;
+  member?: LicenseKeyMember | null;
   /**
    * The benefit ID.
    */
@@ -22158,10 +21900,6 @@ You can store up to **50 key-value pairs**.
    */
   product_id: string;
   /**
-   * The currency of the subscription. The product must have a free price in this currency. If not set, the organization's default currency is used.
-   */
-  currency?: PresentmentCurrency | null;
-  /**
    * The ID of the customer to create the subscription for.
    */
   customer_id: string;
@@ -22189,10 +21927,6 @@ You can store up to **50 key-value pairs**.
    * The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow.
    */
   product_id: string;
-  /**
-   * The currency of the subscription. The product must have a free price in this currency. If not set, the organization's default currency is used.
-   */
-  currency?: PresentmentCurrency | null;
   /**
    * The ID of the customer in your system to create the subscription for. It must already exist in Polar.
    */
@@ -24270,11 +24004,11 @@ export interface ValidatedLicenseKey {
   /**
    * The ID of the seat member holding this key, if any.
    */
-  member_id: string | null;
+  member_id?: string | null;
   /**
    * The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly.
    */
-  member: LicenseKeyMember | null;
+  member?: LicenseKeyMember | null;
   /**
    * The benefit ID.
    */
@@ -24315,22 +24049,6 @@ export interface ValidatedLicenseKey {
    * expires_at
    */
   expires_at: string | null;
-  /**
-   * The ID of the subscription granting the license key.
-   */
-  subscription_id: string | null;
-  /**
-   * The subscription granting the license key, if any.
-   */
-  subscription: LicenseKeySubscription | null;
-  /**
-   * The ID of the one-time order granting the license key.
-   */
-  order_id: string | null;
-  /**
-   * The one-time order granting the license key, if any.
-   */
-  order: LicenseKeyOrder | null;
   /**
    * activation
    */

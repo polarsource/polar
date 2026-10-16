@@ -10,8 +10,7 @@ import { join } from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 import { WebSocketServer, type WebSocket } from "ws";
 
-import type { EventsIngest } from "../{{ ir.versions[0].version }}/models";
-
+import { createPolar } from "../{{ (ir.versions[-2] | default(ir.versions[0])).version }}/client";
 import { ClientBase } from "../base";
 import { Outpost, type OutpostOptions, UnavailableRedisError } from "./client";
 import { BUCKET_SIZE, getBucketStart, type Reducer } from "./reducer";
@@ -171,12 +170,8 @@ const readOutcomes = () =>
   exported
     .filter((span) => ["outpost.actor", "outpost.customer_meter"].includes(span.name))
     .map((span) => [span.name, span.attributes["outpost.read.outcome"]]);
-const ingest = (outpost: Outpost, tokens: number) => {
-  const payload: EventsIngest = {
-    events: [{ ...customer, name: "api_call", timestamp, metadata: { tokens } }],
-  };
-  return outpost.ingest(payload);
-};
+const ingest = (outpost: Outpost, tokens: number) =>
+  outpost.ingest({ ...customer, name: "api_call", timestamp, metadata: { tokens } });
 
 it.each([
   ["count", 12],
@@ -218,7 +213,7 @@ it("handles configuration asynchronously and reports a missing customer snapshot
   const result = ingest(outpost, 3);
   for (const ws of connections)
     ws.send(JSON.stringify({ type: "configuration", payload: { reducers } }));
-  expect(await result).toEqual({ inserted: 1, duplicates: 0 });
+  expect(await result).toBeUndefined();
   await expect(outpost.customerMeter(meter)).rejects.toThrow("snapshot is not ready");
   expect(await outpost.customerMeter({ ...customer, meter_id: "unknown" })).toBeNull();
 });
@@ -265,9 +260,10 @@ it("propagates snapshots, removes cold buckets, and rejects older cutoffs", asyn
   );
   expect(await redis.hget(key, "cold:sum")).toBe("8");
   await writer.ingest({
-    events: [
-      { ...customer, name: "api", timestamp: "2026-10-12T11:55:00Z", metadata: { tokens: 999 } },
-    ],
+    ...customer,
+    name: "api",
+    timestamp: "2026-10-12T11:55:00Z",
+    metadata: { tokens: 999 },
   });
   expect((await writer.customerMeter(meter))?.balance).toBe(89);
 });
@@ -432,9 +428,10 @@ it("keeps reducer cutoffs and meter credits independent under concurrent writes"
     max: 8,
   });
   await first.ingest({
-    events: [
-      { ...customer, name: "api", timestamp: "2026-10-12T12:05:00Z", metadata: { tokens: 4 } },
-    ],
+    ...customer,
+    name: "api",
+    timestamp: "2026-10-12T12:05:00Z",
+    metadata: { tokens: 4 },
   });
   await redis.eval(
     APPLY_SNAPSHOT_SCRIPT,
@@ -536,9 +533,10 @@ it("preserves microsecond cutoffs when removing and rejecting local buckets", as
   );
   await ingest(outpost, 2);
   await outpost.ingest({
-    events: [
-      { ...customer, name: "api", timestamp: "2026-10-12T12:05:00Z", metadata: { tokens: 4 } },
-    ],
+    ...customer,
+    name: "api",
+    timestamp: "2026-10-12T12:05:00Z",
+    metadata: { tokens: 4 },
   });
   await outpost["receiveWebsocket"](
     JSON.stringify({
@@ -682,11 +680,11 @@ it.each([
 it("reconnects the WebSocket and keeps serving from Redis", async () => {
   const outpost = await start();
   connections[0].terminate();
-  expect(await ingest(outpost, 3)).toEqual({ inserted: 1, duplicates: 0 });
+  expect(await ingest(outpost, 3)).toBeUndefined();
   await vi.waitFor(() => expect(connections).toHaveLength(2), { timeout: 3_000 });
   await vi.waitFor(() => expect(outpost.connectionId).toBe(connectionId));
   expect(outpost.connected).toBe(true);
-  expect(await ingest(outpost, 3)).toEqual({ inserted: 1, duplicates: 0 });
+  expect(await ingest(outpost, 3)).toBeUndefined();
 });
 
 it("fails when Polar refuses the reconnection", async () => {
@@ -796,12 +794,11 @@ it("reports sync counts when telemetry is flushed", async () => {
   const writer = await start();
   const reader = await start();
   await reader.actor(customer);
-  await writer.ingest({
-    events: [
-      { ...customer, name: "api_call", timestamp, metadata: { tokens: 1 } },
-      { external_customer_id: "bob", name: "api_call", timestamp, metadata: { tokens: 1 } },
-    ],
-  });
+  for (const event of [
+    { ...customer, name: "api_call", timestamp, metadata: { tokens: 1 } },
+    { external_customer_id: "bob", name: "api_call", timestamp, metadata: { tokens: 1 } },
+  ])
+    await writer.ingest(event);
   await vi.waitFor(() => expect(reader["syncReceived"]).toBe(2));
   exported.length = 0;
   await reader.flushTelemetry();
@@ -886,4 +883,23 @@ it("fails fast while Redis is unavailable", async () => {
   ).rejects.toBeInstanceOf(UnavailableRedisError);
   expect(performance.now() - started).toBeLessThan(500);
   expect(readOutcomes()).toEqual([["outpost.customer_meter", "redis_unavailable"]]);
+});
+
+it("composes buffered Polar delivery with Outpost through the client factory", async () => {
+  const fetch = vi
+    .spyOn(globalThis, "fetch")
+    .mockResolvedValue(new Response('{"inserted":1,"duplicates":0}'));
+  await seed();
+  const [baseUrl] = core.buildRequest("GET", "");
+  const polar = createPolar({ baseUrl, accessToken: "test-token", organizationId: "org" });
+  const reader = await start();
+  {
+    await using ingestion = await polar
+      .ingestion({ outpostRedisUrl: join(directory, "redis.sock") })
+      .start();
+    await ingestion.ingest({ ...customer, name: "api", timestamp, metadata: { tokens: 2 } });
+    expect((await reader.customerMeter(meter))?.consumed_units).toBe(12);
+    expect(fetch).not.toHaveBeenCalled();
+  }
+  expect(fetch).toHaveBeenCalledOnce();
 });

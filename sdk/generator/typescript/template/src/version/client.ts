@@ -1,4 +1,5 @@
 import { ClientBase, ClientOptions, resolveBaseUrl } from "../base";
+import { createIngestion, type IngestionOptions } from "../ingestion/client";
 {% for service in api.services %}
 import { create{{ service.name }}Service } from "./services/{{ service.name | snake }}";
 {% endfor %}
@@ -35,11 +36,16 @@ export type PolarCore = ReturnType<typeof createPolarCore>;
 export function createPolar(options: PolarOptions) {
   const client = createPolarCore(options);
 
-  return {
+  const services = {
     {% for service in api.services %}
     {{ service.name | service_name }}: create{{ service.name }}Service(client),{% if not loop.last %}
     {% endif %}
     {% endfor %}
+  };
+
+  return {
+    ...services,
+    ingestion: (options?: IngestionOptions) => createIngestion(services, client, options),
   };
 }
 

@@ -7,7 +7,6 @@ from polar.ingestion.buffered import (
     BufferedIngestionStrategy as BufferedIngestionStrategy,
 )
 from polar.logging import get_logger
-from polar.outpost import Outpost
 
 log = get_logger(__name__)
 
@@ -46,6 +45,8 @@ class Ingestion:
     ) -> typing.Self:
         strategies = [BufferedIngestionStrategy(polar)]
         if outpost_redis_url is not None:
+            from polar.outpost import Outpost
+
             strategies.append(Outpost.create(polar, outpost_redis_url))
         return cls(strategies=strategies)
 

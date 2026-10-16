@@ -1,4 +1,5 @@
 import { ClientBase, ClientOptions, resolveBaseUrl } from "../base";
+import { createIngestion, type IngestionOptions } from "../ingestion/client";
 import { createBenefitGrantsService } from "./services/benefit_grants";
 import { createBenefitsService } from "./services/benefits";
 import { createCheckoutLinksService } from "./services/checkout_links";
@@ -51,7 +52,7 @@ export type PolarCore = ReturnType<typeof createPolarCore>;
 export function createPolar(options: PolarOptions) {
   const client = createPolarCore(options);
 
-  return {
+  const services = {
     organizations: createOrganizationsService(client),
     subscriptions: createSubscriptionsService(client),
     oauth2: createOauth2Service(client),
@@ -78,6 +79,11 @@ export function createPolar(options: PolarOptions) {
     meters: createMetersService(client),
     customerMeters: createCustomerMetersService(client),
     payments: createPaymentsService(client),
+  };
+
+  return {
+    ...services,
+    ingestion: (options?: IngestionOptions) => createIngestion(services, client, options),
   };
 }
 

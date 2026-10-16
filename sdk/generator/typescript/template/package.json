@@ -15,6 +15,10 @@
       "import": { "types": "./dist/index.d.mts", "default": "./dist/index.mjs" },
       "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
     },
+    "./ingestion": {
+      "import": { "types": "./dist/ingestion/index.d.mts", "default": "./dist/ingestion/index.mjs" },
+      "require": { "types": "./dist/ingestion/index.d.cts", "default": "./dist/ingestion/index.cjs" }
+    },
     "./outpost": {
       "import": { "types": "./dist/outpost/index.d.mts", "default": "./dist/outpost/index.mjs" },
       "require": { "types": "./dist/outpost/index.d.cts", "default": "./dist/outpost/index.cjs" }

@@ -29,7 +29,8 @@ try {
       }
       switch (command.operation) {
         case "ingest":
-          respond({ result: await outpost.ingest(command.arguments) });
+          for (const event of command.arguments.events) await outpost.ingest(event);
+          respond({ result: null });
           break;
         case "read":
           respond({ result: await outpost.customerMeter(command.arguments) });

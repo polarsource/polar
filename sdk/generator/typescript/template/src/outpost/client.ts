@@ -13,8 +13,10 @@ import { randomUUID } from "node:crypto";
 import { once } from "node:events";
 import WebSocket from "ws";
 
+import type { EventInput } from "../ingestion/event";
+
 import { ClientBase, PolarError } from "../base";
-import { customerKey, parseEvent, type EventInput } from "./event";
+import { customerKey, parseEvent } from "./event";
 import {
   reduce,
   getBucketStart,
@@ -231,10 +233,6 @@ export interface OutpostOptions {
   /** How long a read of a cold customer waits for its first snapshot, in milliseconds. */
   snapshotTimeout?: number;
 }
-export interface IngestResult {
-  inserted: number;
-  duplicates: number;
-}
 export interface CustomerMeter extends Customer {
   meter_id: string;
   consumed_units: number;
@@ -418,24 +416,15 @@ export class Outpost {
     await this.close();
   }
 
-  async ingest({ events }: { events: readonly EventInput[] }): Promise<IngestResult> {
+  async ingest(event: EventInput): Promise<void> {
     const redis = this.requireRedis();
-    if (!events.length) return { inserted: 0, duplicates: 0 };
     return this.trace(
       "outpost.ingest",
       async (span) => {
-        const parsed = events.map(parseEvent);
+        const parsed = parseEvent(event);
         await this.waitConfigured();
-        const updates = reduce(
-          this.reducers,
-          parsed,
-          parsed.reduce(
-            (oldest, event) => Math.min(oldest, getBucketStart(event.timestamp)),
-            Infinity,
-          ),
-        );
-        for (const customer of new Set(parsed.map((event) => event.customer)))
-          await this.warmActor(customer);
+        const updates = reduce(this.reducers, [parsed], getBucketStart(parsed.timestamp));
+        await this.warmActor(parsed.customer);
         for (const update of updates) {
           const identity = `${update.customer}:${update.reducer}`;
           const statistics = update.statistics;
@@ -457,9 +446,8 @@ export class Outpost {
           await this.receiveState(identity, decodeState(state));
         }
         span.setAttribute("outpost.buckets", updates.length);
-        return { inserted: parsed.length, duplicates: 0 };
       },
-      { "outpost.events": events.length },
+      { "outpost.events": 1 },
     );
   }
 

@@ -4018,6 +4018,13 @@
             }
           }
         },
+        "x-tool-name": "webhooks_get_external_webhook_endpoint",
+        "x-tool-title": "Get Webhook Endpoint by External ID",
+        "x-tool-description": "Get a webhook endpoint by external ID.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -26184,7 +26191,7 @@
         ],
         "x-tool-name": "customer_meters_credits",
         "x-tool-title": "Credit Customer Meter",
-        "x-tool-description": "Manually grant credits on a customer meter.\n\nReturns the `meter.credited` event. The customer meter balance is updated\nasynchronously, shortly after the request.",
+        "x-tool-description": "Manually grant credits on a customer meter.\n\nReturns the `meter.credited` event. The customer meter balance is updated\nbefore the response is returned, unless the meter is being updated\nconcurrently, in which case it catches up shortly after.",
         "x-tool-annotations": [
           "destructive"
         ],
@@ -64293,6 +64300,15 @@
           "rollover": {
             "type": "boolean",
             "title": "Rollover"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "benefit",
+              "manual"
+            ],
+            "title": "Reason",
+            "default": "benefit"
           }
         },
         "type": "object",

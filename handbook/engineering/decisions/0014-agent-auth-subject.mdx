@@ -13,7 +13,7 @@ description: "An unclaimed agent authenticates as an Agent subject that endpoint
 
 ## Context
 
-With [agent sign-up](/engineering/design-documents/agent-sign-up), an AI agent can create and build an
+With agent sign-up (the WorkOS auth.md spec), an AI agent can create and build an
 organization before any human exists. Something has to own that org and make the API calls. A
 placeholder `User` with a fake email would work, but it puts non-people in the users table and needs
 guards on login, emails, metrics and every endpoint that must stay off-limits. Borrowing the
@@ -58,7 +58,7 @@ user with ordinary user OAuth tokens**, and its OAuth client stays marked as an 
 
 ## References
 
-- [Agent sign-up design document](/engineering/design-documents/agent-sign-up).
+- Agent sign-up design document: [#15460](https://github.com/polarsource/polar/pull/15460).
 - [ADR-0005](/engineering/decisions/0005-auth-subject-and-scopes): the subject and scope model this
   extends.
 - `server/polar/auth/models.py` (`Subject`), `server/polar/oauth2/sub_type.py` (`SubType`),

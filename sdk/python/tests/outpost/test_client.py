@@ -1131,6 +1131,7 @@ async def test_websocket_reconnects_and_keeps_serving(
         with anyio.fail_after(1):
             while outpost.connection_id != "second":
                 await anyio.lowlevel.checkpoint()
+        assert outpost.connected
 
     assert result.inserted == 1
     assert [request["type"] for request in requests].count("configuration") == 2
@@ -1153,6 +1154,7 @@ async def test_refused_reconnection_fails_outpost(
                 except PolarOutpostError:
                     break
                 await anyio.sleep(0.01)
+        assert not outpost.connected
 
 
 def test_backoff_delay_stays_bounded() -> None:

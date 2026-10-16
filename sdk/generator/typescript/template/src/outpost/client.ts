@@ -220,6 +220,7 @@ export class Outpost {
   private readonly cache = new Map<string, LocalState>();
   private readonly actors = new Set<string>();
   private configured = signal();
+  private isConfigured = false;
   private synced = signal();
   private isSynced = false;
   private generation = 0;
@@ -240,10 +241,15 @@ export class Outpost {
     return this._connectionId;
   }
 
+  get connected(): boolean {
+    return !this.failure && this.isConfigured && this.websocket?.readyState === WebSocket.OPEN;
+  }
+
   async start(): Promise<this> {
     if (this.redis) throw new PolarError("Outpost is already connected");
     this.failure = undefined;
     this.reconnectAttempts = 0;
+    this.isConfigured = false;
     this.configured = signal();
     this.synced = signal();
     this.messages = Promise.resolve();
@@ -678,6 +684,7 @@ export class Outpost {
       this._connectionId = message.payload.id;
     } else if (message.type === "configuration") {
       this.reducers = message.payload.reducers;
+      this.isConfigured = true;
       this.configured.resolve();
       // A session counts as stable once Polar configured it.
       this.reconnectAttempts = 0;

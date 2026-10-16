@@ -369,6 +369,14 @@ class Outpost:
     def connection_id(self) -> str | None:
         return self._connection_id
 
+    @property
+    def connected(self) -> bool:
+        return (
+            self._failure is None
+            and self._websocket is not None
+            and self._configured.is_set()
+        )
+
     async def ingest(
         self, *, events: collections.abc.Sequence[EventInput]
     ) -> IngestResult:

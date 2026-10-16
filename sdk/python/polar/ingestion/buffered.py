@@ -21,6 +21,16 @@ def _jittered_delay(base: float, jitter: float = 0.1) -> float:
 DropReason = typing.Literal["retry_exhausted", "shutdown_timeout", "permanent_error"]
 
 
+class BufferedIngestionOptions(typing.TypedDict, total=False):
+    batch_size: int
+    batch_interval: float
+    shutdown_timeout: float
+    max_attempts: int
+    on_dropped: (
+        typing.Callable[[list[EventInput], DropReason], typing.Awaitable[None]] | None
+    )
+
+
 class BufferedIngestionStrategy:
     def __init__(
         self,

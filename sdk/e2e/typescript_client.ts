@@ -33,7 +33,7 @@ try {
           respond({ result: null });
           break;
         case "read":
-          respond({ result: await outpost.customerMeter(command.arguments) });
+          respond({ result: await outpost.meter(command.arguments) });
           break;
         case "actor":
           await outpost.actor(command.arguments);

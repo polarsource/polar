@@ -186,7 +186,8 @@ class ReducerService:
         redis: Redis,
         organization_id: UUID,
         events: Sequence[Event],
-    ) -> None:
+    ) -> int:
+        """Returns the number of reducer buckets the events contributed to."""
         reducers = [
             reducer
             for reducer in await ReducerRepository.from_session(
@@ -195,7 +196,7 @@ class ReducerService:
             if not isinstance(reducer.aggregation, UniqueAggregation)
         ]
         if not reducers:
-            return
+            return 0
 
         now = utc_now()
         current_bucket_start = get_reducer_bucket_start(now)
@@ -246,6 +247,8 @@ class ReducerService:
                 external_customer_id,
                 delay=int(delay.total_seconds() * 1000),
             )
+
+        return len(contributions)
 
     async def sync_bucket(
         self,

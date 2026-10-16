@@ -129,6 +129,7 @@ async def connect_websocket(
 CACHE_SIZE = 1024
 SYNC_INTERVAL = 30.0
 RECONNECT_DELAY = 0.5
+SNAPSHOT_TIMEOUT = 5.0
 MAX_RECONNECT_DELAY = 30.0
 
 READ_STATE_SCRIPT = """
@@ -232,6 +233,20 @@ class ReducerState:
 class LocalState:
     state: ReducerState | None = None
     lock: anyio.Lock = dataclasses.field(default_factory=anyio.Lock)
+    missing: bool = False
+    changed: anyio.Event = dataclasses.field(default_factory=anyio.Event)
+
+    def is_ready(self, meter_ids: collections.abc.Iterable[str]) -> bool:
+        state = self.state
+        return self.missing or (
+            state is not None
+            and state.cold_until is not None
+            and all(meter_id in state.credited for meter_id in meter_ids)
+        )
+
+    def notify(self) -> None:
+        self.changed.set()
+        self.changed = anyio.Event()
 
 
 class Configuration(typing.TypedDict):
@@ -241,6 +256,7 @@ class Configuration(typing.TypedDict):
 class Snapshot(typing.TypedDict):
     customer_id: str | None
     external_customer_id: str | None
+    customer_exists: bool
     meter_id: str
     version: int
     cold_until: int
@@ -396,7 +412,7 @@ class Outpost:
                 ),
             )
             for customer in {event.external_customer_id for event in parsed}:
-                await self.actor(**self._customer_arguments(customer))
+                await self._warm_actor(customer)
             assert self._write_bucket is not None
             for (customer, reducer_id, bucket_start), statistics in updates.items():
                 identity = f"{customer}:{reducer_id}"
@@ -441,6 +457,10 @@ class Outpost:
             if reducer is None:
                 return None
             local = await self._warm_customer(customer, reducer)
+            with anyio.move_on_after(SNAPSHOT_TIMEOUT):
+                await self._wait_ready(reducer, local, [meter_id])
+            if local.missing:
+                return None
             state = local.state
             if state is None or state.cold_until is None:
                 raise PolarOutpostError("Customer snapshot is not ready")
@@ -467,10 +487,27 @@ class Outpost:
     ) -> None:
         with self._span("outpost.actor"):
             customer = self._customer_key(customer_id, external_customer_id)
-            with anyio.fail_after(5):
-                await self._configured.wait()
-            for reducer in self._reducers:
-                await self._warm_customer(customer, reducer)
+            warmed = await self._warm_actor(customer)
+            with anyio.move_on_after(SNAPSHOT_TIMEOUT):
+                for reducer, local in warmed:
+                    await self._wait_ready(reducer, local, reducer.get("meter_ids", []))
+
+    async def _warm_actor(self, customer: str) -> list[tuple[Reducer, LocalState]]:
+        with anyio.fail_after(5):
+            await self._configured.wait()
+        return [
+            (reducer, await self._warm_customer(customer, reducer))
+            for reducer in self._reducers
+        ]
+
+    async def _wait_ready(
+        self, reducer: Reducer, local: LocalState, meter_ids: list[str]
+    ) -> None:
+        # Polar sends no snapshot for unique reducers, nor without a connection.
+        if reducer["aggregation"]["func"] == "unique" or not self.connected:
+            return
+        while not local.is_ready(meter_ids):
+            await local.changed.wait()
 
     @contextlib.contextmanager
     def _span(
@@ -529,6 +566,7 @@ class Outpost:
         async with local.lock:
             if local.state is None:
                 local.state = await self._load_state(identity)
+                local.notify()
             websocket = self._websocket
             if identity not in self._actors and websocket is not None:
                 try:
@@ -599,11 +637,13 @@ class Outpost:
             elif current.revision >= state.revision:
                 return
             local.state = state
+            local.notify()
 
     async def _refresh_states(self) -> None:
         for customer, local in list(self._cache.items()):
             async with local.lock:
                 local.state = await self._load_state(customer)
+                local.notify()
 
     async def _listen_redis(
         self,
@@ -734,6 +774,14 @@ class Outpost:
                     snapshot["customer_id"], snapshot["external_customer_id"]
                 )
                 identity = f"{customer}:{reducer['id']}"
+                local = self._cache.get(identity)
+                if local is not None:
+                    local.missing = not snapshot["customer_exists"]
+                    local.notify()
+                if not snapshot["customer_exists"]:
+                    # Asked again on the next read, in case it was created since.
+                    self._actors.discard(identity)
+                    continue
                 statistics = [
                     snapshot["count"],
                     snapshot["sum"],

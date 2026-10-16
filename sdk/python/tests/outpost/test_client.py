@@ -66,6 +66,11 @@ async def redis_connection(
 
 
 @pytest.fixture(autouse=True)
+def short_snapshot_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("polar.outpost.client.SNAPSHOT_TIMEOUT", 0.1)
+
+
+@pytest.fixture(autouse=True)
 def exported_spans(monkeypatch: pytest.MonkeyPatch) -> list[ReadableSpan]:
     exported: list[ReadableSpan] = []
 
@@ -157,7 +162,10 @@ async def polar_client(
                         {
                             "type": "websocket.send",
                             "text": json.dumps(
-                                {"type": "meter_usage", "payload": snapshot}
+                                {
+                                    "type": "meter_usage",
+                                    "payload": {"customer_exists": True, **snapshot},
+                                }
                             ),
                         }
                     )
@@ -965,7 +973,6 @@ async def test_telemetry_spans(
         "outpost.redis.subscribe",
         "outpost.websocket.connect",
         "outpost.ingest",
-        "outpost.actor",
         "outpost.customer_meter",
         "outpost.snapshot.received",
         "outpost.sync.received",
@@ -1159,3 +1166,130 @@ async def test_refused_reconnection_fails_outpost(
 
 def test_backoff_delay_stays_bounded() -> None:
     assert 15 <= _backoff_delay(5000, 0.5, 30) <= 30
+
+
+ALICE_SNAPSHOT: dict[str, typing.Any] = {
+    "customer_id": None,
+    "external_customer_id": "alice",
+    "meter_id": "meter",
+    "version": 1791807000000000,
+    "cold_until": 1791806700000000,
+    "count": 1,
+    "sum": 3,
+    "min": 3,
+    "max": 3,
+    "credited_units": 10,
+}
+
+
+@pytest.mark.anyio
+async def test_cold_read_waits_for_the_snapshot(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+) -> None:
+    url, _ = redis_connection
+    snapshots["external:alice"] = ALICE_SNAPSHOT
+    async with Outpost(url, client=polar_client) as outpost:
+        meter = await outpost.customer_meter(
+            meter_id="meter", external_customer_id="alice"
+        )
+    assert meter is not None
+    assert meter.balance == 7
+
+
+@pytest.mark.anyio
+async def test_unknown_customer_reads_none(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+) -> None:
+    url, _ = redis_connection
+    snapshots["external:alice"] = {**ALICE_SNAPSHOT, "customer_exists": False}
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        assert (
+            await outpost.customer_meter(meter_id="meter", external_customer_id="alice")
+            is None
+        )
+
+
+@pytest.mark.anyio
+async def test_missing_snapshot_times_out(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+) -> None:
+    url, _ = redis_connection
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        with pytest.raises(PolarOutpostError, match="not ready"):
+            await outpost.customer_meter(meter_id="meter", external_customer_id="alice")
+
+
+@pytest.mark.anyio
+async def test_cold_read_waits_for_its_own_meter(
+    redis_connection: tuple[str, Redis],
+) -> None:
+    url, _ = redis_connection
+    configuration = copy.deepcopy(CONFIGURATION)
+    configuration["reducers"][0]["meter_ids"].append("shared")
+    credits = {"meter": 100, "shared": 200}
+
+    async def app(scope: typing.Any, receive: typing.Any, send: typing.Any) -> None:
+        assert (await receive())["type"] == "websocket.connect"
+        await send({"type": "websocket.accept"})
+        while True:
+            message = await receive()
+            if message["type"] == "websocket.disconnect":
+                return
+            request = json.loads(message["text"])
+            if request["type"] == "configuration":
+                payload: typing.Any = configuration
+            else:
+                meter_id = request["payload"]["meter_id"]
+                if meter_id == "shared":
+                    await anyio.sleep(0.05)
+                payload = {
+                    **ALICE_SNAPSHOT,
+                    "customer_exists": True,
+                    "meter_id": meter_id,
+                    "credited_units": credits[meter_id],
+                }
+            await send(
+                {
+                    "type": "websocket.send",
+                    "text": json.dumps({"type": request["type"], "payload": payload}),
+                }
+            )
+
+    async with (
+        httpx.AsyncClient(
+            base_url="http://polar.test", transport=ASGIWebSocketTransport(app)
+        ) as client,
+        Outpost(url, client=client) as outpost,
+    ):
+        meter = await outpost.customer_meter(
+            meter_id="shared", external_customer_id="alice"
+        )
+    assert meter is not None
+    assert meter.credited_units == 200
+
+
+@pytest.mark.anyio
+async def test_unknown_customer_reads_its_value_once_created(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+) -> None:
+    url, _ = redis_connection
+    snapshots["external:alice"] = {**ALICE_SNAPSHOT, "customer_exists": False}
+    async with Outpost(url, client=polar_client) as outpost:
+        read = functools.partial(
+            outpost.customer_meter, meter_id="meter", external_customer_id="alice"
+        )
+        assert await read() is None
+        snapshots["external:alice"] = ALICE_SNAPSHOT
+        with anyio.fail_after(1):
+            while (meter := await read()) is None:
+                await anyio.sleep(0.01)
+    assert meter.balance == 7

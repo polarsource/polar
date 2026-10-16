@@ -32,7 +32,9 @@ from redis.exceptions import ConnectionError as RedisConnectionError
 from redis.exceptions import TimeoutError as RedisTimeoutError
 
 from polar.base import PolarError
-from polar.outpost.event import Event, EventInput
+from polar.ingestion.client import PolarClient
+from polar.ingestion.events import EventInput
+from polar.outpost.event import Event
 from polar.outpost.reducer import (
     BucketStatistics,
     Reducer,
@@ -364,6 +366,10 @@ class Outpost:
         self._sync_received = 0
         self._sync_applied = 0
 
+    @classmethod
+    def create(cls, polar: PolarClient, redis_url: str) -> typing.Self:
+        return cls(redis_url=redis_url, client=polar._client._client)
+
     @_raise_redis_unavailable
     async def __aenter__(self) -> typing.Self:
         if self._redis is not None:
@@ -450,26 +456,19 @@ class Outpost:
         )
 
     @_raise_redis_unavailable
-    async def ingest(
-        self, *, events: collections.abc.Sequence[EventInput]
-    ) -> IngestResult:
+    async def ingest(self, event: EventInput) -> None:
         self._require_redis()
-        if not events:
-            return IngestResult(inserted=0)
-        with self._span("outpost.ingest", **{"outpost.events": len(events)}) as span:
-            parsed = [self._parse_event(event) for event in events]
+        with self._span("outpost.ingest", **{"outpost.events": 1}) as span:
+            parsed = self._parse_event(event)
             with anyio.fail_after(5):
                 await self._configured.wait()
             reducers = self._reducers
             updates = reduce(
                 [(reducer, get_matcher(reducer["filter"])) for reducer in reducers],
-                parsed,
-                oldest_bucket_start=min(
-                    get_bucket_start(event.timestamp) for event in parsed
-                ),
+                [parsed],
+                oldest_bucket_start=get_bucket_start(parsed.timestamp),
             )
-            for customer in {event.external_customer_id for event in parsed}:
-                await self._warm_actor(customer)
+            await self._warm_actor(parsed.external_customer_id)
             assert self._write_bucket is not None
             for (customer, reducer_id, bucket_start), statistics in updates.items():
                 identity = f"{customer}:{reducer_id}"
@@ -488,7 +487,6 @@ class Outpost:
                 )
                 await self._receive_state(identity, self._decode_state(state))
             span.set_attribute("outpost.buckets", len(updates))
-            return IngestResult(inserted=len(parsed))
 
     @_raise_redis_unavailable
     async def customer_meter(

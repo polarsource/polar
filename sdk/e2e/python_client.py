@@ -40,8 +40,12 @@ async def main() -> None:
                 if operation == "close":
                     print(json.dumps({"result": None}), flush=True)
                     break
+                if operation == "ingest":
+                    for event in command["arguments"]["events"]:
+                        await outpost.ingest(event)
+                    print(json.dumps({"result": None}), flush=True)
+                    continue
                 methods = {
-                    "ingest": outpost.ingest,
                     "read": outpost.customer_meter,
                     "actor": outpost.actor,
                 }

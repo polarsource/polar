@@ -1,6 +1,6 @@
 {
   "name": "@polar-sh/sdk",
-  "version": "1.0.3-alpha.4",
+  "version": "0.0.0",
   "description": "Polar SDK — A billing platform for the intelligence era",
   "keywords": [
     "api",
@@ -34,6 +34,16 @@
       "require": {
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
+      }
+    },
+    "./ingestion": {
+      "import": {
+        "types": "./dist/ingestion/index.d.mts",
+        "default": "./dist/ingestion/index.mjs"
+      },
+      "require": {
+        "types": "./dist/ingestion/index.d.cts",
+        "default": "./dist/ingestion/index.cjs"
       }
     },
     "./outpost": {

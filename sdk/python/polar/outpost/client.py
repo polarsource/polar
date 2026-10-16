@@ -351,6 +351,8 @@ class Outpost:
         self._synced = anyio.Event()
         self._redis_available = False
         self._channel = ""
+        self._sync_received = 0
+        self._sync_applied = 0
 
     @_raise_redis_unavailable
     async def __aenter__(self) -> typing.Self:
@@ -402,6 +404,7 @@ class Outpost:
         exc_val: BaseException | None = None,
         exc_tb: types.TracebackType | None = None,
     ) -> None:
+        self._report_sync()
         with self._span("outpost.websocket.disconnect"):
             pass
         with self._span("outpost.redis.disconnect"):
@@ -542,6 +545,7 @@ class Outpost:
         provider = self._tracer_provider
         if provider is None:
             return True
+        self._report_sync()
         return await anyio.to_thread.run_sync(provider.force_flush)
 
     async def _warm_actor(self, customer: str) -> list[tuple[Reducer, LocalState]]:
@@ -578,6 +582,20 @@ class Outpost:
             raise
         finally:
             span.end()
+
+    def _report_sync(self) -> None:
+        if self._sync_received == 0:
+            return
+        with self._span(
+            "outpost.sync",
+            **{
+                "outpost.sync.received": self._sync_received,
+                "outpost.sync.applied": self._sync_applied,
+            },
+        ):
+            pass
+        self._sync_received = 0
+        self._sync_applied = 0
 
     async def _shutdown_telemetry(self) -> None:
         provider = self._tracer_provider
@@ -681,20 +699,21 @@ class Outpost:
             credited=credited,
         )
 
-    async def _receive_state(self, customer: str, state: ReducerState) -> None:
+    async def _receive_state(self, customer: str, state: ReducerState) -> bool:
         local = self._cache.get(customer)
         if local is None:
-            return
+            return False
         async with local.lock:
             current = local.state
             if current is None:
-                return
+                return False
             if current.epoch != state.epoch:
                 state = await self._load_state(customer)
             elif current.revision >= state.revision:
-                return
+                return False
             local.state = state
             local.notify()
+            return True
 
     async def _refresh_states(self) -> None:
         for customer, local in list(self._cache.items()):
@@ -732,12 +751,14 @@ class Outpost:
                     )
                     if message is not None:
                         update: StateUpdate = json.loads(message["data"])
-                        with self._span("outpost.sync.received"):
-                            await self._receive_state(
-                                update["customer"],
-                                self._decode_state(update["state"]),
-                            )
+                        applied = await self._receive_state(
+                            update["customer"], self._decode_state(update["state"])
+                        )
+                        self._sync_received += 1
+                        if applied:
+                            self._sync_applied += 1
                     if anyio.current_time() >= next_refresh:
+                        self._report_sync()
                         await self._refresh_states()
                         next_refresh = anyio.current_time() + SYNC_INTERVAL
 

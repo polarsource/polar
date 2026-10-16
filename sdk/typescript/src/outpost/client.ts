@@ -264,6 +264,8 @@ export class Outpost {
   private failure?: Error;
   private messages: Promise<unknown> = Promise.resolve();
   private synchronizing?: Promise<void>;
+  private syncReceived = 0;
+  private syncApplied = 0;
 
   constructor(
     readonly redisUrl: string,
@@ -361,6 +363,7 @@ export class Outpost {
       await withTimeout(this.synced.promise);
       await this.connectWebsocket();
       this.refreshTimer = setInterval(() => {
+        this.reportSync();
         if (this.synchronizing) return;
         void this.synchronize();
       }, SYNC_INTERVAL);
@@ -375,6 +378,7 @@ export class Outpost {
   async close(): Promise<void> {
     clearInterval(this.refreshTimer);
     clearTimeout(this.reconnectTimer);
+    this.reportSync();
     const websocket = this.websocket;
     const connections = [this.subscriber, this.redis].filter(
       (redis): redis is Redis => redis !== undefined,
@@ -496,6 +500,7 @@ export class Outpost {
   }
 
   async flushTelemetry(): Promise<void> {
+    this.reportSync();
     await this.tracerProvider?.forceFlush();
   }
 
@@ -667,24 +672,35 @@ export class Outpost {
     );
   }
 
-  private async receiveState(customer: string, state: State): Promise<void> {
+  private async receiveState(customer: string, state: State): Promise<boolean> {
     const local = this.cache.get(customer);
-    if (!local) return;
-    await locked(local, async () => {
+    if (!local) return false;
+    return locked(local, async () => {
       const current = local.state;
-      if (!current) return;
+      if (!current) return false;
       if (current.epoch !== state.epoch) state = await this.loadState(customer);
-      else if (current.revision >= state.revision) return;
+      else if (current.revision >= state.revision) return false;
       local.state = state;
       notify(local);
+      return true;
     });
   }
 
   private async receiveRedis(data: string): Promise<void> {
     const update: StateUpdate = JSON.parse(data);
-    await this.trace("outpost.sync.received", () =>
-      this.receiveState(update.customer, decodeState(update.state)),
-    );
+    const applied = await this.receiveState(update.customer, decodeState(update.state));
+    this.syncReceived += 1;
+    if (applied) this.syncApplied += 1;
+  }
+
+  private reportSync(): void {
+    if (this.syncReceived === 0) return;
+    this.startSpan("outpost.sync", {
+      "outpost.sync.received": this.syncReceived,
+      "outpost.sync.applied": this.syncApplied,
+    }).end();
+    this.syncReceived = 0;
+    this.syncApplied = 0;
   }
 
   private synchronize(): Promise<void> {

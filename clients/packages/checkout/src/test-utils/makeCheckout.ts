@@ -159,7 +159,6 @@ const defaults: ProductCheckoutPublic = {
   trial_end: null,
   organization_id: 'org_1',
   product_id: 'prod_1',
-  product_price_id: 'price_1',
   discount_id: null,
   allow_discount_codes: true,
   require_billing_address: false,

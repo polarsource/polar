@@ -36,18 +36,25 @@ an agent.
   `@pytest.mark.auth(AuthSubjectFixture(subject="agent"))`. Check the existing `if is_user(...) else`
   branches: code that treats every non-user as an `Organization` will misread an `Agent`.
 - Opt in only build endpoints (orgs, products, meters, benefits, discounts, events, config). Never opt
-  in endpoints that move real money or manage members and payouts. A test pins the list of
-  authenticators that accept `Agent`, so every new opt-in shows up in review.
+  in endpoints that move real money, manage members or payouts, or register webhooks, including the
+  webhook section of config: a webhook set up before the claim would keep receiving data after it. A
+  test walks the app's routes and pins the set that accepts `Agent`, so every new opt-in shows up in
+  review.
 - Unclaimed agent tokens also carry only the build scopes. The allowlist is the guard; scopes are a
   second layer, so one wrong opt-in doesn't open a money endpoint by itself.
 - No placeholder users. The users table, login, emails and user metrics only ever see people.
 - The org-access helpers (`get_accessible_org_ids`, `get_accessible_organization`,
   `get_payload_organization`, the authz policies) resolve an `Agent` to the orgs it owns.
-- OAuth tokens gain a third sub type, `SubType.agent`, with its own access-token prefix
-  (`polar_at_a_`). Agent tokens have no refresh token: the agent renews by exchanging its identity
+- Inside its own org, an agent has a fixed permission set, like a role: it may manage the org's
+  settings and build resources, never members or finance.
+- OAuth tokens, grants and authorization codes gain a third sub type, `SubType.agent`, and agent
+  access tokens get their own prefix (`polar_at_a_`). Agent tokens have no refresh token: the agent renews by exchanging its identity
   assertion.
 - An org owned by an agent has no human owner until the claim. Code that looks up the owner must
-  handle that, and the org can't go live before then.
+  handle that. In production the org can't go live before the claim; in sandbox it can, since sandbox
+  never involves real money.
+- Every sign-up creates a new OAuth client, so per-client rate limits don't hold agents back. Limit
+  per agent, and limit sign-ups per IP.
 - The claim adds the human as owner and revokes the agent's pre-claim tokens. Nothing moves between
   users.
 - Trade-off: after the claim, endpoints can't tell an agent from the user it acts for by the subject
@@ -61,8 +68,6 @@ an agent.
   aren't distinguishable from org tokens, so agent rules can't be expressed on endpoints.
 - **`Agent` subject after the claim too**: every user endpoint would need to opt in for the agent to
   act for its user. Delegated user tokens already cover that.
-- **Only support sign-up with a human up front (`service_auth`)**: no pre-claim identity needed, but
-  agents couldn't build anything before a human is involved.
 
 ## References
 

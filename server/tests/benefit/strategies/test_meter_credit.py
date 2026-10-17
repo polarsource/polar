@@ -8,6 +8,7 @@ from polar.benefit.strategies.base.service import BenefitPropertiesValidationErr
 from polar.benefit.strategies.meter_credit.service import BenefitMeterCreditService
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.customer_meter.service import customer_meter as customer_meter_service
+from polar.event.system import SystemEvent
 from polar.meter.aggregation import AggregationFunction, PropertyAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import (
@@ -19,6 +20,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.benefit import BenefitType
+from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
@@ -302,6 +304,100 @@ class TestMeterCreditBenefitIntegration:
         # 80 units of pre-upgrade usage carry over against the new allowance
         assert customer_meter.consumed_units == 80
         assert customer_meter.balance == 920
+
+
+@pytest.mark.anyio
+class TestRevokeMeterCredit:
+    async def test_keeps_rollover_after_period_reset(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        subscription: Subscription,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="name", operator=FilterOperator.eq, value="usage"
+                    )
+                ],
+            ),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="tokens"
+            ),
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={"meter_id": str(meter.id), "units": 100, "rollover": True},
+        )
+        customer_meter_repo = CustomerMeterRepository.from_session(session)
+
+        await benefit_grant_service.grant_benefit(
+            session, redis, customer, benefit, subscription=subscription
+        )
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            name="usage",
+            metadata={"tokens": 80},
+        )
+
+        # Renewal boundary closes the period, then the payment fails
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_reset,
+            metadata={"meter_id": str(meter.id)},
+        )
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"meter_id": str(meter.id), "units": 20, "rollover": True},
+        )
+        await benefit_grant_service.revoke_benefit(
+            session, redis, customer, benefit, subscription=subscription
+        )
+
+        # Usage while past_due belongs to the new period
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            name="usage",
+            metadata={"tokens": 10},
+        )
+        await customer_meter_service.update_customer_meter(session, customer, meter)
+        customer_meter = await customer_meter_repo.get_by_customer_and_meter(
+            customer.id, meter.id
+        )
+        assert customer_meter is not None
+        assert customer_meter.credited_units == 20
+        assert customer_meter.balance == 10
+
+        await benefit_grant_service.grant_benefit(
+            session, redis, customer, benefit, subscription=subscription
+        )
+        customer_meter = await customer_meter_repo.get_by_customer_and_meter(
+            customer.id, meter.id
+        )
+        assert customer_meter is not None
+        assert customer_meter.credited_units == 120
+        assert customer_meter.consumed_units == 10
+        assert customer_meter.balance == 110
 
 
 @pytest.mark.anyio

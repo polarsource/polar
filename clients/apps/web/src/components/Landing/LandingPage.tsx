@@ -1,16 +1,14 @@
 'use client'
 
-import { Margins } from './chapters/Margins'
 import { MerchantOfRecord } from './chapters/MerchantOfRecord'
 import { Meter } from './chapters/Meter'
-import { Platform } from './chapters/Platform'
-import { Primitives } from './chapters/Primitives'
 import { StartupProgram } from './chapters/StartupProgram'
 import { UsageBilling } from './chapters/UsageBilling'
 import { ClosingCta } from './ClosingCta'
 import { CustomerStory } from './CustomerStory'
 import { Hero } from './Hero/Hero'
 import { Pricing } from './Pricing'
+import { Agents, Charge, Understand } from './story/chapters'
 import { Testimonials } from './Testimonials'
 
 export default function Page() {
@@ -19,11 +17,11 @@ export default function Page() {
       <Hero />
       <UsageBilling />
       <CustomerStory />
-      <Primitives />
-      <Platform />
       <Meter />
+      <Charge />
+      <Understand />
       <MerchantOfRecord />
-      <Margins />
+      <Agents />
       <Testimonials />
       <Pricing />
       <StartupProgram />

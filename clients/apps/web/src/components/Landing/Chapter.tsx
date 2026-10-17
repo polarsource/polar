@@ -7,11 +7,22 @@ interface ChapterMarkerProps {
   name: string
 }
 
-const ChapterMarker = ({ name }: ChapterMarkerProps) => (
-  <Box alignItems="start" display={{ md: 'flex', base: 'none' }}>
-    <Text variant="heading-s">{name}</Text>
-  </Box>
-)
+/** The chapter's name. A leading number, as in "03 Charge", is set muted ahead of it. */
+const ChapterMarker = ({ name }: ChapterMarkerProps) => {
+  const [, number, label] = name.match(/^(\d+)\s+(.*)$/) ?? [null, null, name]
+  return (
+    <Box alignItems="start" display={{ md: 'flex', base: 'none' }}>
+      <Text variant="heading-s">
+        {number ? (
+          <Text as="span" variant="heading-s" color="muted">
+            <span className="mr-4">{number}</span>
+          </Text>
+        ) : null}
+        {label}
+      </Text>
+    </Box>
+  )
+}
 
 interface ChapterHeadlineProps {
   title: string

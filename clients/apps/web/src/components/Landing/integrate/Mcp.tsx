@@ -2,7 +2,7 @@ import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Chapter } from '../Chapter'
 import { DocsLink } from './DocsLink'
-import { AgentSession } from './AgentSession'
+import { AgentsFigure, type Turn } from '../story/AgentsFigure'
 import { ConnectPanel } from './ConnectPanel'
 
 const MCP_DOCS = '/docs/integrate/mcp'
@@ -36,53 +36,65 @@ const TOOLSET: Tool[] = [
   },
 ]
 
+/** The landing's agent session, opening with the integration itself. */
+const TURNS: Turn[] = [
+  {
+    prompt: 'Integrate Polar for billing in my stack',
+    tool: 'Create product',
+    answer:
+      'Added the Next.js adapter with checkout, the customer portal and verified webhooks, and created a Pro product in your sandbox.',
+  },
+  {
+    prompt: 'How much usage has Acme run up this cycle?',
+    tool: 'Get customer state by external ID',
+    answer:
+      'Acme is on Business with 9.2B tokens metered. They used all 40,000 credits and $1,284 of usage on top.',
+  },
+]
+
 export const Mcp = () => (
   <Chapter
     id="mcp"
-    index="01"
-    name="MCP"
+    name="01 MCP"
     title="Agents included"
     subtitle="Polar as a tool your agent can call"
     description="A remote MCP server with OAuth, so there are no keys to paste. Three meta-tools keep the context small, so the agent only loads the operations it needs."
     cta={<DocsLink href={MCP_DOCS} label="MCP documentation" />}
   >
     <Box flexDirection="column" rowGap={{ base: '3xl', md: '4xl' }}>
-      <ConnectPanel />
-      <Grid templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }} gap="l">
-        <Box
-          alignItems="center"
-          justifyContent="center"
-          paddingHorizontal={{ base: 'l', md: '3xl' }}
-          paddingVertical={{ base: '2xl', md: '3xl' }}
-          minHeight={{ base: '20rem', md: '24rem' }}
-          backgroundColor="background-secondary"
-        >
-          <AgentSession />
-        </Box>
-        <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap="l">
-          {TOOLSET.map((tool) => (
-            <Box
-              key={tool.name}
-              flexDirection="column"
-              rowGap="xl"
-              padding="xl"
-              backgroundColor="background-secondary"
-            >
-              <Text variant="default" color="muted" monospace>
-                {tool.name}
+      <AgentsFigure turns={TURNS} />
+      <Grid
+        templateColumns={{
+          base: '1fr',
+          md: 'repeat(2, 1fr)',
+          xl: 'repeat(4, 1fr)',
+        }}
+        gap="l"
+      >
+        {TOOLSET.map((tool) => (
+          <Box
+            key={tool.name}
+            flexDirection="column"
+            rowGap="xl"
+            padding="xl"
+            borderRadius="m"
+            backgroundColor="background-secondary"
+          >
+            <Text variant="default" color="muted" monospace>
+              {tool.name}
+            </Text>
+            <Box flexDirection="column" rowGap="s">
+              <Text variant="heading-xxs" as="h3">
+                {tool.title}
               </Text>
-              <Box flexDirection="column" rowGap="s">
-                <Text variant="heading-xxs" as="h3">
-                  {tool.title}
-                </Text>
-                <Text variant="body" color="muted" wrap="pretty">
-                  {tool.desc}
-                </Text>
-              </Box>
+              <Text variant="body" color="muted" wrap="pretty">
+                {tool.desc}
+              </Text>
             </Box>
-          ))}
-        </Grid>
+          </Box>
+        ))}
       </Grid>
+      <ConnectPanel />
     </Box>
   </Chapter>
 )

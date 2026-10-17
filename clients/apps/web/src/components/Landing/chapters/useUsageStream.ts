@@ -42,6 +42,12 @@ export const VISIBLE_EVENTS = 3
 export const PLAN_PRICE = 2_499
 /** Where the cycle stands when the section comes into view: a large customer, three weeks in. */
 const OPENING = { revenue: 18_432.17, cost: 7_104.62, tokens: 9_216_084_000 }
+/** Each meter's reading at the same point in the cycle. */
+const OPENING_UNITS: Record<UsageEventName, number> = {
+  'tokens.in': 6_402_118_000,
+  'tokens.out': 2_813_966_000,
+  'tool.call': 1_204_380,
+}
 /** Points kept on the chart: enough for a line, few enough to read. */
 export const CHART_POINTS = 32
 /** The pace of the stream: a floor, and the spread above it. */
@@ -88,7 +94,7 @@ export interface MarginPoint {
  * A live stream of usage events, and the unit economics they add up to: revenue and cost per event, totals, and a
  * running margin series for the chart. Starts empty and fills in while the section is in view.
  */
-export const useUsageStream = () => {
+export const useUsageStream = (visible = VISIBLE_EVENTS) => {
   // The stream runs only while the section is on screen. Ids persist across pauses, so resumed events never
   // collide with rows already on the ledger.
   const { ref, inView } = useInView()
@@ -96,6 +102,7 @@ export const useUsageStream = () => {
   const [events, setEvents] = useState<UsageEvent[]>([])
   const [totals, setTotals] = useState({
     ...OPENING,
+    units: OPENING_UNITS,
     byName: { 'tokens.in': 0, 'tokens.out': 0, 'tool.call': 0 } as Record<
       UsageEventName,
       number
@@ -111,13 +118,14 @@ export const useUsageStream = () => {
         makeEvent(i + 1),
       )
       const timer = window.setTimeout(() => {
-        setEvents(settled.slice(-VISIBLE_EVENTS).reverse())
+        setEvents(settled.slice(-visible).reverse())
         setTotals(
           settled.reduce(
             (sum, e) => ({
               revenue: sum.revenue + e.revenue,
               cost: sum.cost + e.cost,
               tokens: sum.tokens + (e.name === 'tool.call' ? 0 : e.quantity),
+              units: { ...sum.units, [e.name]: sum.units[e.name] + e.quantity },
               byName: {
                 ...sum.byName,
                 [e.name]: sum.byName[e.name] + e.revenue,
@@ -125,6 +133,7 @@ export const useUsageStream = () => {
             }),
             {
               ...OPENING,
+              units: OPENING_UNITS,
               byName: { 'tokens.in': 0, 'tokens.out': 0, 'tool.call': 0 },
             },
           ),
@@ -140,12 +149,16 @@ export const useUsageStream = () => {
         () => {
           nextId.current += 1
           const event = makeEvent(nextId.current)
-          setEvents((list) => [event, ...list].slice(0, VISIBLE_EVENTS))
+          setEvents((list) => [event, ...list].slice(0, visible))
           setTotals((sum) => ({
             revenue: sum.revenue + event.revenue,
             cost: sum.cost + event.cost,
             tokens:
               sum.tokens + (event.name === 'tool.call' ? 0 : event.quantity),
+            units: {
+              ...sum.units,
+              [event.name]: sum.units[event.name] + event.quantity,
+            },
             byName: {
               ...sum.byName,
               [event.name]: sum.byName[event.name] + event.revenue,
@@ -166,7 +179,7 @@ export const useUsageStream = () => {
       clearTimeout(start)
       clearTimeout(timer)
     }
-  }, [inView])
+  }, [inView, visible])
 
   return {
     ref,

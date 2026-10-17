@@ -59,6 +59,22 @@ export const useSubscriptionChargePreview = (
     enabled: options?.enabled ?? true,
   })
 
+export const useSubscriptionMeterChargePreview = (
+  id: string,
+  options?: { enabled?: boolean },
+) =>
+  useQuery({
+    queryKey: ['subscriptions', { id }, 'meter-charge-preview'],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/subscriptions/{id}/meter-charge-preview', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: options?.enabled ?? true,
+  })
+
 export const useSubscriptionCancelPreview = (
   id: string,
   options?: { enabled?: boolean },
@@ -125,6 +141,9 @@ export const useUpdateSubscription = (id: string) =>
 
       queryClient.invalidateQueries({
         queryKey: ['subscriptions', { id }, 'charge-preview'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['subscriptions', { id }, 'meter-charge-preview'],
       })
       queryClient.invalidateQueries({
         queryKey: ['subscriptions', { id }, 'cancel-preview'],
@@ -195,6 +214,9 @@ export const useUncancelSubscription = (id: string) =>
         queryKey: ['subscriptions', { id }, 'charge-preview'],
       })
       queryClient.invalidateQueries({
+        queryKey: ['subscriptions', { id }, 'meter-charge-preview'],
+      })
+      queryClient.invalidateQueries({
         queryKey: ['subscriptions', { id }, 'cancel-preview'],
       })
     },
@@ -235,6 +257,9 @@ const applySubscriptionUpdateToCache = (
   )
   queryClient.invalidateQueries({
     queryKey: ['subscriptions', { id }, 'charge-preview'],
+  })
+  queryClient.invalidateQueries({
+    queryKey: ['subscriptions', { id }, 'meter-charge-preview'],
   })
   queryClient.invalidateQueries({
     queryKey: ['subscriptions', { id }, 'cancel-preview'],
@@ -378,6 +403,9 @@ export const useClearPendingSubscriptionUpdate = (id: string) =>
 
       queryClient.invalidateQueries({
         queryKey: ['subscriptions', { id }, 'charge-preview'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['subscriptions', { id }, 'meter-charge-preview'],
       })
       queryClient.invalidateQueries({
         queryKey: ['subscriptions', { id }, 'cancel-preview'],

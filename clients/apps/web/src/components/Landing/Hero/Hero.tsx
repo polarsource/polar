@@ -1,3 +1,4 @@
+import GetStartedButton from '@/components/Auth/GetStartedButton'
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 
@@ -24,6 +25,7 @@ export const Hero = () => {
               Modern billing for AI companies
             </Text>
           </Box>
+          <GetStartedButton size="lg" text="Get Started" />
         </Box>
       </Grid>
     </Box>

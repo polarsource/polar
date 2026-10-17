@@ -51,7 +51,7 @@ export const Measure = () => (
 export const Charge = () => (
   <Chapter
     id="charge"
-    name="04 Charge"
+    name="02 Charge"
     title="One invoice for everything"
     subtitle="subscriptions, credits and usage together"
     description="Combine a base plan, prepaid credits and metered usage on one product. Polar draws credits down first, bills the overage and settles it at the end of the cycle."
@@ -63,7 +63,7 @@ export const Charge = () => (
 export const Understand = () => (
   <Chapter
     id="understand"
-    name="05 Understand"
+    name="04 Understand"
     title="Know your margin"
     subtitle="for every customer, not just on average"
     description="Attach the inference cost to the events you already send. Polar collects the revenue, so it can put the two side by side and show the customer burning more than they pay."
@@ -87,7 +87,7 @@ export const SellAnywhere = () => (
 export const Agents = () => (
   <Chapter
     id="agents"
-    name="07 Agents"
+    name="05 Agents"
     title="Run billing from your agent"
     subtitle="Polar in Claude, Cursor and ChatGPT over MCP"
     description="Connect the Polar MCP server and ask your agent about customers, usage and revenue, or have it create products, discounts and refunds. Signed in with OAuth, no API keys to paste."

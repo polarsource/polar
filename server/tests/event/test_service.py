@@ -275,6 +275,46 @@ class TestList:
 
         assert events[0].id == event1.id
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_metadata_filter_system_meter_id(
+        self,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        meter_id = str(uuid.uuid4())
+        event1 = await create_event(
+            buffered_save_fixture,
+            organization=organization,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"meter_id": meter_id, "units": 10, "rollover": False},
+        )
+        await create_event(
+            buffered_save_fixture,
+            organization=organization,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"meter_id": str(uuid.uuid4()), "units": 10, "rollover": False},
+        )
+        await flush_tinybird_events()
+
+        events, count = await event_service.list(
+            session,
+            auth_subject,
+            metadata={"meter_id": [meter_id]},
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert count == 1
+        assert [event.id for event in events] == [event1.id]
+
 
 @pytest.mark.anyio
 class TestGet:

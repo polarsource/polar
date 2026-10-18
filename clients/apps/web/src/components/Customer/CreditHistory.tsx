@@ -1,25 +1,19 @@
 'use client'
 
+import FormattedUnits from '@/components/Meter/FormattedUnits'
 import { useEvents } from '@/hooks/queries/events'
 import { schemas } from '@polar-sh/client'
-import {
-  DataTable,
-  DataTablePaginationState,
-  Status,
-  Text,
-} from '@polar-sh/orbit'
+import { DataTable, DataTablePaginationState, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { useState } from 'react'
 
-const creditSource = ({ metadata }: schemas['MeterCreditEvent']) => {
+const describeCredit = ({ metadata }: schemas['MeterCreditEvent']) => {
   const manual = metadata.reason === 'manual'
   if (metadata.units < 0) {
-    return { label: manual ? 'Reversed' : 'Revoked', color: 'red' } as const
+    return manual ? 'Manual credit reversed' : 'Benefit revoked'
   }
-  return manual
-    ? ({ label: 'Manual', color: 'purple' } as const)
-    : ({ label: 'Benefit', color: 'blue' } as const)
+  return manual ? 'Manual credit' : 'Benefit credit'
 }
 
 export const CreditHistory = ({
@@ -66,33 +60,36 @@ export const CreditHistory = ({
         onPaginationChange={setPagination}
         rowCount={pageInfo?.total_count ?? 0}
         pageCount={pageInfo?.max_page ?? 1}
+        className="text-sm"
         columns={[
           {
             id: 'timestamp',
             header: 'Date',
             cell: ({ row }) => (
-              <FormattedDateTime
-                datetime={row.original.timestamp}
-                resolution="time"
-              />
+              <Text tabularNums>
+                <FormattedDateTime
+                  datetime={row.original.timestamp}
+                  resolution="time"
+                />
+              </Text>
             ),
           },
           {
-            id: 'source',
-            header: 'Source',
-            cell: ({ row }) => {
-              const { label, color } = creditSource(row.original)
-              return <Status status={label} color={color} size="small" />
-            },
+            id: 'description',
+            header: 'Description',
+            cell: ({ row }) => describeCredit(row.original),
           },
           {
             id: 'rollover',
             header: 'At period end',
-            cell: ({ row }) => (
-              <Text color="muted">
-                {row.original.metadata.rollover ? 'Carry over' : 'Expire'}
-              </Text>
-            ),
+            cell: ({ row: { original } }) =>
+              original.metadata.units < 0 ? (
+                <Text color="disabled">—</Text>
+              ) : (
+                <Text color="muted">
+                  {original.metadata.rollover ? 'Carry over' : 'Expire'}
+                </Text>
+              ),
           },
           {
             id: 'units',
@@ -100,9 +97,7 @@ export const CreditHistory = ({
             cell: ({ row }) => (
               <Box justifyContent="end">
                 <Text tabularNums>
-                  {row.original.metadata.units.toLocaleString('en-US', {
-                    signDisplay: 'exceptZero',
-                  })}
+                  <FormattedUnits value={row.original.metadata.units} />
                 </Text>
               </Box>
             ),

@@ -38,7 +38,7 @@ class BenefitMeterCreditService(
         meter_id = uuid.UUID(properties["meter_id"])
         return await self._create_event(
             customer,
-            benefit.organization,
+            benefit,
             meter_id=meter_id,
             units=properties["units"],
             rollover=properties["rollover"],
@@ -109,7 +109,7 @@ class BenefitMeterCreditService(
 
         return await self._create_event(
             customer,
-            benefit.organization,
+            benefit,
             meter_id=meter_id,
             units=properties["units"],
             rollover=properties["rollover"],
@@ -134,7 +134,7 @@ class BenefitMeterCreditService(
         units = -grant_properties.get("last_credited_units", properties["units"])
         return await self._create_event(
             customer,
-            benefit.organization,
+            benefit,
             meter_id=uuid.UUID(meter_id),
             units=units,
             rollover=properties["rollover"],
@@ -172,7 +172,7 @@ class BenefitMeterCreditService(
     async def _create_event(
         self,
         customer: Customer,
-        organization: Organization,
+        benefit: Benefit,
         *,
         meter_id: uuid.UUID,
         units: int,
@@ -183,12 +183,13 @@ class BenefitMeterCreditService(
             build_system_event(
                 SystemEvent.meter_credited,
                 customer=customer,
-                organization=organization,
+                organization=benefit.organization,
                 metadata={
                     "meter_id": str(meter_id),
                     "units": units,
                     "rollover": rollover,
                     "reason": "benefit",
+                    "benefit_id": str(benefit.id),
                 },
             ),
         )

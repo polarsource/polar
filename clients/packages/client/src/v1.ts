@@ -27480,6 +27480,8 @@ export interface components {
        * @enum {string}
        */
       reason: 'benefit' | 'manual'
+      /** Benefit Id */
+      benefit_id?: string
     }
     /** MeterQuantities */
     MeterQuantities: {

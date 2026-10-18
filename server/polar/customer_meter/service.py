@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -13,6 +13,7 @@ from sqlalchemy.orm.strategy_options import contains_eager
 from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission, get_accessible_org_ids
+from polar.billing_entry.repository import BillingEntryRepository
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer_session.service import AmbiguousExternalCustomerID
@@ -23,7 +24,7 @@ from polar.event.system import (
     SystemEvent,
     build_system_event,
 )
-from polar.exceptions import PolarError, PolarRequestValidationError
+from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
 from polar.kit.db.locking import is_lock_not_available_error
 from polar.kit.math import non_negative_running_sum
 from polar.kit.pagination import PaginationParams
@@ -35,7 +36,7 @@ from polar.meter.aggregation import (
     UniqueAggregation,
 )
 from polar.meter.repository import MeterRepository
-from polar.models import Customer, CustomerMeter, Event, Meter
+from polar.models import BillingEntry, Customer, CustomerMeter, Event, Meter
 from polar.models.event import EventSource
 from polar.outpost.stream import enqueue as enqueue_outpost_event
 from polar.postgres import AsyncSession
@@ -51,6 +52,11 @@ from .sorting import CustomerMeterSortProperty
 class CustomerMeterCreditExternalIDConflict(PolarError):
     def __init__(self) -> None:
         super().__init__("This external_id is already used by a different event.", 409)
+
+
+class CustomerMeterCreditNotReversible(PolarError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message, 409)
 
 
 class CustomerMeterService:
@@ -360,6 +366,110 @@ class CustomerMeterService:
                 await customer_meter_repository.update(
                     customer_meter, update_dict={"activated_at": utc_now()}
                 )
+
+        loaded = await event_repository.get_by_id_with_eager(event.id)
+        assert loaded is not None
+        return loaded
+
+    async def reverse_credit(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: uuid.UUID,
+    ) -> Event:
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        event_repository = EventRepository.from_session(session)
+        credit = await event_repository.get_reversible_meter_credit(id, org_ids)
+        if credit is None or credit.customer is None:
+            raise ResourceNotFound()
+
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            credit.organization_id,
+            OrganizationPermission.customers_manage,
+        )
+
+        if credit.timestamp < utc_now() - timedelta(days=7):
+            raise CustomerMeterCreditNotReversible(
+                "Credits can only be reversed within 7 days."
+            )
+
+        customer = credit.customer
+        meter = await MeterRepository.from_session(session).get_by_id(
+            uuid.UUID(credit.user_metadata["meter_id"])
+        )
+        if meter is None:
+            raise ResourceNotFound()
+
+        try:
+            await self.update_customer_meter(
+                session, customer, meter, activate_meter=True
+            )
+        except DBAPIError as e:
+            if not is_lock_not_available_error(e):
+                raise
+            raise CustomerMeterCreditNotReversible(
+                "This customer meter is being updated. Try again shortly."
+            ) from e
+
+        # Checked after locking the meter so a cycle committed concurrently is seen.
+        meter_reset = await event_repository.get_latest_meter_reset(customer, meter.id)
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        invoiced_entry = await billing_entry_repository.get_one_or_none(
+            billing_entry_repository.get_base_statement()
+            .where(
+                BillingEntry.event_id == credit.id,
+                BillingEntry.order_item_id.is_not(None),
+            )
+            .limit(1)
+        )
+        if invoiced_entry is not None or (
+            meter_reset is not None and credit.ingested_at < meter_reset.timestamp
+        ):
+            raise CustomerMeterCreditNotReversible(
+                "Credits from a previous billing period can't be reversed."
+            )
+
+        if await event_repository.get_meter_credit_reversal(credit) is not None:
+            raise CustomerMeterCreditNotReversible(
+                "These credits have already been reversed."
+            )
+
+        # customer_meter.balance can be stale, it only refreshes when a recent event arrives.
+        credited_units = non_negative_running_sum(
+            event.user_metadata["units"]
+            for event in await self._get_credit_events(
+                customer, meter, event_repository
+            )
+        )
+        usage_units = await self._get_usage_quantity(session, customer, meter)
+        balance = credited_units - Decimal(usage_units)
+        units = min(credit.user_metadata["units"], max(int(balance), 0))
+        if units == 0:
+            raise CustomerMeterCreditNotReversible(
+                "These credits have already been used."
+            )
+
+        event = build_system_event(
+            SystemEvent.meter_credited,
+            customer=customer,
+            organization=customer.organization,
+            metadata={
+                "meter_id": str(meter.id),
+                "units": -units,
+                "rollover": credit.user_metadata["rollover"],
+                "reason": "manual",
+                "reversed_event_id": str(credit.id),
+            },
+        )
+        await event_service.create_event(session, event)
+
+        _, updated = await self.update_customer_meter(
+            session, customer, meter, activate_meter=True
+        )
+        if updated:
+            enqueue_job("customer.state_changed", customer.id)
 
         loaded = await event_repository.get_by_id_with_eager(event.id)
         assert loaded is not None

@@ -1,4 +1,5 @@
 import uuid
+from datetime import timedelta
 from decimal import Decimal
 
 import pytest
@@ -7,20 +8,34 @@ from pytest_mock import MockerFixture
 from sqlalchemy.exc import DBAPIError
 
 from polar.customer_meter.repository import CustomerMeterRepository
+from polar.enums import SubscriptionRecurringInterval
 from polar.event.system import SystemEvent
+from polar.kit.utils import utc_now
 from polar.models import (
+    BillingEntry,
     Customer,
     CustomerMeter,
+    Event,
     Meter,
+    OrderItem,
     Organization,
     User,
     UserOrganization,
 )
+from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
+from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from polar.version import V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_event, create_meter
+from tests.fixtures.random_objects import (
+    create_active_subscription,
+    create_event,
+    create_meter,
+    create_order,
+    create_product,
+    create_product_price_metered_unit,
+)
 
 
 @pytest.fixture
@@ -398,3 +413,319 @@ class TestCreditCustomerMeter:
 
         assert response.status_code == 409
         assert response.json()["error"] == "CustomerMeterCreditExternalIDConflict"
+
+
+class TestReverseCustomerMeterCredit:
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_reverses_unused_units(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        credit = await client.post(
+            "/v1/customer-meters/credits",
+            json={
+                "customer_id": str(customer.id),
+                "meter_id": str(meter.id),
+                "units": 5,
+            },
+        )
+        credit_id = uuid.UUID(credit.json()["id"])
+        for parent_id in (credit_id, None, None):
+            await create_event(
+                save_fixture,
+                organization=organization,
+                customer=customer,
+                parent_id=parent_id,
+            )
+
+        response = await client.post(f"/v1/customer-meters/credits/{credit_id}/reverse")
+
+        assert response.status_code == 201
+        json = response.json()
+        assert json["parent_id"] is None
+        assert json["metadata"]["units"] == -2
+        assert json["metadata"]["reversed_event_id"] == str(credit_id)
+        reversal = await session.get(Event, uuid.UUID(json["id"]))
+        assert reversal is not None
+        assert reversal.parent_id is None
+        assert reversal.root_id == reversal.id
+        customer_meter = await CustomerMeterRepository.from_session(
+            session
+        ).get_by_customer_and_meter(customer.id, meter.id)
+        assert customer_meter is not None
+        assert customer_meter.balance == 0
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_already_reversed(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        credit = await client.post(
+            "/v1/customer-meters/credits",
+            json={
+                "customer_id": str(customer.id),
+                "meter_id": str(meter.id),
+                "units": 5,
+            },
+        )
+        await client.post(
+            "/v1/customer-meters/credits",
+            json={
+                "customer_id": str(customer.id),
+                "meter_id": str(meter.id),
+                "units": 5,
+            },
+        )
+        url = f"/v1/customer-meters/credits/{credit.json()['id']}/reverse"
+
+        assert (await client.post(url)).status_code == 201
+        response = await client.post(url)
+        assert response.status_code == 409
+        assert response.json()["detail"] == "These credits have already been reversed."
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_already_used(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        credit = await client.post(
+            "/v1/customer-meters/credits",
+            json={
+                "customer_id": str(customer.id),
+                "meter_id": str(meter.id),
+                "units": 5,
+            },
+        )
+        for _ in range(5):
+            await create_event(
+                save_fixture, organization=organization, customer=customer
+            )
+
+        response = await client.post(
+            f"/v1/customer-meters/credits/{credit.json()['id']}/reverse"
+        )
+
+        assert response.status_code == 409
+        assert response.json()["detail"] == "These credits have already been used."
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_older_than_7_days(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        credit = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            timestamp=utc_now() - timedelta(days=8),
+            metadata={
+                "meter_id": str(meter.id),
+                "units": 5,
+                "rollover": False,
+                "reason": "manual",
+            },
+        )
+
+        response = await client.post(f"/v1/customer-meters/credits/{credit.id}/reverse")
+
+        assert response.status_code == 409
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_benefit_credit(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        credit = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"meter_id": str(meter.id), "units": 5, "rollover": False},
+        )
+
+        response = await client.post(f"/v1/customer-meters/credits/{credit.id}/reverse")
+
+        assert response.status_code == 404
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_already_invoiced(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[],
+        )
+        price = await create_product_price_metered_unit(
+            save_fixture, product=product, meter=meter
+        )
+        product.prices.append(price)
+        product.all_prices.append(price)
+        subscription = await create_active_subscription(
+            save_fixture, customer=customer, product=product
+        )
+        credit = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={
+                "meter_id": str(meter.id),
+                "units": 5,
+                "rollover": False,
+                "reason": "manual",
+            },
+        )
+        order_item = OrderItem(
+            label="", amount=0, net_amount=0, tax_amount=0, product_price=price
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            subscription=subscription,
+            order_items=[order_item],
+        )
+        await save_fixture(
+            BillingEntry(
+                start_timestamp=credit.timestamp,
+                end_timestamp=credit.timestamp,
+                type=BillingEntryType.metered,
+                direction=BillingEntryDirection.debit,
+                customer=customer,
+                product_price=price,
+                subscription=subscription,
+                event=credit,
+                order_item=order_item,
+            )
+        )
+
+        response = await client.post(f"/v1/customer-meters/credits/{credit.id}/reverse")
+
+        assert response.status_code == 409
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_previous_period(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        credit = await client.post(
+            "/v1/customer-meters/credits",
+            json={
+                "customer_id": str(customer.id),
+                "meter_id": str(meter.id),
+                "units": 5,
+            },
+        )
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_reset,
+            timestamp=utc_now() + timedelta(seconds=1),
+            metadata={"meter_id": str(meter.id)},
+        )
+
+        response = await client.post(
+            f"/v1/customer-meters/credits/{credit.json()['id']}/reverse"
+        )
+
+        assert response.status_code == 409
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_stale_stored_balance(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        four_hours_ago = utc_now() - timedelta(hours=4)
+        credit = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            timestamp=four_hours_ago,
+            ingested_at=four_hours_ago,
+            metadata={
+                "meter_id": str(meter.id),
+                "units": 5,
+                "rollover": False,
+                "reason": "manual",
+            },
+        )
+        await save_fixture(
+            CustomerMeter(
+                customer=customer,
+                meter=meter,
+                activated_at=four_hours_ago,
+                credited_units=5,
+                balance=Decimal(5),
+                last_balanced_event=credit,
+            )
+        )
+        for _ in range(3):
+            await create_event(
+                save_fixture,
+                organization=organization,
+                customer=customer,
+                timestamp=four_hours_ago + timedelta(minutes=1),
+                ingested_at=four_hours_ago + timedelta(minutes=1),
+            )
+
+        response = await client.post(f"/v1/customer-meters/credits/{credit.id}/reverse")
+
+        assert response.status_code == 201
+        assert response.json()["metadata"]["units"] == -2

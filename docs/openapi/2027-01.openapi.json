@@ -26213,6 +26213,124 @@
         ]
       }
     },
+    "/v1/customer-meters/credits/{id}/reverse": {
+      "post": {
+        "tags": [
+          "customer_meters",
+          "public",
+          "mcp",
+          "cli"
+        ],
+        "summary": "Reverse Customer Meter Credit",
+        "description": "Reverse a manual credit, removing the units the customer hasn't used yet.\n\nWorks once per credit, within 7 days and in the current billing period.\nReturns a `meter.credited` event with negative units and\n`metadata.reversed_event_id` set to the reversed credit.\n\n**Scopes**: `customers:write`",
+        "operationId": "customer_meters:reverse_credit",
+        "security": [
+          {
+            "oidc": [
+              "customers:write"
+            ]
+          },
+          {
+            "pat": [
+              "customers:write"
+            ]
+          },
+          {
+            "oat": [
+              "customers:write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The ID of the `meter.credited` event returned when the credit was granted.",
+              "title": "Id"
+            },
+            "description": "The ID of the `meter.credited` event returned when the credit was granted."
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Credit reversed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeterCreditEvent"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "You don't have permission to manage customers.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotPermitted"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Manual credit not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The credit can't be reversed, or the customer meter is being updated: retry shortly.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerMeterCreditNotReversible"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-tool-name": "customer_meters_reverse_credit",
+        "x-tool-title": "Reverse Customer Meter Credit",
+        "x-tool-description": "Reverse a credit granted with Credit Customer Meter.\n\nRemoves the credited units the customer hasn't used yet. Only credits from the\nlast 7 days and the current billing period can be reversed, once. Returns the\nreversal: a `meter.credited` event with negative units, whose\n`metadata.reversed_event_id` is the reversed credit.",
+        "x-tool-annotations": [
+          "destructive"
+        ],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "customer_meters",
+        "x-speakeasy-name-override": "reverse_credit",
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_meters.reverse_credit(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+          },
+          {
+            "lang": "typescript",
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerMeters.reverseCredit(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
+          }
+        ]
+      }
+    },
     "/v1/payments/": {
       "get": {
         "tags": [
@@ -50038,6 +50156,28 @@
         ],
         "title": "CustomerMeterCreditExternalIDConflict"
       },
+      "CustomerMeterCreditNotReversible": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "CustomerMeterCreditNotReversible",
+            "title": "Error",
+            "examples": [
+              "CustomerMeterCreditNotReversible"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "CustomerMeterCreditNotReversible"
+      },
       "CustomerMeterCreditsExternalIDCreate": {
         "properties": {
           "units": {
@@ -64309,6 +64449,10 @@
             ],
             "title": "Reason",
             "default": "benefit"
+          },
+          "reversed_event_id": {
+            "type": "string",
+            "title": "Reversed Event Id"
           }
         },
         "type": "object",

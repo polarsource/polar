@@ -105,6 +105,7 @@ class MeterCreditedMetadata(TypedDict):
         Field(default="benefit"),
         Version(starting_from=V2027_01),
     ]
+    reversed_event_id: Annotated[NotRequired[str], Version(starting_from=V2027_01)]
 
 
 class MeterCreditedEvent(Event):

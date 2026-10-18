@@ -147,7 +147,7 @@ async def _flush(
 
 
 async def _get_organization_ids(
-    session: AsyncSession, organization_id: UUID | None
+    session: AsyncSession, organization_id: UUID | None, after: UUID | None
 ) -> Sequence[UUID]:
     """The organizations with active reducers, or the given one."""
     if organization_id is not None:
@@ -159,6 +159,8 @@ async def _get_organization_ids(
         .distinct()
         .order_by(Reducer.organization_id)
     )
+    if after is not None:
+        statement = statement.where(Reducer.organization_id > after)
     return (await session.scalars(statement)).all()
 
 
@@ -440,7 +442,10 @@ async def _insert_buckets(session: AsyncSession, buckets: list[BucketValues]) ->
 @cli.command()
 @typer_async
 async def backfill(
-    start: datetime, end: datetime, organization_id: UUID | None = None
+    start: datetime,
+    end: datetime,
+    organization_id: UUID | None = None,
+    after_organization_id: UUID | None = None,
 ) -> None:
     """Rebuild usage and billing buckets, excluding the latest ten minutes."""
     # Whole buckets only: a window ending inside a bucket would rebuild it from
@@ -455,7 +460,9 @@ async def backfill(
     try:
         async with sessionmaker() as session:
             typer.echo(f"Backfilling [{start.isoformat()}, {end.isoformat()})")
-            for id in await _get_organization_ids(session, organization_id):
+            for id in await _get_organization_ids(
+                session, organization_id, after_organization_id
+            ):
                 written = await backfill_organization(session, id, start, end)
                 typer.echo(f"Organization {id}: {written} buckets")
     finally:

@@ -1,6 +1,7 @@
 'use client'
 
 import { AddCreditsButton } from '@/components/Customer/AddCredits/AddCreditsButton'
+import { CreditHistory } from '@/components/Customer/CreditHistory'
 import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import DateRangePicker, {
   DateRangeInterval,
@@ -286,6 +287,11 @@ const CustomerMeterPage = ({
             </span>
           </div>
         </ShadowBox>
+        <CreditHistory
+          organization={organization}
+          customer={customer}
+          meter={meter}
+        />
         <div className="flex flex-col gap-y-6">
           <h2 className="text-xl">Activity</h2>
           <CustomerMeterActivityCards meter={meter} customer={customer} />

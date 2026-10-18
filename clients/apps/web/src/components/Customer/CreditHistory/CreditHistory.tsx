@@ -1,39 +1,18 @@
 'use client'
 
-import FormattedUnits from '@/components/Meter/FormattedUnits'
+import Pagination from '@/components/Pagination/Pagination'
 import { useBenefits } from '@/hooks/queries/benefits'
-import { useInfiniteEvents } from '@/hooks/queries/events'
+import { useEvents } from '@/hooks/queries/events'
 import { schemas } from '@polar-sh/client'
-import { Button, List, Text } from '@polar-sh/orbit'
+import { List, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { useMemo, useState } from 'react'
-import { CreditPeriod, groupCreditsByPeriod } from './creditPeriods'
+import { useSearchParams } from 'next/navigation'
+import { useState } from 'react'
 import { CreditRow } from './CreditRow'
 
+const PAGE_SIZE = 20
 // Mirrors the reversal endpoint's window; the server enforces the other rules.
 const REVERSIBLE_FOR_MS = 7 * 24 * 60 * 60 * 1000
-
-const PeriodLabel = ({ period }: { period: CreditPeriod }) => {
-  const start =
-    period.start ?? period.rows[period.rows.length - 1].credit.timestamp
-  if (period.end === null) {
-    return (
-      <Text variant="label">
-        Current period{' '}
-        <Text as="span" color="muted">
-          · since <FormattedDateTime datetime={start} />
-        </Text>
-      </Text>
-    )
-  }
-  return (
-    <Text variant="label" color="muted">
-      <FormattedDateTime datetime={start} /> –{' '}
-      <FormattedDateTime datetime={period.end} />
-    </Text>
-  )
-}
 
 export const CreditHistory = ({
   organization,
@@ -44,72 +23,58 @@ export const CreditHistory = ({
   customer: schemas['Customer']
   meter: schemas['Meter']
 }) => {
+  const searchParams = useSearchParams()
+  const [page, setPage] = useState(1)
   const [reversibleSince] = useState(() => Date.now() - REVERSIBLE_FOR_MS)
-  const { data, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useInfiniteEvents(organization.id, {
-      name: ['meter.credited', 'meter.reset'],
-      customer_id: customer.id,
-      metadata: { meter_id: meter.id },
-      limit: 50,
-    })
+  const { data } = useEvents(organization.id, {
+    name: 'meter.credited',
+    customer_id: customer.id,
+    metadata: { meter_id: meter.id },
+    page,
+    limit: PAGE_SIZE,
+  })
   const { data: benefits } = useBenefits(organization.id, {
     type: 'meter_credit',
     limit: 100,
   })
-  const periods = useMemo(
-    () =>
-      groupCreditsByPeriod(
-        (data?.pages.flatMap((page) => page.items) ?? []).filter(
-          (
-            event,
-          ): event is
-            | schemas['MeterCreditEvent']
-            | schemas['MeterResetEvent'] =>
-            event.name === 'meter.credited' || event.name === 'meter.reset',
-        ),
-      ),
-    [data],
+  const credits = (data?.items ?? []).filter(
+    (event): event is schemas['MeterCreditEvent'] =>
+      event.name === 'meter.credited',
+  )
+  const reversedIds = new Set(
+    credits.map((credit) => credit.metadata.reversed_event_id),
   )
 
-  if (periods.length === 0) return null
+  if (credits.length === 0) return null
 
   return (
     <Box flexDirection="column" rowGap="l">
       <Text variant="heading-xxs" as="h3">
         Credit history
       </Text>
-      {periods.map((period) => (
-        <Box key={period.end ?? 'current'} flexDirection="column" rowGap="s">
-          <Box justifyContent="between" paddingHorizontal="l">
-            <PeriodLabel period={period} />
-            <Text color="muted" tabularNums>
-              <FormattedUnits value={period.total} /> credited
-            </Text>
-          </Box>
-          <List size="small">
-            {period.rows.map((row) => (
-              <CreditRow
-                key={row.credit.id}
-                row={row}
-                benefits={benefits?.items ?? []}
-                reversibleSince={reversibleSince}
-              />
-            ))}
-          </List>
-        </Box>
-      ))}
-      {hasNextPage && (
-        <Box justifyContent="center">
-          <Button
-            variant="secondary"
-            size="sm"
-            loading={isFetchingNextPage}
-            onClick={() => fetchNextPage()}
-          >
-            Show more
-          </Button>
-        </Box>
-      )}
+      <Pagination
+        currentPage={page}
+        pageSize={PAGE_SIZE}
+        totalCount={
+          data && 'total_count' in data.pagination
+            ? data.pagination.total_count
+            : 0
+        }
+        currentURL={searchParams}
+        onPageChange={setPage}
+      >
+        <List size="small">
+          {credits.map((credit) => (
+            <CreditRow
+              key={credit.id}
+              credit={credit}
+              benefits={benefits?.items ?? []}
+              reversed={reversedIds.has(credit.id)}
+              reversibleSince={reversibleSince}
+            />
+          ))}
+        </List>
+      </Pagination>
     </Box>
   )
 }

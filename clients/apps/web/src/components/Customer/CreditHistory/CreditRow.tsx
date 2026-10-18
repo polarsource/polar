@@ -5,7 +5,7 @@ import { schemas } from '@polar-sh/client'
 import { ListItem, Pill, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { ReverseCreditMenu } from './ReverseCreditMenu'
+import { ReverseCreditButton } from './ReverseCreditButton'
 
 const describeSource = (
   { metadata }: schemas['MeterCreditEvent'],
@@ -70,8 +70,8 @@ export const CreditRow = ({
             <FormattedUnits value={units} />
           </Text>
         </Box>
-        <Box width={32} marginVertical="-s" justifyContent="end">
-          {reversible && <ReverseCreditMenu credit={credit} />}
+        <Box width={84} marginVertical="-s" justifyContent="end">
+          {reversible && <ReverseCreditButton credit={credit} />}
         </Box>
       </Box>
     </ListItem>

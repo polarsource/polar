@@ -372,7 +372,7 @@ export const DesignPartnerForm = () => {
         disabled={status === 'submitting' || status === 'success'}
         className="my-8"
       >
-        {status === 'success' ? 'Application Sent' : 'Become a design partner'}
+        {status === 'success' ? 'Application Sent' : 'Submit for review'}
       </Button>
       {status === 'error' && (
         <Text variant="caption" color="danger">

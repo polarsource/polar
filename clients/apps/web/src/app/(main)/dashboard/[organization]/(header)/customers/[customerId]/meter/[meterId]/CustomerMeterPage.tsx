@@ -1,7 +1,7 @@
 'use client'
 
 import { AddCreditsButton } from '@/components/Customer/AddCredits/AddCreditsButton'
-import { CreditHistory } from '@/components/Customer/CreditHistory'
+import { CreditHistory } from '@/components/Customer/CreditHistory/CreditHistory'
 import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import DateRangePicker, {
   DateRangeInterval,

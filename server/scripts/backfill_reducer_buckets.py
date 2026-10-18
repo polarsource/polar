@@ -455,7 +455,7 @@ async def backfill(
     end: datetime,
     organization_id: UUID | None = None,
     after_organization_id: UUID | None = None,
-    page_size: int = PAGE_SIZE,
+    page_size: int = typer.Option(PAGE_SIZE, min=1),
 ) -> None:
     """Rebuild usage and billing buckets, excluding the latest ten minutes."""
     # Whole buckets only: a window ending inside a bucket would rebuild it from

@@ -1,19 +1,59 @@
 'use client'
 
 import FormattedUnits from '@/components/Meter/FormattedUnits'
+import Pagination from '@/components/Pagination/Pagination'
+import { useBenefits } from '@/hooks/queries/benefits'
 import { useEvents } from '@/hooks/queries/events'
 import { schemas } from '@polar-sh/client'
-import { DataTable, DataTablePaginationState, Text } from '@polar-sh/orbit'
+import { List, ListItem, Pill, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import { useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 
-const describeCredit = ({ metadata }: schemas['MeterCreditEvent']) => {
-  const manual = metadata.reason === 'manual'
-  if (metadata.units < 0) {
-    return manual ? 'Manual credit reversed' : 'Benefit revoked'
-  }
-  return manual ? 'Manual credit' : 'Benefit credit'
+const PAGE_SIZE = 20
+
+const CreditListItem = ({
+  credit,
+  benefits,
+}: {
+  credit: schemas['MeterCreditEvent']
+  benefits: schemas['Benefit'][]
+}) => {
+  const { reason, units, rollover, benefit_id } = credit.metadata
+  const manual = reason === 'manual'
+  const title = manual
+    ? 'Manual credit'
+    : (benefits.find((benefit) => benefit.id === benefit_id)?.description ??
+      'Benefit credit')
+
+  return (
+    <ListItem className="text-sm">
+      <Box alignItems="center" columnGap="s" minWidth={0}>
+        <span className="truncate">{title}</span>
+        {units < 0 && (
+          <Pill color="red" className="shrink-0 px-2 py-0.5 text-xs">
+            {manual ? 'Reversed' : 'Revoked'}
+          </Pill>
+        )}
+      </Box>
+      <Box alignItems="center" columnGap="xl" flexShrink={0}>
+        {rollover && units > 0 && (
+          <Pill color="gray" className="hidden px-2 py-0.5 text-xs md:block">
+            Carries over
+          </Pill>
+        )}
+        <Text color="muted" tabularNums>
+          <FormattedDateTime datetime={credit.timestamp} resolution="time" />
+        </Text>
+        <Box width={88} justifyContent="end">
+          <Text tabularNums>
+            <FormattedUnits value={units} />
+          </Text>
+        </Box>
+      </Box>
+    </ListItem>
+  )
 }
 
 export const CreditHistory = ({
@@ -25,23 +65,25 @@ export const CreditHistory = ({
   customer: schemas['Customer']
   meter: schemas['Meter']
 }) => {
-  const [pagination, setPagination] = useState<DataTablePaginationState>({
-    pageIndex: 0,
-    pageSize: 20,
-  })
-  const { data, isLoading } = useEvents(organization.id, {
+  const searchParams = useSearchParams()
+  const [page, setPage] = useState(1)
+  const { data } = useEvents(organization.id, {
     name: 'meter.credited',
     customer_id: customer.id,
     metadata: { meter_id: meter.id },
-    page: pagination.pageIndex + 1,
-    limit: pagination.pageSize,
+    page,
+    limit: PAGE_SIZE,
   })
-  const pageInfo =
-    data && 'max_page' in data.pagination ? data.pagination : null
+  const { data: benefits } = useBenefits(organization.id, {
+    type: 'meter_credit',
+    limit: 100,
+  })
   const credits = (data?.items ?? []).filter(
     (event): event is schemas['MeterCreditEvent'] =>
       event.name === 'meter.credited',
   )
+
+  if (credits.length === 0) return null
 
   return (
     <Box flexDirection="column" rowGap="l">
@@ -53,57 +95,27 @@ export const CreditHistory = ({
           Credits granted by benefits and added manually
         </Text>
       </Box>
-      <DataTable
-        isLoading={isLoading}
-        data={credits}
-        pagination={pagination}
-        onPaginationChange={setPagination}
-        rowCount={pageInfo?.total_count ?? 0}
-        pageCount={pageInfo?.max_page ?? 1}
-        className="text-sm"
-        columns={[
-          {
-            id: 'timestamp',
-            header: 'Date',
-            cell: ({ row }) => (
-              <Text tabularNums>
-                <FormattedDateTime
-                  datetime={row.original.timestamp}
-                  resolution="time"
-                />
-              </Text>
-            ),
-          },
-          {
-            id: 'description',
-            header: 'Description',
-            cell: ({ row }) => describeCredit(row.original),
-          },
-          {
-            id: 'rollover',
-            header: 'At period end',
-            cell: ({ row: { original } }) =>
-              original.metadata.units < 0 ? (
-                <Text color="disabled">—</Text>
-              ) : (
-                <Text color="muted">
-                  {original.metadata.rollover ? 'Carry over' : 'Expire'}
-                </Text>
-              ),
-          },
-          {
-            id: 'units',
-            header: () => <Box justifyContent="end">Credits</Box>,
-            cell: ({ row }) => (
-              <Box justifyContent="end">
-                <Text tabularNums>
-                  <FormattedUnits value={row.original.metadata.units} />
-                </Text>
-              </Box>
-            ),
-          },
-        ]}
-      />
+      <Pagination
+        currentPage={page}
+        pageSize={PAGE_SIZE}
+        totalCount={
+          data && 'total_count' in data.pagination
+            ? data.pagination.total_count
+            : 0
+        }
+        currentURL={searchParams}
+        onPageChange={setPage}
+      >
+        <List size="small">
+          {credits.map((credit) => (
+            <CreditListItem
+              key={credit.id}
+              credit={credit}
+              benefits={benefits?.items ?? []}
+            />
+          ))}
+        </List>
+      </Pagination>
     </Box>
   )
 }

@@ -79,7 +79,12 @@ unbilled usage under None."""
 
 
 async def backfill_organization(
-    session: AsyncSession, organization_id: UUID, start: datetime, end: datetime
+    session: AsyncSession,
+    organization_id: UUID,
+    start: datetime,
+    end: datetime,
+    *,
+    page_size: int = PAGE_SIZE,
 ) -> int:
     """Rebuilds the buckets of all the organization's reducers starting in
     [start, end) from one pass over its events, and returns how many were written."""
@@ -89,7 +94,9 @@ async def backfill_organization(
     flushed_until = start
     written = 0
     seen = 0
-    async for rows in _iter_events(session, organization_id, reducers, start, end):
+    async for rows in _iter_events(
+        session, organization_id, reducers, start, end, page_size
+    ):
         billed_at = await _get_billed_at(session, _matched_event_ids(rows))
         _add_to_totals(totals, reducers, rows, billed_at, boundaries)
         # The page may end inside a bucket: only the buckets before it are complete.
@@ -115,13 +122,14 @@ async def _iter_events(
     reducers: Sequence[Reducer],
     start: datetime,
     end: datetime,
+    page_size: int,
 ) -> AsyncIterator[Sequence[Row[Any]]]:
     """Pages of the organization's user events with a timestamp in [start, end),
     in (timestamp, id) order."""
     after: tuple[datetime, UUID] | None = None
     while True:
         rows = await _get_events_page(
-            session, organization_id, reducers, start, end, after
+            session, organization_id, reducers, start, end, after, page_size
         )
         if not rows:
             return
@@ -226,8 +234,9 @@ async def _get_events_page(
     start: datetime,
     end: datetime,
     after: tuple[datetime, UUID] | None,
+    page_size: int,
 ) -> Sequence[Row[Any]]:
-    """Up to PAGE_SIZE of the organization's user events with a timestamp in
+    """Up to `page_size` of the organization's user events with a timestamp in
     [start, end) and (timestamp, id) after `after`, in that order: the event's
     id, timestamp and customer identity, then its value for each reducer."""
     statement = (
@@ -246,7 +255,7 @@ async def _get_events_page(
         )
         # Walks ix_events_org_timestamp_id backwards: timestamp DESC, id ASC reversed.
         .order_by(Event.timestamp.asc(), Event.id.desc())
-        .limit(PAGE_SIZE)
+        .limit(page_size)
     )
     if after is not None:
         after_timestamp, after_id = after
@@ -446,6 +455,7 @@ async def backfill(
     end: datetime,
     organization_id: UUID | None = None,
     after_organization_id: UUID | None = None,
+    page_size: int = PAGE_SIZE,
 ) -> None:
     """Rebuild usage and billing buckets, excluding the latest ten minutes."""
     # Whole buckets only: a window ending inside a bucket would rebuild it from
@@ -463,7 +473,9 @@ async def backfill(
             for id in await _get_organization_ids(
                 session, organization_id, after_organization_id
             ):
-                written = await backfill_organization(session, id, start, end)
+                written = await backfill_organization(
+                    session, id, start, end, page_size=page_size
+                )
                 typer.echo(f"Organization {id}: {written} buckets")
     finally:
         await engine.dispose()

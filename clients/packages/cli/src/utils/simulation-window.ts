@@ -20,7 +20,6 @@ const parseDate = (flag: string, value: string) => {
     : Effect.succeed(date)
 }
 
-// shortcut: month and year steps use JS date overflow (Mar 31 - 1m = Mar 3), fine for a replay window.
 const before = (until: Date, amount: number, unit: string) => {
   const date = new Date(until)
   if (unit === 'd') date.setUTCDate(date.getUTCDate() - amount)

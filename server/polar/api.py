@@ -18,6 +18,9 @@ from polar.customer_portal.endpoints import router as customer_portal_router
 from polar.customer_seat.endpoints import router as customer_seat_router
 from polar.customer_session.endpoints import router as customer_session_router
 from polar.declarative_config.endpoints import router as declarative_config_router
+from polar.declarative_config.simulation.endpoints import (
+    router as pricing_simulation_router,
+)
 from polar.discount.endpoints import router as discount_router
 from polar.dispute.endpoints import router as dispute_router
 from polar.email_update.endpoints import router as email_update_router
@@ -57,7 +60,6 @@ from polar.payment.endpoints import router as payment_router
 from polar.payout.endpoints import router as payout_router
 from polar.payout_account.endpoints import router as payout_account_router
 from polar.personal_access_token.endpoints import router as pat_router
-from polar.pricing_simulation.endpoints import router as pricing_simulation_router
 from polar.product.endpoints import router as product_router
 from polar.refund.endpoints import router as refund_router
 from polar.search.endpoints import router as search_router

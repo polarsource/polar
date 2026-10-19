@@ -4,6 +4,7 @@ import { Effect } from 'effect'
 import { Argument, Command, Flag } from 'effect/cli'
 import { ApiRuntime } from '../runtime'
 import {
+  confirm,
   fields,
   data,
   mergeInput,
@@ -16,6 +17,7 @@ type Body = NonNullable<Parameters<Polar['customers']['update']>[1]>
 export const command = Command.make(
   'update',
   {
+    confirm,
     fields,
     path: {
       id: Argument.String('id'),
@@ -82,9 +84,18 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'customers:update',
         method: 'PATCH',
-        requiresConfirmation: false,
-        confirm: false,
+        requiresConfirmation: true,
+        confirm: config.confirm,
         fields: config.fields,
+        preview: {
+          fields: [
+            { key: 'id', label: 'ID' },
+            { key: 'name', label: 'Name' },
+            { key: 'email', label: 'Email' },
+            { key: 'external_id', label: 'External ID' },
+          ],
+          invoke: (client) => client.customers.get(config.path.id),
+        },
         invoke: (client) => client.customers.update(config.path.id, body),
       })
     }),

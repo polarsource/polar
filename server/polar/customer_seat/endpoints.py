@@ -10,7 +10,7 @@ from polar.eventstream.service import Receivers
 from polar.exceptions import BadRequest, ResourceNotFound
 from polar.models import CustomerSeat, Order, Subscription
 from polar.models.customer_seat import SeatStatus
-from polar.openapi import APITag
+from polar.openapi import APITag, open_world
 from polar.order.repository import OrderRepository
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession, get_db_session
@@ -39,6 +39,7 @@ router = APIRouter(
 @router.post(
     "",
     summary="Assign Seat",
+    openapi_extra=open_world(),
     tags=[APITag.mcp, APITag.cli],
     response_model=CustomerSeatSchema,
     responses={
@@ -207,6 +208,7 @@ async def revoke_seat(
 @router.post(
     "/{seat_id}/resend",
     summary="Resend Invitation",
+    openapi_extra=open_world(),
     tags=[APITag.mcp, APITag.cli],
     response_model=CustomerSeatSchema,
     responses={
@@ -240,7 +242,7 @@ async def resend_invitation(
 @router.get(
     "/claim/{invitation_token}",
     summary="Get Claim Info",
-    tags=[APITag.mcp, APITag.cli],
+    tags=[APITag.cli],
     response_model=SeatClaimInfo,
     responses={
         400: {"description": "Invalid or expired invitation token"},
@@ -311,7 +313,7 @@ async def claim_stream(
 @router.post(
     "/claim",
     summary="Claim Seat",
-    tags=[APITag.mcp, APITag.cli],
+    tags=[APITag.cli],
     response_model=CustomerSeatClaimResponse,
     responses={
         400: {"description": "Invalid, expired, or already claimed token"},

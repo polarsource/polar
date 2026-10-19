@@ -405,6 +405,9 @@ route, or `json_schema_extra=destructive_when_equals(...)` / `destructive_when_o
 field that makes it destructive. `DELETE` routes already are. This sets `destructive` in
 `x-tool-annotations`, which drives both the CLI confirmation prompt and the MCP `destructiveHint`.
 `tests/test_openapi.py` fails until every MCP or CLI write operation is classified.
+Operations that reach outside the organization, such as calling a webhook URL or emailing a customer,
+are marked with `openapi_extra=open_world()`, which drives the MCP `openWorldHint`. Combine it with
+`destructive()` as `openapi_extra={**destructive(), **open_world()}`.
 
 ## Tax ID Validation
 

@@ -9,7 +9,7 @@ from polar.kit.schemas import MultipleQueryFilter, SetSchemaReference
 from polar.kit.versioning import version
 from polar.models import WebhookEndpoint
 from polar.models.webhook_endpoint import WebhookEventType
-from polar.openapi import APITag, cli_preview, destructive
+from polar.openapi import APITag, cli_preview, destructive, open_world
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
@@ -115,6 +115,7 @@ async def get_webhook_endpoint(
 @router.post(
     "/endpoints",
     response_model=WebhookEndpointSchema,
+    openapi_extra=open_world(),
     status_code=201,
     responses={201: {"description": "Webhook endpoint created."}},
 )
@@ -135,6 +136,7 @@ async def create_webhook_endpoint(
 @router.post(
     "/endpoints",
     name="create_webhook_endpoint",
+    openapi_extra=open_world(),
     response_model=WebhookEndpointSchema,
     status_code=201,
     responses={201: {"description": "Webhook endpoint created."}},
@@ -154,6 +156,7 @@ async def create_webhook_endpoint_v2026_10(
 @router.patch(
     "/endpoints/{id}",
     response_model=WebhookEndpointSchema,
+    openapi_extra=open_world(),
     responses={
         200: {"description": "Webhook endpoint updated."},
         404: WebhookEndpointNotFound,
@@ -183,6 +186,7 @@ async def update_webhook_endpoint(
 @router.patch(
     "/endpoints/{id}",
     name="update_webhook_endpoint",
+    openapi_extra=open_world(),
     response_model=WebhookEndpointSchema,
     responses={
         200: {"description": "Webhook endpoint updated."},
@@ -316,6 +320,7 @@ async def list_webhook_deliveries(
 @router.post(
     "/events/{id}/redeliver",
     status_code=202,
+    openapi_extra=open_world(),
     responses={
         202: {"description": "Webhook event re-delivery scheduled."},
         404: {

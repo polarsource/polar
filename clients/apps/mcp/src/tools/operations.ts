@@ -16,7 +16,7 @@ interface OperationTool {
   name: string
   title: string
   description: string
-  annotations: Array<'read_only' | 'destructive' | 'idempotent'>
+  annotations: Array<'read_only' | 'destructive' | 'idempotent' | 'open_world'>
   method: HttpMethod.HttpMethod
   path: string
   queryParameters: string[]
@@ -31,7 +31,7 @@ const operationTools = (generatedTools as unknown as OperationTool[]).map(
       readOnlyHint: tool.annotations.includes('read_only'),
       destructiveHint: tool.annotations.includes('destructive'),
       idempotentHint: tool.annotations.includes('idempotent'),
-      openWorldHint: false,
+      openWorldHint: tool.annotations.includes('open_world'),
     },
   }),
 )

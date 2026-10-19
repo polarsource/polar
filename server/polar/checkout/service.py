@@ -20,6 +20,7 @@ from polar.checkout.guard import has_product_checkout
 from polar.checkout.schemas import (
     CheckoutConfirm,
     CheckoutConfirmBase,
+    CheckoutConfirmSharedPaymentToken,
     CheckoutConfirmStripe,
     CheckoutCreate,
     CheckoutPriceCreate,
@@ -178,6 +179,12 @@ class PaymentError(CheckoutError):
             f"The payment failed{f': {error}' if error else '.'} "
             "Please try again with a different payment method."
         )
+        super().__init__(message, 400)
+
+
+class SharedPaymentTokenError(CheckoutError):
+    def __init__(self, checkout: Checkout, message: str) -> None:
+        self.checkout = checkout
         super().__init__(message, 400)
 
 
@@ -1147,6 +1154,7 @@ class CheckoutService:
         confirmation_token: stripe_lib.ConfirmationToken | None = None
         if (
             checkout.payment_processor == PaymentProcessor.stripe
+            and isinstance(checkout_confirm, CheckoutConfirmStripe)
             and checkout_confirm.confirmation_token_id is not None
             and (
                 checkout.customer_name is None
@@ -1206,6 +1214,7 @@ class CheckoutService:
 
         if (
             checkout.is_payment_form_required
+            and isinstance(checkout_confirm, CheckoutConfirmStripe)
             and checkout_confirm.confirmation_token_id is None
         ):
             errors.append(
@@ -1219,6 +1228,13 @@ class CheckoutService:
 
         if len(errors) > 0:
             raise PolarRequestValidationError(errors)
+
+        if (
+            checkout.payment_processor == PaymentProcessor.stripe
+            and checkout.is_payment_form_required
+            and isinstance(checkout_confirm, CheckoutConfirmSharedPaymentToken)
+        ):
+            self._validate_shared_payment_token(checkout)
 
         if checkout.payment_processor == PaymentProcessor.stripe:
             async with self._create_or_update_customer(
@@ -1267,7 +1283,6 @@ class CheckoutService:
 
                 intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent | None = None
                 if checkout.is_payment_form_required:
-                    assert checkout_confirm.confirmation_token_id is not None
                     assert checkout.customer_billing_address is not None
                     intent_metadata: dict[str, str] = {
                         "organization_id": str(checkout.organization_id),
@@ -1292,7 +1307,6 @@ class CheckoutService:
                                 "currency": checkout.currency,
                                 "automatic_payment_methods": {"enabled": True},
                                 "confirm": True,
-                                "confirmation_token": checkout_confirm.confirmation_token_id,
                                 "customer": stripe_customer_id,
                                 "statement_descriptor_suffix": checkout.organization.statement_descriptor(),
                                 "description": checkout.description,
@@ -1319,10 +1333,26 @@ class CheckoutService:
                                     payment_method_options
                                 )
 
-                            intent = await stripe_service.create_payment_intent(
-                                **payment_intent_params
-                            )
+                            if isinstance(
+                                checkout_confirm, CheckoutConfirmSharedPaymentToken
+                            ):
+                                intent = await stripe_service.create_payment_intent_from_shared_payment_token(
+                                    checkout_confirm.shared_payment_token_id,
+                                    **payment_intent_params,
+                                )
+                            else:
+                                assert (
+                                    checkout_confirm.confirmation_token_id is not None
+                                )
+                                payment_intent_params["confirmation_token"] = (
+                                    checkout_confirm.confirmation_token_id
+                                )
+                                intent = await stripe_service.create_payment_intent(
+                                    **payment_intent_params
+                                )
                         else:
+                            assert isinstance(checkout_confirm, CheckoutConfirmStripe)
+                            assert checkout_confirm.confirmation_token_id is not None
                             setup_intent_params: SetupIntentCreateParams = {
                                 "automatic_payment_methods": {"enabled": True},
                                 "confirm": True,
@@ -1418,6 +1448,19 @@ class CheckoutService:
             checkout.customer_session_token = None
 
         return checkout
+
+    def _validate_shared_payment_token(self, checkout: Checkout) -> None:
+        if not checkout.organization.is_agentic_payments_enabled:
+            raise SharedPaymentTokenError(
+                checkout,
+                "Shared payment tokens are not enabled for this organization.",
+            )
+
+        if not checkout.is_payment_required or checkout.should_save_payment_method:
+            raise SharedPaymentTokenError(
+                checkout,
+                "Shared payment tokens are only supported for one-time payments.",
+            )
 
     async def handle_success(
         self,
@@ -2449,15 +2492,15 @@ class CheckoutService:
                     ) from e
 
         if has_product_checkout(checkout) and (
-            isinstance(checkout_update, CheckoutConfirm)
+            isinstance(checkout_update, CheckoutConfirmBase)
             or "custom_field_data" in checkout_update.model_fields_set
         ):
             custom_field_data = validate_custom_field_data(
                 checkout.product.attached_custom_fields,
                 checkout_update.custom_field_data,
-                validate_required=isinstance(checkout_update, CheckoutConfirm),
+                validate_required=isinstance(checkout_update, CheckoutConfirmBase),
             )
-            if isinstance(checkout_update, CheckoutConfirm):
+            if isinstance(checkout_update, CheckoutConfirmBase):
                 checkout.custom_field_data = custom_field_data
             else:
                 checkout.custom_field_data = {

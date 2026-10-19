@@ -9,11 +9,11 @@ description: "Sell license key access to your service, software or APIs with eas
 You can easily sell software license keys with Polar without having to deal with sales tax or hosting an API to validate them in real-time. License keys with Polar come with a lot of powerful features built-in.
 
 * Brandable prefixes, e.g `POLAR_*****`
-* Automatic expiration after `N` days, months or years
+* Expiration after `N` days, months or years for one-time purchases
+* Automatic revocation when a subscription ends
 * Limited number of user activations, e.g devices
 * Custom validation conditions
 * Usage quotas per license key
-* Automatic revokation upon cancelled subscriptions
 
 Create License Key Benefit
 ---------------------------------
@@ -26,9 +26,22 @@ Create License Key Benefit
 
 Make your license keys standout with brandable prefixes, e.g `MYAPP_<AUTO_GENERATED_UUID4>`
 
-### Automatic Expiration
+### Expiration
 
-Want license keys to expire automatically after a certain time period from when the customer bought them? No problem.
+How long a license key stays valid depends on how the customer got it:
+
+* **One-time purchases:** if you enable expiration on the benefit, the key expires `N` days, months or years after the purchase.
+* **Subscriptions:** the expiration setting is ignored. Keys granted through a subscription have no `expires_at`, stay valid for as long as the subscription is active, and are revoked when it ends.
+
+This means the same benefit can produce keys with an expiry date (one-time products) and keys without one (subscription products).
+
+<Note>
+  For subscription products, check the key's `status` when validating rather than `expires_at`. A revoked key fails validation.
+</Note>
+
+<Warning>
+  Polar manages `expires_at`. Whenever the benefit or the customer's grant is updated, Polar re-applies the benefit's expiration to the key, or removes it for subscription keys. A manual change to `expires_at` through the API will be overwritten.
+</Warning>
 
 ### Activation Limits
 

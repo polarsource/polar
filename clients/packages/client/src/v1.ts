@@ -13747,6 +13747,80 @@ export interface components {
       line1: components['schemas']['BillingAddressFieldMode']
       line2: components['schemas']['BillingAddressFieldMode']
     }
+    CheckoutConfirm:
+      | components['schemas']['CheckoutConfirmStripe']
+      | components['schemas']['CheckoutConfirmSharedPaymentToken']
+    /**
+     * CheckoutConfirmSharedPaymentToken
+     * @description Confirm a checkout session using a Stripe shared payment token granted by an agent.
+     *
+     *     Only supported for one-time payments.
+     */
+    CheckoutConfirmSharedPaymentToken: {
+      /**
+       * Custom Field Data
+       * @description Key-value object storing custom field values.
+       */
+      custom_field_data?: {
+        [key: string]: string | number | boolean | null
+      }
+      /**
+       * Product Id
+       * @description ID of the product to checkout. Must be present in the checkout's product list.
+       */
+      product_id?: string | null
+      /**
+       * Product Price Id
+       * @deprecated
+       * @description ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
+       */
+      product_price_id?: string | null
+      /** Amount */
+      amount?: number | null
+      /**
+       * Seats
+       * @description Number of seats for seat-based pricing.
+       */
+      seats?: number | null
+      /**
+       * Units
+       * @description Number of units for unit-based pricing.
+       */
+      units?: number | null
+      /** Is Business Customer */
+      is_business_customer?: boolean | null
+      /** Customer Name */
+      customer_name?: string | null
+      /** Customer Email */
+      customer_email?: string | null
+      /** Customer Billing Name */
+      customer_billing_name?: string | null
+      customer_billing_address?: components['schemas']['AddressInput'] | null
+      /** Customer Tax Id */
+      customer_tax_id?: string | null
+      /** Locale */
+      locale?: string | null
+      /**
+       * Payment Method Type
+       * @description Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`.
+       */
+      payment_method_type?: string | null
+      /**
+       * Discount Code
+       * @description Discount code to apply to the checkout.
+       */
+      discount_code?: string | null
+      /**
+       * Allow Trial
+       * @description Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one.
+       */
+      allow_trial?: false | null
+      /**
+       * Shared Payment Token Id
+       * @description ID of the Stripe shared payment token (`spt_...`).
+       */
+      shared_payment_token_id: string
+    }
     /**
      * CheckoutConfirmStripe
      * @description Confirm a checkout session using a Stripe confirmation token.
@@ -14632,6 +14706,9 @@ export interface components {
        */
       allow_customer_updates: boolean
     }
+    CheckoutPaymentError:
+      | components['schemas']['PaymentError']
+      | components['schemas']['SharedPaymentTokenError']
     /**
      * CheckoutPriceCreate
      * @description Create a new checkout session from a product price.
@@ -30931,6 +31008,12 @@ export interface components {
        */
       merchant_migration_enabled: boolean
       /**
+       * Agentic Payments Enabled
+       * @description If this organization accepts payments from AI agents through Stripe shared payment tokens.
+       * @default false
+       */
+      agentic_payments_enabled: boolean
+      /**
        * Config As Code Enabled
        * @description If this organization can manage its configuration from a declarative config document.
        * @default false
@@ -36286,6 +36369,17 @@ export interface components {
        * @constant
        */
       error: 'SessionNotFreshError'
+      /** Detail */
+      detail: string
+    }
+    /** SharedPaymentTokenError */
+    SharedPaymentTokenError: {
+      /**
+       * Error
+       * @example SharedPaymentTokenError
+       * @constant
+       */
+      error: 'SharedPaymentTokenError'
       /** Detail */
       detail: string
     }
@@ -50105,7 +50199,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['CheckoutConfirmStripe']
+        'application/json': components['schemas']['CheckoutConfirm']
       }
     }
     responses: {
@@ -50118,13 +50212,13 @@ export interface operations {
           'application/json': components['schemas']['CheckoutPublicConfirmed']
         }
       }
-      /** @description The payment failed. */
+      /** @description The payment failed or the shared payment token was rejected. */
       400: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['PaymentError']
+          'application/json': components['schemas']['CheckoutPaymentError']
         }
       }
       /** @description The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments. */

@@ -64,7 +64,7 @@ const head = (x: number, y: number, dir: 'up' | 'down' | 'left' | 'right') => {
   return <path d={d} fill="none" stroke={MID} strokeWidth={HAIR} />
 }
 
-/** A row of small cells: the ledger as a strip, or buckets, the last `open` of them still open, in a faint line. */
+/** A row of small cells: the event log as a strip, or buckets, the last `open` of them still open, in a faint line. */
 const cells = (
   x: number,
   y: number,
@@ -203,7 +203,7 @@ function figure() {
         name="POLAR"
         mark
         rows={[
-          ['ledger', cells(0, 0, 8, 6, { head: true })],
+          ['events', cells(0, 0, 8, 6, { head: true })],
           ['reducers', text(0, 0, 'Σ tokens', LINE)],
           ['buckets', cells(0, 0, 6, 10, { open: 2 })],
         ]}
@@ -277,7 +277,7 @@ export const igloo = landscape(
     [
       'Between you and Polar',
       [
-        'Events go on to Polar batched over HTTP, and the ledger stays the source of truth. Back over one WebSocket come the reducers, and a snapshot whenever usage settles.',
+        'Events go on to Polar batched over HTTP, and Polar’s event log stays the source of truth. Back over one WebSocket come the reducers, and a snapshot whenever usage settles.',
       ],
     ],
   ],

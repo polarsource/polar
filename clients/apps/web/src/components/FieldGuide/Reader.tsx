@@ -12,7 +12,7 @@ import Link from 'next/link'
 import { Chapter } from './Chapter'
 import { EarlyAccess } from './EarlyAccess'
 import { RequestAccess } from './RequestAccess'
-import { CHAPTERS } from './content'
+import { CHAPTERS, chapterKey } from './content'
 import { KeyRow } from './Keys'
 import { Ruler } from './Ruler'
 import { pieces } from './pages'
@@ -49,7 +49,7 @@ export default function FieldGuideReader() {
   )
   const goChapter = useCallback((i: number) => {
     scrollRef.current
-      ?.querySelector(`[data-chapter="${CHAPTERS[i].n}"]`)
+      ?.querySelector(`[data-chapter="${chapterKey(CHAPTERS[i])}"]`)
       ?.scrollIntoView({ block: 'start', behavior: 'smooth' })
   }, [])
 
@@ -123,8 +123,8 @@ export default function FieldGuideReader() {
       const k = e.key
       if (k === 'ArrowRight') turn(1)
       else if (k === 'ArrowLeft') turn(-1)
-      else if (/^[0-9]$/.test(k) && Number(k) < CHAPTERS.length)
-        goChapter(Number(k))
+      else if (/^[0-9]$/.test(k) && CHAPTERS.some((c) => c.n === `0${k}`))
+        goChapter(CHAPTERS.findIndex((c) => c.n === `0${k}`))
       else if (k === 'e' || k === 'E') emit()
       else if (k === 'r' || k === 'R') reset()
       else if (k === 'h' || k === 'H') setKeys((v) => !v)
@@ -159,7 +159,7 @@ export default function FieldGuideReader() {
         >
           <div className="mx-auto w-full max-w-7xl">
             {CHAPTERS.map((c) => (
-              <Chapter key={c.n} chapter={c} />
+              <Chapter key={chapterKey(c)} chapter={c} />
             ))}
             <EarlyAccess />
           </div>

@@ -61,7 +61,7 @@ export function Contents() {
             viewBox="0 0 120 120"
             fill="none"
             strokeWidth={1}
-            className="mx-auto w-1/2 [&_*]:[vector-effect:non-scaling-stroke]"
+            className="mx-auto w-[62%] [&_*]:[vector-effect:non-scaling-stroke]"
             aria-hidden
           >
             {POSTERS[c.name]}

@@ -4,13 +4,13 @@ import { Contents } from './Contents'
 import { Cover } from './Cover'
 import { Plate } from './Plate'
 import { pieces } from './pages'
-import type { Chapter as ChapterContent } from './content'
+import { chapterKey, type Chapter as ChapterContent } from './content'
 
 const byId = new Map(pieces.map((p) => [p.id, p]))
 
 /** A chapter on the page: its number and title, a paragraph, and its plates in order. */
 export function Chapter({ chapter }: { chapter: ChapterContent }) {
-  const home = chapter.n === '00'
+  const home = !chapter.n
   const plate = (id: string) => {
     const p = byId.get(id)
     if (!p) return null
@@ -18,7 +18,7 @@ export function Chapter({ chapter }: { chapter: ChapterContent }) {
   }
   return (
     <section
-      data-chapter={chapter.n}
+      data-chapter={chapterKey(chapter)}
       className="flex flex-col gap-32 pt-6 pb-56"
     >
       {home ? <Cover /> : null}

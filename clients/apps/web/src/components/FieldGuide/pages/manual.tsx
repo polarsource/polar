@@ -132,24 +132,24 @@ export const manual: Piece[] = [
       )
     },
     {
-      sub: 'A meter is a fold over the event stream: state = fn(events). Nothing is stored that cannot be recomputed.',
+      sub: 'A meter turns events into one number.',
       notes: [
         [
-          'The fold',
+          'What it counts',
           [
-            'Every event the system sees is written down once, in order, and never changed. A meter does not count; it folds. Given the state so far and the next event, it returns the next state.',
+            'A meter picks the events it cares about, like tokens.out, and adds them up: a count, a sum, a maximum.',
           ],
         ],
         [
-          'The reading',
+          'Always current',
           [
-            'Read the state and you have the reading. Replay the stream and you have the same reading.',
+            'Each new event updates the number straight away, so it is never waiting on a nightly job.',
           ],
         ],
         [
           'No drift',
           [
-            'Because the fold is pure, any version of the state can be rebuilt from the events before it. Nothing is stored that cannot be recomputed, so nothing can drift.',
+            'The number can always be rebuilt from the events behind it, so it never quietly drifts from what happened.',
           ],
         ],
       ],
@@ -351,7 +351,7 @@ export const manual: Piece[] = [
         [
           'The apply',
           [
-            'The CLI compares the file with what is deployed and writes the difference as events. Polar holds no second copy: the deployed billing is the fold over those events, and the file is its source.',
+            'The CLI compares the file with what is deployed and applies the difference: new products and prices are created, changed ones updated, the rest left alone. The file stays the source of truth.',
           ],
         ],
       ],
@@ -362,7 +362,7 @@ export const manual: Piece[] = [
   page(
     'm-cli',
     'Review and apply',
-    'A transcript of `polar apply`: the plan, the diff, the confirmation, and the events it wrote. The CLI is how a billing definition reaches production. Chapter 1.',
+    'A transcript of `polar apply`: the plan, the diff, the confirmation, and the changes it made. The CLI takes a billing definition from a file to production. Chapter 1.',
     960,
     540,
     2,
@@ -403,23 +403,10 @@ export const manual: Piece[] = [
           { t: 'y' },
         ],
         [],
-        [
-          D('Writing   '),
-          { t: 'price.updated     pro.tokens' },
-          D('    evt_01JA7'),
-        ],
-        [
-          D('Writing   '),
-          { t: 'product.created   team' },
-          D('          evt_01JA8'),
-        ],
-        [
-          D('Writing   '),
-          { t: 'config.applied    prod' },
-          D('          evt_01JA9'),
-        ],
+        [D('Updated   '), { t: 'price     pro.tokens' }],
+        [D('Created   '), { t: 'product   team' }],
         [],
-        [{ t: '✓ ' }, { t: 'Applied 3 events to prod' }, D('  in 0.41s')],
+        [{ t: '✓ ' }, { t: 'Applied 2 changes to prod' }, D('  in 0.41s')],
       ]
       return sheet(
         960,
@@ -433,28 +420,28 @@ export const manual: Piece[] = [
       )
     },
     {
-      sub: 'The CLI reads the file, shows the plan, asks, and writes the events.',
+      sub: 'The CLI reads the file, shows the plan, asks, and applies it.',
       notes: [
         [
-          'One way in',
+          'The plan',
           [
-            'The CLI is the only way a definition reaches production. It reads the file, computes the diff against what is deployed, and asks.',
+            'The CLI reads the file, computes the diff against what is deployed, and shows it before anything changes. The dashboard still works too; the next plan picks up whatever was changed there.',
           ],
         ],
         [
-          'Events, not edits',
+          'Applied',
           [
-            'On yes, it does not update anything in place: it writes the events, and the deployed state is the fold over them, like every other number.',
+            'On yes, it applies the plan. What is deployed then matches the file, and the next plan starts from there.',
           ],
         ],
       ],
     },
   ),
 
-  // 00 The principle: the whole idea on one page, the fold as its figure, three claims explained beneath
+  // 00 Core principles: the fold as the figure, the three principles beside it
   page(
     'm-principle',
-    'The principle',
+    'Three ideas',
     'The whole idea on one page: state is a function of events. The fold as its figure, and the three claims the rest of the book makes good on.',
     960,
     540,
@@ -469,7 +456,7 @@ export const manual: Piece[] = [
       return sheet(
         960,
         540,
-        'The principle',
+        'Three ideas',
         <Figure x={40} y={156} w={620} h={300}>
           <g transform="translate(150 60)">
             <g fill="none" stroke={MID} strokeWidth={HAIR}>
@@ -510,30 +497,24 @@ export const manual: Piece[] = [
       )
     },
     {
-      sub: 'Every number is derived from events. Nothing is stored twice.',
+      sub: 'The rest of this guide is built on them.',
       notes: [
         [
-          'The rule',
+          'Everything is an event',
           [
-            'Polar keeps one thing: an ordered record of what happened. Every other number, a meter, a balance, an invoice line, is a fold over that record, computed when asked for and recomputed whenever the record grows.',
+            'Usage is recorded as events and nothing else. Meters, credit balances and invoice lines are all computed from them, so there is no second count to drift out of sync.',
           ],
         ],
         [
-          'Every number is derived from events',
+          'Native to agentic workflows',
           [
-            'No second copy of the truth to go stale. If two numbers disagree, the events settle it.',
+            'Customers hold their agents, and every event says which one acted. Usage rolls up to whoever pays, and agents can read and change billing themselves through Polar’s MCP.',
           ],
         ],
         [
-          'Zero latency, by design',
+          'Zero latency and fault tolerant by design',
           [
-            'A check is answered from the state on hand, not a round trip. The stream catches up behind it.',
-          ],
-        ],
-        [
-          'Built for agents, by default',
-          [
-            'A customer holds its agents, each agent its actors. Usage rolls up, access rolls down.',
+            'Checks are answered next to your code, from state kept in your own Redis, with no round trip to Polar. If Polar is unreachable, your app keeps answering and the two reconcile when it is back.',
           ],
         ],
       ],
@@ -1020,18 +1001,18 @@ export const manual: Piece[] = [
         [
           'First sight',
           [
-            'The one wait is the first check for a customer Igloo has not seen. It asks Polar for that customer\u2019s usage once, for up to five seconds, and not again on that connection.',
+            'The only round trip is the first check for a customer Igloo has not seen yet: it fetches their usage from Polar once, and every check after that is answered locally.',
           ],
         ],
       ],
     },
   ),
 
-  // 07 The ledger: one strip of numbered rows. The past is set, the head is now, at the bottom.
+  // 07 The event log: one strip of numbered rows. The past is set, the head is now, at the bottom.
   page(
     'm-ledger',
-    'The ledger',
-    'The ledger as a strip: numbered rows from the first event down, the head in ink at the bottom. Chapter 1.',
+    'The event log',
+    'The event log as a strip: numbered rows from the first event down, the head in ink at the bottom. Chapter 1.',
     960,
     540,
     2,
@@ -1048,7 +1029,7 @@ export const manual: Piece[] = [
       return sheet(
         960,
         540,
-        'The ledger',
+        'The event log',
         <Figure x={40} y={156} w={620} h={300}>
           <g transform="translate(138 22)">
             <LiveLedger x={x} w={w} top={top} rh={rh} past={past} />
@@ -1063,18 +1044,18 @@ export const manual: Piece[] = [
       )
     },
     {
-      sub: 'Append only. Every event in order, none of them ever changed.',
+      sub: 'Append only. Events are added, never changed or removed.',
       notes: [
         [
           'Append only',
           [
-            'The ledger only grows. New events are written at the head, in the order they happened, and every row above the head is set.',
+            'The event log only grows. A new event is added to it, and nothing already in it is ever edited or deleted.',
           ],
         ],
         [
           'Every number',
           [
-            'Any number in Polar is a position on this strip: run the fold down to that row and you have it.',
+            'Every usage number, a meter reading, a credit balance, an invoice line, is computed from the event log, so it can be traced back to the events behind it.',
           ],
         ],
       ],
@@ -1291,7 +1272,7 @@ export const manual: Piece[] = [
     1,
     () => {
       const chapters: [string, [string, string][]][] = [
-        ['Preface', [['The principle', '2']]],
+        ['Preface', [['Core principles', '2']]],
         [
           'Billing as code',
           [
@@ -1303,8 +1284,8 @@ export const manual: Piece[] = [
           'Events',
           [
             ['What’s in an event', '10'],
-            ['The ledger', '12'],
-            ['Ingestion and ordering', '14'],
+            ['The event log', '12'],
+            ['Late events', '14'],
           ],
         ],
         [
@@ -1336,7 +1317,7 @@ export const manual: Piece[] = [
           'Agents',
           [
             ['Customers, agents, actors', '52'],
-            ['Asking the ledger', '56'],
+            ['Asking Polar', '56'],
           ],
         ],
       ]
@@ -1401,7 +1382,7 @@ export const manual: Piece[] = [
   page(
     'm-flow',
     'From checkout to access',
-    'The checkout form, drawn as a schematic: what it shows, what it asks for, and the event each part of it writes. Pay once and four facts land on the ledger. Chapter 5.',
+    'The checkout form, drawn as a schematic: what it shows, what it asks for, and the event each part of it writes. Pay once and four facts land in the event log. Chapter 5.',
     960,
     540,
     2,
@@ -1578,7 +1559,7 @@ export const manual: Piece[] = [
         ],
         [
           'Traceable',
-          ['Each is a fold over the one before, and each can be traced.'],
+          ['Each step can be traced back to the event that caused it.'],
         ],
       ],
     },

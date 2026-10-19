@@ -3,6 +3,7 @@
  * Read in order, or jumped to by number.
  */
 export interface Chapter {
+  /** The chapter's number, or empty for the cover, which is not numbered. */
   n: string
   name: string
   title: string
@@ -12,17 +13,25 @@ export interface Chapter {
 
 export const CHAPTERS: Chapter[] = [
   {
-    n: '00',
+    n: '',
     name: 'Home',
     title: 'Agent-first Billing: A Field Guide',
-    ids: ['cover', 'm-principle'],
+    ids: ['cover'],
+  },
+  {
+    n: '00',
+    name: 'Principles',
+    title: 'Core principles',
+    intro:
+      'Three ideas run through everything that follows. Every number comes from events, agents are customers like any other, and billing answers next to your code without waiting on Polar.',
+    ids: ['m-principle', 'm-agents'],
   },
   {
     n: '01',
     name: 'Billing as code',
     title: 'Billing as code',
     intro:
-      'The catalogue is a file. Products, prices, meters and entitlements are declared once, reviewed as a diff, and applied to an environment. What runs in production is what was reviewed.',
+      'The catalogue is a file. Products, prices, meters and entitlements are declared once, reviewed as a diff, and applied to an environment, so a pricing change goes through the same review as any other code.',
     ids: ['m-code', 'm-cli', 'm-check'],
   },
   {
@@ -30,7 +39,7 @@ export const CHAPTERS: Chapter[] = [
     name: 'Events',
     title: 'Events',
     intro:
-      'An event is a fact: at this time, this customer, through this actor, did this thing, this much. The ledger only grows, and everything else is derived from it.',
+      'An event is a fact: at this time, this customer, through this actor, did this thing, this much. The event log only grows, and every usage number is derived from it.',
     ids: ['m-event', 'm-ledger', 'm-ingest'],
   },
   {
@@ -38,7 +47,7 @@ export const CHAPTERS: Chapter[] = [
     name: 'Meters',
     title: 'Meters',
     intro:
-      'A meter does not count; it folds. Given the state so far and the next event, it returns the next state. Nothing is stored that cannot be recomputed, so nothing can drift.',
+      'A meter turns events into a number: which events count, and how to add them up. Polar keeps that number current as events arrive, and can always rebuild it from the events behind it.',
     ids: ['m-meter', 'm-fold', 'm-tiers'],
   },
   {
@@ -89,3 +98,6 @@ export const chapterOf = (id: string) =>
     0,
     CHAPTERS.findIndex((c) => c.ids.includes(id)),
   )
+
+/** What a chapter is found by on the page: its number, or `home` for the unnumbered cover. */
+export const chapterKey = (c: Chapter) => c.n || 'home'

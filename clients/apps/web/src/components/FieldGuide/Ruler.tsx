@@ -1,6 +1,6 @@
 'use client'
 
-import { CHAPTERS } from './content'
+import { CHAPTERS, chapterKey } from './content'
 import { pieces } from './pages'
 
 const titles = new Map(pieces.map((p) => [p.id, p.title]))
@@ -44,8 +44,10 @@ export function Ruler({
   return (
     <nav aria-label="Chapters and pages" className="flex flex-col">
       {CHAPTERS.map((c, i) => (
-        <div key={c.n} className="flex flex-col">
-          {row(c.n, c.name, c.n, 'text-[#7b7b7b]', () => onChapter(i))}
+        <div key={chapterKey(c)} className="flex flex-col">
+          {c.n
+            ? row(c.n, c.name, c.n, 'text-[#7b7b7b]', () => onChapter(i))
+            : null}
           {c.ids.map((id) => {
             const lit = id === current
             return row(

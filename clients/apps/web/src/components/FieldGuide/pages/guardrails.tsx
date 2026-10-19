@@ -69,7 +69,34 @@ function threshold({
         {...DOTTED}
       />
       {label(X0 - 8, THRESHOLD + 2.5, 'THRESHOLD', 'end')}
-      <path d={path} fill="none" stroke={LINE} strokeWidth={HAIR} />
+      {/* the line twice, each half clipped at the threshold: dim while clear of it, Snow inside the condition */}
+      <defs>
+        <clipPath id={`${number}-over`}>
+          <rect x={X0 - 4} y={0} width={X1 - X0 + 8} height={THRESHOLD} />
+        </clipPath>
+        <clipPath id={`${number}-under`}>
+          <rect
+            x={X0 - 4}
+            y={THRESHOLD}
+            width={X1 - X0 + 8}
+            height={LANE - THRESHOLD}
+          />
+        </clipPath>
+      </defs>
+      <path
+        d={path}
+        fill="none"
+        stroke={MID}
+        strokeWidth={HAIR}
+        clipPath={`url(#${number}-over)`}
+      />
+      <path
+        d={path}
+        fill="none"
+        stroke={LINE}
+        strokeWidth={HAIR}
+        clipPath={`url(#${number}-under)`}
+      />
 
       {(
         [

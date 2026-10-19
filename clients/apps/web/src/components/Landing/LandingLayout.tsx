@@ -4,7 +4,6 @@ import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
 import Footer from '@/components/Organization/Footer'
 import { usePostHog } from '@/hooks/posthog'
 import ArrowForward from '@mui/icons-material/ArrowForward'
-import AutoAwesome from '@mui/icons-material/AutoAwesome'
 import { Modal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
@@ -38,12 +37,7 @@ const ManualBanner = () => (
       backgroundColor="background-secondary"
       color="text-primary"
     >
-      <Text as="span" color="accent">
-        <AutoAwesome fontSize="inherit" />
-      </Text>
-      <Text color="inherit">
-        Introducing Agent-first Billing, in early access
-      </Text>
+      <Text color="inherit">Introducing our new Usage Billing Engine</Text>
       <ArrowForward fontSize="inherit" />
     </Box>
   </Link>

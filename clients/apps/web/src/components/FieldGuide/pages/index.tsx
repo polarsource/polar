@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { agentOps } from './agents'
 import { marginCheck } from './check'
 import { cover } from './cover'
 import { fold } from './fold'
@@ -32,7 +33,11 @@ export type Notes = [string, string[]][]
 
 /** The book, in reading order: the front matter, then the chapters, each with its pages. */
 export const chapters: { title: string; ids: string[] }[] = [
-  { title: 'Front matter', ids: ['cover', 'm-contents', 'm-principle'] },
+  {
+    title: 'Front matter',
+    ids: ['cover', 'm-contents'],
+  },
+  { title: '00 · Principles', ids: ['m-principle', 'm-agents'] },
   { title: '01 · Billing as code', ids: ['m-code', 'm-cli', 'm-check'] },
   {
     title: '02 · Events',
@@ -50,6 +55,7 @@ export const chapters: { title: string; ids: string[] }[] = [
 ]
 const ORDER = chapters.flatMap((c) => c.ids)
 const all = [
+  agentOps,
   cover,
   marginCheck,
   fold,

@@ -14,7 +14,7 @@ export const KEY_GROUPS: [string[], string][] = [
   [['←', '→'], 'Page'],
   [['1', '2', '3'], 'To chapter'],
   [['E'], 'Emit event'],
-  [['R'], 'Reset ledger'],
+  [['R'], 'Reset events'],
   [['H'], 'Hide keys'],
 ]
 

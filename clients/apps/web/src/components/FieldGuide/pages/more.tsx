@@ -64,7 +64,7 @@ export const landscape = (
     { sub, notes: items },
   )
 
-// ---------------------------------------------------------------- 02 Events · Ingestion and ordering
+// ---------------------------------------------------------------- 02 Events · Late events
 
 const ingestion = (() => {
   const x0 = 70,
@@ -112,7 +112,7 @@ const ingestion = (() => {
         )
       })}
       <text x={x0} y={BOT + 42} fontSize={8} fill={DIM} style={MONO}>
-        LEDGER · BY EVENT TIME
+        COUNTED · BY EVENT TIME
       </text>
       {Array.from({ length: 6 }, (_, k) => (
         <g key={k}>
@@ -149,21 +149,21 @@ const ingestion = (() => {
   )
   return landscape(
     'm-ingest',
-    'Ingestion and ordering',
-    'Events arrive out of order. The ledger keeps them in it.',
-    'Six events arrive in one order and are placed in another: the ledger orders by the time the event happened, not the time it landed. The two that arrived late are drawn in ink.',
+    'Late events',
+    'An event counts when it happened, not when it arrived.',
+    'Six events, in the order they arrived and the order they happened. The two that arrived late are drawn in ink, and each still counts at the time it happened.',
     fig,
     [
       [
         'Arrival',
         [
-          'Events arrive late, early and in bursts. Each carries the time it happened, and the ledger orders by that, not by arrival.',
+          'Events can arrive late: a retry, a queue that backed up, a batch sent at the end of a job. Each carries the time it happened, and Polar uses that time, not the time it landed.',
         ],
       ],
       [
         'Same answer',
         [
-          'A fold over the ledger therefore gives the same answer whether an event took a millisecond or a day to arrive, and a late event slots into its place rather than onto the end.',
+          'A meter over the event log therefore gives the same answer whether an event took a millisecond or a day to arrive, and a late event slots into its place rather than onto the end.',
         ],
       ],
     ],
@@ -572,7 +572,7 @@ const zero = (() => {
     'm-zero',
     'Running out',
     'Polar keeps counting. What happens next is up to you.',
-    'A customer’s ledger running out: the request that takes the balance to -142, a signal to the app, then a top-up of 5,000 that settles the 142 owed.',
+    'A customer’s credits running out: the request that takes the balance to -142, a signal to the app, then a top-up of 5,000 that settles the 142 owed.',
     <>
       {rows.map((toks, i) => (toks.length ? line(i, 0, toks, `r${i}`) : null))}
     </>,
@@ -736,20 +736,20 @@ const entitlements = (() => {
       [
         'Granted',
         [
-          'When a subscription to the product becomes active, every entitlement on it is granted as an event, and what the customer holds is the fold over those grants and revocations.',
+          'When a subscription to the product becomes active, every entitlement on it is granted to the customer, and revoked again when the subscription ends.',
         ],
       ],
       [
         'Changes',
         [
-          'Change the product’s entitlements and the next apply writes the difference.',
+          'Change the product’s entitlements in the file, and the next apply updates them.',
         ],
       ],
     ],
   )
 })()
 
-// ---------------------------------------------------------------- 07 Agents · Asking the ledger
+// ---------------------------------------------------------------- 07 Agents · Asking Polar
 
 const ask = (() => {
   const { line } = term(70, 150, 8, 11.6)
@@ -776,9 +776,9 @@ const ask = (() => {
   ]
   return landscape(
     'm-ask',
-    'Asking the ledger',
+    'Asking Polar',
     'Any question about a customer is a query over its events.',
-    'A conversation with Polar: a question about the week, an answer read from the ledger, a grant made on request, and a promise to watch.',
+    'A conversation with Polar: a question about the week, an answer read from the event log, a grant made on request, and a promise to watch.',
     <>
       {rows.map((toks, i) => (toks.length ? line(i, 0, toks, `r${i}`) : null))}
     </>,
@@ -786,7 +786,7 @@ const ask = (() => {
       [
         'Why it works',
         [
-          'Because every number is a fold over events, any question about a customer is a query over the ledger, and the ledger is one call away.',
+          'Because every number is a fold over events, any question about a customer is a query over the event log, and it is one call away.',
         ],
       ],
       [
@@ -798,7 +798,7 @@ const ask = (() => {
       [
         'What it cannot',
         [
-          'Change the past. The ledger is append only for agents too, so an agent’s mistake is a visible event, not a silent edit.',
+          'Change the past. The event log is append only for agents too, so an agent’s mistake is a visible event, not a silent edit.',
         ],
       ],
     ],

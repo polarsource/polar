@@ -3,8 +3,9 @@ import { LINE, MID, DIM, BG, HAIR, DOTTED, Anchor, Dimension } from '../kit'
 import { landscape } from './more'
 
 /**
- * The fold, as it runs: a reducer matches events, and each slot of the strip folds into the five-minute bucket beneath it,
- * and every bucket keeps a count and a sum. The buckets behind the open ones are sealed.
+ * Reducers and buckets: a reducer matches events, each slot of the strip adds into the five-minute bucket beneath it,
+ * and every bucket keeps a count and a sum. The billed buckets are sealed; an older event that arrives after the seal
+ * goes into a new generation of its bucket, drawn open beneath it.
  */
 
 const X0 = 100,
@@ -31,6 +32,10 @@ const EVENTS: [number, number][] = [
   [28.9, 920],
 ]
 const SEALED = 4
+/** An event from 14:08 that arrived after its bucket was sealed, and the height of the generation it opens. */
+const LATE: [number, number] = [8.3, 500]
+const LATE_SLOT = Math.floor(LATE[0] / 5)
+const GEN_H = 22
 
 const at = (minute: number) => X0 + (minute / 5) * BW
 const fmt = (v: number) => v.toLocaleString('en-US')
@@ -104,6 +109,8 @@ function figure() {
       {buckets.map((_, i) => (
         <Anchor key={i} at={[X0 + (i + 0.5) * BW, LANE]} />
       ))}
+      <circle cx={at(LATE[0])} cy={LANE} r={2.2} fill={LINE} />
+      {label(at(LATE[0]) + 6, LANE - 8, 'LATE · 14:08', LINE)}
 
       {/* One outline for the sealed run, one dotted for the open one, and each divider drawn once. */}
       <rect
@@ -140,20 +147,42 @@ function figure() {
             ) : null}
             {label(x + 10, TOP + 20, `count ${b.count}`, open ? DIM : LINE)}
             {label(x + 10, TOP + 36, `sum ${fmt(b.sum)}`, open ? DIM : LINE)}
-            {label(x, TOP + BH + 16, `14:${String(i * 5).padStart(2, '0')}`)}
+            {label(
+              x,
+              TOP + BH + GEN_H + 16,
+              `14:${String(i * 5).padStart(2, '0')}`,
+            )}
           </g>
         )
       })}
 
+      {/* The late event's own generation of the sealed bucket: open, and billed on the next invoice. */}
+      <rect
+        x={X0 + LATE_SLOT * BW}
+        y={TOP + BH}
+        width={BW}
+        height={GEN_H}
+        fill={BG}
+        stroke={MID}
+        strokeWidth={HAIR}
+        {...DOTTED}
+      />
+      {label(
+        X0 + LATE_SLOT * BW + 10,
+        TOP + BH + 14,
+        `gen 2  +${fmt(LATE[1])}`,
+        LINE,
+      )}
+
       <Dimension
-        a={[X0, TOP + BH + 34]}
-        b={[X0 + SEALED * BW, TOP + BH + 34]}
-        text="SEALED · NEVER WRITTEN AGAIN"
+        a={[X0, TOP + BH + GEN_H + 34]}
+        b={[X0 + SEALED * BW, TOP + BH + GEN_H + 34]}
+        text="SEALED · BILLED"
         side={12}
       />
       <Dimension
-        a={[X0 + SEALED * BW, TOP + BH + 34]}
-        b={[end, TOP + BH + 34]}
+        a={[X0 + SEALED * BW, TOP + BH + GEN_H + 34]}
+        b={[end, TOP + BH + GEN_H + 34]}
         text="OPEN"
         side={12}
       />
@@ -163,27 +192,27 @@ function figure() {
 
 export const fold = landscape(
   'm-fold',
-  'The fold',
-  'Reducers fold events into five-minute buckets. An invoice adds up buckets, never events.',
-  'A reducer over a strip of time: events drop into the five-minute bucket their timestamp falls in, each bucket keeps a count and a sum, and the buckets behind the open ones are sealed.',
+  'Reducers and buckets',
+  'Events add up into five-minute buckets. An invoice adds up buckets, not events.',
+  'A reducer over half an hour: events drop into the five-minute bucket their timestamp falls in, each bucket keeps a count and a sum, the billed buckets are sealed, and an event from 14:08 that arrived after the seal opens a second generation of its bucket.',
   figure(),
   [
     [
       'Reducers',
       [
-        'A meter is a filter that says which events count and an aggregation that says how: count them, or sum, minimum, maximum or average a property. That pair is a reducer. Meters that fold the same way share one, so the fold runs once.',
+        'A meter says which events count and how to add them up: count them, or sum, average, minimum or maximum a property. That rule is a reducer. Meters with the same rule share one, so the work is done once.',
       ],
     ],
     [
       'Buckets',
       [
-        'Each matching event adds to a bucket keyed by the reducer, the customer and the five-minute slot its timestamp falls in. A bucket holds four numbers: count, sum, minimum and maximum. From those, every aggregation is recoverable for any period.',
+        'Each matching event lands in the five-minute bucket its timestamp falls in, one per customer. A bucket keeps a count, sum, minimum and maximum, enough to answer any of those for any period.',
       ],
     ],
     [
-      'Sealed on billing',
+      'Sealed, not closed',
       [
-        'When a period is billed, the buckets at its edges are split at the exact times and every bucket inside is sealed. A late event never alters a sealed bucket; it opens the next one, billed on the next invoice.',
+        'When a period is billed, its buckets are sealed and never change. An older event can still arrive: it goes into a new generation of the same bucket, so it counts at the time it happened and is billed on the next invoice.',
       ],
     ],
   ],

@@ -15,6 +15,18 @@ const REDUCERS = ["tokens", "calls", "cost"];
 const stateKey = (identity: string) => `outpost:state:${identity}`;
 const identityOf = (buckets: number) => `external:alice:tokens-${buckets}`;
 const keyOf = (buckets: number) => stateKey(identityOf(buckets));
+// An event of 7 units in the given bucket: what WRITE_BUCKET takes after the key count.
+const writeArgs = (identity: string, bucketStart: number) => [
+  stateKey(identity),
+  identity,
+  CHANNEL,
+  EPOCH,
+  bucketStart,
+  1,
+  7,
+  7,
+  7,
+];
 
 let redisServer: RedisServer;
 let redis: Redis;
@@ -50,15 +62,7 @@ describe("WRITE_BUCKET", () => {
         await redis.eval(
           WRITE_BUCKET_SCRIPT,
           1,
-          keyOf(buckets),
-          identityOf(buckets),
-          CHANNEL,
-          EPOCH,
-          newestBucketStart,
-          1,
-          7,
-          7,
-          7,
+          ...writeArgs(identityOf(buckets), newestBucketStart),
         );
       },
       OPTIONS,
@@ -70,19 +74,7 @@ describe("WRITE_BUCKET", () => {
       const pipeline = redis.pipeline();
       for (const reducer of REDUCERS) {
         const identity = `external:alice:${reducer}`;
-        pipeline.eval(
-          WRITE_BUCKET_SCRIPT,
-          1,
-          stateKey(identity),
-          identity,
-          CHANNEL,
-          EPOCH,
-          COLD_UNTIL,
-          1,
-          7,
-          7,
-          7,
-        );
+        pipeline.eval(WRITE_BUCKET_SCRIPT, 1, ...writeArgs(identity, COLD_UNTIL));
       }
       const results = await pipeline.exec();
       for (const [error] of results ?? []) if (error) throw error;

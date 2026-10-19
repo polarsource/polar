@@ -35,6 +35,11 @@ def key_of(buckets: int) -> str:
     return state_key(identity_of(buckets))
 
 
+# An event of 7 units in the given bucket: what WRITE_BUCKET takes after the key count.
+def write_args(identity: str, bucket_start: int) -> list[str | int]:
+    return [state_key(identity), identity, CHANNEL, EPOCH, bucket_start, 1, 7, 7, 7]
+
+
 def seed_state(redis: Redis, identity: str, buckets: int) -> None:
     redis.hset(state_key(identity), items=encode_state(buckets))
 
@@ -87,15 +92,7 @@ def test_write_bucket_one_event(
         redis.eval,
         WRITE_BUCKET_SCRIPT,
         1,
-        key_of(buckets),
-        identity_of(buckets),
-        CHANNEL,
-        EPOCH,
-        newest_bucket_start,
-        1,
-        7,
-        7,
-        7,
+        *write_args(identity_of(buckets), newest_bucket_start),
     )
 
 
@@ -107,15 +104,7 @@ def test_write_bucket_three_reducers(benchmark: BenchmarkFixture, redis: Redis) 
             pipeline.eval(
                 WRITE_BUCKET_SCRIPT,
                 1,
-                state_key(identity),
-                identity,
-                CHANNEL,
-                EPOCH,
-                COLD_UNTIL,
-                1,
-                7,
-                7,
-                7,
+                *write_args(identity, COLD_UNTIL),
             )
         pipeline.execute()
 

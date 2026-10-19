@@ -288,6 +288,62 @@ class TestSyncUser:
         assert remove.call_count == (1 if linked else 0)
         assert len(respx_mock.calls) == remove.call_count
 
+    async def test_no_organization_email_change(
+        self,
+        session: AsyncSession,
+        user: User,
+        mocker: MockerFixture,
+        respx_mock: respx.MockRouter,
+    ) -> None:
+        mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
+        previous_email = user.email
+        user.email = "new@example.com"
+        user.resend_id = "old-contact"
+        respx_mock.get(path=f"/contacts/{previous_email}").respond(
+            200,
+            json={"id": "old-contact", "email": previous_email, "unsubscribed": True},
+        )
+        respx_mock.get(path="/contacts/new@example.com").respond(404)
+        create = respx_mock.post(path="/contacts").respond(
+            200, json={"id": "new-contact"}
+        )
+        remove = respx_mock.delete(
+            path="/contacts/new-contact/segments/active-users"
+        ).respond(404)
+        delete = respx_mock.delete(path="/contacts/old-contact").respond(200)
+
+        user = await resend_service.sync_user(
+            session, user.id, previous_email=previous_email
+        )
+
+        assert user.resend_id == "new-contact"
+        assert json.loads(create.calls.last.request.content) == {
+            "email": "new@example.com",
+            "unsubscribed": True,
+        }
+        assert remove.called
+        assert delete.called
+
+    async def test_no_organization_email_change_without_contact(
+        self,
+        session: AsyncSession,
+        user: User,
+        mocker: MockerFixture,
+        respx_mock: respx.MockRouter,
+    ) -> None:
+        mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
+        previous_email = user.email
+        user.email = "new@example.com"
+        lookup = respx_mock.get(path=f"/contacts/{previous_email}").respond(404)
+
+        user = await resend_service.sync_user(
+            session, user.id, previous_email=previous_email
+        )
+
+        assert user.resend_id is None
+        assert lookup.called
+        assert len(respx_mock.calls) == 1
+
     async def test_user_does_not_exist(
         self,
         session: AsyncSession,

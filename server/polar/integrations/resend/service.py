@@ -91,9 +91,10 @@ class ResendService:
             return await repository.update(user, update_dict={"resend_id": None})
 
         user_organization_repository = UserOrganizationRepository.from_session(session)
-        if not await user_organization_repository.has_organization_with_status(
+        active = await user_organization_repository.has_organization_with_status(
             user.id, ACTIVE_ORGANIZATION_STATUSES
-        ):
+        )
+        if not active and previous_email is None:
             if user.resend_id is not None:
                 await client.remove_contact_from_segment(user.resend_id, segment_id)
             return user
@@ -105,6 +106,9 @@ class ResendService:
                 previous_contact = await client.get_contact(previous_identifier)
             except ContactDoesNotExist, InvalidIdentifier:
                 pass
+
+        if not active and previous_contact is None:
+            return user
 
         if (
             previous_contact is not None
@@ -129,7 +133,10 @@ class ResendService:
                         contact["id"], unsubscribed=unsubscribed
                     )
 
-        await client.add_contact_to_segment(contact["id"], segment_id)
+        if active:
+            await client.add_contact_to_segment(contact["id"], segment_id)
+        else:
+            await client.remove_contact_from_segment(contact["id"], segment_id)
         if previous_contact is not None and previous_contact["id"] != contact["id"]:
             await client.delete_contact(previous_contact["id"])
         return await repository.update(user, update_dict={"resend_id": contact["id"]})

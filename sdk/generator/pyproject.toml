@@ -15,9 +15,9 @@ dependencies = [
 dev = [
     "adaptix==3.0.0b12",
     "httpx>=0.28.1",
-    "pytest>=9.0.3",
-    "ruff>=0.15.16",
-    "ty>=0.0.44",
+    "pytest>=9.1.1",
+    "ruff>=0.17.0",
+    "ty>=0.0.86",
 ]
 
 [tool.ruff]

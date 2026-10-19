@@ -11,6 +11,7 @@ import {
   getBucketStart,
   getMatcher,
   reduce,
+  withMatchers,
 } from "./reducer";
 
 const { seed, count, customers: CUSTOMERS, names: NAMES, models: MODELS } = benchmark.events;
@@ -115,12 +116,11 @@ describe("reduce", () => {
     { func: "avg", property: "metadata.tokens" },
   ];
   for (const aggregation of aggregations) {
+    const matchers = withMatchers([
+      reducerOf("tokens", all(clause("name", "eq", "llm.call")), aggregation),
+    ]);
     bench(`${aggregation.func}, one reducer, 1,000 events`, () => {
-      reduce(
-        [reducerOf("tokens", all(clause("name", "eq", "llm.call")), aggregation)],
-        events,
-        oldestBucketStart,
-      );
+      reduce(matchers, events, oldestBucketStart);
     });
   }
   const tenReducers = Array.from({ length: 10 }, (_, index) =>
@@ -133,11 +133,13 @@ describe("reduce", () => {
       { func: "sum", property: "metadata.tokens" },
     ),
   );
+  const tenMatchers = withMatchers(tenReducers);
   bench("sum, ten reducers, 1,000 events", () => {
-    reduce(tenReducers, events, oldestBucketStart);
+    reduce(tenMatchers, events, oldestBucketStart);
   });
   const llmCall = events.find((event) => event.name === "llm.call")!;
+  const oneMatcher = withMatchers([tenReducers[0]]);
   bench("sum, one reducer, one matching event", () => {
-    reduce([tenReducers[0]], [llmCall], oldestBucketStart);
+    reduce(oneMatcher, [llmCall], oldestBucketStart);
   });
 });

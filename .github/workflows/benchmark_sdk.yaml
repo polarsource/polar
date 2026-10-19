@@ -65,3 +65,50 @@ jobs:
           mode: ${{ matrix.mode }}
           working-directory: sdk/typescript
           run: pnpm vitest bench --run
+
+  python-sdk:
+    name: Python SDK (${{ matrix.mode }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: simulation
+            runner: blacksmith-4vcpu-ubuntu-2404
+          - mode: walltime
+            runner: codspeed-macro
+    defaults:
+      run:
+        working-directory: sdk/python
+    env:
+      # CodSpeed traces the interpreter from setup-python; keep uv from downloading its own.
+      UV_PYTHON_PREFERENCE: only-system
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version-file: sdk/python/.python-version
+
+      - name: Install dependencies
+        run: uv sync --frozen --all-extras
+
+      - name: Install Redis
+        uses: shogo82148/actions-setup-redis@v1.58.1
+        with:
+          redis-version: "7.4"
+          auto-start: false
+
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@v5
+        with:
+          mode: ${{ matrix.mode }}
+          working-directory: sdk/python
+          run: uv run --no-sync pytest tests/benchmarks -m benchmark --codspeed

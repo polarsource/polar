@@ -282,6 +282,43 @@ class ReducerState:
     credited: dict[str, int | float]
 
 
+def decode_state(values: collections.abc.Sequence[str | bytes]) -> ReducerState:
+    decoded = [
+        value.decode() if isinstance(value, bytes) else value for value in values
+    ]
+    fields = dict(zip(decoded[::2], decoded[1::2], strict=True))
+    cold = BucketStatistics()
+    buckets: dict[int, BucketStatistics] = {}
+    credited: dict[str, int | float] = {}
+    for field, value in fields.items():
+        if field.startswith("cold:"):
+            statistic = field.split(":")[1]
+            setattr(cold, statistic, _number(value))
+        elif field.startswith("bucket:"):
+            _, timestamp, statistic = field.split(":")
+            bucket = buckets.setdefault(int(timestamp), BucketStatistics())
+            setattr(bucket, statistic, _number(value))
+        elif field.startswith("credited:"):
+            credited[field.removeprefix("credited:")] = _number(value)
+    return ReducerState(
+        epoch=fields["epoch"],
+        revision=int(fields["revision"]),
+        cold_until=int(fields["cold_until"]) if "cold_until" in fields else None,
+        cold=cold,
+        buckets=buckets,
+        credited=credited,
+    )
+
+
+def consumed_units(state: ReducerState, func: str) -> int | float:
+    assert state.cold_until is not None
+    combined = dataclasses.replace(state.cold)
+    for bucket_start, statistics in state.buckets.items():
+        if bucket_start >= state.cold_until:
+            combined.add(statistics)
+    return combined.quantity(func)
+
+
 @dataclasses.dataclass
 class LocalState:
     state: ReducerState | None = None
@@ -486,7 +523,7 @@ class Outpost:
                     if first_error is None:
                         first_error = state
                     continue
-                await self._receive_state(identity, self._decode_state(state))
+                await self._receive_state(identity, decode_state(state))
             if first_error is not None:
                 raise first_error
             span.set_attribute("outpost.buckets", len(updates))
@@ -535,11 +572,7 @@ class Outpost:
                 or meter_id in state.credited
                 else "not_ready",
             )
-            combined = dataclasses.replace(state.cold)
-            for bucket_start, statistics in state.buckets.items():
-                if bucket_start >= state.cold_until:
-                    combined.add(statistics)
-            consumed = combined.quantity(reducer["aggregation"]["func"])
+            consumed = consumed_units(state, reducer["aggregation"]["func"])
             credited = state.credited.get(meter_id, 0)
             return CustomerMeter(
                 meter_id=meter_id,
@@ -707,36 +740,7 @@ class Outpost:
             keys=[f"outpost:state:{customer}"],
             args=[epoch],
         )
-        return self._decode_state(state)
-
-    def _decode_state(
-        self, values: collections.abc.Sequence[str | bytes]
-    ) -> ReducerState:
-        decoded = [
-            value.decode() if isinstance(value, bytes) else value for value in values
-        ]
-        fields = dict(zip(decoded[::2], decoded[1::2], strict=True))
-        cold = BucketStatistics()
-        buckets: dict[int, BucketStatistics] = {}
-        credited: dict[str, int | float] = {}
-        for field, value in fields.items():
-            if field.startswith("cold:"):
-                statistic = field.split(":")[1]
-                setattr(cold, statistic, _number(value))
-            elif field.startswith("bucket:"):
-                _, timestamp, statistic = field.split(":")
-                bucket = buckets.setdefault(int(timestamp), BucketStatistics())
-                setattr(bucket, statistic, _number(value))
-            elif field.startswith("credited:"):
-                credited[field.removeprefix("credited:")] = _number(value)
-        return ReducerState(
-            epoch=fields["epoch"],
-            revision=int(fields["revision"]),
-            cold_until=int(fields["cold_until"]) if "cold_until" in fields else None,
-            cold=cold,
-            buckets=buckets,
-            credited=credited,
-        )
+        return decode_state(state)
 
     async def _receive_state(self, customer: str, state: ReducerState) -> bool:
         local = self._cache.get(customer)
@@ -791,7 +795,7 @@ class Outpost:
                     if message is not None:
                         update: StateUpdate = json.loads(message["data"])
                         applied = await self._receive_state(
-                            update["customer"], self._decode_state(update["state"])
+                            update["customer"], decode_state(update["state"])
                         )
                         self._sync_received += 1
                         if applied:
@@ -945,7 +949,7 @@ class Outpost:
                         ],
                     )
                     _report_local_value(span, snapshot, replaced)
-                    await self._receive_state(identity, self._decode_state(state))
+                    await self._receive_state(identity, decode_state(state))
 
     def _parse_event(self, event: EventInput) -> Event:
         customer = self._customer_key(

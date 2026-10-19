@@ -1319,6 +1319,7 @@ async def test_snapshot_reports_local_value(
         span for span in exported_spans if span.name == "outpost.snapshot.received"
     ]
     assert span.attributes is not None
+    assert span.attributes["outpost.customer"] == "external:alice"
     assert span.attributes["outpost.local.cold_until"] == BUCKET - BUCKET_SIZE
     assert span.attributes["outpost.local.count"] == 2
     assert span.attributes["outpost.local.sum"] == 8

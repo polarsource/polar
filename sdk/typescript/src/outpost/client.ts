@@ -947,7 +947,11 @@ export class Outpost {
           reportLocalValue(span, snapshot, replaced);
           await this.receiveState(identity, decodeState(state));
         },
-        { "outpost.meter_id": snapshot.meter_id, "outpost.snapshot_version": snapshot.version },
+        {
+          "outpost.customer": customer,
+          "outpost.meter_id": snapshot.meter_id,
+          "outpost.snapshot_version": snapshot.version,
+        },
       );
     }
   }

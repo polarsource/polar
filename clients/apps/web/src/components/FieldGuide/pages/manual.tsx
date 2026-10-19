@@ -23,7 +23,7 @@ import type { Piece } from './index'
 import { LiveMeter } from '../live/meter'
 import { EventFields } from '../event'
 import { LiveLedger } from '../live/ledger'
-import { LiveBalance, LiveInvoice } from '../live/money'
+import { LiveBalance } from '../live/money'
 
 /**
  * The Polar manual: pages that explain the system the way a reference manual explains a screen or a hard drive.
@@ -618,105 +618,6 @@ export const manual: Piece[] = [
           'The measurement',
           [
             'Its metadata carries the measurement, in any shape, and it is what the meters fold over.',
-          ],
-        ],
-      ],
-    },
-  ),
-
-  // 03 Anatomy of an invoice: a schematic sheet with callouts
-  page(
-    'm-invoice',
-    'Anatomy of an invoice',
-    'The invoice drawn as a schematic, every part named: the line, the rate, the credits, the sum, and where it all came from. Chapter 4.',
-    960,
-    540,
-    2,
-    () => {
-      const x = 56,
-        y = 140,
-        w = 170,
-        h = 240,
-        R = x + w
-      const rows = [0, 1, 2].map((i) => y + 46 + i * 28)
-      return sheet(
-        960,
-        540,
-        'Anatomy of an invoice',
-        <Figure x={40} y={156} w={620} h={300}>
-          <g transform="translate(138 22)">
-            <rect
-              x={x}
-              y={y}
-              width={w}
-              height={h}
-              fill={BG}
-              stroke={MID}
-              strokeWidth={HAIR}
-            />
-            <rect x={x + 12} y={y + 12} width={44} height={8} fill={DIM} />
-            <rect x={x + w - 48} y={y + 12} width={36} height={6} fill={DIM} />
-            {rows.map((ry, i) => (
-              <g key={i}>
-                <line
-                  x1={x + 12}
-                  x2={x + w - 12}
-                  y1={ry + 14}
-                  y2={ry + 14}
-                  stroke={RULE}
-                  strokeWidth={HAIR}
-                />
-              </g>
-            ))}
-            <line
-              x1={x + 12}
-              x2={x + w - 12}
-              y1={y + 150}
-              y2={y + 150}
-              stroke={LINE}
-              strokeWidth={1.2}
-            />
-            <rect x={x + 12} y={y + 212} width={96} height={4} fill={DIM} />
-            <LiveInvoice x={x} y={y} w={w} rows={rows} />
-            <Callout at={[x + 34, y + 16]} to={[x + 34, y - 18]} route="v">
-              ISSUER · THE LOCKUP
-            </Callout>
-            <Callout at={[R, y + 15]} to={[R + 28, y + 15]}>
-              NUMBER · 00042
-            </Callout>
-            <Callout at={[R, rows[0]]} to={[R + 28, rows[0]]}>
-              LINE ITEM · A METER
-            </Callout>
-            <Callout at={[R, rows[1]]} to={[R + 28, rows[1]]}>
-              QUANTITY × RATE
-            </Callout>
-            <Callout at={[R, y + 130]} to={[R + 28, y + 130]}>
-              CREDITS APPLIED
-            </Callout>
-            <Callout at={[R, y + 169]} to={[R + 28, y + 169]}>
-              TOTAL · USD
-            </Callout>
-            <Callout at={[R, y + 214]} to={[R + 28, y + 214]}>
-              DERIVED FROM EVENTS
-            </Callout>
-          </g>
-        </Figure>,
-      )
-    },
-    {
-      sub: 'Usage in, invoice out. Every line is a sum over events.',
-      notes: [
-        [
-          'Computed',
-          [
-            'An invoice is not typed; it is computed. Each line is a meter read at the end of the period, multiplied by its rate.',
-          ],
-        ],
-        ['Credits', ['Credits come off before the sum.']],
-        [
-          'Traceable',
-          [
-            'The footer names the events it was derived from, so any line can be traced back to the facts.',
           ],
         ],
       ],
@@ -1410,14 +1311,6 @@ export const manual: Piece[] = [
             ['The credit balance', '28'],
             ['Grants and expiry', '30'],
             ['Crossing zero', '32'],
-          ],
-        ],
-        [
-          'Invoices',
-          [
-            ['Anatomy of an invoice', '36'],
-            ['Usage in, invoice out', '38'],
-            ['Proration', '40'],
           ],
         ],
         [

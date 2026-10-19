@@ -1,5 +1,6 @@
 'use client'
 
+import { Contents } from './Contents'
 import { Plate } from './Plate'
 import { pieces } from './pages'
 import type { Chapter as ChapterContent } from './content'
@@ -20,6 +21,7 @@ export function Chapter({ chapter }: { chapter: ChapterContent }) {
       className="flex flex-col gap-32 pt-6 pb-56"
     >
       {home ? plate(chapter.ids[0], 0) : null}
+      {home ? <Contents /> : null}
       {home ? null : (
         <div className="flex max-w-[600px] flex-col gap-5">
           <h1 className="m-0 text-[35px] leading-[1.15] font-medium tracking-[-0.01em] text-[#d8d8d8]">

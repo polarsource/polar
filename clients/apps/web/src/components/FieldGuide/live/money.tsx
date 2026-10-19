@@ -1,6 +1,5 @@
-import { MONO } from '../sheet'
-import { LINE, MID, DIM, BG, HAIR, term, type TermTok } from '../kit'
-import { money, num, usd, useSim, type SimEvent } from '../simulation'
+import { LINE, MID, term, type TermTok } from '../kit'
+import { num, useSim, type SimEvent } from '../simulation'
 
 const day = (at: number) => new Date(at).toISOString().slice(5, 10)
 const T = (t: string, w?: number): TermTok => ({ t, tone: 'dim', w })
@@ -83,80 +82,6 @@ export function LiveBalance({
         ],
         'c',
       )}
-    </g>
-  )
-}
-
-/** The invoice page, running: each line a meter read so far, credits off before the sum. */
-export function LiveInvoice({
-  x,
-  y,
-  w,
-  rows,
-}: {
-  x: number
-  y: number
-  w: number
-  rows: number[]
-}) {
-  const sim = useSim((s) => s)
-  const meters = ['tokens.out', 'tokens.in', 'image.gen'] as const
-  const lines = meters.map((m) => ({
-    m,
-    q: sim.usage[m],
-    a: usd(sim, m, sim.usage[m]),
-  }))
-  const sum =
-    lines.reduce((t, l) => t + l.a, 0) +
-    usd(sim, 'api.call', sim.usage['api.call'])
-  const credit = Math.min(sum, usd(sim, 'tokens.out', sim.consumed))
-  const total = sum - credit
-  const text = (
-    tx: number,
-    ty: number,
-    t: string,
-    fill = DIM,
-    anchor: 'start' | 'end' = 'start',
-  ) => (
-    <text
-      x={tx}
-      y={ty}
-      fontSize={6.5}
-      fill={fill}
-      textAnchor={anchor}
-      style={{ ...MONO, letterSpacing: 0 }}
-    >
-      {t}
-    </text>
-  )
-  return (
-    <g data-live>
-      {lines.map((l, i) => (
-        <g key={l.m}>
-          <rect
-            x={x + 12}
-            y={rows[i] - 6}
-            width={w - 24}
-            height={10}
-            fill={BG}
-          />
-          {text(x + 12, rows[i] + 2, l.m)}
-          {text(x + 74, rows[i] + 2, num(l.q))}
-          {text(x + w - 12, rows[i] + 2, money(l.a), DIM, 'end')}
-        </g>
-      ))}
-      <rect x={x + w - 60} y={y + 124} width={48} height={10} fill={BG} />
-      {text(x + w - 12, y + 132, `-${money(credit)}`, LINE, 'end')}
-      <rect
-        x={x + w - 70}
-        y={y + 162}
-        width={58}
-        height={14}
-        fill={BG}
-        stroke={LINE}
-        strokeWidth={HAIR}
-      />
-      {text(x + w - 16, y + 172, money(total), LINE, 'end')}
     </g>
   )
 }

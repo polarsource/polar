@@ -42,9 +42,8 @@ export const chapters: { title: string; ids: string[] }[] = [
   },
   { title: '04 · Local-first', ids: ['m-igloo', 'm-latency', 'm-reconcile'] },
   { title: '05 · Credits', ids: ['m-credits', 'm-grants', 'm-zero'] },
-  { title: '06 · Invoices', ids: ['m-invoice', 'm-usage', 'm-proration'] },
-  { title: '07 · Entitlements', ids: ['m-gates', 'm-flow', 'm-benefits'] },
-  { title: '08 · Agents', ids: ['m-nesting', 'm-keys', 'm-ask'] },
+  { title: '06 · Entitlements', ids: ['m-gates', 'm-flow', 'm-benefits'] },
+  { title: '07 · Agents', ids: ['m-nesting', 'm-keys', 'm-ask'] },
   { title: 'Appendix', ids: ['m-catalogue', 'm-api', 'm-glossary'] },
 ]
 const ORDER = chapters.flatMap((c) => c.ids)

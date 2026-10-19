@@ -59,14 +59,6 @@ export const CHAPTERS: Chapter[] = [
   },
   {
     n: '06',
-    name: 'Invoices',
-    title: 'Invoices',
-    intro:
-      'An invoice is not typed; it is computed. Each line is a meter read at the end of the period, multiplied by its rate. Credits come off before the sum.',
-    ids: ['m-invoice', 'm-usage', 'm-proration'],
-  },
-  {
-    n: '07',
     name: 'Entitlements',
     title: 'Entitlements',
     intro:
@@ -74,7 +66,7 @@ export const CHAPTERS: Chapter[] = [
     ids: ['m-gates', 'm-flow', 'm-benefits'],
   },
   {
-    n: '08',
+    n: '07',
     name: 'Agents',
     title: 'Agents',
     intro:
@@ -82,7 +74,7 @@ export const CHAPTERS: Chapter[] = [
     ids: ['m-nesting', 'm-keys', 'm-ask'],
   },
   {
-    n: '09',
+    n: '08',
     name: 'Appendix',
     title: 'Appendix',
     intro: 'The event catalogue, the API in one call, and the glossary.',

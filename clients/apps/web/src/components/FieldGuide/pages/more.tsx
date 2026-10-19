@@ -16,7 +16,6 @@ import {
   Callout,
   Figure,
   Anchor,
-  Hatch,
 } from '../kit'
 import type { Notes, Piece } from './index'
 
@@ -616,251 +615,7 @@ const zero = (() => {
   )
 })()
 
-// ---------------------------------------------------------------- 06 Invoices · Usage in, invoice out
-
-const usageOut = (() => {
-  const x0 = 56,
-    y = 250
-  const n = 11
-  const fig = (
-    <>
-      <g fill="none" stroke={MID} strokeWidth={HAIR}>
-        {Array.from({ length: n }, (_, i) => {
-          const yy = 176 + ((y - 176) * 2 * i) / (n - 1)
-          return (
-            <path
-              key={i}
-              d={`M ${x0} ${yy} C ${x0 + 100} ${yy}, ${x0 + 50} ${y}, ${x0 + 150} ${y}`}
-            />
-          )
-        })}
-      </g>
-      {Array.from({ length: n }, (_, i) => (
-        <Anchor
-          key={i}
-          at={[x0, 176 + ((y - 176) * 2 * i) / (n - 1)]}
-          size={2.4}
-        />
-      ))}
-      <line
-        x1={x0 + 150}
-        x2={x0 + 190}
-        y1={y}
-        y2={y}
-        stroke={LINE}
-        strokeWidth={HAIR}
-      />
-      <circle cx={x0 + 150} cy={y} r={3.5} fill={LINE} />
-      <rect
-        x={x0 + 190}
-        y={y - 46}
-        width={98}
-        height={92}
-        fill={BG}
-        stroke={LINE}
-        strokeWidth={HAIR}
-      />
-      <rect x={x0 + 200} y={y - 36} width={24} height={4} fill={DIM} />
-      {[0, 1, 2].map((i) => (
-        <g key={i}>
-          <rect
-            x={x0 + 200}
-            y={y - 18 + i * 12}
-            width={30}
-            height={3}
-            fill={MID}
-          />
-          <rect
-            x={x0 + 258}
-            y={y - 18 + i * 12}
-            width={20}
-            height={3}
-            fill={MID}
-          />
-        </g>
-      ))}
-      <line
-        x1={x0 + 200}
-        x2={x0 + 278}
-        y1={y + 22}
-        y2={y + 22}
-        stroke={LINE}
-        strokeWidth={HAIR}
-      />
-      <rect x={x0 + 250} y={y + 28} width={28} height={6} fill={LINE} />
-      <Callout at={[x0, 176]} to={[x0, 148]} route="v">
-        USAGE · 5,015,338 EVENTS
-      </Callout>
-      <Callout at={[x0 + 150, y]} to={[x0 + 150, 326]} route="v" side="left">
-        PERIOD CLOSES · FOLD READ
-      </Callout>
-      <Callout
-        at={[x0 + 288, y - 46]}
-        to={[x0 + 288, 148]}
-        route="v"
-        dot={false}
-        side="left"
-      >
-        INVOICE · 3 LINES
-      </Callout>
-    </>
-  )
-  return landscape(
-    'm-usage',
-    'Usage in, invoice out',
-    'The invoice is the fold, read at the close of the period.',
-    'Usage as strands into one point, and the invoice as the sheet that point writes: the period closes, each meter is read, and a line is made of each reading.',
-    fig,
-    [
-      [
-        'The close',
-        [
-          'Nothing is typed into an invoice. When a period closes, every meter on the product is read, and each reading becomes a line: the quantity, the rate it was priced at, the sum.',
-        ],
-      ],
-      ['The total', ['Credits come off and the total follows.']],
-      [
-        'On the ledger',
-        [
-          'The invoice is issued as an event of its own, so it, too, is on the ledger and can be replayed.',
-        ],
-      ],
-    ],
-  )
-})()
-
-// ---------------------------------------------------------------- 06 Invoices · Proration
-
-const proration = (() => {
-  const x0 = 60,
-    x1 = 340,
-    y = 236
-  const sw = 0.4
-  const fig = (
-    <>
-      <line x1={x0} x2={x1} y1={y} y2={y} stroke={MID} strokeWidth={HAIR} />
-      {[0, 1].map((t) => (
-        <g key={t}>
-          <line
-            x1={x0 + (x1 - x0) * t}
-            x2={x0 + (x1 - x0) * t}
-            y1={y - 6}
-            y2={y + 6}
-            stroke={MID}
-            strokeWidth={HAIR}
-          />
-          <text
-            x={x0 + (x1 - x0) * t}
-            y={y + 18}
-            fontSize={7}
-            fill={DIM}
-            textAnchor="middle"
-            style={MONO}
-          >
-            {t === 0 ? 'OCT 01' : 'OCT 31'}
-          </text>
-        </g>
-      ))}
-      <Hatch id="pro-hatch" />
-      <rect
-        x={x0}
-        y={y - 40}
-        width={(x1 - x0) * sw}
-        height={22}
-        fill={BG}
-        stroke={MID}
-        strokeWidth={HAIR}
-      />
-      <rect
-        x={x0}
-        y={y - 40}
-        width={(x1 - x0) * sw}
-        height={22}
-        fill="url(#pro-hatch)"
-      />
-      <rect
-        x={x0 + (x1 - x0) * sw}
-        y={y - 70}
-        width={(x1 - x0) * (1 - sw)}
-        height={52}
-        fill={BG}
-        stroke={LINE}
-        strokeWidth={HAIR}
-      />
-      <text
-        x={x0 + ((x1 - x0) * sw) / 2}
-        y={y - 26}
-        fontSize={7.5}
-        fill={DIM}
-        textAnchor="middle"
-        style={MONO}
-      >
-        HOBBY · $0
-      </text>
-      <text
-        x={x0 + (x1 - x0) * sw + ((x1 - x0) * (1 - sw)) / 2}
-        y={y - 41}
-        fontSize={7.5}
-        fill={LINE}
-        textAnchor="middle"
-        style={MONO}
-      >
-        PRO · $20 × 19/31
-      </text>
-      <Guide
-        a={[x0 + (x1 - x0) * sw, y - 90]}
-        b={[x0 + (x1 - x0) * sw, y + 6]}
-      />
-      <Anchor at={[x0 + (x1 - x0) * sw, y]} />
-      <Callout
-        at={[x0 + (x1 - x0) * sw, y - 90]}
-        to={[x0 + (x1 - x0) * sw, y - 112]}
-        route="v"
-        dot={false}
-      >
-        OCT 12 · subscription.updated
-      </Callout>
-      <Callout
-        at={[x1, y - 44]}
-        to={[x1 + 4, y + 50]}
-        route="v"
-        dot={false}
-        side="left"
-      >
-        LINE · $12.26
-      </Callout>
-    </>
-  )
-  return landscape(
-    'm-proration',
-    'Proration',
-    'A change mid-period is an event; the line is the fraction.',
-    'A subscription upgraded on the twelfth: the old plan for the first part of the month, the new one for the rest, and the invoice line as the fraction of the period the new plan was active.',
-    fig,
-    [
-      [
-        'No estimates',
-        [
-          'When a subscription changes mid-period, nothing is estimated. The change is an event with a time, so the period splits at that time.',
-        ],
-      ],
-      [
-        'The split',
-        [
-          'The old plan is charged for the days before, the new one for the days after, each as a fraction of the period.',
-        ],
-      ],
-      [
-        'The line',
-        [
-          'The line on the invoice is that fraction, and the event beside it says why.',
-        ],
-      ],
-    ],
-  )
-})()
-
-// ---------------------------------------------------------------- 07 Entitlements · Benefits
+// ---------------------------------------------------------------- 06 Entitlements · Benefits
 
 const benefits = (() => {
   const x0 = 70,
@@ -1010,7 +765,7 @@ const benefits = (() => {
   )
 })()
 
-// ---------------------------------------------------------------- 08 Agents · Keys and sessions
+// ---------------------------------------------------------------- 07 Agents · Keys and sessions
 
 const keys = (() => {
   const { line } = term(70, 150, 8, 11.6)
@@ -1068,7 +823,7 @@ const keys = (() => {
   )
 })()
 
-// ---------------------------------------------------------------- 08 Agents · Asking the ledger
+// ---------------------------------------------------------------- 07 Agents · Asking the ledger
 
 const ask = (() => {
   const { line } = term(70, 150, 8, 11.6)
@@ -1352,8 +1107,6 @@ export const more: Piece[] = [
   reconciliation,
   grants,
   zero,
-  usageOut,
-  proration,
   benefits,
   keys,
   ask,

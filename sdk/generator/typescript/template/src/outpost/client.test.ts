@@ -7,7 +7,7 @@ import { createRequire } from "node:module";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 import { WebSocketServer, type WebSocket } from "ws";
 
-import { createPolar } from "../2026-10/client";
+import { createPolar } from "../{{ (ir.versions[-2] | default(ir.versions[0])).version }}/client";
 import { ClientBase } from "../base";
 import { Outpost, type OutpostOptions, UnavailableRedisError } from "./client";
 import { BUCKET_SIZE, getBucketStart, type Reducer } from "./reducer";

@@ -24,6 +24,7 @@ from polar.models.organization_sso_connection import (
 )
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user_organization import OrganizationRole, UserOrganization
+from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import DISPUTE_AUTO_ACCEPT_MAX_AMOUNT
 from polar.organization_review.schemas import ReviewContext
 from polar.payout_account.service import PayoutAccountServiceError
@@ -269,18 +270,22 @@ class TestUpdateOrganization:
             },
         )
         assert response.status_code == 200
-        organization = await session.get(Organization, organization.id)
-        assert organization is not None
-        assert organization.details is not None
-        assert organization.details["product_description"] == "Updated product"
-        if api_version == V2026_10:
-            assert organization.details["about"] == "Retired input"
-            assert organization.details["previous_annual_revenue"] == 2000
-        else:
-            assert "about" not in organization.details
-            assert "previous_annual_revenue" not in organization.details
 
-        response = await client.get(f"/v1/organizations/{organization.id}/kyc")
+        repository = OrganizationRepository.from_session(session)
+        updated_organization = await repository.get_by_id(organization.id)
+        assert updated_organization is not None
+        assert updated_organization.details is not None
+        assert (
+            updated_organization.details.get("product_description") == "Updated product"
+        )
+        if api_version == V2026_10:
+            assert updated_organization.details.get("about") == "Retired input"
+            assert updated_organization.details.get("previous_annual_revenue") == 2000
+        else:
+            assert "about" not in updated_organization.details
+            assert "previous_annual_revenue" not in updated_organization.details
+
+        response = await client.get(f"/v1/organizations/{updated_organization.id}/kyc")
         assert response.status_code == 200
         details = response.json()["details"]
         assert ("about" in details) is (api_version == V2026_10)

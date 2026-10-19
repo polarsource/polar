@@ -130,3 +130,18 @@ async def telemetry(
         status_code=forwarded.status_code,
         headers=dict(forwarded.headers),
     )
+
+
+@router.post("/telemetry/metrics", include_in_schema=False)
+async def telemetry_metrics(
+    auth_subject: OutpostWrite,
+    body: Annotated[bytes, Body(media_type="application/x-protobuf")],
+) -> Response:
+    forwarded = await anyio.to_thread.run_sync(
+        outpost_service.relay_metrics, auth_subject.subject, body
+    )
+    return Response(
+        content=forwarded.content,
+        status_code=forwarded.status_code,
+        headers=dict(forwarded.headers),
+    )

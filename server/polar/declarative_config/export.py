@@ -1,8 +1,8 @@
 from collections.abc import AsyncIterator, Callable
-from typing import Any, Protocol, cast
+from typing import Any, Literal, Protocol, cast, get_origin
 from uuid import UUID
 
-from pydantic import TypeAdapter, ValidationError
+from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.strategies.meter_credit.properties import (
@@ -309,3 +309,32 @@ async def export_config(
         settings=_settings(organization),
         skipped=skipped,
     )
+
+
+def _is_default(model: BaseModel, name: str) -> bool:
+    field = type(model).model_fields[name]
+    if field.is_required() or get_origin(field.annotation) is Literal:
+        return False
+    return getattr(model, name) == field.get_default(call_default_factory=True)
+
+
+def _drop_defaults(value: Any, data: Any) -> Any:
+    if isinstance(value, BaseModel):
+        return {
+            name: _drop_defaults(getattr(value, name), item)
+            for name, item in data.items()
+            if not _is_default(value, name)
+        }
+    if isinstance(value, list):
+        return [_drop_defaults(v, d) for v, d in zip(value, data, strict=True)]
+    return data
+
+
+def without_defaults(export: ConfigExport) -> dict[str, Any]:
+    """
+    Dump the export leaving out fields set to their default, since plan and
+    apply fill them in. `Literal` fields are kept: they discriminate unions,
+    like a meter's `aggregation.func`, and apply can't parse the entry without
+    them.
+    """
+    return cast(dict[str, Any], _drop_defaults(export, export.model_dump(mode="json")))

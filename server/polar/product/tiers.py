@@ -39,7 +39,7 @@ class TierInput(BaseModel):
     BigInteger amount columns, with 12 decimal places.
     """
 
-    model_config = ConfigDict(json_schema_serialization_defaults_required=True)
+    model_config = ConfigDict(json_schema_mode_override="validation")
 
     bound: int | None = Field(default=None, gt=0)
     unit_amount: Decimal = Field(

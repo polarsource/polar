@@ -137,7 +137,8 @@ describe("reduce", () => {
   bench("sum, ten reducers, 1,000 events", () => {
     reduce(tenReducers, events, oldestBucketStart);
   });
-  bench("sum, one reducer, one event", () => {
-    reduce([tenReducers[0]], events.slice(0, 1), oldestBucketStart);
+  const llmCall = events.find((event) => event.name === "llm.call")!;
+  bench("sum, one reducer, one matching event", () => {
+    reduce([tenReducers[0]], [llmCall], oldestBucketStart);
   });
 });

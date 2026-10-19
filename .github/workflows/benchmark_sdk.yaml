@@ -1,15 +1,15 @@
-name: Benchmarks
+name: SDK Benchmarks
 
 on:
   push:
     branches: [main]
     paths:
       - "sdk/**"
-      - ".github/workflows/benchmarks.yaml"
+      - ".github/workflows/benchmark_sdk.yaml"
   pull_request:
     paths:
       - "sdk/**"
-      - ".github/workflows/benchmarks.yaml"
+      - ".github/workflows/benchmark_sdk.yaml"
   workflow_dispatch:
 
 permissions:

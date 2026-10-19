@@ -88,24 +88,21 @@ def test_write_bucket_one_event(
     benchmark: BenchmarkFixture, redis: Redis, buckets: int
 ) -> None:
     newest_bucket_start = COLD_UNTIL + (buckets - 1) * BUCKET_SIZE
+    # The client loads each script once and calls it by hash.
+    sha = redis.script_load(WRITE_BUCKET_SCRIPT)
     benchmark(
-        redis.eval,
-        WRITE_BUCKET_SCRIPT,
-        1,
-        *write_args(identity_of(buckets), newest_bucket_start),
+        redis.evalsha, sha, 1, *write_args(identity_of(buckets), newest_bucket_start)
     )
 
 
 def test_write_bucket_three_reducers(benchmark: BenchmarkFixture, redis: Redis) -> None:
+    sha = redis.script_load(WRITE_BUCKET_SCRIPT)
+
     def write() -> None:
         pipeline = redis.pipeline(transaction=False)
         for reducer in REDUCERS:
             identity = f"external:alice:{reducer}"
-            pipeline.eval(
-                WRITE_BUCKET_SCRIPT,
-                1,
-                *write_args(identity, COLD_UNTIL),
-            )
+            pipeline.evalsha(sha, 1, *write_args(identity, COLD_UNTIL))
         pipeline.execute()
 
     benchmark(write)
@@ -113,7 +110,6 @@ def test_write_bucket_three_reducers(benchmark: BenchmarkFixture, redis: Redis) 
 
 @pytest.mark.parametrize("buckets", BUCKET_COUNTS)
 def test_read_state(benchmark: BenchmarkFixture, redis: Redis, buckets: int) -> None:
-    # The client loads the read and snapshot scripts once and calls them by hash.
     sha = redis.script_load(READ_STATE_SCRIPT)
     benchmark(redis.evalsha, sha, 1, key_of(buckets), EPOCH)
 

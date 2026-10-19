@@ -37,11 +37,16 @@ OAuth client stays marked as an agent, which is what still identifies it, for ex
   branches: code that treats every non-user as an `Organization` will misread an `Agent`.
 - Only endpoints that set up the org's catalog may accept `Agent`: organizations, products, meters,
   benefits, discounts, events and config. Endpoints that take payments, hold buyer data or pay out
-  never do: checkouts, orders, subscriptions, refunds, customers and payouts. Neither do members or
-  webhooks, including config's webhook section, because a webhook set up before the claim keeps
-  receiving data after it. In production the org can't go live before the claim; in sandbox it can.
-- The route allowlist is the guard: a test pins the routes that accept `Agent`, so every new opt-in
-  shows up in review. Unclaimed agent tokens also carry only the scopes of the allowed resources
+  never do: orders, subscriptions, refunds, customers and payouts. Neither do members or webhooks,
+  including config's webhook section, because a webhook set up before the claim keeps receiving data
+  after it. In production the org can't go live before the claim; in sandbox it can.
+- Checkout sessions and checkout links accept `Agent` in sandbox only, so the agent can test a
+  checkout end to end with test cards. In production they stay closed until the claim.
+- Unclaimed agents can't create organization access tokens: one would be an `Organization` caller
+  that skips this allowlist and keeps working after the claim. App-side testing that needs one waits
+  for the claim.
+- The route allowlist is the guard: a test pins the routes that accept `Agent` in each environment,
+  so every new opt-in shows up in review. Unclaimed agent tokens also carry only the scopes of the allowed resources
   (`products:write`, `meters:write`, …), which blocks a wrong opt-in on a resource with its own scope,
   such as refunds. It doesn't help where scopes are shared: the payout-account, member-invite and
   review-submission routes need `organizations:write`, like editing the org itself, so only the

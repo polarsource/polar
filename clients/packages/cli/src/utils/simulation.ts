@@ -7,6 +7,7 @@ import type {
 import { money } from '@/utils/billing-config/describe'
 import { plural } from '@/utils/billing-config/problems'
 import { box, target } from '@/utils/billing-config/review'
+import { formatWindow } from '@/utils/simulation-window'
 import * as ui from '@/utils/ui'
 
 interface Cell {
@@ -49,8 +50,8 @@ const header = (churn: boolean): Cell[] =>
   [
     '',
     'subscribers',
-    'per subscriber /mo',
-    'change /mo',
+    'billed → proposed',
+    'change',
     '',
     ...(churn ? ['churn risk'] : []),
     '',
@@ -106,7 +107,7 @@ const notes = (cohort: Cohort) =>
   [
     cohort.archived && 'archived price',
     billed(cohort),
-    cohort.partial && 'fixed fee only',
+    cohort.partial && 'other charges not simulated',
   ]
     .filter(Boolean)
     .join(' · ')
@@ -119,14 +120,12 @@ const cohortRows = ({ currency, cohorts }: AnalyzedResult): Cell[][] => {
   }
   return [...products].flatMap(([product, group]) =>
     group.map((cohort, index): Cell[] => {
-      const delta = cohort.proposed_monthly - cohort.baseline_monthly
-      const each = (total: number) =>
-        money(Math.round(total / cohort.subscribers), currency)
+      const delta = cohort.proposed - cohort.baseline
       return [
         { text: index === 0 ? `${ui.INDENT}${product}` : '', style: ui.bold },
         { text: String(cohort.subscribers), right: true },
         {
-          text: `${each(cohort.baseline_monthly)} → ${each(cohort.proposed_monthly)}`,
+          text: `${money(cohort.baseline, currency)} → ${money(cohort.proposed, currency)}`,
           right: true,
         },
         { text: signed(delta, currency), right: true, style: tone(delta) },
@@ -141,17 +140,25 @@ const cohortRows = ({ currency, cohorts }: AnalyzedResult): Cell[][] => {
 const total = (delta: number, currency: string) =>
   `${currency.toUpperCase()} ${tone(delta)(`${signed(delta, currency)}/mo`)}`
 
+const windowTotal = ({
+  currency,
+  baseline,
+  proposed,
+  monthly_delta,
+}: SimulationResult) =>
+  `${currency.toUpperCase()} ${tone(proposed - baseline)(signed(proposed - baseline, currency))} ${ui.dim(`(≈ ${signed(monthly_delta, currency)}/mo)`)}`
+
 const heading = (
-  { currency, monthly_delta, change_pct }: AnalyzedResult,
+  { currency, baseline, proposed, change_pct }: AnalyzedResult,
   churn: boolean,
 ): Cell[] => [
   { text: currency, style: ui.bold },
   { text: '' },
   { text: '' },
   {
-    text: signed(monthly_delta, currency),
+    text: signed(proposed - baseline, currency),
     right: true,
-    style: (text) => ui.bold(tone(monthly_delta)(text)),
+    style: (text) => ui.bold(tone(proposed - baseline)(text)),
   },
   percent(change_pct),
   ...(churn ? [{ text: '' }] : []),
@@ -201,6 +208,7 @@ export const renderSimulation = (
     return [ui.success(`No subscribers in ${target(organization)} to simulate`)]
   }
   const churn = assumptions !== null
+  const window = formatWindow(results[0]!.window)
   const sections = results.map((result) => [
     heading(result, churn),
     ...cohortRows(result),
@@ -218,12 +226,15 @@ export const renderSimulation = (
   const warnings = caveats(results)
   return [
     ui.blank,
-    box(`Simulation ${ui.dim(target(organization))}`, body.join('\n')),
+    box(
+      `Simulation ${ui.dim(`${target(organization)} · ${window}`)}`,
+      body.join('\n'),
+    ),
     ...(warnings.length > 0 ? [ui.blank, ...warnings] : []),
     ui.blank,
-    `${ui.INDENT}${ui.dim('Simulation:')} ${results.map((result) => total(result.monthly_delta, result.currency)).join(', ')}`,
+    `${ui.INDENT}${ui.dim('Simulation:')} ${results.map(windowTotal).join(', ')}`,
     ui.step(
-      `${counts(results)}, based on each subscriber's last billing period.`,
+      `${counts(results)}. Replays subscription orders billed ${window} at the proposed prices.`,
     ),
     ...(assumptions === null
       ? []

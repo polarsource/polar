@@ -12,14 +12,21 @@ const cohort = (subscribers: number, baseline: number, proposed: number) => ({
   recurring_interval: 'month' as const,
   recurring_interval_count: 1,
   subscribers,
-  baseline_monthly: baseline,
-  proposed_monthly: proposed,
+  baseline,
+  proposed,
   components: [],
 })
 
 const result: SimulationResult = {
-  monthly_delta: 1_200,
+  window: {
+    since: '2026-07-01T00:00:00Z',
+    until: '2026-10-01T00:00:00Z',
+    months: 3,
+  },
   currency: 'usd',
+  baseline: 3_000,
+  proposed: 4_200,
+  monthly_delta: 400,
   counts: { more: 4, less: 0, same: 0, no_history: 0, not_simulated: 0 },
   cohorts: [cohort(2, 2_000, 2_200), cohort(2, 1_000, 2_000)],
   not_simulated: [],
@@ -54,11 +61,11 @@ describe('analyze', () => {
     ])
   })
 
-  test('discounts the proposed amounts by each cohort churn risk', () => {
+  test('discounts the proposed amounts by each cohort churn risk, per month', () => {
     const [analyzed] = analyze([result], assumptions)
     expect(analyzed?.cohorts.map((c) => c.churn_risk_pct)).toEqual([0, 100])
     expect(analyzed).toMatchObject({
-      expected_monthly_delta: 2_200 - 3_000,
+      expected_monthly_delta: Math.round((2_200 - 3_000) / 3),
       subscribers_at_risk: 2,
     })
   })

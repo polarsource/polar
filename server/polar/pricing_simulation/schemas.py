@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 
 from pydantic import Field
@@ -12,11 +13,12 @@ class SimulationCounts(Schema):
     less: int = Field(description="Subscribers who would pay less.")
     same: int = Field(description="Subscribers who would pay the same.")
     no_history: int = Field(
-        description="Subscribers with no closed period yet, such as trials. "
-        "Counted, not simulated."
+        description="Active subscribers with nothing billed in the window, such as "
+        "trials. Counted, not simulated."
     )
     not_simulated: int = Field(
-        description="Subscribers left out because none of their bill could be repriced."
+        description="Subscribers billed in the window, left out because none of "
+        "their bill could be repriced."
     )
 
 
@@ -26,26 +28,31 @@ class SimulationComponent(Schema):
     meter_external_id: str | None = Field(
         default=None, description="The meter of a usage component."
     )
-    baseline: int = Field(description="Monthly amount today, in minor units.")
-    proposed: int = Field(description="Monthly amount on the config, in minor units.")
+    baseline: int = Field(description="Billed in the window, in minor units.")
+    proposed: int = Field(
+        description="What the same items bill on the config, in minor units."
+    )
 
 
 class SimulationCohort(Schema):
     product_external_id: str = Field(description="The product's `external_id`.")
-    price_label: str = Field(description="The price the cohort pays today.")
-    archived: bool = Field(description="Whether the cohort pays an archived price.")
+    price_label: str = Field(description="The price the cohort was billed on.")
+    archived: bool = Field(description="Whether that price is archived.")
     partial: bool = Field(
         description="Whether part of the bill wasn't simulated. The amounts then "
         "cover only the simulated components."
     )
     recurring_interval: SubscriptionRecurringInterval
     recurring_interval_count: int
-    subscribers: int = Field(description="Number of simulated subscribers.")
-    baseline_monthly: int = Field(
-        description="What the cohort pays per month today, in minor units."
+    subscribers: int = Field(
+        description="Number of subscriptions billed on this price in the window."
     )
-    proposed_monthly: int = Field(
-        description="What the cohort would pay per month on the config, in minor units."
+    baseline: int = Field(
+        description="What the cohort was billed in the window, in minor units."
+    )
+    proposed: int = Field(
+        description="What the cohort would have been billed on the config, "
+        "in minor units."
     )
     components: list[SimulationComponent]
 
@@ -57,12 +64,24 @@ class SimulationNotSimulated(Schema):
     subscribers: int = Field(description="Number of subscribers it affects.")
 
 
+class SimulationWindow(Schema):
+    since: datetime
+    until: datetime
+    months: float = Field(description="Length of the window in calendar months.")
+
+
 class SimulationResult(Schema):
-    monthly_delta: int = Field(
-        description="Proposed minus baseline, per month, summed over simulated "
-        "subscribers, in minor units."
-    )
+    window: SimulationWindow = Field(description="The replayed time range.")
     currency: str
+    baseline: int = Field(
+        description="Billed in the window by simulated items, in minor units."
+    )
+    proposed: int = Field(
+        description="What the same items bill on the config, in minor units."
+    )
+    monthly_delta: int = Field(
+        description="Proposed minus baseline, per month of the window, in minor units."
+    )
     counts: SimulationCounts
     cohorts: list[SimulationCohort]
     not_simulated: list[SimulationNotSimulated]

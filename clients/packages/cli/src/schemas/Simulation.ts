@@ -17,14 +17,24 @@ const Cohort = Schema.Struct({
   recurring_interval: Schema.Literals(['day', 'week', 'month', 'year']),
   recurring_interval_count: Schema.Finite,
   subscribers: Schema.Finite,
-  baseline_monthly: Schema.Finite,
-  proposed_monthly: Schema.Finite,
+  baseline: Schema.Finite,
+  proposed: Schema.Finite,
   components: Schema.Array(Component),
 })
 
+export const SimulationWindow = Schema.Struct({
+  since: Schema.String,
+  until: Schema.String,
+  months: Schema.Finite,
+})
+export type SimulationWindow = typeof SimulationWindow.Type
+
 export const SimulationResult = Schema.Struct({
-  monthly_delta: Schema.Finite,
+  window: SimulationWindow,
   currency: Schema.String,
+  baseline: Schema.Finite,
+  proposed: Schema.Finite,
+  monthly_delta: Schema.Finite,
   counts: Schema.Struct({
     more: Schema.Finite,
     less: Schema.Finite,

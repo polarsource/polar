@@ -1,8 +1,11 @@
-from fastapi import Depends
+from dateutil.relativedelta import relativedelta
+from fastapi import Depends, Query
+from pydantic import AwareDatetime
 
 from polar.declarative_config.schemas import Config
 from polar.declarative_config.service import ConfigAsCodeNotEnabled
-from polar.exceptions import NotPermitted, Unauthorized
+from polar.exceptions import NotPermitted, PolarRequestValidationError, Unauthorized
+from polar.kit.utils import utc_now
 from polar.openapi import APITag
 from polar.postgres import AsyncReadSession, get_db_read_session
 from polar.routing import APIRouter
@@ -33,13 +36,35 @@ router = APIRouter(prefix="/config", tags=["config", APITag.private])
 async def simulate(
     config: Config,
     auth_subject: SimulationRead,
+    since: AwareDatetime | None = Query(
+        None, description="Start of the window. Defaults to one month before `until`."
+    ),
+    until: AwareDatetime | None = Query(
+        None, description="End of the window. Defaults to now."
+    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> list[SimulationResult]:
     """
-    Show what moving today's subscribers to a declarative config document would
-    change in what they pay per month, without applying it.
+    Replay the subscription orders billed in a window at the prices of a
+    declarative config document, without applying it.
 
-    Subscribers are grouped into cohorts by the price they pay today. Changes the
-    simulation can't reprice are listed in `not_simulated`.
+    Each order item counts for the share of its billing period inside the window.
+    Subscribers are grouped into cohorts by the price they were billed on. Changes
+    the simulation can't reprice are listed in `not_simulated`.
     """
-    return await pricing_simulation_service.simulate(session, auth_subject, config)
+    until = until or utc_now()
+    since = since or until - relativedelta(months=1)
+    if since >= until or since < until - relativedelta(years=2):
+        raise PolarRequestValidationError(
+            [
+                {
+                    "loc": ("query",),
+                    "msg": "since must be before until, at most two years apart.",
+                    "type": "value_error",
+                    "input": (since, until),
+                }
+            ]
+        )
+    return await pricing_simulation_service.simulate(
+        session, auth_subject, config, since, until
+    )

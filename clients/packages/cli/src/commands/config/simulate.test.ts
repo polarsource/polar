@@ -37,8 +37,15 @@ const acme = {
 
 const results: SimulationResponse = [
   {
-    monthly_delta: 168_000 + 1_000,
+    window: {
+      since: '2026-07-19T00:00:00Z',
+      until: '2026-10-19T00:00:00Z',
+      months: 3,
+    },
     currency: 'usd',
+    baseline: 756_000 + 3_000,
+    proposed: 1_260_000 + 6_000,
+    monthly_delta: 169_000,
     counts: { more: 169, less: 0, same: 0, no_history: 2, not_simulated: 3 },
     cohorts: [
       {
@@ -49,8 +56,8 @@ const results: SimulationResponse = [
         recurring_interval: 'month',
         recurring_interval_count: 1,
         subscribers: 168,
-        baseline_monthly: 252_000,
-        proposed_monthly: 420_000,
+        baseline: 756_000,
+        proposed: 1_260_000,
         components: [],
       },
       {
@@ -61,8 +68,8 @@ const results: SimulationResponse = [
         recurring_interval: 'year',
         recurring_interval_count: 1,
         subscribers: 1,
-        baseline_monthly: 1_000,
-        proposed_monthly: 2_000,
+        baseline: 3_000,
+        proposed: 6_000,
         components: [],
       },
     ],
@@ -76,7 +83,7 @@ const results: SimulationResponse = [
       {
         resource: 'product',
         external_id: 'pro',
-        reason: 'no closed period yet',
+        reason: 'nothing billed in the window',
         subscribers: 2,
       },
     ],
@@ -86,6 +93,7 @@ const results: SimulationResponse = [
 const run = async (response: SimulationResponse, args: string[] = []) => {
   const cli = runCli(simulate, ['polar.json', ...args])
   const sent: LoadedConfig[] = []
+  const windows: unknown[] = []
   const exit = await Effect.runPromiseExit(
     cli.effect.pipe(
       Effect.provideService(
@@ -100,8 +108,9 @@ const run = async (response: SimulationResponse, args: string[] = []) => {
       Effect.provideService(
         Simulation,
         Simulation.of({
-          simulate: (config) => {
+          simulate: (config, _organization, window) => {
             sent.push(config)
+            windows.push(window)
             return Effect.succeed(response)
           },
         }),
@@ -122,29 +131,30 @@ const run = async (response: SimulationResponse, args: string[] = []) => {
     output: stripAnsi(cli.output()),
     failed: exit._tag === 'Failure',
     sent,
+    windows,
   }
 }
 
 describe('polar config simulate', () => {
-  test('shows the monthly delta, cohorts and what was not simulated', async () => {
+  test('shows the window totals, cohorts and what was not simulated', async () => {
     const { output, failed } = await run(results)
     expect(failed).toBe(false)
     expect(output).toContain(
       [
-        '  ╭─ Simulation Acme (sandbox)',
+        '  ╭─ Simulation Acme (sandbox) · Jul 19 – Oct 19, 2026',
         '  │',
-        '  │         subscribers   per subscriber /mo   change /mo',
-        '  │ usd                                           +$1,690    +67%',
-        '  │   pro           168            $15 → $25      +$1,680    +67%',
-        '  │                   1            $10 → $20         +$10   +100%   archived price · billed yearly · fixed fee only',
+        '  │         subscribers   billed → proposed    change',
+        '  │ usd                                       +$5,070    +67%',
+        '  │   pro           168    $7,560 → $12,600   +$5,040    +67%',
+        '  │                   1           $30 → $60      +$30   +100%   archived price · billed yearly · other charges not simulated',
         '  │',
         '  ╰─',
         '',
         "  ▲ Not simulated for team (3 subscribers): seat-based prices aren't supported yet",
-        '  ▲ Not simulated for pro (2 subscribers): no closed period yet',
+        '  ▲ Not simulated for pro (2 subscribers): nothing billed in the window',
         '',
-        '  Simulation: USD +$1,690/mo',
-        "  169 pay more, 5 not simulated, based on each subscriber's last billing period.",
+        '  Simulation: USD +$5,070 (≈ +$1,690/mo)',
+        '  169 pay more, 5 not simulated. Replays subscription orders billed Jul 19 – Oct 19, 2026 at the proposed prices.',
       ].join('\n'),
     )
   })
@@ -168,6 +178,28 @@ describe('polar config simulate', () => {
     })
   })
 
+  test('passes the window to the server', async () => {
+    const { windows } = await run(results, [
+      '--since',
+      '3m',
+      '--until',
+      '2026-10-19',
+    ])
+    expect(windows).toEqual([
+      { since: '2026-07-19T00:00:00.000Z', until: '2026-10-19T00:00:00.000Z' },
+    ])
+    expect((await run(results)).windows).toEqual([{ until: undefined }])
+    expect((await run(results, ['--since', '2026-01-01'])).windows).toEqual([
+      { since: '2026-01-01T00:00:00.000Z', until: undefined },
+    ])
+  })
+
+  test('rejects a window it cannot read', async () => {
+    const { failed, windows } = await run(results, ['--since', 'soon'])
+    expect(failed).toBe(true)
+    expect(windows).toEqual([])
+  })
+
   test('simulates prices set on the command line', async () => {
     const { output, sent } = await run(results, ['--set', 'pro.usd=30'])
     expect(output).toMatch(/^ {2}Setting {4}pro\.usd=30$/m)
@@ -187,10 +219,10 @@ describe('polar config simulate', () => {
     const { output } = await run(results, ['--churn-tolerance', '50'])
     expect(output).toContain(
       [
-        '  │         subscribers   per subscriber /mo   change /mo           churn risk',
-        '  │ usd                                           +$1,690    +67%',
-        '  │   pro           168            $15 → $25      +$1,680    +67%          25%',
-        '  │                   1            $10 → $20         +$10   +100%          75%   archived price · billed yearly · fixed fee only',
+        '  │         subscribers   billed → proposed    change           churn risk',
+        '  │ usd                                       +$5,070    +67%',
+        '  │   pro           168    $7,560 → $12,600   +$5,040    +67%          25%',
+        '  │                   1           $30 → $60      +$30   +100%          75%   archived price · billed yearly · other charges not simulated',
       ].join('\n'),
     )
     expect(output).toContain(

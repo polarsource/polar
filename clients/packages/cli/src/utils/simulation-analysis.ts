@@ -31,12 +31,11 @@ export const analyze = (
     const risks = cohorts.map((c) =>
       assumptions === null
         ? null
-        : churnRisk(c.baseline_monthly, c.proposed_monthly, assumptions),
+        : churnRisk(c.baseline, c.proposed, assumptions),
     )
-    const baseline = cohorts.reduce((sum, c) => sum + c.baseline_monthly, 0)
-    const proposed = cohorts.reduce((sum, c) => sum + c.proposed_monthly, 0)
+    const { baseline, proposed, window } = result
     const retained = cohorts.reduce(
-      (sum, c, index) => sum + c.proposed_monthly * (1 - (risks[index] ?? 0)),
+      (sum, c, index) => sum + c.proposed * (1 - (risks[index] ?? 0)),
       0,
     )
     return {
@@ -45,12 +44,13 @@ export const analyze = (
         const risk = risks[index] ?? null
         return {
           ...c,
-          change_pct: percent(c.baseline_monthly, c.proposed_monthly),
+          change_pct: percent(c.baseline, c.proposed),
           churn_risk_pct: risk === null ? null : Math.round(risk * 1000) / 10,
         }
       }),
       change_pct: percent(baseline, proposed),
-      expected_monthly_delta: assumptions && Math.round(retained - baseline),
+      expected_monthly_delta:
+        assumptions && Math.round((retained - baseline) / window.months),
       subscribers_at_risk:
         assumptions &&
         cohorts

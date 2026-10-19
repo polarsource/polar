@@ -11,23 +11,38 @@ import {
 } from '@/services/billing-config/api'
 import { authenticatedClient } from '@/services/client'
 
+type WindowQuery = {
+  readonly since?: string | undefined
+  readonly until?: string | undefined
+}
+
 export class Simulation extends Context.Service<
   Simulation,
   {
     simulate: (
       config: LoadedConfig,
       organization: ActiveOrganization,
+      window: WindowQuery,
     ) => Effect.Effect<SimulationResponse, AuthError | BillingConfigError>
   }
 >()('Simulation') {}
 
 export const simulate =
   (clients: Clients) =>
-  (config: LoadedConfig, organization: ActiveOrganization) =>
+  (
+    config: LoadedConfig,
+    organization: ActiveOrganization,
+    window: WindowQuery,
+  ) =>
     Effect.gen(function* () {
+      const query = new URLSearchParams(
+        Object.entries(window).filter(
+          (entry): entry is [string, string] => entry[1] !== undefined,
+        ),
+      ).toString()
       const response = yield* post(
         clients,
-        '/config/simulate',
+        `/config/simulate${query && `?${query}`}`,
         config,
         organization,
       )

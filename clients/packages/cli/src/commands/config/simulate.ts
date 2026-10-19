@@ -10,12 +10,27 @@ import { setPrices } from '@/utils/price-override'
 import { withProgress } from '@/utils/progress'
 import { renderSimulation } from '@/utils/simulation'
 import { analyze } from '@/utils/simulation-analysis'
+import { parseWindow } from '@/utils/simulation-window'
 
 const set = Flag.String('set').pipe(
   Flag.withDescription(
     'Try a fixed price without editing the file, as product.currency=amount, e.g. starter.usd=15. Repeatable',
   ),
   Flag.atLeast(0),
+)
+
+const since = Flag.String('since').pipe(
+  Flag.withDescription(
+    'Start of the replayed window, as a duration back from --until (30d, 3m, 1y) or a date. Defaults to 1 month',
+  ),
+  Flag.optional,
+)
+
+const until = Flag.String('until').pipe(
+  Flag.withDescription(
+    'End of the replayed window, as a date. Defaults to now',
+  ),
+  Flag.optional,
 )
 
 const churnTolerance = Flag.Finite('churn-tolerance').pipe(
@@ -36,16 +51,22 @@ export const simulate = Command.make('simulate', {
   file,
   org,
   set,
+  since,
+  until,
   churnTolerance,
   churnElasticity,
 }).pipe(
   Command.withDescription(
-    'Show what a billing config file would change in what your subscribers pay, without applying it',
+    'Replay the subscription orders billed in a window at the prices of a billing config file, without applying it',
   ),
   Command.withExamples([
     {
       command: 'polar config simulate',
       description: 'Simulate polar.config.ts in the current directory',
+    },
+    {
+      command: 'polar config simulate --since 3m',
+      description: 'Replay the last three months',
     },
     {
       command: 'polar config simulate --set starter.usd=15 --set pro.usd=45',
@@ -62,7 +83,7 @@ export const simulate = Command.make('simulate', {
   ]),
   output({
     result: SimulateOutput,
-    run: ({ file, org, set, churnTolerance, churnElasticity }) =>
+    run: ({ file, org, set, since, until, churnTolerance, churnElasticity }) =>
       withProgress(
         (progress) =>
           Effect.gen(function* () {
@@ -72,6 +93,7 @@ export const simulate = Command.make('simulate', {
             )
             yield* progress.finish(loaded.file)
             const config = yield* setPrices(loaded, set)
+            const window = yield* parseWindow(since, until)
             if (set.length > 0) {
               yield* progress.start('Setting')
               yield* progress.finish(set.join(', '))
@@ -85,6 +107,7 @@ export const simulate = Command.make('simulate', {
                 const results = yield* (yield* Simulation).simulate(
                   config,
                   organization,
+                  window,
                 )
                 return { organization, results }
               }),

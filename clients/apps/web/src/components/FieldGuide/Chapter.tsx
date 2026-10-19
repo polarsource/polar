@@ -1,6 +1,7 @@
 'use client'
 
 import { Contents } from './Contents'
+import { Cover } from './Cover'
 import { Plate } from './Plate'
 import { pieces } from './pages'
 import type { Chapter as ChapterContent } from './content'
@@ -10,17 +11,17 @@ const byId = new Map(pieces.map((p) => [p.id, p]))
 /** A chapter on the page: its number and title, a paragraph, and its plates in order. */
 export function Chapter({ chapter }: { chapter: ChapterContent }) {
   const home = chapter.n === '00'
-  const plate = (id: string, i: number) => {
+  const plate = (id: string) => {
     const p = byId.get(id)
     if (!p) return null
-    return <Plate key={id} piece={p} pace={home && i === 0 ? 2.4 : 1.3} />
+    return <Plate key={id} piece={p} pace={1.3} />
   }
   return (
     <section
       data-chapter={chapter.n}
       className="flex flex-col gap-32 pt-6 pb-56"
     >
-      {home ? plate(chapter.ids[0], 0) : null}
+      {home ? <Cover /> : null}
       {home ? <Contents /> : null}
       {home ? null : (
         <div className="flex max-w-[600px] flex-col gap-5">
@@ -35,7 +36,7 @@ export function Chapter({ chapter }: { chapter: ChapterContent }) {
           ) : null}
         </div>
       )}
-      {chapter.ids.map((id, i) => (home && i === 0 ? null : plate(id, i)))}
+      {chapter.ids.map((id, i) => (home && i === 0 ? null : plate(id)))}
     </section>
   )
 }

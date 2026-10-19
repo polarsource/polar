@@ -14,7 +14,7 @@ export const CHAPTERS: Chapter[] = [
   {
     n: '00',
     name: 'Home',
-    title: 'Billing for the Intelligence Era.',
+    title: 'Agent-first Billing: A Field Guide',
     ids: ['cover', 'm-principle'],
   },
   {
@@ -22,8 +22,8 @@ export const CHAPTERS: Chapter[] = [
     name: 'Billing as code',
     title: 'Billing as code',
     intro:
-      'The catalogue is a file. Products, prices, meters and benefits are declared once, reviewed as a diff, and applied to an environment. What runs in production is what was reviewed.',
-    ids: ['m-code', 'm-cli'],
+      'The catalogue is a file. Products, prices, meters and entitlements are declared once, reviewed as a diff, and applied to an environment. What runs in production is what was reviewed.',
+    ids: ['m-code', 'm-cli', 'm-check'],
   },
   {
     n: '02',
@@ -62,7 +62,7 @@ export const CHAPTERS: Chapter[] = [
     name: 'Credits',
     title: 'Credits',
     intro:
-      'Credits are a balance derived from two kinds of event: grants, which add, and usage, which takes away at the meter’s rate. When the balance would cross zero, a grant lands first.',
+      'Credits are a balance derived from two kinds of event: grants, which add, and usage, which takes away at the meter’s rate. Run out, and Polar keeps counting: what happens at zero is up to your app.',
     ids: ['m-credits', 'm-grants', 'm-zero'],
   },
   {
@@ -70,8 +70,8 @@ export const CHAPTERS: Chapter[] = [
     name: 'Entitlements',
     title: 'Entitlements',
     intro:
-      'Access is one state line from the subscription, and it drives every switch. From checkout to access there is one path; benefits are what it switches on.',
-    ids: ['m-gates', 'm-flow', 'm-benefits'],
+      'Access is one state line from the subscription, and it drives every switch. From checkout to access there is one path, and entitlements are what it switches on.',
+    ids: ['m-gates', 'm-flow', 'm-entitlements'],
   },
   {
     n: '08',
@@ -79,7 +79,7 @@ export const CHAPTERS: Chapter[] = [
     title: 'Agents',
     intro:
       'Customers, agents and actors nest. A key names an actor, a session names a run, and every event carries who did it. An agent is a customer that can ask.',
-    ids: ['m-nesting', 'm-keys', 'm-ask'],
+    ids: ['m-nesting', 'm-ask'],
   },
 ]
 

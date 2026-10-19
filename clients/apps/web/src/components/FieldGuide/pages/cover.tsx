@@ -4,19 +4,8 @@ import {
   LOGO_MARK_BOUNDS,
   LOGO_MARK_ARC_CIRCLE,
 } from '../logo/geometry'
-import { Sheet, MONO } from '../sheet'
-import {
-  LINE,
-  DIM,
-  FAINT,
-  RULE,
-  HAIR,
-  DOTTED,
-  TITLE,
-  TEXT,
-  Anchor,
-  Cross,
-} from '../kit'
+import { MONO } from '../sheet'
+import { LINE, DIM, FAINT, HAIR, DOTTED, Anchor, Cross } from '../kit'
 import { parsePath, corners } from '../anchors'
 import type { Piece } from './index'
 
@@ -26,15 +15,14 @@ import type { Piece } from './index'
  * corner. Drawn from the logo package.
  */
 
-/** The sheet is landscape like every other page: the title at the left, the mark constructed at the right. */
+/** The mark alone: the cover's words are laid out in HTML beside it (see `Cover`), and the page crops to the drawing. */
 const SW = 960,
   SH = 540
-const PAD = 40
 const LIGHT = { ...MONO, fontWeight: 300 } as const
 
 export const cover: Piece = {
   id: 'cover',
-  title: 'Billing for the Intelligence Era: The Manual',
+  title: 'Agent-first Billing: A Field Guide',
   kind: 'manual',
   note: 'The cover: the mark, constructed. Every tip on one circle; the arc on a second of the same radius.',
   w: SW,
@@ -64,37 +52,13 @@ export const cover: Piece = {
       ]
     }
     return (
-      <Sheet
-        w={SW}
-        h={SH}
-        surface="night"
-        unsigned
-        title="Billing for the Intelligence Era: The Manual"
-        pad={PAD}
+      <svg
+        viewBox={`0 0 ${SW} ${SH}`}
+        width="100%"
+        style={{ display: 'block', overflow: 'visible' }}
+        role="img"
+        aria-label="The Polar mark, constructed"
       >
-        <text x={PAD} y={PAD + 16} fontSize={8.5} fill={DIM} style={MONO}>
-          POLAR · 2026
-        </text>
-        <text
-          x={SW - PAD}
-          y={PAD + 16}
-          fontSize={8.5}
-          fill={DIM}
-          textAnchor="end"
-          style={MONO}
-        >
-          THE MANUAL
-        </text>
-        <line
-          x1={PAD}
-          x2={SW - PAD}
-          y1={PAD + 26}
-          y2={PAD + 26}
-          stroke={RULE}
-          strokeWidth={HAIR}
-          {...DOTTED}
-        />
-
         {/* the axes, dotted, with their angles */}
         {[90, 135, 180, 225, 270].map((deg) => {
           const end = axis(deg)
@@ -159,39 +123,23 @@ export const cover: Piece = {
         ))}
 
         {/* the mark, as an outline, and its anchors */}
-        <g
-          transform={`translate(${ox} ${oy}) scale(${s})`}
-          fill={LINE}
-          stroke={LINE}
-          strokeWidth={HAIR / s}
-          strokeLinejoin="round"
-        >
-          <path d={LOGO_MARK_RAYS_PATH} />
-          <path d={LOGO_MARK_ARC_PATH} />
+        {/* wrapped, so the page measures the mark where it is drawn, not in the logo's own units */}
+        <g>
+          <g
+            transform={`translate(${ox} ${oy}) scale(${s})`}
+            fill={LINE}
+            stroke={LINE}
+            strokeWidth={HAIR / s}
+            strokeLinejoin="round"
+          >
+            <path d={LOGO_MARK_RAYS_PATH} />
+            <path d={LOGO_MARK_ARC_PATH} />
+          </g>
         </g>
         {anchors.map((a, i) => (
           <Anchor key={i} at={P(a.x, a.y)} size={3.2} />
         ))}
-
-        {/* the title: three lines at 40 on 46, then two lines beneath; up with the first stroke of the mark */}
-        <g data-first>
-          <text x={PAD} y={254} fontSize={40} fill={LINE} style={TITLE}>
-            Billing for the
-          </text>
-          <text x={PAD} y={300} fontSize={40} fill={LINE} style={TITLE}>
-            Intelligence Era
-          </text>
-          <text x={PAD} y={346} fontSize={40} fill={DIM} style={TITLE}>
-            The Manual
-          </text>
-          <text x={PAD} y={392} fontSize={16} fill={DIM} style={TEXT}>
-            The engineering behind the fastest
-          </text>
-          <text x={PAD} y={414} fontSize={16} fill={DIM} style={TEXT}>
-            metering infrastructure for AI.
-          </text>
-        </g>
-      </Sheet>
+      </svg>
     )
   },
 }

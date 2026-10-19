@@ -120,16 +120,16 @@ export function Plate({
           {piece.render()}
         </div>
         {piece.notes ? (
-          <aside className="flex shrink-0 flex-col gap-6 lg:w-[300px]">
+          <aside className="flex shrink-0 flex-col gap-7 lg:w-[340px]">
             {piece.notes.map(([head, paras]) => (
-              <section key={head} className="flex flex-col gap-1.5">
-                <h3 className="m-0 text-[15px] leading-[1.45] font-medium text-[#d8d8d8]">
+              <section key={head} className="flex flex-col gap-0.5">
+                <h3 className="m-0 text-[17px] leading-[1.4] font-medium text-[#d8d8d8]">
                   {head}
                 </h3>
                 {paras.map((para) => (
                   <p
                     key={para}
-                    className="m-0 text-[15px] leading-[1.5] font-[450] text-[#7b7b7b]"
+                    className="m-0 text-[17px] leading-[1.4] font-[450] text-[#7b7b7b]"
                   >
                     {para}
                   </p>

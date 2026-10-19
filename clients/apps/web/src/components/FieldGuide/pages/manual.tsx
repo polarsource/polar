@@ -540,10 +540,10 @@ export const manual: Piece[] = [
     },
   ),
 
-  // 02 Anatomy of an event: a frame diagram, as a protocol spec draws a packet. Fixed fields first, the open one last.
+  // 02 What’s in an event: a frame diagram, as a protocol spec draws a packet. Fixed fields first, the open one last.
   page(
     'm-event',
-    'Anatomy of an event',
+    'What’s in an event',
     'An event drawn as a frame, the way a protocol specification draws a packet: a ruler, the fields in order, and the metadata at the end. Chapter 1.',
     960,
     540,
@@ -558,7 +558,7 @@ export const manual: Piece[] = [
       return sheet(
         960,
         540,
-        'Anatomy of an event',
+        'What’s in an event',
         <Figure x={40} y={156} w={620} h={300}>
           <g transform="translate(150 0)">
             {/* the ruler */}
@@ -605,19 +605,30 @@ export const manual: Piece[] = [
       )
     },
     {
-      sub: 'Five fields. The last one holds the measurement.',
+      sub: 'Who did what, when, and how much.',
       notes: [
         [
-          'A fact',
+          'When',
           [
-            'An event is a fact: at this time, this customer, through this actor, did this thing, this much.',
+            'The timestamp is when it happened, not when Polar heard about it, so a late event still lands in the right period.',
           ],
         ],
-        ['Its place', ['Its id and timestamp give it a place in the ledger.']],
         [
-          'The measurement',
+          'Who',
           [
-            'Its metadata carries the measurement, in any shape, and it is what the meters fold over.',
+            'The customer is who pays. The actor is who did it on their behalf: a teammate, an API key, or one of their agents.',
+          ],
+        ],
+        [
+          'What',
+          [
+            'The name says what happened, like tokens.out. Meters pick the events they count by name.',
+          ],
+        ],
+        [
+          'How much',
+          [
+            'The metadata holds the numbers, like 1,240 tokens, in any shape you like. Meters add them up.',
           ],
         ],
       ],
@@ -1291,7 +1302,7 @@ export const manual: Piece[] = [
         [
           'Events',
           [
-            ['Anatomy of an event', '10'],
+            ['What’s in an event', '10'],
             ['The ledger', '12'],
             ['Ingestion and ordering', '14'],
           ],
@@ -1310,7 +1321,7 @@ export const manual: Piece[] = [
           [
             ['The credit balance', '28'],
             ['Grants and expiry', '30'],
-            ['Crossing zero', '32'],
+            ['Running out', '32'],
           ],
         ],
         [
@@ -1318,14 +1329,13 @@ export const manual: Piece[] = [
           [
             ['How entitlements work', '44'],
             ['From checkout to access', '46'],
-            ['Benefits', '48'],
+            ['On a product', '48'],
           ],
         ],
         [
           'Agents',
           [
             ['Customers, agents, actors', '52'],
-            ['Keys and sessions', '54'],
             ['Asking the ledger', '56'],
           ],
         ],
@@ -1520,16 +1530,12 @@ export const manual: Piece[] = [
               x1={R + 14}
               x2={R + 14}
               y1={y + 194}
-              y2={y + 254}
+              y2={y + 234}
               stroke={DIM}
               strokeWidth={HAIR}
               {...DOTTED}
             />
-            {[
-              'subscription.active',
-              'benefit.granted',
-              'entitlement.granted',
-            ].map((ev, i) => (
+            {['subscription.active', 'entitlement.granted'].map((ev, i) => (
               <g key={ev}>
                 <line
                   x1={R + 14}
@@ -1538,9 +1544,10 @@ export const manual: Piece[] = [
                   y2={y + 214 + i * 20}
                   stroke={DIM}
                   strokeWidth={HAIR}
+                  {...DOTTED}
                 />
                 <text
-                  x={R + 33}
+                  x={R + 36}
                   y={y + 216.5 + i * 20}
                   fontSize={8.5}
                   fill={DIM}
@@ -1566,7 +1573,7 @@ export const manual: Piece[] = [
         [
           'What follows',
           [
-            'Three more follow without anyone typing: the subscription, its benefits, and the entitlements that open the gates.',
+            'Two more follow without anyone typing: the subscription, and the entitlements that open the gates.',
           ],
         ],
         [

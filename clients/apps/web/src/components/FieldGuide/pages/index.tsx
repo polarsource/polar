@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { marginCheck } from './check'
 import { cover } from './cover'
 import { fold } from './fold'
 import { marginFloor, signals } from './guardrails'
@@ -32,7 +33,7 @@ export type Notes = [string, string[]][]
 /** The book, in reading order: the front matter, then the chapters, each with its pages. */
 export const chapters: { title: string; ids: string[] }[] = [
   { title: 'Front matter', ids: ['cover', 'm-contents', 'm-principle'] },
-  { title: '01 · Billing as code', ids: ['m-code', 'm-cli'] },
+  { title: '01 · Billing as code', ids: ['m-code', 'm-cli', 'm-check'] },
   {
     title: '02 · Events',
     ids: ['m-event', 'm-ledger', 'm-ingest'],
@@ -44,11 +45,20 @@ export const chapters: { title: string; ids: string[] }[] = [
   { title: '04 · Local-first', ids: ['m-igloo', 'm-latency', 'm-reconcile'] },
   { title: '05 · Guardrails', ids: ['m-signals', 'm-margin'] },
   { title: '06 · Credits', ids: ['m-credits', 'm-grants', 'm-zero'] },
-  { title: '07 · Entitlements', ids: ['m-gates', 'm-flow', 'm-benefits'] },
-  { title: '08 · Agents', ids: ['m-nesting', 'm-keys', 'm-ask'] },
+  { title: '07 · Entitlements', ids: ['m-gates', 'm-flow', 'm-entitlements'] },
+  { title: '08 · Agents', ids: ['m-nesting', 'm-ask'] },
 ]
 const ORDER = chapters.flatMap((c) => c.ids)
-const all = [cover, fold, igloo, signals, marginFloor, ...manual, ...more]
+const all = [
+  cover,
+  marginCheck,
+  fold,
+  igloo,
+  signals,
+  marginFloor,
+  ...manual,
+  ...more,
+]
 export const pieces: Piece[] = ORDER.map((id) => {
   const p = all.find((x) => x.id === id)
   if (!p) throw new Error(`No page ${id}`)

@@ -122,7 +122,7 @@ const credits = (
   </>
 )
 
-/** One state line, the subscription's, drives every switch: two closed, their benefits lit, one open. */
+/** One state line, the subscription's, drives every switch: two closed, their entitlements lit, one open. */
 const GATES: [number, boolean][] = [
   [36, true],
   [60, false],

@@ -10,7 +10,8 @@ import {
 import LogoIcon from '@/components/Brand/logos/LogoIcon'
 import Link from 'next/link'
 import { Chapter } from './Chapter'
-import { GetStarted } from './GetStarted'
+import { EarlyAccess } from './EarlyAccess'
+import { RequestAccess } from './RequestAccess'
 import { CHAPTERS } from './content'
 import { KeyRow } from './Keys'
 import { Ruler } from './Ruler'
@@ -113,7 +114,12 @@ export default function FieldGuideReader() {
     }
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return
-      if ((e.target as HTMLElement | null)?.closest('input, textarea')) return
+      if (
+        (e.target as HTMLElement | null)?.closest(
+          'input, textarea, [role="combobox"], [role="listbox"]',
+        )
+      )
+        return
       const k = e.key
       if (k === 'ArrowRight') turn(1)
       else if (k === 'ArrowLeft') turn(-1)
@@ -137,10 +143,10 @@ export default function FieldGuideReader() {
           <LogoIcon size={24} />
         </Link>
         <span className="hidden text-center text-[15px] text-[#7b7b7b] md:block">
-          Billing for the Intelligence Era · The Manual
+          Agent-first Billing<span className="mx-3">·</span>A Field Guide
         </span>
         <div className="flex justify-end">
-          <GetStarted />
+          <RequestAccess />
         </div>
       </header>
       <div className="flex min-h-0 flex-1">
@@ -155,10 +161,10 @@ export default function FieldGuideReader() {
             {CHAPTERS.map((c) => (
               <Chapter key={c.n} chapter={c} />
             ))}
+            <EarlyAccess />
           </div>
         </div>
       </div>
-      {keys ? <KeyRow /> : null}
     </main>
   )
 }

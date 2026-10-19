@@ -86,20 +86,23 @@ function threshold({
       ))}
 
       {label(X0 - 8, LANE + 11.5, lane, 'end')}
-      {spans.map(([a, b, t, active]) => (
-        <g key={a}>
-          <rect
-            x={a}
-            y={LANE}
-            width={b - a}
-            height={18}
-            fill={BG}
-            stroke={active ? LINE : MID}
-            strokeWidth={HAIR}
-          />
-          {label((a + b) / 2, LANE + 11.5, t, 'middle', active ? LINE : DIM)}
-        </g>
-      ))}
+      {/* the active span last, so the edges it shares are drawn over its neighbours' */}
+      {spans
+        .toSorted(([, , , x], [, , , y]) => Number(x) - Number(y))
+        .map(([a, b, t, active]) => (
+          <g key={a}>
+            <rect
+              x={a}
+              y={LANE}
+              width={b - a}
+              height={18}
+              fill={BG}
+              stroke={active ? LINE : MID}
+              strokeWidth={HAIR}
+            />
+            {label((a + b) / 2, LANE + 11.5, t, 'middle', active ? LINE : DIM)}
+          </g>
+        ))}
     </>
   )
 }
@@ -111,7 +114,7 @@ const credits = threshold({
   enter: 190,
   exit: 270,
   lane: 'MODEL',
-  states: ['large', 'small', 'large'],
+  states: ['claude-opus-5-5', 'gemini-flash', 'claude-opus-5-5'],
 })
 
 // Margin per customer, sliding below the floor as costs climb and back over it as they ease.
@@ -128,7 +131,7 @@ export const signals = landscape(
   'm-signals',
   'Signals',
   'A side effect that runs when a number enters or leaves a threshold.',
-  'Credits stepping down through a threshold and back out after a grant: a signal at each crossing, and the model the customer is on switching from large to small and back.',
+  'Credits stepping down through a threshold and back out after a grant: a signal at each crossing, and the model the customer is on switching from Opus to Gemini Flash and back.',
   credits,
   [
     [

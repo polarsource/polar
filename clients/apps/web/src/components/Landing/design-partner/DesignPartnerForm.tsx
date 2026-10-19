@@ -116,7 +116,11 @@ const INITIAL: FormState = {
 
 type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error'
 
-export const DesignPartnerForm = () => {
+export const DesignPartnerForm = ({
+  submitLabel = 'Become a design partner',
+}: {
+  submitLabel?: string
+}) => {
   const [form, setForm] = useState<FormState>(INITIAL)
   const [status, setStatus] = useState<SubmitStatus>('idle')
 
@@ -372,7 +376,7 @@ export const DesignPartnerForm = () => {
         disabled={status === 'submitting' || status === 'success'}
         className="my-8"
       >
-        {status === 'success' ? 'Application Sent' : 'Become a design partner'}
+        {status === 'success' ? 'Application Sent' : submitLabel}
       </Button>
       {status === 'error' && (
         <Text variant="caption" color="danger">

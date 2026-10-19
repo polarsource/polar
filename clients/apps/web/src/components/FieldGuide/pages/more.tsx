@@ -173,131 +173,144 @@ const ingestion = (() => {
 // ---------------------------------------------------------------- 03 Meters · Rates and tiers
 
 const tiers = (() => {
+  // One month's reading, 2.5M tokens, priced both ways over the same three tiers. The axis runs to 3M.
   const x0 = 70,
-    x1 = 330,
-    y0 = 150,
-    h = 170
-  const steps: [number, number, string][] = [
-    [0, 0.33, '$3 / M'],
-    [0.33, 0.66, '$2.5 / M'],
-    [0.66, 1, '$2 / M'],
+    x1 = 400
+  const X = (m: number) => x0 + (m / 3) * (x1 - x0)
+  const USAGE = 2.5
+  const TOTAL = x1 + 24
+  const HEAD = 150,
+    GRAD = 186,
+    VOL = 240,
+    AXIS = 290,
+    BAR = 20
+  const t = (
+    x: number,
+    y: number,
+    text: string,
+    anchor: 'start' | 'middle' | 'end' = 'middle',
+    fill = DIM,
+  ) => (
+    <text
+      x={x}
+      y={y}
+      fontSize={7.5}
+      fill={fill}
+      textAnchor={anchor}
+      style={MONO}
+    >
+      {text}
+    </text>
+  )
+  const TIERS: [number, number, string, string][] = [
+    [0, 1, 'TIER 1', '$3.00 / M'],
+    [1, 2, 'TIER 2', '$2.50 / M'],
+    [2, 3, 'TIER 3', '$2.00 / M'],
   ]
+  // What each tier bills under graduated pricing: the tokens that fall in it, at its own rate.
+  const graduated: [number, number, string, string][] = [
+    [0, 1, '1M × $3', '$3.00'],
+    [1, 2, '1M × $2.50', '$2.50'],
+    [2, USAGE, '0.5M × $2', '$1.00'],
+  ]
+  const bar = (
+    a: number,
+    b: number,
+    y: number,
+    inside: string,
+    under?: string,
+  ) => (
+    <g key={`${y}-${a}`}>
+      <rect
+        x={X(a)}
+        y={y}
+        width={X(b) - X(a)}
+        height={BAR}
+        fill={BG}
+        stroke={LINE}
+        strokeWidth={HAIR}
+      />
+      {t((X(a) + X(b)) / 2, y + 12.5, inside, 'middle', LINE)}
+      {under ? t((X(a) + X(b)) / 2, y + BAR + 12, `= ${under}`) : null}
+    </g>
+  )
   const fig = (
     <>
+      {TIERS.map(([a, b, name, rate]) => (
+        <g key={name}>
+          {t((X(a) + X(b)) / 2, HEAD, name)}
+          {t((X(a) + X(b)) / 2, HEAD + 12, rate, 'middle', LINE)}
+        </g>
+      ))}
+      {[1, 2].map((m) => (
+        <Guide key={m} a={[X(m), HEAD - 8]} b={[X(m), AXIS]} />
+      ))}
+      {t(TOTAL, HEAD + 12, 'TOTAL', 'start')}
+
+      {t(x0 - 8, GRAD + 12.5, 'GRADUATED', 'end')}
+      {graduated.map(([a, b, inside, under]) => bar(a, b, GRAD, inside, under))}
+      {t(TOTAL, GRAD + 12.5, '$6.50', 'start', LINE)}
+
+      {t(x0 - 8, VOL + 12.5, 'VOLUME', 'end')}
+      {bar(0, USAGE, VOL, '2.5M × $2, all in tier 3')}
+      {t(TOTAL, VOL + 12.5, '$5.00', 'start', LINE)}
+
       <line
         x1={x0}
         x2={x1}
-        y1={y0 + h}
-        y2={y0 + h}
+        y1={AXIS}
+        y2={AXIS}
         stroke={MID}
         strokeWidth={HAIR}
       />
-      <line
-        x1={x0}
-        x2={x0}
-        y1={y0}
-        y2={y0 + h}
-        stroke={MID}
-        strokeWidth={HAIR}
-      />
-      {steps.map(([a, b, label], i) => {
-        const yy = y0 + h - h * (0.9 - i * 0.25)
-        return (
-          <g key={label}>
-            <line
-              x1={x0 + (x1 - x0) * a}
-              x2={x0 + (x1 - x0) * b}
-              y1={yy}
-              y2={yy}
-              stroke={LINE}
-              strokeWidth={HAIR}
-            />
-            {i > 0 ? (
-              <Guide
-                a={[x0 + (x1 - x0) * a, yy]}
-                b={[x0 + (x1 - x0) * a, y0 + h - h * (0.9 - (i - 1) * 0.25)]}
-              />
-            ) : null}
-            <text
-              x={x0 + ((x1 - x0) * (a + b)) / 2}
-              y={yy - 6}
-              fontSize={7.5}
-              fill={DIM}
-              textAnchor="middle"
-              style={MONO}
-            >
-              {label}
-            </text>
-            <Anchor at={[x0 + (x1 - x0) * a, yy]} />
-          </g>
-        )
-      })}
-      {[0, 0.33, 0.66, 1].map((t, i) => (
-        <g key={i}>
+      {[0, 1, 2, 3].map((m) => (
+        <g key={m}>
           <line
-            x1={x0 + (x1 - x0) * t}
-            x2={x0 + (x1 - x0) * t}
-            y1={y0 + h}
-            y2={y0 + h + 4}
+            x1={X(m)}
+            x2={X(m)}
+            y1={AXIS}
+            y2={AXIS + 4}
             stroke={MID}
             strokeWidth={HAIR}
           />
-          <text
-            x={x0 + (x1 - x0) * t}
-            y={y0 + h + 15}
-            fontSize={7.5}
-            fill={DIM}
-            textAnchor="middle"
-            style={MONO}
-          >
-            {['0', '1M', '2M', '∞'][i]}
-          </text>
+          {t(X(m), AXIS + 15, m ? `${m}M` : '0')}
         </g>
       ))}
-      <text
-        x={(x0 + x1) / 2}
-        y={y0 + h + 32}
-        fontSize={7.5}
-        fill={DIM}
-        textAnchor="middle"
-        style={MONO}
-      >
-        TOKENS
-      </text>
-      <text
-        x={x0}
-        y={y0 - 10}
-        fontSize={7.5}
-        fill={DIM}
-        textAnchor="middle"
-        style={MONO}
-      >
-        RATE
-      </text>
+      <Guide a={[X(USAGE), GRAD + BAR]} b={[X(USAGE), AXIS]} />
+      <Anchor at={[X(USAGE), AXIS]} />
+      {t(X(USAGE), AXIS + 15, '2.5M', 'middle', LINE)}
+      {t((x0 + x1) / 2, AXIS + 34, 'TOKENS THIS MONTH')}
     </>
   )
   return landscape(
     'm-tiers',
     'Rates and tiers',
-    'A rate is a function of the reading; tiers make it a step.',
-    'A graduated price: three tiers, each with its own rate per million, drawn as a step function over the meter.',
+    'One month of usage, priced two ways.',
+    'A customer uses 2.5M tokens in a month. The same three tiers, $3, $2.50 and $2 per million, bill $6.50 when graduated and $5.00 by volume.',
     fig,
     [
       [
-        'Flat',
-        ['A price is a function of a reading. Flat means one rate throughout.'],
+        'Tiers',
+        [
+          'A price splits the meter into ranges, each with its own rate. Here, the first million tokens cost $3 per million, the second $2.50, and everything after $2.',
+        ],
       ],
       [
         'Graduated',
         [
-          'Each tier is charged at its own rate, so the first million costs more than the third.',
+          'Each tier bills the tokens that fall in it, at its own rate, like tax brackets. 2.5M tokens come to $3 + $2.50 + $1 = $6.50.',
         ],
       ],
-      ['Volume', ['The tier the total lands in sets the rate for all of it.']],
+      [
+        'Volume',
+        [
+          'The tier the total lands in sets the rate for every token. 2.5M lands in tier 3, so all of it bills at $2: $5.00.',
+        ],
+      ],
       [
         'Declared',
         [
-          'Tiers are declared in the config next to the meter they price, and a cap bounds the sum.',
+          'Tiers are declared in the config next to the meter they price, and a cap can bound the total.',
         ],
       ],
     ],
@@ -372,15 +385,7 @@ const reconciliation = (() => {
       ))}
       {label(snapshots[0], POLAR - 10, 'SNAPSHOT', 'middle')}
 
-      <rect
-        x={x0}
-        y={BAND}
-        width={last - x0}
-        height={8}
-        fill={BG}
-        stroke={LINE}
-        strokeWidth={HAIR}
-      />
+      {/* the open part first, so the settled edge they share is drawn over it */}
       <rect
         x={last}
         y={BAND}
@@ -388,6 +393,15 @@ const reconciliation = (() => {
         height={8}
         fill={BG}
         stroke={FAINT}
+        strokeWidth={HAIR}
+      />
+      <rect
+        x={x0}
+        y={BAND}
+        width={last - x0}
+        height={8}
+        fill={BG}
+        stroke={LINE}
         strokeWidth={HAIR}
       />
       {label((x0 + last) / 2, BAND + 22, 'SETTLED · FROM POLAR', 'middle')}
@@ -469,16 +483,14 @@ const grants = (() => {
             strokeWidth={1.2}
           />
           <Anchor at={[x0 + (x1 - x0) * Number(a), Number(yy)]} />
-          {Number(b) < 1 ? (
-            <line
-              x1={x0 + (x1 - x0) * Number(b)}
-              x2={x0 + (x1 - x0) * Number(b)}
-              y1={Number(yy) - 4}
-              y2={Number(yy) + 4}
-              stroke={String(col)}
-              strokeWidth={HAIR}
-            />
-          ) : null}
+          <line
+            x1={x0 + (x1 - x0) * Number(b)}
+            x2={x0 + (x1 - x0) * Number(b)}
+            y1={Number(yy) - 4}
+            y2={Number(yy) + 4}
+            stroke={String(col)}
+            strokeWidth={HAIR}
+          />
           <text
             x={x0 + (x1 - x0) * Number(a) + 6}
             y={Number(yy) - 5}
@@ -490,20 +502,6 @@ const grants = (() => {
           </text>
         </g>
       ))}
-      <Guide
-        a={[x0 + (x1 - x0) * 0.6, y - 100]}
-        b={[x0 + (x1 - x0) * 0.6, y + 24]}
-      />
-      <text
-        x={x0 + (x1 - x0) * 0.6}
-        y={y - 106}
-        fontSize={7}
-        fill={DIM}
-        textAnchor="middle"
-        style={MONO}
-      >
-        NOW
-      </text>
       <Callout
         at={[x0 + (x1 - x0) * 0.5, y - 36]}
         to={[x0 + (x1 - x0) * 0.5, y + 44]}
@@ -519,7 +517,7 @@ const grants = (() => {
     'm-grants',
     'Grants and expiry',
     'A grant is an event with a start and, sometimes, an end.',
-    'Three grants on a timeline, each a bar from its start to its expiry, and the moment now cutting across them: one still open, one expired, one without an end.',
+    'Three grants on a timeline, each a bar from its start to its expiry: one still open, one expired, one without an end.',
     fig,
     [
       [
@@ -544,78 +542,66 @@ const grants = (() => {
   )
 })()
 
-// ---------------------------------------------------------------- 05 Credits · Crossing zero
+// ---------------------------------------------------------------- 05 Credits · Running out
 
 const zero = (() => {
   const { line } = term(70, 150, 8, 11.6)
   const rows: TermTok[][] = [
-    [D('   TIME        EVENT                   Δ        BALANCE')],
-    [{ t: '   10-12 09:41 tokens.out  314 × 1   -314      1,250' }],
-    [{ t: '   10-12 09:52 tokens.out  980 × 1   -980        270' }],
+    [D('   TIME   EVENT                      CREDITS   BALANCE')],
+    [{ t: '   09:41  tokens.out                    -314     1,250' }],
+    [{ t: '   09:52  tokens.out                    -980       270' }],
     [
       {
-        t: '   10-12 10:07 tokens.out  412 × 1   -412       -142',
+        t: '   10:07  tokens.out                    -412      -142',
         tone: 'del',
       },
     ],
     [
-      { t: '   10-12 10:07 ' },
-      { t: 'credit.exhausted', tone: 'del' },
-      { t: '                  0' },
-    ],
-    [
-      { t: '   10-12 10:07 ' },
-      { t: 'entitlement.revoked', tone: 'del' },
-      D('    api'),
+      { t: '   10:07  ' },
+      { t: 'signal', tone: 'del' },
+      D('   balance below zero, your app decides'),
     ],
     [],
     [
-      { t: '   10-12 10:31 ' },
+      { t: '   10:31  ' },
       { t: 'credit.granted', tone: 'add' },
-      { t: '        +5,000      4,858' },
+      { t: '              +5,000     4,858' },
     ],
-    [
-      { t: '   10-12 10:31 ' },
-      { t: 'entitlement.granted', tone: 'add' },
-      D('    api'),
-    ],
-    [],
-    [D('   overdraft 142 carried into the grant')],
   ]
   return landscape(
     'm-zero',
-    'Crossing zero',
-    'Zero is a line, not a wall. What happens there is an entitlement.',
-    'A balance crossing zero and coming back: the event that takes it below, the entitlement that closes, the grant that reopens it, and the overdraft carried across.',
+    'Running out',
+    'Polar keeps counting. What happens next is up to you.',
+    'A customer’s ledger running out: the request that takes the balance to -142, a signal to the app, then a top-up of 5,000 that settles the 142 owed.',
     <>
       {rows.map((toks, i) => (toks.length ? line(i, 0, toks, `r${i}`) : null))}
     </>,
     [
       [
-        'The crossing',
+        'Never refused',
         [
-          'A metered event is never refused. If it takes the balance below zero, it is recorded, the balance goes negative, and credit.exhausted is written beside it.',
+          'Polar records every event, even the one that takes the balance under zero. The balance just goes negative: here, -142.',
         ],
       ],
       [
-        'What closes',
+        'Your call',
         [
-          'The entitlements that depend on credit close on that event. The API stops answering; the ledger keeps counting.',
+          'Polar does not cut anyone off. What happens at zero is up to your app: block the request, move the customer to a cheaper model, or let them run a tab. A guardrail at zero tells you when it happens.',
         ],
       ],
       [
-        'Coming back',
+        'Topping up',
         [
-          'A new grant folds over the negative balance, so the overdraft is paid first. The gate reopens on the grant, with the same event history either side of zero.',
+          'A new grant is added to the balance as it stands, so the 142 owed comes off first: 5,000 credits leave 4,858.',
         ],
       ],
     ],
   )
 })()
 
-// ---------------------------------------------------------------- 06 Entitlements · Benefits
+// ---------------------------------------------------------------- 06 Entitlements · On a product
 
-const benefits = (() => {
+const entitlements = (() => {
   const x0 = 70,
     y0 = 160
   const rows: [string, string, boolean][] = [
@@ -735,86 +721,28 @@ const benefits = (() => {
     </>
   )
   return landscape(
-    'm-benefits',
-    'Benefits',
-    'What a product grants; an entitlement is the grant, held.',
-    'A product and the four benefits it may grant: three on this plan, one not. Each benefit becomes an entitlement when the subscription is active.',
+    'm-entitlements',
+    'On a product',
+    'What a product grants, held by the customer while they subscribe.',
+    'A product and the four entitlements it may grant: three on this plan, one not. Each is granted when the subscription is active.',
     fig,
     [
       [
         'Templates',
         [
-          'A product declares its benefits: access to the API, a monthly grant of credits, exports, a license key. Each is a template.',
+          'A product declares its entitlements: access to the API, a monthly grant of credits, exports, a license key. Each is a template.',
         ],
       ],
       [
         'Granted',
         [
-          'When a subscription to the product becomes active, every benefit on it is granted as an event, and the entitlement is the fold over those grants and revocations.',
+          'When a subscription to the product becomes active, every entitlement on it is granted as an event, and what the customer holds is the fold over those grants and revocations.',
         ],
       ],
       [
         'Changes',
         [
-          'Change the product’s benefits and the next apply writes the difference.',
-        ],
-      ],
-    ],
-  )
-})()
-
-// ---------------------------------------------------------------- 07 Agents · Keys and sessions
-
-const keys = (() => {
-  const { line } = term(70, 150, 8, 11.6)
-  const rows: TermTok[][] = [
-    [
-      { t: '$ ' },
-      { t: 'polar keys create' },
-      D(' --customer acme --agent support-bot'),
-    ],
-    [
-      { t: '✓ ' },
-      { t: 'polar_sk_01JA7…' },
-      D('   actor key_01JA7 · scope: events:write, state:read'),
-    ],
-    [],
-    [{ t: '$ ' }, { t: 'polar sessions open' }, D(' --key key_01JA7 --ttl 1h')],
-    [{ t: '✓ ' }, { t: 'ses_01JB2' }, D('   actor ses_01JB2 · expires 10:41')],
-    [],
-    [D('   every event this session emits:')],
-    [{ t: '   customer  acme' }],
-    [{ t: '   agent     support-bot' }],
-    [{ t: '   actor     ses_01JB2' }],
-    [],
-    [{ t: '$ ' }, { t: 'polar keys revoke' }, D(' key_01JA7')],
-    [{ t: '✓ ' }, { t: 'key.revoked' }, D('   sessions under it closed · 1')],
-  ]
-  return landscape(
-    'm-keys',
-    'Keys and sessions',
-    'A key is an actor that lasts. A session is an actor that ends.',
-    'Creating a key for an agent, opening a session under it, the three names every event from that session carries, and the revocation that closes it.',
-    <>
-      {rows.map((toks, i) => (toks.length ? line(i, 0, toks, `r${i}`) : null))}
-    </>,
-    [
-      [
-        'Keys',
-        [
-          'A key belongs to an agent and names it on every event. It carries scopes, so a key that can write events may still not read state.',
-        ],
-      ],
-      [
-        'Sessions',
-        [
-          'A session is a short-lived actor under a key: a run, a conversation, a job. It has a time to live, and the events it emits name it, so usage can be read per session.',
-        ],
-      ],
-      [
-        'Revocation',
-        [
-          'Revoking a key is an event. The sessions under it close, their entitlements fall, and the ledger shows exactly when.',
+          'Change the product’s entitlements and the next apply writes the difference.',
         ],
       ],
     ],
@@ -883,7 +811,6 @@ export const more: Piece[] = [
   reconciliation,
   grants,
   zero,
-  benefits,
-  keys,
+  entitlements,
   ask,
 ]

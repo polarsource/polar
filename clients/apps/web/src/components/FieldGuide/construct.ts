@@ -2,9 +2,10 @@
  * Replays the drawing of a page the way a drafting program would: guides first, then every hairline
  * traced from its first anchor, then the filled parts, then the type. Runs on the elements the page has when it
  * arrives; whatever the live layers add later draws itself. `pace` stretches the whole replay: 1 is an ordinary
- * page, more is slower. A figure's frame stands still. Returns a cancel, for a page that leaves mid-stroke.
+ * page, more is slower. `after` holds the whole replay back, in milliseconds, so a row of drawings can follow one
+ * another. A figure's frame stands still. Returns a cancel, for a page that leaves mid-stroke.
  */
-export function construct(svg: SVGSVGElement, pace = 1): () => void {
+export function construct(svg: SVGSVGElement, pace = 1, after = 0): () => void {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches)
     return () => {}
 
@@ -19,6 +20,11 @@ export function construct(svg: SVGSVGElement, pace = 1): () => void {
     if (el.closest('defs, [data-live], [data-first], [data-frame]')) continue
     if (el instanceof SVGTextElement) {
       texts.push(el)
+      continue
+    }
+    // Dashed parts of the drawing itself, as opposed to construction guides, come in with the filled parts.
+    if (el.closest('[data-fade]')) {
+      fills.push(el)
       continue
     }
     if (el.closest('[stroke-dasharray]')) {
@@ -42,7 +48,7 @@ export function construct(svg: SVGSVGElement, pace = 1): () => void {
     anims.push(
       el.animate(frames, {
         duration: duration * pace,
-        delay: delay * pace,
+        delay: after + delay * pace,
         easing: ease,
         fill: 'backwards',
       }),
@@ -67,6 +73,9 @@ export function construct(svg: SVGSVGElement, pace = 1): () => void {
     let length = 0
     try {
       length = el.getTotalLength()
+      // A stroke that keeps its width dashes in screen pixels, not in the drawing's units.
+      if (getComputedStyle(el).vectorEffect === 'non-scaling-stroke')
+        length *= el.getScreenCTM()?.a ?? 1
     } catch {
       length = 0
     }

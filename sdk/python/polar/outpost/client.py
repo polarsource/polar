@@ -30,7 +30,7 @@ from redis.asyncio.retry import Retry
 from redis.backoff import EqualJitterBackoff, NoBackoff
 from redis.commands.core import AsyncScript
 from redis.exceptions import ConnectionError as RedisConnectionError
-from redis.exceptions import NoScriptError
+from redis.exceptions import NoScriptError, RedisError
 from redis.exceptions import TimeoutError as RedisTimeoutError
 
 from polar.base import PolarError
@@ -524,7 +524,12 @@ class Outpost:
             for (identity, arguments), state in zip(writes, states, strict=True):
                 # Redis caches the script with the first EVAL, so this happens once per server.
                 if isinstance(state, NoScriptError):
-                    state = await self._redis.eval(WRITE_BUCKET_SCRIPT, 1, *arguments)
+                    try:
+                        state = await self._redis.eval(
+                            WRITE_BUCKET_SCRIPT, 1, *arguments
+                        )
+                    except RedisError as error:
+                        state = error
                 if isinstance(state, Exception):
                     if first_error is None:
                         first_error = state

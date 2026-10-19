@@ -11,6 +11,7 @@ from polar.config import settings
 from polar.exceptions import PolarError
 from polar.integrations.polar.service import billing_member_role
 from polar.integrations.polar.service import polar_self as polar_self_service
+from polar.integrations.resend.service import resend as resend_service
 from polar.kit.utils import utc_now
 from polar.models import User, UserOrganization
 from polar.models.user import IdentityVerificationStatus
@@ -354,6 +355,7 @@ class UserOrganizationService:
                 external_customer_id=str(organization_id),
                 external_id=str(user_id),
             )
+            resend_service.enqueue_sync_user(user_id)
 
     async def _assert_admin_capability_after_loss(
         self,

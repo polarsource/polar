@@ -130,6 +130,12 @@ def get_matcher(clause: Filter | FilterClause) -> EventMatcher:
     return matcher
 
 
+def with_matchers(
+    reducers: collections.abc.Iterable[Reducer],
+) -> list[tuple[Reducer, EventMatcher]]:
+    return [(reducer, get_matcher(reducer["filter"])) for reducer in reducers]
+
+
 def get_bucket_start(timestamp: datetime.datetime) -> int:
     if timestamp.utcoffset() is None:
         raise ValueError("Bucket timestamps must include a timezone")

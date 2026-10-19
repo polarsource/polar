@@ -38,10 +38,11 @@ from polar.ingestion.meter import CustomerMeter
 from polar.outpost.event import Event
 from polar.outpost.reducer import (
     BucketStatistics,
+    EventMatcher,
     Reducer,
     get_bucket_start,
-    get_matcher,
     reduce,
+    with_matchers,
 )
 from polar.outpost.telemetry import create_tracer_provider, is_telemetry_enabled
 
@@ -380,6 +381,7 @@ class Outpost:
         self._reconnect_attempts = 0
         self._tasks: anyio.abc.TaskGroup | None = None
         self._reducers: list[Reducer] = []
+        self._matchers: list[tuple[Reducer, EventMatcher]] = []
         self._actors: set[str] = set()
         self._configured = anyio.Event()
         self._apply_snapshot: AsyncScript | None = None
@@ -436,6 +438,7 @@ class Outpost:
                 self._connection_id = None
                 self._tasks = None
                 self._reducers = []
+                self._matchers = []
                 self._apply_snapshot = None
                 self._read_state = None
                 self._cache.clear()
@@ -464,6 +467,7 @@ class Outpost:
             self._connection_id = None
             self._tasks = None
             self._reducers = []
+            self._matchers = []
             self._actors.clear()
             self._apply_snapshot = None
             self._read_state = None
@@ -490,9 +494,8 @@ class Outpost:
             parsed = self._parse_event(event)
             with anyio.fail_after(5):
                 await self._configured.wait()
-            reducers = self._reducers
             updates = reduce(
-                [(reducer, get_matcher(reducer["filter"])) for reducer in reducers],
+                self._matchers,
                 [parsed],
                 oldest_bucket_start=get_bucket_start(parsed.timestamp),
             )
@@ -880,6 +883,7 @@ class Outpost:
                 self._connection_id = message["payload"]["id"]
             elif message["type"] == "configuration":
                 self._reducers = message["payload"]["reducers"]
+                self._matchers = with_matchers(self._reducers)
                 self._configured.set()
                 # A session counts as stable once Polar configured it.
                 self._reconnect_attempts = 0

@@ -35,11 +35,14 @@ OAuth client stays marked as an agent, which is what still identifies it, for ex
   handle `is_agent` in the service's subject branches, and test it with
   `@pytest.mark.auth(AuthSubjectFixture(subject="agent"))`. Check the existing `if is_user(...) else`
   branches: code that treats every non-user as an `Organization` will misread an `Agent`.
-- Opt in only build endpoints (orgs, products, meters, benefits, discounts, events, config). Never
-  money, members, payouts or webhooks (config's webhook section included): a webhook set up before the
-  claim keeps receiving data after it. In production the org can't go live before the claim; sandbox
-  can. A test pins the routes that accept `Agent`, and unclaimed tokens carry only build scopes, so one
-  wrong opt-in doesn't open a money endpoint by itself.
+- Only endpoints that set up the org's catalog may accept `Agent`: organizations, products, meters,
+  benefits, discounts, events and config. Endpoints that take payments, hold buyer data or pay out
+  never do: checkouts, orders, subscriptions, refunds, customers and payouts. Neither do members or
+  webhooks, including config's webhook section, because a webhook set up before the claim keeps
+  receiving data after it. In production the org can't go live before the claim; in sandbox it can.
+- A test pins the routes that accept `Agent`. Unclaimed agent tokens also carry only the scopes of
+  the allowed resources (`products:write`, `meters:write`, …), so adding `Agent` to the wrong
+  `Authenticator` still fails the scope check.
 - No placeholder users: the users table, login, emails and user metrics only ever see people. The claim
   adds the human as owner and revokes everything the agent was issued before it; nothing moves between
   users.

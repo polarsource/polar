@@ -947,6 +947,7 @@ class Outpost:
                 with self._span(
                     "outpost.snapshot.received",
                     **{
+                        "outpost.customer": customer,
                         "outpost.meter_id": snapshot["meter_id"],
                         "outpost.snapshot_version": snapshot["version"],
                     },

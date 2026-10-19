@@ -54,7 +54,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Redis
-        run: sudo apt-get update && sudo apt-get install -y redis-server
+        uses: shogo82148/actions-setup-redis@v1.58.1
+        with:
+          redis-version: "7.4"
+          auto-start: false
 
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v5

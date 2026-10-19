@@ -88,6 +88,8 @@ jobs:
       run:
         working-directory: sdk/python
     env:
+      # CodSpeed profiles Python from 3.12; 3.14 runs this code about as fast as 3.11, 3.12 slower.
+      UV_PYTHON: "3.14"
       # CodSpeed traces the interpreter from setup-python; keep uv from downloading its own.
       UV_PYTHON_PREFERENCE: only-system
       # A random hash seed changes dict collisions, hence instruction counts, from run to run.
@@ -103,7 +105,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7.0.0
         with:
-          python-version-file: sdk/python/.python-version
+          python-version: ${{ env.UV_PYTHON }}
 
       - name: Install dependencies
         run: uv sync --frozen --all-extras

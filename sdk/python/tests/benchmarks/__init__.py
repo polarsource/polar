@@ -33,6 +33,8 @@ def encode_state(buckets: int) -> list[str]:
         "999",
         "credited:meter",
         "1000000",
+        "credited_version:meter",
+        str(COLD_UNTIL + 1),
     ]
     for index in range(buckets):
         prefix = f"bucket:{COLD_UNTIL + index * BUCKET_SIZE}:"

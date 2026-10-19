@@ -30,6 +30,8 @@ export const encodeState = (buckets: number): string[] => {
     "999",
     "credited:meter",
     "1000000",
+    "credited_version:meter",
+    String(COLD_UNTIL + 1),
   ];
   for (let index = 0; index < buckets; index++) {
     const prefix = `bucket:${COLD_UNTIL + index * BUCKET_SIZE}:`;

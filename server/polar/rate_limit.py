@@ -303,6 +303,14 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
             zone="compass-assistant",
         ),
     ],
+    # SDK telemetry exports share the token with event ingestion; their own zone
+    # keeps a chatty exporter from spending the `api` budget of the events.
+    # Restricted and unvalidated tokens keep their tighter `^/v1` limits.
+    "^/v1/outpost/telemetry": [
+        Rule(group=group, minute=120, zone="outpost-telemetry")
+        for group in RateLimitGroup
+        if group not in {RateLimitGroup.restricted, RateLimitGroup.pending_auth}
+    ],
 }
 
 _SANDBOX_RULES: dict[str, Sequence[Rule]] = {

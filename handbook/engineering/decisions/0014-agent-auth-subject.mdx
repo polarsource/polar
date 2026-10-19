@@ -13,13 +13,11 @@ description: "An unclaimed agent authenticates as an Agent subject that endpoint
 
 ## Context
 
-With agent sign-up (the WorkOS auth.md spec), an AI agent registers itself and gets an identity
-assertion: a long-lived signed credential it trades for short-lived access tokens. It can then create
-and build an organization before any human exists, until a human *claims* it by signing in and
-approving it. Until the claim, something has to own that org and make the API calls. A placeholder
-`User` with a fake email puts non-people in the users table and needs guards on login, emails, metrics
-and every endpoint that must stay off-limits; borrowing the `Organization` subject avoids fake users,
-but endpoints can't tell an agent from an organization access token.
+With agent sign-up (the WorkOS auth.md spec), an AI agent registers itself and gets an *identity
+assertion*, a long-lived credential it trades for short-lived access tokens. It builds an organization
+before any human exists, until a human *claims* it by signing in and approving it. Until then,
+something has to own that org and make the API calls, and neither a placeholder `User` nor the
+`Organization` subject fits (see Alternatives).
 
 ## Decision
 
@@ -27,9 +25,9 @@ but endpoints can't tell an agent from an organization access token.
 created at sign-up, which also holds its OAuth client, its status and who claimed it. It authenticates
 as itself, owns exactly one org through an agent–organization link (not a `UserOrganization`
 membership), and can only reach endpoints whose `Authenticator` lists `Agent` in `allowed_subjects`.
-**After the claim, it acts for the claiming user with ordinary user OAuth tokens**: the claim replaces
-its identity assertion with one that only yields that user's tokens, and its OAuth client stays marked
-as an agent.
+**After the claim, it acts on behalf of the claiming user by design, with ordinary user OAuth
+tokens**: the claim replaces its identity assertion with one that only yields that user's tokens. Its
+OAuth client stays marked as an agent, which is what still identifies it, for example in logs.
 
 ## Consequences
 
@@ -37,11 +35,10 @@ as an agent.
   handle `is_agent` in the service's subject branches, and test it with
   `@pytest.mark.auth(AuthSubjectFixture(subject="agent"))`. Check the existing `if is_user(...) else`
   branches: code that treats every non-user as an `Organization` will misread an `Agent`.
-- Opt in only build endpoints (orgs, products, meters, benefits, discounts, events, config). Never opt
-  in endpoints that move real money, manage members or payouts, or register webhooks, including the
-  webhook section of config: a webhook set up before the claim would keep receiving data after it. In
-  production the org can't go live before the claim; sandbox can. A test walks the app's routes and
-  pins the set that accepts `Agent`, and unclaimed agent tokens carry only the build scopes, so one
+- Opt in only build endpoints (orgs, products, meters, benefits, discounts, events, config). Never
+  money, members, payouts or webhooks (config's webhook section included): a webhook set up before the
+  claim keeps receiving data after it. In production the org can't go live before the claim; sandbox
+  can. A test pins the routes that accept `Agent`, and unclaimed tokens carry only build scopes, so one
   wrong opt-in doesn't open a money endpoint by itself.
 - No placeholder users: the users table, login, emails and user metrics only ever see people. The claim
   adds the human as owner and revokes everything the agent was issued before it; nothing moves between
@@ -54,16 +51,14 @@ as an agent.
 - An org owned by an agent has no human owner until the claim. Code that looks up the owner must
   handle that.
 - OAuth tokens, grants and authorization codes gain a third sub type, `SubType.agent`.
-- After the claim the agent acts on behalf of the user by design, so endpoints treat it as that user.
-  The OAuth client's agent marker is what still identifies it as an agent, for example in logs.
-- Accepted trade-off: a new kind of caller across the whole auth model. Every authz path and every
-  subject branch must account for `Agent`, and the agent–organization link is a second ownership path,
-  next to memberships, that the org-access code has to keep in step with.
+- Accepted trade-off: a new kind of caller across the auth model. Every authz path and subject branch
+  must account for `Agent`, and the agent–organization link is a second ownership path next to
+  memberships.
 
 ## Alternatives considered
 
-- **Placeholder `User` with an unreachable email**: no new subject, but fake users everywhere and many
-  guards to keep them in bounds.
+- **Placeholder `User` with an unreachable email**: no new subject, but non-people in the users table
+  and guards on login, emails, metrics and every endpoint that must stay off-limits.
 - **Reuse the `Organization` subject** (like organization access tokens): no new subject, but agents
   aren't distinguishable from org tokens, so agent rules can't be expressed on endpoints.
 - **`Agent` subject after the claim too**: every user endpoint would need to opt in for the agent to

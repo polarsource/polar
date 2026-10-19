@@ -2339,6 +2339,12 @@ export interface components {
        */
       merchant_migration_enabled: boolean
       /**
+       * Agentic Payments Enabled
+       * @description If this organization accepts payments from AI agents through Stripe shared payment tokens.
+       * @default false
+       */
+      agentic_payments_enabled: boolean
+      /**
        * Config As Code Enabled
        * @description If this organization can manage its configuration from a declarative config document.
        * @default false

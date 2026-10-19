@@ -36,7 +36,7 @@ from polar.meter.aggregation import (
     UniqueAggregation,
 )
 from polar.meter.repository import MeterRepository
-from polar.models import BillingEntry, Customer, CustomerMeter, Event, Meter
+from polar.models import Customer, CustomerMeter, Event, Meter
 from polar.models.event import EventSource
 from polar.outpost.stream import enqueue as enqueue_outpost_event
 from polar.postgres import AsyncSession
@@ -405,8 +405,9 @@ class CustomerMeterService:
             raise ResourceNotFound()
 
         try:
-            await self.update_customer_meter(
-                session, customer, meter, activate_meter=True
+            # Creates the row if missing, so concurrent reversals always have one to lock.
+            await CustomerMeterRepository.from_session(session).get_or_create(
+                customer, meter
             )
         except DBAPIError as e:
             if not is_lock_not_available_error(e):
@@ -417,16 +418,10 @@ class CustomerMeterService:
 
         # Checked after locking the meter so a cycle committed concurrently is seen.
         meter_reset = await event_repository.get_latest_meter_reset(customer, meter.id)
-        billing_entry_repository = BillingEntryRepository.from_session(session)
-        invoiced_entry = await billing_entry_repository.get_one_or_none(
-            billing_entry_repository.get_base_statement()
-            .where(
-                BillingEntry.event_id == credit.id,
-                BillingEntry.order_item_id.is_not(None),
-            )
-            .limit(1)
-        )
-        if invoiced_entry is not None or (
+        invoiced = await BillingEntryRepository.from_session(
+            session
+        ).has_invoiced_for_event(credit.id)
+        if invoiced or (
             meter_reset is not None and credit.ingested_at < meter_reset.timestamp
         ):
             raise CustomerMeterCreditNotReversible(

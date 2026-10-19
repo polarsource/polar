@@ -4,6 +4,7 @@ import contextlib
 import dataclasses
 import datetime
 import functools
+import hashlib
 import json
 import math
 import random
@@ -29,6 +30,7 @@ from redis.asyncio.retry import Retry
 from redis.backoff import EqualJitterBackoff, NoBackoff
 from redis.commands.core import AsyncScript
 from redis.exceptions import ConnectionError as RedisConnectionError
+from redis.exceptions import NoScriptError, RedisError
 from redis.exceptions import TimeoutError as RedisTimeoutError
 
 from polar.base import PolarError
@@ -38,10 +40,11 @@ from polar.ingestion.meter import CustomerMeter
 from polar.outpost.event import Event
 from polar.outpost.reducer import (
     BucketStatistics,
+    EventMatcher,
     Reducer,
     get_bucket_start,
-    get_matcher,
     reduce,
+    with_matchers,
 )
 from polar.outpost.telemetry import create_tracer_provider, is_telemetry_enabled
 
@@ -230,6 +233,8 @@ end
     + "return state\n"
 )
 
+WRITE_BUCKET_SHA = hashlib.sha1(WRITE_BUCKET_SCRIPT.encode()).hexdigest()
+
 APPLY_SNAPSHOT_SCRIPT = (
     """
 local cutoff = tonumber(ARGV[4])
@@ -380,6 +385,7 @@ class Outpost:
         self._reconnect_attempts = 0
         self._tasks: anyio.abc.TaskGroup | None = None
         self._reducers: list[Reducer] = []
+        self._matchers: list[tuple[Reducer, EventMatcher]] = []
         self._actors: set[str] = set()
         self._configured = anyio.Event()
         self._apply_snapshot: AsyncScript | None = None
@@ -436,6 +442,7 @@ class Outpost:
                 self._connection_id = None
                 self._tasks = None
                 self._reducers = []
+                self._matchers = []
                 self._apply_snapshot = None
                 self._read_state = None
                 self._cache.clear()
@@ -464,6 +471,7 @@ class Outpost:
             self._connection_id = None
             self._tasks = None
             self._reducers = []
+            self._matchers = []
             self._actors.clear()
             self._apply_snapshot = None
             self._read_state = None
@@ -491,22 +499,18 @@ class Outpost:
             if not self._configured.is_set():
                 with anyio.fail_after(5):
                     await self._configured.wait()
-            reducers = self._reducers
             updates = reduce(
-                [(reducer, get_matcher(reducer["filter"])) for reducer in reducers],
+                self._matchers,
                 [parsed],
                 oldest_bucket_start=get_bucket_start(parsed.timestamp),
             )
             await self._warm_actor(parsed.external_customer_id)
             assert self._redis is not None
-            identities = []
+            writes: list[tuple[str, list[str | int | float]]] = []
             async with self._redis.pipeline(transaction=False) as pipeline:
                 for (customer, reducer_id, bucket_start), statistics in updates.items():
                     identity = f"{customer}:{reducer_id}"
-                    identities.append(identity)
-                    pipeline.eval(
-                        WRITE_BUCKET_SCRIPT,
-                        1,
+                    arguments: list[str | int | float] = [
                         f"outpost:state:{identity}",
                         identity,
                         self._channel,
@@ -516,10 +520,20 @@ class Outpost:
                         statistics.sum,
                         statistics.min if statistics.min is not None else "",
                         statistics.max if statistics.max is not None else "",
-                    )
+                    ]
+                    writes.append((identity, arguments))
+                    pipeline.evalsha(WRITE_BUCKET_SHA, 1, *arguments)
                 states = await pipeline.execute(raise_on_error=False)
             first_error: Exception | None = None
-            for identity, state in zip(identities, states, strict=True):
+            for (identity, arguments), state in zip(writes, states, strict=True):
+                # Redis caches the script with the first EVAL, so this happens once per server.
+                if isinstance(state, NoScriptError):
+                    try:
+                        state = await self._redis.eval(
+                            WRITE_BUCKET_SCRIPT, 1, *arguments
+                        )
+                    except RedisError as error:
+                        state = error
                 if isinstance(state, Exception):
                     if first_error is None:
                         first_error = state
@@ -699,10 +713,11 @@ class Outpost:
         # Fail fast during an outage; only wait for a resync in progress.
         if not self._synced.is_set() and not self._redis_available:
             raise UnavailableRedisError()
-        with anyio.move_on_after(REDIS_TIMEOUT):
-            await self._synced.wait()
         if not self._synced.is_set():
-            raise UnavailableRedisError()
+            with anyio.move_on_after(REDIS_TIMEOUT):
+                await self._synced.wait()
+            if not self._synced.is_set():
+                raise UnavailableRedisError()
         local = self._cache.get(identity)
         if local is None:
             local = LocalState()
@@ -883,6 +898,7 @@ class Outpost:
                 self._connection_id = message["payload"]["id"]
             elif message["type"] == "configuration":
                 self._reducers = message["payload"]["reducers"]
+                self._matchers = with_matchers(self._reducers)
                 self._configured.set()
                 # A session counts as stable once Polar configured it.
                 self._reconnect_attempts = 0

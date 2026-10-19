@@ -1,0 +1,13 @@
+{
+  "cold_until": 1790856000000000,
+  "bucket_counts": [1, 12, 288],
+  "epoch": "0123456789abcdef0123456789abcdef",
+  "channel": "outpost:bench:updates",
+  "events": {
+    "seed": 4242,
+    "count": 1000,
+    "customers": 10,
+    "names": ["llm.call", "tool.call", "agent.run", "embedding"],
+    "models": ["claude-sonnet-5", "gpt-5", "gemini-3-pro"]
+  }
+}

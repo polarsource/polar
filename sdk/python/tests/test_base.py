@@ -327,9 +327,7 @@ class TestOrganization:
         assert request.headers["Polar-Organization"] == "org_1"
 
     @pytest.mark.parametrize("polar_class", [Polar, PolarAsync])
-    def test_polar_organization(
-        self, polar_class: type[Polar | PolarAsync]
-    ) -> None:
+    def test_polar_organization(self, polar_class: type[Polar | PolarAsync]) -> None:
         polar = polar_class("polar_at_u_xxx", organization_id="org_1")
 
         request = polar._client.build_request(method="GET", url="/v1/items/")

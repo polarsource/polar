@@ -8,7 +8,7 @@ import {
   type Span,
   type Tracer,
 } from "@opentelemetry/api";
-import { Redis } from "ioredis";
+import { Redis, type ChainableCommander } from "ioredis";
 import { randomUUID } from "node:crypto";
 import { once } from "node:events";
 import WebSocket from "ws";
@@ -20,9 +20,11 @@ import { ClientBase, PolarError } from "../base";
 import { customerKey, parseEvent } from "./event";
 import {
   reduce,
+  withMatchers,
   getBucketStart,
   type Aggregation,
   type Reducer,
+  type ReducerMatchers,
   type BucketStatistics,
   emptyStatistics,
   addStatistics,
@@ -80,6 +82,9 @@ interface OutpostRedis extends Redis {
     key: string,
     ...args: (string | number)[]
   ): Promise<[state: string[], replaced: string[]]>;
+}
+interface OutpostPipeline extends ChainableCommander {
+  outpostWriteBucket(key: string, ...args: (string | number)[]): this;
 }
 
 const generateEpoch = (): string => randomUUID().replaceAll("-", "");
@@ -248,6 +253,7 @@ export class Outpost {
   private tracerProvider?: TracerProvider;
   private tracer?: Tracer;
   private reducers: Reducer[] = [];
+  private matchers: ReducerMatchers = [];
   private readonly cache = new Map<string, LocalState>();
   private readonly actors = new Set<string>();
   private configured = signal();
@@ -313,6 +319,10 @@ export class Outpost {
         },
       }) as OutpostRedis;
       this.redis.defineCommand("outpostReadState", { numberOfKeys: 1, lua: READ_STATE_SCRIPT });
+      this.redis.defineCommand("outpostWriteBucket", {
+        numberOfKeys: 1,
+        lua: WRITE_BUCKET_SCRIPT,
+      });
       this.redis.defineCommand("outpostApplySnapshot", {
         numberOfKeys: 1,
         lua: APPLY_SNAPSHOT_SCRIPT,
@@ -405,6 +415,7 @@ export class Outpost {
     this.cache.clear();
     this.actors.clear();
     this.reducers = [];
+    this.matchers = [];
     const tracerProvider = this.tracerProvider;
     this.tracerProvider = undefined;
     this.tracer = undefined;
@@ -422,15 +433,13 @@ export class Outpost {
       async (span) => {
         const parsed = parseEvent(event);
         await this.waitConfigured();
-        const updates = reduce(this.reducers, [parsed], getBucketStart(parsed.timestamp));
+        const updates = reduce(this.matchers, [parsed], getBucketStart(parsed.timestamp));
         await this.warmActor(parsed.customer);
-        const pipeline = redis.pipeline();
+        const pipeline = redis.pipeline() as OutpostPipeline;
         for (const update of updates) {
           const identity = `${update.customer}:${update.reducer}`;
           const statistics = update.statistics;
-          pipeline.eval(
-            WRITE_BUCKET_SCRIPT,
-            1,
+          pipeline.outpostWriteBucket(
             `outpost:state:${identity}`,
             identity,
             this.channel,
@@ -834,6 +843,7 @@ export class Outpost {
       this._connectionId = message.payload.id;
     } else if (message.type === "configuration") {
       this.reducers = message.payload.reducers;
+      this.matchers = withMatchers(this.reducers);
       this.isConfigured = true;
       this.configured.resolve();
       // A session counts as stable once Polar configured it.

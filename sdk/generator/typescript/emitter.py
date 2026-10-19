@@ -27,6 +27,7 @@ from typescript.types import (
 from typescript.utils import format_default_value_ts, format_description
 
 EMITTER_DIRECTORY = pathlib.Path(__file__).parent
+BENCHMARK_DATA = EMITTER_DIRECTORY.parent / "benchmarks" / "outpost.json"
 
 
 class TypeScriptEmitter(EmitterBase):
@@ -127,6 +128,7 @@ class TypeScriptEmitter(EmitterBase):
                     src_dir / module / source_file.name,
                     self.get_context(),
                 )
+        self.copy_file(BENCHMARK_DATA, src_dir / "outpost" / "benchmark.json")
 
         for api in self.ir.versions:
             version_dir = src_dir / self.get_version_string(api)

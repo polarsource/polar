@@ -62,7 +62,10 @@ export const getBucketStart = (timestamp: number): number => {
   return Math.floor(timestamp / BUCKET_SIZE) * BUCKET_SIZE;
 };
 
-export const getMatcher = (filter: Filter | FilterClause): ((event: Event) => boolean) => {
+export type EventMatcher = (event: Event) => boolean;
+export type ReducerMatchers = readonly (readonly [Reducer, EventMatcher])[];
+
+export const getMatcher = (filter: Filter | FilterClause): EventMatcher => {
   if (!("property" in filter)) {
     const children = filter.clauses.map(getMatcher);
     return filter.conjunction === "and"
@@ -98,13 +101,15 @@ export const getMatcher = (filter: Filter | FilterClause): ((event: Event) => bo
   };
 };
 
+export const withMatchers = (reducers: readonly Reducer[]): ReducerMatchers =>
+  reducers.map((reducer) => [reducer, getMatcher(reducer.filter)] as const);
+
 export const reduce = (
-  reducers: readonly Reducer[],
+  matchers: ReducerMatchers,
   events: readonly Event[],
   oldestBucketStart: number,
 ): BucketUpdate[] => {
   const updates = new Map<string, BucketUpdate>();
-  const matchers = reducers.map((reducer) => [reducer, getMatcher(reducer.filter)] as const);
   for (const event of events) {
     const bucketStart = getBucketStart(event.timestamp);
     if (bucketStart < oldestBucketStart) continue;

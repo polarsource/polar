@@ -21,6 +21,10 @@ import { allScopes, readScopes } from './spec'
 
 export { PolarApiOutbound } from './outbound'
 
+const OPENAI_APPS_CHALLENGE_PATH = '/.well-known/openai-apps-challenge'
+const OPENAI_APPS_CHALLENGE_TOKEN =
+  'ZjVpZNBFeHL9gB3r9BKCLpb68RF88tIzveJIntQm90E'
+
 const MCP_PATH = /^\/mcp\/([^/]+)$/
 const PROTECTED_RESOURCE_PATH =
   /^\/\.well-known\/oauth-protected-resource\/mcp\/([^/]+)$/
@@ -60,6 +64,12 @@ const withCors = (response: Response) => {
 
 const handle = Effect.fn('handle')(function* (request: Request) {
   const url = new URL(request.url)
+
+  if (url.pathname === OPENAI_APPS_CHALLENGE_PATH) {
+    return new Response(OPENAI_APPS_CHALLENGE_TOKEN, {
+      headers: { 'Content-Type': 'text/plain' },
+    })
+  }
 
   const metadataMatch = url.pathname.match(PROTECTED_RESOURCE_PATH)
   if (metadataMatch) {

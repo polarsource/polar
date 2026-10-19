@@ -1235,7 +1235,6 @@ class BenefitFeatureFlagProperties:
     """Properties for a benefit of type `feature_flag`."""
 
 
-
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitFeatureFlagPublic:
     id: str
@@ -1301,7 +1300,6 @@ class BenefitFeatureFlagSubscriber:
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitFeatureFlagSubscriberProperties:
     """Properties available to subscribers for a benefit of type `feature_flag`."""
-
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)

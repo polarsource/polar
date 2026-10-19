@@ -1,5 +1,5 @@
+import collections.abc
 import datetime
-import random
 import typing
 
 import pytest
@@ -8,21 +8,25 @@ from pytest_codspeed import BenchmarkFixture
 from polar.outpost.event import Event
 from polar.outpost.reducer import (
     Aggregation,
+    EventMatcher,
     Filter,
     FilterClause,
     Reducer,
     get_bucket_start,
     get_matcher,
     reduce,
+    with_matchers,
 )
+from tests.benchmarks import DATA
 
 pytestmark = pytest.mark.benchmark
 
-EVENTS = 1_000
-CUSTOMERS = 10
-NAMES = ["llm.call", "tool.call", "agent.run", "embedding"]
-MODELS = ["claude-sonnet-5", "gpt-5", "gemini-3-pro"]
-START = datetime.datetime(2026, 10, 1, 12, 0, 0, tzinfo=datetime.UTC)
+EVENTS: dict[str, typing.Any] = DATA["events"]
+CUSTOMERS: int = EVENTS["customers"]
+NAMES: list[str] = EVENTS["names"]
+MODELS: list[str] = EVENTS["models"]
+# Events start at the cold boundary, one per second.
+START = datetime.datetime.fromtimestamp(DATA["cold_until"] / 1_000_000, tz=datetime.UTC)
 Operator = typing.Literal["eq", "ne", "gt", "gte", "lt", "lte"]
 OPERATORS: list[Operator] = ["eq", "ne", "gt", "gte", "lt", "lte"]
 AGGREGATIONS: list[Aggregation] = [
@@ -34,19 +38,33 @@ AGGREGATIONS: list[Aggregation] = [
 ]
 
 
+def seeded(seed: int) -> collections.abc.Callable[[], float]:
+    # Mulberry32: the same events in every SDK, so the numbers compare across commits.
+    state = seed & 0xFFFFFFFF
+
+    def random() -> float:
+        nonlocal state
+        state = (state + 0x6D2B79F5) & 0xFFFFFFFF
+        t = state
+        t = ((t ^ (t >> 15)) * (t | 1)) & 0xFFFFFFFF
+        t ^= (t + (((t ^ (t >> 7)) * (t | 61)) & 0xFFFFFFFF)) & 0xFFFFFFFF
+        return ((t ^ (t >> 14)) & 0xFFFFFFFF) / 4294967296
+
+    return random
+
+
 def make_events(count: int) -> list[Event]:
-    # The same events on every run, so the numbers compare across commits.
-    generator = random.Random(4242)
+    random = seeded(EVENTS["seed"])
     return [
         Event(
-            name=generator.choice(NAMES),
-            external_customer_id=f"kr-{1 + generator.randrange(CUSTOMERS):03d}",
+            name=NAMES[int(random() * len(NAMES))],
+            external_customer_id=f"kr-{1 + int(random() * CUSTOMERS):03d}",
             timestamp=START + datetime.timedelta(seconds=index),
             metadata={
-                "tokens": generator.randrange(12_000),
-                "model": generator.choice(MODELS),
+                "tokens": int(random() * 12_000),
+                "model": MODELS[int(random() * len(MODELS))],
                 "_llm": {
-                    "input_tokens": generator.randrange(8_000),
+                    "input_tokens": int(random() * 8_000),
                     "vendor": "anthropic",
                 },
             },
@@ -55,7 +73,7 @@ def make_events(count: int) -> list[Event]:
     ]
 
 
-events = make_events(EVENTS)
+events = make_events(EVENTS["count"])
 oldest_bucket_start = get_bucket_start(START)
 
 
@@ -81,12 +99,10 @@ def match_all(filter: Filter) -> None:
         matches(event)
 
 
-def reduce_all(reducers: list[Reducer], batch: list[Event]) -> None:
-    reduce(
-        [(reducer, get_matcher(reducer["filter"])) for reducer in reducers],
-        batch,
-        oldest_bucket_start=oldest_bucket_start,
-    )
+def reduce_all(
+    matchers: list[tuple[Reducer, EventMatcher]], batch: list[Event]
+) -> None:
+    reduce(matchers, batch, oldest_bucket_start=oldest_bucket_start)
 
 
 @pytest.mark.parametrize("operator", OPERATORS)
@@ -143,7 +159,7 @@ def test_reduce_one_reducer_1000_events(
     reducers = [
         reducer_of("tokens", all_of(clause("name", "eq", "llm.call")), aggregation)
     ]
-    benchmark(reduce_all, reducers, events)
+    benchmark(reduce_all, with_matchers(reducers), events)
 
 
 ten_reducers = [
@@ -160,9 +176,9 @@ ten_reducers = [
 
 
 def test_reduce_sum_ten_reducers_1000_events(benchmark: BenchmarkFixture) -> None:
-    benchmark(reduce_all, ten_reducers, events)
+    benchmark(reduce_all, with_matchers(ten_reducers), events)
 
 
 def test_reduce_sum_one_reducer_one_matching_event(benchmark: BenchmarkFixture) -> None:
     llm_call = next(event for event in events if event.name == "llm.call")
-    benchmark(reduce_all, [ten_reducers[0]], [llm_call])
+    benchmark(reduce_all, with_matchers([ten_reducers[0]]), [llm_call])

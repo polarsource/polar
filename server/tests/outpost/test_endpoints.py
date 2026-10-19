@@ -6,6 +6,9 @@ import httpx
 import httpx_ws
 import pytest
 from logfire.experimental.forwarding import ForwardExportRequestResponse
+from opentelemetry.proto.collector.metrics.v1.metrics_service_pb2 import (
+    ExportMetricsServiceRequest,
+)
 from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import (
     ExportTraceServiceRequest,
 )
@@ -385,3 +388,73 @@ class TestTelemetry:
             "deployment.environment.name": "testing",
         }
         assert forward_mock.call_args.kwargs["path"] == "/v1/traces"
+
+
+def _metrics_request(**attributes: str) -> ExportMetricsServiceRequest:
+    request = ExportMetricsServiceRequest()
+    resource_metrics = request.resource_metrics.add()
+    for key, value in attributes.items():
+        resource_metrics.resource.attributes.add(
+            key=key, value=AnyValue(string_value=value)
+        )
+    return request
+
+
+@pytest.mark.anyio
+class TestTelemetryMetrics:
+    async def test_anonymous(self, client: httpx.AsyncClient) -> None:
+        response = await client.post(
+            "/v1/outpost/telemetry/metrics",
+            content=_metrics_request().SerializeToString(),
+            headers={"Content-Type": "application/x-protobuf"},
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_invalid_body(self, client: httpx.AsyncClient) -> None:
+        response = await client.post(
+            "/v1/outpost/telemetry/metrics",
+            content=b"not protobuf",
+            headers={"Content-Type": "application/x-protobuf"},
+        )
+
+        assert response.status_code == 400
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_forwards_with_organization(
+        self,
+        mocker: MockerFixture,
+        client: httpx.AsyncClient,
+        organization: Organization,
+    ) -> None:
+        forward_mock = mocker.patch(
+            "polar.outpost.service.logfire.forward_export_request",
+            return_value=ForwardExportRequestResponse(
+                status_code=200,
+                headers={"Content-Type": "application/x-protobuf"},
+                content=b"",
+            ),
+        )
+
+        response = await client.post(
+            "/v1/outpost/telemetry/metrics",
+            content=_metrics_request(
+                **{"polar.organization_id": "spoofed", "service.name": "other"}
+            ).SerializeToString(),
+            headers={"Content-Type": "application/x-protobuf"},
+        )
+
+        assert response.status_code == 200
+        forwarded = ExportMetricsServiceRequest()
+        forwarded.ParseFromString(forward_mock.call_args.kwargs["body"])
+        attributes = {
+            attribute.key: attribute.value.string_value
+            for attribute in forwarded.resource_metrics[0].resource.attributes
+        }
+        assert attributes == {
+            "polar.organization_id": str(organization.id),
+            "service.name": "outpost",
+            "deployment.environment.name": "testing",
+        }
+        assert forward_mock.call_args.kwargs["path"] == "/v1/metrics"

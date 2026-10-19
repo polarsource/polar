@@ -308,7 +308,7 @@ async def run_review_agent(
 
             # Auto-deny on DENY — human will review the denial
             if report.verdict == ReviewVerdict.DENY:
-                organization.set_status(OrganizationStatus.DENIED)
+                organization_service.set_status(organization, OrganizationStatus.DENIED)
                 session.add(organization)
 
                 await review_repository.record_agent_decision(
@@ -336,7 +336,7 @@ async def run_review_agent(
             review_context == ReviewContext.PRODUCT_CHANGED
             and report.verdict != ReviewVerdict.APPROVE
         ):
-            organization.set_status(OrganizationStatus.REVIEW)
+            organization_service.set_status(organization, OrganizationStatus.REVIEW)
             session.add(organization)
 
             await review_repository.record_agent_decision(

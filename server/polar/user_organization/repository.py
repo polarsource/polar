@@ -1,10 +1,11 @@
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from typing import Self
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import Select, exists, select, update
 
 from polar.models import Organization, UserOrganization
+from polar.models.organization import OrganizationStatus
 from polar.models.user_organization import OrganizationRole
 from polar.postgres import AsyncReadSession, AsyncSession
 
@@ -56,6 +57,38 @@ class UserOrganizationRepository:
         )
         result = await self.session.execute(statement)
         return [(row[0], row[1]) for row in result.all()]
+
+    @classmethod
+    def get_user_ids_with_organization_status_statement(
+        cls, statuses: Collection[OrganizationStatus]
+    ) -> Select[tuple[UUID]]:
+        return (
+            select(UserOrganization.user_id)
+            .join(Organization, Organization.id == UserOrganization.organization_id)
+            .where(
+                ~UserOrganization.is_deleted,
+                ~Organization.is_deleted,
+                Organization.status.in_(statuses),
+            )
+        )
+
+    async def has_organization_with_status(
+        self, user_id: UUID, statuses: Collection[OrganizationStatus]
+    ) -> bool:
+        statement = self.get_user_ids_with_organization_status_statement(
+            statuses
+        ).where(UserOrganization.user_id == user_id)
+        result = await self.session.execute(select(exists(statement)))
+        return result.scalar_one()
+
+    async def get_member_user_ids(self, organization_id: UUID) -> Sequence[UUID]:
+        result = await self.session.scalars(
+            select(UserOrganization.user_id).where(
+                UserOrganization.organization_id == organization_id,
+                ~UserOrganization.is_deleted,
+            )
+        )
+        return result.all()
 
     async def lock_members_for_update(self, organization_id: UUID) -> None:
         await self.session.execute(

@@ -13,3 +13,11 @@ async def sync_user(
 ) -> None:
     async with AsyncSessionMaker() as session:
         await resend_service.sync_user(session, user_id, previous_email=previous_email)
+
+
+@actor(actor_name="resend.sync_organization_members", priority=TaskPriority.LOW)
+async def sync_organization_members(
+    organization_id: Annotated[UUID, LoggableField],
+) -> None:
+    async with AsyncSessionMaker() as session:
+        await resend_service.sync_organization_members(session, organization_id)

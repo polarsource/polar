@@ -5962,3 +5962,20 @@ class TestUpdateSSOEnforcement:
         )
 
         revoke_mock.assert_not_awaited()
+
+
+@pytest.mark.anyio
+class TestSetStatus:
+    async def test_notifies_resend(
+        self, mocker: MockerFixture, organization: Organization
+    ) -> None:
+        on_status_changed = mocker.patch(
+            "polar.organization.service.resend_service.on_organization_status_changed"
+        )
+
+        organization_service.set_status(organization, OrganizationStatus.DENIED)
+
+        assert organization.status == OrganizationStatus.DENIED
+        on_status_changed.assert_called_once_with(
+            organization.id, OrganizationStatus.ACTIVE, OrganizationStatus.DENIED
+        )

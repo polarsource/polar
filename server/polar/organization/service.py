@@ -29,6 +29,7 @@ from polar.exceptions import (
 )
 from polar.integrations.polar.service import billing_member_role
 from polar.integrations.polar.service import polar_self as polar_self_service
+from polar.integrations.resend.service import resend as resend_service
 from polar.integrations.stripe.account_risk import (
     ACTIONABLE_RISK_LEVELS,
     AccountRiskSignal,
@@ -706,6 +707,15 @@ class OrganizationService:
         await self._after_update(session, organization)
         return organization
 
+    def set_status(
+        self, organization: Organization, status: OrganizationStatus
+    ) -> None:
+        previous_status = organization.status
+        organization.set_status(status)
+        resend_service.on_organization_status_changed(
+            organization.id, previous_status, status
+        )
+
     async def reset_onboarding_for_review(
         self,
         session: AsyncSession,
@@ -727,7 +737,7 @@ class OrganizationService:
             )
 
         previous_status = organization.status
-        organization.set_status(OrganizationStatus.CREATED)
+        self.set_status(organization, OrganizationStatus.CREATED)
         organization.details_submitted_at = None
         organization.snoozed_until = None
         organization.snooze_type = None
@@ -932,6 +942,7 @@ class OrganizationService:
             await appeal_case_service.close_for_organization_deletion(session, review)
 
         polar_self_service.enqueue_delete_customer(organization_id=organization.id)
+        resend_service.enqueue_sync_organization_members(organization.id)
 
         log.info(
             "organization.deleted",
@@ -1050,6 +1061,7 @@ class OrganizationService:
                     role=billing_member_role(role),
                     delay=polar_self_member_delay,
                 )
+            resend_service.enqueue_sync_user(user.id)
 
     async def change_owner(
         self,
@@ -1179,7 +1191,7 @@ class OrganizationService:
             organization.next_review_threshold >= 0
             and transfers_sum >= organization.next_review_threshold
         ):
-            organization.set_status(OrganizationStatus.REVIEW)
+            self.set_status(organization, OrganizationStatus.REVIEW)
             session.add(organization)
 
             enqueue_job("organization.under_review", organization_id=organization.id)
@@ -1215,7 +1227,7 @@ class OrganizationService:
         stripe_reject_reason: StripeAccountRejectReason | None = None,
     ) -> Organization:
         """Block an organization by setting status to BLOCKED."""
-        organization.set_status(OrganizationStatus.BLOCKED)
+        self.set_status(organization, OrganizationStatus.BLOCKED)
         session.add(organization)
         self._enqueue_cancel_pending_payouts(organization)
         if stripe_reject_reason is not None:
@@ -1339,7 +1351,7 @@ class OrganizationService:
         if not readiness.is_ready:
             return False
 
-        organization.set_status(OrganizationStatus.ACTIVE)
+        self.set_status(organization, OrganizationStatus.ACTIVE)
         if organization.initially_reviewed_at is None:
             # First activation: keep the small default threshold so the next
             # review fires quickly once the merchant starts taking payments.
@@ -1415,7 +1427,7 @@ class OrganizationService:
                 "Stripe Connect Express completion before activation."
             )
 
-        organization.set_status(target_status)
+        self.set_status(organization, target_status)
         organization.next_review_threshold = next_review_threshold
         _append_internal_note(organization, full_note, reason=reason)
 
@@ -1536,7 +1548,7 @@ class OrganizationService:
         *,
         stripe_reject_reason: StripeAccountRejectReason | None = None,
     ) -> Organization:
-        organization.set_status(OrganizationStatus.DENIED)
+        self.set_status(organization, OrganizationStatus.DENIED)
         session.add(organization)
 
         self._enqueue_cancel_pending_payouts(organization)
@@ -1585,7 +1597,7 @@ class OrganizationService:
                 400,
             )
 
-        organization.set_status(OrganizationStatus.SNOOZED)
+        self.set_status(organization, OrganizationStatus.SNOOZED)
         organization.snooze_count += 1
         organization.snoozed_until = datetime.now(UTC) + timedelta(days=days)
         organization.snooze_type = snooze_type
@@ -1752,7 +1764,7 @@ class OrganizationService:
     def _transition_to_offboarded(
         self, session: AsyncSession, organization: Organization, note: str
     ) -> None:
-        organization.set_status(OrganizationStatus.OFFBOARDED)
+        self.set_status(organization, OrganizationStatus.OFFBOARDED)
         _append_internal_note(organization, note)
         session.add(organization)
         enqueue_job("organization.offboarded", organization_id=organization.id)
@@ -1760,7 +1772,7 @@ class OrganizationService:
     async def _exit_snooze_to_review(
         self, session: AsyncSession, organization: Organization
     ) -> None:
-        organization.set_status(OrganizationStatus.REVIEW)
+        self.set_status(organization, OrganizationStatus.REVIEW)
         organization.snoozed_until = None
         organization.snooze_type = None
         session.add(organization)
@@ -1773,7 +1785,7 @@ class OrganizationService:
         *,
         enqueue_review: bool = True,
     ) -> Organization:
-        organization.set_status(OrganizationStatus.REVIEW)
+        self.set_status(organization, OrganizationStatus.REVIEW)
         # Drop stale snooze metadata when coming from SNOOZED.
         organization.snoozed_until = None
         organization.snooze_type = None
@@ -2010,7 +2022,7 @@ class OrganizationService:
                 "Only organizations under review or denied can be set to offboarding.",
                 403,
             )
-        organization.set_status(OrganizationStatus.OFFBOARDING)
+        self.set_status(organization, OrganizationStatus.OFFBOARDING)
         _append_internal_note(
             organization, "Organization set to offboarding.", reason=reason
         )

@@ -109,25 +109,30 @@ export class UnavailableRedisError extends PolarOutpostError {
 }
 const redisUnavailable = (error: unknown): UnavailableRedisError =>
   new UnavailableRedisError({ cause: error });
-const isRedisConnectionError = (error: unknown): boolean =>
-  error instanceof Error &&
-  (error.name === "MaxRetriesPerRequestError" ||
-    [
-      "ECONNABORTED",
-      "ECONNREFUSED",
-      "ECONNRESET",
-      "EHOSTUNREACH",
-      "ENETUNREACH",
-      "ENOTFOUND",
-      "EPIPE",
-      "ETIMEDOUT",
-      "EAI_AGAIN",
-    ].includes((error as NodeJS.ErrnoException).code ?? "") ||
-    [
-      "Command timed out",
-      "Connection is closed.",
-      "Stream isn't writeable and enableOfflineQueue options is false",
-    ].includes(error.message));
+const isRedisConnectionError = (error: unknown): boolean => {
+  if (error instanceof UnavailableRedisError)
+    return isRedisConnectionError(error.cause);
+  return (
+    error instanceof Error &&
+    (error.name === "MaxRetriesPerRequestError" ||
+      [
+        "ECONNABORTED",
+        "ECONNREFUSED",
+        "ECONNRESET",
+        "EHOSTUNREACH",
+        "ENETUNREACH",
+        "ENOTFOUND",
+        "EPIPE",
+        "ETIMEDOUT",
+        "EAI_AGAIN",
+      ].includes((error as NodeJS.ErrnoException).code ?? "") ||
+      [
+        "Command timed out",
+        "Connection is closed.",
+        "Stream isn't writeable and enableOfflineQueue options is false",
+      ].includes(error.message))
+  );
+};
 const withTimeout = async <T>(promise: Promise<T>): Promise<T> => {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {

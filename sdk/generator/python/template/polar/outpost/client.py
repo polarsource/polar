@@ -696,10 +696,11 @@ class Outpost:
         # Fail fast during an outage; only wait for a resync in progress.
         if not self._synced.is_set() and not self._redis_available:
             raise UnavailableRedisError()
-        with anyio.move_on_after(REDIS_TIMEOUT):
-            await self._synced.wait()
         if not self._synced.is_set():
-            raise UnavailableRedisError()
+            with anyio.move_on_after(REDIS_TIMEOUT):
+                await self._synced.wait()
+            if not self._synced.is_set():
+                raise UnavailableRedisError()
         local = self._cache.get(identity)
         if local is None:
             local = LocalState()

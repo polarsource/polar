@@ -8,12 +8,14 @@ from pytest_codspeed import BenchmarkFixture
 from polar.outpost.event import Event
 from polar.outpost.reducer import (
     Aggregation,
+    EventMatcher,
     Filter,
     FilterClause,
     Reducer,
     get_bucket_start,
     get_matcher,
     reduce,
+    with_matchers,
 )
 from tests.benchmarks import DATA
 
@@ -97,12 +99,10 @@ def match_all(filter: Filter) -> None:
         matches(event)
 
 
-def reduce_all(reducers: list[Reducer], batch: list[Event]) -> None:
-    reduce(
-        [(reducer, get_matcher(reducer["filter"])) for reducer in reducers],
-        batch,
-        oldest_bucket_start=oldest_bucket_start,
-    )
+def reduce_all(
+    matchers: list[tuple[Reducer, EventMatcher]], batch: list[Event]
+) -> None:
+    reduce(matchers, batch, oldest_bucket_start=oldest_bucket_start)
 
 
 @pytest.mark.parametrize("operator", OPERATORS)
@@ -159,7 +159,7 @@ def test_reduce_one_reducer_1000_events(
     reducers = [
         reducer_of("tokens", all_of(clause("name", "eq", "llm.call")), aggregation)
     ]
-    benchmark(reduce_all, reducers, events)
+    benchmark(reduce_all, with_matchers(reducers), events)
 
 
 ten_reducers = [
@@ -176,9 +176,9 @@ ten_reducers = [
 
 
 def test_reduce_sum_ten_reducers_1000_events(benchmark: BenchmarkFixture) -> None:
-    benchmark(reduce_all, ten_reducers, events)
+    benchmark(reduce_all, with_matchers(ten_reducers), events)
 
 
 def test_reduce_sum_one_reducer_one_matching_event(benchmark: BenchmarkFixture) -> None:
     llm_call = next(event for event in events if event.name == "llm.call")
-    benchmark(reduce_all, [ten_reducers[0]], [llm_call])
+    benchmark(reduce_all, with_matchers([ten_reducers[0]]), [llm_call])

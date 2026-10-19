@@ -6,6 +6,7 @@ import {
   getBucketStart,
   getMatcher,
   reduce,
+  withMatchers,
   type Reducer,
   quantity,
   emptyStatistics,
@@ -55,7 +56,7 @@ describe("reduction", () => {
       { ...event, customer: "external:bob" },
       { ...event, timestamp: event.timestamp - BUCKET_SIZE },
     ];
-    expect(reduce([reducer(func)], events, bucket)).toEqual([
+    expect(reduce(withMatchers([reducer(func)]), events, bucket)).toEqual([
       {
         customer: "external:alice",
         reducer: "tokens",
@@ -75,7 +76,9 @@ describe("reduction", () => {
             : { count: 1, sum: 3, min: 3, max: 3 },
       },
     ]);
-    expect(quantity(reduce([reducer(func)], events, bucket)[0].statistics, func)).toBe(value);
+    expect(
+      quantity(reduce(withMatchers([reducer(func)]), events, bucket)[0].statistics, func),
+    ).toBe(value);
     expect(getBucketStart(-1)).toBe(-BUCKET_SIZE);
     const fractional = parseEvent({
       name: "api",
@@ -131,13 +134,15 @@ describe("reduction", () => {
       parseEvent({ name: "api", external_customer_id: "a", timestamp: "2026-10-12T12:00:00" }),
     ).toThrow();
     expect(() => customerKey({ customer_id: "a", external_customer_id: "a" })).toThrow();
-    expect(reduce([reducer("sum")], [{ ...event, metadata: { tokens: true } }], 0)).toEqual([]);
+    expect(
+      reduce(withMatchers([reducer("sum")]), [{ ...event, metadata: { tokens: true } }], 0),
+    ).toEqual([]);
     expect(() =>
-      reduce([reducer("sum")], [{ ...event, metadata: { tokens: Infinity } }], 0),
+      reduce(withMatchers([reducer("sum")]), [{ ...event, metadata: { tokens: Infinity } }], 0),
     ).toThrow();
     expect(() =>
       reduce(
-        [reducer("sum")],
+        withMatchers([reducer("sum")]),
         Array(2).fill({ ...event, metadata: { tokens: Number.MAX_VALUE } }),
         0,
       ),

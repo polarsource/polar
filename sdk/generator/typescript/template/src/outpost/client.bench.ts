@@ -40,7 +40,7 @@ const encodeState = (buckets: number): string[] => {
 describe("decodeState", () => {
   for (const buckets of BUCKET_COUNTS) {
     const encoded = encodeState(buckets);
-    bench(`${buckets}-bucket state`, () => {
+    bench(`decode a ${buckets}-bucket state`, () => {
       decodeState(encoded);
     });
   }

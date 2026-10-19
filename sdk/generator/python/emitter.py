@@ -154,6 +154,7 @@ class PythonEmitter(EmitterBase):
             ("tests", "outpost", "test_reducer.py"),
             ("tests", "outpost", "test_telemetry.py"),
             ("tests", "benchmarks", "__init__.py"),
+            ("tests", "benchmarks", "conftest.py"),
             ("tests", "benchmarks", "test_reducer.py"),
             ("tests", "benchmarks", "test_client.py"),
             ("tests", "benchmarks", "test_scripts.py"),

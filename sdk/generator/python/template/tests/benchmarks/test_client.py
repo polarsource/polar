@@ -1,5 +1,4 @@
 import asyncio
-import collections.abc
 
 import httpx
 import pytest
@@ -45,15 +44,6 @@ async def warm_outpost() -> Outpost:
     outpost._cache[identity] = LocalState(state=decode_state(encode_state(1)))
     outpost._actors.add(identity)
     return outpost
-
-
-# pytest-codspeed cannot benchmark a coroutine (CodSpeedHQ/pytest-codspeed#101): one event loop
-# drives the reads, and its constant overhead is part of every measurement.
-@pytest.fixture(scope="module")
-def loop() -> collections.abc.Iterator[asyncio.AbstractEventLoop]:
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
 
 
 def test_warm_meter_read(

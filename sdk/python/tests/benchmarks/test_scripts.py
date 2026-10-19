@@ -64,8 +64,8 @@ def redis() -> collections.abc.Iterator[Redis]:
                 if process.poll() is not None or time.monotonic() > deadline:
                     raise RuntimeError("redis-server did not start")
                 time.sleep(0.01)
-            # pytest-codspeed cannot benchmark a coroutine (CodSpeedHQ/pytest-codspeed#101), so the
-            # sync client stands in for redis.asyncio; both share the connection and parser code.
+            # No coroutine can be benchmarked (see the `loop` fixture in conftest.py): the sync
+            # client stands in for redis.asyncio; both share the connection and parser code.
             client = Redis(unix_socket_path=socket)
             for buckets in BUCKET_COUNTS:
                 seed_state(client, identity_of(buckets), buckets)

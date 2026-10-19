@@ -92,7 +92,7 @@ export const LicenseKeysBenefitForm = () => {
         />
       </div>
       {expires && (
-        <>
+        <div className="flex flex-col gap-y-2">
           <div className="flex flex-row space-x-4">
             <FormField
               control={control}
@@ -139,7 +139,7 @@ export const LicenseKeysBenefitForm = () => {
             Only applies to one-time purchases. Keys granted by a subscription
             don&apos;t expire and are revoked when the subscription ends.
           </FormDescription>
-        </>
+        </div>
       )}
 
       <div className="flex flex-row items-center">

@@ -53,9 +53,11 @@ def test_emit_input_model_with_fields_and_additional_properties(
     assert not (tmp_path / "polar" / "ingestion" / "alias.py").exists()
     for module in ("conftest", "test_buffered", "test_ingestion"):
         assert (tmp_path / "tests" / "ingestion" / f"{module}.py").is_file()
-    buffered_tests = (tmp_path / "tests" / "ingestion" / "test_buffered.py").read_text()
-    assert "from polar.v2026_04 import PolarAsync" in buffered_tests
-    assert "from polar.v2026_10 import PolarAsync" not in buffered_tests
+    ingestion_tests = (
+        tmp_path / "tests" / "ingestion" / "test_ingestion.py"
+    ).read_text()
+    assert "from polar.v2026_04 import PolarAsync" in ingestion_tests
+    assert "from polar.v2026_10 import PolarAsync" not in ingestion_tests
     assert (tmp_path / "polar" / "outpost" / "reducer.py").is_file()
     assert (tmp_path / "polar" / "outpost" / "client.py").is_file()
     for module in ("client", "event", "reducer"):

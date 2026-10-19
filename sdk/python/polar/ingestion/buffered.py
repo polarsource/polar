@@ -1,4 +1,5 @@
 import contextlib
+import dataclasses
 import math
 import random
 import types
@@ -31,6 +32,12 @@ class BufferedIngestionOptions(typing.TypedDict, total=False):
     )
 
 
+@dataclasses.dataclass
+class _FlushRequest:
+    completed: anyio.Event = dataclasses.field(default_factory=anyio.Event)
+    error: BaseException | None = None
+
+
 class BufferedIngestionStrategy:
     def __init__(
         self,
@@ -53,15 +60,18 @@ class BufferedIngestionStrategy:
         self.max_attempts = max_attempts
         self.on_dropped = on_dropped
         self._send_queue, self._receive_queue = anyio.create_memory_object_stream[
-            EventInput
+            EventInput | _FlushRequest
         ](math.inf)
         self._stack = contextlib.AsyncExitStack()
+        self._flush_cancel_scope: anyio.CancelScope | None = None
 
     async def __aenter__(self) -> typing.Self:
-        self._flush_task_handle = await self._stack.enter_async_context(
+        if self._flush_cancel_scope is not None:
+            raise PolarError("Buffered ingestion has already started")
+        self._worker_task_group = await self._stack.enter_async_context(
             anyio.create_task_group()
         )
-        self._flush_cancel_scope = await self._flush_task_handle.start(self._flush_task)
+        self._flush_cancel_scope = await self._worker_task_group.start(self._flush_task)
         return self
 
     async def __aexit__(
@@ -70,7 +80,8 @@ class BufferedIngestionStrategy:
         exc_value: BaseException | None,
         traceback: types.TracebackType | None,
     ) -> bool | None:
-        self._flush_task_handle.cancel_scope.shield = True
+        assert self._flush_cancel_scope is not None
+        self._worker_task_group.cancel_scope.shield = True
         self._flush_cancel_scope.deadline = anyio.current_time() + self.shutdown_timeout
         self._send_queue.close()
         await self._stack.aclose()
@@ -80,6 +91,16 @@ class BufferedIngestionStrategy:
         event: EventInput,
     ) -> None:
         await self._send_queue.send(event)
+
+    async def flush(self) -> None:
+        """Wait until earlier events are delivered or reported as dropped."""
+        if self._flush_cancel_scope is None:
+            raise PolarError("Buffered ingestion has not started")
+        request = _FlushRequest()
+        await self._send_queue.send(request)
+        await request.completed.wait()
+        if request.error is not None:
+            raise request.error
 
     async def _on_dropped(self, events: list[EventInput], reason: DropReason) -> None:
         log.warning("Dropping %s events: %s", len(events), reason)
@@ -91,30 +112,59 @@ class BufferedIngestionStrategy:
     ) -> None:
         async with self._receive_queue:
             batch: list[EventInput] = []
-            with anyio.CancelScope(shield=True) as cancel_scope:
-                task_status.started(cancel_scope)
-                stream_closed = False
-                while not stream_closed:
-                    batch = []
-                    try:
-                        with anyio.move_on_after(self.batch_interval):
-                            while len(batch) < self.batch_size:
-                                event = await self._receive_queue.receive()
-                                batch.append(event)
-                    except anyio.EndOfStream:
-                        stream_closed = True
+            request: _FlushRequest | None = None
+            failure: BaseException | None = None
+            cancel_scope = anyio.CancelScope(shield=True)
+            try:
+                with cancel_scope:
+                    task_status.started(cancel_scope)
+                    stream_closed = False
+                    while not stream_closed:
+                        try:
+                            message = await self._receive_queue.receive()
+                        except anyio.EndOfStream:
+                            break
+                        if isinstance(message, _FlushRequest):
+                            message.completed.set()
+                            continue
+                        batch = [message]
+                        try:
+                            with anyio.move_on_after(self.batch_interval):
+                                while len(batch) < self.batch_size:
+                                    message = await self._receive_queue.receive()
+                                    if isinstance(message, _FlushRequest):
+                                        request = message
+                                        break
+                                    batch.append(message)
+                        except anyio.EndOfStream:
+                            stream_closed = True
 
-                    if batch:
                         await self._process_batch(batch)
                         batch = []
-
-            if cancel_scope.cancelled_caught:
+                        if request is not None:
+                            request.completed.set()
+                            request = None
+                if cancel_scope.cancelled_caught:
+                    failure = TimeoutError("Buffered ingestion shutdown timed out")
+            except BaseException as error:
+                failure = error
+                raise
+            finally:
+                self._send_queue.close()
+                requests = [request] if request is not None else []
                 while True:
                     try:
-                        batch.append(self._receive_queue.receive_nowait())
+                        message = self._receive_queue.receive_nowait()
                     except anyio.EndOfStream:
                         break
-                if batch:
+                    if isinstance(message, _FlushRequest):
+                        requests.append(message)
+                    else:
+                        batch.append(message)
+                for request in requests:
+                    request.error = failure
+                    request.completed.set()
+                if cancel_scope.cancelled_caught and batch:
                     await self._on_dropped(batch, "shutdown_timeout")
 
     async def _process_batch(self, batch: list[EventInput], attempt: int = 1) -> None:

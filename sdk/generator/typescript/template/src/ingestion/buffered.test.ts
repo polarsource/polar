@@ -16,17 +16,142 @@ const events: EventInput[] = Array.from({ length: 5 }, (_, i) => ({
   external_customer_id: "alice",
 }));
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.useRealTimers();
+});
+
+it("flushes empty and bounded batches, then accepts more events", async () => {
+  const ingest = vi.fn().mockResolvedValue(undefined);
+  const strategy = new BufferedIngestionStrategy(
+    { events: { ingest } },
+    { batchSize: 2, batchIntervalMs: 60_000 },
+  );
+  await expect(strategy.ingest(events[0])).rejects.toThrow("not running");
+  await expect(strategy.flush()).rejects.toThrow("not running");
+  await strategy.start();
+  await expect(strategy.start()).rejects.toThrow("already started");
+  await strategy.flush();
+  expect(ingest).not.toHaveBeenCalled();
+  for (const event of events) await strategy.ingest(event);
+  await strategy.flush();
+  expect(ingest.mock.calls.map(([body]) => body.events)).toEqual([
+    events.slice(0, 2),
+    events.slice(2, 4),
+    events.slice(4),
+  ]);
+  await strategy.ingest(events[0]);
+  await strategy.flush();
+  expect(ingest).toHaveBeenCalledTimes(4);
+  await strategy.close();
+  await expect(strategy.flush()).rejects.toThrow("not running");
+});
+
+it("starts the batch interval with the first event without resetting it", async () => {
+  vi.useFakeTimers();
+  const ingest = vi.fn().mockResolvedValue(undefined);
+  await using strategy = await new BufferedIngestionStrategy(
+    { events: { ingest } },
+    { batchIntervalMs: 100 },
+  ).start();
+  expect(vi.getTimerCount()).toBe(0);
+  await vi.advanceTimersByTimeAsync(50);
+  await strategy.ingest(events[0]);
+  await vi.advanceTimersByTimeAsync(50);
+  await strategy.ingest(events[1]);
+  expect(ingest).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(50);
+  expect(ingest).toHaveBeenCalledExactlyOnceWith({ events: events.slice(0, 2) }, expect.anything());
+  expect(vi.getTimerCount()).toBe(0);
+});
+
+it("keeps concurrent flush boundaries separate while a batch is in flight", async () => {
+  let finishDelivery!: () => void;
+  const ingest = vi.fn(
+    (_body: { events: EventInput[] }) =>
+      new Promise<void>((resolve) => {
+        finishDelivery = resolve;
+      }),
+  );
+  await using strategy = await new BufferedIngestionStrategy(
+    { events: { ingest } },
+    { batchSize: 1 },
+  ).start();
+  try {
+    await strategy.ingest(events[0]);
+    await vi.waitFor(() => expect(ingest).toHaveBeenCalledOnce());
+    const firstDone = vi.fn();
+    const firstFlush = strategy.flush().then(firstDone);
+    await strategy.ingest(events[1]);
+    const secondDone = vi.fn();
+    const secondFlush = strategy.flush().then(secondDone);
+    const closed = vi.fn();
+    const closing = strategy.close().then(closed);
+    await expect(strategy.flush()).rejects.toThrow("not running");
+    expect(firstDone).not.toHaveBeenCalled();
+    finishDelivery();
+    await firstFlush;
+    await vi.waitFor(() => expect(ingest).toHaveBeenCalledTimes(2));
+    expect(secondDone).not.toHaveBeenCalled();
+    expect(closed).not.toHaveBeenCalled();
+    finishDelivery();
+    await Promise.all([secondFlush, closing]);
+    expect(ingest.mock.calls.map(([body]) => body.events)).toEqual([[events[0]], [events[1]]]);
+  } finally {
+    ingest.mockResolvedValue(undefined);
+    finishDelivery();
+  }
+});
+
+it.each(["shutdown timeout", "worker error"])(
+  "rejects active and queued flushes on %s",
+  async (failure) => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    let failDelivery!: (error: Error) => void;
+    const ingest = vi.fn(async (_body: unknown, options?: RequestOptions) => {
+      await new Promise<void>((_, reject) => {
+        failDelivery = reject;
+        options!.signal!.addEventListener("abort", () => reject(options!.signal!.reason), {
+          once: true,
+        });
+      });
+    });
+    const onDropped = vi.fn();
+    const strategy = await new BufferedIngestionStrategy(
+      { events: { ingest } },
+      { batchIntervalMs: 60_000, shutdownTimeoutMs: 10, onDropped },
+    ).start();
+    await strategy.ingest(events[0]);
+    const firstFlush = strategy.flush();
+    await vi.waitFor(() => expect(ingest).toHaveBeenCalledOnce());
+    await strategy.ingest(events[1]);
+    const flushes = Promise.allSettled([firstFlush, strategy.flush()]);
+    const error = failure === "worker error" ? "broken transport" : "shutdown timed out";
+    if (failure === "worker error") {
+      failDelivery(new TypeError(error));
+      await expect(strategy.close()).rejects.toThrow(error);
+      await expect(strategy.flush()).rejects.toThrow(error);
+      await expect(strategy.ingest(events[0])).rejects.toThrow(error);
+      expect(onDropped).not.toHaveBeenCalled();
+    } else {
+      await strategy.close();
+      expect(onDropped).toHaveBeenCalledExactlyOnceWith(events.slice(0, 2), "shutdown_timeout");
+    }
+    for (const result of await flushes) {
+      expect(result).toMatchObject({
+        status: "rejected",
+        reason: { message: expect.stringContaining(error) },
+      });
+    }
+  },
+);
 
 it.each([0, 1, 5])("drains %i events in bounded batches on disposal", async (count) => {
   const ingest = vi.fn().mockResolvedValue(undefined);
   {
     await using strategy = await new BufferedIngestionStrategy(
       { events: { ingest } },
-      {
-        batchSize: 2,
-        batchIntervalMs: 60_000,
-      },
+      { batchSize: 2, batchIntervalMs: 60_000 },
     ).start();
     for (const event of events.slice(0, count)) await strategy.ingest(event);
   }
@@ -35,19 +160,22 @@ it.each([0, 1, 5])("drains %i events in bounded batches on disposal", async (cou
   expect(batches.every((batch) => batch.length <= 2)).toBe(true);
 });
 
-it.each(["size", "interval"])("flushes when the batch %s is reached", async (trigger) => {
-  const ingest = vi.fn().mockResolvedValue(undefined);
-  await using strategy = await new BufferedIngestionStrategy(
-    { events: { ingest } },
-    {
-      batchSize: trigger === "size" ? 1 : 100,
-      batchIntervalMs: trigger === "interval" ? 10 : 60_000,
-    },
-  ).start();
-  await strategy.ingest(events[0]);
-  await vi.waitFor(() => expect(ingest).toHaveBeenCalledOnce());
-  expect(ingest.mock.calls[0][0]).toEqual({ events: [events[0]] });
-});
+it.each([
+  { batchSize: 1, batchIntervalMs: 60_000 },
+  { batchSize: 100, batchIntervalMs: 0 },
+])(
+  "automatically sends with batch size $batchSize and interval $batchIntervalMs",
+  async (options) => {
+    const ingest = vi.fn().mockResolvedValue(undefined);
+    await using strategy = await new BufferedIngestionStrategy(
+      { events: { ingest } },
+      options,
+    ).start();
+    await strategy.ingest(events[0]);
+    await vi.waitFor(() => expect(ingest).toHaveBeenCalledOnce());
+    expect(ingest.mock.calls[0][0]).toEqual({ events: [events[0]] });
+  },
+);
 
 it("honors Retry-After and preserves the batch through retries", async () => {
   const onDropped = vi.fn();
@@ -60,7 +188,7 @@ it("honors Retry-After and preserves the batch through retries", async () => {
     { onDropped },
   ).start();
   await strategy.ingest(events[0]);
-  await strategy.close();
+  await strategy.flush();
   expect(ingest).toHaveBeenCalledTimes(2);
   expect(ingest.mock.calls[0]).toEqual(ingest.mock.calls[1]);
   expect(onDropped).not.toHaveBeenCalled();
@@ -74,13 +202,27 @@ it.each([
 ] as const)("reports delivery failure: %s", async (error, reason) => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
   const ingest = vi.fn().mockRejectedValue(error);
-  const onDropped = vi.fn();
+  let finishDrop!: () => void;
+  const onDropped = vi.fn(
+    () =>
+      new Promise<void>((resolve) => {
+        finishDrop = resolve;
+      }),
+  );
   await using strategy = await new BufferedIngestionStrategy(
     { events: { ingest } },
     { maxAttempts: 1, onDropped },
   ).start();
   await strategy.ingest(events[0]);
-  await strategy.close();
+  const flushed = vi.fn();
+  const flushing = strategy.flush().then(flushed);
+  try {
+    await vi.waitFor(() => expect(onDropped).toHaveBeenCalledOnce());
+    expect(flushed).not.toHaveBeenCalled();
+  } finally {
+    finishDrop();
+  }
+  await flushing;
   expect(ingest).toHaveBeenCalledOnce();
   expect(onDropped).toHaveBeenCalledExactlyOnceWith([events[0]], reason);
 });
@@ -146,15 +288,4 @@ it("flushes before propagating the scope error", async () => {
     throw new Error("body failed");
   }).rejects.toThrow("body failed");
   expect(ingest).toHaveBeenCalledOnce();
-});
-
-it("rejects use outside the lifecycle and propagates unexpected worker errors", async () => {
-  const ingest = vi.fn().mockRejectedValue(new TypeError("broken transport"));
-  const strategy = new BufferedIngestionStrategy({ events: { ingest } });
-  await expect(strategy.ingest(events[0])).rejects.toThrow("not running");
-  await strategy.start();
-  await expect(strategy.start()).rejects.toThrow("already started");
-  await strategy.ingest(events[0]);
-  await expect(strategy.close()).rejects.toThrow("broken transport");
-  await expect(strategy.ingest(events[0])).rejects.toThrow("broken transport");
 });

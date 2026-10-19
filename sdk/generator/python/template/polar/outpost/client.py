@@ -4,6 +4,7 @@ import contextlib
 import dataclasses
 import datetime
 import functools
+import hashlib
 import json
 import math
 import random
@@ -29,6 +30,7 @@ from redis.asyncio.retry import Retry
 from redis.backoff import EqualJitterBackoff, NoBackoff
 from redis.commands.core import AsyncScript
 from redis.exceptions import ConnectionError as RedisConnectionError
+from redis.exceptions import NoScriptError
 from redis.exceptions import TimeoutError as RedisTimeoutError
 
 from polar.base import PolarError
@@ -229,6 +231,8 @@ end
     + PUBLISH_STATE_SCRIPT
     + "return state\n"
 )
+
+WRITE_BUCKET_SHA = hashlib.sha1(WRITE_BUCKET_SCRIPT.encode()).hexdigest()
 
 APPLY_SNAPSHOT_SCRIPT = (
     """
@@ -498,14 +502,11 @@ class Outpost:
             )
             await self._warm_actor(parsed.external_customer_id)
             assert self._redis is not None
-            identities = []
+            writes: list[tuple[str, list[str | int | float]]] = []
             async with self._redis.pipeline(transaction=False) as pipeline:
                 for (customer, reducer_id, bucket_start), statistics in updates.items():
                     identity = f"{customer}:{reducer_id}"
-                    identities.append(identity)
-                    pipeline.eval(
-                        WRITE_BUCKET_SCRIPT,
-                        1,
+                    arguments: list[str | int | float] = [
                         f"outpost:state:{identity}",
                         identity,
                         self._channel,
@@ -515,10 +516,15 @@ class Outpost:
                         statistics.sum,
                         statistics.min if statistics.min is not None else "",
                         statistics.max if statistics.max is not None else "",
-                    )
+                    ]
+                    writes.append((identity, arguments))
+                    pipeline.evalsha(WRITE_BUCKET_SHA, 1, *arguments)
                 states = await pipeline.execute(raise_on_error=False)
             first_error: Exception | None = None
-            for identity, state in zip(identities, states, strict=True):
+            for (identity, arguments), state in zip(writes, states, strict=True):
+                # Redis caches the script with the first EVAL, so this happens once per server.
+                if isinstance(state, NoScriptError):
+                    state = await self._redis.eval(WRITE_BUCKET_SCRIPT, 1, *arguments)
                 if isinstance(state, Exception):
                     if first_error is None:
                         first_error = state

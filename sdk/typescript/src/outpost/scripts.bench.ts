@@ -14,6 +14,7 @@ const COLD_UNTIL = Date.UTC(2026, 9, 1, 12, 0, 0) * 1_000;
 const BUCKET_COUNTS = [1, 12, 288];
 const CHANNEL = "outpost:bench:updates";
 const EPOCH = "0123456789abcdef0123456789abcdef";
+const OPTIONS = { warmupTime: 500, time: 2_000 };
 
 const identityOf = (buckets: number) => `external:alice:tokens-${buckets}`;
 const keyOf = (buckets: number) => `outpost:state:${identityOf(buckets)}`;
@@ -80,7 +81,7 @@ afterAll(async () => {
 describe("WRITE_BUCKET", () => {
   for (const buckets of BUCKET_COUNTS) {
     const newestBucketStart = COLD_UNTIL + (buckets - 1) * BUCKET_SIZE;
-    bench(`one event on a ${buckets}-bucket state`, async () => {
+    bench(`write one event to a ${buckets}-bucket state`, async () => {
       await redis.eval(
         WRITE_BUCKET_SCRIPT,
         1,
@@ -94,15 +95,15 @@ describe("WRITE_BUCKET", () => {
         7,
         7,
       );
-    });
+    }, OPTIONS);
   }
 });
 
 describe("READ_STATE", () => {
   for (const buckets of BUCKET_COUNTS) {
-    bench(`${buckets}-bucket state`, async () => {
+    bench(`read a ${buckets}-bucket state`, async () => {
       await redis.evalsha(readStateSha, 1, keyOf(buckets), EPOCH);
-    });
+    }, OPTIONS);
   }
 });
 
@@ -110,7 +111,7 @@ describe("APPLY_SNAPSHOT", () => {
   for (const buckets of BUCKET_COUNTS) {
     // Same cold_until and version as the seeded state: the script rescans every field and
     // rewrites the cold summary, but seals no bucket, so the state keeps its size.
-    bench(`${buckets}-bucket state`, async () => {
+    bench(`apply a snapshot to a ${buckets}-bucket state`, async () => {
       await redis.evalsha(
         applySnapshotSha,
         1,
@@ -127,6 +128,6 @@ describe("APPLY_SNAPSHOT", () => {
         1,
         999,
       );
-    });
+    }, OPTIONS);
   }
 });

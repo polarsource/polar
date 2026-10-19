@@ -8,7 +8,7 @@ dependencies = [
     "jinja2>=3.1.6",
     "keepachangelog==2.0.0",
     "oas-patch==0.6.0",
-    "openapi-pydantic>=0.5.1",
+    "openapi-pydantic>=0.6.0",
 ]
 
 [dependency-groups]

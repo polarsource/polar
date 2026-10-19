@@ -1,0 +1,61 @@
+name: SDK Benchmarks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "sdk/**"
+      - ".github/workflows/benchmark_sdk.yaml"
+  pull_request:
+    paths:
+      - "sdk/**"
+      - ".github/workflows/benchmark_sdk.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # CodSpeed authenticates the run with OIDC.
+  id-token: write
+
+jobs:
+  typescript-sdk:
+    name: TypeScript SDK (${{ matrix.mode }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Instruction counts: deterministic, on the runners the rest of CI uses.
+          - mode: simulation
+            runner: blacksmith-4vcpu-ubuntu-2404
+          # Real time: on CodSpeed's dedicated ARM64 machines, registered in the org by the app.
+          - mode: walltime
+            runner: codspeed-macro
+    defaults:
+      run:
+        working-directory: sdk/typescript
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6.1.0
+        with:
+          package_json_file: sdk/typescript/package.json
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: sdk/typescript/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@v5
+        with:
+          mode: ${{ matrix.mode }}
+          working-directory: sdk/typescript
+          run: pnpm vitest bench --run

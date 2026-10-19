@@ -215,9 +215,11 @@
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "bench": "vitest bench --run"
   },
   "devDependencies": {
+    "@codspeed/vitest-plugin": "^5.7.1",
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/otlp-transformer": "^0.223.0",
     "@opentelemetry/resources": "^2.12.0",

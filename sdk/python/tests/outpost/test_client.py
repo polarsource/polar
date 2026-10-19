@@ -13,6 +13,11 @@ import httpx
 import pytest
 from fakeredis import FakeAsyncRedis, FakeServer
 from httpx_ws.transport import ASGIWebSocketTransport
+from opentelemetry.sdk.metrics.export import (
+    MetricExporter,
+    MetricExportResult,
+    MetricsData,
+)
 from opentelemetry.sdk.trace import ReadableSpan
 from opentelemetry.sdk.trace.export import (
     BatchSpanProcessor,
@@ -93,6 +98,46 @@ def exported_spans(monkeypatch: pytest.MonkeyPatch) -> list[ReadableSpan]:
         "polar.outpost.telemetry.BatchSpanProcessor", SimpleSpanProcessor
     )
     return exported
+
+
+@pytest.fixture(autouse=True)
+def exported_metrics(monkeypatch: pytest.MonkeyPatch) -> list[MetricsData]:
+    exported: list[MetricsData] = []
+
+    class Exporter(MetricExporter):
+        def export(
+            self,
+            metrics_data: MetricsData,
+            timeout_millis: float = 10_000,
+            **kwargs: typing.Any,
+        ) -> MetricExportResult:
+            exported.append(metrics_data)
+            return MetricExportResult.SUCCESS
+
+        def force_flush(self, timeout_millis: float = 10_000) -> bool:
+            return True
+
+        def shutdown(
+            self, timeout_millis: float = 30_000, **kwargs: typing.Any
+        ) -> None:
+            pass
+
+    monkeypatch.setattr(
+        "polar.outpost.telemetry.RelayMetricExporter", lambda *_: Exporter()
+    )
+    return exported
+
+
+def _data_points(exported: list[MetricsData], name: str) -> list[typing.Any]:
+    return [
+        point
+        for metrics_data in exported
+        for resource_metrics in metrics_data.resource_metrics
+        for scope_metrics in resource_metrics.scope_metrics
+        for metric in scope_metrics.metrics
+        if metric.name == name
+        for point in metric.data.data_points
+    ]
 
 
 @pytest.fixture
@@ -993,6 +1038,7 @@ async def test_telemetry_spans(
     polar_client: httpx.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     exported_spans: list[ReadableSpan],
+    exported_metrics: list[MetricsData],
 ) -> None:
     url, _ = redis_connection
     snapshots["external:alice"] = {
@@ -1024,12 +1070,19 @@ async def test_telemetry_spans(
                 await anyio.lowlevel.checkpoint()
         await outpost.meter(meter_id="meter", external_customer_id="alice")
 
+    events = _data_points(exported_metrics, "outpost.ingest.events")
+    assert [(point.attributes, point.value) for point in events] == [
+        ({"outpost.outcome": "ok"}, 1)
+    ]
+    durations = _data_points(exported_metrics, "outpost.ingest.duration")
+    assert [(point.attributes, point.count) for point in durations] == [
+        ({"outpost.outcome": "ok"}, 1)
+    ]
     names = {span.name for span in exported_spans}
     assert names == {
         "outpost.redis.connect",
         "outpost.redis.subscribe",
         "outpost.websocket.connect",
-        "outpost.ingest",
         "outpost.customer_meter",
         "outpost.snapshot.received",
         "outpost.sync",
@@ -1194,6 +1247,7 @@ async def test_flush_telemetry_exports_buffered_spans(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,
     exported_spans: list[ReadableSpan],
+    exported_metrics: list[MetricsData],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
@@ -1203,8 +1257,10 @@ async def test_flush_telemetry_exports_buffered_spans(
     async with Outpost(url, client=polar_client) as outpost:
         await outpost.ingest({"name": "call", "external_customer_id": "alice"})
         assert exported_spans == []
+        assert exported_metrics == []
         assert await outpost.flush_telemetry()
-        assert "outpost.ingest" in {span.name for span in exported_spans}
+        assert "outpost.redis.connect" in {span.name for span in exported_spans}
+        assert _data_points(exported_metrics, "outpost.ingest.events") != []
 
 
 @pytest.mark.anyio

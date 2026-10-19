@@ -28,15 +28,23 @@ CHANNEL = "outpost:bench:updates"
 EPOCH = "0123456789abcdef0123456789abcdef"
 
 
+# One event usually matches several reducers; ingest sends their WRITE_BUCKET calls in one pipeline.
+REDUCERS = ["tokens", "calls", "cost"]
+
+
+def state_key(identity: str) -> str:
+    return f"outpost:state:{identity}"
+
+
 def identity_of(buckets: int) -> str:
     return f"external:alice:tokens-{buckets}"
 
 
 def key_of(buckets: int) -> str:
-    return f"outpost:state:{identity_of(buckets)}"
+    return state_key(identity_of(buckets))
 
 
-def seed_state(redis: Redis, buckets: int) -> None:
+def seed_state(redis: Redis, identity: str, buckets: int) -> None:
     fields = [
         "epoch",
         EPOCH,
@@ -63,7 +71,7 @@ def seed_state(redis: Redis, buckets: int) -> None:
         prefix = f"bucket:{COLD_UNTIL + index * BUCKET_SIZE}:"
         fields += [f"{prefix}count", "10", f"{prefix}sum", str(100 + index)]
         fields += [f"{prefix}min", "1", f"{prefix}max", str(50 + index)]
-    redis.hset(key_of(buckets), items=fields)
+    redis.hset(state_key(identity), items=fields)
 
 
 @pytest.fixture(scope="module")
@@ -95,7 +103,9 @@ def redis() -> collections.abc.Iterator[Redis]:
             # sync client stands in for redis.asyncio; both share the connection and parser code.
             client = Redis(unix_socket_path=socket)
             for buckets in BUCKET_COUNTS:
-                seed_state(client, buckets)
+                seed_state(client, identity_of(buckets), buckets)
+            for reducer in REDUCERS:
+                seed_state(client, f"external:alice:{reducer}", 1)
             yield client
             client.close()
         finally:
@@ -122,6 +132,29 @@ def test_write_bucket_one_event(
         7,
         7,
     )
+
+
+def test_write_bucket_three_reducers(benchmark: BenchmarkFixture, redis: Redis) -> None:
+    def write() -> None:
+        pipeline = redis.pipeline(transaction=False)
+        for reducer in REDUCERS:
+            identity = f"external:alice:{reducer}"
+            pipeline.eval(
+                WRITE_BUCKET_SCRIPT,
+                1,
+                state_key(identity),
+                identity,
+                CHANNEL,
+                EPOCH,
+                COLD_UNTIL,
+                1,
+                7,
+                7,
+                7,
+            )
+        pipeline.execute()
+
+    benchmark(write)
 
 
 @pytest.mark.parametrize("buckets", BUCKET_COUNTS)

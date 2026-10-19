@@ -3,6 +3,7 @@ import * as entrypoint from './src/index.ts' with { type: 'cf-worker' }
 
 const POLAR_SERVERS = {
   'polar-mcp': 'https://api.polar.sh',
+  'polar-lovable': 'https://api.polar.sh',
   'polar-sandbox': 'https://sandbox-api.polar.sh',
 }
 

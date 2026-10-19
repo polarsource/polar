@@ -14,17 +14,14 @@ import {
   TEXT,
   term,
   type TermTok,
-  Sections,
   IsoBox,
   Callout,
   Figure,
-  PageHead,
-  Body,
   Anchor,
 } from '../kit'
 import type { Piece } from './index'
 import { LiveMeter } from '../live/meter'
-import { LiveEventFields } from '../live/event'
+import { EventFields } from '../event'
 import { LiveLedger } from '../live/ledger'
 import { LiveBalance, LiveInvoice } from '../live/money'
 
@@ -41,7 +38,8 @@ const page = (
   h: number,
   cols: 1 | 2,
   render: () => ReactNode,
-): Piece => ({ id, title, kind: 'manual', note, w, h, cols, render })
+  text: Pick<Piece, 'sub' | 'notes'> = {},
+): Piece => ({ id, title, kind: 'manual', note, w, h, cols, render, ...text })
 
 const sheet = (w: number, h: number, title: string, children: ReactNode) => (
   <Sheet w={w} h={h} surface="night" unsigned title={title} pad={40}>
@@ -70,94 +68,98 @@ export const manual: Piece[] = [
         960,
         540,
         'How does a meter work?',
-        <>
-          <PageHead
-            crumb="03 · METERS · HOW DOES A METER WORK?"
-            w={960}
-            pad={40}
-            title="How does a meter work?"
-            sub="A meter is a fold over the event stream: state = fn(events). Nothing is stored that cannot be recomputed."
-          />
-          <Figure x={40} y={156} w={620} h={300} dy={26} n="002">
-            <g fill="none" stroke={MID} strokeWidth={HAIR}>
-              {Array.from({ length: n }, (_, i) => {
-                const y = 190 + ((fy - 190) * 2 * i) / (n - 1)
-                return (
-                  <path
-                    key={i}
-                    d={`M ${x0} ${y} C ${x0 + (xm - x0) * 0.75} ${y}, ${x0 + (xm - x0) * 0.25} ${fy}, ${xm} ${fy}`}
-                  />
-                )
-              })}
-            </g>
+        <Figure x={40} y={156} w={620} h={300}>
+          <g fill="none" stroke={MID} strokeWidth={HAIR}>
             {Array.from({ length: n }, (_, i) => {
               const y = 190 + ((fy - 190) * 2 * i) / (n - 1)
-              return <Anchor key={i} at={[x0, y]} size={2.6} />
-            })}
-            <line
-              x1={xm}
-              x2={gauge[0] - 30}
-              y1={fy}
-              y2={fy}
-              stroke={LINE}
-              strokeWidth={HAIR}
-            />
-            <circle cx={fold} cy={fy} r={4.5} fill={LINE} />
-            {/* the meter: a half dial of five ticks, a needle, a pivot */}
-            <path
-              d={`M${gauge[0] - 30} ${gauge[1]} A 30 30 0 0 1 ${gauge[0] + 30} ${gauge[1]}`}
-              fill="none"
-              stroke={MID}
-              strokeWidth={HAIR}
-            />
-            {[0, 1, 2, 3, 4].map((i) => {
-              const a = Math.PI + (Math.PI * i) / 4
               return (
-                <line
+                <path
                   key={i}
-                  x1={gauge[0] + Math.cos(a) * 30}
-                  y1={gauge[1] + Math.sin(a) * 30}
-                  x2={gauge[0] + Math.cos(a) * 25}
-                  y2={gauge[1] + Math.sin(a) * 25}
-                  stroke={MID}
-                  strokeWidth={HAIR}
+                  d={`M ${x0} ${y} C ${x0 + (xm - x0) * 0.75} ${y}, ${x0 + (xm - x0) * 0.25} ${fy}, ${xm} ${fy}`}
                 />
               )
             })}
-            <LiveMeter x0={x0} xm={xm} fy={fy} n={n} gauge={gauge} />
-            <Callout at={[x0, 190]} to={[x0, 160]} route="v">
-              EVENT STREAM
-            </Callout>
-            <Callout at={[fold, fy]} to={[fold, 400]} route="v">
-              THE FOLD
-            </Callout>
-            <Callout
-              at={[gauge[0], gauge[1] - 30]}
-              to={[gauge[0], 190]}
-              route="v"
-            >
-              READING
-            </Callout>
-          </Figure>
-          <Body
-            x={700}
-            y={176}
-            width={220}
-            size={11.5}
-            text={[
-              'Every event the system sees is written down once, in order, and never changed. A meter does not count; it folds. Given the state so far and the next event, it returns the next state. Read the state and you have the reading. Replay the stream and you have the same reading.',
-              'Because the fold is pure, any version of the state can be rebuilt from the events before it. Nothing is stored that cannot be recomputed, so nothing can drift.',
-            ]}
+          </g>
+          {Array.from({ length: n }, (_, i) => {
+            const y = 190 + ((fy - 190) * 2 * i) / (n - 1)
+            return <Anchor key={i} at={[x0, y]} size={2.6} />
+          })}
+          <line
+            x1={xm}
+            x2={gauge[0] - 30}
+            y1={fy}
+            y2={fy}
+            stroke={LINE}
+            strokeWidth={HAIR}
           />
-        </>,
+          <circle cx={fold} cy={fy} r={4.5} fill={LINE} />
+          {/* the meter: a half dial of five ticks, a needle, a pivot */}
+          <path
+            d={`M${gauge[0] - 30} ${gauge[1]} A 30 30 0 0 1 ${gauge[0] + 30} ${gauge[1]}`}
+            fill="none"
+            stroke={MID}
+            strokeWidth={HAIR}
+          />
+          {[0, 1, 2, 3, 4].map((i) => {
+            const a = Math.PI + (Math.PI * i) / 4
+            return (
+              <line
+                key={i}
+                x1={gauge[0] + Math.cos(a) * 30}
+                y1={gauge[1] + Math.sin(a) * 30}
+                x2={gauge[0] + Math.cos(a) * 25}
+                y2={gauge[1] + Math.sin(a) * 25}
+                stroke={MID}
+                strokeWidth={HAIR}
+              />
+            )
+          })}
+          <LiveMeter x0={x0} xm={xm} fy={fy} n={n} gauge={gauge} />
+          <Callout at={[x0, 190]} to={[x0, 160]} route="v">
+            EVENT STREAM
+          </Callout>
+          <Callout at={[fold, fy]} to={[fold, 400]} route="v">
+            THE FOLD
+          </Callout>
+          <Callout
+            at={[gauge[0], gauge[1] - 30]}
+            to={[gauge[0], 190]}
+            route="v"
+          >
+            READING
+          </Callout>
+        </Figure>,
       )
+    },
+    {
+      sub: 'A meter is a fold over the event stream: state = fn(events). Nothing is stored that cannot be recomputed.',
+      notes: [
+        [
+          'The fold',
+          [
+            'Every event the system sees is written down once, in order, and never changed. A meter does not count; it folds. Given the state so far and the next event, it returns the next state.',
+          ],
+        ],
+        [
+          'The reading',
+          [
+            'Read the state and you have the reading. Replay the stream and you have the same reading.',
+          ],
+        ],
+        [
+          'No drift',
+          [
+            'Because the fold is pure, any version of the state can be rebuilt from the events before it. Nothing is stored that cannot be recomputed, so nothing can drift.',
+          ],
+        ],
+      ],
     },
   ),
 
   // 0a Billing as code: a product file on the left, the objects it produces on the right, one arrow between
   page(
     'm-code',
-    'Billing as code',
+    'The config',
     'A product is a file. Its events, meters and prices are declared in code, checked in, reviewed, and applied, and the objects on the right are what the file produces. Chapter 1.',
     960,
     540,
@@ -201,169 +203,157 @@ export const manual: Piece[] = [
       return sheet(
         960,
         540,
-        'Billing as code',
-        <>
-          <PageHead
-            crumb="01 · BILLING AS CODE · THE CONFIG"
-            w={960}
-            pad={40}
-            title="Billing as code"
-            sub="A product is a file: declared, reviewed, applied."
-          />
-          <Figure x={40} y={156} w={620} h={300} dy={26} n="00a">
-            <g transform="translate(96 0)">
-              <rect
-                x={fx}
-                y={fy}
-                width={fw}
-                height={fh}
-                fill={BG}
-                stroke={MID}
-                strokeWidth={HAIR}
-              />
-              <Code
-                x={fx + 12}
-                y={fy + 16}
-                lines={lines}
-                ink={NIGHT_INK}
-                size={7.5}
-                lh={1.35}
-              />
-              <Guide a={[R, fy + 130]} b={[R + 44, fy + 130]} />
-              <path
-                d={`M${R + 40} ${fy + 127}l4 3l-4 3`}
-                fill="none"
-                stroke={DIM}
-                strokeWidth={HAIR}
-              />
-              <Label
-                x={R + 22}
-                y={fy + 123}
-                ink={NIGHT_INK}
-                size={7.5}
-                anchor="middle"
-              >
-                APPLY
-              </Label>
-              {objects.map(([kind, value], i) => {
-                const y = oy0 + i * 56
-                return (
-                  <g key={kind}>
-                    {i === 0 ? (
+        'The config',
+        <Figure x={40} y={156} w={620} h={300}>
+          <g transform="translate(96 0)">
+            <rect
+              x={fx}
+              y={fy}
+              width={fw}
+              height={fh}
+              fill={BG}
+              stroke={MID}
+              strokeWidth={HAIR}
+            />
+            <Code
+              x={fx + 12}
+              y={fy + 16}
+              lines={lines}
+              ink={NIGHT_INK}
+              size={7.5}
+              lh={1.35}
+            />
+            <Guide a={[R, fy + 130]} b={[R + 44, fy + 130]} />
+            <path
+              d={`M${R + 40} ${fy + 127}l4 3l-4 3`}
+              fill="none"
+              stroke={DIM}
+              strokeWidth={HAIR}
+            />
+            <Label
+              x={R + 22}
+              y={fy + 123}
+              ink={NIGHT_INK}
+              size={7.5}
+              anchor="middle"
+            >
+              APPLY
+            </Label>
+            {objects.map(([kind, value], i) => {
+              const y = oy0 + i * 56
+              return (
+                <g key={kind}>
+                  {i === 0 ? (
+                    <IsoBox
+                      x={0}
+                      y={0}
+                      z={0}
+                      w={1}
+                      d={1}
+                      h={1}
+                      s={10}
+                      ox={R + 86}
+                      oy={y + 14}
+                      tone="mid"
+                    />
+                  ) : i === 1 ? (
+                    <g>
+                      {[0, 1, 2].map((k) => (
+                        <IsoBox
+                          key={k}
+                          x={k * 1.2}
+                          y={0}
+                          z={0}
+                          w={1}
+                          d={1}
+                          h={1}
+                          s={10}
+                          ox={R + 72}
+                          oy={y + 10}
+                          tone="mid"
+                        />
+                      ))}
+                    </g>
+                  ) : (
+                    <g>
                       <IsoBox
-                        x={0}
-                        y={0}
-                        z={0}
-                        w={1}
-                        d={1}
-                        h={1}
+                        x={-0.4}
+                        y={-0.4}
+                        z={-0.5}
+                        w={4.2}
+                        d={1.8}
+                        h={0.5}
                         s={10}
-                        ox={R + 86}
-                        oy={y + 14}
+                        ox={R + 72}
+                        oy={y + 12}
                         tone="mid"
                       />
-                    ) : i === 1 ? (
-                      <g>
-                        {[0, 1, 2].map((k) => (
-                          <IsoBox
-                            key={k}
-                            x={k * 1.2}
-                            y={0}
-                            z={0}
-                            w={1}
-                            d={1}
-                            h={1}
-                            s={10}
-                            ox={R + 72}
-                            oy={y + 10}
-                            tone="mid"
-                          />
-                        ))}
-                      </g>
-                    ) : (
-                      <g>
+                      {[0, 1, 2].map((k) => (
                         <IsoBox
-                          x={-0.4}
-                          y={-0.4}
-                          z={-0.5}
-                          w={4.2}
-                          d={1.8}
-                          h={0.5}
+                          key={k}
+                          x={k * 1.2}
+                          y={0}
+                          z={0}
+                          w={1}
+                          d={1}
+                          h={1}
                           s={10}
                           ox={R + 72}
                           oy={y + 12}
                           tone="mid"
                         />
-                        {[0, 1, 2].map((k) => (
-                          <IsoBox
-                            key={k}
-                            x={k * 1.2}
-                            y={0}
-                            z={0}
-                            w={1}
-                            d={1}
-                            h={1}
-                            s={10}
-                            ox={R + 72}
-                            oy={y + 12}
-                            tone="mid"
-                          />
-                        ))}
-                      </g>
-                    )}
-                    <Label x={R + 122} y={y + 4} ink={NIGHT_INK} size={8}>
-                      {kind}
-                    </Label>
-                    <Label
-                      x={R + 122}
-                      y={y + 16}
-                      ink={NIGHT_INK}
-                      size={8}
-                      dim={false}
-                    >
-                      {value}
-                    </Label>
-                  </g>
-                )
-              })}
-              <Callout
-                at={[fx + 24, fy]}
-                to={[fx + 24, fy - 26]}
-                route="v"
-                dot={false}
-              >
-                polar.config.ts · IN GIT
-              </Callout>
-            </g>
-          </Figure>
-          <Sections
-            x={700}
-            y={176}
-            width={220}
-            size={11}
-            items={[
-              [
-                'THE FILE',
-                [
-                  'A product is declared, not configured. Its events, meters and prices live in one typed file, beside the code that emits the events, and the types flow from the event schema to the meter to the price.',
-                ],
-              ],
-              [
-                'THE REVIEW',
-                [
-                  'The file goes through the same pull request as everything else. A price change is a diff; a reviewer reads it; the build type-checks it against the schemas before anyone can apply it.',
-                ],
-              ],
-              [
-                'THE APPLY',
-                [
-                  'The CLI compares the file with what is deployed and writes the difference as events. Polar holds no second copy: the deployed billing is the fold over those events, and the file is its source.',
-                ],
-              ],
-            ]}
-          />
-        </>,
+                      ))}
+                    </g>
+                  )}
+                  <Label x={R + 122} y={y + 4} ink={NIGHT_INK} size={8}>
+                    {kind}
+                  </Label>
+                  <Label
+                    x={R + 122}
+                    y={y + 16}
+                    ink={NIGHT_INK}
+                    size={8}
+                    dim={false}
+                  >
+                    {value}
+                  </Label>
+                </g>
+              )
+            })}
+            <Callout
+              at={[fx + 24, fy]}
+              to={[fx + 24, fy - 26]}
+              route="v"
+              dot={false}
+            >
+              polar.config.ts · IN GIT
+            </Callout>
+          </g>
+        </Figure>,
       )
+    },
+    {
+      sub: 'A product is a file: declared, reviewed, applied.',
+      notes: [
+        [
+          'The file',
+          [
+            'A product is declared, not configured. Its events, meters and prices live in one typed file, beside the code that emits the events, and the types flow from the event schema to the meter to the price.',
+          ],
+        ],
+        [
+          'The review',
+          [
+            'The file goes through the same pull request as everything else. A price change is a diff; a reviewer reads it; the build type-checks it against the schemas before anyone can apply it.',
+          ],
+        ],
+        [
+          'The apply',
+          [
+            'The CLI compares the file with what is deployed and writes the difference as events. Polar holds no second copy: the deployed billing is the fold over those events, and the file is its source.',
+          ],
+        ],
+      ],
     },
   ),
 
@@ -434,30 +424,29 @@ export const manual: Piece[] = [
         960,
         540,
         'Review and apply',
-        <>
-          <PageHead
-            crumb="01 · BILLING AS CODE · REVIEW AND APPLY"
-            w={960}
-            pad={40}
-            title="Review and apply"
-            sub="The CLI reads the file, shows the plan, asks, and writes the events."
-          />
-          <Figure x={40} y={156} w={620} h={300} dy={26} n="00b">
-            {rows.map((toks, i) =>
-              toks.length ? line(i, 0, toks, `r${i}`) : null,
-            )}
-          </Figure>
-          <Body
-            x={700}
-            y={176}
-            width={220}
-            size={11.5}
-            text={[
-              'The CLI is the only way a definition reaches production. It reads the file, computes the diff against what is deployed, and asks. On yes, it does not update anything in place: it writes the events, and the deployed state is the fold over them, like every other number.',
-            ]}
-          />
-        </>,
+        <Figure x={40} y={156} w={620} h={300}>
+          {rows.map((toks, i) =>
+            toks.length ? line(i, 0, toks, `r${i}`) : null,
+          )}
+        </Figure>,
       )
+    },
+    {
+      sub: 'The CLI reads the file, shows the plan, asks, and writes the events.',
+      notes: [
+        [
+          'One way in',
+          [
+            'The CLI is the only way a definition reaches production. It reads the file, computes the diff against what is deployed, and asks.',
+          ],
+        ],
+        [
+          'Events, not edits',
+          [
+            'On yes, it does not update anything in place: it writes the events, and the deployed state is the fold over them, like every other number.',
+          ],
+        ],
+      ],
     },
   ),
 
@@ -480,85 +469,73 @@ export const manual: Piece[] = [
         960,
         540,
         'The principle',
-        <>
-          <PageHead
-            crumb="PREFACE · THE PRINCIPLE"
-            w={960}
-            pad={40}
-            title="The principle"
-            sub="Every number is derived from events. Nothing is stored twice."
-          />
-          <Figure x={40} y={156} w={620} h={300} dy={26} n="000">
-            <g transform="translate(150 60)">
-              <g fill="none" stroke={MID} strokeWidth={HAIR}>
-                {Array.from({ length: n }, (_, i) => {
-                  const y = 164 + ((fy - 164) * 2 * i) / (n - 1)
-                  return (
-                    <path
-                      key={i}
-                      d={`M ${x0} ${y} C ${x0 + (xm - x0) * 0.75} ${y}, ${x0 + (xm - x0) * 0.25} ${fy}, ${xm} ${fy}`}
-                    />
-                  )
-                })}
-              </g>
+        <Figure x={40} y={156} w={620} h={300}>
+          <g transform="translate(150 60)">
+            <g fill="none" stroke={MID} strokeWidth={HAIR}>
               {Array.from({ length: n }, (_, i) => {
                 const y = 164 + ((fy - 164) * 2 * i) / (n - 1)
-                return <Anchor key={i} at={[x0, y]} size={2.6} />
+                return (
+                  <path
+                    key={i}
+                    d={`M ${x0} ${y} C ${x0 + (xm - x0) * 0.75} ${y}, ${x0 + (xm - x0) * 0.25} ${fy}, ${xm} ${fy}`}
+                  />
+                )
               })}
-              <line
-                x1={xm}
-                x2={x1}
-                y1={fy}
-                y2={fy}
-                stroke={LINE}
-                strokeWidth={HAIR}
-              />
-              <circle cx={fold} cy={fy} r={4.5} fill={LINE} />
-              <Callout at={[x0, 164]} to={[x0, 128]} route="v">
-                EVENTS · IN ORDER
-              </Callout>
-              <Callout at={[x1, fy]} to={[x1, 284]} route="v" side="left">
-                STATE · ONE VALUE
-              </Callout>
-              <Label x={x0} y={360} ink={NIGHT_INK} size={8.5}>
-                state = fn(events)
-              </Label>
             </g>
-          </Figure>
-          <Sections
-            x={700}
-            y={176}
-            width={220}
-            size={11}
-            items={[
-              [
-                'THE RULE',
-                [
-                  'Polar keeps one thing: an ordered record of what happened. Every other number, a meter, a balance, an invoice line, is a fold over that record, computed when asked for and recomputed whenever the record grows.',
-                ],
-              ],
-              [
-                '01 · EVERY NUMBER IS DERIVED FROM EVENTS',
-                [
-                  'No second copy of the truth to go stale. If two numbers disagree, the events settle it.',
-                ],
-              ],
-              [
-                '02 · ZERO LATENCY, BY DESIGN',
-                [
-                  'A check is answered from the state on hand, not a round trip. The stream catches up behind it.',
-                ],
-              ],
-              [
-                '03 · BUILT FOR AGENTS, BY DEFAULT',
-                [
-                  'A customer holds its agents, each agent its actors. Usage rolls up, access rolls down.',
-                ],
-              ],
-            ]}
-          />
-        </>,
+            {Array.from({ length: n }, (_, i) => {
+              const y = 164 + ((fy - 164) * 2 * i) / (n - 1)
+              return <Anchor key={i} at={[x0, y]} size={2.6} />
+            })}
+            <line
+              x1={xm}
+              x2={x1}
+              y1={fy}
+              y2={fy}
+              stroke={LINE}
+              strokeWidth={HAIR}
+            />
+            <circle cx={fold} cy={fy} r={4.5} fill={LINE} />
+            <Callout at={[x0, 164]} to={[x0, 128]} route="v">
+              EVENTS · IN ORDER
+            </Callout>
+            <Callout at={[x1, fy]} to={[x1, 284]} route="v" side="left">
+              STATE · ONE VALUE
+            </Callout>
+            <Label x={x0} y={360} ink={NIGHT_INK} size={8.5}>
+              state = fn(events)
+            </Label>
+          </g>
+        </Figure>,
       )
+    },
+    {
+      sub: 'Every number is derived from events. Nothing is stored twice.',
+      notes: [
+        [
+          'The rule',
+          [
+            'Polar keeps one thing: an ordered record of what happened. Every other number, a meter, a balance, an invoice line, is a fold over that record, computed when asked for and recomputed whenever the record grows.',
+          ],
+        ],
+        [
+          'Every number is derived from events',
+          [
+            'No second copy of the truth to go stale. If two numbers disagree, the events settle it.',
+          ],
+        ],
+        [
+          'Zero latency, by design',
+          [
+            'A check is answered from the state on hand, not a round trip. The stream catches up behind it.',
+          ],
+        ],
+        [
+          'Built for agents, by default',
+          [
+            'A customer holds its agents, each agent its actors. Usage rolls up, access rolls down.',
+          ],
+        ],
+      ],
     },
   ),
 
@@ -581,68 +558,68 @@ export const manual: Piece[] = [
         960,
         540,
         'Anatomy of an event',
-        <>
-          <PageHead
-            crumb="02 · EVENTS · ANATOMY OF AN EVENT"
-            w={960}
-            pad={40}
-            title="Anatomy of an event"
-            sub="Five fields. The last one holds the measurement."
-          />
-          <Figure x={40} y={156} w={620} h={300} dy={26} n="001">
-            <g transform="translate(150 0)">
-              {/* the ruler */}
-              {Array.from({ length: cols + 1 }, (_, i) => {
-                const major = i % 8 === 0
-                return (
-                  <line
-                    key={i}
-                    x1={x + i * cw}
-                    x2={x + i * cw}
-                    y1={top - (major ? 10 : 6)}
-                    y2={top - 2}
-                    stroke={MID}
-                    strokeWidth={HAIR}
-                  />
-                )
-              })}
-              {[0, 8, 16, 24, 32].map((i) => (
-                <text
+        <Figure x={40} y={156} w={620} h={300}>
+          <g transform="translate(150 0)">
+            {/* the ruler */}
+            {Array.from({ length: cols + 1 }, (_, i) => {
+              const major = i % 8 === 0
+              return (
+                <line
                   key={i}
-                  x={x + i * cw}
-                  y={top - 14}
-                  fontSize={7}
-                  fill={DIM}
-                  textAnchor="middle"
-                  style={MONO}
-                >
-                  {i}
-                </text>
-              ))}
-              <LiveEventFields x={x} top={top} rh={rh} cw={cw} />
-              {/* the sentence the chapter opens with, field by field */}
-              {(['WHEN', 'WHO', 'WHAT', 'HOW MUCH'] as const).map((word, i) => (
-                <Callout
-                  key={word}
-                  at={[x + w, top + rh * (i + 1.5)]}
-                  to={[x + w + 24, top + rh * (i + 1.5)]}
-                >
-                  {word}
-                </Callout>
-              ))}
-            </g>
-          </Figure>
-          <Body
-            x={700}
-            y={176}
-            width={220}
-            size={11.5}
-            text={[
-              'An event is a fact: at this time, this customer, through this actor, did this thing, this much. Its id and timestamp give it a place in the ledger; its metadata carries the measurement, in any shape, and it is what the meters fold over.',
-            ]}
-          />
-        </>,
+                  x1={x + i * cw}
+                  x2={x + i * cw}
+                  y1={top - (major ? 10 : 6)}
+                  y2={top - 2}
+                  stroke={MID}
+                  strokeWidth={HAIR}
+                />
+              )
+            })}
+            {[0, 8, 16, 24, 32].map((i) => (
+              <text
+                key={i}
+                x={x + i * cw}
+                y={top - 14}
+                fontSize={7}
+                fill={DIM}
+                textAnchor="middle"
+                style={MONO}
+              >
+                {i}
+              </text>
+            ))}
+            <EventFields x={x} top={top} rh={rh} cw={cw} />
+            {/* the sentence the chapter opens with, field by field */}
+            {(['WHEN', 'WHO', 'WHAT', 'HOW MUCH'] as const).map((word, i) => (
+              <Callout
+                key={word}
+                at={[x + w, top + rh * (i + 1.5)]}
+                to={[x + w + 24, top + rh * (i + 1.5)]}
+              >
+                {word}
+              </Callout>
+            ))}
+          </g>
+        </Figure>,
       )
+    },
+    {
+      sub: 'Five fields. The last one holds the measurement.',
+      notes: [
+        [
+          'A fact',
+          [
+            'An event is a fact: at this time, this customer, through this actor, did this thing, this much.',
+          ],
+        ],
+        ['Its place', ['Its id and timestamp give it a place in the ledger.']],
+        [
+          'The measurement',
+          [
+            'Its metadata carries the measurement, in any shape, and it is what the meters fold over.',
+          ],
+        ],
+      ],
     },
   ),
 
@@ -665,89 +642,83 @@ export const manual: Piece[] = [
         960,
         540,
         'Anatomy of an invoice',
-        <>
-          <PageHead
-            w={960}
-            pad={40}
-            crumb="05 · INVOICES · ANATOMY OF AN INVOICE"
-            title="Anatomy of an invoice"
-            sub="Usage in, invoice out. Every line is a sum over events."
-          />
-          <Figure x={40} y={156} w={620} h={300} dy={26} n="004">
-            <g transform="translate(138 22)">
-              <rect
-                x={x}
-                y={y}
-                width={w}
-                height={h}
-                fill={BG}
-                stroke={MID}
-                strokeWidth={HAIR}
-              />
-              <rect x={x + 12} y={y + 12} width={44} height={8} fill={DIM} />
-              <rect
-                x={x + w - 48}
-                y={y + 12}
-                width={36}
-                height={6}
-                fill={DIM}
-              />
-              {rows.map((ry, i) => (
-                <g key={i}>
-                  <line
-                    x1={x + 12}
-                    x2={x + w - 12}
-                    y1={ry + 14}
-                    y2={ry + 14}
-                    stroke={RULE}
-                    strokeWidth={HAIR}
-                  />
-                </g>
-              ))}
-              <line
-                x1={x + 12}
-                x2={x + w - 12}
-                y1={y + 150}
-                y2={y + 150}
-                stroke={LINE}
-                strokeWidth={1.2}
-              />
-              <rect x={x + 12} y={y + 212} width={96} height={4} fill={DIM} />
-              <LiveInvoice x={x} y={y} w={w} rows={rows} />
-              <Callout at={[x + 34, y + 16]} to={[x + 34, y - 18]} route="v">
-                ISSUER · THE LOCKUP
-              </Callout>
-              <Callout at={[R, y + 15]} to={[R + 28, y + 15]}>
-                NUMBER · 00042
-              </Callout>
-              <Callout at={[R, rows[0]]} to={[R + 28, rows[0]]}>
-                LINE ITEM · A METER
-              </Callout>
-              <Callout at={[R, rows[1]]} to={[R + 28, rows[1]]}>
-                QUANTITY × RATE
-              </Callout>
-              <Callout at={[R, y + 130]} to={[R + 28, y + 130]}>
-                CREDITS APPLIED
-              </Callout>
-              <Callout at={[R, y + 169]} to={[R + 28, y + 169]}>
-                TOTAL · USD
-              </Callout>
-              <Callout at={[R, y + 214]} to={[R + 28, y + 214]}>
-                DERIVED FROM EVENTS
-              </Callout>
-            </g>
-          </Figure>
-          <Body
-            x={700}
-            y={176}
-            width={220}
-            size={11.5}
-            text={[
-              'An invoice is not typed; it is computed. Each line is a meter read at the end of the period, multiplied by its rate. Credits come off before the sum. The footer names the events it was derived from, so any line can be traced back to the facts.',
-            ]}
-          />
-        </>,
+        <Figure x={40} y={156} w={620} h={300}>
+          <g transform="translate(138 22)">
+            <rect
+              x={x}
+              y={y}
+              width={w}
+              height={h}
+              fill={BG}
+              stroke={MID}
+              strokeWidth={HAIR}
+            />
+            <rect x={x + 12} y={y + 12} width={44} height={8} fill={DIM} />
+            <rect x={x + w - 48} y={y + 12} width={36} height={6} fill={DIM} />
+            {rows.map((ry, i) => (
+              <g key={i}>
+                <line
+                  x1={x + 12}
+                  x2={x + w - 12}
+                  y1={ry + 14}
+                  y2={ry + 14}
+                  stroke={RULE}
+                  strokeWidth={HAIR}
+                />
+              </g>
+            ))}
+            <line
+              x1={x + 12}
+              x2={x + w - 12}
+              y1={y + 150}
+              y2={y + 150}
+              stroke={LINE}
+              strokeWidth={1.2}
+            />
+            <rect x={x + 12} y={y + 212} width={96} height={4} fill={DIM} />
+            <LiveInvoice x={x} y={y} w={w} rows={rows} />
+            <Callout at={[x + 34, y + 16]} to={[x + 34, y - 18]} route="v">
+              ISSUER · THE LOCKUP
+            </Callout>
+            <Callout at={[R, y + 15]} to={[R + 28, y + 15]}>
+              NUMBER · 00042
+            </Callout>
+            <Callout at={[R, rows[0]]} to={[R + 28, rows[0]]}>
+              LINE ITEM · A METER
+            </Callout>
+            <Callout at={[R, rows[1]]} to={[R + 28, rows[1]]}>
+              QUANTITY × RATE
+            </Callout>
+            <Callout at={[R, y + 130]} to={[R + 28, y + 130]}>
+              CREDITS APPLIED
+            </Callout>
+            <Callout at={[R, y + 169]} to={[R + 28, y + 169]}>
+              TOTAL · USD
+            </Callout>
+            <Callout at={[R, y + 214]} to={[R + 28, y + 214]}>
+              DERIVED FROM EVENTS
+            </Callout>
+          </g>
+        </Figure>,
       )
+    },
+    {
+      sub: 'Usage in, invoice out. Every line is a sum over events.',
+      notes: [
+        [
+          'Computed',
+          [
+            'An invoice is not typed; it is computed. Each line is a meter read at the end of the period, multiplied by its rate.',
+          ],
+        ],
+        ['Credits', ['Credits come off before the sum.']],
+        [
+          'Traceable',
+          [
+            'The footer names the events it was derived from, so any line can be traced back to the facts.',
+          ],
+        ],
+      ],
     },
   ),
 
@@ -769,36 +740,35 @@ export const manual: Piece[] = [
         960,
         540,
         'The credit balance',
-        <>
-          <PageHead
-            crumb="04 · CREDITS · THE CREDIT BALANCE"
-            w={960}
-            pad={40}
-            title="The credit balance"
-            sub="A grant fills it; every metered event drains it."
-          />
-          <Figure x={40} y={156} w={620} h={300} dy={26} n="003">
-            <g transform="translate(150 0)">
-              {line(
-                0,
-                0,
-                [T('', 7), T('EVENT'), T('', 19), T('Δ', 9), T('BALANCE')],
-                'h',
-              )}
-              <LiveBalance X0={X0} BX={BX} BW={BW} />
-            </g>
-          </Figure>
-          <Body
-            x={700}
-            y={176}
-            width={220}
-            size={11.5}
-            text={[
-              'Credits are a balance derived from two kinds of event: grants, which add, and usage, which takes away at the meter\u2019s rate. The balance is never stored; it is the last line of this statement, recomputed from the events above it.',
-            ]}
-          />
-        </>,
+        <Figure x={40} y={156} w={620} h={300}>
+          <g transform="translate(150 0)">
+            {line(
+              0,
+              0,
+              [T('', 7), T('EVENT'), T('', 19), T('Δ', 9), T('BALANCE')],
+              'h',
+            )}
+            <LiveBalance X0={X0} BX={BX} BW={BW} />
+          </g>
+        </Figure>,
       )
+    },
+    {
+      sub: 'A grant fills it; every metered event drains it.',
+      notes: [
+        [
+          'Two kinds of event',
+          [
+            'Credits are a balance derived from two kinds of event: grants, which add, and usage, which takes away at the meter’s rate.',
+          ],
+        ],
+        [
+          'Never stored',
+          [
+            'The balance is never stored; it is the last line of this statement, recomputed from the events above it.',
+          ],
+        ],
+      ],
     },
   ),
 
@@ -827,169 +797,169 @@ export const manual: Piece[] = [
         960,
         540,
         'How entitlements work',
-        <>
-          <PageHead
-            w={960}
-            pad={40}
-            crumb="06 · ENTITLEMENTS · HOW ENTITLEMENTS WORK"
-            title="How entitlements work"
-            sub="One state, every gate."
-          />
-          <Figure x={40} y={156} w={620} h={300} dy={26} n="005">
-            <g transform="translate(138 22)">
-              <rect
-                x={bx}
-                y={by}
-                width={bw}
-                height={bh}
-                fill={BG}
-                stroke={LINE}
-                strokeWidth={HAIR}
-              />
-              <text
-                x={bx + bw / 2}
-                y={by + 13}
-                fontSize={7.5}
-                fill={DIM}
-                textAnchor="middle"
-                style={MONO}
-              >
-                SUBSCRIPTION
-              </text>
-              <text
-                x={bx + bw / 2}
-                y={by + 24}
-                fontSize={7.5}
-                fill={LINE}
-                textAnchor="middle"
-                style={MONO}
-              >
-                active
-              </text>
-              <line
-                x1={bx + bw}
-                x2={bus}
-                y1={by + bh / 2}
-                y2={by + bh / 2}
-                stroke={LINE}
-                strokeWidth={HAIR}
-              />
-              <line
-                x1={bus}
-                x2={bus}
-                y1={by + bh / 2}
-                y2={ry(2)}
-                stroke={LINE}
-                strokeWidth={HAIR}
-              />
-              {rows.map(([name, on], i) => {
-                const y = ry(i)
-                return (
-                  <g key={name}>
-                    <circle cx={bus} cy={y} r={1.8} fill={LINE} />
+        <Figure x={40} y={156} w={620} h={300}>
+          <g transform="translate(138 22)">
+            <rect
+              x={bx}
+              y={by}
+              width={bw}
+              height={bh}
+              fill={BG}
+              stroke={LINE}
+              strokeWidth={HAIR}
+            />
+            <text
+              x={bx + bw / 2}
+              y={by + 13}
+              fontSize={7.5}
+              fill={DIM}
+              textAnchor="middle"
+              style={MONO}
+            >
+              SUBSCRIPTION
+            </text>
+            <text
+              x={bx + bw / 2}
+              y={by + 24}
+              fontSize={7.5}
+              fill={LINE}
+              textAnchor="middle"
+              style={MONO}
+            >
+              active
+            </text>
+            <line
+              x1={bx + bw}
+              x2={bus}
+              y1={by + bh / 2}
+              y2={by + bh / 2}
+              stroke={LINE}
+              strokeWidth={HAIR}
+            />
+            <line
+              x1={bus}
+              x2={bus}
+              y1={by + bh / 2}
+              y2={ry(2)}
+              stroke={LINE}
+              strokeWidth={HAIR}
+            />
+            {rows.map(([name, on], i) => {
+              const y = ry(i)
+              return (
+                <g key={name}>
+                  <circle cx={bus} cy={y} r={1.8} fill={LINE} />
+                  <line
+                    x1={bus}
+                    x2={sw}
+                    y1={y}
+                    y2={y}
+                    stroke={LINE}
+                    strokeWidth={HAIR}
+                  />
+                  <circle
+                    cx={sw}
+                    cy={y}
+                    r={2.2}
+                    fill={BG}
+                    stroke={LINE}
+                    strokeWidth={HAIR}
+                  />
+                  <circle
+                    cx={sw + 28}
+                    cy={y}
+                    r={2.2}
+                    fill={BG}
+                    stroke={LINE}
+                    strokeWidth={HAIR}
+                  />
+                  {on ? (
                     <line
-                      x1={bus}
-                      x2={sw}
+                      x1={sw + 2.2}
+                      x2={sw + 25.8}
                       y1={y}
                       y2={y}
                       stroke={LINE}
                       strokeWidth={HAIR}
                     />
-                    <circle
-                      cx={sw}
-                      cy={y}
-                      r={2.2}
-                      fill={BG}
-                      stroke={LINE}
-                      strokeWidth={HAIR}
-                    />
-                    <circle
-                      cx={sw + 28}
-                      cy={y}
-                      r={2.2}
-                      fill={BG}
-                      stroke={LINE}
-                      strokeWidth={HAIR}
-                    />
-                    {on ? (
-                      <line
-                        x1={sw + 2.2}
-                        x2={sw + 25.8}
-                        y1={y}
-                        y2={y}
-                        stroke={LINE}
-                        strokeWidth={HAIR}
-                      />
-                    ) : (
-                      <line
-                        x1={sw + 2.2}
-                        x2={sw + 24}
-                        y1={y}
-                        y2={y - 11}
-                        stroke={LINE}
-                        strokeWidth={HAIR}
-                      />
-                    )}
+                  ) : (
                     <line
-                      x1={sw + 30.2}
-                      x2={sw + 56}
+                      x1={sw + 2.2}
+                      x2={sw + 24}
                       y1={y}
-                      y2={y}
-                      stroke={on ? LINE : MID}
+                      y2={y - 11}
+                      stroke={LINE}
                       strokeWidth={HAIR}
                     />
-                    <rect
-                      x={sw + 56}
-                      y={y - 9}
-                      width={70}
-                      height={18}
-                      fill={BG}
-                      stroke={on ? LINE : MID}
-                      strokeWidth={HAIR}
-                    />
-                    <text
-                      x={sw + 64}
-                      y={y + 2.5}
-                      fontSize={7.5}
-                      fill={on ? LINE : DIM}
-                      style={MONO}
-                    >
-                      {name}
-                    </text>
-                    <text
-                      x={sw + 118}
-                      y={y + 2.5}
-                      fontSize={7.5}
-                      fill={on ? LINE : DIM}
-                      textAnchor="end"
-                      style={MONO}
-                    >
-                      {on ? 'ON' : 'OFF'}
-                    </text>
-                  </g>
-                )
-              })}
-              <Callout
-                at={[sw + 14, ry(0) - 6]}
-                to={[sw + 14, ry(0) - 30]}
-                route="v"
-                dot={false}
-              >
-                GATE
-              </Callout>
-            </g>
-          </Figure>
-          <Body
-            x={700}
-            y={176}
-            width={220}
-            size={11.5}
-            text={[
-              'An entitlement is a switch, and the subscription’s state is the line that drives it. When the state changes, every switch on the line moves at once. Active closes them; past due keeps them closed; canceled opens them. Each move is an event, so access has a history.',
-            ]}
-          />
-        </>,
+                  )}
+                  <line
+                    x1={sw + 30.2}
+                    x2={sw + 56}
+                    y1={y}
+                    y2={y}
+                    stroke={on ? LINE : MID}
+                    strokeWidth={HAIR}
+                  />
+                  <rect
+                    x={sw + 56}
+                    y={y - 9}
+                    width={70}
+                    height={18}
+                    fill={BG}
+                    stroke={on ? LINE : MID}
+                    strokeWidth={HAIR}
+                  />
+                  <text
+                    x={sw + 64}
+                    y={y + 2.5}
+                    fontSize={7.5}
+                    fill={on ? LINE : DIM}
+                    style={MONO}
+                  >
+                    {name}
+                  </text>
+                  <text
+                    x={sw + 118}
+                    y={y + 2.5}
+                    fontSize={7.5}
+                    fill={on ? LINE : DIM}
+                    textAnchor="end"
+                    style={MONO}
+                  >
+                    {on ? 'ON' : 'OFF'}
+                  </text>
+                </g>
+              )
+            })}
+            <Callout
+              at={[sw + 14, ry(0) - 6]}
+              to={[sw + 14, ry(0) - 30]}
+              route="v"
+              dot={false}
+            >
+              GATE
+            </Callout>
+          </g>
+        </Figure>,
       )
+    },
+    {
+      sub: 'One state, every gate.',
+      notes: [
+        [
+          'The switch',
+          [
+            'An entitlement is a switch, and the subscription’s state is the line that drives it. When the state changes, every switch on the line moves at once.',
+          ],
+        ],
+        [
+          'The states',
+          [
+            'Active closes them; past due keeps them closed; canceled opens them.',
+          ],
+        ],
+        ['A history', ['Each move is an event, so access has a history.']],
+      ],
     },
   ),
 
@@ -1031,118 +1001,110 @@ export const manual: Piece[] = [
         960,
         540,
         'Local-first checks',
-        <>
-          <PageHead
-            crumb="03 · METERS · LOCAL-FIRST CHECKS"
-            w={960}
-            pad={40}
-            title="Local-first checks"
-            sub="Answered from the state on hand, in no time. The stream catches up behind it."
-          />
-          <Figure x={40} y={156} w={620} h={300} dy={26} n="006">
-            {[
-              ['CHECK', CHECK],
-              ['STATE', STATE - step * 1.5],
-              ['STREAM', STREAM],
-            ].map(([lane, y]) => (
-              <text
-                key={lane}
-                x={x0 - 12}
-                y={Number(y) + 2.5}
-                fontSize={8.5}
-                fill={DIM}
-                textAnchor="end"
-                style={MONO}
-              >
-                {lane}
-              </text>
-            ))}
-            <line
-              x1={x0}
-              x2={x1}
-              y1={CHECK}
-              y2={CHECK}
-              stroke={MID}
-              strokeWidth={HAIR}
-            />
-            <line
-              x1={x0}
-              x2={x1}
-              y1={STREAM}
-              y2={STREAM}
-              stroke={MID}
-              strokeWidth={HAIR}
-            />
-            <path d={path} fill="none" stroke={LINE} strokeWidth={HAIR} />
-            {events.map((e, i) => (
-              <g key={e}>
-                <Anchor at={[t(e), STREAM]} />
-                <Guide a={[t(e), STREAM - 4]} b={[t(e), stateAt(e) + 4]} />
-                <text
-                  x={t(e) + 5}
-                  y={stateAt(e) - 4}
-                  fontSize={8}
-                  fill={DIM}
-                  style={MONO}
-                >
-                  v{i + 1}
-                </text>
-              </g>
-            ))}
+        <Figure x={40} y={156} w={620} h={300}>
+          {[
+            ['CHECK', CHECK],
+            ['STATE', STATE - step * 1.5],
+            ['STREAM', STREAM],
+          ].map(([lane, y]) => (
             <text
-              x={x0 + 14}
-              y={STATE - 4}
-              fontSize={8}
+              key={lane}
+              x={x0 - 12}
+              y={Number(y) + 2.5}
+              fontSize={8.5}
               fill={DIM}
+              textAnchor="end"
               style={MONO}
             >
-              v0
+              {lane}
             </text>
-            {check(0)}
-            {check(400)}
-            {[0, 100, 200, 300, 400].map((ms) => (
-              <g key={ms}>
-                <line
-                  x1={t(ms)}
-                  x2={t(ms)}
-                  y1={STREAM + 30}
-                  y2={STREAM + 36}
-                  stroke={MID}
-                  strokeWidth={HAIR}
-                />
-                <text
-                  x={t(ms)}
-                  y={STREAM + 48}
-                  fontSize={8}
-                  fill={DIM}
-                  textAnchor="middle"
-                  style={MONO}
-                >
-                  {ms} ms
-                </text>
-              </g>
-            ))}
-            <line
-              x1={x0}
-              x2={x1}
-              y1={STREAM + 33}
-              y2={STREAM + 33}
-              stroke={MID}
-              strokeWidth={HAIR}
-            />
-          </Figure>
-          <Body
-            x={700}
-            y={176}
-            width={220}
-            size={11.5}
-            text={[
-              'A check, "may this customer call the API?", never waits for the network. It is answered from the state already on hand, which is the fold of every event seen so far. That takes no time at all.',
-              'The stream keeps arriving. Each new event is folded in as it lands, so the next check is answered from a newer state. Latency moves out of the request and into the stream, where it is cheap.',
-            ]}
+          ))}
+          <line
+            x1={x0}
+            x2={x1}
+            y1={CHECK}
+            y2={CHECK}
+            stroke={MID}
+            strokeWidth={HAIR}
           />
-        </>,
+          <line
+            x1={x0}
+            x2={x1}
+            y1={STREAM}
+            y2={STREAM}
+            stroke={MID}
+            strokeWidth={HAIR}
+          />
+          <path d={path} fill="none" stroke={LINE} strokeWidth={HAIR} />
+          {events.map((e, i) => (
+            <g key={e}>
+              <Anchor at={[t(e), STREAM]} />
+              <Guide a={[t(e), STREAM - 4]} b={[t(e), stateAt(e) + 4]} />
+              <text
+                x={t(e) + 5}
+                y={stateAt(e) - 4}
+                fontSize={8}
+                fill={DIM}
+                style={MONO}
+              >
+                v{i + 1}
+              </text>
+            </g>
+          ))}
+          <text x={x0 + 14} y={STATE - 4} fontSize={8} fill={DIM} style={MONO}>
+            v0
+          </text>
+          {check(0)}
+          {check(400)}
+          {[0, 100, 200, 300, 400].map((ms) => (
+            <g key={ms}>
+              <line
+                x1={t(ms)}
+                x2={t(ms)}
+                y1={STREAM + 30}
+                y2={STREAM + 36}
+                stroke={MID}
+                strokeWidth={HAIR}
+              />
+              <text
+                x={t(ms)}
+                y={STREAM + 48}
+                fontSize={8}
+                fill={DIM}
+                textAnchor="middle"
+                style={MONO}
+              >
+                {ms} ms
+              </text>
+            </g>
+          ))}
+          <line
+            x1={x0}
+            x2={x1}
+            y1={STREAM + 33}
+            y2={STREAM + 33}
+            stroke={MID}
+            strokeWidth={HAIR}
+          />
+        </Figure>,
       )
+    },
+    {
+      sub: 'Answered from the state on hand, in no time. The stream catches up behind it.',
+      notes: [
+        [
+          'No round trip',
+          [
+            'A check, "may this customer call the API?", never waits for the network. It is answered from the state already on hand, which is the fold of every event seen so far. That takes no time at all.',
+          ],
+        ],
+        [
+          'The stream',
+          [
+            'The stream keeps arriving. Each new event is folded in as it lands, so the next check is answered from a newer state. Latency moves out of the request and into the stream, where it is cheap.',
+          ],
+        ],
+      ],
     },
   ),
 
@@ -1168,39 +1130,38 @@ export const manual: Piece[] = [
         960,
         540,
         'The ledger',
-        <>
-          <PageHead
-            w={960}
-            pad={40}
-            crumb="02 · EVENTS · THE LEDGER"
-            title="The ledger"
-            sub="Append only. Every event in order, none of them ever changed."
-          />
-          <Figure x={40} y={156} w={620} h={300} dy={26} n="001b">
-            <g transform="translate(138 22)">
-              <LiveLedger x={x} w={w} top={top} rh={rh} past={past} />
-              <Callout at={[mark, rowY(0)]} to={[mark + 28, rowY(0)]}>
-                FIRST EVENT
-              </Callout>
-              <Callout at={[mark, rowY(4)]} to={[mark + 28, rowY(4)]}>
-                SET · NEVER CHANGED
-              </Callout>
-              <Callout at={[mark, head]} to={[mark + 28, head]}>
-                HEAD · NOW
-              </Callout>
-            </g>
-          </Figure>
-          <Body
-            x={700}
-            y={176}
-            width={220}
-            size={11.5}
-            text={[
-              'The ledger only grows. New events are written at the head, in the order they happened, and every row above the head is set. Any number in Polar is a position on this strip: run the fold down to that row and you have it.',
-            ]}
-          />
-        </>,
+        <Figure x={40} y={156} w={620} h={300}>
+          <g transform="translate(138 22)">
+            <LiveLedger x={x} w={w} top={top} rh={rh} past={past} />
+            <Callout at={[mark, rowY(0)]} to={[mark + 28, rowY(0)]}>
+              FIRST EVENT
+            </Callout>
+            <Callout at={[mark, rowY(4)]} to={[mark + 28, rowY(4)]}>
+              SET · NEVER CHANGED
+            </Callout>
+            <Callout at={[mark, head]} to={[mark + 28, head]}>
+              HEAD · NOW
+            </Callout>
+          </g>
+        </Figure>,
       )
+    },
+    {
+      sub: 'Append only. Every event in order, none of them ever changed.',
+      notes: [
+        [
+          'Append only',
+          [
+            'The ledger only grows. New events are written at the head, in the order they happened, and every row above the head is set.',
+          ],
+        ],
+        [
+          'Every number',
+          [
+            'Any number in Polar is a position on this strip: run the fold down to that row and you have it.',
+          ],
+        ],
+      ],
     },
   ),
 
@@ -1252,152 +1213,155 @@ export const manual: Piece[] = [
         960,
         540,
         'Customers, agents, actors',
-        <>
-          <PageHead
-            w={960}
-            pad={40}
-            crumb="07 · AGENTS · CUSTOMERS, AGENTS, ACTORS"
-            title="Customers, agents, actors"
-            sub="Usage rolls up; access rolls down."
-          />
-          <Figure x={40} y={156} w={620} h={300} dy={26} n="008">
-            <g transform="translate(138 22)">
-              <line
-                x1={cx}
-                x2={cx}
-                y1={L0 + 9}
-                y2={L1 - 20}
-                stroke={MID}
-                strokeWidth={HAIR}
-              />
-              <line
-                x1={agents[0]}
-                x2={agents[1]}
-                y1={L1 - 20}
-                y2={L1 - 20}
-                stroke={MID}
-                strokeWidth={HAIR}
-              />
-              {agents.map((ax) => (
-                <g key={ax}>
+        <Figure x={40} y={156} w={620} h={300}>
+          <g transform="translate(138 22)">
+            <line
+              x1={cx}
+              x2={cx}
+              y1={L0 + 9}
+              y2={L1 - 20}
+              stroke={MID}
+              strokeWidth={HAIR}
+            />
+            <line
+              x1={agents[0]}
+              x2={agents[1]}
+              y1={L1 - 20}
+              y2={L1 - 20}
+              stroke={MID}
+              strokeWidth={HAIR}
+            />
+            {agents.map((ax) => (
+              <g key={ax}>
+                <line
+                  x1={ax}
+                  x2={ax}
+                  y1={L1 - 20}
+                  y2={L1 - 9}
+                  stroke={MID}
+                  strokeWidth={HAIR}
+                />
+                <line
+                  x1={ax}
+                  x2={ax}
+                  y1={L1 + 9}
+                  y2={L2 - 20}
+                  stroke={MID}
+                  strokeWidth={HAIR}
+                />
+                <line
+                  x1={actors(ax)[0]}
+                  x2={actors(ax)[2]}
+                  y1={L2 - 20}
+                  y2={L2 - 20}
+                  stroke={MID}
+                  strokeWidth={HAIR}
+                />
+                {actors(ax).map((tx) => (
                   <line
-                    x1={ax}
-                    x2={ax}
-                    y1={L1 - 20}
-                    y2={L1 - 9}
-                    stroke={MID}
-                    strokeWidth={HAIR}
-                  />
-                  <line
-                    x1={ax}
-                    x2={ax}
-                    y1={L1 + 9}
-                    y2={L2 - 20}
-                    stroke={MID}
-                    strokeWidth={HAIR}
-                  />
-                  <line
-                    x1={actors(ax)[0]}
-                    x2={actors(ax)[2]}
+                    key={tx}
+                    x1={tx}
+                    x2={tx}
                     y1={L2 - 20}
-                    y2={L2 - 20}
+                    y2={L2 - 9}
                     stroke={MID}
                     strokeWidth={HAIR}
                   />
-                  {actors(ax).map((tx) => (
-                    <line
-                      key={tx}
-                      x1={tx}
-                      x2={tx}
-                      y1={L2 - 20}
-                      y2={L2 - 9}
-                      stroke={MID}
-                      strokeWidth={HAIR}
-                    />
-                  ))}
-                </g>
-              ))}
-              {node(cx, L0, 'CUSTOMER · acme', 'ink', 92)}
-              {node(agents[0], L1, 'AGENT', 'mid')}
-              {node(agents[1], L1, 'AGENT', 'mid')}
-              {agents.flatMap((ax, i) =>
-                actors(ax).map((tx, j) =>
-                  node(tx, L2, 'actor', i === 0 && j === 1 ? 'ink' : 'mid', 32),
-                ),
-              )}
-              <line
-                x1={cx - 150}
-                x2={cx - 150}
-                y1={L2}
-                y2={L0}
-                stroke={DIM}
-                strokeWidth={HAIR}
-                {...DOTTED}
-              />
-              <path
-                d={`M${cx - 153} ${L0 + 5}l3 -5l3 5`}
-                fill="none"
-                stroke={DIM}
-                strokeWidth={HAIR}
-              />
-              <text
-                transform={`rotate(-90 ${cx - 156} ${(L0 + L2) / 2})`}
-                x={cx - 156}
-                y={(L0 + L2) / 2}
-                fontSize={7.5}
-                fill={DIM}
-                textAnchor="middle"
-                style={MONO}
-              >
-                USAGE ROLLS UP
-              </text>
-              <line
-                x1={cx + 150}
-                x2={cx + 150}
-                y1={L0}
-                y2={L2}
-                stroke={DIM}
-                strokeWidth={HAIR}
-                {...DOTTED}
-              />
-              <path
-                d={`M${cx + 147} ${L2 - 5}l3 5l3 -5`}
-                fill="none"
-                stroke={DIM}
-                strokeWidth={HAIR}
-              />
-              <text
-                transform={`rotate(90 ${cx + 156} ${(L0 + L2) / 2})`}
-                x={cx + 156}
-                y={(L0 + L2) / 2}
-                fontSize={7.5}
-                fill={DIM}
-                textAnchor="middle"
-                style={MONO}
-              >
-                ACCESS ROLLS DOWN
-              </text>
-              <Callout
-                at={[actors(agents[0])[1], L2 + 9]}
-                to={[actors(agents[0])[1], L2 + 34]}
-                route="v"
-                dot={false}
-              >
-                A RUN, A SESSION, A KEY
-              </Callout>
-            </g>
-          </Figure>
-          <Body
-            x={700}
-            y={176}
-            width={220}
-            size={11.5}
-            text={[
-              'A customer holds its agents, and each agent its actors: a run, a session, a key. Every event names its actor, so usage is counted at the leaves and summed upward, while entitlements are set at the root and inherited all the way down.',
-            ]}
-          />
-        </>,
+                ))}
+              </g>
+            ))}
+            {node(cx, L0, 'CUSTOMER · acme', 'ink', 92)}
+            {node(agents[0], L1, 'AGENT', 'mid')}
+            {node(agents[1], L1, 'AGENT', 'mid')}
+            {agents.flatMap((ax, i) =>
+              actors(ax).map((tx, j) =>
+                node(tx, L2, 'actor', i === 0 && j === 1 ? 'ink' : 'mid', 32),
+              ),
+            )}
+            <line
+              x1={cx - 150}
+              x2={cx - 150}
+              y1={L2}
+              y2={L0}
+              stroke={DIM}
+              strokeWidth={HAIR}
+              {...DOTTED}
+            />
+            <path
+              d={`M${cx - 153} ${L0 + 5}l3 -5l3 5`}
+              fill="none"
+              stroke={DIM}
+              strokeWidth={HAIR}
+            />
+            <text
+              transform={`rotate(-90 ${cx - 156} ${(L0 + L2) / 2})`}
+              x={cx - 156}
+              y={(L0 + L2) / 2}
+              fontSize={7.5}
+              fill={DIM}
+              textAnchor="middle"
+              style={MONO}
+            >
+              USAGE ROLLS UP
+            </text>
+            <line
+              x1={cx + 150}
+              x2={cx + 150}
+              y1={L0}
+              y2={L2}
+              stroke={DIM}
+              strokeWidth={HAIR}
+              {...DOTTED}
+            />
+            <path
+              d={`M${cx + 147} ${L2 - 5}l3 5l3 -5`}
+              fill="none"
+              stroke={DIM}
+              strokeWidth={HAIR}
+            />
+            <text
+              transform={`rotate(90 ${cx + 156} ${(L0 + L2) / 2})`}
+              x={cx + 156}
+              y={(L0 + L2) / 2}
+              fontSize={7.5}
+              fill={DIM}
+              textAnchor="middle"
+              style={MONO}
+            >
+              ACCESS ROLLS DOWN
+            </text>
+            <Callout
+              at={[actors(agents[0])[1], L2 + 9]}
+              to={[actors(agents[0])[1], L2 + 34]}
+              route="v"
+              dot={false}
+            >
+              A RUN, A SESSION, A KEY
+            </Callout>
+          </g>
+        </Figure>,
       )
+    },
+    {
+      sub: 'Usage rolls up; access rolls down.',
+      notes: [
+        [
+          'Nesting',
+          [
+            'A customer holds its agents, and each agent its actors: a run, a session, a key.',
+          ],
+        ],
+        [
+          'Usage rolls up',
+          [
+            'Every event names its actor, so usage is counted at the leaves and summed upward.',
+          ],
+        ],
+        [
+          'Access rolls down',
+          ['Entitlements are set at the root and inherited all the way down.'],
+        ],
+      ],
     },
   ),
 
@@ -1467,7 +1431,7 @@ export const manual: Piece[] = [
           [
             ['Customers, agents, actors', '52'],
             ['Keys and sessions', '54'],
-            ['Just ask', '56'],
+            ['Asking the ledger', '56'],
           ],
         ],
         [
@@ -1531,20 +1495,9 @@ export const manual: Piece[] = [
         })
         yy += 18
       })
-      return sheet(
-        400,
-        566,
-        'Table of contents',
-        <>
-          <PageHead
-            crumb="CONTENTS"
-            title="Contents"
-            sub="A preface, seven chapters and an appendix."
-          />
-          {rows}
-        </>,
-      )
+      return sheet(400, 566, 'Table of contents', rows)
     },
+    { sub: 'A preface, seven chapters and an appendix.' },
   ),
 
   // 10 From checkout to access: a flow
@@ -1595,142 +1548,145 @@ export const manual: Piece[] = [
         960,
         540,
         'From checkout to access',
-        <>
-          <PageHead
-            w={960}
-            pad={40}
-            crumb="06 · ENTITLEMENTS · FROM CHECKOUT TO ACCESS"
-            title="From checkout to access"
-            sub="One form. Four events. Then the gates open."
-          />
-          <Figure x={40} y={156} w={620} h={300} dy={26} n="007">
-            <g transform="translate(138 22)">
-              <rect
-                x={x}
-                y={y}
-                width={w}
-                height={h}
-                fill={BG}
-                stroke={MID}
-                strokeWidth={HAIR}
-              />
-              <rect x={x + 14} y={y + 12} width={28} height={6} fill={DIM} />
-              <text
-                x={x + 14}
-                y={y + 38}
-                fontSize={10.5}
-                fill={LINE}
-                style={TITLE}
-              >
-                Pro
-              </text>
-              <text
-                x={R - 14}
-                y={y + 38}
-                fontSize={8}
-                fill={LINE}
-                textAnchor="end"
-                style={MONO}
-              >
-                $ 20 / mo
-              </text>
-              <line
-                x1={x + 14}
-                x2={R - 14}
-                y1={y + 48}
-                y2={y + 48}
-                stroke={RULE}
-                strokeWidth={HAIR}
-              />
-              {field(y + 70, 'EMAIL', 'ada@acme.com')}
-              {field(y + 108, 'CARD', '•••• •••• •••• 4242')}
-              {field(y + 146, 'COUNTRY', 'SE')}
-              <rect
-                x={x + 14}
-                y={y + 184}
-                width={w - 28}
-                height={20}
-                fill={LINE}
-              />
-              <text
-                x={x + w / 2}
-                y={y + 197}
-                fontSize={8}
-                fill={BG}
-                textAnchor="middle"
-                style={MONO}
-              >
-                PAY $ 20
-              </text>
-              <text
-                x={x + w / 2}
-                y={y + 222}
-                fontSize={6.5}
-                fill={DIM}
-                textAnchor="middle"
-                style={MONO}
-              >
-                SECURED BY POLAR
-              </text>
-              <Callout at={[R, y + 15]} to={[R + 28, y + 15]}>
-                checkout.created
-              </Callout>
-              <Callout at={[R, y + 35]} to={[R + 28, y + 35]}>
-                PRODUCT · pro
-              </Callout>
-              <Callout at={[R, y + 78]} to={[R + 28, y + 78]}>
-                CUSTOMER · acme
-              </Callout>
-              <Callout at={[R, y + 194]} to={[R + 28, y + 194]}>
-                order.paid
-              </Callout>
-              <line
-                x1={R + 14}
-                x2={R + 14}
-                y1={y + 194}
-                y2={y + 254}
-                stroke={DIM}
-                strokeWidth={HAIR}
-                {...DOTTED}
-              />
-              {[
-                'subscription.active',
-                'benefit.granted',
-                'entitlement.granted',
-              ].map((ev, i) => (
-                <g key={ev}>
-                  <line
-                    x1={R + 14}
-                    x2={R + 28}
-                    y1={y + 214 + i * 20}
-                    y2={y + 214 + i * 20}
-                    stroke={DIM}
-                    strokeWidth={HAIR}
-                  />
-                  <text
-                    x={R + 33}
-                    y={y + 216.5 + i * 20}
-                    fontSize={8.5}
-                    fill={DIM}
-                    style={MONO}
-                  >
-                    {ev}
-                  </text>
-                </g>
-              ))}
-            </g>
-          </Figure>
-          <Body
-            x={700}
-            y={176}
-            width={220}
-            size={11.5}
-            text={[
-              'The form is the only thing the customer sees. Opening it writes an event; paying writes another, and three more follow without anyone typing: the subscription, its benefits, and the entitlements that open the gates. Each is a fold over the one before, and each can be traced.',
-            ]}
-          />
-        </>,
+        <Figure x={40} y={156} w={620} h={300}>
+          <g transform="translate(138 22)">
+            <rect
+              x={x}
+              y={y}
+              width={w}
+              height={h}
+              fill={BG}
+              stroke={MID}
+              strokeWidth={HAIR}
+            />
+            <rect x={x + 14} y={y + 12} width={28} height={6} fill={DIM} />
+            <text
+              x={x + 14}
+              y={y + 38}
+              fontSize={10.5}
+              fill={LINE}
+              style={TITLE}
+            >
+              Pro
+            </text>
+            <text
+              x={R - 14}
+              y={y + 38}
+              fontSize={8}
+              fill={LINE}
+              textAnchor="end"
+              style={MONO}
+            >
+              $ 20 / mo
+            </text>
+            <line
+              x1={x + 14}
+              x2={R - 14}
+              y1={y + 48}
+              y2={y + 48}
+              stroke={RULE}
+              strokeWidth={HAIR}
+            />
+            {field(y + 70, 'EMAIL', 'ada@acme.com')}
+            {field(y + 108, 'CARD', '•••• •••• •••• 4242')}
+            {field(y + 146, 'COUNTRY', 'SE')}
+            <rect
+              x={x + 14}
+              y={y + 184}
+              width={w - 28}
+              height={20}
+              fill={LINE}
+            />
+            <text
+              x={x + w / 2}
+              y={y + 197}
+              fontSize={8}
+              fill={BG}
+              textAnchor="middle"
+              style={MONO}
+            >
+              PAY $ 20
+            </text>
+            <text
+              x={x + w / 2}
+              y={y + 222}
+              fontSize={6.5}
+              fill={DIM}
+              textAnchor="middle"
+              style={MONO}
+            >
+              SECURED BY POLAR
+            </text>
+            <Callout at={[R, y + 15]} to={[R + 28, y + 15]}>
+              checkout.created
+            </Callout>
+            <Callout at={[R, y + 35]} to={[R + 28, y + 35]}>
+              PRODUCT · pro
+            </Callout>
+            <Callout at={[R, y + 78]} to={[R + 28, y + 78]}>
+              CUSTOMER · acme
+            </Callout>
+            <Callout at={[R, y + 194]} to={[R + 28, y + 194]}>
+              order.paid
+            </Callout>
+            <line
+              x1={R + 14}
+              x2={R + 14}
+              y1={y + 194}
+              y2={y + 254}
+              stroke={DIM}
+              strokeWidth={HAIR}
+              {...DOTTED}
+            />
+            {[
+              'subscription.active',
+              'benefit.granted',
+              'entitlement.granted',
+            ].map((ev, i) => (
+              <g key={ev}>
+                <line
+                  x1={R + 14}
+                  x2={R + 28}
+                  y1={y + 214 + i * 20}
+                  y2={y + 214 + i * 20}
+                  stroke={DIM}
+                  strokeWidth={HAIR}
+                />
+                <text
+                  x={R + 33}
+                  y={y + 216.5 + i * 20}
+                  fontSize={8.5}
+                  fill={DIM}
+                  style={MONO}
+                >
+                  {ev}
+                </text>
+              </g>
+            ))}
+          </g>
+        </Figure>,
       )
+    },
+    {
+      sub: 'One form. Four events. Then the gates open.',
+      notes: [
+        [
+          'The form',
+          [
+            'The form is the only thing the customer sees. Opening it writes an event; paying writes another.',
+          ],
+        ],
+        [
+          'What follows',
+          [
+            'Three more follow without anyone typing: the subscription, its benefits, and the entitlements that open the gates.',
+          ],
+        ],
+        [
+          'Traceable',
+          ['Each is a fold over the one before, and each can be traced.'],
+        ],
+      ],
     },
   ),
 ]

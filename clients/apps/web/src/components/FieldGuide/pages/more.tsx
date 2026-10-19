@@ -12,15 +12,12 @@ import {
   TEXT,
   term,
   type TermTok,
-  Sections,
   Callout,
   Figure,
-  PageHead,
-  Body,
   Anchor,
   Hatch,
 } from '../kit'
-import type { Piece } from './index'
+import type { Notes, Piece } from './index'
 
 /** The remaining pages of the book: every section the contents promises, in the same hand as the first ones. */
 
@@ -32,7 +29,8 @@ const page = (
   h: number,
   cols: 1 | 2,
   render: () => ReactNode,
-): Piece => ({ id, title, kind: 'manual', note, w, h, cols, render })
+  text: Pick<Piece, 'sub' | 'notes'> = {},
+): Piece => ({ id, title, kind: 'manual', note, w, h, cols, render, ...text })
 const sheet = (w: number, h: number, title: string, children: ReactNode) => (
   <Sheet w={w} h={h} surface="night" unsigned title={title} pad={40}>
     {children}
@@ -40,58 +38,32 @@ const sheet = (w: number, h: number, title: string, children: ReactNode) => (
 )
 const D = (t: string, w?: number): TermTok => ({ t, tone: 'dim', w })
 
-/** A page with one paragraph: head, the figure centred, the paragraph right, a folio. */
-const portrait = (
-  id: string,
-  crumb: string,
-  title: string,
-  sub: string,
-  n: string,
-  folio: string,
-  note: string,
-  figure: ReactNode,
-  text: string[],
-) =>
-  page(id, title, note, 960, 540, 2, () =>
-    sheet(
-      960,
-      540,
-      title,
-      <>
-        <PageHead crumb={crumb} w={960} pad={40} title={title} sub={sub} />
-        <Figure x={40} y={156} w={620} h={300} dy={26} n={n}>
-          <g transform="translate(138 22)">{figure}</g>
-        </Figure>
-        <Body x={700} y={176} width={220} size={11.5} text={text} />
-      </>,
-    ),
-  )
-
-/** A landscape page: head, one figure left, sections right, a folio. */
+/** A page with one figure, a line under its title, and notes beside it. */
 const landscape = (
   id: string,
-  crumb: string,
   title: string,
   sub: string,
-  n: string,
-  folio: string,
   note: string,
   figure: ReactNode,
-  items: [string, string[]][],
+  items: Notes,
 ) =>
-  page(id, title, note, 960, 540, 2, () =>
-    sheet(
-      960,
-      540,
-      title,
-      <>
-        <PageHead crumb={crumb} w={960} pad={40} title={title} sub={sub} />
-        <Figure x={40} y={156} w={620} h={300} dy={26} n={n}>
+  page(
+    id,
+    title,
+    note,
+    960,
+    540,
+    2,
+    () =>
+      sheet(
+        960,
+        540,
+        title,
+        <Figure x={40} y={156} w={620} h={300}>
           {figure}
-        </Figure>
-        <Sections x={700} y={176} width={220} size={11} items={items} />
-      </>,
-    ),
+        </Figure>,
+      ),
+    { sub, notes: items },
   )
 
 // ---------------------------------------------------------------- 01 Billing as code · Environments
@@ -146,30 +118,27 @@ const environments = (() => {
   ]
   return landscape(
     'm-env',
-    '01 · BILLING AS CODE · ENVIRONMENTS',
     'Environments',
     'One file, three deployments. Promotion is a diff, not a copy.',
-    '00c',
-    '8',
     'Three environments running the same config at different commits, the diff between two of them, and a promotion.',
     <>
       {rows.map((toks, i) => (toks.length ? line(i, 0, toks, `r${i}`) : null))}
     </>,
     [
       [
-        'ONE FILE',
+        'One file',
         [
           'Every environment runs the same config at some commit. There is no separate staging file to drift; staging is prod a few commits ahead.',
         ],
       ],
       [
-        'THE DIFF',
+        'The diff',
         [
           'Because each environment is a fold over its applied events, the difference between two of them is a diff of config, readable before it is promoted.',
         ],
       ],
       [
-        'PROMOTE',
+        'Promote',
         [
           'Promotion applies the events staging already has to prod. Nothing is re-entered, and the commit tells you exactly what moved.',
         ],
@@ -261,17 +230,25 @@ const ingestion = (() => {
       />
     </>
   )
-  return portrait(
+  return landscape(
     'm-ingest',
-    '02 · EVENTS · INGESTION AND ORDERING',
     'Ingestion and ordering',
     'Events arrive out of order. The ledger keeps them in it.',
-    '001c',
-    '14',
     'Six events arrive in one order and are placed in another: the ledger orders by the time the event happened, not the time it landed. The two that arrived late are drawn in ink.',
     fig,
     [
-      'Events arrive late, early and in bursts. Each carries the time it happened, and the ledger orders by that, not by arrival. A fold over the ledger therefore gives the same answer whether an event took a millisecond or a day to arrive, and a late event slots into its place rather than onto the end.',
+      [
+        'Arrival',
+        [
+          'Events arrive late, early and in bursts. Each carries the time it happened, and the ledger orders by that, not by arrival.',
+        ],
+      ],
+      [
+        'Same answer',
+        [
+          'A fold over the ledger therefore gives the same answer whether an event took a millisecond or a day to arrive, and a late event slots into its place rather than onto the end.',
+        ],
+      ],
     ],
   )
 })()
@@ -309,30 +286,27 @@ const replay = (() => {
   ]
   return landscape(
     'm-replay',
-    '02 · EVENTS · REPLAY',
     'Replay',
     'Run the fold again and you get the same number. That is the test.',
-    '001d',
-    '16',
     'A replay of one meter over one month: every event folded again from the ledger, and the result checked against the stored reading.',
     <>
       {rows.map((toks, i) => (toks.length ? line(i, 0, toks, `r${i}`) : null))}
     </>,
     [
       [
-        'WHY REPLAY',
+        'Why replay',
         [
           'A number is trustworthy if it can be recomputed. Replay runs the fold over the ledger from scratch and compares it with the reading on hand.',
         ],
       ],
       [
-        'WHAT IT CATCHES',
+        'What it catches',
         [
           'A fold that changed, an event that was mis-ordered, a reading that drifted. If replay and reading agree, the number is the events; if not, the events win.',
         ],
       ],
       [
-        'WHEN',
+        'When',
         [
           'At the close of every period, before an invoice is issued, and any time a meter’s definition changes.',
         ],
@@ -447,17 +421,30 @@ const tiers = (() => {
       </text>
     </>
   )
-  return portrait(
+  return landscape(
     'm-tiers',
-    '03 · METERS · RATES AND TIERS',
     'Rates and tiers',
     'A rate is a function of the reading; tiers make it a step.',
-    '002b',
-    '22',
     'A graduated price: three tiers, each with its own rate per million, drawn as a step function over the meter.',
     fig,
     [
-      'A price is a function of a reading. Flat means one rate throughout. Graduated means each tier is charged at its own rate, so the first million costs more than the third. Volume means the tier the total lands in sets the rate for all of it. Tiers are declared in the config next to the meter they price, and a cap bounds the sum.',
+      [
+        'Flat',
+        ['A price is a function of a reading. Flat means one rate throughout.'],
+      ],
+      [
+        'Graduated',
+        [
+          'Each tier is charged at its own rate, so the first million costs more than the third.',
+        ],
+      ],
+      ['Volume', ['The tier the total lands in sets the rate for all of it.']],
+      [
+        'Declared',
+        [
+          'Tiers are declared in the config next to the meter they price, and a cap bounds the sum.',
+        ],
+      ],
     ],
   )
 })()
@@ -531,17 +518,29 @@ const reconciliation = (() => {
       </Callout>
     </>
   )
-  return portrait(
+  return landscape(
     'm-reconcile',
-    '03 · METERS · RECONCILIATION',
     'Reconciliation',
     'The local fold answers now; the ledger corrects it later.',
-    '002c',
-    '24',
     'Two step lines: the local state, folded as events are seen, and the ledger, folded in event order. A late event puts them out of step until reconciliation brings them back together.',
     fig,
     [
-      'A local fold answers from what it has seen. The ledger folds in event order, including what arrived late. The two can differ for a while, and that is allowed: a check is answered from the local fold at once, and at the next reconciliation the local state is replaced by the ledger’s. Nothing is lost, because the events are still there.',
+      [
+        'Two folds',
+        [
+          'A local fold answers from what it has seen. The ledger folds in event order, including what arrived late.',
+        ],
+      ],
+      [
+        'Allowed to differ',
+        [
+          'The two can differ for a while, and that is allowed: a check is answered from the local fold at once, and at the next reconciliation the local state is replaced by the ledger’s.',
+        ],
+      ],
+      [
+        'Nothing lost',
+        ['Nothing is lost, because the events are still there.'],
+      ],
     ],
   )
 })()
@@ -638,17 +637,31 @@ const grants = (() => {
       </Callout>
     </>
   )
-  return portrait(
+  return landscape(
     'm-grants',
-    '04 · CREDITS · GRANTS AND EXPIRY',
     'Grants and expiry',
     'A grant is an event with a start and, sometimes, an end.',
-    '003b',
-    '30',
     'Three grants on a timeline, each a bar from its start to its expiry, and the moment now cutting across them: one still open, one expired, one without an end.',
     fig,
     [
-      'A grant adds credits from a moment, and may take them back at another. Usage drains the grant that expires soonest first, so nothing is left to lapse while a longer one is spent. When a grant expires, its unused remainder is written off with an event of its own, and the balance is simply the fold over all of them.',
+      [
+        'A grant',
+        [
+          'A grant adds credits from a moment, and may take them back at another.',
+        ],
+      ],
+      [
+        'Soonest first',
+        [
+          'Usage drains the grant that expires soonest first, so nothing is left to lapse while a longer one is spent.',
+        ],
+      ],
+      [
+        'Expiry',
+        [
+          'When a grant expires, its unused remainder is written off with an event of its own, and the balance is simply the fold over all of them.',
+        ],
+      ],
     ],
   )
 })()
@@ -693,30 +706,27 @@ const zero = (() => {
   ]
   return landscape(
     'm-zero',
-    '04 · CREDITS · CROSSING ZERO',
     'Crossing zero',
     'Zero is a line, not a wall. What happens there is an entitlement.',
-    '003c',
-    '32',
     'A balance crossing zero and coming back: the event that takes it below, the entitlement that closes, the grant that reopens it, and the overdraft carried across.',
     <>
       {rows.map((toks, i) => (toks.length ? line(i, 0, toks, `r${i}`) : null))}
     </>,
     [
       [
-        'THE CROSSING',
+        'The crossing',
         [
           'A metered event is never refused. If it takes the balance below zero, it is recorded, the balance goes negative, and credit.exhausted is written beside it.',
         ],
       ],
       [
-        'WHAT CLOSES',
+        'What closes',
         [
           'The entitlements that depend on credit close on that event. The API stops answering; the ledger keeps counting.',
         ],
       ],
       [
-        'COMING BACK',
+        'Coming back',
         [
           'A new grant folds over the negative balance, so the overdraft is paid first. The gate reopens on the grant, with the same event history either side of zero.',
         ],
@@ -814,17 +824,26 @@ const usageOut = (() => {
       </Callout>
     </>
   )
-  return portrait(
+  return landscape(
     'm-usage',
-    '05 · INVOICES · USAGE IN, INVOICE OUT',
     'Usage in, invoice out',
     'The invoice is the fold, read at the close of the period.',
-    '004b',
-    '38',
     'Usage as strands into one point, and the invoice as the sheet that point writes: the period closes, each meter is read, and a line is made of each reading.',
     fig,
     [
-      'Nothing is typed into an invoice. When a period closes, every meter on the product is read, and each reading becomes a line: the quantity, the rate it was priced at, the sum. Credits come off, the total follows, and the invoice is issued as an event of its own, so it, too, is on the ledger and can be replayed.',
+      [
+        'The close',
+        [
+          'Nothing is typed into an invoice. When a period closes, every meter on the product is read, and each reading becomes a line: the quantity, the rate it was priced at, the sum.',
+        ],
+      ],
+      ['The total', ['Credits come off and the total follows.']],
+      [
+        'On the ledger',
+        [
+          'The invoice is issued as an event of its own, so it, too, is on the ledger and can be replayed.',
+        ],
+      ],
     ],
   )
 })()
@@ -931,17 +950,31 @@ const proration = (() => {
       </Callout>
     </>
   )
-  return portrait(
+  return landscape(
     'm-proration',
-    '05 · INVOICES · PRORATION',
     'Proration',
     'A change mid-period is an event; the line is the fraction.',
-    '004c',
-    '40',
     'A subscription upgraded on the twelfth: the old plan for the first part of the month, the new one for the rest, and the invoice line as the fraction of the period the new plan was active.',
     fig,
     [
-      'When a subscription changes mid-period, nothing is estimated. The change is an event with a time, so the period splits at that time: the old plan is charged for the days before, the new one for the days after, each as a fraction of the period. The line on the invoice is that fraction, and the event beside it says why.',
+      [
+        'No estimates',
+        [
+          'When a subscription changes mid-period, nothing is estimated. The change is an event with a time, so the period splits at that time.',
+        ],
+      ],
+      [
+        'The split',
+        [
+          'The old plan is charged for the days before, the new one for the days after, each as a fraction of the period.',
+        ],
+      ],
+      [
+        'The line',
+        [
+          'The line on the invoice is that fraction, and the event beside it says why.',
+        ],
+      ],
     ],
   )
 })()
@@ -1067,17 +1100,31 @@ const benefits = (() => {
       </Callout>
     </>
   )
-  return portrait(
+  return landscape(
     'm-benefits',
-    '06 · ENTITLEMENTS · BENEFITS',
     'Benefits',
     'What a product grants; an entitlement is the grant, held.',
-    '005b',
-    '48',
     'A product and the four benefits it may grant: three on this plan, one not. Each benefit becomes an entitlement when the subscription is active.',
     fig,
     [
-      'A product declares its benefits: access to the API, a monthly grant of credits, exports, a license key. Each is a template. When a subscription to the product becomes active, every benefit on it is granted as an event, and the entitlement is the fold over those grants and revocations. Change the product’s benefits and the next apply writes the difference.',
+      [
+        'Templates',
+        [
+          'A product declares its benefits: access to the API, a monthly grant of credits, exports, a license key. Each is a template.',
+        ],
+      ],
+      [
+        'Granted',
+        [
+          'When a subscription to the product becomes active, every benefit on it is granted as an event, and the entitlement is the fold over those grants and revocations.',
+        ],
+      ],
+      [
+        'Changes',
+        [
+          'Change the product’s benefits and the next apply writes the difference.',
+        ],
+      ],
     ],
   )
 })()
@@ -1111,30 +1158,27 @@ const keys = (() => {
   ]
   return landscape(
     'm-keys',
-    '07 · AGENTS · KEYS AND SESSIONS',
     'Keys and sessions',
     'A key is an actor that lasts. A session is an actor that ends.',
-    '006b',
-    '54',
     'Creating a key for an agent, opening a session under it, the three names every event from that session carries, and the revocation that closes it.',
     <>
       {rows.map((toks, i) => (toks.length ? line(i, 0, toks, `r${i}`) : null))}
     </>,
     [
       [
-        'KEYS',
+        'Keys',
         [
           'A key belongs to an agent and names it on every event. It carries scopes, so a key that can write events may still not read state.',
         ],
       ],
       [
-        'SESSIONS',
+        'Sessions',
         [
           'A session is a short-lived actor under a key: a run, a conversation, a job. It has a time to live, and the events it emits name it, so usage can be read per session.',
         ],
       ],
       [
-        'REVOCATION',
+        'Revocation',
         [
           'Revoking a key is an event. The sessions under it close, their entitlements fall, and the ledger shows exactly when.',
         ],
@@ -1143,7 +1187,7 @@ const keys = (() => {
   )
 })()
 
-// ---------------------------------------------------------------- 07 Agents · Just ask
+// ---------------------------------------------------------------- 07 Agents · Asking the ledger
 
 const ask = (() => {
   const { line } = term(70, 150, 8, 11.6)
@@ -1170,30 +1214,27 @@ const ask = (() => {
   ]
   return landscape(
     'm-ask',
-    '07 · AGENTS · JUST ASK',
-    'Just ask',
-    'The whole customer is one call away, so an agent can simply ask.',
-    '006c',
-    '56',
+    'Asking the ledger',
+    'Any question about a customer is a query over its events.',
     'A conversation with Polar: a question about the week, an answer read from the ledger, a grant made on request, and a promise to watch.',
     <>
       {rows.map((toks, i) => (toks.length ? line(i, 0, toks, `r${i}`) : null))}
     </>,
     [
       [
-        'WHY IT WORKS',
+        'Why it works',
         [
           'Because every number is a fold over events, any question about a customer is a query over the ledger, and the ledger is one call away.',
         ],
       ],
       [
-        'WHAT IT CAN DO',
+        'What it can do',
         [
           'Read any state, replay any meter, and write the events a person could: a grant, a revocation, a note. Each action is an event with the agent as its actor.',
         ],
       ],
       [
-        'WHAT IT CANNOT',
+        'What it cannot',
         [
           'Change the past. The ledger is append only for agents too, so an agent’s mistake is a visible event, not a silent edit.',
         ],
@@ -1207,9 +1248,9 @@ const ask = (() => {
 const catalogue = (() => {
   const { line } = term(70, 146, 7.5, 10.4)
   const groups: [string, string[]][] = [
-    ['CHECKOUT', ['checkout.created', 'checkout.updated', 'order.paid']],
+    ['Checkout', ['checkout.created', 'checkout.updated', 'order.paid']],
     [
-      'SUBSCRIPTION',
+      'Subscription',
       [
         'subscription.active',
         'subscription.updated',
@@ -1218,7 +1259,7 @@ const catalogue = (() => {
       ],
     ],
     [
-      'BENEFITS',
+      'Benefits',
       [
         'benefit.granted',
         'benefit.revoked',
@@ -1227,7 +1268,7 @@ const catalogue = (() => {
       ],
     ],
     [
-      'CREDITS',
+      'Credits',
       [
         'credit.granted',
         'credit.consumed',
@@ -1236,11 +1277,11 @@ const catalogue = (() => {
       ],
     ],
     [
-      'METERS',
+      'Meters',
       ['meter.updated', 'period.closed', 'invoice.issued', 'invoice.paid'],
     ],
     [
-      'CONFIG',
+      'Config',
       ['config.applied', 'price.updated', 'product.created', 'key.revoked'],
     ],
   ]
@@ -1255,28 +1296,25 @@ const catalogue = (() => {
   })
   return landscape(
     'm-catalogue',
-    'APPENDIX · THE EVENT CATALOGUE',
     'The event catalogue',
     'Every event the system writes, by the part of it that writes them.',
-    'A01',
-    '60',
     'The catalogue: six groups of events, from checkout to config, every one of which may appear on the ledger.',
     rows,
     [
       [
-        'NAMING',
+        'Naming',
         [
           'An event is named object.verb, in the past tense: something happened to a thing. The object is what the fold reads; the verb is what it does to the state.',
         ],
       ],
       [
-        'YOURS',
+        'Yours',
         [
           'Events you emit, like llm.completion, are declared in the config with a schema, and sit on the same ledger as these.',
         ],
       ],
       [
-        'STABILITY',
+        'Stability',
         [
           'A name, once written, is never renamed. A new meaning is a new event, so an old fold keeps folding.',
         ],
@@ -1311,30 +1349,27 @@ const api = (() => {
   ]
   return landscape(
     'm-api',
-    'APPENDIX · THE API, ONE CALL',
     'The API, one call',
     'The whole customer, derived and returned from one call.',
-    'A02',
-    '64',
     'The state endpoint: everything the system knows about a customer, computed from its events and returned in one response, stamped with the last event it folded.',
     <>
       {rows.map((toks, i) => (toks.length ? line(i, 0, toks, `r${i}`) : null))}
     </>,
     [
       [
-        'ONE CALL',
+        'One call',
         [
           'There is no separate endpoint for the plan, the meters and the balance. They are one state, folded together, so they are returned together.',
         ],
       ],
       [
-        'AS OF',
+        'As of',
         [
           'Every response names the last event it folded. Two calls that return the same asOf returned the same state, and a replay to that event will reproduce it.',
         ],
       ],
       [
-        'LOCAL FIRST',
+        'Local first',
         [
           'The same state is what a local-first check answers from. The call is how you get it; the fold is what it is.',
         ],
@@ -1422,19 +1457,11 @@ const glossary = (() => {
         960,
         540,
         'Glossary',
-        <>
-          <PageHead
-            crumb="APPENDIX · GLOSSARY"
-            w={960}
-            pad={40}
-            title="Glossary"
-            sub="Twelve words, defined once."
-          />
-          <Figure x={40} y={156} w={880} h={300} dy={26} n="A03">
-            {fig}
-          </Figure>
-        </>,
+        <Figure x={40} y={156} w={880} h={300}>
+          {fig}
+        </Figure>,
       ),
+    { sub: 'Twelve words, defined once.' },
   )
 })()
 

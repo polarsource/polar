@@ -1,23 +1,18 @@
-import { MONO } from '../sheet'
-import { LINE, DIM, MID, BG, HAIR } from '../kit'
-import { useSim, type SimEvent } from '../simulation'
+import { MONO } from './sheet'
+import { LINE, DIM, MID, BG, HAIR } from './kit'
 
-const metadata = (e: SimEvent) => {
-  switch (e.name) {
-    case 'tokens.in':
-    case 'tokens.out':
-      return `{ tokens: ${e.quantity}, model: "…" }`
-    case 'image.gen':
-      return `{ count: ${e.quantity}, size: "1024" }`
-    case 'api.call':
-      return `{ route: "/v1/runs", status: 200 }`
-    case 'credit.granted':
-      return `{ credits: ${e.quantity} }`
-  }
+/** The event the page dissects. It is fixed: the page reads one event, not whichever arrived last. */
+const EXAMPLE = {
+  id: 'evt_01ja7q',
+  stamp: '2026-10-18T14:02:11Z',
+  customer: 'acme',
+  actor: 'agent_ada',
+  name: 'tokens.out',
+  metadata: '{ tokens: 1240, model: "…" }',
 }
 
-/** The event page, running: the frame is the latest event on the ledger, field by field. */
-export function LiveEventFields({
+/** The event page: one event, field by field, on a 32-column ruler. */
+export function EventFields({
   x,
   top,
   rh,
@@ -28,14 +23,12 @@ export function LiveEventFields({
   rh: number
   cw: number
 }) {
-  const e = useSim((s) => s.events[s.events.length - 1])
-  if (!e) return null
-  const stamp = new Date(e.at).toISOString().slice(0, 19) + 'Z'
+  const e = EXAMPLE
   const rows: {
     cells: { span: number; name: string; value: string; measure?: boolean }[]
   }[] = [
     { cells: [{ span: 32, name: 'ID', value: e.id }] },
-    { cells: [{ span: 32, name: 'TIMESTAMP', value: stamp }] },
+    { cells: [{ span: 32, name: 'TIMESTAMP', value: e.stamp }] },
     {
       cells: [
         { span: 16, name: 'CUSTOMER', value: e.customer },
@@ -44,13 +37,11 @@ export function LiveEventFields({
     },
     { cells: [{ span: 32, name: 'NAME', value: e.name }] },
     {
-      cells: [
-        { span: 32, name: 'METADATA', value: metadata(e), measure: true },
-      ],
+      cells: [{ span: 32, name: 'METADATA', value: e.metadata, measure: true }],
     },
   ]
   return (
-    <g data-live>
+    <g>
       {rows.map((r, ri) => {
         let cx = x
         const y = top + rh * ri
@@ -78,16 +69,11 @@ export function LiveEventFields({
                 {c.name}
               </text>
               <text
-                key={e.id}
                 x={cxx + 8}
                 y={y + 22}
                 fontSize={7.5}
                 fill={c.measure ? LINE : MID}
-                style={{
-                  ...MONO,
-                  letterSpacing: 0,
-                  animation: 'fg-appear 400ms both',
-                }}
+                style={{ ...MONO, letterSpacing: 0 }}
               >
                 {c.value}
               </text>

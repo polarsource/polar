@@ -16,8 +16,15 @@ export interface Piece {
   h: number
   /** Columns in the grid, of three. */
   cols: 1 | 2
+  /** The line under the title. */
+  sub?: string
+  /** The column beside the figure: a heading, then its paragraphs. */
+  notes?: Notes
+  /** The drawing alone. The title, its line and the notes are set beside it as text. */
   render: () => ReactNode
 }
+
+export type Notes = [string, string[]][]
 
 /** The book, in reading order: the front matter, then the chapters, each with its pages. */
 export const chapters: { title: string; ids: string[] }[] = [

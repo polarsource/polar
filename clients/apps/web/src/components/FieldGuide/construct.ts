@@ -1,8 +1,8 @@
 /**
- * Replays the drawing of a page the way a drafting program would: guides and frames first, then every hairline
+ * Replays the drawing of a page the way a drafting program would: guides first, then every hairline
  * traced from its first anchor, then the filled parts, then the type. Runs on the elements the page has when it
  * arrives; whatever the live layers add later draws itself. `pace` stretches the whole replay: 1 is an ordinary
- * page, more is slower. Returns a cancel, for a page that leaves mid-stroke.
+ * page, more is slower. A figure's frame stands still. Returns a cancel, for a page that leaves mid-stroke.
  */
 export function construct(svg: SVGSVGElement, pace = 1): () => void {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches)
@@ -16,7 +16,7 @@ export function construct(svg: SVGSVGElement, pace = 1): () => void {
   for (const el of svg.querySelectorAll<SVGElement>(
     'path, line, polyline, polygon, circle, ellipse, rect, text',
   )) {
-    if (el.closest('defs, [data-live], [data-first]')) continue
+    if (el.closest('defs, [data-live], [data-first], [data-frame]')) continue
     if (el instanceof SVGTextElement) {
       texts.push(el)
       continue

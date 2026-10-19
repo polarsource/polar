@@ -1,17 +1,12 @@
 /**
- * The manual as chapters: a number, a name for the row at the top, a title, a paragraph, a tip, the control the
- * chapter puts on the page, and the plates it shows. Read in order, or jumped to by number.
+ * The manual as chapters: a number, a name for the row at the top, a title, a paragraph, and the plates it shows.
+ * Read in order, or jumped to by number.
  */
-export type Control = 'rate'
-
 export interface Chapter {
   n: string
   name: string
   title: string
   intro?: string
-  /** `[before, key, after]`, set with a key cap. */
-  tip?: [string, string, string]
-  control?: Control
   ids: string[]
 }
 
@@ -28,11 +23,6 @@ export const CHAPTERS: Chapter[] = [
     title: 'Billing as code',
     intro:
       'The catalogue is a file. Products, prices, meters and benefits are declared once, reviewed as a diff, and applied to an environment. What runs in production is what was reviewed.',
-    tip: [
-      'Press',
-      'E',
-      'to emit an event and watch the figures in every chapter change.',
-    ],
     ids: ['m-code', 'm-cli', 'm-env'],
   },
   {
@@ -49,12 +39,6 @@ export const CHAPTERS: Chapter[] = [
     title: 'Meters',
     intro:
       'A meter does not count; it folds. Given the state so far and the next event, it returns the next state. Nothing is stored that cannot be recomputed, so nothing can drift.',
-    tip: [
-      'Change the rate below, then press',
-      '5',
-      'to read the invoice again.',
-    ],
-    control: 'rate',
     ids: ['m-meter', 'm-latency', 'm-tiers', 'm-reconcile'],
   },
   {
@@ -63,7 +47,6 @@ export const CHAPTERS: Chapter[] = [
     title: 'Credits',
     intro:
       'Credits are a balance derived from two kinds of event: grants, which add, and usage, which takes away at the meter’s rate. When the balance would cross zero, a grant lands first.',
-    tip: ['Press', 'R', 'to start the ledger again from an empty balance.'],
     ids: ['m-credits', 'm-grants', 'm-zero'],
   },
   {

@@ -284,48 +284,44 @@ export function Dimension({
   )
 }
 
-/** A figure frame: a faint hairline box, corner marks, a vertical figure number left and a note right. */
+/**
+ * A figure frame: a faint hairline box with corner marks, standing still while the drawing inside traces itself in.
+ * The page centres the drawing inside it once it has been measured; see `Plate`.
+ */
 export function Figure({
   x,
   y,
   w,
   h,
-  n,
-  dy = 0,
   children,
 }: {
   x: number
   y: number
   w: number
   h: number
-  n: string
-  dy?: number
-  note?: string
-  grid?: boolean
   children: ReactNode
 }) {
   const c = 6
   return (
-    <g>
-      <rect
-        x={x}
-        y={y}
-        width={w}
-        height={h}
-        fill="none"
-        stroke={FRAME}
-        strokeWidth={HAIR}
-      />
-      <g stroke={MID} strokeWidth={HAIR} fill="none">
-        <path d={`M${x} ${y + c}V${y}H${x + c}`} />
-        <path d={`M${x + w - c} ${y}H${x + w}V${y + c}`} />
-        <path d={`M${x + w} ${y + h - c}V${y + h}H${x + w - c}`} />
-        <path d={`M${x + c} ${y + h}H${x}V${y + h - c}`} />
+    <g data-figure={`${x} ${y} ${w} ${h}`}>
+      <g data-frame>
+        <rect
+          x={x}
+          y={y}
+          width={w}
+          height={h}
+          fill="none"
+          stroke={FRAME}
+          strokeWidth={HAIR}
+        />
+        <g stroke={MID} strokeWidth={HAIR} fill="none">
+          <path d={`M${x} ${y + c}V${y}H${x + c}`} />
+          <path d={`M${x + w - c} ${y}H${x + w}V${y + c}`} />
+          <path d={`M${x + w} ${y + h - c}V${y + h}H${x + w - c}`} />
+          <path d={`M${x + c} ${y + h}H${x}V${y + h - c}`} />
+        </g>
       </g>
-      <text x={x + 10} y={y + h - 10} fontSize={8} fill={DIM} style={LIGHT}>
-        FIG. {n}
-      </text>
-      <g transform={dy ? `translate(0 ${dy})` : undefined}>{children}</g>
+      <g data-figure-content>{children}</g>
     </g>
   )
 }
@@ -345,184 +341,6 @@ export const TEXT = {
   fontKerning: 'normal',
   textRendering: 'optimizeLegibility',
 } as const
-
-/** The head of a page: the running head (chapter and section left, the book right, a dotted rule), then the title and its line. */
-export function PageHead({
-  w = 400,
-  pad = 28,
-  crumb,
-  meta = 'THE MANUAL',
-  title,
-  sub,
-  ink = NIGHT_INK,
-}: {
-  w?: number
-  pad?: number
-  crumb?: string
-  meta?: string
-  title: string
-  sub?: string
-  ink?: Ink
-}) {
-  const lines = sub ? wrap(sub, 14, w - pad * 2) : []
-  return (
-    <g>
-      {crumb ? (
-        <>
-          <text x={pad} y={pad + 16} fontSize={8.5} fill={ink.dim} style={MONO}>
-            {crumb}
-          </text>
-          <text
-            x={w - pad}
-            y={pad + 16}
-            fontSize={8.5}
-            fill={ink.dim}
-            textAnchor="end"
-            style={MONO}
-          >
-            {meta}
-          </text>
-          <line
-            x1={pad}
-            x2={w - pad}
-            y1={pad + 26}
-            y2={pad + 26}
-            stroke={RULE}
-            strokeWidth={HAIR}
-            {...DOTTED}
-          />
-        </>
-      ) : null}
-      <text x={pad} y={pad + 66} fontSize={24} fill={ink.ink} style={TITLE}>
-        {title}
-      </text>
-      {lines.map((l, i) => (
-        <text
-          key={i}
-          x={pad}
-          y={pad + 87 + i * 17}
-          fontSize={14}
-          fill={ink.dim}
-          style={TEXT}
-        >
-          {l}
-        </text>
-      ))}
-    </g>
-  )
-}
-
-/** Wraps a paragraph to a width, by an average glyph width of the display face. */
-export function wrap(text: string, size: number, width: number): string[] {
-  const perChar = size * 0.48
-  const max = Math.max(8, Math.floor(width / perChar))
-  const out: string[] = []
-  let line = ''
-  for (const word of text.split(' ')) {
-    const next = line ? `${line} ${word}` : word
-    if (next.length > max && line) {
-      out.push(line)
-      line = word
-    } else line = next
-  }
-  if (line) out.push(line)
-  return out
-}
-
-/** Body text: each string a paragraph, wrapped to `width`, a half line between paragraphs. */
-export function Body({
-  x,
-  y,
-  width = 344,
-  text,
-  size = 10.5,
-  ink = NIGHT_INK,
-  lh = 1.5,
-}: {
-  x: number
-  y: number
-  width?: number
-  text: string[]
-  size?: number
-  ink?: Ink
-  lh?: number
-}) {
-  let yy = y
-  const rows: { y: number; t: string }[] = []
-  text.forEach((para, i) => {
-    if (i > 0) yy += size * lh * 0.5
-    for (const l of wrap(para, size, width)) {
-      rows.push({ y: yy, t: l })
-      yy += size * lh
-    }
-  })
-  return (
-    <g style={TEXT} fontSize={size} fill={ink.ink}>
-      {rows.map((r, i) => (
-        <text key={i} x={x} y={r.y}>
-          {r.t}
-        </text>
-      ))}
-    </g>
-  )
-}
-
-/** A column of short sections: a mono heading, then a paragraph or two, each wrapped to `width`. */
-export function Sections({
-  x,
-  y,
-  width = 220,
-  size = 11.5,
-  lh = 1.5,
-  items,
-  ink = NIGHT_INK,
-}: {
-  x: number
-  y: number
-  width?: number
-  size?: number
-  lh?: number
-  items: [string, string[]][]
-  ink?: Ink
-}) {
-  let yy = y
-  const out: ReactNode[] = []
-  items.forEach(([head, paras], i) => {
-    out.push(
-      <text
-        key={`h${i}`}
-        x={x}
-        y={yy}
-        fontSize={8.5}
-        fill={ink.dim}
-        style={MONO}
-      >
-        {head}
-      </text>,
-    )
-    yy += size * lh * 0.9
-    paras.forEach((para, j) => {
-      if (j > 0) yy += size * lh * 0.5
-      for (const l of wrap(para, size, width)) {
-        out.push(
-          <text
-            key={`${i}-${j}-${yy}`}
-            x={x}
-            y={yy}
-            fontSize={size}
-            fill={ink.ink}
-            style={TEXT}
-          >
-            {l}
-          </text>,
-        )
-        yy += size * lh
-      }
-    })
-    yy += size * lh * 0.9
-  })
-  return <g>{out}</g>
-}
 
 /** The foot: the page number, nothing else. */
 export function PageFoot({

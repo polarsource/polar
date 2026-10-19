@@ -133,7 +133,7 @@ export default function FieldGuideReader() {
         <Link href="/" aria-label="Polar" className="flex text-white">
           <LogoIcon size={24} />
         </Link>
-        <span className="hidden text-center text-[#7b7b7b] md:block">
+        <span className="hidden text-center text-[15px] text-[#7b7b7b] md:block">
           Billing for the Intelligence Era · The Manual
         </span>
         <div className="flex justify-end">

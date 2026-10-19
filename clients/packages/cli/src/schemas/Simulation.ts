@@ -47,7 +47,30 @@ export type SimulationResult = typeof SimulationResult.Type
 export const SimulationResponse = Schema.Array(SimulationResult)
 export type SimulationResponse = typeof SimulationResponse.Type
 
+export const ChurnAssumptions = Schema.Struct({
+  churn_tolerance_pct: Schema.Finite,
+  churn_elasticity_pct: Schema.Finite,
+})
+export type ChurnAssumptions = typeof ChurnAssumptions.Type
+
+const AnalyzedCohort = Schema.Struct({
+  ...Cohort.fields,
+  change_pct: Schema.NullOr(Schema.Finite),
+  churn_risk_pct: Schema.NullOr(Schema.Finite),
+})
+
+export const AnalyzedResult = Schema.Struct({
+  ...SimulationResult.fields,
+  cohorts: Schema.Array(AnalyzedCohort),
+  change_pct: Schema.NullOr(Schema.Finite),
+  expected_monthly_delta: Schema.NullOr(Schema.Finite),
+  subscribers_at_risk: Schema.NullOr(Schema.Finite),
+})
+export type AnalyzedResult = typeof AnalyzedResult.Type
+
 export const SimulateOutput = Schema.Struct({
   file: Schema.String,
-  results: SimulationResponse,
+  set: Schema.Array(Schema.String),
+  assumptions: Schema.NullOr(ChurnAssumptions),
+  results: Schema.Array(AnalyzedResult),
 })

@@ -49,7 +49,7 @@ export const aggregation = (input: Record<string, unknown>) =>
     ? name(input['func'])
     : `${name(input['func'])}(${name(input['property'])})`
 
-const minorUnits = (code: string) =>
+export const minorUnits = (code: string) =>
   new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: code,

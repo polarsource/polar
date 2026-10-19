@@ -1,5 +1,9 @@
 import type { ActiveOrganization } from '@/schemas/Auth'
-import type { SimulationResult } from '@/schemas/Simulation'
+import type {
+  AnalyzedResult,
+  ChurnAssumptions,
+  SimulationResult,
+} from '@/schemas/Simulation'
 import { money } from '@/utils/billing-config/describe'
 import { plural } from '@/utils/billing-config/problems'
 import { box, target } from '@/utils/billing-config/review'
@@ -11,7 +15,7 @@ interface Cell {
   readonly style?: (text: string) => string
 }
 
-type Cohort = SimulationResult['cohorts'][number]
+type Cohort = AnalyzedResult['cohorts'][number]
 
 const signed = (minor: number, currency: string) =>
   `${minor < 0 ? '-' : '+'}${money(Math.abs(minor), currency)}`
@@ -41,13 +45,33 @@ const table = (
       .trimEnd(),
   )
 
-const HEADER: Cell[] = [
-  '',
-  'subscribers',
-  'per subscriber /mo',
-  'change /mo',
-  '',
-].map((text, column) => ({ text, right: column > 0, style: ui.dim }))
+const header = (churn: boolean): Cell[] =>
+  [
+    '',
+    'subscribers',
+    'per subscriber /mo',
+    'change /mo',
+    '',
+    ...(churn ? ['churn risk'] : []),
+    '',
+  ].map((text, column) => ({ text, right: column > 0, style: ui.dim }))
+
+const percent = (pct: number | null): Cell => ({
+  text: pct === null ? '' : `${pct > 0 ? '+' : ''}${Math.round(pct)}%`,
+  right: true,
+  style: ui.dim,
+})
+
+const risk = (pct: number | null): Cell[] =>
+  pct === null
+    ? []
+    : [
+        {
+          text: pct > 0 ? `${Math.round(pct)}%` : '',
+          right: true,
+          style: ui.yellow,
+        },
+      ]
 
 const counts = (results: ReadonlyArray<SimulationResult>) => {
   const sum = (count: (counts: SimulationResult['counts']) => number) =>
@@ -87,7 +111,7 @@ const notes = (cohort: Cohort) =>
     .filter(Boolean)
     .join(' · ')
 
-const cohortRows = ({ currency, cohorts }: SimulationResult): Cell[][] => {
+const cohortRows = ({ currency, cohorts }: AnalyzedResult): Cell[][] => {
   const products = new Map<string, Cohort[]>()
   for (const cohort of cohorts) {
     const group = products.get(cohort.product_external_id) ?? []
@@ -106,16 +130,21 @@ const cohortRows = ({ currency, cohorts }: SimulationResult): Cell[][] => {
           right: true,
         },
         { text: signed(delta, currency), right: true, style: tone(delta) },
+        percent(cohort.change_pct),
+        ...risk(cohort.churn_risk_pct),
         { text: notes(cohort), style: ui.dim },
       ]
     }),
   )
 }
 
-const total = ({ monthly_delta, currency }: SimulationResult) =>
-  tone(monthly_delta)(`${signed(monthly_delta, currency)}/mo`)
+const total = (delta: number, currency: string) =>
+  `${currency.toUpperCase()} ${tone(delta)(`${signed(delta, currency)}/mo`)}`
 
-const heading = ({ currency, monthly_delta }: SimulationResult): Cell[] => [
+const heading = (
+  { currency, monthly_delta, change_pct }: AnalyzedResult,
+  churn: boolean,
+): Cell[] => [
   { text: currency, style: ui.bold },
   { text: '' },
   { text: '' },
@@ -124,8 +153,26 @@ const heading = ({ currency, monthly_delta }: SimulationResult): Cell[] => [
     right: true,
     style: (text) => ui.bold(tone(monthly_delta)(text)),
   },
+  percent(change_pct),
+  ...(churn ? [{ text: '' }] : []),
   { text: '' },
 ]
+
+const expected = (
+  results: ReadonlyArray<AnalyzedResult>,
+  { churn_tolerance_pct, churn_elasticity_pct }: ChurnAssumptions,
+) => {
+  const atRisk = results.reduce(
+    (sum, result) => sum + (result.subscribers_at_risk ?? 0),
+    0,
+  )
+  return [
+    `${ui.INDENT}${ui.dim('Expected after churn:')} ${results.map((result) => total(result.expected_monthly_delta ?? 0, result.currency)).join(', ')} ${ui.dim(`(${plural(atRisk, 'subscriber')} at risk)`)}`,
+    ui.step(
+      `Assumes subscribers accept up to ${churn_tolerance_pct}% more, then ${churn_elasticity_pct}% churn for every further 10%.`,
+    ),
+  ]
+}
 
 const caveats = (results: ReadonlyArray<SimulationResult>) => {
   const reasons = new Map<string, { products: string[]; subscribers: number }>()
@@ -147,20 +194,22 @@ const caveats = (results: ReadonlyArray<SimulationResult>) => {
 
 export const renderSimulation = (
   organization: ActiveOrganization,
-  results: ReadonlyArray<SimulationResult>,
+  results: ReadonlyArray<AnalyzedResult>,
+  assumptions: ChurnAssumptions | null,
 ) => {
   if (results.length === 0) {
     return [ui.success(`No subscribers in ${target(organization)} to simulate`)]
   }
+  const churn = assumptions !== null
   const sections = results.map((result) => [
-    heading(result),
+    heading(result, churn),
     ...cohortRows(result),
   ])
-  const widths = widthsOf([HEADER, ...sections.flat()])
+  const widths = widthsOf([header(churn), ...sections.flat()])
   const indented = (rows: ReadonlyArray<ReadonlyArray<Cell>>) =>
     table(rows, widths).map((line) => `${ui.INDENT}${line}`)
   const body = [
-    ...indented([HEADER]),
+    ...indented([header(churn)]),
     ...sections.flatMap((rows, index) => [
       ...(index > 0 ? [ui.blank] : []),
       ...indented(rows),
@@ -172,9 +221,12 @@ export const renderSimulation = (
     box(`Simulation ${ui.dim(target(organization))}`, body.join('\n')),
     ...(warnings.length > 0 ? [ui.blank, ...warnings] : []),
     ui.blank,
-    `${ui.INDENT}${ui.dim('Simulation:')} ${results.map((result) => `${result.currency.toUpperCase()} ${total(result)}`).join(', ')}`,
+    `${ui.INDENT}${ui.dim('Simulation:')} ${results.map((result) => total(result.monthly_delta, result.currency)).join(', ')}`,
     ui.step(
       `${counts(results)}, based on each subscriber's last billing period.`,
     ),
+    ...(assumptions === null
+      ? []
+      : [ui.blank, ...expected(results, assumptions)]),
   ]
 }

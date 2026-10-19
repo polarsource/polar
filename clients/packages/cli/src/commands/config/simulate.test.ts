@@ -15,7 +15,16 @@ import { fakeAuth, fakeOrganizations } from '@/utils/test-utils/services'
 const config: LoadedConfig = {
   file: 'polar.json',
   source: '{}',
-  input: {},
+  input: {
+    products: [
+      {
+        external_id: 'pro',
+        prices: [
+          { amount_type: 'fixed', price_currency: 'usd', price_amount: 2500 },
+        ],
+      },
+    ],
+  },
   generated: false,
 }
 
@@ -76,6 +85,7 @@ const results: SimulationResponse = [
 
 const run = async (response: SimulationResponse, args: string[] = []) => {
   const cli = runCli(simulate, ['polar.json', ...args])
+  const sent: LoadedConfig[] = []
   const exit = await Effect.runPromiseExit(
     cli.effect.pipe(
       Effect.provideService(
@@ -89,7 +99,12 @@ const run = async (response: SimulationResponse, args: string[] = []) => {
       ),
       Effect.provideService(
         Simulation,
-        Simulation.of({ simulate: () => Effect.succeed(response) }),
+        Simulation.of({
+          simulate: (config) => {
+            sent.push(config)
+            return Effect.succeed(response)
+          },
+        }),
       ),
       Effect.provideService(Auth, fakeAuth().auth),
       Effect.provideService(
@@ -103,7 +118,11 @@ const run = async (response: SimulationResponse, args: string[] = []) => {
       Effect.provide(FetchHttpClient.layer),
     ),
   )
-  return { output: stripAnsi(cli.output()), failed: exit._tag === 'Failure' }
+  return {
+    output: stripAnsi(cli.output()),
+    failed: exit._tag === 'Failure',
+    sent,
+  }
 }
 
 describe('polar config simulate', () => {
@@ -115,9 +134,9 @@ describe('polar config simulate', () => {
         '  ╭─ Simulation Acme (sandbox)',
         '  │',
         '  │         subscribers   per subscriber /mo   change /mo',
-        '  │ usd                                           +$1,690',
-        '  │   pro           168            $15 → $25      +$1,680',
-        '  │                   1            $10 → $20         +$10   archived price · billed yearly · fixed fee only',
+        '  │ usd                                           +$1,690    +67%',
+        '  │   pro           168            $15 → $25      +$1,680    +67%',
+        '  │                   1            $10 → $20         +$10   +100%   archived price · billed yearly · fixed fee only',
         '  │',
         '  ╰─',
         '',
@@ -137,6 +156,48 @@ describe('polar config simulate', () => {
 
   test('prints the results as JSON', async () => {
     const { output } = await run(results, ['--json'])
-    expect(JSON.parse(output)).toEqual({ file: 'polar.json', results })
+    const json = JSON.parse(output)
+    expect(json).toMatchObject({
+      file: 'polar.json',
+      set: [],
+      assumptions: null,
+    })
+    expect(json.results[0]).toMatchObject({
+      change_pct: 66.8,
+      expected_monthly_delta: null,
+    })
+  })
+
+  test('simulates prices set on the command line', async () => {
+    const { output, sent } = await run(results, ['--set', 'pro.usd=30'])
+    expect(output).toMatch(/^ {2}Setting {4}pro\.usd=30$/m)
+    expect(sent[0]?.input).toEqual({
+      products: [
+        {
+          external_id: 'pro',
+          prices: [
+            { amount_type: 'fixed', price_currency: 'usd', price_amount: 3000 },
+          ],
+        },
+      ],
+    })
+  })
+
+  test('estimates the revenue left after churn', async () => {
+    const { output } = await run(results, ['--churn-tolerance', '50'])
+    expect(output).toContain(
+      [
+        '  │         subscribers   per subscriber /mo   change /mo           churn risk',
+        '  │ usd                                           +$1,690    +67%',
+        '  │   pro           168            $15 → $25      +$1,680    +67%          25%',
+        '  │                   1            $10 → $20         +$10   +100%          75%   archived price · billed yearly · fixed fee only',
+      ].join('\n'),
+    )
+    expect(output).toContain(
+      [
+        '  Expected after churn: USD +$625/mo (169 subscribers at risk)',
+        '  Assumes subscribers accept up to 50% more, then 15% churn for every further 10%.',
+      ].join('\n'),
+    )
   })
 })

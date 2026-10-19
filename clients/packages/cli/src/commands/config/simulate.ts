@@ -1,15 +1,44 @@
 import { Duration, Effect, Option } from 'effect'
-import { Command } from 'effect/cli'
+import { Command, Flag } from 'effect/cli'
 import { SimulateOutput } from '@/schemas/Simulation'
 import { BillingConfig } from '@/services/billing-config/service'
 import { Simulation } from '@/services/simulation'
 import { Organizations } from '@/services/organizations'
 import { output } from '@/utils/command'
 import { configFile as file, org } from '@/utils/flags'
+import { setPrices } from '@/utils/price-override'
 import { withProgress } from '@/utils/progress'
 import { renderSimulation } from '@/utils/simulation'
+import { analyze } from '@/utils/simulation-analysis'
 
-export const simulate = Command.make('simulate', { file, org }).pipe(
+const set = Flag.String('set').pipe(
+  Flag.withDescription(
+    'Try a fixed price without editing the file, as product.currency=amount, e.g. starter.usd=15. Repeatable',
+  ),
+  Flag.atLeast(0),
+)
+
+const churnTolerance = Flag.Finite('churn-tolerance').pipe(
+  Flag.withDescription(
+    'Price increase, in percent, subscribers accept without churning. Turns on churn estimates; defaults to 20 when only --churn-elasticity is given',
+  ),
+  Flag.optional,
+)
+
+const churnElasticity = Flag.Finite('churn-elasticity').pipe(
+  Flag.withDescription(
+    'Percent of subscribers who churn for every 10% increase past the tolerance. Turns on churn estimates; defaults to 15 when only --churn-tolerance is given',
+  ),
+  Flag.optional,
+)
+
+export const simulate = Command.make('simulate', {
+  file,
+  org,
+  set,
+  churnTolerance,
+  churnElasticity,
+}).pipe(
   Command.withDescription(
     'Show what a billing config file would change in what your subscribers pay, without applying it',
   ),
@@ -19,21 +48,34 @@ export const simulate = Command.make('simulate', { file, org }).pipe(
       description: 'Simulate polar.config.ts in the current directory',
     },
     {
+      command: 'polar config simulate --set starter.usd=15 --set pro.usd=45',
+      description: 'Try other fixed prices without editing the file',
+    },
+    {
+      command: 'polar config simulate --churn-tolerance 10',
+      description: 'Estimate the revenue left after subscribers churn',
+    },
+    {
       command: 'polar config simulate --json',
       description: 'Print the simulation as JSON',
     },
   ]),
   output({
     result: SimulateOutput,
-    run: ({ file, org }) =>
+    run: ({ file, org, set, churnTolerance, churnElasticity }) =>
       withProgress(
         (progress) =>
           Effect.gen(function* () {
             yield* progress.start('Reading')
-            const config = yield* (yield* BillingConfig).load(
+            const loaded = yield* (yield* BillingConfig).load(
               Option.getOrUndefined(file),
             )
-            yield* progress.finish(config.file)
+            yield* progress.finish(loaded.file)
+            const config = yield* setPrices(loaded, set)
+            if (set.length > 0) {
+              yield* progress.start('Setting')
+              yield* progress.finish(set.join(', '))
+            }
             yield* progress.start('Simulating')
             const [elapsed, { organization, results }] = yield* Effect.timed(
               Effect.gen(function* () {
@@ -50,12 +92,36 @@ export const simulate = Command.make('simulate', { file, org }).pipe(
             yield* progress.finish(
               `${Math.round(Duration.toMillis(elapsed))}ms`,
             )
-            return { config, organization, results }
+            const assumptions =
+              Option.isNone(churnTolerance) && Option.isNone(churnElasticity)
+                ? null
+                : {
+                    churn_tolerance_pct: Option.getOrElse(
+                      churnTolerance,
+                      () => 20,
+                    ),
+                    churn_elasticity_pct: Option.getOrElse(
+                      churnElasticity,
+                      () => 15,
+                    ),
+                  }
+            return {
+              file: config.file,
+              set,
+              assumptions,
+              organization,
+              results: analyze(results, assumptions),
+            }
           }),
         'columns',
       ),
-    render: ({ organization, results }) =>
-      renderSimulation(organization, results),
-    json: ({ config, results }) => ({ file: config.file, results }),
+    render: ({ organization, results, assumptions }) =>
+      renderSimulation(organization, results, assumptions),
+    json: ({ file, set, assumptions, results }) => ({
+      file,
+      set,
+      assumptions,
+      results,
+    }),
   }),
 )

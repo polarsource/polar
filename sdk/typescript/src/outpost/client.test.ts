@@ -229,7 +229,7 @@ it.each([
   await ingest(outpost, 3);
   expect(execute).toHaveBeenCalledOnce();
   for (let i = 0; i < bucketCount; i++) {
-    expect(await outpost.customerMeter({ ...customer, meter_id: `meter-${i}` })).toMatchObject({
+    expect(await outpost.meter({ ...customer, meter_id: `meter-${i}` })).toMatchObject({
       consumed_units: 3,
       balance: 97,
     });
@@ -243,7 +243,7 @@ it.each([
     await expect(ingest(outpost, 2)).rejects.toBeInstanceOf(UnavailableRedisError);
     expect(execute).toHaveBeenCalledTimes(2);
     for (const i of [0, 2]) {
-      expect(await outpost.customerMeter({ ...customer, meter_id: `meter-${i}` })).toMatchObject({
+      expect(await outpost.meter({ ...customer, meter_id: `meter-${i}` })).toMatchObject({
         consumed_units: 5,
         balance: 95,
       });

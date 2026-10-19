@@ -254,7 +254,7 @@ async def test_ingest_pipelines_buckets(
         )
         execute.assert_awaited_once()
         for i in range(bucket_count):
-            meter = await outpost.customer_meter(
+            meter = await outpost.meter(
                 meter_id=f"meter-{i}", external_customer_id="alice"
             )
             assert meter is not None
@@ -284,7 +284,7 @@ async def test_ingest_pipelines_buckets(
                 )
             assert execute.await_count == 2
             for i in (0, 2):
-                meter = await outpost.customer_meter(
+                meter = await outpost.meter(
                     meter_id=f"meter-{i}", external_customer_id="alice"
                 )
                 assert meter is not None

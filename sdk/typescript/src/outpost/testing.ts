@@ -30,7 +30,7 @@ export const startRedisServer = async (): Promise<RedisServer> => {
   return {
     socket,
     async stop() {
-      if (server.pid) {
+      if (server.exitCode === null && server.signalCode === null) {
         const exited = once(server, "exit");
         server.kill();
         await exited;

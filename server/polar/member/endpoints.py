@@ -6,7 +6,7 @@ from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models.member import MemberRole
-from polar.openapi import APITag, cli_preview
+from polar.openapi import APITag, cli_preview, destructive
 from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
@@ -336,6 +336,7 @@ async def get_external(
 @customer_members_router.patch(
     "/{id}/members/{member_id}",
     summary="Update Member",
+    openapi_extra=destructive(),
     response_model=Member,
     responses={
         200: {"description": "Member updated."},
@@ -373,6 +374,7 @@ async def update(
 @customer_members_router.patch(
     "/external/{external_id}/members/{member_external_id}",
     summary="Update Member by External ID",
+    openapi_extra=destructive(),
     response_model=Member,
     responses={
         200: {"description": "Member updated."},

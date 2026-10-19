@@ -21,6 +21,7 @@ export const registerDocsTools = Effect.fn('registerDocsTools')(function* (
       }).pipe(Schema.toStandardSchemaV1, Schema.toStandardJSONSchemaV1),
       annotations: {
         readOnlyHint: true,
+        destructiveHint: false,
         openWorldHint: false,
       },
     },
@@ -39,6 +40,7 @@ export const registerDocsTools = Effect.fn('registerDocsTools')(function* (
       }).pipe(Schema.toStandardSchemaV1, Schema.toStandardJSONSchemaV1),
       annotations: {
         readOnlyHint: true,
+        destructiveHint: false,
         openWorldHint: false,
       },
     },

@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from polar.config import settings
 from polar.kit.pagination import ListResource
-from polar.openapi import TOOL_ANNOTATIONS, TOOL_DESTRUCTIVE, APITag
+from polar.openapi import TOOL_ANNOTATIONS, TOOL_DESTRUCTIVE, TOOL_OPEN_WORLD, APITag
 
 
 class TransactionalAPIRoute(APIRoute):
@@ -80,6 +80,7 @@ class ToolAPIRoute(APIRoute):
     with `polar.openapi.destructive()`. Routes with a request field marked with
     `destructive_when_equals()` or `destructive_when_one_of()` get it when the
     OpenAPI schema is generated, see `polar.openapi.add_destructive_tool_annotations`.
+    Routes marked with `polar.openapi.open_world()` get `open_world`.
 
     It must come *before* `DocumentedAuthSubjectAPIRoute` in the MRO, so the
     description is read before the required scopes are appended to it.
@@ -99,6 +100,7 @@ class ToolAPIRoute(APIRoute):
 
         openapi_extra = dict(self.openapi_extra or {})
         destructive = openapi_extra.pop(TOOL_DESTRUCTIVE, False)
+        open_world = openapi_extra.pop(TOOL_OPEN_WORLD, False)
         self.openapi_extra = openapi_extra or None
 
         if APITag.mcp not in self.tags and APITag.cli not in self.tags:
@@ -110,6 +112,8 @@ class ToolAPIRoute(APIRoute):
         annotations = openapi_extra.get(TOOL_ANNOTATIONS, annotations)
         if destructive and "destructive" not in annotations:
             annotations = ["destructive", *annotations]
+        if open_world and "open_world" not in annotations:
+            annotations = [*annotations, "open_world"]
 
         defaults = {
             "x-tool-name": self.unique_id.replace(":", "_").replace("-", "_"),

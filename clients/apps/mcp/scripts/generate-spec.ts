@@ -21,7 +21,7 @@ const outputDirectory = resolve(root, 'src/generated')
 
 type JsonObject = Record<string, unknown>
 
-type ToolAnnotation = 'read_only' | 'destructive' | 'idempotent'
+type ToolAnnotation = 'read_only' | 'destructive' | 'idempotent' | 'open_world'
 
 interface Parameter {
   name: string

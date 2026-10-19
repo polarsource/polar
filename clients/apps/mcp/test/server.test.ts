@@ -186,6 +186,9 @@ test('code mode is the default for every client; ?codemode=false selects operati
     idempotentHint: false,
   })
   expect(annotations('benefit_grants_list').readOnlyHint).toBe(true)
+  expect(annotations('webhooks_create_webhook_endpoint').openWorldHint).toBe(
+    true,
+  )
 })
 
 test('initialize returns instructions for the tool mode', async () => {

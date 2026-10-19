@@ -308,6 +308,7 @@ describe('generated commands', () => {
           '--type=custom',
           '--description=A custom benefit',
           '--properties={}',
+          ...(operation === 'update' ? ['--confirm'] : []),
         ]).promise
         expect(await requests[0]!.json()).toEqual({
           type: 'custom',

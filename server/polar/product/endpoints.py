@@ -12,7 +12,7 @@ from polar.kit.sorting import Sorting, SortingGetter
 from polar.kit.versioning import version
 from polar.models import Product
 from polar.models.product import ProductVisibility
-from polar.openapi import APITag, cli_preview
+from polar.openapi import APITag, cli_preview, destructive, open_world
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
@@ -208,6 +208,7 @@ async def get(
     response_model=ProductSchema,
     status_code=201,
     summary="Create Product",
+    openapi_extra=open_world(),
     responses={201: {"description": "Product created."}},
 )
 async def create(
@@ -225,6 +226,7 @@ async def create(
     response_model=ProductSchema,
     status_code=201,
     summary="Create Product",
+    openapi_extra=open_world(),
     responses={201: {"description": "Product created."}},
 )
 @version(starting_from=V2027_01)
@@ -241,6 +243,7 @@ async def create_v2027_01(
     "/{id}",
     response_model=ProductSchema,
     summary="Update Product",
+    openapi_extra=open_world(),
     responses={
         200: {"description": "Product updated."},
         403: {
@@ -270,6 +273,7 @@ async def update(
     name="update",
     response_model=ProductSchema,
     summary="Update Product",
+    openapi_extra=open_world(),
     responses={
         200: {"description": "Product updated."},
         403: {
@@ -299,6 +303,7 @@ async def update_v2027_01(
     "/{id}/benefits",
     response_model=ProductSchema,
     summary="Update Product Benefits",
+    openapi_extra={**destructive(), **open_world()},
     responses={
         200: {"description": "Product benefits updated."},
         403: {

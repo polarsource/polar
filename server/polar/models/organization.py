@@ -746,6 +746,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
     def is_config_as_code_enabled(self) -> bool:
         return self.feature_settings.get("config_as_code_enabled", False)
 
+    @property
+    def is_agentic_payments_enabled(self) -> bool:
+        return self.feature_settings.get("agentic_payments_enabled", False)
+
     sso_enforced: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     #

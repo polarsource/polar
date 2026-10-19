@@ -499,7 +499,34 @@ class CheckoutConfirmStripe(CheckoutConfirmBase):
     )
 
 
-CheckoutConfirm = CheckoutConfirmStripe
+class CheckoutConfirmSharedPaymentToken(CheckoutConfirmBase):
+    """
+    Confirm a checkout session using a Stripe shared payment token granted by an agent.
+
+    Only supported for one-time payments.
+    """
+
+    shared_payment_token_id: str = Field(
+        pattern=r"^spt_[A-Za-z0-9_]+$",
+        description="ID of the Stripe shared payment token (`spt_...`).",
+    )
+    confirmation_token_id: SkipJsonSchema[None] = None
+
+
+def get_checkout_confirm_discriminator_value(v: Any) -> str:
+    if isinstance(v, dict):
+        shared_payment_token_id = v.get("shared_payment_token_id")
+    else:
+        shared_payment_token_id = getattr(v, "shared_payment_token_id", None)
+    return "shared_payment_token" if shared_payment_token_id is not None else "stripe"
+
+
+CheckoutConfirm = Annotated[
+    Annotated[CheckoutConfirmStripe, Tag("stripe")]
+    | Annotated[CheckoutConfirmSharedPaymentToken, Tag("shared_payment_token")],
+    Discriminator(get_checkout_confirm_discriminator_value),
+    SetSchemaReference("CheckoutConfirm"),
+]
 
 
 class CheckoutOpened(Schema):

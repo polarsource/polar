@@ -7,6 +7,7 @@ import { ApiRuntime } from '@polar-sh/cli-commands'
 import { builtIns, program } from '@/program'
 import { Auth } from '@/services/auth'
 import { BillingConfig } from '@/services/billing-config/service'
+import { Simulation } from '@/services/simulation'
 import { Deliveries } from '@/services/deliveries'
 import { Organizations } from '@/services/organizations'
 import { TokenHandoff } from '@/services/token-handoff'
@@ -28,6 +29,7 @@ const helpOnlyServices = Layer.mergeAll(
       pull: unused,
     }),
   ),
+  Layer.succeed(Simulation, Simulation.of({ simulate: unused })),
   Layer.succeed(Organizations, fakeOrganizations().organizations),
   Layer.succeed(Trigger, Trigger.of({ listEvents: unused, send: unused })),
   Layer.succeed(TokenHandoff, TokenHandoff.of({ receive: unused })),

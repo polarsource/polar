@@ -57,6 +57,7 @@ from polar.payment.endpoints import router as payment_router
 from polar.payout.endpoints import router as payout_router
 from polar.payout_account.endpoints import router as payout_account_router
 from polar.personal_access_token.endpoints import router as pat_router
+from polar.pricing_simulation.endpoints import router as pricing_simulation_router
 from polar.product.endpoints import router as product_router
 from polar.refund.endpoints import router as refund_router
 from polar.search.endpoints import router as search_router
@@ -170,6 +171,7 @@ router.include_router(event_type_router)
 router.include_router(meter_router)
 # /config
 router.include_router(declarative_config_router)
+router.include_router(pricing_simulation_router)
 # /organization-access-tokens
 router.include_router(organization_access_token_router)
 # /customer-meters

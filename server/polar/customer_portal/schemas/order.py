@@ -1,11 +1,8 @@
-from typing import Annotated
-
 from pydantic import UUID4, AliasChoices, AliasPath, Field, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.enums import PaymentProcessor
 from polar.kit.schemas import Schema
-from polar.kit.versioning import Version
 from polar.order.schemas import OrderBase, OrderItemSchema, OrderUpdateBase
 from polar.product.schemas import (
     BenefitPublicList,
@@ -15,7 +12,6 @@ from polar.product.schemas import (
     ProductPriceList,
 )
 from polar.subscription.schemas import SubscriptionBase
-from polar.version import V2026_10
 
 from .organization import CustomerOrganization
 
@@ -31,7 +27,7 @@ class CustomerOrderSubscription(SubscriptionBase): ...
 
 
 class CustomerOrder(OrderBase):
-    user_id: Annotated[SkipJsonSchema[UUID4], Version(up_to=V2026_10)] = Field(
+    user_id: SkipJsonSchema[UUID4] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user_id",
@@ -41,9 +37,7 @@ class CustomerOrder(OrderBase):
         deprecated="Use `customer_id`.",
     )
     product: CustomerOrderProduct | None
-    product_price: Annotated[
-        SkipJsonSchema[ProductPrice | None], Version(up_to=V2026_10)
-    ] = Field(
+    product_price: SkipJsonSchema[ProductPrice | None] = Field(
         deprecated="Use `items` instead.",
         validation_alias=AliasChoices(
             # Validate from stored webhook payload

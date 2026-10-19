@@ -16,16 +16,31 @@ interface UpdateDiscountModalContentProps {
   hideModal: () => void
 }
 
+type DiscountFixed =
+  | schemas['DiscountFixedOnceForeverDuration']
+  | schemas['DiscountFixedRepeatDuration']
+
 const getInitialAmountsByCurrency = (
   discount: schemas['Discount'],
+  defaultCurrency: string,
 ): { currency: string; amount: number }[] => {
   if (!isDiscountFixed(discount)) {
     return []
   }
-  return Object.entries(discount.amounts).map(([currency, amount]) => ({
-    currency,
-    amount,
-  }))
+
+  const fixed = discount as unknown as DiscountFixed
+
+  // Prefer the new amounts map if present and non-empty
+  if (fixed.amounts && Object.keys(fixed.amounts).length > 0) {
+    return Object.entries(fixed.amounts as Record<string, number>).map(
+      ([currency, amount]) => ({ currency, amount }),
+    )
+  }
+
+  // Fall back to legacy single currency/amount fields
+  const currency = fixed.currency ?? defaultCurrency
+  const amount = fixed.amount ?? 0
+  return [{ currency, amount }]
 }
 
 const UpdateDiscountModalContent = ({
@@ -40,7 +55,10 @@ const UpdateDiscountModalContent = ({
     defaultValues: {
       ...(discount as unknown as DiscountFormValues),
       products: discount.products.map((product) => product.id),
-      amountsByCurrency: getInitialAmountsByCurrency(discount),
+      amountsByCurrency: getInitialAmountsByCurrency(
+        discount,
+        organization.default_presentment_currency,
+      ),
     },
   })
 

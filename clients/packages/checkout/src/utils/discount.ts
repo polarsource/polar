@@ -75,7 +75,6 @@ export const getDiscountEndDate = (
 
 export const getDiscountDisplay = (
   discount: CheckoutDiscount,
-  currency: string,
   locale?: AcceptedLocale,
 ): string => {
   if (isDiscountPercentage(discount)) {
@@ -87,8 +86,8 @@ export const getDiscountDisplay = (
   }
   if (isDiscountFixed(discount)) {
     return formatCurrency('compact', locale)(
-      -(discount.amounts[currency] ?? 0),
-      currency,
+      -discount.amount,
+      discount.currency,
     )
   }
   throw new Error('Unknown discount type')

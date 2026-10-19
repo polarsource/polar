@@ -37,6 +37,7 @@ export interface IngestionStrategy {
   actor?(input: ActorInput): Promise<void>;
   meter?(input: MeterInput): Promise<CustomerMeter | null>;
   ingest(event: EventInput): Promise<void>;
+  flush?(): Promise<void>;
   close(): Promise<void>;
 }
 
@@ -151,6 +152,24 @@ export class Ingestion {
       const response = await this.client.sendRequest(request);
       const result = await this.client.parseResponse<{ items: CustomerMeter[] }>(response, "json");
       return result.items[0] ?? null;
+    } finally {
+      if (--this.activeOperations === 0) this.onDrained?.();
+    }
+  }
+
+  async flush(): Promise<void> {
+    if (!this.started) throw new IngestionError("Ingestion is not running");
+    this.activeOperations++;
+    try {
+      const errors: unknown[] = [];
+      for (const strategy of this.strategies) {
+        try {
+          await strategy.flush?.();
+        } catch (error) {
+          errors.push(error);
+        }
+      }
+      if (errors.length) throw new AggregateError(errors, "Ingestion flush failed");
     } finally {
       if (--this.activeOperations === 0) this.onDrained?.();
     }

@@ -32,8 +32,13 @@ from redis.asyncio import Redis
 from redis.asyncio.retry import Retry
 from redis.backoff import EqualJitterBackoff, NoBackoff
 from redis.commands.core import AsyncScript
+from redis.exceptions import (
+    AuthenticationError,
+    AuthorizationError,
+    NoScriptError,
+    RedisError,
+)
 from redis.exceptions import ConnectionError as RedisConnectionError
-from redis.exceptions import NoScriptError, RedisError
 from redis.exceptions import TimeoutError as RedisTimeoutError
 
 from polar.base import PolarError
@@ -157,7 +162,18 @@ def _tag_read_outcome(span: Span) -> collections.abc.Generator[None]:
 def _is_connection_error(error: BaseException) -> bool:
     if isinstance(error, BaseExceptionGroup):
         return all(_is_connection_error(inner) for inner in error.exceptions)
-    return isinstance(error, (HTTPXWSException, httpx.HTTPError, OSError))
+    if isinstance(error, (AuthenticationError, AuthorizationError)):
+        return False
+    return isinstance(
+        error,
+        (
+            HTTPXWSException,
+            httpx.HTTPError,
+            OSError,
+            RedisConnectionError,
+            RedisTimeoutError,
+        ),
+    )
 
 
 def _generate_epoch() -> str:

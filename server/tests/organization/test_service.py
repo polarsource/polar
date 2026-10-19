@@ -201,7 +201,7 @@ class TestCreate:
 
         assert organization.name == "My New Organization"
         assert organization.slug == slug
-        assert organization.feature_settings == {}
+        assert organization.feature_settings == {"meter_cycling_enabled": True}
 
         user_organization = await user_organization_service.get_by_user_and_org(
             session, auth_subject.subject.id, organization.id
@@ -267,6 +267,7 @@ class TestCreate:
 
         assert organization.feature_settings == {
             "checkout_localization_enabled": True,
+            "meter_cycling_enabled": True,
         }
 
     @pytest.mark.auth

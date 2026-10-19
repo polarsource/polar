@@ -13747,10 +13747,83 @@ export interface components {
       line1: components['schemas']['BillingAddressFieldMode']
       line2: components['schemas']['BillingAddressFieldMode']
     }
+    CheckoutConfirm:
+      | components['schemas']['CheckoutConfirmStripe']
+      | components['schemas']['CheckoutConfirmSharedPaymentToken']
+    /**
+     * CheckoutConfirmSharedPaymentToken
+     * @description Confirm a checkout session using a Stripe shared payment token granted by an agent.
+     *
+     *     Only supported for one-time payments.
+     */
+    CheckoutConfirmSharedPaymentToken: {
+      /**
+       * Custom Field Data
+       * @description Key-value object storing custom field values.
+       */
+      custom_field_data?: {
+        [key: string]: string | number | boolean | null
+      }
+      /**
+       * Product Id
+       * @description ID of the product to checkout. Must be present in the checkout's product list.
+       */
+      product_id?: string | null
+      /**
+       * Product Price Id
+       * @deprecated
+       * @description ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
+       */
+      product_price_id?: string | null
+      /** Amount */
+      amount?: number | null
+      /**
+       * Seats
+       * @description Number of seats for seat-based pricing.
+       */
+      seats?: number | null
+      /**
+       * Units
+       * @description Number of units for unit-based pricing.
+       */
+      units?: number | null
+      /** Is Business Customer */
+      is_business_customer?: boolean | null
+      /** Customer Name */
+      customer_name?: string | null
+      /** Customer Email */
+      customer_email?: string | null
+      /** Customer Billing Name */
+      customer_billing_name?: string | null
+      customer_billing_address?: components['schemas']['AddressInput'] | null
+      /** Customer Tax Id */
+      customer_tax_id?: string | null
+      /** Locale */
+      locale?: string | null
+      /**
+       * Payment Method Type
+       * @description Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`.
+       */
+      payment_method_type?: string | null
+      /**
+       * Discount Code
+       * @description Discount code to apply to the checkout.
+       */
+      discount_code?: string | null
+      /**
+       * Allow Trial
+       * @description Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one.
+       */
+      allow_trial?: false | null
+      /**
+       * Shared Payment Token Id
+       * @description ID of the Stripe shared payment token (`spt_...`).
+       */
+      shared_payment_token_id: string
+    }
     /**
      * CheckoutConfirmStripe
-     * @description Confirm a checkout session using a Stripe confirmation token
-     *     or a Stripe shared payment token.
+     * @description Confirm a checkout session using a Stripe confirmation token.
      */
     CheckoutConfirmStripe: {
       /**
@@ -13813,14 +13886,9 @@ export interface components {
       allow_trial?: false | null
       /**
        * Confirmation Token Id
-       * @description ID of the Stripe confirmation token. Either this or `shared_payment_token_id` is required for fixed prices and custom prices.
+       * @description ID of the Stripe confirmation token. Required for fixed prices and custom prices.
        */
       confirmation_token_id?: string | null
-      /**
-       * Shared Payment Token Id
-       * @description ID of a Stripe shared payment token (`spt_...`) granted by an agent. Only supported for one-time payments. Mutually exclusive with `confirmation_token_id`.
-       */
-      shared_payment_token_id?: string | null
     }
     CheckoutCreate: components['schemas']['CheckoutProductsCreate']
     /**
@@ -50131,7 +50199,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['CheckoutConfirmStripe']
+        'application/json': components['schemas']['CheckoutConfirm']
       }
     }
     responses: {

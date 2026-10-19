@@ -7,7 +7,7 @@ from unittest.mock import ANY, AsyncMock, MagicMock
 
 import pytest
 import stripe as stripe_lib
-from pydantic import HttpUrl, ValidationError
+from pydantic import HttpUrl, TypeAdapter, ValidationError
 from pytest_mock import MockerFixture
 from sqlalchemy import inspect as orm_inspect
 from sqlalchemy.orm import joinedload
@@ -16,6 +16,7 @@ from polar.auth.models import Anonymous, AuthSubject
 from polar.checkout.guard import has_product_checkout
 from polar.checkout.schemas import (
     CheckoutConfirm,
+    CheckoutConfirmSharedPaymentToken,
     CheckoutConfirmStripe,
     CheckoutPriceCreate,
     CheckoutProductCreate,
@@ -32,6 +33,7 @@ from polar.checkout.service import (
     ExpiredCheckoutError,
     NotConfirmedCheckout,
     NotOpenCheckout,
+    PaymentError,
     SharedPaymentTokenError,
     TrialAlreadyRedeemed,
 )
@@ -6508,7 +6510,7 @@ class TestConfirm:
                 session,
                 auth_subject,
                 checkout_one_time_fixed,
-                CheckoutConfirm(
+                CheckoutConfirmStripe(
                     customer_email="test@example.com",
                     customer_name="Test Customer",
                     confirmation_token_id=None,
@@ -6599,7 +6601,7 @@ class TestConfirm:
             session,
             auth_subject,
             checkout_one_time_free,
-            CheckoutConfirm(
+            CheckoutConfirmStripe(
                 customer_email="test@example.com",
                 customer_name="Test Customer",
                 confirmation_token_id=None,
@@ -6911,7 +6913,7 @@ class TestConfirm:
             session,
             auth_subject,
             checkout,
-            CheckoutConfirm(
+            CheckoutConfirmStripe(
                 customer_email="test@example.com",
                 customer_name="Test Customer",
                 confirmation_token_id=None,
@@ -7155,16 +7157,6 @@ class TestConfirm:
         checkout_one_time_fixed: Checkout,
         agentic_payments_organization: Organization,
     ) -> None:
-        stripe_service_mock.get_shared_payment_granted_token.return_value = {
-            "id": "spt_123",
-            "deactivated_at": None,
-            "deactivated_reason": None,
-            "usage_limits": {
-                "currency": "usd",
-                "max_amount": checkout_one_time_fixed.total_amount,
-                "expires_at": int((utc_now() + timedelta(hours=1)).timestamp()),
-            },
-        }
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
             id="STRIPE_CUSTOMER_ID"
         )
@@ -7176,7 +7168,7 @@ class TestConfirm:
             session,
             auth_subject,
             checkout_one_time_fixed,
-            CheckoutConfirmStripe.model_validate(
+            CheckoutConfirmSharedPaymentToken.model_validate(
                 {
                     "shared_payment_token_id": "spt_123",
                     "customer_name": "Customer Name",
@@ -7188,9 +7180,6 @@ class TestConfirm:
 
         assert checkout.status == CheckoutStatus.confirmed
         assert checkout.payment_processor_metadata["intent_id"] == "STRIPE_INTENT_ID"
-        stripe_service_mock.get_shared_payment_granted_token.assert_awaited_once_with(
-            "spt_123"
-        )
         stripe_service_mock.get_confirmation_token.assert_not_called()
         stripe_service_mock.create_payment_intent.assert_not_called()
         create_mock = (
@@ -7208,7 +7197,7 @@ class TestConfirm:
 
     def test_shared_payment_token_with_confirmation_token(self) -> None:
         with pytest.raises(ValidationError):
-            CheckoutConfirmStripe.model_validate(
+            TypeAdapter(CheckoutConfirm).validate_python(
                 {
                     "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
                     "shared_payment_token_id": "spt_123",
@@ -7227,7 +7216,7 @@ class TestConfirm:
                 session,
                 auth_subject,
                 checkout_one_time_fixed,
-                CheckoutConfirmStripe.model_validate(
+                CheckoutConfirmSharedPaymentToken.model_validate(
                     {
                         "shared_payment_token_id": "spt_123",
                         "customer_name": "Customer Name",
@@ -7237,7 +7226,7 @@ class TestConfirm:
                 ),
             )
 
-        stripe_service_mock.get_shared_payment_granted_token.assert_not_called()
+        stripe_service_mock.create_payment_intent_from_shared_payment_token.assert_not_called()
         stripe_service_mock.create_payment_intent_from_shared_payment_token.assert_not_called()
 
     async def test_shared_payment_token_satisfies_required_payment_token(
@@ -7252,7 +7241,7 @@ class TestConfirm:
                 session,
                 auth_subject,
                 checkout_one_time_fixed,
-                CheckoutConfirmStripe.model_validate(
+                CheckoutConfirmSharedPaymentToken.model_validate(
                     {"shared_payment_token_id": "spt_123"}
                 ),
             )
@@ -7260,7 +7249,7 @@ class TestConfirm:
         error_locations = {error["loc"] for error in e.value.errors()}
         assert ("body", "customer_email") in error_locations
         assert ("body", "confirmation_token_id") not in error_locations
-        stripe_service_mock.get_shared_payment_granted_token.assert_not_called()
+        stripe_service_mock.create_payment_intent_from_shared_payment_token.assert_not_called()
 
     async def test_shared_payment_token_subscription(
         self,
@@ -7275,7 +7264,7 @@ class TestConfirm:
                 session,
                 auth_subject,
                 checkout_recurring_fixed,
-                CheckoutConfirmStripe.model_validate(
+                CheckoutConfirmSharedPaymentToken.model_validate(
                     {
                         "shared_payment_token_id": "spt_123",
                         "customer_name": "Customer Name",
@@ -7285,92 +7274,11 @@ class TestConfirm:
                 ),
             )
 
-        stripe_service_mock.get_shared_payment_granted_token.assert_not_called()
+        stripe_service_mock.create_payment_intent_from_shared_payment_token.assert_not_called()
         stripe_service_mock.create_payment_intent_from_shared_payment_token.assert_not_called()
         stripe_service_mock.create_setup_intent.assert_not_called()
 
-    @pytest.mark.parametrize(
-        "token",
-        [
-            pytest.param(
-                {
-                    "id": "spt_123",
-                    "deactivated_at": 1700000000,
-                    "deactivated_reason": "revoked",
-                    "usage_limits": None,
-                },
-                id="deactivated",
-            ),
-            pytest.param(
-                {
-                    "id": "spt_123",
-                    "deactivated_at": None,
-                    "deactivated_reason": None,
-                    "usage_limits": {
-                        "currency": "usd",
-                        "max_amount": 1_000_000,
-                        "expires_at": 1700000000,
-                    },
-                },
-                id="expired",
-            ),
-            pytest.param(
-                {
-                    "id": "spt_123",
-                    "deactivated_at": None,
-                    "deactivated_reason": None,
-                    "usage_limits": {
-                        "currency": "eur",
-                        "max_amount": 1_000_000,
-                        "expires_at": None,
-                    },
-                },
-                id="currency mismatch",
-            ),
-            pytest.param(
-                {
-                    "id": "spt_123",
-                    "deactivated_at": None,
-                    "deactivated_reason": None,
-                    "usage_limits": {
-                        "currency": "usd",
-                        "max_amount": 1,
-                        "expires_at": None,
-                    },
-                },
-                id="max amount too low",
-            ),
-        ],
-    )
-    async def test_shared_payment_token_invalid(
-        self,
-        token: dict[str, Any],
-        stripe_service_mock: MagicMock,
-        session: AsyncSession,
-        auth_subject: AuthSubject[Anonymous],
-        checkout_one_time_fixed: Checkout,
-        agentic_payments_organization: Organization,
-    ) -> None:
-        stripe_service_mock.get_shared_payment_granted_token.return_value = token
-
-        with pytest.raises(SharedPaymentTokenError):
-            await checkout_service.confirm(
-                session,
-                auth_subject,
-                checkout_one_time_fixed,
-                CheckoutConfirmStripe.model_validate(
-                    {
-                        "shared_payment_token_id": "spt_123",
-                        "customer_name": "Customer Name",
-                        "customer_email": "customer@example.com",
-                        "customer_billing_address": {"country": "FR"},
-                    }
-                ),
-            )
-
-        stripe_service_mock.create_payment_intent_from_shared_payment_token.assert_not_called()
-
-    async def test_shared_payment_token_not_found(
+    async def test_shared_payment_token_rejected_by_stripe(
         self,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
@@ -7378,16 +7286,26 @@ class TestConfirm:
         checkout_one_time_fixed: Checkout,
         agentic_payments_organization: Organization,
     ) -> None:
-        stripe_service_mock.get_shared_payment_granted_token.side_effect = (
-            stripe_lib.InvalidRequestError("No such token", "id")
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent_from_shared_payment_token.side_effect = stripe_lib.InvalidRequestError(
+            "The shared payment token has expired.",
+            "payment_method_data[shared_payment_granted_token]",
+            json_body={
+                "error": {
+                    "type": "invalid_request_error",
+                    "message": "The shared payment token has expired.",
+                }
+            },
         )
 
-        with pytest.raises(SharedPaymentTokenError):
+        with pytest.raises(PaymentError) as e:
             await checkout_service.confirm(
                 session,
                 auth_subject,
                 checkout_one_time_fixed,
-                CheckoutConfirmStripe.model_validate(
+                CheckoutConfirmSharedPaymentToken.model_validate(
                     {
                         "shared_payment_token_id": "spt_123",
                         "customer_name": "Customer Name",
@@ -7396,6 +7314,9 @@ class TestConfirm:
                     }
                 ),
             )
+
+        assert e.value.error_type == "invalid_request_error"
+        assert e.value.error == "The shared payment token has expired."
 
     async def test_shared_payment_token_requires_action(
         self,
@@ -7405,12 +7326,6 @@ class TestConfirm:
         checkout_one_time_fixed: Checkout,
         agentic_payments_organization: Organization,
     ) -> None:
-        stripe_service_mock.get_shared_payment_granted_token.return_value = {
-            "id": "spt_123",
-            "deactivated_at": None,
-            "deactivated_reason": None,
-            "usage_limits": None,
-        }
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
             id="STRIPE_CUSTOMER_ID"
         )
@@ -7424,7 +7339,7 @@ class TestConfirm:
             session,
             auth_subject,
             checkout_one_time_fixed,
-            CheckoutConfirmStripe.model_validate(
+            CheckoutConfirmSharedPaymentToken.model_validate(
                 {
                     "shared_payment_token_id": "spt_123",
                     "customer_name": "Customer Name",

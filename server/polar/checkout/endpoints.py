@@ -43,6 +43,7 @@ from .repository import CheckoutRepository
 from .schemas import Checkout as CheckoutSchema
 from .schemas import (
     CheckoutConfirm,
+    CheckoutConfirmStripe,
     CheckoutCreate,
     CheckoutEmbedPolicy,
     CheckoutOpened,
@@ -318,7 +319,7 @@ async def client_update(
 )
 async def client_confirm(
     client_secret: CheckoutClientSecret,
-    checkout_confirm: legacy_schemas.CheckoutConfirm,
+    checkout_confirm: CheckoutConfirmStripe,
     auth_subject: auth.CheckoutWeb,
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:

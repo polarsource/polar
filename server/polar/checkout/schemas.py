@@ -488,43 +488,45 @@ class CheckoutConfirmBase(CheckoutUpdatePublic): ...
 
 
 class CheckoutConfirmStripe(CheckoutConfirmBase):
-    """
-    Confirm a checkout session using a Stripe confirmation token
-    or a Stripe shared payment token.
-    """
+    """Confirm a checkout session using a Stripe confirmation token."""
 
     confirmation_token_id: str | None = Field(
         None,
         description=(
             "ID of the Stripe confirmation token. "
-            "Either this or `shared_payment_token_id` is required "
-            "for fixed prices and custom prices."
+            "Required for fixed prices and custom prices."
         ),
     )
-    shared_payment_token_id: str | None = Field(
-        None,
+
+
+class CheckoutConfirmSharedPaymentToken(CheckoutConfirmBase):
+    """
+    Confirm a checkout session using a Stripe shared payment token granted by an agent.
+
+    Only supported for one-time payments.
+    """
+
+    shared_payment_token_id: str = Field(
         pattern=r"^spt_[A-Za-z0-9_]+$",
-        description=(
-            "ID of a Stripe shared payment token (`spt_...`) granted by an agent. "
-            "Only supported for one-time payments. "
-            "Mutually exclusive with `confirmation_token_id`."
-        ),
+        description="ID of the Stripe shared payment token (`spt_...`).",
     )
-
-    @model_validator(mode="after")
-    def validate_payment_token(self) -> "CheckoutConfirmStripe":
-        if (
-            self.confirmation_token_id is not None
-            and self.shared_payment_token_id is not None
-        ):
-            raise ValueError(
-                "Only one of confirmation_token_id or shared_payment_token_id "
-                "can be provided"
-            )
-        return self
+    confirmation_token_id: SkipJsonSchema[None] = None
 
 
-CheckoutConfirm = CheckoutConfirmStripe
+def get_checkout_confirm_discriminator_value(v: Any) -> str:
+    if isinstance(v, dict):
+        shared_payment_token_id = v.get("shared_payment_token_id")
+    else:
+        shared_payment_token_id = getattr(v, "shared_payment_token_id", None)
+    return "shared_payment_token" if shared_payment_token_id is not None else "stripe"
+
+
+CheckoutConfirm = Annotated[
+    Annotated[CheckoutConfirmStripe, Tag("stripe")]
+    | Annotated[CheckoutConfirmSharedPaymentToken, Tag("shared_payment_token")],
+    Discriminator(get_checkout_confirm_discriminator_value),
+    SetSchemaReference("CheckoutConfirm"),
+]
 
 
 class CheckoutOpened(Schema):

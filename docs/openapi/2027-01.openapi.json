@@ -8829,7 +8829,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CheckoutConfirmStripe"
+                "$ref": "#/components/schemas/CheckoutConfirm"
               }
             }
           }
@@ -39756,6 +39756,256 @@
         ],
         "title": "CheckoutBillingAddressFields"
       },
+      "CheckoutConfirm": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CheckoutConfirmStripe"
+          },
+          {
+            "$ref": "#/components/schemas/CheckoutConfirmSharedPaymentToken"
+          }
+        ]
+      },
+      "CheckoutConfirmSharedPaymentToken": {
+        "properties": {
+          "custom_field_data": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "examples": [
+                    "2026-01-01T00:00:00.000000Z"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Custom Field Data",
+            "description": "Key-value object storing custom field values."
+          },
+          "product_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Id",
+            "description": "ID of the product to checkout. Must be present in the checkout's product list."
+          },
+          "product_price_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Price Id",
+            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
+            "deprecated": true
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0,
+                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "seats": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seats",
+            "description": "Number of seats for seat-based pricing."
+          },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "Number of units for unit-based pricing."
+          },
+          "is_business_customer": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Business Customer"
+          },
+          "customer_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256,
+                "description": "The name of the customer.",
+                "examples": [
+                  "John Doe"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Name"
+          },
+          "customer_email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "email",
+                "description": "Email address of the customer."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Email"
+          },
+          "customer_billing_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Billing Name"
+          },
+          "customer_billing_address": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AddressInput",
+                "description": "Billing address of the customer."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "customer_tax_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Tax Id"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Locale of the customer, given as an IETF BCP 47 language tag, e.g. `en`, `en-US` or `en-GB-oxendict`. If `null` or unsupported, the locale will default to `en`.",
+                "examples": [
+                  "en",
+                  "en-US",
+                  "fr",
+                  "fr-CA"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
+          "payment_method_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Method Type",
+            "description": "Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`."
+          },
+          "discount_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discount Code",
+            "description": "Discount code to apply to the checkout."
+          },
+          "allow_trial": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allow Trial",
+            "description": "Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one."
+          },
+          "shared_payment_token_id": {
+            "type": "string",
+            "pattern": "^spt_[A-Za-z0-9_]+$",
+            "title": "Shared Payment Token Id",
+            "description": "ID of the Stripe shared payment token (`spt_...`)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "shared_payment_token_id"
+        ],
+        "title": "CheckoutConfirmSharedPaymentToken",
+        "description": "Confirm a checkout session using a Stripe shared payment token granted by an agent.\n\nOnly supported for one-time payments."
+      },
       "CheckoutConfirmStripe": {
         "properties": {
           "custom_field_data": {
@@ -39992,25 +40242,12 @@
               }
             ],
             "title": "Confirmation Token Id",
-            "description": "ID of the Stripe confirmation token. Either this or `shared_payment_token_id` is required for fixed prices and custom prices."
-          },
-          "shared_payment_token_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^spt_[A-Za-z0-9_]+$"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Shared Payment Token Id",
-            "description": "ID of a Stripe shared payment token (`spt_...`) granted by an agent. Only supported for one-time payments. Mutually exclusive with `confirmation_token_id`."
+            "description": "ID of the Stripe confirmation token. Required for fixed prices and custom prices."
           }
         },
         "type": "object",
         "title": "CheckoutConfirmStripe",
-        "description": "Confirm a checkout session using a Stripe confirmation token\nor a Stripe shared payment token."
+        "description": "Confirm a checkout session using a Stripe confirmation token."
       },
       "CheckoutCreate": {
         "$ref": "#/components/schemas/CheckoutProductsCreate"

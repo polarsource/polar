@@ -97,35 +97,6 @@ class TestCreatePaymentIntentFromSharedPaymentToken:
 
 
 @pytest.mark.anyio
-class TestGetSharedPaymentGrantedToken:
-    async def test_valid(self, mocker: MockerFixture) -> None:
-        token = {
-            "id": "spt_123",
-            "deactivated_at": None,
-            "deactivated_reason": None,
-            "usage_limits": {
-                "currency": "usd",
-                "max_amount": 1000,
-                "expires_at": 1798761600,
-            },
-        }
-        fetch = mocker.patch(
-            "polar.integrations.stripe.service.stripe_risk_client.raw_request_async",
-            new_callable=AsyncMock,
-            return_value=MagicMock(body=json.dumps(token)),
-        )
-
-        result = await stripe_service.get_shared_payment_granted_token("spt_123")
-
-        assert result == token
-        fetch.assert_awaited_once_with(
-            "get",
-            "/v1/shared_payment/granted_tokens/spt_123",
-            stripe_version=SHARED_PAYMENT_TOKENS_API_VERSION,
-        )
-
-
-@pytest.mark.anyio
 class TestGetUsdBaseRates:
     async def test_valid(self, mocker: MockerFixture) -> None:
         fetch = mocker.patch(

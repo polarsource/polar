@@ -1,3 +1,4 @@
+import type { DataPoint, ResourceMetrics } from "@opentelemetry/sdk-metrics";
 import type { ReadableSpan } from "@opentelemetry/sdk-trace";
 
 import { Pipeline, Redis } from "ioredis";
@@ -14,9 +15,14 @@ import { APPLY_SNAPSHOT_SCRIPT } from "./scripts";
 import { TELEMETRY_ENV } from "./telemetry";
 import { startRedisServer, type RedisServer } from "./testing";
 
-const { exported } = vi.hoisted(() => ({ exported: [] as ReadableSpan[] }));
+const { exported, metrics } = vi.hoisted(() => ({
+  exported: [] as ReadableSpan[],
+  metrics: [] as ResourceMetrics[],
+}));
 vi.mock("./telemetry", async (importOriginal) => {
   const { SimpleSpanProcessor, TracerProvider } = await import("@opentelemetry/sdk-trace");
+  const { MeterProvider, PeriodicExportingMetricReader } =
+    await import("@opentelemetry/sdk-metrics");
   return {
     ...(await importOriginal<typeof import("./telemetry")>()),
     createTracerProvider: () =>
@@ -33,8 +39,30 @@ vi.mock("./telemetry", async (importOriginal) => {
           }),
         ],
       }),
+    createMeterProvider: () =>
+      new MeterProvider({
+        readers: [
+          new PeriodicExportingMetricReader({
+            exporter: {
+              export: (resourceMetrics, resultCallback) => {
+                metrics.push(resourceMetrics);
+                resultCallback({ code: 0 });
+              },
+              forceFlush: async () => {},
+              shutdown: async () => {},
+            },
+            exportIntervalMillis: 60_000,
+          }),
+        ],
+      }),
   };
 });
+const dataPoints = (name: string) =>
+  metrics
+    .flatMap((resourceMetrics) => resourceMetrics.scopeMetrics)
+    .flatMap((scopeMetrics) => scopeMetrics.metrics)
+    .filter((metric) => metric.descriptor.name === name)
+    .flatMap((metric): DataPoint<unknown>[] => metric.dataPoints);
 
 const timestamp = "2026-10-12T12:00:00Z";
 const bucket = getBucketStart(Date.parse(timestamp) * 1000);
@@ -107,6 +135,7 @@ beforeEach(async () => {
   refuseConnections = false;
   meterSnapshots = {};
   exported.length = 0;
+  metrics.length = 0;
 });
 
 afterEach(async () => {
@@ -598,12 +627,17 @@ it("sends telemetry spans tagged with the connection ID", async () => {
   await outpost.meter(meter);
   await outpost.close();
 
+  expect(dataPoints("outpost.ingest.events")).toMatchObject([
+    { attributes: { "outpost.outcome": "ok" }, value: 1 },
+  ]);
+  expect(dataPoints("outpost.ingest.duration")).toMatchObject([
+    { attributes: { "outpost.outcome": "ok" }, value: { count: 1 } },
+  ]);
   expect(new Set(exported.map((span) => span.name))).toEqual(
     new Set([
       "outpost.redis.connect",
       "outpost.redis.subscribe",
       "outpost.websocket.connect",
-      "outpost.ingest",
       "outpost.customer_meter",
       "outpost.snapshot.received",
       "outpost.sync",
@@ -641,6 +675,7 @@ it.each([
   await outpost.flushTelemetry();
   await outpost.close();
   expect(exported).toEqual([]);
+  expect(metrics).toEqual([]);
 });
 
 it.each([

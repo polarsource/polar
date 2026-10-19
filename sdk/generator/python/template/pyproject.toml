@@ -39,7 +39,11 @@ packages = ["polar"]
 artifacts = ["/polar/.agents/**"]
 
 [dependency-groups]
-dev = ["ty", "ruff", "pytest", "fakeredis[lua]>=2.36.1", "standardwebhooks>=1.0.0,<2.0.0"]
+dev = ["ty", "ruff", "pytest", "pytest-codspeed>=5.0.3", "fakeredis[lua]>=2.36.1", "standardwebhooks>=1.0.0,<2.0.0"]
+
+[tool.pytest.ini_options]
+markers = ["benchmark: performance benchmark, deselected by default (run with -m benchmark)"]
+addopts = "-m 'not benchmark'"
 
 [tool.ruff]
 target-version = "py311"

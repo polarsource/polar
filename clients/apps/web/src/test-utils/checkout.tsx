@@ -84,7 +84,7 @@ const withDiscount = (
     ? 0
     : 'basis_points' in discount
       ? Math.round((checkout.amount * discount.basis_points) / 10000)
-      : Math.min(discount.amount, checkout.amount)
+      : Math.min(discount.amounts[checkout.currency] ?? 0, checkout.amount)
   const netAmount = checkout.amount - discountAmount
   return {
     ...checkout,

@@ -42,7 +42,8 @@ from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
 from polar.webhook.service import webhook as webhook_service
 
-from .schemas import DiscountCreate, DiscountFixedCreate, DiscountUpdate
+from . import legacy_schemas
+from .schemas import DiscountCreate, DiscountUpdate
 from .sorting import DiscountSortProperty
 
 log = structlog.get_logger()
@@ -178,7 +179,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         discount_model = discount_create.type.get_model()
         discount_id = uuid.uuid4()
 
-        if isinstance(discount_create, DiscountFixedCreate) and (
+        if isinstance(discount_create, legacy_schemas.DiscountFixedCreate) and (
             discount_create.amount is not None and discount_create.currency is not None
         ):
             discount_create.amounts = {discount_create.currency: discount_create.amount}
@@ -371,7 +372,11 @@ class DiscountService(ResourceServiceReader[Discount]):
         exclude = {"products"}
         if isinstance(discount, DiscountFixed):
             exclude.add("basis_points")
-            if discount_update.amount and discount_update.currency:
+            if (
+                isinstance(discount_update, legacy_schemas.DiscountUpdate)
+                and discount_update.amount
+                and discount_update.currency
+            ):
                 discount.amounts = {discount_update.currency: discount_update.amount}
                 exclude.add("amount")
                 exclude.add("currency")

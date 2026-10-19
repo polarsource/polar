@@ -338,8 +338,6 @@ describe('CheckoutPricingBreakdown', () => {
           type: 'fixed',
           duration: 'once',
           code: null,
-          amount: 500,
-          currency: 'usd',
           amounts: { usd: 500 },
         } satisfies schemas['CheckoutPublic']['discount'],
       })
@@ -803,8 +801,6 @@ describe('CheckoutPricingBreakdown', () => {
           type: 'fixed',
           duration: 'once',
           code: null,
-          amount: 500,
-          currency: 'usd',
           amounts: { usd: 500 },
         } satisfies schemas['CheckoutPublic']['discount'],
         prices: {

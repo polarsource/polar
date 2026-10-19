@@ -103,7 +103,8 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7.0.0
         with:
-          python-version-file: sdk/python/.python-version
+          # CodSpeed profiles Python from 3.12: the closest to the version the SDK is tested on.
+          python-version: "3.12"
 
       - name: Install dependencies
         run: uv sync --frozen --all-extras

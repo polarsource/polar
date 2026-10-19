@@ -439,15 +439,27 @@ class CustomerMeterService:
             )
 
         # customer_meter.balance can be stale, it only refreshes when a recent event arrives.
-        credited_units = non_negative_running_sum(
+        credit_events = await self._get_credit_events(customer, meter, event_repository)
+        non_rollover_units = non_negative_running_sum(
             event.user_metadata["units"]
-            for event in await self._get_credit_events(
-                customer, meter, event_repository
-            )
+            for event in credit_events
+            if not event.user_metadata["rollover"]
         )
-        usage_units = await self._get_usage_quantity(session, customer, meter)
-        balance = credited_units - Decimal(usage_units)
-        units = min(credit.user_metadata["units"], max(int(balance), 0))
+        rollover_units = non_negative_running_sum(
+            event.user_metadata["units"]
+            for event in credit_events
+            if event.user_metadata["rollover"]
+        )
+        usage_units = Decimal(await self._get_usage_quantity(session, customer, meter))
+        # Usage draws from non-rollover credits first, matching get_rollover_units.
+        if credit.user_metadata["rollover"]:
+            unused = min(
+                Decimal(rollover_units),
+                non_rollover_units + rollover_units - usage_units,
+            )
+        else:
+            unused = non_rollover_units - usage_units
+        units = min(credit.user_metadata["units"], max(int(unused), 0))
         if units == 0:
             raise CustomerMeterCreditNotReversible(
                 "These credits have already been used."

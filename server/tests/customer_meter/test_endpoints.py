@@ -527,6 +527,45 @@ class TestReverseCustomerMeterCredit:
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth
+    async def test_used_credit_with_unused_rollover_credit(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        credits = []
+        for rollover in (False, True):
+            credit = await client.post(
+                "/v1/customer-meters/credits",
+                json={
+                    "customer_id": str(customer.id),
+                    "meter_id": str(meter.id),
+                    "units": 5,
+                    "rollover": rollover,
+                },
+            )
+            credits.append(credit.json()["id"])
+        for _ in range(5):
+            await create_event(
+                save_fixture, organization=organization, customer=customer
+            )
+        non_rollover_url, rollover_url = (
+            f"/v1/customer-meters/credits/{credit_id}/reverse" for credit_id in credits
+        )
+
+        response = await client.post(non_rollover_url)
+        assert response.status_code == 409
+        assert response.json()["detail"] == "These credits have already been used."
+
+        response = await client.post(rollover_url)
+        assert response.status_code == 201
+        assert response.json()["metadata"]["units"] == -5
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
     async def test_older_than_7_days(
         self,
         save_fixture: SaveFixture,

@@ -488,8 +488,9 @@ class Outpost:
         self._require_redis()
         with self._span("outpost.ingest", **{"outpost.events": 1}) as span:
             parsed = self._parse_event(event)
-            with anyio.fail_after(5):
-                await self._configured.wait()
+            if not self._configured.is_set():
+                with anyio.fail_after(5):
+                    await self._configured.wait()
             reducers = self._reducers
             updates = reduce(
                 [(reducer, get_matcher(reducer["filter"])) for reducer in reducers],
@@ -542,8 +543,9 @@ class Outpost:
         ):
             customer = self._customer_key(customer_id, external_customer_id)
             self._require_redis()
-            with anyio.fail_after(5):
-                await self._configured.wait()
+            if not self._configured.is_set():
+                with anyio.fail_after(5):
+                    await self._configured.wait()
             reducers = self._reducers
             reducer = next(
                 (
@@ -621,8 +623,9 @@ class Outpost:
         return await anyio.to_thread.run_sync(provider.force_flush)
 
     async def _warm_actor(self, customer: str) -> list[tuple[Reducer, LocalState]]:
-        with anyio.fail_after(5):
-            await self._configured.wait()
+        if not self._configured.is_set():
+            with anyio.fail_after(5):
+                await self._configured.wait()
         return [
             (reducer, await self._warm_customer(customer, reducer))
             for reducer in self._reducers

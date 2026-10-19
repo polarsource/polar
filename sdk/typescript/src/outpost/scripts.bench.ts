@@ -34,7 +34,12 @@ let readStateSha: string;
 let applySnapshotSha: string;
 
 const seedState = async (identity: string, buckets: number): Promise<void> => {
-  await redis.hset(stateKey(identity), ...encodeState(buckets));
+  await redis.hset(
+    stateKey(identity),
+    ...encodeState(buckets),
+    "credited_version:meter",
+    String(COLD_UNTIL + 1),
+  );
 };
 
 beforeAll(async () => {

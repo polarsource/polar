@@ -41,7 +41,8 @@ def write_args(identity: str, bucket_start: int) -> list[str | int]:
 
 
 def seed_state(redis: Redis, identity: str, buckets: int) -> None:
-    redis.hset(state_key(identity), items=encode_state(buckets))
+    fields = encode_state(buckets) + ["credited_version:meter", str(COLD_UNTIL + 1)]
+    redis.hset(state_key(identity), items=fields)
 
 
 @pytest.fixture(scope="module")

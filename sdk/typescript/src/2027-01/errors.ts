@@ -1,10 +1,13 @@
 import type {
   AlreadyCanceledSubscription as AlreadyCanceledSubscriptionModel,
   AmbiguousExternalCustomerID as AmbiguousExternalCustomerIDModel,
+  AmbiguousExternalMeterID as AmbiguousExternalMeterIDModel,
+  AmbiguousExternalWebhookEndpointID as AmbiguousExternalWebhookEndpointIDModel,
   BadRequest as BadRequestModel,
   CannotCreateOrganizationError as CannotCreateOrganizationErrorModel,
   CheckoutForbiddenError as CheckoutForbiddenErrorModel,
   CheckoutLocked as CheckoutLockedModel,
+  CustomerMeterCreditExternalIDConflict as CustomerMeterCreditExternalIDConflictModel,
   CustomerNotReady as CustomerNotReadyModel,
   DisputeAutoAcceptNotEnabled as DisputeAutoAcceptNotEnabledModel,
   DisputeNotOpenError as DisputeNotOpenErrorModel,
@@ -183,6 +186,18 @@ export class NotPermitted extends PolarClientError<NotPermittedModel> {
   ) {
     super(statusCode, error);
     this.name = "NotPermitted";
+  }
+}
+/**
+ * The external ID matches webhook endpoints in several accessible organizations.
+ */
+export class AmbiguousExternalWebhookEndpointID extends PolarClientError<AmbiguousExternalWebhookEndpointIDModel> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: AmbiguousExternalWebhookEndpointIDModel,
+  ) {
+    super(statusCode, error);
+    this.name = "AmbiguousExternalWebhookEndpointID";
   }
 }
 /**
@@ -1136,5 +1151,33 @@ export class EventTypesUpdate404Error extends PolarClientError<null> {
   ) {
     super(statusCode, error);
     this.name = "EventTypesUpdate404Error";
+  }
+}
+/**
+ * The external ID matches meters in several accessible organizations.
+ */
+export class AmbiguousExternalMeterID extends PolarClientError<AmbiguousExternalMeterIDModel> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: AmbiguousExternalMeterIDModel,
+  ) {
+    super(statusCode, error);
+    this.name = "AmbiguousExternalMeterID";
+  }
+}
+/**
+ * The external_id is already used by a different event, or the external customer ID matches customers in several accessible organizations.
+ */
+export class CustomerMetersCredits409Error extends PolarClientError<
+  CustomerMeterCreditExternalIDConflictModel | AmbiguousExternalCustomerIDModel
+> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error:
+      | CustomerMeterCreditExternalIDConflictModel
+      | AmbiguousExternalCustomerIDModel,
+  ) {
+    super(statusCode, error);
+    this.name = "CustomerMetersCredits409Error";
   }
 }

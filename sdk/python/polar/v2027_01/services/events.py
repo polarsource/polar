@@ -11,6 +11,7 @@ from polar.base import (
 )
 from polar.v2027_01.errors import (
     HTTPValidationError,
+    NotPermitted,
     ResourceNotFound,
 )
 from polar.v2027_01.inputs import (
@@ -303,6 +304,7 @@ class EventsSync(SyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
+            NotPermitted: Forbidden
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -319,6 +321,7 @@ class EventsSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
+            403: NotPermitted,
             422: HTTPValidationError,
         }
         return parse_response_json(response, EventsIngestResponse, method_errors)
@@ -596,6 +599,7 @@ class EventsAsync(AsyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
+            NotPermitted: Forbidden
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -612,6 +616,7 @@ class EventsAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
+            403: NotPermitted,
             422: HTTPValidationError,
         }
         return parse_response_json(response, EventsIngestResponse, method_errors)

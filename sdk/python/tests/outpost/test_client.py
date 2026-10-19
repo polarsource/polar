@@ -353,9 +353,7 @@ async def test_customer_meter_reads_cold_and_shared_buckets(
                     "metadata": {"tokens": value},
                 }
             )
-        own_meter = await writer.meter(
-            external_customer_id="alice", meter_id="meter"
-        )
+        own_meter = await writer.meter(external_customer_id="alice", meter_id="meter")
         assert own_meter is not None and own_meter.consumed_units == expected
         with anyio.fail_after(1):
             while True:
@@ -429,9 +427,7 @@ async def test_actor_is_idempotent_and_missing_snapshot_is_not_zero(
         await outpost.actor(external_customer_id="alice")
         await outpost.actor(external_customer_id="alice")
         assert (
-            await outpost.meter(
-                external_customer_id="alice", meter_id="unknown"
-            )
+            await outpost.meter(external_customer_id="alice", meter_id="unknown")
             is None
         )
         with pytest.raises(PolarOutpostError, match="snapshot is not ready"):
@@ -614,9 +610,7 @@ async def test_warmed_reads_do_not_use_redis(
 
         assert outpost._redis is not None
         monkeypatch.setattr(outpost._redis, "execute_command", unexpected_command)
-        meter = await outpost.meter(
-            external_customer_id="alice", meter_id="meter"
-        )
+        meter = await outpost.meter(external_customer_id="alice", meter_id="meter")
         assert meter is not None and meter.consumed_units == 13
 
 
@@ -672,9 +666,7 @@ async def test_old_messages_and_redis_reset_do_not_roll_back_cache(
         await redis.publish("outpost:0:updates", json.dumps(old))
         with anyio.fail_after(1):
             await received.wait()
-        meter = await outpost.meter(
-            external_customer_id="alice", meter_id="meter"
-        )
+        meter = await outpost.meter(external_customer_id="alice", meter_id="meter")
         assert meter is not None and meter.consumed_units == 13
 
         await redis.delete(key)
@@ -691,9 +683,7 @@ async def test_old_messages_and_redis_reset_do_not_roll_back_cache(
         await redis.publish("outpost:0:updates", json.dumps(old))
         with anyio.fail_after(1):
             await received.wait()
-        meter = await outpost.meter(
-            external_customer_id="alice", meter_id="meter"
-        )
+        meter = await outpost.meter(external_customer_id="alice", meter_id="meter")
         assert meter is not None and meter.consumed_units == 22
 
 
@@ -776,9 +766,7 @@ async def test_evicted_customer_is_reloaded(
         await outpost.actor(external_customer_id="bob")
         await outpost.actor(external_customer_id="carol")
         await redis.hset(key, "cold:sum", 2)
-        meter = await outpost.meter(
-            external_customer_id="alice", meter_id="meter"
-        )
+        meter = await outpost.meter(external_customer_id="alice", meter_id="meter")
         assert meter is not None and meter.consumed_units == 2
 
 
@@ -896,12 +884,8 @@ async def test_independent_reducers_concurrent_statistics_and_meter_credits(
             tasks.start_soon(emit, first, 2)
             tasks.start_soon(emit, second, 8)
         await first._refresh_states()
-        meter = await first.meter(
-            external_customer_id="alice", meter_id="meter"
-        )
-        shared = await first.meter(
-            external_customer_id="alice", meter_id="shared"
-        )
+        meter = await first.meter(external_customer_id="alice", meter_id="meter")
+        shared = await first.meter(external_customer_id="alice", meter_id="shared")
         average = await first.meter(
             external_customer_id="alice", meter_id="average-meter"
         )
@@ -959,15 +943,11 @@ async def test_independent_reducers_concurrent_statistics_and_meter_credits(
             )
             == b"100"
         )
-        meter = await first.meter(
-            external_customer_id="alice", meter_id="meter"
-        )
+        meter = await first.meter(external_customer_id="alice", meter_id="meter")
         average = await first.meter(
             external_customer_id="alice", meter_id="average-meter"
         )
-        shared = await first.meter(
-            external_customer_id="alice", meter_id="shared"
-        )
+        shared = await first.meter(external_customer_id="alice", meter_id="shared")
         assert meter is not None and meter.consumed_units == 124 and meter.balance == 26
         assert average is not None and average.consumed_units == pytest.approx(124 / 23)
         assert shared is not None and shared.credited_units == 200
@@ -1413,9 +1393,7 @@ async def test_cold_read_waits_for_the_snapshot(
     snapshots["external:alice"] = ALICE_SNAPSHOT
     async with Outpost(url, client=polar_client) as outpost:
         await outpost.actor(external_customer_id="alice")
-        meter = await outpost.meter(
-            meter_id="meter", external_customer_id="alice"
-        )
+        meter = await outpost.meter(meter_id="meter", external_customer_id="alice")
     assert meter is not None
     assert meter.balance == 7
     assert read_outcomes(exported_spans) == [
@@ -1433,8 +1411,7 @@ async def test_unknown_meter_reads_none(
     url, _ = redis_connection
     async with Outpost(url, client=polar_client) as outpost:
         assert (
-            await outpost.meter(meter_id="other", external_customer_id="alice")
-            is None
+            await outpost.meter(meter_id="other", external_customer_id="alice") is None
         )
     assert read_outcomes(exported_spans) == [
         ("outpost.customer_meter", "unknown_meter")
@@ -1482,8 +1459,7 @@ async def test_unknown_customer_reads_none(
     async with Outpost(url, client=polar_client) as outpost:
         await outpost.actor(external_customer_id="alice")
         assert (
-            await outpost.meter(meter_id="meter", external_customer_id="alice")
-            is None
+            await outpost.meter(meter_id="meter", external_customer_id="alice") is None
         )
     assert read_outcomes(exported_spans) == [
         ("outpost.actor", "unknown_customer"),
@@ -1557,9 +1533,7 @@ async def test_cold_read_waits_for_its_own_meter(
         ) as client,
         Outpost(url, client=client) as outpost,
     ):
-        meter = await outpost.meter(
-            meter_id="shared", external_customer_id="alice"
-        )
+        meter = await outpost.meter(meter_id="shared", external_customer_id="alice")
     assert meter is not None
     assert meter.credited_units == credited
     assert read_outcomes(exported_spans) == [("outpost.customer_meter", outcome)]
@@ -1648,9 +1622,7 @@ async def test_redis_outage_fails_fast(
         assert not outpost.connected
         with anyio.fail_after(0.5):
             with pytest.raises(UnavailableRedisError):
-                await outpost.meter(
-                    meter_id="meter", external_customer_id="bob"
-                )
+                await outpost.meter(meter_id="meter", external_customer_id="bob")
     assert read_outcomes(exported_spans) == [
         ("outpost.customer_meter", "redis_unavailable")
     ]
@@ -1691,9 +1663,7 @@ async def test_failed_resync_wakes_waiting_reads(
 
         async def read() -> None:
             with pytest.raises(UnavailableRedisError):
-                await outpost.meter(
-                    meter_id="meter", external_customer_id="bob"
-                )
+                await outpost.meter(meter_id="meter", external_customer_id="bob")
 
         with anyio.fail_after(1):
             async with anyio.create_task_group() as tasks:

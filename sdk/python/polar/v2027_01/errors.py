@@ -8,6 +8,12 @@ from polar.v2027_01.outputs import (
     AmbiguousExternalCustomerID as AmbiguousExternalCustomerIDModel,
 )
 from polar.v2027_01.outputs import (
+    AmbiguousExternalMeterID as AmbiguousExternalMeterIDModel,
+)
+from polar.v2027_01.outputs import (
+    AmbiguousExternalWebhookEndpointID as AmbiguousExternalWebhookEndpointIDModel,
+)
+from polar.v2027_01.outputs import (
     BadRequest as BadRequestModel,
 )
 from polar.v2027_01.outputs import (
@@ -18,6 +24,9 @@ from polar.v2027_01.outputs import (
 )
 from polar.v2027_01.outputs import (
     CheckoutLocked as CheckoutLockedModel,
+)
+from polar.v2027_01.outputs import (
+    CustomerMeterCreditExternalIDConflict as CustomerMeterCreditExternalIDConflictModel,
 )
 from polar.v2027_01.outputs import (
     CustomerNotReady as CustomerNotReadyModel,
@@ -248,6 +257,17 @@ class NotPermitted(PolarClientError):
     error: NotPermittedModel
 
     def __init__(self, status_code: int, error: NotPermittedModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class AmbiguousExternalWebhookEndpointID(PolarClientError):
+    error_type = AmbiguousExternalWebhookEndpointIDModel
+    error: AmbiguousExternalWebhookEndpointIDModel
+
+    def __init__(
+        self, status_code: int, error: AmbiguousExternalWebhookEndpointIDModel
+    ) -> None:
         self.error = error
         super().__init__(status_code, error)
 
@@ -988,5 +1008,30 @@ class EventTypesUpdate404Error(PolarClientError):
     error: None
 
     def __init__(self, status_code: int, error: None) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class AmbiguousExternalMeterID(PolarClientError):
+    error_type = AmbiguousExternalMeterIDModel
+    error: AmbiguousExternalMeterIDModel
+
+    def __init__(self, status_code: int, error: AmbiguousExternalMeterIDModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class CustomerMetersCredits409Error(PolarClientError):
+    error_type = (
+        CustomerMeterCreditExternalIDConflictModel | AmbiguousExternalCustomerIDModel
+    )
+    error: CustomerMeterCreditExternalIDConflictModel | AmbiguousExternalCustomerIDModel
+
+    def __init__(
+        self,
+        status_code: int,
+        error: CustomerMeterCreditExternalIDConflictModel
+        | AmbiguousExternalCustomerIDModel,
+    ) -> None:
         self.error = error
         super().__init__(status_code, error)

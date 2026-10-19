@@ -29,9 +29,12 @@ jobs:
           # Instruction counts: deterministic, on the runners the rest of CI uses.
           - mode: simulation
             runner: blacksmith-4vcpu-ubuntu-2404
+            benchmarks: ""
           # Real time: on CodSpeed's dedicated ARM64 machines, registered in the org by the app.
+          # Only the Redis benchmarks: wall time adds noise, not information, on pure CPU code.
           - mode: walltime
             runner: codspeed-macro
+            benchmarks: src/outpost/scripts.bench.ts
     defaults:
       run:
         working-directory: sdk/typescript
@@ -64,7 +67,7 @@ jobs:
         with:
           mode: ${{ matrix.mode }}
           working-directory: sdk/typescript
-          run: pnpm vitest bench --run
+          run: pnpm vitest bench --run ${{ matrix.benchmarks }}
 
   python-sdk:
     name: Python SDK (${{ matrix.mode }})
@@ -76,8 +79,10 @@ jobs:
         include:
           - mode: simulation
             runner: blacksmith-4vcpu-ubuntu-2404
+            benchmarks: tests/benchmarks
           - mode: walltime
             runner: codspeed-macro
+            benchmarks: tests/benchmarks/test_scripts.py
     defaults:
       run:
         working-directory: sdk/python
@@ -111,4 +116,4 @@ jobs:
         with:
           mode: ${{ matrix.mode }}
           working-directory: sdk/python
-          run: uv run --no-sync pytest tests/benchmarks -m benchmark --codspeed
+          run: uv run --no-sync pytest ${{ matrix.benchmarks }} -m benchmark --codspeed

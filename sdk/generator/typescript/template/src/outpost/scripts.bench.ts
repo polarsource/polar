@@ -14,6 +14,7 @@ const COLD_UNTIL = Date.UTC(2026, 9, 1, 12, 0, 0) * 1_000;
 const BUCKET_COUNTS = [1, 12, 288];
 const CHANNEL = "outpost:bench:updates";
 const EPOCH = "0123456789abcdef0123456789abcdef";
+const OPTIONS = { warmupTime: 500, time: 2_000 };
 
 const identityOf = (buckets: number) => `external:alice:tokens-${buckets}`;
 const keyOf = (buckets: number) => `outpost:state:${identityOf(buckets)}`;
@@ -94,7 +95,7 @@ describe("WRITE_BUCKET", () => {
         7,
         7,
       );
-    });
+    }, OPTIONS);
   }
 });
 
@@ -102,7 +103,7 @@ describe("READ_STATE", () => {
   for (const buckets of BUCKET_COUNTS) {
     bench(`${buckets}-bucket state`, async () => {
       await redis.evalsha(readStateSha, 1, keyOf(buckets), EPOCH);
-    });
+    }, OPTIONS);
   }
 });
 
@@ -127,6 +128,6 @@ describe("APPLY_SNAPSHOT", () => {
         1,
         999,
       );
-    });
+    }, OPTIONS);
   }
 });

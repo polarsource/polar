@@ -14,22 +14,29 @@ const line = (x1: number, y1: number, x2: number, y2: number, stroke = DIM) => (
   <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={stroke} />
 )
 
-/** The code lines of the file: indent, height, end, and the one line in Snow. */
-const CODE_LINES: [number, number, number, string?][] = [
-  [42, 44, 70],
-  [48, 52, 76],
-  [48, 60, 64],
-  [54, 68, 78, INK],
-  [48, 76, 70],
-  [42, 84, 58],
+/**
+ * The file, reviewed as a diff: each line an indent, a height and an end, and a gutter mark on the lines that
+ * changed, a minus for the line taken out and a plus, in Snow, for the two put in.
+ */
+const CODE_LINES: [number, number, number, ('-' | '+')?][] = [
+  [46, 40, 70],
+  [52, 48, 76, '-'],
+  [52, 56, 72, '+'],
+  [58, 64, 78, '+'],
+  [52, 72, 70],
+  [46, 80, 60],
 ]
 
 const code = (
   <>
     <path d="M34 22H74L86 34V98H34Z" stroke={INK} />
     <path d="M74 22V34H86" stroke={DIM} />
-    {CODE_LINES.map(([x, y, x2, stroke = DIM]) => (
-      <g key={y}>{line(x, y, x2, y, stroke)}</g>
+    {CODE_LINES.map(([x, y, x2, mark]) => (
+      <g key={y}>
+        {line(x, y, x2, y, mark === '+' ? INK : mark === '-' ? FAINT : DIM)}
+        {mark ? line(38, y, 42, y, mark === '+' ? INK : DIM) : null}
+        {mark === '+' ? line(40, y - 2, 40, y + 2, INK) : null}
+      </g>
     ))}
   </>
 )
@@ -74,6 +81,26 @@ const local = (
         </g>
       )
     })}
+  </>
+)
+
+/**
+ * The Signals page, reduced: a balance dropping through a dotted threshold and lifted back over it, and below, a line
+ * lit for as long as the balance is under.
+ */
+const ENTER = 58,
+  EXIT = 74
+
+const guardrails = (
+  <>
+    <line x1={20} y1={52} x2={100} y2={52} stroke={DIM} {...DOTS} />
+    <path d="M22 36H40V44H58V62H74V40H98" stroke={INK} />
+    {[ENTER, EXIT].map((x) => (
+      <line key={x} x1={x} y1={64} x2={x} y2={81} stroke={FAINT} {...DOTS} />
+    ))}
+    <line x1={22} y1={84} x2={ENTER} y2={84} stroke={DIM} {...DOTS} />
+    {line(ENTER, 84, EXIT, 84, INK)}
+    <line x1={EXIT} y1={84} x2={98} y2={84} stroke={DIM} {...DOTS} />
   </>
 )
 
@@ -171,27 +198,14 @@ const log = (
   </>
 )
 
-/** A glossary: a term in Snow, its definition beside it in two shorter lines, three times down the page. */
-const glossary = (
-  <>
-    {[32, 58, 84].map((y, i) => (
-      <g key={y}>
-        {line(26, y, 44 + (i % 2) * 6, y, INK)}
-        {line(58, y, 94, y)}
-        {line(58, y + 8, 82 - (i % 2) * 10, y + 8, FAINT)}
-      </g>
-    ))}
-  </>
-)
-
 /** Each chapter's poster, by its name, so renumbering the book never moves a drawing. */
 export const POSTERS: Record<string, ReactNode> = {
   'Billing as code': code,
   Events: log,
   Meters: fold,
   'Local-first': local,
+  Guardrails: guardrails,
   Credits: credits,
   Entitlements: gates,
   Agents: agents,
-  Appendix: glossary,
 }

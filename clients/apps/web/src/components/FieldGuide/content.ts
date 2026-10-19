@@ -51,6 +51,14 @@ export const CHAPTERS: Chapter[] = [
   },
   {
     n: '05',
+    name: 'Guardrails',
+    title: 'Guardrails',
+    intro:
+      'A guardrail is a condition on a number Polar already keeps: a meter, a credit balance, a margin. When the number crosses it, a signal fires and runs your side effect, so you can move a customer to a cheaper model before the credits run out.',
+    ids: ['m-signals', 'm-margin'],
+  },
+  {
+    n: '06',
     name: 'Credits',
     title: 'Credits',
     intro:
@@ -58,7 +66,7 @@ export const CHAPTERS: Chapter[] = [
     ids: ['m-credits', 'm-grants', 'm-zero'],
   },
   {
-    n: '06',
+    n: '07',
     name: 'Entitlements',
     title: 'Entitlements',
     intro:
@@ -66,19 +74,12 @@ export const CHAPTERS: Chapter[] = [
     ids: ['m-gates', 'm-flow', 'm-benefits'],
   },
   {
-    n: '07',
+    n: '08',
     name: 'Agents',
     title: 'Agents',
     intro:
       'Customers, agents and actors nest. A key names an actor, a session names a run, and every event carries who did it. An agent is a customer that can ask.',
     ids: ['m-nesting', 'm-keys', 'm-ask'],
-  },
-  {
-    n: '08',
-    name: 'Appendix',
-    title: 'Appendix',
-    intro: 'The event catalogue, the API in one call, and the glossary.',
-    ids: ['m-catalogue', 'm-api', 'm-glossary'],
   },
 ]
 

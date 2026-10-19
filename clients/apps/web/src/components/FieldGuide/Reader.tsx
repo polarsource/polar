@@ -117,7 +117,8 @@ export default function FieldGuideReader() {
       const k = e.key
       if (k === 'ArrowRight') turn(1)
       else if (k === 'ArrowLeft') turn(-1)
-      else if (/^[0-9]$/.test(k)) goChapter(Number(k))
+      else if (/^[0-9]$/.test(k) && Number(k) < CHAPTERS.length)
+        goChapter(Number(k))
       else if (k === 'e' || k === 'E') emit()
       else if (k === 'r' || k === 'R') reset()
       else if (k === 'h' || k === 'H') setKeys((v) => !v)

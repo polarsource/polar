@@ -1329,14 +1329,6 @@ export const manual: Piece[] = [
             ['Asking the ledger', '56'],
           ],
         ],
-        [
-          'Appendix',
-          [
-            ['The event catalogue', '60'],
-            ['The API, one call', '64'],
-            ['Glossary', '68'],
-          ],
-        ],
       ]
       const col = (k: number) =>
         k < 5 ? { x: 28, right: 190 } : { x: 212, right: 372 }

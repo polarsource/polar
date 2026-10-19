@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { cover } from './cover'
 import { fold } from './fold'
+import { marginFloor, signals } from './guardrails'
 import { igloo } from './igloo'
 import { manual } from './manual'
 import { more } from './more'
@@ -41,13 +42,13 @@ export const chapters: { title: string; ids: string[] }[] = [
     ids: ['m-meter', 'm-fold', 'm-tiers'],
   },
   { title: '04 · Local-first', ids: ['m-igloo', 'm-latency', 'm-reconcile'] },
-  { title: '05 · Credits', ids: ['m-credits', 'm-grants', 'm-zero'] },
-  { title: '06 · Entitlements', ids: ['m-gates', 'm-flow', 'm-benefits'] },
-  { title: '07 · Agents', ids: ['m-nesting', 'm-keys', 'm-ask'] },
-  { title: 'Appendix', ids: ['m-catalogue', 'm-api', 'm-glossary'] },
+  { title: '05 · Guardrails', ids: ['m-signals', 'm-margin'] },
+  { title: '06 · Credits', ids: ['m-credits', 'm-grants', 'm-zero'] },
+  { title: '07 · Entitlements', ids: ['m-gates', 'm-flow', 'm-benefits'] },
+  { title: '08 · Agents', ids: ['m-nesting', 'm-keys', 'm-ask'] },
 ]
 const ORDER = chapters.flatMap((c) => c.ids)
-const all = [cover, fold, igloo, ...manual, ...more]
+const all = [cover, fold, igloo, signals, marginFloor, ...manual, ...more]
 export const pieces: Piece[] = ORDER.map((id) => {
   const p = all.find((x) => x.id === id)
   if (!p) throw new Error(`No page ${id}`)

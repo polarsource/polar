@@ -53,6 +53,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install Redis
+        run: sudo apt-get update && sudo apt-get install -y redis-server
+
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v5
         with:

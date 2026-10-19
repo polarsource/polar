@@ -120,9 +120,8 @@ elif args.command == "generate":
     if output_path.exists() and not output_path.is_dir():
         print(f"Error: Output path {output_path} is not a directory.", file=sys.stderr)
         sys.exit(1)
-    if args.clear:
-        if output_path.exists():
-            shutil.rmtree(output_path)
+    if args.clear and output_path.exists():
+        shutil.rmtree(output_path)
 
     prerelease: Prerelease | None = None
     if args.prerelease is not None:

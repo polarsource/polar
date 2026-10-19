@@ -22,7 +22,7 @@ class Prerelease:
     number: int
 
     @classmethod
-    def parse(cls, value: str) -> "Prerelease":
+    def parse(cls, value: str) -> Prerelease:
         match = _PRERELEASE_PATTERN.match(value)
         if not match:
             raise ValueError(
@@ -71,14 +71,12 @@ class EmitterBase(abc.ABC):
 
         Override this method in subclasses to add custom filters, globals, or extensions.
         """
-        pass
 
     def run_post_actions(self, root_directory: pathlib.Path | str) -> None:
         """Run any post-processing actions after emitting files.
 
         Override this method in subclasses to perform actions like formatting or linting.
         """
-        pass
 
     def get_context(self) -> dict[str, typing.Any]:
         """Get the context dictionary for template rendering.

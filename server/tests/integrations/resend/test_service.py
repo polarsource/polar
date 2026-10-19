@@ -231,6 +231,7 @@ class TestSyncUser:
             (OrganizationStatus.CREATED, False),
             (OrganizationStatus.REVIEW, True),
             (OrganizationStatus.SNOOZED, True),
+            (OrganizationStatus.OFFBOARDING, True),
             (OrganizationStatus.DENIED, False),
             (OrganizationStatus.BLOCKED, False),
         ],
@@ -422,7 +423,8 @@ class TestOnOrganizationStatusChanged:
         [
             (OrganizationStatus.CREATED, OrganizationStatus.REVIEW, True),
             (OrganizationStatus.ACTIVE, OrganizationStatus.DENIED, True),
-            (OrganizationStatus.REVIEW, OrganizationStatus.OFFBOARDING, True),
+            (OrganizationStatus.OFFBOARDING, OrganizationStatus.OFFBOARDED, True),
+            (OrganizationStatus.REVIEW, OrganizationStatus.OFFBOARDING, False),
             (OrganizationStatus.ACTIVE, OrganizationStatus.REVIEW, False),
             (OrganizationStatus.REVIEW, OrganizationStatus.SNOOZED, False),
             (OrganizationStatus.DENIED, OrganizationStatus.CREATED, False),

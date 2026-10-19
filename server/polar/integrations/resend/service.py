@@ -23,7 +23,12 @@ class UserDoesNotExist(ResendServiceError):
 
 
 ACTIVE_ORGANIZATION_STATUSES = frozenset(
-    {OrganizationStatus.ACTIVE, OrganizationStatus.REVIEW, OrganizationStatus.SNOOZED}
+    {
+        OrganizationStatus.ACTIVE,
+        OrganizationStatus.REVIEW,
+        OrganizationStatus.SNOOZED,
+        OrganizationStatus.OFFBOARDING,
+    }
 )
 
 

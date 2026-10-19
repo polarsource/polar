@@ -14,7 +14,7 @@ cli = typer.Typer()
 @cli.command()
 @typer_async
 async def remove_inactive_users() -> None:
-    """Sync users in Resend without an active, review or snoozed organization."""
+    """Sync users in Resend without an active, review, snoozed or offboarding organization."""
     statement = select(User.id).where(
         ~User.is_deleted,
         User.resend_id.is_not(None),

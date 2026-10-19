@@ -6,14 +6,17 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, bench, describe, vi } from "vitest";
 
+import benchmark from "./benchmark.json";
 import { BUCKET_SIZE } from "./reducer";
 import { APPLY_SNAPSHOT_SCRIPT, READ_STATE_SCRIPT, WRITE_BUCKET_SCRIPT } from "./scripts";
 
-const COLD_UNTIL = Date.UTC(2026, 9, 1, 12, 0, 0) * 1_000;
 // 5-minute buckets: 5 minutes, 1 hour, 24 hours of usage since the last snapshot.
-const BUCKET_COUNTS = [1, 12, 288];
-const CHANNEL = "outpost:bench:updates";
-const EPOCH = "0123456789abcdef0123456789abcdef";
+const {
+  cold_until: COLD_UNTIL,
+  bucket_counts: BUCKET_COUNTS,
+  channel: CHANNEL,
+  epoch: EPOCH,
+} = benchmark;
 const OPTIONS = { warmupTime: 500, time: 2_000 };
 
 // One event usually matches several reducers; ingest sends their WRITE_BUCKET calls in one pipeline.

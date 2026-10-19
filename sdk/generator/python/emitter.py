@@ -25,6 +25,7 @@ from python.utils import format_default_value, format_default_value_dataclass
 from typescript.types import collect_enum_names
 
 EMITTER_DIRECTORY = pathlib.Path(__file__).parent
+BENCHMARK_DATA = EMITTER_DIRECTORY.parent / "benchmarks" / "outpost.json"
 
 
 def _collect_type_ref_names(
@@ -167,6 +168,9 @@ class PythonEmitter(EmitterBase):
                 root_directory.joinpath(*file),
                 self.get_context(),
             )
+        self.copy_file(
+            BENCHMARK_DATA, root_directory / "tests" / "benchmarks" / "benchmark.json"
+        )
 
         for api in self.ir.versions:
             version_dir = root_directory / "polar" / self.get_version_string(api)

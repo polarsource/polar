@@ -1,0 +1,6 @@
+{
+  "cold_until": 1790856000000000,
+  "bucket_counts": [1, 12, 288],
+  "epoch": "0123456789abcdef0123456789abcdef",
+  "channel": "outpost:bench:updates"
+}

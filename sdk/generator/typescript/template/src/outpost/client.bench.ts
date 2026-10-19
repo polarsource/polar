@@ -1,11 +1,11 @@
 import { bench, describe } from "vitest";
 
+import benchmark from "./benchmark.json";
 import { consumedUnits, decodeState } from "./client";
 import { BUCKET_SIZE } from "./reducer";
 
-const COLD_UNTIL = Date.UTC(2026, 9, 1, 12, 0, 0) * 1_000;
 // 5-minute buckets: 5 minutes, 1 hour, 24 hours of usage since the last snapshot.
-const BUCKET_COUNTS = [1, 12, 288];
+const { cold_until: COLD_UNTIL, bucket_counts: BUCKET_COUNTS } = benchmark;
 
 // The flat field list decodeState reads: one `bucket:<start>:<statistic>` entry per bucket.
 const encodeState = (buckets: number): string[] => {

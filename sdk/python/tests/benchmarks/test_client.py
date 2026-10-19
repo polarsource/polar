@@ -1,6 +1,5 @@
 import asyncio
 import collections.abc
-import datetime
 
 import httpx
 import pytest
@@ -9,15 +8,13 @@ from redis.asyncio import Redis
 
 from polar.outpost.client import LocalState, Outpost, consumed_units, decode_state
 from polar.outpost.reducer import BUCKET_SIZE, Reducer
+from tests.benchmarks import DATA
 
 pytestmark = pytest.mark.benchmark
 
-COLD_UNTIL = int(
-    datetime.datetime(2026, 10, 1, 12, 0, 0, tzinfo=datetime.UTC).timestamp()
-    * 1_000_000
-)
 # 5-minute buckets: 5 minutes, 1 hour, 24 hours of usage since the last snapshot.
-BUCKET_COUNTS = [1, 12, 288]
+COLD_UNTIL: int = DATA["cold_until"]
+BUCKET_COUNTS: list[int] = DATA["bucket_counts"]
 
 
 # The flat field list decode_state reads: one `bucket:<start>:<statistic>` entry per bucket.

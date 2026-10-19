@@ -1,5 +1,4 @@
 import collections.abc
-import datetime
 import os
 import subprocess
 import tempfile
@@ -15,17 +14,15 @@ from polar.outpost.client import (
     WRITE_BUCKET_SCRIPT,
 )
 from polar.outpost.reducer import BUCKET_SIZE
+from tests.benchmarks import DATA
 
 pytestmark = pytest.mark.benchmark
 
-COLD_UNTIL = int(
-    datetime.datetime(2026, 10, 1, 12, 0, 0, tzinfo=datetime.UTC).timestamp()
-    * 1_000_000
-)
 # 5-minute buckets: 5 minutes, 1 hour, 24 hours of usage since the last snapshot.
-BUCKET_COUNTS = [1, 12, 288]
-CHANNEL = "outpost:bench:updates"
-EPOCH = "0123456789abcdef0123456789abcdef"
+COLD_UNTIL: int = DATA["cold_until"]
+BUCKET_COUNTS: list[int] = DATA["bucket_counts"]
+CHANNEL: str = DATA["channel"]
+EPOCH: str = DATA["epoch"]
 
 
 # One event usually matches several reducers; ingest sends their WRITE_BUCKET calls in one pipeline.

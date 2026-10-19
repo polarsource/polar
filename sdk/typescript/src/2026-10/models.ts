@@ -11847,7 +11847,7 @@ export interface CustomerStateSubscription {
   /**
    * status
    */
-  status: Status;
+  status: "active" | "trialing";
   /**
    * The amount of the subscription.
    */
@@ -14622,11 +14622,11 @@ export interface GrantedLicenseKey {
   /**
    * The ID of the seat member holding this key, if any.
    */
-  member_id?: string | null;
+  member_id: string | null;
   /**
    * The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly.
    */
-  member?: LicenseKeyMember | null;
+  member: LicenseKeyMember | null;
   /**
    * The benefit ID.
    */
@@ -15282,11 +15282,11 @@ export interface LicenseKeyRead {
   /**
    * The ID of the seat member holding this key, if any.
    */
-  member_id?: string | null;
+  member_id: string | null;
   /**
    * The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly.
    */
-  member?: LicenseKeyMember | null;
+  member: LicenseKeyMember | null;
   /**
    * The benefit ID.
    */
@@ -15430,11 +15430,11 @@ export interface LicenseKeyWithActivations {
   /**
    * The ID of the seat member holding this key, if any.
    */
-  member_id?: string | null;
+  member_id: string | null;
   /**
    * The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly.
    */
-  member?: LicenseKeyMember | null;
+  member: LicenseKeyMember | null;
   /**
    * The benefit ID.
    */
@@ -19005,10 +19005,6 @@ export interface OrganizationFeatureSettings {
    * If this organization can migrate its billing from another provider (e.g. Stripe) to Polar.
    */
   merchant_migration_enabled?: boolean;
-  /**
-   * If this organization's checkout tells the browser to refuse framing from any host outside its embed hosts.
-   */
-  frame_ancestors_enforced?: boolean;
 }
 
 /**
@@ -21190,11 +21186,11 @@ export interface RotatedLicenseKey {
   /**
    * The ID of the seat member holding this key, if any.
    */
-  member_id?: string | null;
+  member_id: string | null;
   /**
    * The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly.
    */
-  member?: LicenseKeyMember | null;
+  member: LicenseKeyMember | null;
   /**
    * The benefit ID.
    */
@@ -24004,11 +24000,11 @@ export interface ValidatedLicenseKey {
   /**
    * The ID of the seat member holding this key, if any.
    */
-  member_id?: string | null;
+  member_id: string | null;
   /**
    * The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly.
    */
-  member?: LicenseKeyMember | null;
+  member: LicenseKeyMember | null;
   /**
    * The benefit ID.
    */

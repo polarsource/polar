@@ -35,6 +35,7 @@ def test_emits_ingestion_and_outpost_submodules(
         "client",
         "buffered",
         "event",
+        "meter",
         "index",
         "client.test",
         "buffered.test",

@@ -34,6 +34,7 @@ from redis.exceptions import TimeoutError as RedisTimeoutError
 from polar.base import PolarError
 from polar.ingestion.client import PolarClient
 from polar.ingestion.events import EventInput
+from polar.ingestion.meter import CustomerMeter
 from polar.outpost.event import Event
 from polar.outpost.reducer import (
     BucketStatistics,
@@ -325,16 +326,6 @@ class IngestResult:
     duplicates: int = 0
 
 
-@dataclasses.dataclass(kw_only=True)
-class CustomerMeter:
-    meter_id: str
-    consumed_units: int | float
-    credited_units: int | float
-    balance: int | float
-    customer_id: str | None = None
-    external_customer_id: str | None = None
-
-
 class Outpost:
     def __init__(
         self, redis_url: str, *, client: httpx.AsyncClient, telemetry: bool = True
@@ -366,8 +357,12 @@ class Outpost:
         self._sync_applied = 0
 
     @classmethod
-    def create(cls, polar: PolarClient, redis_url: str) -> typing.Self:
-        return cls(redis_url=redis_url, client=polar._client._client)
+    def create(
+        cls, polar: PolarClient, redis_url: str, *, telemetry: bool = True
+    ) -> typing.Self:
+        return cls(
+            redis_url=redis_url, client=polar._client._client, telemetry=telemetry
+        )
 
     @_raise_redis_unavailable
     async def __aenter__(self) -> typing.Self:
@@ -497,7 +492,7 @@ class Outpost:
             span.set_attribute("outpost.buckets", len(updates))
 
     @_raise_redis_unavailable
-    async def customer_meter(
+    async def meter(
         self,
         *,
         meter_id: str,

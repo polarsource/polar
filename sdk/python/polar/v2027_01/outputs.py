@@ -42,7 +42,6 @@ from polar.v2027_01.literals import (
     RefundStatus,
     Scope,
     SeatStatus,
-    SeatTierType,
     Status,
     SubscriptionProrationBehavior,
     SubscriptionStatus,
@@ -105,6 +104,20 @@ class AlreadyCanceledSubscription:
 @dataclasses.dataclass(kw_only=True, slots=True)
 class AmbiguousExternalCustomerID:
     error: typing.Literal["AmbiguousExternalCustomerID"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class AmbiguousExternalMeterID:
+    error: typing.Literal["AmbiguousExternalMeterID"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class AmbiguousExternalWebhookEndpointID:
+    error: typing.Literal["AmbiguousExternalWebhookEndpointID"]
 
     detail: str
 
@@ -748,6 +761,9 @@ class BenefitCustom:
     organization_id: str
     """The ID of the organization owning the benefit."""
 
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: MetadataOutputType
 
     visibility: BenefitVisibility
@@ -911,6 +927,9 @@ class BenefitDiscord:
 
     organization_id: str
     """The ID of the organization owning the benefit."""
+
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: MetadataOutputType
 
@@ -1078,6 +1097,9 @@ class BenefitDownloadables:
     organization_id: str
     """The ID of the organization owning the benefit."""
 
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: MetadataOutputType
 
     visibility: BenefitVisibility
@@ -1195,6 +1217,9 @@ class BenefitFeatureFlag:
     organization_id: str
     """The ID of the organization owning the benefit."""
 
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: MetadataOutputType
 
     visibility: BenefitVisibility
@@ -1310,6 +1335,9 @@ class BenefitGitHubRepository:
 
     organization_id: str
     """The ID of the organization owning the benefit."""
+
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: MetadataOutputType
 
@@ -2060,6 +2088,9 @@ class BenefitLicenseKeys:
     organization_id: str
     """The ID of the organization owning the benefit."""
 
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: MetadataOutputType
 
     visibility: BenefitVisibility
@@ -2185,6 +2216,9 @@ class BenefitMeterCredit:
 
     organization_id: str
     """The ID of the organization owning the benefit."""
+
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: MetadataOutputType
 
@@ -2368,6 +2402,9 @@ class BenefitSlackSharedChannel:
 
     organization_id: str
     """The ID of the organization owning the benefit."""
+
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: MetadataOutputType
 
@@ -4370,6 +4407,13 @@ class CustomerMeter:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class CustomerMeterCreditExternalIDConflict:
+    error: typing.Literal["CustomerMeterCreditExternalIDConflict"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerNotReady:
     error: typing.Literal["CustomerNotReady"]
 
@@ -4711,9 +4755,6 @@ class CustomerOrganizationData:
 @dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerOrganizationFeatureSettings:
     """Feature flags exposed to the customer portal."""
-
-    member_model_enabled: bool = False
-    """Whether the member model is enabled for this organization."""
 
     checkout_localization_enabled: bool = False
     """Whether localization is enabled for this organization."""
@@ -5174,7 +5215,7 @@ class CustomerStateSubscription:
 
     metadata: MetadataOutputType
 
-    status: Status
+    status: typing.Literal["active", "trialing"]
 
     amount: int
     """The amount of the subscription."""
@@ -5699,6 +5740,9 @@ class DiscountFixedOnceForeverDuration:
     id: str
     """The ID of the object."""
 
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: MetadataOutputType
 
     name: str
@@ -5749,6 +5793,9 @@ class DiscountFixedOnceForeverDurationBase:
 
     id: str
     """The ID of the object."""
+
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: MetadataOutputType
 
@@ -5804,6 +5851,9 @@ class DiscountFixedRepeatDuration:
     id: str
     """The ID of the object."""
 
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: MetadataOutputType
 
     name: str
@@ -5857,6 +5907,9 @@ class DiscountFixedRepeatDurationBase:
     id: str
     """The ID of the object."""
 
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: MetadataOutputType
 
     name: str
@@ -5904,6 +5957,9 @@ class DiscountPercentageOnceForeverDuration:
     id: str
     """The ID of the object."""
 
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: MetadataOutputType
 
     name: str
@@ -5950,6 +6006,9 @@ class DiscountPercentageOnceForeverDurationBase:
 
     id: str
     """The ID of the object."""
+
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: MetadataOutputType
 
@@ -6001,6 +6060,9 @@ class DiscountPercentageRepeatDuration:
     id: str
     """The ID of the object."""
 
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: MetadataOutputType
 
     name: str
@@ -6049,6 +6111,9 @@ class DiscountPercentageRepeatDurationBase:
 
     id: str
     """The ID of the object."""
+
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: MetadataOutputType
 
@@ -6567,10 +6632,10 @@ class GrantedLicenseKey:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None = None
+    member_id: str | None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None = None
+    member: LicenseKeyMember | None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -6593,6 +6658,18 @@ class GrantedLicenseKey:
     last_validated_at: str | None
 
     expires_at: str | None
+
+    subscription_id: str | None
+    """The ID of the subscription granting the license key."""
+
+    subscription: LicenseKeySubscription | None
+    """The subscription granting the license key, if any."""
+
+    order_id: str | None
+    """The ID of the one-time order granting the license key."""
+
+    order: LicenseKeyOrder | None
+    """The one-time order granting the license key, if any."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -6931,6 +7008,20 @@ class LicenseKeyMember:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class LicenseKeyOrder:
+    id: str
+    """The ID of the object."""
+
+    created_at: str
+    """Creation timestamp of the object."""
+
+    status: OrderStatus
+
+    paid: bool
+    """Whether the order has been paid for."""
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class LicenseKeyRead:
     id: str
     """The ID of the object."""
@@ -6947,10 +7038,10 @@ class LicenseKeyRead:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None = None
+    member_id: str | None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None = None
+    member: LicenseKeyMember | None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -6976,6 +7067,27 @@ class LicenseKeyRead:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class LicenseKeySubscription:
+    id: str
+    """The ID of the object."""
+
+    status: SubscriptionStatus
+    """The status of the subscription."""
+
+    current_period_start: str
+    """The start timestamp of the current billing period."""
+
+    current_period_end: str
+    """The end timestamp of the current billing period."""
+
+    cancel_at_period_end: bool
+    """Whether the subscription will be canceled at the end of the current period."""
+
+    ends_at: str | None
+    """The timestamp when the subscription will end."""
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class LicenseKeyWithActivations:
     id: str
     """The ID of the object."""
@@ -6992,10 +7104,10 @@ class LicenseKeyWithActivations:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None = None
+    member_id: str | None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None = None
+    member: LicenseKeyMember | None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -7308,6 +7420,9 @@ MetadataOutputType: typing.TypeAlias = dict[str, str | int | float | bool]
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class Meter:
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: MetadataOutputType
 
     created_at: str
@@ -7397,6 +7512,8 @@ class MeterCreditedMetadata:
     units: int
 
     rollover: bool
+
+    reason: typing.Literal["benefit", "manual"] = "benefit"
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -8780,9 +8897,6 @@ class OrganizationFeatureSettings:
     wallets_enabled: bool = False
     """If this organization has Wallets enabled"""
 
-    member_model_enabled: bool = False
-    """If this organization has the Member model enabled"""
-
     checkout_localization_enabled: bool = False
     """If this organization has checkout localization enabled"""
 
@@ -8819,8 +8933,8 @@ class OrganizationFeatureSettings:
     merchant_migration_enabled: bool = False
     """If this organization can migrate its billing from another provider (e.g. Stripe) to Polar."""
 
-    frame_ancestors_enforced: bool = False
-    """If this organization's checkout tells the browser to refuse framing from any host outside its embed hosts."""
+    config_as_code_enabled: bool = False
+    """If this organization can manage its configuration from a declarative config document."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -9025,6 +9139,12 @@ class PendingSubscriptionUpdate:
     units: int | None
     """Number of units to apply to the subscription. If `null`, the number of units won't be changed."""
 
+    discount_id: str | None
+    """ID of the new discount to apply to the subscription. If `null`, the subscription keeps its current discount."""
+
+    discount_unset: bool
+    """Whether the subscription's current discount will be removed."""
+
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class PortalAuthenticatedUser:
@@ -9097,6 +9217,9 @@ class Product:
 
     organization_id: str
     """The ID of the organization owning the product."""
+
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: MetadataOutputType
 
@@ -9373,43 +9496,14 @@ class ProductPriceSeatBased:
     product_id: str
     """The ID of the product owning the price."""
 
-    seat_tiers: ProductPriceSeatTiersOutput
-    """Tiered pricing based on seat quantity"""
+    tiers: Tiers
+    """Tiered pricing based on the purchased seat quantity."""
 
+    minimum_units: int | None
+    """The minimum purchasable seat quantity (inclusive)."""
 
-@dataclasses.dataclass(kw_only=True, slots=True)
-class ProductPriceSeatTier:
-    """A pricing tier for seat-based pricing."""
-
-    min_seats: int
-    """Minimum number of seats (inclusive)"""
-
-    max_seats: int | None = None
-    """Maximum number of seats (inclusive). None for unlimited."""
-
-    price_per_seat: int
-    """Price per seat in cents for this tier"""
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class ProductPriceSeatTiersOutput:
-    """List of pricing tiers for seat-based pricing.
-
-    The minimum and maximum seat limits are derived from the tiers:
-    - minimum_seats = first tier's min_seats
-    - maximum_seats = last tier's max_seats (None for unlimited)"""
-
-    seat_tier_type: SeatTierType | None = None
-    """How tiers are applied. 'volume' prices all seats at the matching tier's rate. 'graduated' prices each tier's range independently."""
-
-    tiers: list[ProductPriceSeatTier]
-    """List of pricing tiers"""
-
-    minimum_seats: int
-    """Minimum number of seats required for purchase, derived from first tier."""
-
-    maximum_seats: int | None
-    """Maximum number of seats allowed for purchase, derived from last tier. None for unlimited."""
+    maximum_units: int | None
+    """The maximum purchasable seat quantity, from the last tier's bound. `null` for unlimited."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -9589,10 +9683,10 @@ class RotatedLicenseKey:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None = None
+    member_id: str | None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None = None
+    member: LicenseKeyMember | None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -11138,10 +11232,10 @@ class ValidatedLicenseKey:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None = None
+    member_id: str | None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None = None
+    member: LicenseKeyMember | None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -11164,6 +11258,18 @@ class ValidatedLicenseKey:
     last_validated_at: str | None
 
     expires_at: str | None
+
+    subscription_id: str | None
+    """The ID of the subscription granting the license key."""
+
+    subscription: LicenseKeySubscription | None
+    """The subscription granting the license key, if any."""
+
+    order_id: str | None
+    """The ID of the one-time order granting the license key."""
+
+    order: LicenseKeyOrder | None
+    """The one-time order granting the license key, if any."""
 
     activation: LicenseKeyActivationBase | None = None
 
@@ -11210,6 +11316,9 @@ class WebhookDelivery:
 @dataclasses.dataclass(kw_only=True, slots=True)
 class WebhookEndpoint:
     """A webhook endpoint."""
+
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     created_at: str
     """Creation timestamp of the object."""

@@ -10,8 +10,14 @@ from polar.base import (
     parse_response_json,
 )
 from polar.v2027_01.errors import (
+    CustomerMetersCredits409Error,
     HTTPValidationError,
+    NotPermitted,
     ResourceNotFound,
+)
+from polar.v2027_01.inputs import (
+    CustomerMeterCreditsExternalIDCreate,
+    CustomerMeterCreditsIDCreate,
 )
 from polar.v2027_01.literals import (
     CustomerMeterSortProperty,
@@ -19,6 +25,7 @@ from polar.v2027_01.literals import (
 from polar.v2027_01.outputs import (
     CustomerMeter,
     ListResourceCustomerMeter,
+    MeterCreditEvent,
 )
 
 
@@ -30,6 +37,7 @@ class CustomerMetersSync(SyncServiceBase):
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
         meter_id: str | builtins.list[str] | None = None,
+        external_meter_id: str | builtins.list[str] | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomerMeterSortProperty] | None = ["-modified_at"],
@@ -46,6 +54,7 @@ class CustomerMetersSync(SyncServiceBase):
             customer_id: Filter by customer ID.
             external_customer_id: Filter by external customer ID.
             meter_id: Filter by meter ID.
+            external_meter_id: Filter by meter external ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
@@ -68,6 +77,7 @@ class CustomerMetersSync(SyncServiceBase):
                 "customer_id": customer_id,
                 "external_customer_id": external_customer_id,
                 "meter_id": meter_id,
+                "external_meter_id": external_meter_id,
                 "page": page,
                 "limit": limit,
                 "sorting": sorting,
@@ -88,6 +98,7 @@ class CustomerMetersSync(SyncServiceBase):
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
         meter_id: str | builtins.list[str] | None = None,
+        external_meter_id: str | builtins.list[str] | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomerMeterSortProperty] | None = ["-modified_at"],
@@ -104,6 +115,7 @@ class CustomerMetersSync(SyncServiceBase):
             customer_id: Filter by customer ID.
             external_customer_id: Filter by external customer ID.
             meter_id: Filter by meter ID.
+            external_meter_id: Filter by meter external ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
@@ -126,6 +138,7 @@ class CustomerMetersSync(SyncServiceBase):
                 customer_id=customer_id,
                 external_customer_id=external_customer_id,
                 meter_id=meter_id,
+                external_meter_id=external_meter_id,
                 page=page,
                 limit=limit,
                 sorting=sorting,
@@ -179,6 +192,71 @@ class CustomerMetersSync(SyncServiceBase):
         }
         return parse_response_json(response, CustomerMeter, method_errors)
 
+    @typing.overload
+    def credits(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerMeterCreditsIDCreate],
+    ) -> MeterCreditEvent: ...
+
+    @typing.overload
+    def credits(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerMeterCreditsExternalIDCreate],
+    ) -> MeterCreditEvent: ...
+
+    def credits(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Any,
+    ) -> MeterCreditEvent:
+        """
+        Manually grant credits on a customer meter.
+
+        Returns the `meter.credited` event. The customer meter balance is updated
+        before the response is returned, unless the meter is being updated
+        concurrently, in which case it catches up shortly after.
+
+        **Scopes**: `customers:write`
+
+        Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            NotPermitted: You don't have permission to manage customers.
+            CustomerMetersCredits409Error: The external_id is already used by a different event, or the external customer ID matches customers in several accessible organizations.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/customer-meters/credits",
+            path_params={},
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+            body=kwargs,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            403: NotPermitted,
+            409: CustomerMetersCredits409Error,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, MeterCreditEvent, method_errors)
+
 
 class CustomerMetersAsync(AsyncServiceBase):
     async def list(
@@ -188,6 +266,7 @@ class CustomerMetersAsync(AsyncServiceBase):
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
         meter_id: str | builtins.list[str] | None = None,
+        external_meter_id: str | builtins.list[str] | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomerMeterSortProperty] | None = ["-modified_at"],
@@ -204,6 +283,7 @@ class CustomerMetersAsync(AsyncServiceBase):
             customer_id: Filter by customer ID.
             external_customer_id: Filter by external customer ID.
             meter_id: Filter by meter ID.
+            external_meter_id: Filter by meter external ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
@@ -226,6 +306,7 @@ class CustomerMetersAsync(AsyncServiceBase):
                 "customer_id": customer_id,
                 "external_customer_id": external_customer_id,
                 "meter_id": meter_id,
+                "external_meter_id": external_meter_id,
                 "page": page,
                 "limit": limit,
                 "sorting": sorting,
@@ -246,6 +327,7 @@ class CustomerMetersAsync(AsyncServiceBase):
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
         meter_id: str | builtins.list[str] | None = None,
+        external_meter_id: str | builtins.list[str] | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomerMeterSortProperty] | None = ["-modified_at"],
@@ -262,6 +344,7 @@ class CustomerMetersAsync(AsyncServiceBase):
             customer_id: Filter by customer ID.
             external_customer_id: Filter by external customer ID.
             meter_id: Filter by meter ID.
+            external_meter_id: Filter by meter external ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
@@ -284,6 +367,7 @@ class CustomerMetersAsync(AsyncServiceBase):
                 customer_id=customer_id,
                 external_customer_id=external_customer_id,
                 meter_id=meter_id,
+                external_meter_id=external_meter_id,
                 page=page,
                 limit=limit,
                 sorting=sorting,
@@ -337,3 +421,68 @@ class CustomerMetersAsync(AsyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, CustomerMeter, method_errors)
+
+    @typing.overload
+    async def credits(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerMeterCreditsIDCreate],
+    ) -> MeterCreditEvent: ...
+
+    @typing.overload
+    async def credits(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerMeterCreditsExternalIDCreate],
+    ) -> MeterCreditEvent: ...
+
+    async def credits(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Any,
+    ) -> MeterCreditEvent:
+        """
+        Manually grant credits on a customer meter.
+
+        Returns the `meter.credited` event. The customer meter balance is updated
+        before the response is returned, unless the meter is being updated
+        concurrently, in which case it catches up shortly after.
+
+        **Scopes**: `customers:write`
+
+        Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            NotPermitted: You don't have permission to manage customers.
+            CustomerMetersCredits409Error: The external_id is already used by a different event, or the external customer ID matches customers in several accessible organizations.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/customer-meters/credits",
+            path_params={},
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+            body=kwargs,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            403: NotPermitted,
+            409: CustomerMetersCredits409Error,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, MeterCreditEvent, method_errors)

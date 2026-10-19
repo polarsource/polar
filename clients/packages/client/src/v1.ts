@@ -13984,6 +13984,18 @@ export interface components {
       duration: components['schemas']['DiscountDuration']
       type: components['schemas']['DiscountType']
       /**
+       * Amount
+       * @deprecated
+       * @example 1000
+       */
+      amount: number
+      /**
+       * Currency
+       * @deprecated
+       * @example usd
+       */
+      currency: string
+      /**
        * Amounts
        * @description Map of currency to fixed amount to discount from the total.
        * @example {
@@ -14015,6 +14027,18 @@ export interface components {
       /** Duration In Months */
       duration_in_months: number
       type: components['schemas']['DiscountType']
+      /**
+       * Amount
+       * @deprecated
+       * @example 1000
+       */
+      amount: number
+      /**
+       * Currency
+       * @deprecated
+       * @example usd
+       */
+      currency: string
       /**
        * Amounts
        * @description Map of currency to fixed amount to discount from the total.
@@ -22474,12 +22498,19 @@ export interface components {
        */
       duration_in_months?: number | null
       /**
-       * Amounts
-       * @description Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies.
+       * Amount
+       * @deprecated
        */
-      amounts: {
+      amount?: number | null
+      /**
+       * @deprecated
+       * @default usd
+       */
+      currency: components['schemas']['PresentmentCurrency'] | null
+      /** Amounts */
+      amounts?: {
         [key: string]: number
-      }
+      } | null
     }
     /**
      * DiscountFixedOnceForeverDuration
@@ -22488,6 +22519,18 @@ export interface components {
     DiscountFixedOnceForeverDuration: {
       duration: components['schemas']['DiscountDuration']
       type: components['schemas']['DiscountType']
+      /**
+       * Amount
+       * @deprecated
+       * @example 1000
+       */
+      amount: number
+      /**
+       * Currency
+       * @deprecated
+       * @example usd
+       */
+      currency: string
       /**
        * Amounts
        * @description Map of currency to fixed amount to discount from the total.
@@ -22573,6 +22616,18 @@ export interface components {
     DiscountFixedOnceForeverDurationBase: {
       duration: components['schemas']['DiscountDuration']
       type: components['schemas']['DiscountType']
+      /**
+       * Amount
+       * @deprecated
+       * @example 1000
+       */
+      amount: number
+      /**
+       * Currency
+       * @deprecated
+       * @example usd
+       */
+      currency: string
       /**
        * Amounts
        * @description Map of currency to fixed amount to discount from the total.
@@ -22663,6 +22718,18 @@ export interface components {
       duration_in_months: number
       type: components['schemas']['DiscountType']
       /**
+       * Amount
+       * @deprecated
+       * @example 1000
+       */
+      amount: number
+      /**
+       * Currency
+       * @deprecated
+       * @example usd
+       */
+      currency: string
+      /**
        * Amounts
        * @description Map of currency to fixed amount to discount from the total.
        * @example {
@@ -22749,6 +22816,18 @@ export interface components {
       /** Duration In Months */
       duration_in_months: number
       type: components['schemas']['DiscountType']
+      /**
+       * Amount
+       * @deprecated
+       * @example 1000
+       */
+      amount: number
+      /**
+       * Currency
+       * @deprecated
+       * @example usd
+       */
+      currency: string
       /**
        * Amounts
        * @description Map of currency to fixed amount to discount from the total.
@@ -23410,6 +23489,13 @@ export interface components {
       /** Duration In Months */
       duration_in_months?: number | null
       type?: components['schemas']['DiscountType'] | null
+      /**
+       * Amount
+       * @deprecated
+       */
+      amount?: number | null
+      /** @deprecated */
+      currency?: components['schemas']['PresentmentCurrency'] | null
       /** Amounts */
       amounts?: {
         [key: string]: number
@@ -25106,6 +25192,13 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /**
+     * LegacyOrganizationStatus
+     * @description Legacy organization status values kept for backward compatibility in schemas
+     *     using OrganizationPublicBase.
+     * @enum {string}
+     */
+    LegacyOrganizationStatus: 'created' | 'under_review' | 'denied' | 'active'
     LegacyRecurringProductPrice:
       | components['schemas']['LegacyRecurringProductPriceFixed']
       | components['schemas']['LegacyRecurringProductPriceCustom']
@@ -25653,6 +25746,20 @@ export interface components {
       limit_usage?: number | null
       /** Expires At */
       expires_at?: string | null
+    }
+    /** LicenseKeyUser */
+    LicenseKeyUser: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /** Email */
+      email?: string | null
+      /** Public Name */
+      public_name: string
+      /** Avatar Url */
+      avatar_url?: string | null
     }
     /** LicenseKeyValidate */
     LicenseKeyValidate: {
@@ -29560,6 +29667,22 @@ export interface components {
       /** @description The address of the customer that should appear on the invoice. Country and state fields cannot be updated. */
       billing_address?: components['schemas']['AddressInput'] | null
     }
+    /** OrderUser */
+    OrderUser: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /** Email */
+      email?: string | null
+      /** Public Name */
+      public_name: string
+      /** Avatar Url */
+      avatar_url?: string | null
+      /** Github Username */
+      github_username?: string | null
+    }
     /**
      * OrderVoidedEvent
      * @description An event created by Polar when an order is voided.
@@ -30361,7 +30484,7 @@ export interface components {
        */
       socials?: components['schemas']['OrganizationSocialLink'][] | null
       /** @description Additional, private, business details Polar needs about active organizations for compliance (KYC). */
-      details?: components['schemas']['OrganizationDetailsInput'] | null
+      details?: components['schemas']['OrganizationDetails'] | null
       /** @description Two-letter country code (ISO 3166-1 alpha-2). */
       country?:
         | (
@@ -30712,36 +30835,11 @@ export interface components {
     /** OrganizationDetails */
     OrganizationDetails: {
       /**
-       * Product Description
-       * @description Description of digital products being sold.
+       * About
+       * @deprecated
+       * @description Brief information about you and your business.
        */
-      product_description?: string | null
-      /**
-       * Selling Categories
-       * @description Categories of products being sold.
-       */
-      selling_categories?: string[]
-      /**
-       * Pricing Models
-       * @description Pricing models used by the organization.
-       */
-      pricing_models?: string[]
-      /**
-       * Switching
-       * @description Switching from another platform?
-       * @default false
-       */
-      switching: boolean
-      /**
-       * Switching From
-       * @description Which platform the organization is migrating from.
-       */
-      switching_from?:
-        | ('paddle' | 'lemon_squeezy' | 'gumroad' | 'stripe' | 'other')
-        | null
-    }
-    /** OrganizationDetailsInput */
-    OrganizationDetailsInput: {
+      about?: string | null
       /**
        * Product Description
        * @description Description of digital products being sold.
@@ -30758,6 +30856,24 @@ export interface components {
        */
       pricing_models?: string[]
       /**
+       * Intended Use
+       * @deprecated
+       * @description How the organization will integrate and use Polar.
+       */
+      intended_use?: string | null
+      /**
+       * Customer Acquisition
+       * @deprecated
+       * @description Main customer acquisition channels.
+       */
+      customer_acquisition?: string[]
+      /**
+       * Future Annual Revenue
+       * @deprecated
+       * @description Estimated revenue in the next 12 months
+       */
+      future_annual_revenue?: number | null
+      /**
        * Switching
        * @description Switching from another platform?
        * @default false
@@ -30770,6 +30886,12 @@ export interface components {
       switching_from?:
         | ('paddle' | 'lemon_squeezy' | 'gumroad' | 'stripe' | 'other')
         | null
+      /**
+       * Previous Annual Revenue
+       * @deprecated
+       * @description Revenue from last year if applicable.
+       */
+      previous_annual_revenue?: number | null
     }
     /**
      * OrganizationDisputeSettings
@@ -32099,7 +32221,7 @@ export interface components {
        */
       socials?: components['schemas']['OrganizationSocialLink'][] | null
       /** @description Additional, private, business details Polar needs about active organizations for compliance (KYC). */
-      details?: components['schemas']['OrganizationDetailsInput'] | null
+      details?: components['schemas']['OrganizationDetails'] | null
       /** @description Two-letter country code (ISO 3166-1 alpha-2). */
       country?:
         | (
@@ -39169,6 +39291,22 @@ export interface components {
       billing_period_end?: string
       /** Subscription Id */
       subscription_id: string
+    }
+    /** SubscriptionUser */
+    SubscriptionUser: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /** Email */
+      email?: string | null
+      /** Public Name */
+      public_name: string
+      /** Avatar Url */
+      avatar_url?: string | null
+      /** Github Username */
+      github_username?: string | null
     }
     /** SupportCase */
     SupportCase: {
@@ -72921,6 +73059,9 @@ export const insightSeverityValues: ReadonlyArray<
 export const introspectTokenResponseToken_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['IntrospectTokenResponse']['token_type']
 > = ['access_token', 'refresh_token']
+export const legacyOrganizationStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['LegacyOrganizationStatus']
+> = ['created', 'under_review', 'denied', 'active']
 export const legacyRecurringProductPriceCustomAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['LegacyRecurringProductPriceCustom']['amount_type']
 > = ['custom']
@@ -73647,9 +73788,6 @@ export const organizationDeletionBlockedReasonValues: ReadonlyArray<
 > = ['has_orders', 'has_active_subscriptions', 'stripe_account_deletion_failed']
 export const organizationDetailsSwitching_fromAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationDetails']['switching_from']
-> = ['paddle', 'lemon_squeezy', 'gumroad', 'stripe', 'other']
-export const organizationDetailsInputSwitching_fromAnyOf0Values: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['OrganizationDetailsInput']['switching_from']
 > = ['paddle', 'lemon_squeezy', 'gumroad', 'stripe', 'other']
 export const organizationIndividualLegalEntitySchemaTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationIndividualLegalEntitySchema']['type']

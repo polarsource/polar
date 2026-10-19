@@ -159,7 +159,7 @@ class LicenseKeyUser(Schema):
 
 class LicenseKeyRead(TimestampedSchema, IDSchema):
     organization_id: UUID4
-    user_id: Annotated[SkipJsonSchema[UUID4], Version(up_to=V2026_10)] = Field(
+    user_id: SkipJsonSchema[UUID4] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user_id",
@@ -169,7 +169,7 @@ class LicenseKeyRead(TimestampedSchema, IDSchema):
         deprecated="Use `customer_id`.",
     )
     customer_id: UUID4
-    user: Annotated[SkipJsonSchema[LicenseKeyUser], Version(up_to=V2026_10)] = Field(
+    user: SkipJsonSchema[LicenseKeyUser] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user",

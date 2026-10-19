@@ -4,9 +4,7 @@ from pydantic import Field
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.kit.schemas import Schema
-from polar.kit.versioning import Version
 from polar.models.benefit import BenefitType
-from polar.version import V2026_10
 
 from ..base.schemas import (
     BenefitBase,
@@ -73,9 +71,7 @@ class BenefitCustom(BenefitBase):
 
     type: Literal[BenefitType.custom]
     properties: BenefitCustomProperties
-    is_tax_applicable: Annotated[SkipJsonSchema[bool], Version(up_to=V2026_10)] = Field(
-        deprecated=True
-    )
+    is_tax_applicable: SkipJsonSchema[bool] = Field(deprecated=True)
 
 
 class BenefitCustomSubscriber(BenefitSubscriberBase):

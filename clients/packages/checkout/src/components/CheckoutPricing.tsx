@@ -67,7 +67,7 @@ const CheckoutProductAmountLabel = ({
         </div>
 
         <div className="relative rounded-xs bg-linear-to-br from-gray-400 to-gray-500 px-3 py-0.5 text-center text-sm text-white shadow-md dark:from-gray-600 dark:to-gray-700">
-          <span>{getDiscountDisplay(discount, checkout.currency, locale)}</span>
+          <span>{getDiscountDisplay(discount, locale)}</span>
 
           <div className="dark:bg-polar-800 absolute top-1/2 left-0 -ml-1 flex h-2 w-2 -translate-y-1/2 transform rounded-full bg-gray-50"></div>
           <div className="dark:bg-polar-800 absolute top-1/2 right-0 -mr-1 flex h-2 w-2 -translate-y-1/2 transform rounded-full bg-gray-50"></div>

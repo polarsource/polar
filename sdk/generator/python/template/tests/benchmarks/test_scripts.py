@@ -14,15 +14,9 @@ from polar.outpost.client import (
     WRITE_BUCKET_SCRIPT,
 )
 from polar.outpost.reducer import BUCKET_SIZE
-from tests.benchmarks import DATA
+from tests.benchmarks import BUCKET_COUNTS, CHANNEL, COLD_UNTIL, EPOCH, encode_state
 
 pytestmark = pytest.mark.benchmark
-
-# 5-minute buckets: 5 minutes, 1 hour, 24 hours of usage since the last snapshot.
-COLD_UNTIL: int = DATA["cold_until"]
-BUCKET_COUNTS: list[int] = DATA["bucket_counts"]
-CHANNEL: str = DATA["channel"]
-EPOCH: str = DATA["epoch"]
 
 
 # One event usually matches several reducers; ingest sends their WRITE_BUCKET calls in one pipeline.
@@ -42,33 +36,7 @@ def key_of(buckets: int) -> str:
 
 
 def seed_state(redis: Redis, identity: str, buckets: int) -> None:
-    fields = [
-        "epoch",
-        EPOCH,
-        "revision",
-        "4242",
-        "cold_until",
-        str(COLD_UNTIL),
-        "snapshot_version",
-        str(COLD_UNTIL + 1),
-        "cold:count",
-        "1000",
-        "cold:sum",
-        "123456",
-        "cold:min",
-        "1",
-        "cold:max",
-        "999",
-        "credited:meter",
-        "1000000",
-        "credited_version:meter",
-        str(COLD_UNTIL + 1),
-    ]
-    for index in range(buckets):
-        prefix = f"bucket:{COLD_UNTIL + index * BUCKET_SIZE}:"
-        fields += [f"{prefix}count", "10", f"{prefix}sum", str(100 + index)]
-        fields += [f"{prefix}min", "1", f"{prefix}max", str(50 + index)]
-    redis.hset(state_key(identity), items=fields)
+    redis.hset(state_key(identity), items=encode_state(buckets))
 
 
 @pytest.fixture(scope="module")

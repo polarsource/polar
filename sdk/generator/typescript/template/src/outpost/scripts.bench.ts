@@ -6,17 +6,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, bench, describe, vi } from "vitest";
 
-import benchmark from "./benchmark.json";
+import { BUCKET_COUNTS, CHANNEL, COLD_UNTIL, EPOCH, encodeState } from "./benchmark";
 import { BUCKET_SIZE } from "./reducer";
 import { APPLY_SNAPSHOT_SCRIPT, READ_STATE_SCRIPT, WRITE_BUCKET_SCRIPT } from "./scripts";
 
-// 5-minute buckets: 5 minutes, 1 hour, 24 hours of usage since the last snapshot.
-const {
-  cold_until: COLD_UNTIL,
-  bucket_counts: BUCKET_COUNTS,
-  channel: CHANNEL,
-  epoch: EPOCH,
-} = benchmark;
 const OPTIONS = { warmupTime: 500, time: 2_000 };
 
 // One event usually matches several reducers; ingest sends their WRITE_BUCKET calls in one pipeline.
@@ -33,26 +26,7 @@ let readStateSha: string;
 let applySnapshotSha: string;
 
 const seedState = async (identity: string, buckets: number): Promise<void> => {
-  const fields: Record<string, string> = {
-    epoch: EPOCH,
-    revision: "4242",
-    cold_until: String(COLD_UNTIL),
-    snapshot_version: String(COLD_UNTIL + 1),
-    "cold:count": "1000",
-    "cold:sum": "123456",
-    "cold:min": "1",
-    "cold:max": "999",
-    "credited:meter": "1000000",
-    "credited_version:meter": String(COLD_UNTIL + 1),
-  };
-  for (let index = 0; index < buckets; index++) {
-    const prefix = `bucket:${COLD_UNTIL + index * BUCKET_SIZE}:`;
-    fields[`${prefix}count`] = "10";
-    fields[`${prefix}sum`] = String(100 + index);
-    fields[`${prefix}min`] = "1";
-    fields[`${prefix}max`] = String(50 + index);
-  }
-  await redis.hset(stateKey(identity), fields);
+  await redis.hset(stateKey(identity), ...encodeState(buckets));
 };
 
 beforeAll(async () => {

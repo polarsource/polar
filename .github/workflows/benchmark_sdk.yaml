@@ -53,6 +53,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install Redis
+        uses: shogo82148/actions-setup-redis@v1.58.1
+        with:
+          redis-version: "7.4"
+          auto-start: false
+
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v5
         with:

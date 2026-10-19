@@ -26,10 +26,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Instruction counts: deterministic, on the runners the rest of CI uses.
+          # Instruction counts: deterministic, on the runners the rest of CI uses. Not for the
+          # Redis benchmarks, whose cost is in another process.
           - mode: simulation
             runner: blacksmith-4vcpu-ubuntu-2404
-            benchmarks: ""
+            benchmarks: --exclude src/outpost/scripts.bench.ts
           # Real time: on CodSpeed's dedicated ARM64 machines, registered in the org by the app.
           # Only the Redis benchmarks: wall time adds noise, not information, on pure CPU code.
           - mode: walltime
@@ -79,7 +80,7 @@ jobs:
         include:
           - mode: simulation
             runner: blacksmith-4vcpu-ubuntu-2404
-            benchmarks: tests/benchmarks
+            benchmarks: tests/benchmarks --ignore=tests/benchmarks/test_scripts.py
           - mode: walltime
             runner: codspeed-macro
             benchmarks: tests/benchmarks/test_scripts.py

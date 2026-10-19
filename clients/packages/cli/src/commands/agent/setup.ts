@@ -1,4 +1,4 @@
-import { Effect, Option, Stdio } from 'effect'
+import { Array, Effect, Option, Stdio } from 'effect'
 import { Command, Flag, Prompt } from 'effect/cli'
 import {
   AgentSetupError,
@@ -7,7 +7,6 @@ import {
   type ClientStatus,
   type SetupStep,
   type SkillScope,
-  type SkillsStatus,
   clients,
   skillScopes,
 } from '@/schemas/AgentSetup'
@@ -51,7 +50,7 @@ const skills = Flag.Literals('skills', skillScopes).pipe(
 
 interface Selection {
   readonly targets: ReadonlyArray<ClientStatus>
-  readonly scope: SkillScope | undefined
+  readonly scopes: ReadonlyArray<SkillScope>
 }
 
 const isClient = (agent: string): agent is Client =>
@@ -66,48 +65,37 @@ const pick = (
   detected: ReadonlyArray<ClientStatus>,
   scope: SkillScope | undefined,
 ) =>
-  Effect.gen(function* () {
-    const picked = yield* Prompt.run(
-      Prompt.MultiSelect<Client | 'skills'>({
-        message: 'What should be set up for Polar?',
-        choices: [
-          ...detected.map((status) => ({
-            title: status.name,
-            value: status.client,
-            description: describeClient(status),
-            selected: !status.installed && status.problem === undefined,
-          })),
-          {
-            title: 'Polar skills',
-            value: 'skills',
-            description: 'For other agents, in .agents/skills',
-            selected: scope !== undefined || detected.length === 0,
-          },
-        ],
+  Prompt.run(
+    Prompt.MultiSelect<Client | SkillScope>({
+      message: 'What should be set up for Polar?',
+      choices: [
+        ...detected.map((status) => ({
+          title: status.name,
+          value: status.client,
+          description: describeClient(status),
+          selected: !status.installed && status.problem === undefined,
+        })),
+        ...skillScopes.map((value) => ({
+          title: skillsName(value),
+          value,
+          description: `For other agents, in ${value === 'global' ? '~/' : ''}.agents/skills`,
+          selected:
+            scope === value ||
+            (scope === undefined &&
+              value === 'project' &&
+              detected.length === 0),
+        })),
+      ],
+    }),
+  ).pipe(
+    Effect.orElseSucceed((): ReadonlyArray<Client | SkillScope> => []),
+    Effect.map(
+      (picked): Selection => ({
+        targets: detected.filter((status) => picked.includes(status.client)),
+        scopes: skillScopes.filter((scope) => picked.includes(scope)),
       }),
-    ).pipe(Effect.orElseSucceed((): ReadonlyArray<Client | 'skills'> => []))
-    const targets = detected.filter((status) => picked.includes(status.client))
-    if (!picked.includes('skills')) return { targets, scope: undefined }
-    if (scope) return { targets, scope }
-    const chosen = yield* Prompt.run(
-      Prompt.Select<SkillScope | undefined>({
-        message: 'Where should the Polar skills go?',
-        choices: [
-          {
-            title: 'This project',
-            value: 'project',
-            description: '.agents/skills',
-          },
-          {
-            title: 'Your home directory',
-            value: 'global',
-            description: '~/.agents/skills',
-          },
-        ],
-      }),
-    ).pipe(Effect.orElseSucceed(() => undefined))
-    return chosen ? { targets, scope: chosen } : { targets: [], scope }
-  })
+    ),
+  )
 
 const select = (
   detected: ReadonlyArray<ClientStatus>,
@@ -116,14 +104,14 @@ const select = (
   yes: boolean,
 ) =>
   Effect.gen(function* () {
-    const setup = yield* AgentSetup
+    const { callingAgent: agent } = yield* AgentSetup
     const { json } = yield* Output
-    const agent = setup.callingAgent
+    const scopes: ReadonlyArray<SkillScope> = scope ? [scope] : []
     if (agent && !only) {
       const own = detected.find((status) => status.client === agent)
       if (own) {
         yield* note(ui.step(`Running inside ${own.name}, setting up only it`))
-        return { targets: [own], scope }
+        return { targets: [own], scopes }
       }
       if (!isClient(agent)) {
         yield* note(
@@ -131,89 +119,98 @@ const select = (
             `Running inside ${agent}, which has no Polar plugin, installing the Polar skills instead`,
           ),
         )
-        return { targets: [], scope: scope ?? 'project' }
+        return { targets: [], scopes: [scope ?? 'project'] }
       }
     }
     if (yes || json || agent || only || !(yield* interactive)) {
-      return { targets: detected, scope }
+      return { targets: detected, scopes }
     }
     yield* note(ui.blank)
     return yield* pick(detected, scope)
   })
 
-const setUpClient = (target: ClientStatus, force: boolean) =>
-  Effect.gen(function* () {
-    const step = (
-      outcome: SetupStep['outcome'],
-      detail?: string,
-    ): SetupStep => ({
-      target: target.client,
-      name: target.name,
-      outcome,
-      ...(detail ? { detail } : {}),
-    })
-    if (target.problem) {
-      yield* note(ui.failure(target.name, target.problem))
-      return step('failed', target.problem)
-    }
-    if (target.installed && !force) {
-      yield* note(ui.success(`${target.name} ${ui.dim('already set up')}`))
-      return step('unchanged')
-    }
-    const setup = yield* AgentSetup
-    return yield* withProgress((progress) =>
-      progress.start(target.name).pipe(Effect.andThen(setup.setUp(target))),
-    ).pipe(
-      Effect.as(step(target.installed ? 'updated' : 'installed')),
-      Effect.catch((error) =>
-        note(errorDetail(error)).pipe(Effect.as(step('failed', error.message))),
-      ),
-    )
-  })
+const step = (
+  target: SetupStep['target'],
+  name: string,
+  outcome: SetupStep['outcome'],
+  detail?: string,
+): SetupStep => ({ target, name, outcome, ...(detail ? { detail } : {}) })
 
-const setUpSkills = (scope: SkillScope, force: boolean) =>
-  Effect.gen(function* () {
-    const setup = yield* AgentSetup
-    const name = skillsName(scope)
-    const step = (
-      outcome: SetupStep['outcome'],
-      detail?: string,
-    ): SetupStep => ({
-      target: 'skills',
-      name,
-      outcome,
-      ...(detail ? { detail } : {}),
-    })
-    return yield* withProgress((progress) =>
+const attempt = <R>(
+  target: SetupStep['target'],
+  name: string,
+  work: Effect.Effect<SetupStep, AgentSetupError, R>,
+) =>
+  work.pipe(
+    Effect.catch((error) =>
+      note(errorDetail(error)).pipe(
+        Effect.as(step(target, name, 'failed', error.message)),
+      ),
+    ),
+  )
+
+const setUpClient = (target: ClientStatus, force: boolean) =>
+  attempt(
+    target.client,
+    target.name,
+    Effect.gen(function* () {
+      if (target.installed && !force) {
+        yield* note(ui.success(`${target.name} ${ui.dim('already set up')}`))
+        return step(target.client, target.name, 'unchanged')
+      }
+      const setup = yield* AgentSetup
+      yield* withProgress((progress) =>
+        progress
+          .start(target.name)
+          .pipe(
+            Effect.andThen(
+              target.problem
+                ? Effect.fail(new AgentSetupError({ message: target.problem }))
+                : setup.setUp(target),
+            ),
+          ),
+      )
+      return step(
+        target.client,
+        target.name,
+        target.installed ? 'updated' : 'installed',
+      )
+    }),
+  )
+
+const setUpSkills = (scope: SkillScope, force: boolean) => {
+  const name = skillsName(scope)
+  return attempt(
+    'skills',
+    name,
+    withProgress((progress) =>
       Effect.gen(function* () {
+        const setup = yield* AgentSetup
         yield* progress.start(name)
         const before = yield* setup.skills(scope)
         if (before.state === 'current' && !force) {
           yield* progress.finish('already up to date')
-          return step('unchanged', before.directory)
+          return step('skills', name, 'unchanged', before.directory)
         }
         const after = yield* setup.installSkills(scope)
         yield* progress.finish(after.directory)
         return step(
+          'skills',
+          name,
           before.state === 'missing' ? 'installed' : 'updated',
           after.directory,
         )
       }),
-    ).pipe(
-      Effect.catch((error) =>
-        note(errorDetail(error)).pipe(Effect.as(step('failed', error.message))),
-      ),
-    )
-  })
+    ),
+  )
+}
 
 const installedSkills = Effect.gen(function* () {
   const setup = yield* AgentSetup
   const found = yield* Effect.forEach(skillScopes, (scope) =>
     setup.skills(scope).pipe(Effect.option),
   )
-  return found
-    .flatMap((status) => Option.toArray(status))
-    .filter((status): status is SkillsStatus => status.state !== 'missing')
+  return Array.getSomes(found).filter((status) => status.state !== 'missing')
 })
 
 interface Input {
@@ -241,7 +238,6 @@ const runSetup = (input: Input) =>
       }),
     )
     const detected = statuses.filter((status) => status.detected)
-
     if (input.status) {
       return { clients: statuses, skills: yield* installedSkills, steps: [] }
     }
@@ -252,20 +248,20 @@ const runSetup = (input: Input) =>
         hint: `Install ${name}, or make sure it is on your PATH.`,
       })
     }
-
-    const selection: Selection = yield* select(
+    const selection = yield* select(
       detected,
       only,
       Option.getOrUndefined(input.skills),
       input.yes,
     )
-    const steps: SetupStep[] = []
-    for (const target of selection.targets) {
-      steps.push(yield* setUpClient(target, input.force))
-    }
-    if (selection.scope) {
-      steps.push(yield* setUpSkills(selection.scope, input.force))
-    }
+    const steps = [
+      ...(yield* Effect.forEach(selection.targets, (target) =>
+        setUpClient(target, input.force),
+      )),
+      ...(yield* Effect.forEach(selection.scopes, (scope) =>
+        setUpSkills(scope, input.force),
+      )),
+    ]
     return { clients: statuses, skills: [], steps }
   })
 

@@ -44,44 +44,41 @@ export const skillsFromTree = (
 ): ReadonlyArray<Skill> => {
   const skills = new Map<string, SkillFile[]>()
   for (const entry of tree.tree) {
-    if (entry.type !== 'blob') continue
-    const match = SKILL_PATH.exec(entry.path)
-    if (!match) continue
-    const [, name, relative] = match
+    const match = entry.type === 'blob' ? SKILL_PATH.exec(entry.path) : null
+    const [, name, relative] = match ?? []
     if (!name || !relative || !isSafeRelative(relative)) continue
-    const files = skills.get(name) ?? []
-    files.push({ source: entry.path, relative, sha: entry.sha })
-    skills.set(name, files)
+    skills.set(name, [
+      ...(skills.get(name) ?? []),
+      { source: entry.path, relative, sha: entry.sha },
+    ])
   }
   return [...skills]
     .filter(([, files]) => files.some((file) => file.relative === 'SKILL.md'))
     .map(([name, files]) => ({ name, files }))
 }
 
-const toolkitError = (action: string) => (cause: unknown) =>
-  new AgentSetupError({
-    message: `Could not ${action} the Polar skills from GitHub`,
-    hint:
-      cause instanceof Error
-        ? cause.message
-        : `Check your connection to github.com/${TOOLKIT_REPOSITORY}.`,
-  })
-
-const fetchTree = Effect.gen(function* () {
+export const fetchSkills = Effect.gen(function* () {
   const client = (yield* HttpClient.HttpClient).pipe(HttpClient.filterStatusOk)
   const response = yield* client.get(TREE_URL)
-  return yield* HttpClientResponse.schemaBodyJson(Tree)(response)
-}).pipe(Effect.mapError(toolkitError('fetch')))
-
-export const fetchSkills = Effect.gen(function* () {
-  const skills = skillsFromTree(yield* fetchTree)
-  if (skills.length === 0) {
-    return yield* new AgentSetupError({
-      message: `No skills found in ${TOOLKIT_REPOSITORY}`,
-    })
-  }
-  return skills
-})
+  return skillsFromTree(
+    yield* HttpClientResponse.schemaBodyJson(Tree)(response),
+  )
+}).pipe(
+  Effect.mapError(
+    (cause) =>
+      new AgentSetupError({
+        message: 'Could not fetch the Polar skills from GitHub',
+        hint: cause.message,
+      }),
+  ),
+  Effect.filterOrFail(
+    (skills) => skills.length > 0,
+    () =>
+      new AgentSetupError({
+        message: `No skills found in ${TOOLKIT_REPOSITORY}`,
+      }),
+  ),
+)
 
 export const gitBlobSha = (content: Uint8Array) =>
   new Bun.CryptoHasher('sha1')
@@ -94,6 +91,14 @@ export const skillsDirectory = (
   { home, cwd }: { readonly home: string; readonly cwd: string },
 ) => path.join(scope === 'global' ? home : cwd, '.agents', 'skills')
 
+const targets = (directory: string, skills: ReadonlyArray<Skill>) =>
+  skills.flatMap((skill) =>
+    skill.files.map((file) => ({
+      ...file,
+      target: path.join(directory, skill.name, file.relative),
+    })),
+  )
+
 const localSha = (file: string) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem
@@ -105,12 +110,7 @@ export const checkSkills = (
   skills: ReadonlyArray<Skill>,
 ): Effect.Effect<SkillsStatus['state'], never, FileSystem.FileSystem> =>
   Effect.gen(function* () {
-    const files = skills.flatMap((skill) =>
-      skill.files.map((file) => ({
-        target: path.join(directory, skill.name, file.relative),
-        sha: file.sha,
-      })),
-    )
+    const files = targets(directory, skills)
     const shas = yield* Effect.forEach(files, (file) => localSha(file.target), {
       concurrency: 8,
     })
@@ -126,32 +126,25 @@ export const writeSkills = (directory: string, skills: ReadonlyArray<Skill>) =>
     const client = (yield* HttpClient.HttpClient).pipe(
       HttpClient.filterStatusOk,
     )
-    const files = skills.flatMap((skill) =>
-      skill.files.map((file) => ({
-        ...file,
-        target: path.join(directory, skill.name, file.relative),
-      })),
-    )
-    const contents = yield* Effect.forEach(
-      files,
+    yield* Effect.forEach(
+      targets(directory, skills),
       (file) =>
-        client
-          .get(fileUrl(file.source))
-          .pipe(Effect.flatMap((response) => response.arrayBuffer)),
+        Effect.gen(function* () {
+          const response = yield* client.get(fileUrl(file.source))
+          const content = new Uint8Array(yield* response.arrayBuffer)
+          yield* fs.makeDirectory(path.dirname(file.target), {
+            recursive: true,
+          })
+          yield* fs.writeFile(file.target, content)
+        }),
       { concurrency: 8 },
-    ).pipe(Effect.mapError(toolkitError('download')))
-    yield* Effect.forEach(files, (file, index) =>
-      Effect.gen(function* () {
-        yield* fs.makeDirectory(path.dirname(file.target), { recursive: true })
-        yield* fs.writeFile(file.target, new Uint8Array(contents[index]!))
-      }),
-    ).pipe(
-      Effect.mapError(
-        (cause) =>
-          new AgentSetupError({
-            message: `Could not write the Polar skills to ${directory}`,
-            hint: cause.message,
-          }),
-      ),
     )
-  })
+  }).pipe(
+    Effect.mapError(
+      (cause) =>
+        new AgentSetupError({
+          message: `Could not install the Polar skills into ${directory}`,
+          hint: cause.message,
+        }),
+    ),
+  )

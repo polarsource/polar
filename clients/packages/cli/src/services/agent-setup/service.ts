@@ -27,7 +27,7 @@ import {
   writeSkills,
 } from '@/services/agent-setup/skills'
 import { Environment, detectAgent } from '@/services/telemetry'
-import { type Exec, exec } from '@/services/updater'
+import { exec } from '@/services/updater'
 
 export class AgentSetup extends Context.Service<
   AgentSetup,
@@ -48,106 +48,72 @@ export class AgentSetup extends Context.Service<
   }
 >()('AgentSetup') {}
 
-export interface Dependencies {
-  readonly exec: Exec
-  readonly which: (binary: string) => string | null
-  readonly home: string
-  readonly cwd: string
-  readonly env: Record<string, string | undefined>
-}
-
 const plugins: Partial<Record<Client, PluginClient>> = {
   'claude-code': claude,
   codex,
 }
 
-export const make = (deps: Dependencies) =>
+export const layer = Layer.effect(
+  AgentSetup,
   Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem
-    const http = yield* HttpClient.HttpClient
-    const provide = <A, E>(
-      effect: Effect.Effect<
-        A,
-        E,
-        FileSystem.FileSystem | HttpClient.HttpClient
-      >,
-    ) =>
-      effect.pipe(
-        Effect.provideService(FileSystem.FileSystem, fs),
-        Effect.provideService(HttpClient.HttpClient, http),
-      )
-    const toolkit = yield* Effect.cached(provide(fetchSkills))
+    const services = yield* Effect.context<
+      FileSystem.FileSystem | HttpClient.HttpClient
+    >()
+    const env = yield* Environment
+    const paths = { home: homedir(), cwd: process.cwd() }
+    const cursorSkills = cursorSkillsDirectory(paths.home)
+    const toolkit = yield* Effect.cached(fetchSkills)
 
     const skillsAt = (directory: string) =>
-      toolkit.pipe(
-        Effect.flatMap((skills) =>
-          provide(checkSkills(directory, skills)).pipe(
-            Effect.map((state) => ({
-              directory,
-              state,
-              skills: skills.map(({ name }) => name),
-            })),
-          ),
-        ),
-      )
+      Effect.gen(function* () {
+        const skills = yield* toolkit
+        const state = yield* checkSkills(directory, skills)
+        return { directory, state, skills: skills.map(({ name }) => name) }
+      }).pipe(Effect.provideContext(services))
+
     const installSkillsAt = (directory: string) =>
       toolkit.pipe(
-        Effect.flatMap((skills) => provide(writeSkills(directory, skills))),
+        Effect.flatMap((skills) => writeSkills(directory, skills)),
         Effect.andThen(skillsAt(directory)),
+        Effect.provideContext(services),
       )
 
-    const cursorSkills = cursorSkillsDirectory(deps.home)
     const detectClient = (client: Client) => {
       const plugin = plugins[client]
       if (plugin) {
-        return detectPlugin(plugin, deps.exec, deps.which(plugin.binary))
+        return detectPlugin(plugin, exec, Bun.which(plugin.binary))
       }
-      return provide(
-        detectCursor(
-          deps.home,
-          deps.which('cursor'),
-          skillsAt(cursorSkills).pipe(
-            Effect.map(({ state }) => state === 'current'),
-            Effect.orElseSucceed(() => false),
-          ),
+      return detectCursor(
+        paths.home,
+        Bun.which('cursor'),
+        skillsAt(cursorSkills).pipe(
+          Effect.map(({ state }) => state === 'current'),
+          Effect.orElseSucceed(() => false),
         ),
-      )
+      ).pipe(Effect.provideContext(services))
     }
 
     return AgentSetup.of({
-      callingAgent: detectAgent(deps.env),
+      callingAgent: detectAgent(env),
       detect: (clients) =>
         Effect.forEach(clients, detectClient, { concurrency: 'unbounded' }),
       setUp: (status) => {
         const plugin = plugins[status.client]
-        if (plugin) {
-          return installPlugin(plugin, deps.exec, status.installed)
-        }
-        return provide(configureCursorMcp(deps.home)).pipe(
+        if (plugin) return installPlugin(plugin, exec, status.installed)
+        return configureCursorMcp(paths.home).pipe(
           Effect.andThen(installSkillsAt(cursorSkills)),
+          Effect.provideContext(services),
           Effect.asVoid,
         )
       },
       skills: (scope) =>
-        skillsAt(skillsDirectory(scope, deps)).pipe(
+        skillsAt(skillsDirectory(scope, paths)).pipe(
           Effect.map((status) => ({ scope, ...status })),
         ),
       installSkills: (scope) =>
-        installSkillsAt(skillsDirectory(scope, deps)).pipe(
+        installSkillsAt(skillsDirectory(scope, paths)).pipe(
           Effect.map((status) => ({ scope, ...status })),
         ),
-    })
-  })
-
-export const layer = Layer.effect(
-  AgentSetup,
-  Effect.gen(function* () {
-    return yield* make({
-      exec,
-      which: (binary) => Bun.which(binary),
-      home: homedir(),
-      cwd: process.cwd(),
-      env: yield* Environment,
     })
   }),
 )

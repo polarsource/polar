@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { Effect, FileSystem } from 'effect'
+import { Effect, FileSystem, Option, Schema } from 'effect'
 import { applyEdits, modify, parse } from 'jsonc-parser'
 import { AgentSetupError, type ClientStatus } from '@/schemas/AgentSetup'
 
@@ -8,30 +8,28 @@ export const MCP_SERVERS = {
   'polar-sandbox': 'https://mcp.polar.sh/mcp/polar-sandbox',
 } as const
 
-export const cursorDirectory = (home: string) => path.join(home, '.cursor')
+const cursorDirectory = (home: string) => path.join(home, '.cursor')
 export const cursorSkillsDirectory = (home: string) =>
   path.join(cursorDirectory(home), 'skills')
 const mcpFile = (home: string) => path.join(cursorDirectory(home), 'mcp.json')
 
+const Config = Schema.Struct({
+  mcpServers: Schema.optional(Schema.Record(Schema.String, Schema.Unknown)),
+})
+
+const configuredServers = (source: string) =>
+  Schema.decodeUnknownOption(Config)(parse(source)).pipe(
+    Option.map((config) => Object.keys(config.mcpServers ?? {})),
+    Option.getOrElse((): ReadonlyArray<string> => []),
+  )
+
 const readConfig = (file: string) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem
-    if (!(yield* fs.exists(file))) return '{}'
-    return yield* fs.readFileString(file)
+    return (yield* fs.exists(file)) ? yield* fs.readFileString(file) : '{}'
   })
 
-const configuredServers = (source: string) => {
-  const config: unknown = parse(source)
-  const servers =
-    typeof config === 'object' && config !== null && 'mcpServers' in config
-      ? config.mcpServers
-      : undefined
-  return typeof servers === 'object' && servers !== null
-    ? Object.keys(servers)
-    : []
-}
-
-export const mcpConfigured = (home: string) =>
+const mcpConfigured = (home: string) =>
   readConfig(mcpFile(home)).pipe(
     Effect.map((source) => {
       const servers = configuredServers(source)

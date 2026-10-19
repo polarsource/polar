@@ -42,15 +42,15 @@ export const statusReport = (result: AgentSetupResult) => {
         ] as const,
     ),
   ]
-  const pending = result.clients.some(
-    (status) => status.detected && !status.installed && !status.problem,
-  )
-  const outdated = result.skills.some((skills) => skills.state === 'outdated')
+  const pending =
+    result.clients.some(
+      (status) => status.detected && !status.installed && !status.problem,
+    ) || result.skills.some((skills) => skills.state === 'outdated')
   return [
     ui.blank,
     ui.keyValue(rows),
     ui.blank,
-    ...(pending || outdated
+    ...(pending
       ? [
           ui.step(`Run ${ui.command('polar agent setup')} to set them up`),
           ui.blank,
@@ -61,23 +61,17 @@ export const statusReport = (result: AgentSetupResult) => {
 
 const count = (
   steps: ReadonlyArray<SetupStep>,
-  outcome: SetupStep['outcome'],
-) => steps.filter((step) => step.outcome === outcome).length
+  ...outcomes: SetupStep['outcome'][]
+) => steps.filter((step) => outcomes.includes(step.outcome)).length
 
-export const summary = (result: AgentSetupResult) => {
-  const { steps } = result
+export const summary = ({ steps, clients }: AgentSetupResult) => {
   if (steps.length > 0) {
-    const changed = count(steps, 'installed') + count(steps, 'updated')
     return [
       ui.blank,
-      `${ui.INDENT}${[
-        `${changed} set up`,
-        `${count(steps, 'unchanged')} already set up`,
-        `${count(steps, 'failed')} failed`,
-      ].join(', ')}`,
+      `${ui.INDENT}${count(steps, 'installed', 'updated')} set up, ${count(steps, 'unchanged')} already set up, ${count(steps, 'failed')} failed`,
     ]
   }
-  if (result.clients.some((status) => status.detected)) {
+  if (clients.some((status) => status.detected)) {
     return [ui.step('Nothing selected, no changes made'), ui.blank]
   }
   return [
@@ -90,25 +84,23 @@ export const summary = (result: AgentSetupResult) => {
   ]
 }
 
-const signIn: Record<SetupStep['target'], string | undefined> = {
+const signIn: Partial<Record<SetupStep['target'], string>> = {
   'claude-code': `Claude Code: restart it, run ${ui.command('/mcp')} and sign in to polar or polar-sandbox`,
   codex: `Codex: run ${ui.command('codex mcp login polar')} or ${ui.command('codex mcp login polar-sandbox')}`,
   cursor: 'Cursor: open Settings → MCP and connect polar or polar-sandbox',
-  skills: undefined,
 }
 
-export const nextSteps = (result: AgentSetupResult) => {
-  const lines = result.steps
+export const nextSteps = ({ steps }: AgentSetupResult) => {
+  const lines = steps
     .filter(
       (step) => step.outcome === 'installed' || step.outcome === 'updated',
     )
     .flatMap((step) => signIn[step.target] ?? [])
-  return lines.length > 0
-    ? [
-        ui.blank,
-        `${ui.INDENT}${ui.bold('Next, sign in to Polar')}`,
-        ...lines.map((line) => ui.step(line)),
-        ui.blank,
-      ]
-    : [ui.blank]
+  if (lines.length === 0) return [ui.blank]
+  return [
+    ui.blank,
+    `${ui.INDENT}${ui.bold('Next, sign in to Polar')}`,
+    ...lines.map((line) => ui.step(line)),
+    ui.blank,
+  ]
 }

@@ -2,6 +2,7 @@
 
 import { schemas } from '@polar-sh/client'
 import { Input } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   Select,
   SelectContent,
@@ -67,10 +68,14 @@ export const LicenseKeysBenefitForm = () => {
         }}
       />
 
-      <div className="flex flex-row items-center">
-        <div className="grow">
+      <Box alignItems="center" columnGap="l">
+        <Box flexDirection="column" flexGrow={1} rowGap="xs">
           <label htmlFor="license-key-ttl">Expires</label>
-        </div>
+          <FormDescription>
+            Only applies to one-time purchases. Keys granted by a subscription
+            don&apos;t expire and are revoked when the subscription ends.
+          </FormDescription>
+        </Box>
         <FormField
           control={control}
           name="properties.expires"
@@ -90,7 +95,7 @@ export const LicenseKeysBenefitForm = () => {
             )
           }}
         />
-      </div>
+      </Box>
       {expires && (
         <div className="flex flex-row space-x-4">
           <FormField

@@ -1,6 +1,22 @@
 import { MONO } from '../sheet'
 import { LINE, DIM, MID, RULE, HAIR } from '../kit'
-import { num, useSim } from '../simulation'
+import { useSim, type SimEvent } from '../simulation'
+
+/** An event's metadata as the row has room for it: the field that carries the measurement, and an ellipsis. */
+const metadata = (e: SimEvent) => {
+  switch (e.name) {
+    case 'tokens.in':
+      return `{ input_tokens: ${e.quantity}, … }`
+    case 'tokens.out':
+      return `{ output_tokens: ${e.quantity}, … }`
+    case 'image.gen':
+      return `{ images: ${e.quantity}, … }`
+    case 'api.call':
+      return '{ route: "/v1/runs", … }'
+    case 'credit.granted':
+      return `{ credits: ${e.quantity} }`
+  }
+}
 
 /** The ledger page, running: the last rows of the real ledger, the head in ink at the bottom. */
 export function LiveLedger({
@@ -59,14 +75,13 @@ export function LiveLedger({
               {e.actor}
             </text>
             <text
-              x={x + w - 8}
+              x={x + 140}
               y={y + 3}
               fontSize={7.5}
               fill={ink}
-              textAnchor="end"
-              style={MONO}
+              style={{ ...MONO, letterSpacing: 0 }}
             >
-              {num(e.quantity)}
+              {metadata(e)}
             </text>
             <line
               x1={x}

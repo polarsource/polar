@@ -284,9 +284,24 @@ export function Dimension({
   )
 }
 
+/** Room between a drawing and the top and bottom of its frame. */
+export const FIGURE_PAD = 48
+
+/** The four corner marks of a frame, as path data. */
+export const frameCorners = (x: number, y: number, w: number, h: number) => {
+  const c = 6
+  return [
+    `M${x} ${y + c}V${y}H${x + c}`,
+    `M${x + w - c} ${y}H${x + w}V${y + c}`,
+    `M${x + w} ${y + h - c}V${y + h}H${x + w - c}`,
+    `M${x + c} ${y + h}H${x}V${y + h - c}`,
+  ]
+}
+
 /**
  * A figure frame: a faint hairline box with corner marks, standing still while the drawing inside traces itself in.
- * The page centres the drawing inside it once it has been measured; see `Plate`.
+ * It spans `x` to `x + w`; once the drawing is measured, the page centres it across that width and fits the frame's
+ * height to it, `FIGURE_PAD` above and below, so no drawing is held to one aspect ratio. See `Plate`.
  */
 export function Figure({
   x,
@@ -301,7 +316,6 @@ export function Figure({
   h: number
   children: ReactNode
 }) {
-  const c = 6
   return (
     <g data-figure={`${x} ${y} ${w} ${h}`}>
       <g data-frame>
@@ -315,10 +329,9 @@ export function Figure({
           strokeWidth={HAIR}
         />
         <g stroke={MID} strokeWidth={HAIR} fill="none">
-          <path d={`M${x} ${y + c}V${y}H${x + c}`} />
-          <path d={`M${x + w - c} ${y}H${x + w}V${y + c}`} />
-          <path d={`M${x + w} ${y + h - c}V${y + h}H${x + w - c}`} />
-          <path d={`M${x + c} ${y + h}H${x}V${y + h - c}`} />
+          {frameCorners(x, y, w, h).map((d) => (
+            <path key={d.slice(0, 12)} d={d} />
+          ))}
         </g>
       </g>
       <g data-figure-content>{children}</g>
@@ -416,8 +429,8 @@ export function Grain({
 
 export type TermTone = 'ink' | 'dim' | 'inv' | 'add' | 'del'
 /** The two colours a diff needs, and the only colour on these pages. */
-export const ADD = '#3CB371'
-export const DEL = '#D0321F'
+export const ADD = '#34D399'
+export const DEL = '#EF4444'
 export interface TermTok {
   t: string
   tone?: TermTone

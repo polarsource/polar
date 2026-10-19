@@ -49,6 +49,11 @@ export function construct(svg: SVGSVGElement, pace = 1): () => void {
     )
   const spread = (i: number, n: number, from: number, over: number) =>
     from + (n > 1 ? (i / (n - 1)) * over : 0)
+  // Each phase starts when the one before it would have, and a phase the page does not have takes no time: a page
+  // that is all type starts typing at once instead of waiting out strokes that are not there.
+  const strokesFrom = guides.length ? 90 : 0
+  const fillsFrom = traces.length ? strokesFrom + 330 : strokesFrom
+  const typeFrom = traces.length || fills.length ? fillsFrom + 220 : 0
 
   guides.forEach((el, i) =>
     run(
@@ -65,7 +70,7 @@ export function construct(svg: SVGSVGElement, pace = 1): () => void {
     } catch {
       length = 0
     }
-    const delay = spread(i, traces.length, 90, 560)
+    const delay = spread(i, traces.length, strokesFrom, 560)
     if (length > 0)
       run(
         el,
@@ -93,7 +98,7 @@ export function construct(svg: SVGSVGElement, pace = 1): () => void {
       el,
       [{ opacity: 0 }, { opacity: 1 }],
       240,
-      spread(i, fills.length, 420, 380),
+      spread(i, fills.length, fillsFrom, 380),
     ),
   )
   // What is marked first comes up whole with the first stroke: a cover's title beside its mark.
@@ -103,13 +108,13 @@ export function construct(svg: SVGSVGElement, pace = 1): () => void {
   // The live layers redraw themselves, so they come in whole, with the type.
   svg
     .querySelectorAll('[data-live]')
-    .forEach((el) => run(el, [{ opacity: 0 }, { opacity: 1 }], 420, 560))
+    .forEach((el) => run(el, [{ opacity: 0 }, { opacity: 1 }], 420, typeFrom))
   texts.forEach((el, i) =>
     run(
       el,
       [{ opacity: 0 }, { opacity: 1 }],
       280,
-      spread(i, texts.length, 640, 360),
+      spread(i, texts.length, typeFrom, 360),
     ),
   )
 

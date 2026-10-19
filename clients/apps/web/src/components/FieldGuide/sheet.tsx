@@ -135,7 +135,24 @@ export function Label({
   )
 }
 
-/** Lines of mono, as in a terminal or a file. */
+/** Code read in three tones of one ink: the values brightest, the names between, the syntax dimmest. */
+const TOKEN =
+  /('[^']*'|"[^"]*")|(\b\d+(?:\.\d+)?\b)|(\b(?:export|default|const|return)\b)|([A-Za-z_$][\w$]*)|(\s+)|([^\w\s'"$]+)/g
+
+function highlight(line: string, ink: Ink) {
+  const name = `color-mix(in srgb, ${ink.ink} 72%, ${ink.bg})`
+  return Array.from(line.matchAll(TOKEN), (m, i) => {
+    const [t, str, numeral, keyword, ident] = m
+    const fill = str || numeral ? ink.ink : ident && !keyword ? name : ink.dim
+    return (
+      <tspan key={i} style={{ fill }}>
+        {t}
+      </tspan>
+    )
+  })
+}
+
+/** Lines of mono, as in a terminal or a file. `highlight` sets them as code, in tones of the ink. */
 export function Code({
   x,
   y,
@@ -143,6 +160,7 @@ export function Code({
   ink,
   size = 13,
   lh = 1.7,
+  highlight: highlighted = false,
 }: {
   x: number
   y: number
@@ -150,6 +168,7 @@ export function Code({
   ink: Ink
   size?: number
   lh?: number
+  highlight?: boolean
 }) {
   return (
     <g style={{ ...MONO, letterSpacing: 0 }} fontSize={size}>
@@ -169,7 +188,7 @@ export function Code({
             }
             xmlSpace="preserve"
           >
-            {o.t}
+            {highlighted && !o.tone ? highlight(o.t, ink) : o.t}
           </text>
         )
       })}

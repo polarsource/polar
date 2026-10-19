@@ -2,23 +2,32 @@
 
 import { useEffect, useLayoutEffect, useRef } from 'react'
 import { construct } from './construct'
+import { FIGURE_PAD, frameCorners } from './kit'
 import type { Piece } from './pages'
 import { useSim } from './simulation'
 
-/** Centres each figure's drawing in its frame, then cuts the view box to what is drawn, on every side. */
+/**
+ * Centres each figure's drawing across its frame and fits the frame's height to the drawing, then cuts the view box
+ * to what is drawn, on every side.
+ */
 function layout(svg: SVGSVGElement) {
   svg.querySelectorAll<SVGGElement>('[data-figure]').forEach((fig) => {
     const content = fig.querySelector<SVGGElement>('[data-figure-content]')
     if (!content) return
-    const [x, y, w, h] = fig.dataset.figure!.split(' ').map(Number)
+    const [x, , w] = fig.dataset.figure!.split(' ').map(Number)
     const b = content.getBBox()
     if (!b.width || !b.height) return
     const dx = x + w / 2 - (b.x + b.width / 2)
-    const dy = y + h / 2 - (b.y + b.height / 2)
-    content.setAttribute(
-      'transform',
-      `translate(${dx.toFixed(1)} ${dy.toFixed(1)})`,
-    )
+    content.setAttribute('transform', `translate(${dx.toFixed(1)} 0)`)
+    const y = b.y - FIGURE_PAD
+    const h = b.height + FIGURE_PAD * 2
+    const rect = fig.querySelector('[data-frame] rect')
+    rect?.setAttribute('y', String(y))
+    rect?.setAttribute('height', String(h))
+    const corners = frameCorners(x, y, w, h)
+    fig
+      .querySelectorAll('[data-frame] path')
+      .forEach((path, i) => path.setAttribute('d', corners[i]))
   })
   let left = Infinity,
     top = Infinity,
@@ -35,9 +44,8 @@ function layout(svg: SVGSVGElement) {
   }
   if (right < left) return
   // Never wider than the crop the sheet sets: a page's full-bleed ground is not part of the drawing.
-  const [cx, cy, cw, ch] = (svg.getAttribute('viewBox') ?? '')
-    .split(' ')
-    .map(Number)
+  svg.dataset.crop ??= svg.getAttribute('viewBox') ?? ''
+  const [cx, cy, cw, ch] = svg.dataset.crop.split(' ').map(Number)
   left = Math.max(left, cx)
   top = Math.max(top, cy)
   right = Math.min(right, cx + cw)
@@ -59,13 +67,14 @@ export function Plate({
   pace?: number
 }) {
   const ref = useRef<HTMLDivElement>(null)
-  // Every drawing is centred in its frame, then the view box is cut to the drawing. Run again once
-  // the stream has its first events, which is when the live figures take their size.
-  const seeded = useSim((s) => s.head > 0)
+  // Every drawing is centred in its frame, then the view box is cut to the drawing. It runs on every render, not
+  // once: the page renders again when the stream has its first events, which is when the live figures take their
+  // size, and when the drawing itself changes.
+  useSim((s) => s.head > 0)
   useLayoutEffect(() => {
     const svg = ref.current?.querySelector('svg')
     if (svg) layout(svg)
-  }, [seeded])
+  })
   useEffect(() => {
     const el = ref.current
     if (!el) return

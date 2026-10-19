@@ -6,6 +6,7 @@ import {
   DIM,
   BG,
   HAIR,
+  FAINT,
   DOTTED,
   Guide,
   TITLE,
@@ -39,7 +40,7 @@ const sheet = (w: number, h: number, title: string, children: ReactNode) => (
 const D = (t: string, w?: number): TermTok => ({ t, tone: 'dim', w })
 
 /** A page with one figure, a line under its title, and notes beside it. */
-const landscape = (
+export const landscape = (
   id: string,
   title: string,
   sub: string,
@@ -66,87 +67,6 @@ const landscape = (
     { sub, notes: items },
   )
 
-// ---------------------------------------------------------------- 01 Billing as code · Environments
-
-const environments = (() => {
-  const { line } = term(70, 150, 8, 11.6)
-  const rows: TermTok[][] = [
-    [{ t: '$ ' }, { t: 'polar env list' }],
-    [],
-    [D('NAME     '), D('CONFIG          '), D('APPLIED            '), D('BY')],
-    [
-      { t: 'prod     ' },
-      { t: 'a41f2c0        ' },
-      D('2026-10-07 09:41   '),
-      D('ada'),
-    ],
-    [
-      { t: 'staging  ' },
-      { t: 'c9e8b17        ' },
-      D('2026-10-10 14:02   '),
-      D('ci'),
-    ],
-    [
-      { t: 'dev      ' },
-      { t: 'c9e8b17        ' },
-      D('2026-10-10 14:02   '),
-      D('ci'),
-    ],
-    [],
-    [{ t: '$ ' }, { t: 'polar diff' }, D(' --from staging --to prod')],
-    [],
-    [
-      { t: '  ' },
-      { t: '-  price    pro.tokens    perMillion(usd(3))', tone: 'del' },
-    ],
-    [
-      { t: '  ' },
-      { t: '+  price    pro.tokens    perMillion(usd(2.5))', tone: 'add' },
-    ],
-    [
-      { t: '  ' },
-      {
-        t: '+  product  team          seats · graduated · monthly',
-        tone: 'add',
-      },
-    ],
-    [],
-    [D('staging is 2 changes ahead of prod')],
-    [],
-    [{ t: '$ ' }, { t: 'polar promote' }, D(' staging prod')],
-    [{ t: '✓ ' }, { t: 'prod is now at c9e8b17' }],
-  ]
-  return landscape(
-    'm-env',
-    'Environments',
-    'One file, three deployments. Promotion is a diff, not a copy.',
-    'Three environments running the same config at different commits, the diff between two of them, and a promotion.',
-    <>
-      {rows.map((toks, i) => (toks.length ? line(i, 0, toks, `r${i}`) : null))}
-    </>,
-    [
-      [
-        'One file',
-        [
-          'Every environment runs the same config at some commit. There is no separate staging file to drift; staging is prod a few commits ahead.',
-        ],
-      ],
-      [
-        'The diff',
-        [
-          'Because each environment is a fold over its applied events, the difference between two of them is a diff of config, readable before it is promoted.',
-        ],
-      ],
-      [
-        'Promote',
-        [
-          'Promotion applies the events staging already has to prod. Nothing is re-entered, and the commit tells you exactly what moved.',
-        ],
-      ],
-    ],
-  )
-})()
-
 // ---------------------------------------------------------------- 02 Events · Ingestion and ordering
 
 const ingestion = (() => {
@@ -160,7 +80,7 @@ const ingestion = (() => {
   const fig = (
     <>
       <text x={x0} y={TOP - 26} fontSize={8} fill={DIM} style={MONO}>
-        ARRIVED · BY WALL CLOCK
+        ARRIVED · BY INGESTION TIME
       </text>
       <line x1={x0} x2={x1} y1={TOP} y2={TOP} stroke={MID} strokeWidth={HAIR} />
       {arrivals.map((t, i) => (
@@ -247,68 +167,6 @@ const ingestion = (() => {
         'Same answer',
         [
           'A fold over the ledger therefore gives the same answer whether an event took a millisecond or a day to arrive, and a late event slots into its place rather than onto the end.',
-        ],
-      ],
-    ],
-  )
-})()
-
-// ---------------------------------------------------------------- 02 Events · Replay
-
-const replay = (() => {
-  const { line } = term(70, 150, 8, 11.6)
-  const rows: TermTok[][] = [
-    [
-      { t: '$ ' },
-      { t: 'polar replay' },
-      D(' --meter tokens --from 2026-10-01 --to 2026-10-31'),
-    ],
-    [],
-    [
-      D('Reading   '),
-      { t: '5,015,338 events' },
-      D('  2026-10-01 → 2026-10-31'),
-    ],
-    [D('Folding   '), { t: 'tokens' }, D('  sum(tokens) on llm.completion')],
-    [],
-    [D('   DAY         EVENTS      TOKENS      BALANCE')],
-    [{ t: '   10-01       161,204   1,204,318   1,204,318' }],
-    [{ t: '   10-02       158,990   1,188,002   2,392,320' }],
-    [D('   …')],
-    [{ t: '   10-31       171,380   1,301,114  38,210,906' }],
-    [],
-    [
-      { t: '✓ ' },
-      { t: 'tokens = 38,210,906' },
-      D('  identical to the stored reading'),
-    ],
-    [D('  state = fn(events)')],
-  ]
-  return landscape(
-    'm-replay',
-    'Replay',
-    'Run the fold again and you get the same number. That is the test.',
-    'A replay of one meter over one month: every event folded again from the ledger, and the result checked against the stored reading.',
-    <>
-      {rows.map((toks, i) => (toks.length ? line(i, 0, toks, `r${i}`) : null))}
-    </>,
-    [
-      [
-        'Why replay',
-        [
-          'A number is trustworthy if it can be recomputed. Replay runs the fold over the ledger from scratch and compares it with the reading on hand.',
-        ],
-      ],
-      [
-        'What it catches',
-        [
-          'A fold that changed, an event that was mis-ordered, a reading that drifted. If replay and reading agree, the number is the events; if not, the events win.',
-        ],
-      ],
-      [
-        'When',
-        [
-          'At the close of every period, before an invoice is issued, and any time a meter’s definition changes.',
         ],
       ],
     ],
@@ -449,103 +307,126 @@ const tiers = (() => {
   )
 })()
 
-// ---------------------------------------------------------------- 03 Meters · Reconciliation
+// ---------------------------------------------------------------- 04 Local-first · Reconciliation
 
 const reconciliation = (() => {
-  const x0 = 60,
-    x1 = 340
-  const LOCAL = 190,
-    LEDGER = 290
+  const x0 = 70,
+    x1 = 390
+  const POLAR = 150,
+    BASE = 290,
+    BAND = 312
+  // Events step Igloo's balance up as they land; Polar's snapshots settle it at three points along the way.
+  const steps = [
+    90, 108, 130, 158, 178, 196, 222, 246, 262, 288, 310, 336, 358, 378,
+  ]
+  const snapshots = [140, 205, 270]
+  const rise = 5
+  const level = (x: number) => BASE - steps.filter((s) => s <= x).length * rise
+  const path = steps.reduce(
+    (d, s, i) => `${d}H${s}V${BASE - (i + 1) * rise}`,
+    `M${x0} ${BASE}`,
+  )
+  const last = snapshots[snapshots.length - 1]
+  const label = (
+    x: number,
+    y: number,
+    t: string,
+    anchor: 'start' | 'middle' | 'end' = 'end',
+  ) => (
+    <text
+      x={x}
+      y={y}
+      fontSize={7.5}
+      fill={DIM}
+      textAnchor={anchor}
+      style={MONO}
+    >
+      {t}
+    </text>
+  )
   const fig = (
     <>
-      {[
-        ['LOCAL', LOCAL],
-        ['LEDGER', LEDGER],
-      ].map(([l, y]) => (
-        <g key={String(l)}>
-          <text
-            x={x0 - 8}
-            y={Number(y) + 2.5}
-            fontSize={7.5}
-            fill={DIM}
-            textAnchor="end"
-            style={MONO}
-          >
-            {l}
-          </text>
-          <line
-            x1={x0}
-            x2={x1}
-            y1={Number(y)}
-            y2={Number(y)}
-            stroke={MID}
-            strokeWidth={HAIR}
-          />
+      {label(x0 - 8, POLAR + 2.5, 'POLAR')}
+      <line
+        x1={x0}
+        x2={x1}
+        y1={POLAR}
+        y2={POLAR}
+        stroke={MID}
+        strokeWidth={HAIR}
+      />
+      {label(x0 - 8, BASE + 2.5, 'IGLOO')}
+      <line
+        x1={x0}
+        x2={x1}
+        y1={BASE}
+        y2={BASE}
+        stroke={MID}
+        strokeWidth={HAIR}
+      />
+      <path d={`${path}H${x1}`} fill="none" stroke={LINE} strokeWidth={HAIR} />
+
+      {snapshots.map((x) => (
+        <g key={x}>
+          <Guide a={[x, POLAR + 3]} b={[x, level(x) - 3]} />
+          <Anchor at={[x, POLAR]} />
+          <Anchor at={[x, level(x)]} />
         </g>
       ))}
-      <path
-        d={`M${x0} ${LOCAL} H${x0 + 70} V${LOCAL - 10} H${x0 + 150} V${LOCAL - 20} H${x0 + 210} V${LOCAL - 36} H${x1}`}
-        fill="none"
+      {label(snapshots[0], POLAR - 10, 'SNAPSHOT', 'middle')}
+
+      <rect
+        x={x0}
+        y={BAND}
+        width={last - x0}
+        height={8}
+        fill={BG}
         stroke={LINE}
         strokeWidth={HAIR}
       />
-      <path
-        d={`M${x0} ${LEDGER} H${x0 + 70} V${LEDGER - 10} H${x0 + 120} V${LEDGER - 20} H${x0 + 150} V${LEDGER - 26} H${x0 + 210} V${LEDGER - 36} H${x1}`}
-        fill="none"
-        stroke={LINE}
+      <rect
+        x={last}
+        y={BAND}
+        width={x1 - last}
+        height={8}
+        fill={BG}
+        stroke={FAINT}
         strokeWidth={HAIR}
       />
-      <Guide a={[x0 + 120, LEDGER - 20]} b={[x0 + 120, LOCAL - 10]} />
-      <Anchor at={[x0 + 120, LEDGER - 20]} />
-      <Anchor at={[x0 + 210, LOCAL - 36]} />
-      <Anchor at={[x0 + 210, LEDGER - 36]} />
-      <Callout
-        at={[x0 + 120, LOCAL - 10]}
-        to={[x0 + 120, 134]}
-        route="v"
-        dot={false}
-        side="left"
-      >
-        A LATE EVENT, MISSED LOCALLY
-      </Callout>
-      <Callout
-        at={[x0 + 210, LEDGER - 36]}
-        to={[x0 + 210, 320]}
-        route="v"
-        side="left"
-      >
-        RECONCILED · LOCAL = LEDGER
-      </Callout>
+      {label((x0 + last) / 2, BAND + 22, 'SETTLED · FROM POLAR', 'middle')}
+      {label((last + x1) / 2, BAND + 22, 'LOCAL · OPEN BUCKETS', 'middle')}
     </>
   )
   return landscape(
     'm-reconcile',
     'Reconciliation',
-    'The local fold answers now; the ledger corrects it later.',
-    'Two step lines: the local state, folded as events are seen, and the ledger, folded in event order. A late event puts them out of step until reconciliation brings them back together.',
+    'Igloo answers now. Polar\u2019s snapshots correct it as buckets close.',
+    'Igloo\u2019s balance as one step line, rising as events land, with Polar\u2019s snapshots settling it at points along the way: settled usage from Polar up to the latest snapshot, open local buckets after it.',
     fig,
     [
       [
         'Two folds',
         [
-          'A local fold answers from what it has seen. The ledger folds in event order, including what arrived late.',
+          'Igloo folds what your process has seen. Polar folds everything, including events from your other processes and events that arrived late.',
         ],
       ],
       [
-        'Allowed to differ',
+        'Snapshots',
         [
-          'The two can differ for a while, and that is allowed: a check is answered from the local fold at once, and at the next reconciliation the local state is replaced by the ledger’s.',
+          'When a bucket closes, a late event lands or credits change, Polar pushes a snapshot: the customer\u2019s settled usage up to a point in time. It replaces Igloo\u2019s totals before that point, and the local buckets behind it are dropped.',
         ],
       ],
       [
-        'Nothing lost',
-        ['Nothing is lost, because the events are still there.'],
+        'Never backwards',
+        [
+          'Every snapshot carries a version, and an older one is never applied over a newer one. If the connection drops, Igloo keeps answering from what it has and asks for fresh snapshots when it is back.',
+        ],
       ],
     ],
   )
 })()
 
-// ---------------------------------------------------------------- 04 Credits · Grants and expiry
+// ---------------------------------------------------------------- 05 Credits · Grants and expiry
 
 const grants = (() => {
   const x0 = 60,
@@ -666,7 +547,7 @@ const grants = (() => {
   )
 })()
 
-// ---------------------------------------------------------------- 04 Credits · Crossing zero
+// ---------------------------------------------------------------- 05 Credits · Crossing zero
 
 const zero = (() => {
   const { line } = term(70, 150, 8, 11.6)
@@ -735,7 +616,7 @@ const zero = (() => {
   )
 })()
 
-// ---------------------------------------------------------------- 05 Invoices · Usage in, invoice out
+// ---------------------------------------------------------------- 06 Invoices · Usage in, invoice out
 
 const usageOut = (() => {
   const x0 = 56,
@@ -848,7 +729,7 @@ const usageOut = (() => {
   )
 })()
 
-// ---------------------------------------------------------------- 05 Invoices · Proration
+// ---------------------------------------------------------------- 06 Invoices · Proration
 
 const proration = (() => {
   const x0 = 60,
@@ -979,7 +860,7 @@ const proration = (() => {
   )
 })()
 
-// ---------------------------------------------------------------- 06 Entitlements · Benefits
+// ---------------------------------------------------------------- 07 Entitlements · Benefits
 
 const benefits = (() => {
   const x0 = 70,
@@ -1129,7 +1010,7 @@ const benefits = (() => {
   )
 })()
 
-// ---------------------------------------------------------------- 07 Agents · Keys and sessions
+// ---------------------------------------------------------------- 08 Agents · Keys and sessions
 
 const keys = (() => {
   const { line } = term(70, 150, 8, 11.6)
@@ -1187,7 +1068,7 @@ const keys = (() => {
   )
 })()
 
-// ---------------------------------------------------------------- 07 Agents · Asking the ledger
+// ---------------------------------------------------------------- 08 Agents · Asking the ledger
 
 const ask = (() => {
   const { line } = term(70, 150, 8, 11.6)
@@ -1466,9 +1347,7 @@ const glossary = (() => {
 })()
 
 export const more: Piece[] = [
-  environments,
   ingestion,
-  replay,
   tiers,
   reconciliation,
   grants,

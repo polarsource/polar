@@ -10,13 +10,14 @@ import {
 import LogoIcon from '@/components/Brand/logos/LogoIcon'
 import Link from 'next/link'
 import { Chapter } from './Chapter'
+import { GetStarted } from './GetStarted'
 import { CHAPTERS } from './content'
 import { KeyRow } from './Keys'
 import { Ruler } from './Ruler'
-import { Ticker } from './Ticker'
 import { pieces } from './pages'
 import { emit, reset } from './simulation'
 import { READER_CSS } from './styles'
+import { useTrafficDriver } from './traffic'
 
 const ids = pieces.map((p) => p.id)
 const byId = new Map(pieces.map((p) => [p.id, p]))
@@ -27,6 +28,7 @@ const byId = new Map(pieces.map((p) => [p.id, p]))
  * run on. `?page=m-meter` starts on a page.
  */
 export default function FieldGuideReader() {
+  useTrafficDriver()
   const scrollRef = useRef<HTMLDivElement>(null)
   const [current, setCurrent] = useState(ids[0])
   const [keys, setKeys] = useState(true)
@@ -115,7 +117,7 @@ export default function FieldGuideReader() {
       const k = e.key
       if (k === 'ArrowRight') turn(1)
       else if (k === 'ArrowLeft') turn(-1)
-      else if (/^[0-8]$/.test(k)) goChapter(Number(k))
+      else if (/^[0-9]$/.test(k)) goChapter(Number(k))
       else if (k === 'e' || k === 'E') emit()
       else if (k === 'r' || k === 'R') reset()
       else if (k === 'h' || k === 'H') setKeys((v) => !v)
@@ -137,7 +139,7 @@ export default function FieldGuideReader() {
           Billing for the Intelligence Era · The Manual
         </span>
         <div className="flex justify-end">
-          <Ticker />
+          <GetStarted />
         </div>
       </header>
       <div className="flex min-h-0 flex-1">

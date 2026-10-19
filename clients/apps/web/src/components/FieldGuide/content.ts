@@ -23,7 +23,7 @@ export const CHAPTERS: Chapter[] = [
     title: 'Billing as code',
     intro:
       'The catalogue is a file. Products, prices, meters and benefits are declared once, reviewed as a diff, and applied to an environment. What runs in production is what was reviewed.',
-    ids: ['m-code', 'm-cli', 'm-env'],
+    ids: ['m-code', 'm-cli'],
   },
   {
     n: '02',
@@ -31,7 +31,7 @@ export const CHAPTERS: Chapter[] = [
     title: 'Events',
     intro:
       'An event is a fact: at this time, this customer, through this actor, did this thing, this much. The ledger only grows, and everything else is derived from it.',
-    ids: ['m-event', 'm-ledger', 'm-ingest', 'm-replay'],
+    ids: ['m-event', 'm-ledger', 'm-ingest'],
   },
   {
     n: '03',
@@ -39,10 +39,18 @@ export const CHAPTERS: Chapter[] = [
     title: 'Meters',
     intro:
       'A meter does not count; it folds. Given the state so far and the next event, it returns the next state. Nothing is stored that cannot be recomputed, so nothing can drift.',
-    ids: ['m-meter', 'm-latency', 'm-tiers', 'm-reconcile'],
+    ids: ['m-meter', 'm-fold', 'm-tiers'],
   },
   {
     n: '04',
+    name: 'Local-first',
+    title: 'Local-first',
+    intro:
+      'Igloo runs inside your own process. It folds every event with the reducers Polar runs, in your own Redis, so a check is answered where your code is. Polar settles the usage behind it and sends that back.',
+    ids: ['m-igloo', 'm-latency', 'm-reconcile'],
+  },
+  {
+    n: '05',
     name: 'Credits',
     title: 'Credits',
     intro:
@@ -50,7 +58,7 @@ export const CHAPTERS: Chapter[] = [
     ids: ['m-credits', 'm-grants', 'm-zero'],
   },
   {
-    n: '05',
+    n: '06',
     name: 'Invoices',
     title: 'Invoices',
     intro:
@@ -58,7 +66,7 @@ export const CHAPTERS: Chapter[] = [
     ids: ['m-invoice', 'm-usage', 'm-proration'],
   },
   {
-    n: '06',
+    n: '07',
     name: 'Entitlements',
     title: 'Entitlements',
     intro:
@@ -66,7 +74,7 @@ export const CHAPTERS: Chapter[] = [
     ids: ['m-gates', 'm-flow', 'm-benefits'],
   },
   {
-    n: '07',
+    n: '08',
     name: 'Agents',
     title: 'Agents',
     intro:
@@ -74,7 +82,7 @@ export const CHAPTERS: Chapter[] = [
     ids: ['m-nesting', 'm-keys', 'm-ask'],
   },
   {
-    n: '08',
+    n: '09',
     name: 'Appendix',
     title: 'Appendix',
     intro: 'The event catalogue, the API in one call, and the glossary.',

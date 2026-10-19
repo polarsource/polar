@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 import { cover } from './cover'
+import { fold } from './fold'
+import { igloo } from './igloo'
 import { manual } from './manual'
 import { more } from './more'
 
@@ -29,23 +31,24 @@ export type Notes = [string, string[]][]
 /** The book, in reading order: the front matter, then the chapters, each with its pages. */
 export const chapters: { title: string; ids: string[] }[] = [
   { title: 'Front matter', ids: ['cover', 'm-contents', 'm-principle'] },
-  { title: '01 · Billing as code', ids: ['m-code', 'm-cli', 'm-env'] },
+  { title: '01 · Billing as code', ids: ['m-code', 'm-cli'] },
   {
     title: '02 · Events',
-    ids: ['m-event', 'm-ledger', 'm-ingest', 'm-replay'],
+    ids: ['m-event', 'm-ledger', 'm-ingest'],
   },
   {
     title: '03 · Meters',
-    ids: ['m-meter', 'm-latency', 'm-tiers', 'm-reconcile'],
+    ids: ['m-meter', 'm-fold', 'm-tiers'],
   },
-  { title: '04 · Credits', ids: ['m-credits', 'm-grants', 'm-zero'] },
-  { title: '05 · Invoices', ids: ['m-invoice', 'm-usage', 'm-proration'] },
-  { title: '06 · Entitlements', ids: ['m-gates', 'm-flow', 'm-benefits'] },
-  { title: '07 · Agents', ids: ['m-nesting', 'm-keys', 'm-ask'] },
+  { title: '04 · Local-first', ids: ['m-igloo', 'm-latency', 'm-reconcile'] },
+  { title: '05 · Credits', ids: ['m-credits', 'm-grants', 'm-zero'] },
+  { title: '06 · Invoices', ids: ['m-invoice', 'm-usage', 'm-proration'] },
+  { title: '07 · Entitlements', ids: ['m-gates', 'm-flow', 'm-benefits'] },
+  { title: '08 · Agents', ids: ['m-nesting', 'm-keys', 'm-ask'] },
   { title: 'Appendix', ids: ['m-catalogue', 'm-api', 'm-glossary'] },
 ]
 const ORDER = chapters.flatMap((c) => c.ids)
-const all = [cover, ...manual, ...more]
+const all = [cover, fold, igloo, ...manual, ...more]
 export const pieces: Piece[] = ORDER.map((id) => {
   const p = all.find((x) => x.id === id)
   if (!p) throw new Error(`No page ${id}`)

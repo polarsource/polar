@@ -222,6 +222,7 @@ export const manual: Piece[] = [
               ink={NIGHT_INK}
               size={7.5}
               lh={1.35}
+              highlight
             />
             <Guide a={[R, fy + 130]} b={[R + 44, fy + 130]} />
             <path
@@ -326,7 +327,7 @@ export const manual: Piece[] = [
               route="v"
               dot={false}
             >
-              polar.config.ts · IN GIT
+              polar.config.ts
             </Callout>
           </g>
         </Figure>,
@@ -1090,18 +1091,24 @@ export const manual: Piece[] = [
       )
     },
     {
-      sub: 'Answered from the state on hand, in no time. The stream catches up behind it.',
+      sub: 'Answered from the state in your own Redis. Polar catches up behind it.',
       notes: [
         [
           'No round trip',
           [
-            'A check, "may this customer call the API?", never waits for the network. It is answered from the state already on hand, which is the fold of every event seen so far. That takes no time at all.',
+            'A check, "may this customer call the API?", is answered by Igloo from the state it holds: the fold of every event seen so far. It does not wait on Polar.',
           ],
         ],
         [
-          'The stream',
+          'Same reducers',
           [
-            'The stream keeps arriving. Each new event is folded in as it lands, so the next check is answered from a newer state. Latency moves out of the request and into the stream, where it is cheap.',
+            'When Igloo connects, Polar sends it the organization\u2019s reducers, so an event is folded locally exactly as Polar folds it, into the same five-minute buckets.',
+          ],
+        ],
+        [
+          'First sight',
+          [
+            'The one wait is the first check for a customer Igloo has not seen. It asks Polar for that customer\u2019s usage once, for up to five seconds, and not again on that connection.',
           ],
         ],
       ],
@@ -1118,7 +1125,7 @@ export const manual: Piece[] = [
     2,
     () => {
       const x = 96,
-        w = 176,
+        w = 300,
         top = 160,
         rh = 16
       const past = 12
@@ -1134,10 +1141,7 @@ export const manual: Piece[] = [
           <g transform="translate(138 22)">
             <LiveLedger x={x} w={w} top={top} rh={rh} past={past} />
             <Callout at={[mark, rowY(0)]} to={[mark + 28, rowY(0)]}>
-              FIRST EVENT
-            </Callout>
-            <Callout at={[mark, rowY(4)]} to={[mark + 28, rowY(4)]}>
-              SET · NEVER CHANGED
+              IMMUTABLE EVENT LOG
             </Callout>
             <Callout at={[mark, head]} to={[mark + 28, head]}>
               HEAD · NOW
@@ -1381,7 +1385,6 @@ export const manual: Piece[] = [
           [
             ['The config', '4'],
             ['Review and apply', '6'],
-            ['Environments', '8'],
           ],
         ],
         [
@@ -1390,7 +1393,6 @@ export const manual: Piece[] = [
             ['Anatomy of an event', '10'],
             ['The ledger', '12'],
             ['Ingestion and ordering', '14'],
-            ['Replay', '16'],
           ],
         ],
         [

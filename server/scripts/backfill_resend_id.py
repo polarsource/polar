@@ -53,10 +53,8 @@ async def enqueue_sync(
                 User.is_deleted,
                 and_(
                     User.blocked_at.is_(None),
-                    User.id.in_(
-                        UserOrganizationRepository.get_user_ids_with_organization_status_statement(
-                            ACTIVE_ORGANIZATION_STATUSES
-                        )
+                    UserOrganizationRepository.get_has_organization_with_status_clause(
+                        User.id, ACTIVE_ORGANIZATION_STATUSES
                     ),
                 ),
             )

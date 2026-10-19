@@ -18,10 +18,8 @@ async def remove_inactive_users() -> None:
     statement = select(User.id).where(
         ~User.is_deleted,
         User.resend_id.is_not(None),
-        User.id.not_in(
-            UserOrganizationRepository.get_user_ids_with_organization_status_statement(
-                ACTIVE_ORGANIZATION_STATUSES
-            )
+        ~UserOrganizationRepository.get_has_organization_with_status_clause(
+            User.id, ACTIVE_ORGANIZATION_STATUSES
         ),
     )
     await enqueue_sync_users(statement)

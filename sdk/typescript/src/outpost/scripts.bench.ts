@@ -30,6 +30,7 @@ const writeArgs = (identity: string, bucketStart: number) => [
 
 let redisServer: RedisServer;
 let redis: Redis;
+let writeBucketSha: string;
 let readStateSha: string;
 let applySnapshotSha: string;
 
@@ -41,7 +42,8 @@ beforeAll(async () => {
   redisServer = await startRedisServer();
   redis = new Redis(redisServer.socket);
   await once(redis, "ready");
-  // The client loads the read and snapshot scripts once and calls them by hash.
+  // The client loads each script once and calls it by hash.
+  writeBucketSha = (await redis.script("LOAD", WRITE_BUCKET_SCRIPT)) as string;
   readStateSha = (await redis.script("LOAD", READ_STATE_SCRIPT)) as string;
   applySnapshotSha = (await redis.script("LOAD", APPLY_SNAPSHOT_SCRIPT)) as string;
   for (const buckets of BUCKET_COUNTS) await seedState(identityOf(buckets), buckets);
@@ -59,8 +61,8 @@ describe("WRITE_BUCKET", () => {
     bench(
       `write one event to a ${buckets}-bucket state`,
       async () => {
-        await redis.eval(
-          WRITE_BUCKET_SCRIPT,
+        await redis.evalsha(
+          writeBucketSha,
           1,
           ...writeArgs(identityOf(buckets), newestBucketStart),
         );
@@ -74,7 +76,7 @@ describe("WRITE_BUCKET", () => {
       const pipeline = redis.pipeline();
       for (const reducer of REDUCERS) {
         const identity = `external:alice:${reducer}`;
-        pipeline.eval(WRITE_BUCKET_SCRIPT, 1, ...writeArgs(identity, COLD_UNTIL));
+        pipeline.evalsha(writeBucketSha, 1, ...writeArgs(identity, COLD_UNTIL));
       }
       const results = await pipeline.exec();
       for (const [error] of results ?? []) if (error) throw error;

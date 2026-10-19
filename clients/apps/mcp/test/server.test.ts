@@ -39,6 +39,11 @@ test('CORS, metadata, unknown routes and bearer challenges remain unchanged', as
     bearer_methods_supported: ['header'],
     resource_name: 'Polar',
   })
+  const challenge = await request('/.well-known/openai-apps-challenge')
+  expect(challenge.headers.get('Content-Type')).toBe('text/plain')
+  expect(await challenge.text()).toBe(
+    'ZjVpZNBFeHL9gB3r9BKCLpb68RF88tIzveJIntQm90E',
+  )
   for (const path of [
     '/mcp/unknown',
     '/mcp/polar-mcp/',

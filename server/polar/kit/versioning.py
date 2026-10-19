@@ -32,6 +32,7 @@ from starlette.responses import JSONResponse
 from starlette.routing import BaseRoute, Match
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from starlette.websockets import WebSocketClose
+from typing_extensions import TypeForm
 
 _API_VERSION_PATTERN = re.compile(r"^(\d{4})-(\d{2})$")
 
@@ -207,7 +208,10 @@ def _get_omitted_schema_names(version: APIVersion) -> set[str]:
                 for metadata in field.metadata
             ):
                 schema = TypeAdapter(
-                    types.GenericAlias(list, (field.annotation,))
+                    typing.cast(
+                        TypeForm[typing.Any],
+                        types.GenericAlias(list, (field.annotation,)),
+                    )
                 ).json_schema()
                 names.update(schema.get("$defs", {}))
     return names

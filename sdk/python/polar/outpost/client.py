@@ -8,6 +8,7 @@ import hashlib
 import json
 import math
 import random
+import time
 import types
 import typing
 import uuid
@@ -22,6 +23,8 @@ from httpx_ws import (
 )
 from opentelemetry import context as otel_context
 from opentelemetry import trace
+from opentelemetry.metrics import Counter, Histogram
+from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.trace import Span, StatusCode
 from opentelemetry.util.types import AttributeValue
@@ -46,7 +49,11 @@ from polar.outpost.reducer import (
     reduce,
     with_matchers,
 )
-from polar.outpost.telemetry import create_tracer_provider, is_telemetry_enabled
+from polar.outpost.telemetry import (
+    create_meter_provider,
+    create_tracer_provider,
+    is_telemetry_enabled,
+)
 
 
 class PolarOutpostError(PolarError): ...
@@ -377,6 +384,10 @@ class Outpost:
         self._telemetry = is_telemetry_enabled(telemetry)
         self._tracer_provider: TracerProvider | None = None
         self._tracer: trace.Tracer = trace.NoOpTracer()
+        self._meter_provider: MeterProvider | None = None
+        self._ingest_duration: Histogram | None = None
+        self._ingest_events: Counter | None = None
+        self._ingest_buckets: Counter | None = None
         self._stack = contextlib.AsyncExitStack()
         self._redis: Redis | None = None
         self._websocket: AsyncWebSocketSession | None = None
@@ -417,6 +428,13 @@ class Outpost:
         if self._telemetry:
             self._tracer_provider = create_tracer_provider(self._client)
             self._tracer = self._tracer_provider.get_tracer("polar.outpost")
+            self._meter_provider = create_meter_provider(self._client)
+            meter = self._meter_provider.get_meter("polar.outpost")
+            self._ingest_duration = meter.create_histogram(
+                "outpost.ingest.duration", unit="s"
+            )
+            self._ingest_events = meter.create_counter("outpost.ingest.events")
+            self._ingest_buckets = meter.create_counter("outpost.ingest.buckets")
         try:
             with self._span("outpost.redis.connect"):
                 self._redis = await self._stack.enter_async_context(
@@ -494,7 +512,9 @@ class Outpost:
     @_raise_redis_unavailable
     async def ingest(self, event: EventInput) -> None:
         self._require_redis()
-        with self._span("outpost.ingest", **{"outpost.events": 1}) as span:
+        started = time.perf_counter()
+        outcome = "ok"
+        try:
             parsed = self._parse_event(event)
             if not self._configured.is_set():
                 with anyio.fail_after(5):
@@ -504,6 +524,8 @@ class Outpost:
                 [parsed],
                 oldest_bucket_start=get_bucket_start(parsed.timestamp),
             )
+            if self._ingest_buckets is not None:
+                self._ingest_buckets.add(len(updates))
             await self._warm_actor(parsed.external_customer_id)
             assert self._redis is not None
             writes: list[tuple[str, list[str | int | float]]] = []
@@ -541,7 +563,15 @@ class Outpost:
                 await self._receive_state(identity, decode_state(state))
             if first_error is not None:
                 raise first_error
-            span.set_attribute("outpost.buckets", len(updates))
+        except BaseException:
+            outcome = "error"
+            raise
+        finally:
+            attributes = {"outpost.outcome": outcome}
+            if self._ingest_duration is not None:
+                self._ingest_duration.record(time.perf_counter() - started, attributes)
+            if self._ingest_events is not None:
+                self._ingest_events.add(1, attributes)
 
     @_raise_redis_unavailable
     async def meter(
@@ -630,11 +660,13 @@ class Outpost:
             span.set_attribute("outpost.read.outcome", outcome)
 
     async def flush_telemetry(self) -> bool:
-        provider = self._tracer_provider
-        if provider is None:
+        tracer_provider = self._tracer_provider
+        meter_provider = self._meter_provider
+        if tracer_provider is None or meter_provider is None:
             return True
         self._report_sync()
-        return await anyio.to_thread.run_sync(provider.force_flush)
+        flushed = await anyio.to_thread.run_sync(tracer_provider.force_flush)
+        return await anyio.to_thread.run_sync(meter_provider.force_flush) and flushed
 
     async def _warm_actor(self, customer: str) -> list[tuple[Reducer, LocalState]]:
         if not self._configured.is_set():
@@ -687,12 +719,19 @@ class Outpost:
         self._sync_applied = 0
 
     async def _shutdown_telemetry(self) -> None:
-        provider = self._tracer_provider
+        tracer_provider = self._tracer_provider
+        meter_provider = self._meter_provider
         self._tracer_provider = None
         self._tracer = trace.NoOpTracer()
-        if provider is not None:
-            with anyio.CancelScope(shield=True):
-                await anyio.to_thread.run_sync(provider.shutdown)
+        self._meter_provider = None
+        self._ingest_duration = None
+        self._ingest_events = None
+        self._ingest_buckets = None
+        with anyio.CancelScope(shield=True):
+            if tracer_provider is not None:
+                await anyio.to_thread.run_sync(tracer_provider.shutdown)
+            if meter_provider is not None:
+                await anyio.to_thread.run_sync(meter_provider.shutdown)
 
     def _customer_arguments(self, customer: str) -> dict[str, str]:
         kind, identifier = customer.split(":", 1)

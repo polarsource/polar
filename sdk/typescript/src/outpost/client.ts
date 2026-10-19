@@ -1,3 +1,4 @@
+import type { MeterProvider } from "@opentelemetry/sdk-metrics";
 import type { TracerProvider } from "@opentelemetry/sdk-trace";
 
 import {
@@ -5,6 +6,8 @@ import {
   SpanStatusCode,
   trace,
   type Attributes,
+  type Counter,
+  type Histogram,
   type Span,
   type Tracer,
 } from "@opentelemetry/api";
@@ -31,7 +34,7 @@ import {
   quantity,
 } from "./reducer";
 import { READ_STATE_SCRIPT, WRITE_BUCKET_SCRIPT, APPLY_SNAPSHOT_SCRIPT } from "./scripts";
-import { createTracerProvider, isTelemetryEnabled } from "./telemetry";
+import { createMeterProvider, createTracerProvider, isTelemetryEnabled } from "./telemetry";
 
 const CACHE_SIZE = 1024;
 const SYNC_INTERVAL = 30_000;
@@ -252,6 +255,10 @@ export class Outpost {
   private _connectionId?: string;
   private tracerProvider?: TracerProvider;
   private tracer?: Tracer;
+  private meterProvider?: MeterProvider;
+  private ingestDuration?: Histogram;
+  private ingestEvents?: Counter;
+  private ingestBuckets?: Counter;
   private reducers: Reducer[] = [];
   private matchers: ReducerMatchers = [];
   private readonly cache = new Map<string, LocalState>();
@@ -301,6 +308,11 @@ export class Outpost {
     if (isTelemetryEnabled(this.options.telemetry ?? true)) {
       this.tracerProvider = createTracerProvider(this.options.client);
       this.tracer = this.tracerProvider.getTracer("polar.outpost");
+      this.meterProvider = createMeterProvider(this.options.client);
+      const meter = this.meterProvider.getMeter("polar.outpost");
+      this.ingestDuration = meter.createHistogram("outpost.ingest.duration", { unit: "s" });
+      this.ingestEvents = meter.createCounter("outpost.ingest.events");
+      this.ingestBuckets = meter.createCounter("outpost.ingest.buckets");
     }
     try {
       this.redis = new Redis(this.redisUrl, {
@@ -417,9 +429,14 @@ export class Outpost {
     this.reducers = [];
     this.matchers = [];
     const tracerProvider = this.tracerProvider;
+    const meterProvider = this.meterProvider;
     this.tracerProvider = undefined;
     this.tracer = undefined;
-    await tracerProvider?.shutdown();
+    this.meterProvider = undefined;
+    this.ingestDuration = undefined;
+    this.ingestEvents = undefined;
+    this.ingestBuckets = undefined;
+    await Promise.all([tracerProvider?.shutdown(), meterProvider?.shutdown()]);
   }
 
   async [Symbol.asyncDispose](): Promise<void> {
@@ -428,48 +445,53 @@ export class Outpost {
 
   async ingest(event: EventInput): Promise<void> {
     const redis = this.requireRedis();
-    return this.trace(
-      "outpost.ingest",
-      async (span) => {
-        const parsed = parseEvent(event);
-        await this.waitConfigured();
-        const updates = reduce(this.matchers, [parsed], getBucketStart(parsed.timestamp));
-        await this.warmActor(parsed.customer);
-        const pipeline = redis.pipeline() as OutpostPipeline;
-        for (const update of updates) {
-          const identity = `${update.customer}:${update.reducer}`;
-          const statistics = update.statistics;
-          pipeline.outpostWriteBucket(
-            `outpost:state:${identity}`,
-            identity,
-            this.channel,
-            generateEpoch(),
-            update.bucketStart,
-            statistics.count,
-            statistics.sum,
-            statistics.min ?? "",
-            statistics.max ?? "",
-          );
+    const started = performance.now();
+    let outcome = "ok";
+    try {
+      const parsed = parseEvent(event);
+      await this.waitConfigured();
+      const updates = reduce(this.matchers, [parsed], getBucketStart(parsed.timestamp));
+      this.ingestBuckets?.add(updates.length);
+      await this.warmActor(parsed.customer);
+      const pipeline = redis.pipeline() as OutpostPipeline;
+      for (const update of updates) {
+        const identity = `${update.customer}:${update.reducer}`;
+        const statistics = update.statistics;
+        pipeline.outpostWriteBucket(
+          `outpost:state:${identity}`,
+          identity,
+          this.channel,
+          generateEpoch(),
+          update.bucketStart,
+          statistics.count,
+          statistics.sum,
+          statistics.min ?? "",
+          statistics.max ?? "",
+        );
+      }
+      const results = await pipeline.exec().catch((error: unknown) => {
+        throw redisUnavailable(error);
+      });
+      if (results === null) throw new UnavailableRedisError();
+      let firstError: Error | undefined;
+      for (const [index, [error, state]] of results.entries()) {
+        if (error) {
+          firstError ??= error;
+          continue;
         }
-        const results = await pipeline.exec().catch((error: unknown) => {
-          throw redisUnavailable(error);
-        });
-        if (results === null) throw new UnavailableRedisError();
-        let firstError: Error | undefined;
-        for (const [index, [error, state]] of results.entries()) {
-          if (error) {
-            firstError ??= error;
-            continue;
-          }
-          const update = updates[index];
-          const identity = `${update.customer}:${update.reducer}`;
-          await this.receiveState(identity, decodeState(state as string[]));
-        }
-        if (firstError) throw redisUnavailable(firstError);
-        span.setAttribute("outpost.buckets", updates.length);
-      },
-      { "outpost.events": 1 },
-    );
+        const update = updates[index];
+        const identity = `${update.customer}:${update.reducer}`;
+        await this.receiveState(identity, decodeState(state as string[]));
+      }
+      if (firstError) throw redisUnavailable(firstError);
+    } catch (error) {
+      outcome = "error";
+      throw error;
+    } finally {
+      const attributes = { "outpost.outcome": outcome };
+      this.ingestDuration?.record((performance.now() - started) / 1000, attributes);
+      this.ingestEvents?.add(1, attributes);
+    }
   }
 
   async meter(input: Customer & { meter_id: string }): Promise<CustomerMeter | null> {
@@ -531,7 +553,7 @@ export class Outpost {
 
   async flushTelemetry(): Promise<void> {
     this.reportSync();
-    await this.tracerProvider?.forceFlush();
+    await Promise.all([this.tracerProvider?.forceFlush(), this.meterProvider?.forceFlush()]);
   }
 
   private async warmActor(customer: string): Promise<[Reducer, LocalState][]> {

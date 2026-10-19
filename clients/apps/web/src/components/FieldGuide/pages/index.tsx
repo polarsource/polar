@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import { agentOps } from './agents'
 import { marginCheck } from './check'
+import { delegation } from './identities'
+import { branchReplay, simulationCompare } from './simulations'
 import { cover } from './cover'
 import { fold } from './fold'
 import { marginFloor, signals } from './guardrails'
@@ -49,12 +51,16 @@ export const chapters: { title: string; ids: string[] }[] = [
   },
   { title: '04 · Local-first', ids: ['m-igloo', 'm-latency', 'm-reconcile'] },
   { title: '05 · Guardrails', ids: ['m-signals', 'm-margin'] },
-  { title: '06 · Credits', ids: ['m-credits', 'm-grants', 'm-zero'] },
-  { title: '07 · Entitlements', ids: ['m-gates', 'm-flow', 'm-entitlements'] },
-  { title: '08 · Agents', ids: ['m-nesting', 'm-ask'] },
+  { title: '06 · Simulations', ids: ['m-branch', 'm-compare'] },
+  { title: '07 · Credits', ids: ['m-credits', 'm-grants', 'm-zero'] },
+  { title: '08 · Entitlements', ids: ['m-gates', 'm-flow', 'm-entitlements'] },
+  { title: '09 · Identities', ids: ['m-nesting', 'm-delegate'] },
 ]
 const ORDER = chapters.flatMap((c) => c.ids)
 const all = [
+  delegation,
+  branchReplay,
+  simulationCompare,
   agentOps,
   cover,
   marginCheck,

@@ -104,6 +104,21 @@ const guardrails = (
   </>
 )
 
+/** A branch: production along the bottom, a pricing branch forking off it, replayed, and merged back in. */
+const simulations = (
+  <>
+    {line(20, 76, 100, 76, INK)}
+    <path d="M36 76C46 76 42 48 54 48H66C78 48 74 76 84 76" stroke={DIM} />
+    {[36, 84].map((x) => (
+      <circle key={x} cx={x} cy={76} r={3} stroke={INK} fill="#141414" />
+    ))}
+    {[54, 66].map((x) => (
+      <circle key={x} cx={x} cy={48} r={2.5} stroke={DIM} fill="#141414" />
+    ))}
+    <line x1={60} y1={52} x2={60} y2={72} stroke={FAINT} {...DOTS} />
+  </>
+)
+
 /** A balance drawn down by usage, step by step, and lifted by a grant before it reaches zero. */
 const DRAIN = [
   'M22 32H30V38H38V44H46V50H54V56H62V62H68',
@@ -154,11 +169,11 @@ const gates = (
   </>
 )
 
-/** The customer at the root, two agents under it, three actors under each: a tree, read top down. */
+/** Identities, nested: a company at the root, two identities under it, three under each: a tree, read top down. */
 const AGENTS = [36, 84]
 const actorsOf = (x: number) => [x - 14, x, x + 14]
 
-const agents = (
+const identities = (
   <>
     <rect x={54} y={22} width={12} height={12} stroke={INK} />
     <path d={`M60 34V44M${AGENTS[0]} 44H${AGENTS[1]}`} stroke={DIM} />
@@ -205,7 +220,8 @@ export const POSTERS: Record<string, ReactNode> = {
   Meters: fold,
   'Local-first': local,
   Guardrails: guardrails,
+  Simulations: simulations,
   Credits: credits,
   Entitlements: gates,
-  Agents: agents,
+  Identities: identities,
 }

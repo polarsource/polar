@@ -68,6 +68,14 @@ export const CHAPTERS: Chapter[] = [
   },
   {
     n: '06',
+    name: 'Simulations',
+    title: 'Simulations',
+    intro:
+      'Try a pricing change before your customers do. Branch your billing, replay last month’s real usage through it, pull levers like churn and growth, and see revenue, margin and who would pay more. When it looks right, deploy it like any other change.',
+    ids: ['m-branch', 'm-compare'],
+  },
+  {
+    n: '07',
     name: 'Credits',
     title: 'Credits',
     intro:
@@ -75,7 +83,7 @@ export const CHAPTERS: Chapter[] = [
     ids: ['m-credits', 'm-grants', 'm-zero'],
   },
   {
-    n: '07',
+    n: '08',
     name: 'Entitlements',
     title: 'Entitlements',
     intro:
@@ -83,12 +91,12 @@ export const CHAPTERS: Chapter[] = [
     ids: ['m-gates', 'm-flow', 'm-entitlements'],
   },
   {
-    n: '08',
-    name: 'Agents',
-    title: 'Agents',
+    n: '09',
+    name: 'Identities',
+    title: 'Identities',
     intro:
-      'Customers, agents and actors nest. A key names an actor, a session names a run, and every event carries who did it. An agent is a customer that can ask.',
-    ids: ['m-nesting', 'm-ask'],
+      'Customers are not all humans anymore. You might sell to agents, spawn them on a customer’s behalf, or both. Polar calls each of them an identity, human or machine, and gives every one the same meters, credits and entitlements.',
+    ids: ['m-nesting', 'm-delegate'],
   },
 ]
 

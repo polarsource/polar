@@ -484,7 +484,7 @@ export const manual: Piece[] = [
             />
             <circle cx={fold} cy={fy} r={4.5} fill={LINE} />
             <Callout at={[x0, 164]} to={[x0, 128]} route="v">
-              EVENTS · IN ORDER
+              EVENTS
             </Callout>
             <Callout at={[x1, fy]} to={[x1, 284]} route="v" side="left">
               STATE · ONE VALUE
@@ -1065,8 +1065,8 @@ export const manual: Piece[] = [
   // 08 Customers, agents and actors: nested boxes
   page(
     'm-nesting',
-    'Customers, agents, actors',
-    'A tree: the customer at the root, its agents beneath, the actors beneath those. Usage is counted at the leaves and summed upward; access is set at the root and inherited. Chapter 6.',
+    'Nested identities',
+    'A tree of identities: a company at the root, a human team and an agent beneath it, and the people, agents and runs beneath those. Usage is counted at the leaves and summed upward; access is set higher up and inherited. Chapter 9.',
     960,
     540,
     2,
@@ -1077,6 +1077,11 @@ export const manual: Piece[] = [
         L2 = 304
       const agents = [cx - 70, cx + 70]
       const actors = (ax: number) => [ax - 40, ax, ax + 40]
+      // A human team's people and agent, and the support agent's runs.
+      const LEAVES = [
+        ['ada', 'lin', 'bot'],
+        ['run', 'run', 'run'],
+      ]
       const node = (
         x: number,
         y: number,
@@ -1109,7 +1114,7 @@ export const manual: Piece[] = [
       return sheet(
         960,
         540,
-        'Customers, agents, actors',
+        'Nested identities',
         <Figure x={40} y={156} w={620} h={300}>
           <g transform="translate(138 22)">
             <line
@@ -1167,12 +1172,18 @@ export const manual: Piece[] = [
                 ))}
               </g>
             ))}
-            {node(cx, L0, 'CUSTOMER · acme', 'ink', 92)}
-            {node(agents[0], L1, 'AGENT', 'mid')}
-            {node(agents[1], L1, 'AGENT', 'mid')}
+            {node(cx, L0, 'acme', 'ink', 92)}
+            {node(agents[0], L1, 'research', 'mid')}
+            {node(agents[1], L1, 'support-bot', 'mid')}
             {agents.flatMap((ax, i) =>
               actors(ax).map((tx, j) =>
-                node(tx, L2, 'actor', i === 0 && j === 1 ? 'ink' : 'mid', 32),
+                node(
+                  tx,
+                  L2,
+                  LEAVES[i][j],
+                  i === 1 && j === 1 ? 'ink' : 'mid',
+                  32,
+                ),
               ),
             )}
             <line
@@ -1228,35 +1239,37 @@ export const manual: Piece[] = [
               ACCESS ROLLS DOWN
             </text>
             <Callout
-              at={[actors(agents[0])[1], L2 + 9]}
-              to={[actors(agents[0])[1], L2 + 34]}
+              at={[actors(agents[1])[1], L2 + 9]}
+              to={[actors(agents[1])[1], L2 + 34]}
               route="v"
               dot={false}
             >
-              A RUN, A SESSION, A KEY
+              ONE RUN, ITS OWN IDENTITY
             </Callout>
           </g>
         </Figure>,
       )
     },
     {
-      sub: 'Usage rolls up; access rolls down.',
+      sub: 'People and agents, in whatever hierarchy you design.',
       notes: [
         [
-          'Nesting',
+          'Human or machine',
           [
-            'A customer holds its agents, and each agent its actors: a run, a session, a key.',
+            'A person, a team, an agent, a single agent run: each is an identity, and each holds meters, credits and entitlements the same way.',
           ],
         ],
         [
-          'Usage rolls up',
+          'Nested',
           [
-            'Every event names its actor, so usage is counted at the leaves and summed upward.',
+            'Identities nest in the shape your product needs: a company, its teams, the people and agents in them, and the runs those agents start.',
           ],
         ],
         [
-          'Access rolls down',
-          ['Entitlements are set at the root and inherited all the way down.'],
+          'Up and down',
+          [
+            'Every event names the identity that acted. Usage adds up the tree to whoever pays, and entitlements set higher up apply to everything beneath.',
+          ],
         ],
       ],
     },
@@ -1316,8 +1329,8 @@ export const manual: Piece[] = [
         [
           'Agents',
           [
-            ['Customers, agents, actors', '52'],
-            ['Asking Polar', '56'],
+            ['Nested identities', '52'],
+            ['Shared and delegated', '56'],
           ],
         ],
       ]

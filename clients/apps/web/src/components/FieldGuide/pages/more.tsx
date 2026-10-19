@@ -556,11 +556,8 @@ const zero = (() => {
         tone: 'del',
       },
     ],
-    [
-      { t: '   10:07  ' },
-      { t: 'signal', tone: 'del' },
-      D('   balance below zero, your app decides'),
-    ],
+    [{ t: '   10:07  ' }, { t: 'signal', tone: 'del' }, { t: '  balance < 0' }],
+    [D('          → your app decides what happens next')],
     [],
     [
       { t: '   10:31  ' },
@@ -749,62 +746,6 @@ const entitlements = (() => {
   )
 })()
 
-// ---------------------------------------------------------------- 07 Agents · Asking Polar
-
-const ask = (() => {
-  const { line } = term(70, 150, 8, 11.6)
-  const rows: TermTok[][] = [
-    [D('you')],
-    [{ t: 'Which customers ran out of credits this week?' }],
-    [],
-    [D('polar')],
-    [{ t: 'Three customers crossed zero: Atlas on Tuesday, Northwind on' }],
-    [{ t: 'Thursday, and Acme this morning. Each lost API access on the' }],
-    [{ t: 'crossing. Shall I grant each of them 1,000 credits?' }],
-    [],
-    [D('you')],
-    [{ t: 'Yes, and tell me when Acme is back.' }],
-    [],
-    [D('polar')],
-    [
-      { t: '✓ ' },
-      { t: 'credit.granted × 3' },
-      D('   evt_01JC1 · evt_01JC2 · evt_01JC3'),
-    ],
-    [{ t: '✓ ' }, { t: 'entitlement.granted × 3' }, D('   api')],
-    [{ t: 'Acme is back. I will say so when its balance drops under 500.' }],
-  ]
-  return landscape(
-    'm-ask',
-    'Asking Polar',
-    'Any question about a customer is a query over its events.',
-    'A conversation with Polar: a question about the week, an answer read from the event log, a grant made on request, and a promise to watch.',
-    <>
-      {rows.map((toks, i) => (toks.length ? line(i, 0, toks, `r${i}`) : null))}
-    </>,
-    [
-      [
-        'Why it works',
-        [
-          'Because every number is a fold over events, any question about a customer is a query over the event log, and it is one call away.',
-        ],
-      ],
-      [
-        'What it can do',
-        [
-          'Read any state, replay any meter, and write the events a person could: a grant, a revocation, a note. Each action is an event with the agent as its actor.',
-        ],
-      ],
-      [
-        'What it cannot',
-        [
-          'Change the past. The event log is append only for agents too, so an agent’s mistake is a visible event, not a silent edit.',
-        ],
-      ],
-    ],
-  )
-})()
-
 export const more: Piece[] = [
   ingestion,
   tiers,
@@ -812,5 +753,4 @@ export const more: Piece[] = [
   grants,
   zero,
   entitlements,
-  ask,
 ]

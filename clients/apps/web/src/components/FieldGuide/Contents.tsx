@@ -46,7 +46,7 @@ export function Contents() {
       ref={ref}
       data-undrawn
       aria-label="Chapters"
-      className="grid grid-cols-2 gap-4 lg:grid-cols-4 [&:has(button:hover)>button:not(:hover)]:opacity-40"
+      className="grid grid-cols-2 gap-4 lg:grid-cols-3 [&:has(button:hover)>button:not(:hover)]:opacity-40"
     >
       {chapters.map((c) => (
         <button

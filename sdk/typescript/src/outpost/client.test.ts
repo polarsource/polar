@@ -680,6 +680,7 @@ it.each([
 
     const span = exported.find((span) => span.name === "outpost.snapshot.received")!;
     expect(span.attributes).toMatchObject({
+      "outpost.customer": "external:alice",
       "outpost.local.cold_until": bucket - BUCKET_SIZE,
       "outpost.local.count": 2,
       "outpost.local.sum": 8,

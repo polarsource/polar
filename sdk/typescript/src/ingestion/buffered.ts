@@ -26,10 +26,19 @@ export interface BufferedIngestionOptions {
   onDropped?: (events: EventInput[], reason: DropReason) => void | Promise<void>;
 }
 
+class FlushRequest {
+  resolve!: () => void;
+  reject!: (error: Error) => void;
+  readonly completed = new Promise<void>((resolve, reject) => {
+    this.resolve = resolve;
+    this.reject = reject;
+  });
+}
+
 export class BufferedIngestionStrategy {
   private readonly options: Required<Omit<BufferedIngestionOptions, "onDropped">> &
     Pick<BufferedIngestionOptions, "onDropped">;
-  private readonly queue: EventInput[] = [];
+  private readonly queue: (EventInput | FlushRequest)[] = [];
   private readonly abort = new AbortController();
   private worker?: Promise<void>;
   private closing?: Promise<void>;
@@ -66,10 +75,13 @@ export class BufferedIngestionStrategy {
   }
 
   async ingest(event: EventInput): Promise<void> {
-    if (this.failure) throw this.failure;
-    if (!this.worker || this.closing) throw new PolarError("Buffered ingestion is not running");
-    this.queue.push(event);
-    if (this.queue.length >= this.options.batchSize) this.wake?.();
+    this.enqueue(event);
+  }
+
+  async flush(): Promise<void> {
+    const request = new FlushRequest();
+    this.enqueue(request);
+    await request.completed;
   }
 
   async close(): Promise<void> {
@@ -85,6 +97,13 @@ export class BufferedIngestionStrategy {
     await this.close();
   }
 
+  private enqueue(message: EventInput | FlushRequest): void {
+    if (this.failure) throw this.failure;
+    if (!this.worker || this.closing) throw new PolarError("Buffered ingestion is not running");
+    this.queue.push(message);
+    this.wake?.();
+  }
+
   private async drain(): Promise<void> {
     const timer = setTimeout(() => this.abort.abort(), this.options.shutdownTimeoutMs);
     try {
@@ -95,12 +114,12 @@ export class BufferedIngestionStrategy {
     }
   }
 
-  private async waitForBatch(): Promise<void> {
+  private async waitForMessage(timeoutMs?: number): Promise<void> {
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       await new Promise<void>((resolve) => {
         this.wake = resolve;
-        timer = setTimeout(resolve, this.options.batchIntervalMs);
+        if (timeoutMs !== undefined) timer = setTimeout(resolve, timeoutMs);
       });
     } finally {
       clearTimeout(timer);
@@ -110,18 +129,54 @@ export class BufferedIngestionStrategy {
 
   private async run(): Promise<void> {
     let batch: EventInput[] = [];
+    let request: FlushRequest | undefined;
     try {
       while (!this.closing || this.queue.length) {
         this.abort.signal.throwIfAborted();
-        if (!this.closing && this.queue.length < this.options.batchSize) await this.waitForBatch();
-        batch = this.queue.splice(0, this.options.batchSize);
-        if (batch.length) await this.processBatch(batch);
+        const message = this.queue.shift();
+        if (message === undefined) {
+          await this.waitForMessage();
+          continue;
+        }
+        if (message instanceof FlushRequest) {
+          message.resolve();
+          continue;
+        }
+        batch = [message];
+        const deadline = Date.now() + this.options.batchIntervalMs;
+        while (batch.length < this.options.batchSize) {
+          if (!this.queue.length) {
+            const remaining = deadline - Date.now();
+            if (this.closing || remaining <= 0) break;
+            await this.waitForMessage(remaining);
+          }
+          const next = this.queue.shift();
+          if (next === undefined) break;
+          if (next instanceof FlushRequest) {
+            request = next;
+            break;
+          }
+          batch.push(next);
+        }
+        await this.processBatch(batch);
         batch = [];
+        request?.resolve();
+        request = undefined;
       }
     } catch (error) {
-      if (!this.abort.signal.aborted) throw error;
-      const unfinished = [...batch, ...this.queue.splice(0)];
-      if (unfinished.length) await this.onDropped(unfinished, "shutdown_timeout");
+      const failure = this.abort.signal.aborted
+        ? new PolarError("Buffered ingestion shutdown timed out")
+        : error instanceof Error
+          ? error
+          : new PolarError(String(error));
+      if (!this.abort.signal.aborted) this.failure = failure;
+      request?.reject(failure);
+      for (const message of this.queue.splice(0)) {
+        if (message instanceof FlushRequest) message.reject(failure);
+        else batch.push(message);
+      }
+      if (this.abort.signal.aborted && batch.length)
+        await this.onDropped(batch, "shutdown_timeout");
     }
   }
 

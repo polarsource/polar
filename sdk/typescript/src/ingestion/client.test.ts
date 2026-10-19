@@ -31,6 +31,62 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
+it.each([false, true])("flushes supporting strategies and collects failures: %s", async (fail) => {
+  const ordinary = {
+    start: vi.fn().mockResolvedValue(undefined),
+    ingest: vi.fn().mockResolvedValue(undefined),
+    close: vi.fn().mockResolvedValue(undefined),
+  };
+  const error = new Error("flush failed");
+  const first = {
+    ...ordinary,
+    flush: vi.fn(async () => {
+      if (fail) throw error;
+    }),
+  };
+  const second = { ...ordinary, flush: vi.fn().mockResolvedValue(undefined) };
+  await using ingestion = await new Ingestion({
+    client,
+    strategies: [first, ordinary, second],
+  }).start();
+  if (fail) {
+    await expect(ingestion.flush()).rejects.toMatchObject({ errors: [error] });
+  } else {
+    await ingestion.flush();
+  }
+  expect(first.flush).toHaveBeenCalledOnce();
+  expect(second.flush).toHaveBeenCalledOnce();
+  expect(ordinary.close).not.toHaveBeenCalled();
+  await ingestion.ingest(event);
+  expect(ordinary.ingest).toHaveBeenCalledTimes(3);
+});
+
+it("waits for an active flush before closing", async () => {
+  let finishFlush!: () => void;
+  const strategy = {
+    start: vi.fn().mockResolvedValue(undefined),
+    ingest: vi.fn(),
+    flush: vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finishFlush = resolve;
+        }),
+    ),
+    close: vi.fn().mockResolvedValue(undefined),
+  };
+  const ingestion = new Ingestion({ client, strategies: [strategy] });
+  await expect(ingestion.flush()).rejects.toThrow("not running");
+  await ingestion.start();
+  const flushing = ingestion.flush();
+  const closing = ingestion.close();
+  expect(strategy.close).not.toHaveBeenCalled();
+  finishFlush();
+  await flushing;
+  await closing;
+  expect(strategy.close).toHaveBeenCalledOnce();
+  await expect(ingestion.flush()).rejects.toThrow("not running");
+});
+
 it("starts and ingests in order, then closes in reverse order", async () => {
   const calls: string[] = [];
   const strategies: IngestionStrategy[] = ["buffered", "local"].map((name) => ({

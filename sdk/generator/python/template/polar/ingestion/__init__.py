@@ -42,6 +42,11 @@ class IngestionStrategyProtocol(
 
 
 @typing.runtime_checkable
+class FlushProtocol(typing.Protocol):
+    async def flush(self) -> None: ...
+
+
+@typing.runtime_checkable
 class ActorWarmupProtocol(typing.Protocol):
     async def actor(
         self,
@@ -118,6 +123,17 @@ class Ingestion:
         traceback: types.TracebackType | None,
     ) -> bool | None:
         await self._stack.aclose()
+
+    async def flush(self) -> None:
+        errors: list[Exception] = []
+        for strategy in self.strategies:
+            if isinstance(strategy, FlushProtocol):
+                try:
+                    await strategy.flush()
+                except Exception as error: # noqa: BLE001
+                    errors.append(error)
+        if errors:
+            raise ExceptionGroup("Ingestion flush failed", errors)
 
     @typing.overload
     async def ingest(self, **event: typing.Unpack[EventCustomerInput]) -> None: ...
@@ -271,6 +287,7 @@ __all__ = [
     "ContextualEventInput",
     "CustomerMeter",
     "EventInput",
+    "FlushProtocol",
     "Ingestion",
     "IngestionClient",
     "IngestionError",

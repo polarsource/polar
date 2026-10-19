@@ -14,6 +14,7 @@ from polar.ingestion import (
     BufferedIngestionOptions,
     CustomerMeter,
     EventInput,
+    FlushProtocol,
     Ingestion,
     IngestionError,
     IngestionOutpostOptions,
@@ -23,6 +24,36 @@ from polar.ingestion import (
 from polar.ingestion.buffered import BufferedIngestionStrategy
 from polar.outpost import Outpost
 from polar.v2026_04 import PolarAsync
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("fail", [False, True])
+async def test_flush_optional_strategies(fail: bool) -> None:
+    ordinary = AsyncMock(spec=IngestionStrategyProtocol)
+    first = AsyncMock(spec=IngestionStrategyProtocol)
+    first.flush = AsyncMock()
+    second = AsyncMock(spec=IngestionStrategyProtocol)
+    second.flush = AsyncMock()
+    error = RuntimeError("flush failed")
+    if fail:
+        first.flush.side_effect = error
+    assert isinstance(first, FlushProtocol)
+    assert not isinstance(ordinary, FlushProtocol)
+    async with (
+        PolarAsync("token") as polar,
+        polar.ingestion(strategies=[first, ordinary, second]) as ingestion,
+    ):
+        if fail:
+            with pytest.raises(ExceptionGroup) as exc_info:
+                await ingestion.flush()
+            assert exc_info.value.exceptions == (error,)
+        else:
+            await ingestion.flush()
+        first.flush.assert_awaited_once_with()
+        second.flush.assert_awaited_once_with()
+        first.__aexit__.assert_not_awaited()
+        await ingestion.ingest(name="usage", external_customer_id="customer")
+        first.ingest.assert_awaited_once()
 
 
 @pytest.mark.anyio

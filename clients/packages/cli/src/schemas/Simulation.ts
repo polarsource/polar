@@ -1,14 +1,6 @@
 import { Schema } from 'effect'
 import { ConfigResource } from '@/schemas/BillingConfig'
 
-const Component = Schema.Struct({
-  label: Schema.String,
-  kind: Schema.Literals(['fee', 'usage']),
-  meter_external_id: Schema.optional(Schema.NullOr(Schema.String)),
-  baseline: Schema.Finite,
-  proposed: Schema.Finite,
-})
-
 const BreakdownItem = Schema.Struct({
   product_external_id: Schema.String,
   price_label: Schema.String,
@@ -19,7 +11,6 @@ const BreakdownItem = Schema.Struct({
   subscribers: Schema.Finite,
   baseline: Schema.Finite,
   proposed: Schema.Finite,
-  components: Schema.Array(Component),
 })
 
 export const SimulationWindow = Schema.Struct({

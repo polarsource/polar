@@ -27,7 +27,6 @@ from polar.product.repository import ProductRepository
 from .repository import BilledRow, PricingSimulationRepository
 from .schemas import (
     SimulationBreakdownItem,
-    SimulationComponent,
     SimulationCounts,
     SimulationNotSimulated,
     SimulationResult,
@@ -147,7 +146,6 @@ class PricingSimulationService:
             price = prices[price_id]
             product_config = product_configs[price.product_id]
             billed[subscription_id] = currency
-            # Proposed prices of a kind the simulation can't reprice yet.
             for config_price in product_config.prices:
                 if config_price.price_currency == currency and not isinstance(
                     config_price, ConfigProductPriceFixed | ConfigProductPriceSeatBased
@@ -211,16 +209,6 @@ class PricingSimulationService:
                 subscribers=len(members),
                 baseline=baseline,
                 proposed=proposed,
-                components=[
-                    SimulationComponent(
-                        label="Seats"
-                        if isinstance(price, ProductPriceSeatUnit)
-                        else "Fixed price",
-                        kind="fee",
-                        baseline=baseline,
-                        proposed=proposed,
-                    )
-                ],
             )
             currency_result = result(currency)
             currency_result.breakdown.append(item)

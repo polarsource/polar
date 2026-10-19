@@ -57,7 +57,6 @@ const results: SimulationResponse = [
         subscribers: 168,
         baseline: 756_000,
         proposed: 1_260_000,
-        components: [],
       },
       {
         product_external_id: 'pro',
@@ -69,7 +68,6 @@ const results: SimulationResponse = [
         subscribers: 1,
         baseline: 3_000,
         proposed: 6_000,
-        components: [],
       },
     ],
     not_simulated: [

@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Literal
 
 from pydantic import Field
 
@@ -22,25 +21,13 @@ class SimulationCounts(Schema):
     )
 
 
-class SimulationComponent(Schema):
-    label: str = Field(description="What this part of the bill is.")
-    kind: Literal["fee", "usage"] = Field(description="Fixed fee or usage charge.")
-    meter_external_id: str | None = Field(
-        default=None, description="The meter of a usage component."
-    )
-    baseline: int = Field(description="Billed in the window, in minor units.")
-    proposed: int = Field(
-        description="What the same items bill on the config, in minor units."
-    )
-
-
 class SimulationBreakdownItem(Schema):
     product_external_id: str = Field(description="The product's `external_id`.")
     price_label: str = Field(description="The price these subscribers were billed on.")
     archived: bool = Field(description="Whether that price is archived.")
     partial: bool = Field(
         description="Whether part of the bill wasn't simulated. The amounts then "
-        "cover only the simulated components."
+        "cover only the simulated items."
     )
     recurring_interval: SubscriptionRecurringInterval
     recurring_interval_count: int
@@ -53,7 +40,6 @@ class SimulationBreakdownItem(Schema):
     proposed: int = Field(
         description="What they would have been billed on the config, in minor units."
     )
-    components: list[SimulationComponent]
 
 
 class SimulationNotSimulated(Schema):

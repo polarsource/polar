@@ -9,8 +9,6 @@ const percent = (baseline: number, proposed: number) =>
     ? Math.round(((proposed - baseline) / baseline) * 1000) / 10
     : null
 
-// Void's model (Simulation/engine.ts): subscribers accept increases up to the
-// tolerance, then churn by the elasticity for every further 10%.
 export const churnRisk = (
   baseline: number,
   proposed: number,

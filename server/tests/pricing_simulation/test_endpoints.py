@@ -1,3 +1,4 @@
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
@@ -8,6 +9,7 @@ from httpx import AsyncClient
 from polar.enums import SubscriptionRecurringInterval
 from polar.models import (
     Customer,
+    Order,
     OrderItem,
     Organization,
     ProductPrice,
@@ -39,55 +41,40 @@ def _product(external_id: str, interval: str = "month", **price: Any) -> dict[st
     }
 
 
-def _seats(external_id: str, unit_amount: int) -> dict[str, Any]:
-    tiers = [{"bound": None, "unit_amount": unit_amount}]
-    return {
-        **_product(external_id),
-        "prices": [
-            {
-                "amount_type": "seat_based",
-                "price_currency": "usd",
-                "tiers": {"type": "volume", "tiers": tiers},
-            }
-        ],
-    }
+@pytest.fixture
+def bill(save_fixture: SaveFixture) -> Callable[..., Awaitable[Order]]:
+    async def create(
+        subscription: Subscription,
+        *items: tuple[ProductPrice, int],
+        start: datetime | None = SEP_1,
+        end: datetime | None = OCT_1,
+        proration: bool = False,
+        created_at: datetime = SEP_1,
+        status: OrderStatus = OrderStatus.paid,
+    ) -> Order:
+        return await create_order(
+            save_fixture,
+            customer=subscription.customer,
+            subscription=subscription,
+            order_items=[
+                OrderItem(
+                    label="",
+                    amount=amount,
+                    net_amount=amount,
+                    tax_amount=0,
+                    proration=proration,
+                    product_price=price,
+                    start_timestamp=start,
+                    end_timestamp=end,
+                )
+                for price, amount in items
+            ],
+            created_at=created_at,
+            status=status,
+            currency=subscription.currency,
+        )
 
-
-def _item(
-    price: ProductPrice,
-    amount: int,
-    start: datetime | None = SEP_1,
-    end: datetime | None = OCT_1,
-    proration: bool = False,
-) -> OrderItem:
-    return OrderItem(
-        label="",
-        amount=amount,
-        net_amount=amount,
-        tax_amount=0,
-        proration=proration,
-        product_price=price,
-        start_timestamp=start,
-        end_timestamp=end,
-    )
-
-
-async def _bill(
-    save_fixture: SaveFixture,
-    subscription: Subscription,
-    *items: OrderItem,
-    created_at: datetime = SEP_1,
-    status: OrderStatus = OrderStatus.paid,
-) -> None:
-    await create_order(
-        save_fixture,
-        customer=subscription.customer,
-        subscription=subscription,
-        order_items=list(items),
-        created_at=created_at,
-        status=status,
-        currency=subscription.currency,
-    )
+    return create
 
 
 @pytest.mark.anyio
@@ -136,6 +123,7 @@ class TestSimulate:
         organization: Organization,
         user_organization: UserOrganization,
         customer: Customer,
+        bill: Callable[..., Awaitable[Order]],
     ) -> None:
         product = await create_product(
             save_fixture,
@@ -149,44 +137,55 @@ class TestSimulate:
             save_fixture, product=product, amount=1000, is_archived=True
         )
 
-        async def subscribe(**kwargs: Any) -> Subscription:
-            return await create_subscription(
-                save_fixture, product=product, customer=customer, **kwargs
-            )
-
-        full_month = await subscribe(status=SubscriptionStatus.active)
-        await _bill(save_fixture, full_month, _item(current, 1500))
-        await _bill(
+        full_month = await create_subscription(
             save_fixture,
-            full_month,
-            _item(current, 1500),
-            status=OrderStatus.void,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
         )
-        churned = await subscribe(revoke=True)
-        await _bill(
-            save_fixture, churned, _item(current, 1500), status=OrderStatus.refunded
+        await bill(full_month, (current, 1500))
+        await bill(full_month, (current, 1500), status=OrderStatus.void)
+        churned = await create_subscription(
+            save_fixture, product=product, customer=customer, revoke=True
         )
+        await bill(churned, (current, 1500), status=OrderStatus.refunded)
         # No period: falls back to one month from the order, Aug 16 – Sep 16.
-        no_timestamps = await subscribe(
-            prices=[archived], status=SubscriptionStatus.active
-        )
-        await _bill(
+        no_timestamps = await create_subscription(
             save_fixture,
+            product=product,
+            customer=customer,
+            prices=[archived],
+            status=SubscriptionStatus.active,
+        )
+        await bill(
             no_timestamps,
-            _item(archived, 1000, start=None, end=None),
+            (archived, 1000),
+            start=None,
+            end=None,
             created_at=datetime(2026, 8, 16, tzinfo=UTC),
         )
-        upgraded = await subscribe(status=SubscriptionStatus.active)
-        await _bill(save_fixture, upgraded, _item(archived, 1000))
-        mid_month = datetime(2026, 9, 16, tzinfo=UTC)
-        await _bill(
+        upgraded = await create_subscription(
             save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+        await bill(upgraded, (archived, 1000))
+        mid_month = datetime(2026, 9, 16, tzinfo=UTC)
+        await bill(
             upgraded,
-            _item(archived, -500, start=mid_month, proration=True),
-            _item(current, 750, start=mid_month, proration=True),
+            (archived, -500),
+            (current, 750),
+            start=mid_month,
+            proration=True,
             created_at=mid_month,
         )
-        await subscribe(status=SubscriptionStatus.trialing)
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.trialing,
+        )
 
         response = await client.post(
             "/v1/config/simulate",
@@ -251,6 +250,7 @@ class TestSimulate:
         organization: Organization,
         user_organization: UserOrganization,
         customer: Customer,
+        bill: Callable[..., Awaitable[Order]],
     ) -> None:
         product = await create_product(
             save_fixture,
@@ -266,15 +266,11 @@ class TestSimulate:
             status=SubscriptionStatus.active,
         )
         march = datetime(2026, 3, 1, tzinfo=UTC)
-        await _bill(
-            save_fixture,
+        await bill(
             subscription,
-            _item(
-                product.prices[0],
-                12000,
-                start=march,
-                end=datetime(2027, 3, 1, tzinfo=UTC),
-            ),
+            (product.prices[0], 12000),
+            start=march,
+            end=datetime(2027, 3, 1, tzinfo=UTC),
             created_at=march,
         )
 
@@ -305,49 +301,73 @@ class TestSimulate:
         organization: Organization,
         user_organization: UserOrganization,
         customer: Customer,
+        bill: Callable[..., Awaitable[Order]],
     ) -> None:
         meter = await create_meter(
             save_fixture, organization=organization, external_id="tokens"
         )
 
-        async def product(external_id: str, *prices: Any) -> Any:
-            return await create_product(
-                save_fixture,
-                organization=organization,
-                recurring_interval=SubscriptionRecurringInterval.month,
-                prices=list(prices),
-                external_id=external_id,
-            )
-
-        async def billed(product: Any, *amounts: int, **kwargs: Any) -> None:
-            subscription = await create_subscription(
-                save_fixture,
-                product=product,
-                customer=customer,
-                status=SubscriptionStatus.active,
-                **kwargs,
-            )
-            prices = [
-                price
-                for price in product.prices
-                if price.price_currency == subscription.currency
-            ]
-            await _bill(
-                save_fixture,
-                subscription,
-                *(_item(price, amount) for price, amount in zip(prices, amounts)),
-            )
-
-        await billed(
-            await product("pro", (1500, "usd"), (1400, "eur")), 1400, currency="eur"
+        pro = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(1500, "usd"), (1400, "eur")],
+            external_id="pro",
         )
-        await billed(await product("team", ("seat", 1000, "usd")), 3000, seats=3)
-        await billed(
-            await product("api", (1500, "usd"), (meter, Decimal(1), None, "usd")),
-            1500,
-            300,
+        pro_subscription = await create_subscription(
+            save_fixture,
+            product=pro,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            currency="eur",
         )
-        await billed(await product("solo", (900, "usd")), 900)
+        await bill(pro_subscription, (pro.prices[1], 1400))
+
+        team = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+            external_id="team",
+        )
+        team_subscription = await create_subscription(
+            save_fixture,
+            product=team,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            seats=3,
+        )
+        await bill(team_subscription, (team.prices[0], 3000))
+
+        api = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(1500, "usd"), (meter, Decimal(1), None, "usd")],
+            external_id="api",
+        )
+        api_subscription = await create_subscription(
+            save_fixture,
+            product=api,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+        await bill(api_subscription, (api.prices[0], 1500), (api.prices[1], 300))
+
+        solo = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(900, "usd")],
+            external_id="solo",
+        )
+        solo_subscription = await create_subscription(
+            save_fixture,
+            product=solo,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+        await bill(solo_subscription, (solo.prices[0], 900))
 
         response = await client.post(
             "/v1/config/simulate",
@@ -356,7 +376,19 @@ class TestSimulate:
                 "organization_id": str(organization.id),
                 "products": [
                     _product("pro", price_amount=2000),
-                    _seats("team", 2000),
+                    {
+                        **_product("team"),
+                        "prices": [
+                            {
+                                "amount_type": "seat_based",
+                                "price_currency": "usd",
+                                "tiers": {
+                                    "type": "volume",
+                                    "tiers": [{"bound": None, "unit_amount": 2000}],
+                                },
+                            }
+                        ],
+                    },
                     {
                         **_product("api"),
                         "prices": [

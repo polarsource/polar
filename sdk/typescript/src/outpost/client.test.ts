@@ -729,6 +729,50 @@ const aliceSnapshot = {
   credited_units: 10,
 };
 
+it.each([
+  Object.assign(new Error("getaddrinfo EAI_AGAIN redis.test"), { code: "EAI_AGAIN" }),
+  Object.assign(new Error("connect ETIMEDOUT"), { code: "ETIMEDOUT" }),
+  Object.assign(new Error("read ECONNRESET"), { code: "ECONNRESET" }),
+  new Error("Command timed out"),
+  new Error("Connection is closed."),
+  new Error("Stream isn't writeable and enableOfflineQueue options is false"),
+  Object.assign(new Error("Reached the max retries per request limit"), {
+    name: "MaxRetriesPerRequestError",
+  }),
+])("recovers from a snapshot Redis failure: %s", async (error) => {
+  snapshot = aliceSnapshot;
+  const outpost = await start();
+  const applySnapshot = vi
+    .spyOn(outpost["redis"]!, "outpostApplySnapshot")
+    .mockRejectedValueOnce(error);
+  await outpost.actor(customer);
+  await vi.waitFor(() => expect(connections).toHaveLength(2), { timeout: 3_000 });
+  await outpost.actor(customer);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(3);
+  await ingest(outpost, 5);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(8);
+  expect((await outpost.meter(meter))?.balance).toBe(2);
+  expect(outpost.connected).toBe(true);
+  expect(applySnapshot).toHaveBeenCalledTimes(2);
+});
+
+it.each([
+  new Error("WRONGPASS invalid username-password pair"),
+  new Error("NOAUTH Authentication required"),
+  new Error("NOPERM this user has no permissions"),
+  new TypeError("Invalid snapshot"),
+  new Error("Unexpected failure"),
+])("keeps snapshot authentication and unrelated errors fatal: %s", async (error) => {
+  snapshot = aliceSnapshot;
+  const outpost = await start();
+  vi.spyOn(outpost["redis"]!, "outpostApplySnapshot").mockRejectedValueOnce(error);
+  await outpost.actor(customer);
+  await vi.waitFor(() => expect(outpost.meter(meter)).rejects.toBe(error));
+  await expect(ingest(outpost, 5)).rejects.toBe(error);
+  expect(outpost.connected).toBe(false);
+  expect(connections).toHaveLength(1);
+});
+
 it("waits for the first snapshot on a cold read", async () => {
   snapshot = aliceSnapshot;
   const outpost = await start();

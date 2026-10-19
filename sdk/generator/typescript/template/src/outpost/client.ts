@@ -109,6 +109,25 @@ export class UnavailableRedisError extends PolarOutpostError {
 }
 const redisUnavailable = (error: unknown): UnavailableRedisError =>
   new UnavailableRedisError({ cause: error });
+const isRedisConnectionError = (error: unknown): boolean =>
+  error instanceof Error &&
+  (error.name === "MaxRetriesPerRequestError" ||
+    [
+      "ECONNABORTED",
+      "ECONNREFUSED",
+      "ECONNRESET",
+      "EHOSTUNREACH",
+      "ENETUNREACH",
+      "ENOTFOUND",
+      "EPIPE",
+      "ETIMEDOUT",
+      "EAI_AGAIN",
+    ].includes((error as NodeJS.ErrnoException).code ?? "") ||
+    [
+      "Command timed out",
+      "Connection is closed.",
+      "Stream isn't writeable and enableOfflineQueue options is false",
+    ].includes(error.message));
 const withTimeout = async <T>(promise: Promise<T>): Promise<T> => {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -586,7 +605,10 @@ export class Outpost {
     websocket.on("message", (data) => {
       this.messages = this.messages
         .then(() => this.receiveWebsocket(data.toString()))
-        .catch((error: unknown) => this.fail(error));
+        .catch((error: unknown) => {
+          if (isRedisConnectionError(error)) websocket.terminate();
+          else this.fail(error);
+        });
     });
     websocket.on("close", () => {
       if (this.websocket !== websocket) return;

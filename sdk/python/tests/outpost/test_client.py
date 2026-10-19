@@ -5,7 +5,7 @@ import datetime
 import functools
 import json
 import typing
-from unittest.mock import AsyncMock
+from unittest.mock import DEFAULT, AsyncMock
 
 import anyio
 import anyio.lowlevel
@@ -22,8 +22,9 @@ from opentelemetry.sdk.trace.export import (
 )
 from redis.asyncio import Redis
 from redis.asyncio.client import PubSub
+from redis.exceptions import AuthenticationError, AuthorizationError, ResponseError
 from redis.exceptions import ConnectionError as RedisConnectionError
-from redis.exceptions import ResponseError
+from redis.exceptions import TimeoutError as RedisTimeoutError
 
 from polar import __version__
 from polar.ingestion import EventInput
@@ -36,6 +37,7 @@ from polar.outpost.client import (
     ReducerState,
     UnavailableRedisError,
     _backoff_delay,
+    _is_connection_error,
     connect_websocket,
 )
 from polar.outpost.reducer import BUCKET_SIZE, get_bucket_start
@@ -1350,6 +1352,78 @@ async def test_refused_reconnection_fails_outpost(
                     break
                 await anyio.sleep(0.01)
         assert not outpost.connected
+
+
+@pytest.mark.parametrize("nested", [False, True])
+@pytest.mark.parametrize(
+    ("error", "retryable"),
+    [
+        (RedisConnectionError("Disconnected"), True),
+        (RedisTimeoutError("DNS resolution timed out"), True),
+        (AuthenticationError("Invalid credentials"), False),
+        (AuthorizationError("Access denied"), False),
+        (ValueError("Invalid snapshot"), False),
+        (ResponseError("Invalid command"), False),
+        (
+            ExceptionGroup(
+                "mixed", [RedisTimeoutError("Timeout"), ValueError("Invalid snapshot")]
+            ),
+            False,
+        ),
+    ],
+)
+def test_connection_errors(error: Exception, retryable: bool, nested: bool) -> None:
+    if nested:
+        error = ExceptionGroup("outer", [ExceptionGroup("inner", [error])])
+    assert _is_connection_error(error) is retryable
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("error_type", [RedisConnectionError, RedisTimeoutError])
+async def test_snapshot_redis_error_reconnects_and_keeps_serving(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+    websocket_requests: list[dict[str, typing.Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    error_type: type[Exception],
+) -> None:
+    monkeypatch.setattr("polar.outpost.client.RECONNECT_DELAY", 0.01)
+    url, _ = redis_connection
+    snapshots["external:alice"] = ALICE_SNAPSHOT
+    async with Outpost(url, client=polar_client) as outpost:
+        assert outpost._apply_snapshot is not None
+        apply_snapshot = AsyncMock(
+            wraps=outpost._apply_snapshot.__call__,
+            side_effect=[error_type("DNS resolution timed out"), DEFAULT],
+        )
+        monkeypatch.setattr(outpost, "_apply_snapshot", apply_snapshot)
+        await outpost.actor(external_customer_id="alice")
+        with anyio.fail_after(1):
+            while (
+                sum(
+                    request["type"] == "configuration" for request in websocket_requests
+                )
+                < 2
+            ):
+                await anyio.lowlevel.checkpoint()
+
+        await outpost.actor(external_customer_id="alice")
+        meter = await outpost.meter(meter_id="meter", external_customer_id="alice")
+        assert meter is not None and meter.consumed_units == 3
+        await outpost.ingest(
+            {
+                "name": "call",
+                "external_customer_id": "alice",
+                "timestamp": "2026-10-12T12:10:00Z",
+                "metadata": {"tokens": 5},
+            }
+        )
+        meter = await outpost.meter(meter_id="meter", external_customer_id="alice")
+        assert meter is not None and meter.consumed_units == 8
+        assert meter.balance == 2
+        assert outpost.connected
+        assert apply_snapshot.await_count == 2
 
 
 def test_backoff_delay_stays_bounded() -> None:

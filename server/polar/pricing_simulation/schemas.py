@@ -3,6 +3,7 @@ from typing import Literal
 from pydantic import Field
 
 from polar.declarative_config.schemas import ConfigResource
+from polar.enums import SubscriptionRecurringInterval
 from polar.kit.schemas import Schema
 
 
@@ -13,6 +14,9 @@ class SimulationCounts(Schema):
     no_history: int = Field(
         description="Subscribers with no closed period yet, such as trials. "
         "Counted, not simulated."
+    )
+    not_simulated: int = Field(
+        description="Subscribers left out because none of their bill could be repriced."
     )
 
 
@@ -29,6 +33,13 @@ class SimulationComponent(Schema):
 class SimulationCohort(Schema):
     product_external_id: str = Field(description="The product's `external_id`.")
     price_label: str = Field(description="The price the cohort pays today.")
+    archived: bool = Field(description="Whether the cohort pays an archived price.")
+    partial: bool = Field(
+        description="Whether part of the bill wasn't simulated. The amounts then "
+        "cover only the simulated components."
+    )
+    recurring_interval: SubscriptionRecurringInterval
+    recurring_interval_count: int
     subscribers: int = Field(description="Number of simulated subscribers.")
     baseline_monthly: int = Field(
         description="What the cohort pays per month today, in minor units."
@@ -43,6 +54,7 @@ class SimulationNotSimulated(Schema):
     resource: ConfigResource = Field(description="The type of resource.")
     external_id: str = Field(description="The resource's `external_id`.")
     reason: str = Field(description="Why the simulation can't reprice it.")
+    subscribers: int = Field(description="Number of subscribers it affects.")
 
 
 class SimulationResult(Schema):

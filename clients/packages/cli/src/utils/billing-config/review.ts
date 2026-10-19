@@ -59,7 +59,7 @@ const gutter = (text: string) =>
     )
     .join('\n')
 
-const box = (title: string, text: string) =>
+export const box = (title: string, text: string) =>
   [
     `${ui.INDENT}${ui.dim('╭─')} ${title}`,
     `${ui.INDENT}${ui.dim('│')}`,

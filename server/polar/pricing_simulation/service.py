@@ -42,18 +42,31 @@ def monthly(amount: int, interval: SubscriptionRecurringInterval, count: int) ->
     return round(amount / (_MONTHS_PER_INTERVAL[interval] * count))
 
 
+def _amount_type_label(amount_type: str) -> str:
+    return amount_type.replace("_based", "-based").replace("_", " ")
+
+
 def _price_label(price: ProductPrice) -> str:
     if isinstance(price, ProductPriceFixed):
         return format_currency(price.price_amount, price.price_currency)
-    return price.amount_type.replace("_", " ")
+    return _amount_type_label(price.amount_type)
 
 
-def _not_simulated(result: SimulationResult, external_id: str, reason: str) -> None:
-    item = SimulationNotSimulated(
-        resource=ConfigResource.product, external_id=external_id, reason=reason
+def _not_simulated(
+    result: SimulationResult, external_id: str, reason: str, subscribers: int
+) -> None:
+    for item in result.not_simulated:
+        if (item.external_id, item.reason) == (external_id, reason):
+            item.subscribers += subscribers
+            return
+    result.not_simulated.append(
+        SimulationNotSimulated(
+            resource=ConfigResource.product,
+            external_id=external_id,
+            reason=reason,
+            subscribers=subscribers,
+        )
     )
-    if item not in result.not_simulated:
-        result.not_simulated.append(item)
 
 
 def _add_cohort(
@@ -68,10 +81,15 @@ def _add_cohort(
         subscription.recurring_interval_count,
     ):
         _not_simulated(
-            result, config.external_id, "Recurring interval changes aren't simulated."
+            result,
+            config.external_id,
+            "recurring interval changes aren't simulated",
+            subscribers,
         )
+        result.counts.not_simulated += subscribers
         return
 
+    reasons: dict[str, None] = {}
     proposed_fixed: ConfigProductPriceFixed | None = None
     for proposed in config.prices:
         if proposed.price_currency != currency:
@@ -79,26 +97,16 @@ def _add_cohort(
         if isinstance(proposed, ConfigProductPriceFixed):
             proposed_fixed = proposed
         else:
-            _not_simulated(
-                result,
-                config.external_id,
-                f"{proposed.amount_type.replace('_', ' ')} prices aren't supported yet.",
-            )
+            reasons[
+                f"{_amount_type_label(proposed.amount_type)} prices aren't supported yet"
+            ] = None
 
     components: list[SimulationComponent] = []
     for price in subscription.prices:
         if not isinstance(price, ProductPriceFixed):
-            _not_simulated(
-                result,
-                config.external_id,
-                f"{_price_label(price)} prices aren't supported yet.",
-            )
+            reasons[f"{_price_label(price)} prices aren't supported yet"] = None
         elif proposed_fixed is None:
-            _not_simulated(
-                result,
-                config.external_id,
-                f"The config has no fixed {currency.upper()} price.",
-            )
+            reasons[f"no fixed {currency.upper()} price in the config"] = None
         else:
             components.append(
                 SimulationComponent(
@@ -118,12 +126,19 @@ def _add_cohort(
                     * subscribers,
                 )
             )
+    for reason in reasons:
+        _not_simulated(result, config.external_id, reason, subscribers)
     if not components:
+        result.counts.not_simulated += subscribers
         return
 
     cohort = SimulationCohort(
         product_external_id=config.external_id,
         price_label=" + ".join(_price_label(price) for price in subscription.prices),
+        archived=any(price.is_archived for price in subscription.prices),
+        partial=bool(reasons),
+        recurring_interval=subscription.recurring_interval,
+        recurring_interval_count=subscription.recurring_interval_count,
         subscribers=subscribers,
         baseline_monthly=sum(component.baseline for component in components),
         proposed_monthly=sum(component.proposed for component in components),
@@ -179,19 +194,28 @@ class PricingSimulationService:
         cohorts: dict[tuple[UUID, frozenset[UUID]], list[Subscription]] = defaultdict(
             list
         )
+        no_history: dict[tuple[str, str], int] = defaultdict(int)
         for subscription in subscriptions:
             result = results.setdefault(
                 subscription.currency,
                 SimulationResult(
                     monthly_delta=0,
                     currency=subscription.currency,
-                    counts=SimulationCounts(more=0, less=0, same=0, no_history=0),
+                    counts=SimulationCounts(
+                        more=0, less=0, same=0, no_history=0, not_simulated=0
+                    ),
                     cohorts=[],
                     not_simulated=[],
                 ),
             )
             if subscription.status == SubscriptionStatus.trialing:
                 result.counts.no_history += 1
+                no_history[
+                    (
+                        subscription.currency,
+                        product_configs[subscription.product_id].external_id,
+                    )
+                ] += 1
                 continue
             price_ids = frozenset(price.id for price in subscription.prices)
             cohorts[(subscription.product_id, price_ids)].append(subscription)
@@ -203,6 +227,10 @@ class PricingSimulationService:
                 product_configs[product_id],
                 subscription,
                 len(subscribers),
+            )
+        for (currency, external_id), count in no_history.items():
+            _not_simulated(
+                results[currency], external_id, "no closed period yet", count
             )
         return list(results.values())
 

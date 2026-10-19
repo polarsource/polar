@@ -30,11 +30,15 @@ const results: SimulationResponse = [
   {
     monthly_delta: 168_000 + 1_000,
     currency: 'usd',
-    counts: { more: 169, less: 0, same: 0, no_history: 2 },
+    counts: { more: 169, less: 0, same: 0, no_history: 2, not_simulated: 3 },
     cohorts: [
       {
         product_external_id: 'pro',
         price_label: '$15.00',
+        archived: false,
+        partial: false,
+        recurring_interval: 'month',
+        recurring_interval_count: 1,
         subscribers: 168,
         baseline_monthly: 252_000,
         proposed_monthly: 420_000,
@@ -43,6 +47,10 @@ const results: SimulationResponse = [
       {
         product_external_id: 'pro',
         price_label: '$10.00',
+        archived: true,
+        partial: true,
+        recurring_interval: 'year',
+        recurring_interval_count: 1,
         subscribers: 1,
         baseline_monthly: 1_000,
         proposed_monthly: 2_000,
@@ -53,7 +61,14 @@ const results: SimulationResponse = [
       {
         resource: 'product',
         external_id: 'team',
-        reason: "seat based prices aren't supported yet.",
+        reason: "seat-based prices aren't supported yet",
+        subscribers: 3,
+      },
+      {
+        resource: 'product',
+        external_id: 'pro',
+        reason: 'no closed period yet',
+        subscribers: 2,
       },
     ],
   },
@@ -97,14 +112,20 @@ describe('polar config simulate', () => {
     expect(failed).toBe(false)
     expect(output).toContain(
       [
-        '  Simulation Acme (sandbox)',
+        '  ╭─ Simulation Acme (sandbox)',
+        '  │',
+        '  │         subscribers   per subscriber /mo   change /mo',
+        '  │ usd                                           +$1,690',
+        '  │   pro           168            $15 → $25      +$1,680',
+        '  │                   1            $10 → $20         +$10   archived price · billed yearly · fixed fee only',
+        '  │',
+        '  ╰─',
         '',
-        '  +$1,690/mo 169 pay more, 0 pay less, 0 the same, 2 no history',
-        '    pro · $15.00 · 168 subscribers · +$10/mo each · +$1,680/mo',
-        '    pro · $10.00 · 1 subscriber · +$10/mo each · +$10/mo',
+        "  ▲ Not simulated for team (3 subscribers): seat-based prices aren't supported yet",
+        '  ▲ Not simulated for pro (2 subscribers): no closed period yet',
         '',
-        '  Not simulated',
-        "    team seat based prices aren't supported yet.",
+        '  Simulation: USD +$1,690/mo',
+        "  169 pay more, 5 not simulated, based on each subscriber's last billing period.",
       ].join('\n'),
     )
   })

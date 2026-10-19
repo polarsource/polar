@@ -12,6 +12,10 @@ const Component = Schema.Struct({
 const Cohort = Schema.Struct({
   product_external_id: Schema.String,
   price_label: Schema.String,
+  archived: Schema.Boolean,
+  partial: Schema.Boolean,
+  recurring_interval: Schema.Literals(['day', 'week', 'month', 'year']),
+  recurring_interval_count: Schema.Finite,
   subscribers: Schema.Finite,
   baseline_monthly: Schema.Finite,
   proposed_monthly: Schema.Finite,
@@ -26,6 +30,7 @@ export const SimulationResult = Schema.Struct({
     less: Schema.Finite,
     same: Schema.Finite,
     no_history: Schema.Finite,
+    not_simulated: Schema.Finite,
   }),
   cohorts: Schema.Array(Cohort),
   not_simulated: Schema.Array(
@@ -33,6 +38,7 @@ export const SimulationResult = Schema.Struct({
       resource: ConfigResource,
       external_id: Schema.String,
       reason: Schema.String,
+      subscribers: Schema.Finite,
     }),
   ),
 })

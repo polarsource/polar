@@ -102,17 +102,31 @@ class TestSimulate:
         assert response.status_code == 200
         [result] = response.json()
         assert result["monthly_delta"] == 2 * 500 + 1000
-        assert result["counts"] == {"more": 3, "less": 0, "same": 0, "no_history": 1}
+        assert result["counts"] == {
+            "more": 3,
+            "less": 0,
+            "same": 0,
+            "no_history": 1,
+            "not_simulated": 0,
+        }
         assert sorted(
             (
                 c["price_label"],
+                c["archived"],
                 c["subscribers"],
                 c["baseline_monthly"],
                 c["proposed_monthly"],
             )
             for c in result["cohorts"]
-        ) == [("$10.00", 1, 1000, 2000), ("$15.00", 2, 3000, 4000)]
-        assert result["not_simulated"] == []
+        ) == [("$10.00", True, 1, 1000, 2000), ("$15.00", False, 2, 3000, 4000)]
+        assert result["not_simulated"] == [
+            {
+                "resource": "product",
+                "external_id": "pro",
+                "reason": "no closed period yet",
+                "subscribers": 1,
+            }
+        ]
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -152,6 +166,7 @@ class TestSimulate:
         assert result["counts"]["less"] == 1
         [cohort] = result["cohorts"]
         assert (cohort["baseline_monthly"], cohort["proposed_monthly"]) == (1000, 500)
+        assert cohort["recurring_interval"] == "year"
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -254,16 +269,25 @@ class TestSimulate:
             {
                 "resource": "product",
                 "external_id": "pro",
-                "reason": "The config has no fixed EUR price.",
+                "reason": "no fixed EUR price in the config",
+                "subscribers": 1,
             }
         ]
+        assert results["eur"]["counts"]["not_simulated"] == 1
         usd = results["usd"]
         [cohort] = usd["cohorts"]
-        assert cohort["product_external_id"] == "api"
-        assert usd["counts"] == {"more": 0, "less": 0, "same": 1, "no_history": 0}
+        assert (cohort["product_external_id"], cohort["partial"]) == ("api", True)
+        assert usd["counts"] == {
+            "more": 0,
+            "less": 0,
+            "same": 1,
+            "no_history": 0,
+            "not_simulated": 1,
+        }
         assert sorted(
-            (item["external_id"], item["reason"]) for item in usd["not_simulated"]
+            (item["external_id"], item["reason"], item["subscribers"])
+            for item in usd["not_simulated"]
         ) == [
-            ("api", "metered unit prices aren't supported yet."),
-            ("team", "seat based prices aren't supported yet."),
+            ("api", "metered unit prices aren't supported yet", 1),
+            ("team", "seat-based prices aren't supported yet", 1),
         ]

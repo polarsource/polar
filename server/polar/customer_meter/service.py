@@ -48,6 +48,8 @@ from .repository import CustomerMeterRepository
 from .schemas import CustomerMeterCreditsCreate, CustomerMeterCreditsIDCreate
 from .sorting import CustomerMeterSortProperty
 
+_MAX_REVERSIBLE_DAYS = 7
+
 
 class CustomerMeterCreditExternalIDConflict(PolarError):
     def __init__(self) -> None:
@@ -390,9 +392,9 @@ class CustomerMeterService:
             OrganizationPermission.customers_manage,
         )
 
-        if credit.timestamp < utc_now() - timedelta(days=7):
+        if credit.timestamp < utc_now() - timedelta(days=_MAX_REVERSIBLE_DAYS):
             raise CustomerMeterCreditNotReversible(
-                "Credits can only be reversed within 7 days."
+                f"Credits can only be reversed within {_MAX_REVERSIBLE_DAYS} days."
             )
 
         customer = credit.customer

@@ -121,6 +121,7 @@ from polar.organization.repository import (
 )
 from polar.product.guard import (
     is_custom_price,
+    is_metered_price,
     is_recurring_product,
     is_seat_price,
     is_static_price,
@@ -1461,20 +1462,22 @@ class SubscriptionService:
         include_meter_credits: bool = True,
     ) -> None:
         """
-        Resets the subscription's meters to start fresh, optionally reporting
-        rollover units if applicable.
+        Resets the meters the subscription bills or credits to start fresh,
+        optionally reporting rollover units if applicable.
 
         This should be called when creating a new subscription or cycling an
-        existing one. Meters fed by granted meter-credit benefits are reset too,
-        whether or not the renewal payment succeeds: their credits were for the
-        period that just ended.
+        existing one. Meters are taken from the metered prices and from the
+        granted meter-credit benefits, so a meter that is only credited is reset
+        too, whether or not the renewal payment succeeds: its credits were for
+        the period that just ended.
         """
         meters: dict[tuple[uuid.UUID, uuid.UUID], tuple[Customer, Meter]] = {
-            (subscription.customer_id, subscription_meter.meter_id): (
+            (subscription.customer_id, price.meter_id): (
                 subscription.customer,
-                subscription_meter.meter,
+                price.meter,
             )
-            for subscription_meter in subscription.meters
+            for price in subscription.prices
+            if is_metered_price(price)
         }
         if include_meter_credits:
             benefit_grant_repository = BenefitGrantRepository.from_session(session)

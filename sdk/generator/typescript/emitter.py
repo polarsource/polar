@@ -57,7 +57,8 @@ class TypeScriptEmitter(EmitterBase):
         )
         self.copy_file(self.templates_dir / "justfile", root_directory / "justfile")
         self.copy_file(
-            self.templates_dir / "vitest.config.mts", root_directory / "vitest.config.mts"
+            self.templates_dir / "vitest.config.mts",
+            root_directory / "vitest.config.mts",
         )
         self.copy_file(self.templates_dir / "LICENSE", root_directory / "LICENSE")
 

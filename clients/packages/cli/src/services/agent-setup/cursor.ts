@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { Effect, FileSystem, Option, Schema } from 'effect'
-import { applyEdits, modify, parse } from 'jsonc-parser'
+import { type ParseError, applyEdits, modify, parse } from 'jsonc-parser'
 import { AgentSetupError, type ClientStatus } from '@/schemas/AgentSetup'
 
 export const MCP_SERVERS = {
@@ -17,11 +17,14 @@ const Config = Schema.Struct({
   mcpServers: Schema.optional(Schema.Record(Schema.String, Schema.Unknown)),
 })
 
-const configuredServers = (source: string) =>
-  Schema.decodeUnknownOption(Config)(parse(source)).pipe(
+const configuredServers = (source: string) => {
+  const errors: ParseError[] = []
+  const config = parse(source, errors, { allowTrailingComma: true })
+  if (errors.length > 0) return Option.none()
+  return Schema.decodeUnknownOption(Config)(config).pipe(
     Option.map((config) => Object.keys(config.mcpServers ?? {})),
-    Option.getOrElse((): ReadonlyArray<string> => []),
   )
+}
 
 const readConfig = (file: string) =>
   Effect.gen(function* () {
@@ -31,10 +34,13 @@ const readConfig = (file: string) =>
 
 const mcpConfigured = (home: string) =>
   readConfig(mcpFile(home)).pipe(
-    Effect.map((source) => {
-      const servers = configuredServers(source)
-      return Object.keys(MCP_SERVERS).every((name) => servers.includes(name))
-    }),
+    Effect.map((source) =>
+      configuredServers(source).pipe(
+        Option.exists((servers) =>
+          Object.keys(MCP_SERVERS).every((name) => servers.includes(name)),
+        ),
+      ),
+    ),
     Effect.orElseSucceed(() => false),
   )
 
@@ -61,7 +67,14 @@ export const configureCursorMcp = (home: string) =>
     const fs = yield* FileSystem.FileSystem
     const file = mcpFile(home)
     let source = yield* readConfig(file)
-    const existing = configuredServers(source)
+    const configured = configuredServers(source)
+    if (Option.isNone(configured)) {
+      return yield* new AgentSetupError({
+        message: `${file} is not valid JSON`,
+        hint: 'Fix it, then run polar agent setup again.',
+      })
+    }
+    const existing = configured.value
     for (const [name, url] of Object.entries(MCP_SERVERS)) {
       if (existing.includes(name)) continue
       source = applyEdits(
@@ -80,11 +93,12 @@ export const configureCursorMcp = (home: string) =>
       source.endsWith('\n') ? source : `${source}\n`,
     )
   }).pipe(
-    Effect.mapError(
-      (cause) =>
+    Effect.catchTag('PlatformError', (cause) =>
+      Effect.fail(
         new AgentSetupError({
           message: `Could not add the Polar MCP servers to ${mcpFile(home)}`,
           hint: cause.message,
         }),
+      ),
     ),
   )

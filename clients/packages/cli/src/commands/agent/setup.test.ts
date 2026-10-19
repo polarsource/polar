@@ -170,6 +170,31 @@ describe('agent setup', () => {
     )
   })
 
+  test('fails inside a supported agent that is not installed, instead of setting up the others', async () => {
+    const cli = run([], {
+      statuses: [client('claude-code'), client('cursor')],
+      callingAgent: { id: 'codex', name: 'Codex' },
+    })
+
+    await expect(cli.promise).rejects.toThrow(
+      'Running inside Codex, but Codex was not found on this machine',
+    )
+    expect(cli.installed).toEqual([])
+  })
+
+  test('needs --yes to set up every agent with --json in a terminal', async () => {
+    const cli = run(
+      ['--json'],
+      { statuses: [client('codex')] },
+      {
+        interactive: true,
+      },
+    )
+
+    await expect(cli.promise).rejects.toThrow('Choose what to set up')
+    expect(cli.installed).toEqual([])
+  })
+
   test('reports a failed client, keeps going and exits non-zero', async () => {
     const cli = run(['--yes'], {
       statuses: [

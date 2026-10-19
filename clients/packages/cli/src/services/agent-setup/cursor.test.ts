@@ -40,3 +40,21 @@ test('adds the Polar servers to mcp.json without touching what is there', async 
   expect(source).toContain('http://127.0.0.1:9000/mcp')
   expect(source).toContain(MCP_SERVERS['polar-sandbox'])
 })
+
+test('refuses to edit an mcp.json that is not valid JSON', async () => {
+  const home = await mkdtemp(join(tmpdir(), 'polar-cursor-'))
+  const file = join(home, '.cursor', 'mcp.json')
+  await mkdir(join(home, '.cursor'))
+  await writeFile(file, '{ "mcpServers": { "polar": {')
+  const error = await Effect.runPromise(
+    configureCursorMcp(home).pipe(
+      Effect.flip,
+      Effect.provide(BunFileSystem.layer),
+    ),
+  )
+  const source = await readFile(file, 'utf8')
+  await rm(home, { recursive: true, force: true })
+
+  expect(error.message).toBe(`${file} is not valid JSON`)
+  expect(source).toBe('{ "mcpServers": { "polar": {')
+})

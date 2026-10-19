@@ -1,4 +1,4 @@
-import { Array, Effect, Option, Stdio } from 'effect'
+import { Effect, Option, Stdio } from 'effect'
 import { Command, Flag, Prompt } from 'effect/cli'
 import {
   AgentSetupError,
@@ -113,17 +113,27 @@ const select = (
         yield* note(ui.step(`Running inside ${own.name}, setting up only it`))
         return { targets: [own], scopes }
       }
-      if (!isClient(agent.id)) {
-        yield* note(
-          ui.step(
-            `Running inside ${agent.name}, which has no Polar plugin, installing the Polar skills instead`,
-          ),
-        )
-        return { targets: [], scopes: [scope ?? 'project'] }
+      if (isClient(agent.id)) {
+        return yield* new AgentSetupError({
+          message: `Running inside ${agent.name}, but ${agent.name} was not found on this machine`,
+          hint: 'Pass --client to set up another agent.',
+        })
       }
+      yield* note(
+        ui.step(
+          `Running inside ${agent.name}, which has no Polar plugin, installing the Polar skills instead`,
+        ),
+      )
+      return { targets: [], scopes: [scope ?? 'project'] }
     }
-    if (yes || json || agent || only || !(yield* interactive)) {
+    if (yes || only || !(yield* interactive)) {
       return { targets: detected, scopes }
+    }
+    if (json) {
+      return yield* new AgentSetupError({
+        message: 'Choose what to set up',
+        hint: 'Pass --yes to set up every detected agent, or --client to pick one.',
+      })
     }
     yield* note(ui.blank)
     return yield* pick(detected, scope)
@@ -207,11 +217,15 @@ const setUpSkills = (scope: SkillScope, force: boolean) => {
 
 const installedSkills = Effect.gen(function* () {
   const setup = yield* AgentSetup
-  const found = yield* Effect.forEach(skillScopes, (scope) =>
-    setup.skills(scope).pipe(Effect.option),
-  )
-  return Array.getSomes(found).filter((status) => status.state !== 'missing')
-})
+  const found = yield* Effect.forEach(skillScopes, setup.skills)
+  return found.filter((status) => status.state !== 'missing')
+}).pipe(
+  Effect.catch((error) =>
+    note(ui.warning(`Could not check the Polar skills: ${error.message}`)).pipe(
+      Effect.as([]),
+    ),
+  ),
+)
 
 interface Input {
   readonly status: boolean

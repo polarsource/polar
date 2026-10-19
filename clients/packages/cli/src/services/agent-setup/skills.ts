@@ -37,7 +37,8 @@ export interface Skill {
 const SKILL_PATH = /^skills\/([a-z0-9][a-z0-9-]*)\/(.+)$/
 
 const isSafeRelative = (relative: string) =>
-  relative.split('/').every((part) => part !== '' && part !== '..')
+  !relative.includes('\\') &&
+  relative.split('/').every((part) => !['', '.', '..'].includes(part))
 
 export const skillsFromTree = (
   tree: typeof Tree.Type,
@@ -120,24 +121,54 @@ export const checkSkills = (
       : 'outdated'
   })
 
+// Each skill is written to a fresh staging directory and then swapped in, so a
+// failed download changes nothing and a symlink planted in the destination is
+// replaced rather than written through.
 export const writeSkills = (directory: string, skills: ReadonlyArray<Skill>) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem
     const client = (yield* HttpClient.HttpClient).pipe(
       HttpClient.filterStatusOk,
     )
-    yield* Effect.forEach(
-      targets(directory, skills),
-      (file) =>
-        Effect.gen(function* () {
-          const response = yield* client.get(fileUrl(file.source))
-          const content = new Uint8Array(yield* response.arrayBuffer)
-          yield* fs.makeDirectory(path.dirname(file.target), {
-            recursive: true,
-          })
-          yield* fs.writeFile(file.target, content)
-        }),
-      { concurrency: 8 },
+    const downloads = yield* Effect.forEach(skills, (skill) =>
+      Effect.forEach(
+        skill.files,
+        (file) =>
+          client.get(fileUrl(file.source)).pipe(
+            Effect.flatMap((response) => response.arrayBuffer),
+            Effect.map((content) => ({
+              relative: file.relative,
+              content: new Uint8Array(content),
+            })),
+          ),
+        { concurrency: 8 },
+      ).pipe(Effect.map((files) => ({ name: skill.name, files }))),
+    )
+    yield* fs.makeDirectory(directory, { recursive: true })
+    yield* Effect.forEach(downloads, ({ name, files }) =>
+      Effect.gen(function* () {
+        const staging = yield* fs.makeTempDirectory({
+          directory,
+          prefix: `.${name}-`,
+        })
+        yield* Effect.gen(function* () {
+          yield* fs.chmod(staging, 0o755)
+          for (const { relative, content } of files) {
+            const target = path.join(staging, relative)
+            yield* fs.makeDirectory(path.dirname(target), { recursive: true })
+            yield* fs.writeFile(target, content)
+          }
+          const destination = path.join(directory, name)
+          yield* fs.remove(destination, { recursive: true, force: true })
+          yield* fs.rename(staging, destination)
+        }).pipe(
+          Effect.onError(() =>
+            fs
+              .remove(staging, { recursive: true, force: true })
+              .pipe(Effect.ignore),
+          ),
+        )
+      }),
     )
   }).pipe(
     Effect.mapError(

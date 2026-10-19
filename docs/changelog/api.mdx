@@ -12,8 +12,10 @@ as `2026-10`, and apply to API requests, responses, webhook payloads, and SDK ty
 
 **This will become the Current version on January 1, 2027.**
 
-Removed the following obsolete response fields, including fields that were already hidden from the API documentation and SDKs. These removals also apply to webhook payloads. Earlier API versions retain these fields.
+Removed the following obsolete fields, including fields that were already hidden from the API documentation and SDKs. Response field removals also apply to webhook payloads. Earlier API versions retain these fields.
 
+- Fixed discounts: removed `amount` and `currency` from create and update requests, responses, and webhook payloads. Use `amounts` instead; it is required when creating a fixed discount. Removed input fields are ignored.
+- Organization onboarding details: removed `about`, `intended_use`, `customer_acquisition`, `future_annual_revenue`, and `previous_annual_revenue` from create/update requests and KYC responses. Removed input fields are ignored. Updating details replaces stored values with the remaining supported fields.
 - Orders: `user_id`, `user`, `product_price_id`, `product_price`, `amount` (use `net_amount`), and `from_balance_amount` (use `applied_balance_amount`). Embedded subscriptions also lose `user_id`.
 - Subscriptions: `user_id`, `user`, `price_id`, and `price`. Use `customer_id`, `customer`, and `prices` instead.
 - Customer state active subscriptions: `price_id`. Use `prices` instead.

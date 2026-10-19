@@ -208,7 +208,7 @@ def _get_omitted_schema_names(version: APIVersion) -> set[str]:
             ):
                 schema = TypeAdapter(
                     types.GenericAlias(list, (field.annotation,))
-                ).json_schema()
+                ).json_schema(mode="serialization")
                 names.update(schema.get("$defs", {}))
     return names
 

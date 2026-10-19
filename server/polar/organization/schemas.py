@@ -295,12 +295,7 @@ class OrganizationDisputeSettingsUpdate(Schema):
     )
 
 
-class OrganizationDetails(Schema):
-    about: str | None = Field(
-        None,
-        deprecated=True,
-        description="Brief information about you and your business.",
-    )
+class OrganizationDetailsInput(Schema):
     product_description: str | None = Field(
         None, description="Description of digital products being sold."
     )
@@ -310,27 +305,35 @@ class OrganizationDetails(Schema):
     pricing_models: list[str] = Field(
         default_factory=list, description="Pricing models used by the organization."
     )
-    intended_use: str | None = Field(
+    switching: bool = Field(False, description="Switching from another platform?")
+    switching_from: (
+        Literal["paddle", "lemon_squeezy", "gumroad", "stripe", "other"] | None
+    ) = Field(None, description="Which platform the organization is migrating from.")
+
+
+class OrganizationDetails(OrganizationDetailsInput):
+    about: Annotated[str | None, Version(up_to=V2026_10)] = Field(
+        None,
+        deprecated=True,
+        description="Brief information about you and your business.",
+    )
+    intended_use: Annotated[str | None, Version(up_to=V2026_10)] = Field(
         None,
         deprecated=True,
         description="How the organization will integrate and use Polar.",
     )
-    customer_acquisition: list[str] = Field(
+    customer_acquisition: Annotated[list[str], Version(up_to=V2026_10)] = Field(
         default_factory=list,
         deprecated=True,
         description="Main customer acquisition channels.",
     )
-    future_annual_revenue: int | None = Field(
+    future_annual_revenue: Annotated[int | None, Version(up_to=V2026_10)] = Field(
         None,
         ge=0,
         deprecated=True,
         description="Estimated revenue in the next 12 months",
     )
-    switching: bool = Field(False, description="Switching from another platform?")
-    switching_from: (
-        Literal["paddle", "lemon_squeezy", "gumroad", "stripe", "other"] | None
-    ) = Field(None, description="Which platform the organization is migrating from.")
-    previous_annual_revenue: int | None = Field(
+    previous_annual_revenue: Annotated[int | None, Version(up_to=V2026_10)] = Field(
         None,
         ge=0,
         deprecated=True,
@@ -679,7 +682,7 @@ class OrganizationCreate(Schema):
         None,
         description="Link to social profiles.",
     )
-    details: OrganizationDetails | None = Field(
+    details: OrganizationDetailsInput | None = Field(
         None,
         description="Additional, private, business details Polar needs about active organizations for compliance (KYC).",
     )
@@ -711,7 +714,7 @@ class OrganizationUpdate(Schema):
     socials: list[OrganizationSocialLink] | None = Field(
         None, description="Links to social profiles."
     )
-    details: OrganizationDetails | None = Field(
+    details: OrganizationDetailsInput | None = Field(
         None,
         description="Additional, private, business details Polar needs about active organizations for compliance (KYC).",
     )

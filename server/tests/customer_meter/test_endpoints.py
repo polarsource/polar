@@ -470,13 +470,12 @@ class TestReverseCustomerMeterCredit:
 
         assert response.status_code == 201
         json = response.json()
-        assert json["parent_id"] is None
+        assert json["parent_id"] == str(credit_id)
         assert json["metadata"]["units"] == -2
-        assert json["metadata"]["reversed_event_id"] == str(credit_id)
+        assert "reversed_event_id" not in json["metadata"]
         reversal = await session.get(Event, uuid.UUID(json["id"]))
         assert reversal is not None
-        assert reversal.parent_id is None
-        assert reversal.root_id == reversal.id
+        assert reversal.root_id == credit.root_id
         customer_meter = await CustomerMeterRepository.from_session(
             session
         ).get_by_customer_and_meter(customer.id, meter.id)

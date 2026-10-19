@@ -6284,7 +6284,7 @@ export interface paths {
      *
      *     Works once per credit, within 7 days and in the current billing period.
      *     Returns a `meter.credited` event with negative units and
-     *     `metadata.reversed_event_id` set to the reversed credit.
+     *     `parent_id` set to the reversed credit.
      *
      *     **Scopes**: `customers:write`
      */
@@ -27353,8 +27353,6 @@ export interface components {
        * @enum {string}
        */
       reason: 'benefit' | 'manual'
-      /** Reversed Event Id */
-      reversed_event_id?: string
     }
     /** MeterQuantities */
     MeterQuantities: {

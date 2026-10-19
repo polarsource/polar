@@ -26222,7 +26222,7 @@
           "cli"
         ],
         "summary": "Reverse Customer Meter Credit",
-        "description": "Reverse a manual credit, removing the units the customer hasn't used yet.\n\nWorks once per credit, within 7 days and in the current billing period.\nReturns a `meter.credited` event with negative units and\n`metadata.reversed_event_id` set to the reversed credit.\n\n**Scopes**: `customers:write`",
+        "description": "Reverse a manual credit, removing the units the customer hasn't used yet.\n\nWorks once per credit, within 7 days and in the current billing period.\nReturns a `meter.credited` event with negative units and\n`parent_id` set to the reversed credit.\n\n**Scopes**: `customers:write`",
         "operationId": "customer_meters:reverse_credit",
         "security": [
           {
@@ -26309,7 +26309,7 @@
         },
         "x-tool-name": "customer_meters_reverse_credit",
         "x-tool-title": "Reverse Customer Meter Credit",
-        "x-tool-description": "Reverse a credit granted with Credit Customer Meter.\n\nRemoves the credited units the customer hasn't used yet. Only credits from the\nlast 7 days and the current billing period can be reversed, once. Returns the\nreversal: a `meter.credited` event with negative units, whose\n`metadata.reversed_event_id` is the reversed credit.",
+        "x-tool-description": "Reverse a credit granted with Credit Customer Meter.\n\nRemoves the credited units the customer hasn't used yet. Only credits from the\nlast 7 days and the current billing period can be reversed, once. Returns the\nreversal: a `meter.credited` event with negative units, whose\n`parent_id` is the reversed credit.",
         "x-tool-annotations": [
           "destructive"
         ],
@@ -64449,10 +64449,6 @@
             ],
             "title": "Reason",
             "default": "benefit"
-          },
-          "reversed_event_id": {
-            "type": "string",
-            "title": "Reversed Event Id"
           }
         },
         "type": "object",

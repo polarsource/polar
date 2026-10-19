@@ -569,7 +569,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 Event.organization_id == credit.organization_id,
                 Event.customer_id == credit.customer_id,
                 Event.is_meter_credit,
-                Event.user_metadata["reversed_event_id"].as_string() == str(credit.id),
+                Event.parent_id == credit.id,
             )
             .limit(1)
         )

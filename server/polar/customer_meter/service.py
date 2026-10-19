@@ -469,9 +469,10 @@ class CustomerMeterService:
                 "units": -units,
                 "rollover": credit.user_metadata["rollover"],
                 "reason": "manual",
-                "reversed_event_id": str(credit.id),
             },
         )
+        event.parent_id = credit.id
+        event.root_id = credit.root_id
         await event_service.create_event(session, event)
 
         _, updated = await self.update_customer_meter(

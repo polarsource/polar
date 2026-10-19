@@ -249,6 +249,6 @@ async def reverse_credit(
 
     Works once per credit, within 7 days and in the current billing period.
     Returns a `meter.credited` event with negative units and
-    `metadata.reversed_event_id` set to the reversed credit.
+    `parent_id` set to the reversed credit.
     """
     return await customer_meter_service.reverse_credit(session, auth_subject, id)

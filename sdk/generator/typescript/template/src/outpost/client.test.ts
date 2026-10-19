@@ -1,12 +1,8 @@
 import type { ReadableSpan } from "@opentelemetry/sdk-trace";
 
 import { Pipeline, Redis } from "ioredis";
-import { spawn, type ChildProcess } from "node:child_process";
 import { once } from "node:events";
-import { mkdtemp, access, rm } from "node:fs/promises";
 import { createRequire } from "node:module";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 import { WebSocketServer, type WebSocket } from "ws";
 
@@ -16,6 +12,7 @@ import { Outpost, type OutpostOptions, UnavailableRedisError } from "./client";
 import { BUCKET_SIZE, getBucketStart, type Reducer } from "./reducer";
 import { APPLY_SNAPSHOT_SCRIPT } from "./scripts";
 import { TELEMETRY_ENV } from "./telemetry";
+import { startRedisServer, type RedisServer } from "./testing";
 
 const { exported } = vi.hoisted(() => ({ exported: [] as ReadableSpan[] }));
 vi.mock("./telemetry", async (importOriginal) => {
@@ -45,8 +42,7 @@ const customer = { external_customer_id: "alice" };
 const meter = { ...customer, meter_id: "meter" };
 const key = "outpost:state:external:alice:tokens";
 const connectionId = "5b6e1f0c-8f4c-4d2a-9a51-3c7d2e8b1f60";
-let directory: string;
-let redisProcess: ChildProcess;
+let redisServer: RedisServer;
 let redis: Redis;
 let server: WebSocketServer;
 let core: ClientBase;
@@ -59,22 +55,8 @@ const connections: WebSocket[] = [];
 const outposts: Outpost[] = [];
 
 beforeAll(async () => {
-  directory = await mkdtemp(join(tmpdir(), "polar-outpost-"));
-  const socket = join(directory, "redis.sock");
-  redisProcess = spawn(
-    "redis-server",
-    ["--port", "0", "--unixsocket", socket, "--save", "", "--appendonly", "no"],
-    { stdio: "ignore" },
-  );
-  let startupError: Error | undefined;
-  redisProcess.on("error", (error) => {
-    startupError = error;
-  });
-  await vi.waitFor(async () => {
-    if (startupError) throw startupError;
-    await access(socket);
-  });
-  redis = new Redis(socket);
+  redisServer = await startRedisServer();
+  redis = new Redis(redisServer.socket);
   await once(redis, "ready");
   server = new WebSocketServer({
     port: 0,
@@ -139,16 +121,11 @@ afterAll(async () => {
   redis?.disconnect();
   for (const ws of server?.clients ?? []) ws.terminate();
   if (server) await new Promise<void>((resolve) => server.close(() => resolve()));
-  if (redisProcess?.pid) {
-    const exited = once(redisProcess, "exit");
-    redisProcess.kill();
-    await exited;
-  }
-  if (directory) await rm(directory, { recursive: true, force: true });
+  if (redisServer) await redisServer.stop();
 });
 
 const start = async (options: Partial<OutpostOptions> = {}): Promise<Outpost> => {
-  const outpost = new Outpost(join(directory, "redis.sock"), {
+  const outpost = new Outpost(redisServer.socket, {
     client: core,
     snapshotTimeout: 100,
     ...options,
@@ -653,7 +630,7 @@ it.each([
   ["environment", true, "0"],
 ] as const)("turns telemetry off through the %s", async (_, telemetry, environment) => {
   if (environment !== undefined) vi.stubEnv(TELEMETRY_ENV, environment);
-  const outpost = new Outpost(join(directory, "redis.sock"), {
+  const outpost = new Outpost(redisServer.socket, {
     client: core,
     telemetry,
     snapshotTimeout: 100,
@@ -735,7 +712,7 @@ it("fails when Polar refuses the reconnection", async () => {
 });
 
 it("fails to start without Redis instead of hanging", async () => {
-  const outpost = new Outpost(join(directory, "missing.sock"), { client: core });
+  const outpost = new Outpost(`${redisServer.socket}.missing`, { client: core });
   await expect(outpost.start()).rejects.toThrow();
 }, 10_000);
 
@@ -910,7 +887,7 @@ it("raises Outpost errors when Redis fails", async () => {
 });
 
 it("raises an Outpost error when Redis is unavailable at startup", async () => {
-  const outpost = new Outpost(join(directory, "missing.sock"), { client: core });
+  const outpost = new Outpost(`${redisServer.socket}.missing`, { client: core });
   await expect(outpost.start()).rejects.toBeInstanceOf(UnavailableRedisError);
 }, 10_000);
 
@@ -937,7 +914,7 @@ it("composes buffered Polar delivery with Outpost through the client factory", a
   const reader = await start();
   {
     await using ingestion = await polar
-      .ingestion({ outpost: { redisUrl: join(directory, "redis.sock") } })
+      .ingestion({ outpost: { redisUrl: redisServer.socket } })
       .start();
     await ingestion.ingest({ ...customer, name: "api", timestamp, metadata: { tokens: 2 } });
     expect((await reader.meter(meter))?.consumed_units).toBe(12);

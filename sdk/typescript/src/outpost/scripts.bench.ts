@@ -1,19 +1,12 @@
 import { Redis } from "ioredis";
-import { spawn, type ChildProcess } from "node:child_process";
 import { once } from "node:events";
-import { access, mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { afterAll, beforeAll, bench, describe, vi } from "vitest";
+import { afterAll, beforeAll, bench, describe } from "vitest";
 
+import { BUCKET_COUNTS, CHANNEL, COLD_UNTIL, EPOCH, encodeState } from "./benchmark";
 import { BUCKET_SIZE } from "./reducer";
 import { APPLY_SNAPSHOT_SCRIPT, READ_STATE_SCRIPT, WRITE_BUCKET_SCRIPT } from "./scripts";
+import { startRedisServer, type RedisServer } from "./testing";
 
-const COLD_UNTIL = Date.UTC(2026, 9, 1, 12, 0, 0) * 1_000;
-// 5-minute buckets: 5 minutes, 1 hour, 24 hours of usage since the last snapshot.
-const BUCKET_COUNTS = [1, 12, 288];
-const CHANNEL = "outpost:bench:updates";
-const EPOCH = "0123456789abcdef0123456789abcdef";
 const OPTIONS = { warmupTime: 500, time: 2_000 };
 
 // One event usually matches several reducers; ingest sends their WRITE_BUCKET calls in one pipeline.
@@ -22,53 +15,31 @@ const REDUCERS = ["tokens", "calls", "cost"];
 const stateKey = (identity: string) => `outpost:state:${identity}`;
 const identityOf = (buckets: number) => `external:alice:tokens-${buckets}`;
 const keyOf = (buckets: number) => stateKey(identityOf(buckets));
+// An event of 7 units in the given bucket: what WRITE_BUCKET takes after the key count.
+const writeArgs = (identity: string, bucketStart: number) => [
+  stateKey(identity),
+  identity,
+  CHANNEL,
+  EPOCH,
+  bucketStart,
+  1,
+  7,
+  7,
+  7,
+];
 
-let directory: string;
-let redisProcess: ChildProcess;
+let redisServer: RedisServer;
 let redis: Redis;
 let readStateSha: string;
 let applySnapshotSha: string;
 
 const seedState = async (identity: string, buckets: number): Promise<void> => {
-  const fields: Record<string, string> = {
-    epoch: EPOCH,
-    revision: "4242",
-    cold_until: String(COLD_UNTIL),
-    snapshot_version: String(COLD_UNTIL + 1),
-    "cold:count": "1000",
-    "cold:sum": "123456",
-    "cold:min": "1",
-    "cold:max": "999",
-    "credited:meter": "1000000",
-    "credited_version:meter": String(COLD_UNTIL + 1),
-  };
-  for (let index = 0; index < buckets; index++) {
-    const prefix = `bucket:${COLD_UNTIL + index * BUCKET_SIZE}:`;
-    fields[`${prefix}count`] = "10";
-    fields[`${prefix}sum`] = String(100 + index);
-    fields[`${prefix}min`] = "1";
-    fields[`${prefix}max`] = String(50 + index);
-  }
-  await redis.hset(stateKey(identity), fields);
+  await redis.hset(stateKey(identity), ...encodeState(buckets));
 };
 
 beforeAll(async () => {
-  directory = await mkdtemp(join(tmpdir(), "polar-outpost-bench-"));
-  const socket = join(directory, "redis.sock");
-  redisProcess = spawn(
-    "redis-server",
-    ["--port", "0", "--unixsocket", socket, "--save", "", "--appendonly", "no"],
-    { stdio: "ignore" },
-  );
-  let startupError: Error | undefined;
-  redisProcess.on("error", (error) => {
-    startupError = error;
-  });
-  await vi.waitFor(async () => {
-    if (startupError) throw startupError;
-    await access(socket);
-  });
-  redis = new Redis(socket);
+  redisServer = await startRedisServer();
+  redis = new Redis(redisServer.socket);
   await once(redis, "ready");
   // The client loads the read and snapshot scripts once and calls them by hash.
   readStateSha = (await redis.script("LOAD", READ_STATE_SCRIPT)) as string;
@@ -79,8 +50,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   redis.disconnect();
-  redisProcess.kill();
-  await rm(directory, { recursive: true, force: true });
+  await redisServer.stop();
 });
 
 describe("WRITE_BUCKET", () => {
@@ -92,15 +62,7 @@ describe("WRITE_BUCKET", () => {
         await redis.eval(
           WRITE_BUCKET_SCRIPT,
           1,
-          keyOf(buckets),
-          identityOf(buckets),
-          CHANNEL,
-          EPOCH,
-          newestBucketStart,
-          1,
-          7,
-          7,
-          7,
+          ...writeArgs(identityOf(buckets), newestBucketStart),
         );
       },
       OPTIONS,
@@ -112,19 +74,7 @@ describe("WRITE_BUCKET", () => {
       const pipeline = redis.pipeline();
       for (const reducer of REDUCERS) {
         const identity = `external:alice:${reducer}`;
-        pipeline.eval(
-          WRITE_BUCKET_SCRIPT,
-          1,
-          stateKey(identity),
-          identity,
-          CHANNEL,
-          EPOCH,
-          COLD_UNTIL,
-          1,
-          7,
-          7,
-          7,
-        );
+        pipeline.eval(WRITE_BUCKET_SCRIPT, 1, ...writeArgs(identity, COLD_UNTIL));
       }
       const results = await pipeline.exec();
       for (const [error] of results ?? []) if (error) throw error;

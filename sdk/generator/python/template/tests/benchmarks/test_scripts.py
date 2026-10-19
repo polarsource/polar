@@ -1,5 +1,4 @@
 import collections.abc
-import datetime
 import os
 import subprocess
 import tempfile
@@ -15,17 +14,9 @@ from polar.outpost.client import (
     WRITE_BUCKET_SCRIPT,
 )
 from polar.outpost.reducer import BUCKET_SIZE
+from tests.benchmarks import BUCKET_COUNTS, CHANNEL, COLD_UNTIL, EPOCH, encode_state
 
 pytestmark = pytest.mark.benchmark
-
-COLD_UNTIL = int(
-    datetime.datetime(2026, 10, 1, 12, 0, 0, tzinfo=datetime.UTC).timestamp()
-    * 1_000_000
-)
-# 5-minute buckets: 5 minutes, 1 hour, 24 hours of usage since the last snapshot.
-BUCKET_COUNTS = [1, 12, 288]
-CHANNEL = "outpost:bench:updates"
-EPOCH = "0123456789abcdef0123456789abcdef"
 
 
 # One event usually matches several reducers; ingest sends their WRITE_BUCKET calls in one pipeline.
@@ -44,34 +35,13 @@ def key_of(buckets: int) -> str:
     return state_key(identity_of(buckets))
 
 
+# An event of 7 units in the given bucket: what WRITE_BUCKET takes after the key count.
+def write_args(identity: str, bucket_start: int) -> list[str | int]:
+    return [state_key(identity), identity, CHANNEL, EPOCH, bucket_start, 1, 7, 7, 7]
+
+
 def seed_state(redis: Redis, identity: str, buckets: int) -> None:
-    fields = [
-        "epoch",
-        EPOCH,
-        "revision",
-        "4242",
-        "cold_until",
-        str(COLD_UNTIL),
-        "snapshot_version",
-        str(COLD_UNTIL + 1),
-        "cold:count",
-        "1000",
-        "cold:sum",
-        "123456",
-        "cold:min",
-        "1",
-        "cold:max",
-        "999",
-        "credited:meter",
-        "1000000",
-        "credited_version:meter",
-        str(COLD_UNTIL + 1),
-    ]
-    for index in range(buckets):
-        prefix = f"bucket:{COLD_UNTIL + index * BUCKET_SIZE}:"
-        fields += [f"{prefix}count", "10", f"{prefix}sum", str(100 + index)]
-        fields += [f"{prefix}min", "1", f"{prefix}max", str(50 + index)]
-    redis.hset(state_key(identity), items=fields)
+    redis.hset(state_key(identity), items=encode_state(buckets))
 
 
 @pytest.fixture(scope="module")
@@ -99,8 +69,8 @@ def redis() -> collections.abc.Iterator[Redis]:
                 if process.poll() is not None or time.monotonic() > deadline:
                     raise RuntimeError("redis-server did not start")
                 time.sleep(0.01)
-            # pytest-codspeed cannot benchmark a coroutine (CodSpeedHQ/pytest-codspeed#101), so the
-            # sync client stands in for redis.asyncio; both share the connection and parser code.
+            # No coroutine can be benchmarked (see the `loop` fixture in conftest.py): the sync
+            # client stands in for redis.asyncio; both share the connection and parser code.
             client = Redis(unix_socket_path=socket)
             for buckets in BUCKET_COUNTS:
                 seed_state(client, identity_of(buckets), buckets)
@@ -122,15 +92,7 @@ def test_write_bucket_one_event(
         redis.eval,
         WRITE_BUCKET_SCRIPT,
         1,
-        key_of(buckets),
-        identity_of(buckets),
-        CHANNEL,
-        EPOCH,
-        newest_bucket_start,
-        1,
-        7,
-        7,
-        7,
+        *write_args(identity_of(buckets), newest_bucket_start),
     )
 
 
@@ -142,15 +104,7 @@ def test_write_bucket_three_reducers(benchmark: BenchmarkFixture, redis: Redis) 
             pipeline.eval(
                 WRITE_BUCKET_SCRIPT,
                 1,
-                state_key(identity),
-                identity,
-                CHANNEL,
-                EPOCH,
-                COLD_UNTIL,
-                1,
-                7,
-                7,
-                7,
+                *write_args(identity, COLD_UNTIL),
             )
         pipeline.execute()
 

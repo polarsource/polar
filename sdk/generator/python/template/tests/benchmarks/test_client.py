@@ -1,6 +1,4 @@
 import asyncio
-import collections.abc
-import datetime
 
 import httpx
 import pytest
@@ -8,45 +6,10 @@ from pytest_codspeed import BenchmarkFixture
 from redis.asyncio import Redis
 
 from polar.outpost.client import LocalState, Outpost, consumed_units, decode_state
-from polar.outpost.reducer import BUCKET_SIZE, Reducer
+from polar.outpost.reducer import Reducer
+from tests.benchmarks import BUCKET_COUNTS, encode_state
 
 pytestmark = pytest.mark.benchmark
-
-COLD_UNTIL = int(
-    datetime.datetime(2026, 10, 1, 12, 0, 0, tzinfo=datetime.UTC).timestamp()
-    * 1_000_000
-)
-# 5-minute buckets: 5 minutes, 1 hour, 24 hours of usage since the last snapshot.
-BUCKET_COUNTS = [1, 12, 288]
-
-
-# The flat field list decode_state reads: one `bucket:<start>:<statistic>` entry per bucket.
-def encode_state(buckets: int) -> list[str]:
-    fields = [
-        "epoch",
-        "0123456789abcdef0123456789abcdef",
-        "revision",
-        "4242",
-        "cold_until",
-        str(COLD_UNTIL),
-        "snapshot_version",
-        str(COLD_UNTIL + 1),
-        "cold:count",
-        "1000",
-        "cold:sum",
-        "123456",
-        "cold:min",
-        "1",
-        "cold:max",
-        "999",
-        "credited:meter",
-        "1000000",
-    ]
-    for index in range(buckets):
-        prefix = f"bucket:{COLD_UNTIL + index * BUCKET_SIZE}:"
-        fields += [f"{prefix}count", "10", f"{prefix}sum", str(100 + index)]
-        fields += [f"{prefix}min", "1", f"{prefix}max", str(50 + index)]
-    return fields
 
 
 @pytest.mark.parametrize("buckets", BUCKET_COUNTS)
@@ -81,15 +44,6 @@ async def warm_outpost() -> Outpost:
     outpost._cache[identity] = LocalState(state=decode_state(encode_state(1)))
     outpost._actors.add(identity)
     return outpost
-
-
-# pytest-codspeed cannot benchmark a coroutine (CodSpeedHQ/pytest-codspeed#101): one event loop
-# drives the reads, and its constant overhead is part of every measurement.
-@pytest.fixture(scope="module")
-def loop() -> collections.abc.Iterator[asyncio.AbstractEventLoop]:
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
 
 
 def test_warm_meter_read(

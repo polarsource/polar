@@ -2,6 +2,7 @@ import { bench, describe } from "vitest";
 
 import type { Event } from "./event";
 
+import benchmark from "./benchmark.json";
 import {
   type Aggregation,
   type Filter,
@@ -12,11 +13,9 @@ import {
   reduce,
 } from "./reducer";
 
-const EVENTS = 1_000;
-const CUSTOMERS = 10;
-const NAMES = ["llm.call", "tool.call", "agent.run", "embedding"];
-const MODELS = ["claude-sonnet-5", "gpt-5", "gemini-3-pro"];
-const START = Date.UTC(2026, 9, 1, 12, 0, 0) * 1_000;
+const { seed, count, customers: CUSTOMERS, names: NAMES, models: MODELS } = benchmark.events;
+// Events start at the cold boundary, one per second.
+const START = benchmark.cold_until;
 
 // Mulberry32: the same events on every run, so the numbers compare across commits.
 const seeded = (seed: number) => {
@@ -31,7 +30,7 @@ const seeded = (seed: number) => {
 };
 
 const makeEvents = (count: number): Event[] => {
-  const random = seeded(4242);
+  const random = seeded(seed);
   return Array.from({ length: count }, (_, index) => ({
     name: NAMES[Math.floor(random() * NAMES.length)],
     customer: `external:kr-${String(1 + Math.floor(random() * CUSTOMERS)).padStart(3, "0")}`,
@@ -44,7 +43,7 @@ const makeEvents = (count: number): Event[] => {
   }));
 };
 
-const events = makeEvents(EVENTS);
+const events = makeEvents(count);
 const oldestBucketStart = getBucketStart(START);
 
 const clause = (

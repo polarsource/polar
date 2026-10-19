@@ -90,6 +90,8 @@ jobs:
     env:
       # CodSpeed traces the interpreter from setup-python; keep uv from downloading its own.
       UV_PYTHON_PREFERENCE: only-system
+      # A random hash seed changes dict collisions, hence instruction counts, from run to run.
+      PYTHONHASHSEED: "0"
     steps:
       - uses: actions/checkout@v7.0.1
 

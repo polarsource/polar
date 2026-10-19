@@ -1,14 +1,11 @@
 import { Redis } from "ioredis";
-import { spawn, type ChildProcess } from "node:child_process";
 import { once } from "node:events";
-import { access, mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { afterAll, beforeAll, bench, describe, vi } from "vitest";
+import { afterAll, beforeAll, bench, describe } from "vitest";
 
 import { BUCKET_COUNTS, CHANNEL, COLD_UNTIL, EPOCH, encodeState } from "./benchmark";
 import { BUCKET_SIZE } from "./reducer";
 import { APPLY_SNAPSHOT_SCRIPT, READ_STATE_SCRIPT, WRITE_BUCKET_SCRIPT } from "./scripts";
+import { startRedisServer, type RedisServer } from "./testing";
 
 const OPTIONS = { warmupTime: 500, time: 2_000 };
 
@@ -19,8 +16,7 @@ const stateKey = (identity: string) => `outpost:state:${identity}`;
 const identityOf = (buckets: number) => `external:alice:tokens-${buckets}`;
 const keyOf = (buckets: number) => stateKey(identityOf(buckets));
 
-let directory: string;
-let redisProcess: ChildProcess;
+let redisServer: RedisServer;
 let redis: Redis;
 let readStateSha: string;
 let applySnapshotSha: string;
@@ -30,22 +26,8 @@ const seedState = async (identity: string, buckets: number): Promise<void> => {
 };
 
 beforeAll(async () => {
-  directory = await mkdtemp(join(tmpdir(), "polar-outpost-bench-"));
-  const socket = join(directory, "redis.sock");
-  redisProcess = spawn(
-    "redis-server",
-    ["--port", "0", "--unixsocket", socket, "--save", "", "--appendonly", "no"],
-    { stdio: "ignore" },
-  );
-  let startupError: Error | undefined;
-  redisProcess.on("error", (error) => {
-    startupError = error;
-  });
-  await vi.waitFor(async () => {
-    if (startupError) throw startupError;
-    await access(socket);
-  });
-  redis = new Redis(socket);
+  redisServer = await startRedisServer();
+  redis = new Redis(redisServer.socket);
   await once(redis, "ready");
   // The client loads the read and snapshot scripts once and calls them by hash.
   readStateSha = (await redis.script("LOAD", READ_STATE_SCRIPT)) as string;
@@ -56,8 +38,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   redis.disconnect();
-  redisProcess.kill();
-  await rm(directory, { recursive: true, force: true });
+  await redisServer.stop();
 });
 
 describe("WRITE_BUCKET", () => {

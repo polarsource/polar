@@ -126,7 +126,8 @@ describe("WRITE_BUCKET", () => {
           7,
         );
       }
-      await pipeline.exec();
+      const results = await pipeline.exec();
+      for (const [error] of results ?? []) if (error) throw error;
     },
     OPTIONS,
   );

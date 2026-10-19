@@ -21,6 +21,7 @@ import { customerKey, parseEvent } from "./event";
 import {
   reduce,
   getBucketStart,
+  type Aggregation,
   type Reducer,
   type BucketStatistics,
   emptyStatistics,
@@ -37,7 +38,7 @@ const RECONNECT_DELAY = 500;
 const MAX_RECONNECT_DELAY = 30_000;
 const REDIS_RECONNECT_DELAY = 100;
 const MAX_REDIS_RECONNECT_DELAY = 2_000;
-interface State {
+export interface State {
   epoch: string;
   revision: bigint;
   coldUntil?: number;
@@ -139,7 +140,7 @@ const locked = <T>(local: LocalState, action: () => Promise<T>): Promise<T> => {
   local.pending = result.catch(() => {});
   return result;
 };
-const decodeState = (value: string[]): State => {
+export const decodeState = (value: string[]): State => {
   const fields: Record<string, string> = {};
   for (let i = 0; i < value.length; i += 2) fields[value[i]] = value[i + 1];
   const state: State = {
@@ -163,6 +164,12 @@ const decodeState = (value: string[]): State => {
     } else if (field.startsWith("credited:")) state.credited[field.slice(9)] = number(value);
   }
   return state;
+};
+export const consumedUnits = (state: State, func: Aggregation["func"]): number => {
+  const combined = { ...state.cold };
+  for (const [start, statistics] of state.buckets)
+    if (start >= state.coldUntil!) addStatistics(combined, statistics);
+  return quantity(combined, func);
 };
 
 const isClose = (a: number, b: number): boolean =>
@@ -481,10 +488,7 @@ export class Outpost {
           ? "ready"
           : "not_ready",
       );
-      const combined = { ...state.cold };
-      for (const [start, statistics] of state.buckets)
-        if (start >= state.coldUntil) addStatistics(combined, statistics);
-      const consumed = quantity(combined, reducer.aggregation.func);
+      const consumed = consumedUnits(state, reducer.aggregation.func);
       const credited = state.credited[input.meter_id] ?? 0;
       return {
         ...input,

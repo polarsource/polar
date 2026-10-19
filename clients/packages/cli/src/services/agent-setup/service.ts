@@ -26,13 +26,17 @@ import {
   skillsDirectory,
   writeSkills,
 } from '@/services/agent-setup/skills'
-import { Environment, detectAgent } from '@/services/telemetry'
+import {
+  type CallingAgent,
+  detectCallingAgent,
+} from '@/services/agent-setup/agents'
+import { Environment } from '@/services/telemetry'
 import { exec } from '@/services/updater'
 
 export class AgentSetup extends Context.Service<
   AgentSetup,
   {
-    readonly callingAgent: string | undefined
+    readonly callingAgent: CallingAgent | undefined
     readonly detect: (
       clients: ReadonlyArray<Client>,
     ) => Effect.Effect<ReadonlyArray<ClientStatus>>
@@ -94,7 +98,7 @@ export const layer = Layer.effect(
     }
 
     return AgentSetup.of({
-      callingAgent: detectAgent(env),
+      callingAgent: detectCallingAgent(env),
       detect: (clients) =>
         Effect.forEach(clients, detectClient, { concurrency: 'unbounded' }),
       setUp: (status) => {

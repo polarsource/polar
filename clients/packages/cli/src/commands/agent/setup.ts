@@ -108,15 +108,15 @@ const select = (
     const { json } = yield* Output
     const scopes: ReadonlyArray<SkillScope> = scope ? [scope] : []
     if (agent && !only) {
-      const own = detected.find((status) => status.client === agent)
+      const own = detected.find((status) => status.client === agent.id)
       if (own) {
         yield* note(ui.step(`Running inside ${own.name}, setting up only it`))
         return { targets: [own], scopes }
       }
-      if (!isClient(agent)) {
+      if (!isClient(agent.id)) {
         yield* note(
           ui.step(
-            `Running inside ${agent}, which has no Polar plugin, installing the Polar skills instead`,
+            `Running inside ${agent.name}, which has no Polar plugin, installing the Polar skills instead`,
           ),
         )
         return { targets: [], scopes: [scope ?? 'project'] }

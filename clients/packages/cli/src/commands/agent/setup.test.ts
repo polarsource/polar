@@ -8,6 +8,7 @@ import {
   type SkillScope,
   type SkillsStatus,
 } from '@/schemas/AgentSetup'
+import type { CallingAgent } from '@/services/agent-setup/agents'
 import { AgentSetup } from '@/services/agent-setup/service'
 import { type RunCliOptions, keys, runCli } from '@/utils/test-utils/cli'
 
@@ -30,7 +31,7 @@ const client = (
 
 interface FakeOptions {
   readonly statuses: ReadonlyArray<ClientStatus>
-  readonly callingAgent?: string
+  readonly callingAgent?: CallingAgent
   readonly skills?: Partial<Record<SkillScope, SkillsStatus['state']>>
   readonly failing?: ReadonlyArray<Client>
 }
@@ -133,7 +134,7 @@ describe('agent setup', () => {
       [],
       {
         statuses: [client('claude-code'), client('codex')],
-        callingAgent: 'codex',
+        callingAgent: { id: 'codex', name: 'Codex' },
       },
       { interactive: true },
     )
@@ -146,7 +147,7 @@ describe('agent setup', () => {
   test('installs project skills for an agent without a Polar plugin', async () => {
     const cli = run(['--json'], {
       statuses: [client('claude-code')],
-      callingAgent: 'opencode',
+      callingAgent: { id: 'opencode', name: 'OpenCode' },
     })
     await cli.promise
 

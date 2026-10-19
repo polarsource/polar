@@ -589,7 +589,10 @@ class SubscriptionChargePreview(Schema):
         description="Base subscription amount in cents (sum of product prices)"
     )
     metered_amount: int = Field(
-        description="Total metered usage charges in cents (sum of all meter charges)"
+        description=(
+            "Metered usage in cents billed on this invoice. Zero when usage is "
+            "billed on its own meter cycle, ending before this invoice."
+        )
     )
     proration_amount: int = Field(
         description=(
@@ -621,6 +624,21 @@ class SubscriptionChargePreview(Schema):
             "Amount actually due in cents: total_amount plus the applied wallet "
             "balance, floored at zero. This is the figure charged today."
         )
+    )
+
+
+class SubscriptionMeterChargePreview(Schema):
+    """Preview of the metered usage billed at the end of the current meter cycle."""
+
+    metered_amount: int = Field(description="Metered usage amount in cents.")
+    subtotal_amount: int = Field(
+        description="Subtotal amount in cents, before discount and tax."
+    )
+    discount_amount: int = Field(description="Discount amount in cents.")
+    net_amount: int = Field(description="Net amount in cents, before taxes.")
+    tax_amount: int = Field(description="Tax amount in cents.")
+    total_amount: int = Field(
+        description="Total amount in cents, before applying the wallet balance."
     )
 
 

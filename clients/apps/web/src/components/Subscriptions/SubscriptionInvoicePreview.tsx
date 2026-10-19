@@ -8,6 +8,7 @@ import { OrderSection } from '@/components/Orders/OrderSection'
 import { useProduct } from '@/hooks/queries'
 import { useSubscriptionChargePreview } from '@/hooks/queries/subscriptions'
 import { isFreePrice, isSeatBasedPrice } from '@/utils/product'
+import { billsUsageOnMeterCycle } from '@/utils/subscription'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -53,10 +54,28 @@ const SubscriptionInvoicePreview = ({
   )
 
   const isFreeProduct = subscription.prices.some(isFreePrice)
-  const hasMeters = subscription.meters.length > 0
-  const hasNextInvoice = !isFreeProduct || hasMeters
+  // Usage settled on an earlier meter cycle is shown by SubscriptionUsageChargePreview
+  const usageOnMeterCycle = billsUsageOnMeterCycle(subscription)
+  const hasMeters = subscription.meters.length > 0 && !usageOnMeterCycle
 
-  if (!showsCharge || !hasNextInvoice || !chargePreview) {
+  if (!showsCharge || !chargePreview) {
+    return null
+  }
+
+  const hasNextInvoice =
+    !isFreeProduct ||
+    hasMeters ||
+    chargePreview.base_amount > 0 ||
+    chargePreview.prorations.length > 0
+  if (!hasNextInvoice) {
+    return null
+  }
+
+  if (
+    isCancelingAtPeriodEnd &&
+    usageOnMeterCycle &&
+    chargePreview.prorations.length === 0
+  ) {
     return null
   }
 
@@ -78,7 +97,7 @@ const SubscriptionInvoicePreview = ({
       label: proration.label,
       amount: proration.amount,
     })),
-    ...subscription.meters.map((meter) => ({
+    ...(hasMeters ? subscription.meters : []).map((meter) => ({
       id: meter.id,
       label: meter.meter.name,
       amount: meter.amount,
@@ -91,7 +110,7 @@ const SubscriptionInvoicePreview = ({
       ? subscription.resumes_at
       : subscription.current_period_end
 
-  let title = 'Upcoming charge'
+  let title = 'Upcoming renewal'
   let dateLabel = 'Next invoice'
   if (isTrialing) {
     title = 'First charge after trial'

@@ -1,8 +1,5 @@
-import asyncio
-from functools import wraps
-
 import typer
-from sqlalchemy import Text, cast, literal, select, update
+from sqlalchemy import func, literal, select, update
 from sqlalchemy.dialects.postgresql import JSONB
 
 from polar.models import Organization
@@ -10,6 +7,7 @@ from scripts.helper import (
     configure_script_logging,
     limit_bindparam,
     run_batched_update,
+    typer_async,
 )
 
 cli = typer.Typer()
@@ -19,17 +17,9 @@ configure_script_logging()
 FLAG = "meter_cycling_enabled"
 
 
-def typer_async(f):  # type: ignore
-    @wraps(f)
-    def wrapper(*args, **kwargs):  # type: ignore
-        return asyncio.run(f(*args, **kwargs))
-
-    return wrapper
-
-
 @cli.command()
 @typer_async
-async def drop_meter_cycling_flag(
+async def enable_meter_cycling_flag(
     batch_size: int = typer.Option(5000, help="Number of rows to process per batch"),
     sleep_seconds: float = typer.Option(0.1, help="Seconds to sleep between batches"),
 ) -> None:
@@ -38,16 +28,19 @@ async def drop_meter_cycling_flag(
             update(Organization)
             .values(
                 feature_settings=Organization.feature_settings.op(
-                    "-", return_type=JSONB
-                )(cast(literal(FLAG), Text)),
-                # Self-assign to suppress the onupdate: dropping a key nobody
-                # reads must not make every organization look freshly modified.
+                    "||", return_type=JSONB
+                )(func.jsonb_build_object(FLAG, literal(True))),
+                # Self-assign to suppress the onupdate: flipping a flag the
+                # current API no longer exposes must not make every
+                # organization look freshly modified.
                 modified_at=Organization.modified_at,
             )
             .where(
                 Organization.id.in_(
                     select(Organization.id)
-                    .where(Organization.feature_settings.has_key(FLAG))
+                    .where(
+                        Organization.feature_settings[FLAG].as_boolean().is_not(True)
+                    )
                     .limit(limit_bindparam())
                 ),
             )

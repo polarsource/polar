@@ -1074,6 +1074,8 @@ async def test_telemetry_spans(
     assert [(point.attributes, point.value) for point in events] == [
         ({"outpost.outcome": "ok"}, 1)
     ]
+    buckets = _data_points(exported_metrics, "outpost.ingest.buckets")
+    assert [point.value for point in buckets] == [1]
     durations = _data_points(exported_metrics, "outpost.ingest.duration")
     assert [(point.attributes, point.count) for point in durations] == [
         ({"outpost.outcome": "ok"}, 1)

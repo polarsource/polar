@@ -7,7 +7,7 @@ import { createRequire } from "node:module";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 import { WebSocketServer, type WebSocket } from "ws";
 
-import { createPolar } from "../{{ (ir.versions[-2] | default(ir.versions[0])).version }}/client";
+import { createPolar } from "../2026-10/client";
 import { ClientBase } from "../base";
 import { Outpost, type OutpostOptions, UnavailableRedisError } from "./client";
 import { BUCKET_SIZE, getBucketStart, type Reducer } from "./reducer";
@@ -21,7 +21,8 @@ const { exported, metrics } = vi.hoisted(() => ({
 }));
 vi.mock("./telemetry", async (importOriginal) => {
   const { SimpleSpanProcessor, TracerProvider } = await import("@opentelemetry/sdk-trace");
-  const { MeterProvider, PeriodicExportingMetricReader } = await import("@opentelemetry/sdk-metrics");
+  const { MeterProvider, PeriodicExportingMetricReader } =
+    await import("@opentelemetry/sdk-metrics");
   return {
     ...(await importOriginal<typeof import("./telemetry")>()),
     createTracerProvider: () =>
@@ -629,6 +630,7 @@ it("sends telemetry spans tagged with the connection ID", async () => {
   expect(dataPoints("outpost.ingest.events")).toMatchObject([
     { attributes: { "outpost.outcome": "ok" }, value: 1 },
   ]);
+  expect(dataPoints("outpost.ingest.buckets")).toMatchObject([{ value: 1 }]);
   expect(dataPoints("outpost.ingest.duration")).toMatchObject([
     { attributes: { "outpost.outcome": "ok" }, value: { count: 1 } },
   ]);

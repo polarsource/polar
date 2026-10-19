@@ -387,6 +387,7 @@ class Outpost:
         self._meter_provider: MeterProvider | None = None
         self._ingest_duration: Histogram | None = None
         self._ingest_events: Counter | None = None
+        self._ingest_buckets: Counter | None = None
         self._stack = contextlib.AsyncExitStack()
         self._redis: Redis | None = None
         self._websocket: AsyncWebSocketSession | None = None
@@ -433,6 +434,7 @@ class Outpost:
                 "outpost.ingest.duration", unit="s"
             )
             self._ingest_events = meter.create_counter("outpost.ingest.events")
+            self._ingest_buckets = meter.create_counter("outpost.ingest.buckets")
         try:
             with self._span("outpost.redis.connect"):
                 self._redis = await self._stack.enter_async_context(
@@ -522,6 +524,8 @@ class Outpost:
                 [parsed],
                 oldest_bucket_start=get_bucket_start(parsed.timestamp),
             )
+            if self._ingest_buckets is not None:
+                self._ingest_buckets.add(len(updates))
             await self._warm_actor(parsed.external_customer_id)
             assert self._redis is not None
             writes: list[tuple[str, list[str | int | float]]] = []
@@ -722,6 +726,7 @@ class Outpost:
         self._meter_provider = None
         self._ingest_duration = None
         self._ingest_events = None
+        self._ingest_buckets = None
         with anyio.CancelScope(shield=True):
             if tracer_provider is not None:
                 await anyio.to_thread.run_sync(tracer_provider.shutdown)

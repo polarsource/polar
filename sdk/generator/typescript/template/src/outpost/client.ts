@@ -258,6 +258,7 @@ export class Outpost {
   private meterProvider?: MeterProvider;
   private ingestDuration?: Histogram;
   private ingestEvents?: Counter;
+  private ingestBuckets?: Counter;
   private reducers: Reducer[] = [];
   private matchers: ReducerMatchers = [];
   private readonly cache = new Map<string, LocalState>();
@@ -311,6 +312,7 @@ export class Outpost {
       const meter = this.meterProvider.getMeter("polar.outpost");
       this.ingestDuration = meter.createHistogram("outpost.ingest.duration", { unit: "s" });
       this.ingestEvents = meter.createCounter("outpost.ingest.events");
+      this.ingestBuckets = meter.createCounter("outpost.ingest.buckets");
     }
     try {
       this.redis = new Redis(this.redisUrl, {
@@ -433,6 +435,7 @@ export class Outpost {
     this.meterProvider = undefined;
     this.ingestDuration = undefined;
     this.ingestEvents = undefined;
+    this.ingestBuckets = undefined;
     await Promise.all([tracerProvider?.shutdown(), meterProvider?.shutdown()]);
   }
 
@@ -448,6 +451,7 @@ export class Outpost {
       const parsed = parseEvent(event);
       await this.waitConfigured();
       const updates = reduce(this.matchers, [parsed], getBucketStart(parsed.timestamp));
+      this.ingestBuckets?.add(updates.length);
       await this.warmActor(parsed.customer);
       const pipeline = redis.pipeline() as OutpostPipeline;
       for (const update of updates) {

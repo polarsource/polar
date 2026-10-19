@@ -630,6 +630,7 @@ it("sends telemetry spans tagged with the connection ID", async () => {
   expect(dataPoints("outpost.ingest.events")).toMatchObject([
     { attributes: { "outpost.outcome": "ok" }, value: 1 },
   ]);
+  expect(dataPoints("outpost.ingest.buckets")).toMatchObject([{ value: 1 }]);
   expect(dataPoints("outpost.ingest.duration")).toMatchObject([
     { attributes: { "outpost.outcome": "ok" }, value: { count: 1 } },
   ]);

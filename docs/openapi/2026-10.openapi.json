@@ -8593,11 +8593,11 @@
             }
           },
           "400": {
-            "description": "The payment failed or the shared payment token was rejected.",
+            "description": "The payment failed.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CheckoutPaymentError"
+                  "$ref": "#/components/schemas/PaymentError"
                 }
               }
             }
@@ -39000,25 +39000,12 @@
               }
             ],
             "title": "Confirmation Token Id",
-            "description": "ID of the Stripe confirmation token. Either this or `shared_payment_token_id` is required for fixed prices and custom prices."
-          },
-          "shared_payment_token_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^spt_[A-Za-z0-9_]+$"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Shared Payment Token Id",
-            "description": "ID of a Stripe shared payment token (`spt_...`) granted by an agent. Only supported for one-time payments. Mutually exclusive with `confirmation_token_id`."
+            "description": "ID of the Stripe confirmation token. Required for fixed prices and custom prices."
           }
         },
         "type": "object",
         "title": "CheckoutConfirmStripe",
-        "description": "Confirm a checkout session using a Stripe confirmation token\nor a Stripe shared payment token."
+        "description": "Confirm a checkout session using a Stripe confirmation token."
       },
       "CheckoutCreate": {
         "$ref": "#/components/schemas/CheckoutProductsCreate"
@@ -40716,16 +40703,6 @@
           "allow_customer_updates"
         ],
         "title": "CheckoutOrganization"
-      },
-      "CheckoutPaymentError": {
-        "anyOf": [
-          {
-            "$ref": "#/components/schemas/PaymentError"
-          },
-          {
-            "$ref": "#/components/schemas/SharedPaymentTokenError"
-          }
-        ]
       },
       "CheckoutPriceCreate": {
         "properties": {
@@ -75948,28 +75925,6 @@
           "total_seats"
         ],
         "title": "SeatsList"
-      },
-      "SharedPaymentTokenError": {
-        "properties": {
-          "error": {
-            "type": "string",
-            "const": "SharedPaymentTokenError",
-            "title": "Error",
-            "examples": [
-              "SharedPaymentTokenError"
-            ]
-          },
-          "detail": {
-            "type": "string",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "required": [
-          "error",
-          "detail"
-        ],
-        "title": "SharedPaymentTokenError"
       },
       "SubType": {
         "type": "string",

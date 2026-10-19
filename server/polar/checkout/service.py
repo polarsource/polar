@@ -1449,6 +1449,12 @@ class CheckoutService:
     async def _validate_shared_payment_token(
         self, checkout: Checkout, shared_payment_token_id: str
     ) -> None:
+        if not checkout.organization.is_agentic_payments_enabled:
+            raise SharedPaymentTokenError(
+                checkout,
+                "Shared payment tokens are not enabled for this organization.",
+            )
+
         if not checkout.is_payment_required or checkout.should_save_payment_method:
             raise SharedPaymentTokenError(
                 checkout,

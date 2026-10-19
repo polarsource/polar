@@ -34,3 +34,19 @@ CheckoutCreate = Annotated[
     | SkipJsonSchema[CheckoutPriceCreate],
     SetSchemaReference("CheckoutCreate"),
 ]
+
+
+class CheckoutConfirmStripe(schemas.CheckoutConfirmStripe):
+    """Confirm a checkout session using a Stripe confirmation token."""
+
+    confirmation_token_id: str | None = Field(
+        None,
+        description=(
+            "ID of the Stripe confirmation token. "
+            "Required for fixed prices and custom prices."
+        ),
+    )
+    shared_payment_token_id: SkipJsonSchema[None] = None
+
+
+CheckoutConfirm = CheckoutConfirmStripe

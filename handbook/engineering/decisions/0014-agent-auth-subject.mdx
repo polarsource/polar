@@ -45,8 +45,8 @@ OAuth client stays marked as an agent, which is what still identifies it, for ex
 - Unclaimed agents can't create organization access tokens: one would be an `Organization` caller
   that skips this allowlist and keeps working after the claim. App-side testing that needs one waits
   for the claim.
-- The route allowlist is the guard: a test pins the routes that accept `Agent` in each environment,
-  so every new opt-in shows up in review. Unclaimed agent tokens also carry only the scopes of the allowed resources
+- The route allowlist is the guard: a test pins the routes that accept `Agent`, so every new opt-in
+  shows up in review. Unclaimed agent tokens also carry only the scopes of the allowed resources
   (`products:write`, `meters:write`, …), which blocks a wrong opt-in on a resource with its own scope,
   such as refunds. It doesn't help where scopes are shared: the payout-account, member-invite and
   review-submission routes need `organizations:write`, like editing the org itself, so only the

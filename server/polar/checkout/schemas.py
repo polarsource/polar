@@ -55,6 +55,7 @@ from polar.kit.trial import (
     TrialConfigurationOutputMixin,
     TrialInterval,
 )
+from polar.kit.versioning import Version
 from polar.models.checkout import (
     CheckoutBillingAddressFields,
     CheckoutCustomerBillingAddressFields,
@@ -70,6 +71,7 @@ from polar.product.schemas import (
     ProductPriceCreateList,
     ProductPriceList,
 )
+from polar.version import V2026_10
 
 Amount = Annotated[
     int,
@@ -675,8 +677,8 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
 
     payment_processor_metadata: dict[str, str]
 
-    customer_billing_address_fields: SkipJsonSchema[
-        CheckoutCustomerBillingAddressFields
+    customer_billing_address_fields: Annotated[
+        SkipJsonSchema[CheckoutCustomerBillingAddressFields], Version(up_to=V2026_10)
     ] = Field(
         deprecated="Use `billing_address_fields` instead.",
     )
@@ -687,7 +689,9 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
         )
     )
 
-    @computed_field(deprecated="Use `net_amount`.")
+    @computed_field(
+        exclude_if=Version(up_to=V2026_10).exclude_if, deprecated="Use `net_amount`."
+    )
     def subtotal_amount(self) -> SkipJsonSchema[int | None]:
         return self.net_amount
 
@@ -773,7 +777,9 @@ class Checkout(MetadataOutputMixin, TrialConfigurationOutputMixin, CheckoutBase)
         description=_external_customer_id_description,
         validation_alias=AliasChoices("external_customer_id", "customer_external_id"),
     )
-    customer_external_id: SkipJsonSchema[str | None] = Field(
+    customer_external_id: Annotated[
+        SkipJsonSchema[str | None], Version(up_to=V2026_10)
+    ] = Field(
         validation_alias=AliasChoices("external_customer_id", "customer_external_id"),
         deprecated="Use `external_customer_id` instead.",
     )

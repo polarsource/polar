@@ -432,29 +432,37 @@ class OrganizationBase(IDSchema, TimestampedSchema):
     )
 
     # Deprecated attributes
-    bio: SkipJsonSchema[str | None] = Field(..., deprecated="")
-    company: SkipJsonSchema[str | None] = Field(
+    bio: Annotated[SkipJsonSchema[str | None], Version(up_to=V2026_10)] = Field(
+        ..., deprecated=""
+    )
+    company: Annotated[SkipJsonSchema[str | None], Version(up_to=V2026_10)] = Field(
         ...,
         deprecated="Legacy attribute no longer in use.",
     )
-    blog: SkipJsonSchema[str | None] = Field(
+    blog: Annotated[SkipJsonSchema[str | None], Version(up_to=V2026_10)] = Field(
         ...,
         deprecated="Legacy attribute no longer in use. See `socials` instead.",
     )
-    location: SkipJsonSchema[str | None] = Field(
+    location: Annotated[SkipJsonSchema[str | None], Version(up_to=V2026_10)] = Field(
         ...,
         deprecated="Legacy attribute no longer in use.",
     )
-    twitter_username: SkipJsonSchema[str | None] = Field(
-        ...,
-        deprecated="Legacy attribute no longer in use. See `socials` instead.",
+    twitter_username: Annotated[SkipJsonSchema[str | None], Version(up_to=V2026_10)] = (
+        Field(
+            ...,
+            deprecated="Legacy attribute no longer in use. See `socials` instead.",
+        )
     )
 
-    pledge_minimum_amount: SkipJsonSchema[int] = Field(0, deprecated=True)
-    pledge_badge_show_amount: SkipJsonSchema[bool] = Field(False, deprecated=True)
-    default_upfront_split_to_contributors: SkipJsonSchema[int | None] = Field(
-        None, deprecated=True
+    pledge_minimum_amount: Annotated[SkipJsonSchema[int], Version(up_to=V2026_10)] = (
+        Field(0, deprecated=True)
     )
+    pledge_badge_show_amount: Annotated[
+        SkipJsonSchema[bool], Version(up_to=V2026_10)
+    ] = Field(False, deprecated=True)
+    default_upfront_split_to_contributors: Annotated[
+        SkipJsonSchema[int | None], Version(up_to=V2026_10)
+    ] = Field(None, deprecated=True)
 
 
 class LegacyOrganizationStatus(StrEnum):
@@ -490,18 +498,29 @@ class OrganizationPublicBase(OrganizationBase):
     # Attributes that we used to have publicly, but now want to hide from
     # the public schema.
     # Keep it for now for backward compatibility in the SDK
-    email: SkipJsonSchema[str | None]
-    website: SkipJsonSchema[str | None]
-    socials: SkipJsonSchema[list[OrganizationSocialLink]]
+    email: Annotated[SkipJsonSchema[str | None], Version(up_to=V2026_10)]
+    website: Annotated[SkipJsonSchema[str | None], Version(up_to=V2026_10)]
+    socials: Annotated[
+        SkipJsonSchema[list[OrganizationSocialLink]], Version(up_to=V2026_10)
+    ]
     status: Annotated[
         SkipJsonSchema[LegacyOrganizationStatus],
+        Version(up_to=V2026_10),
         BeforeValidator(LegacyOrganizationStatus.from_status),
     ]
-    details_submitted_at: SkipJsonSchema[datetime | None]
+    details_submitted_at: Annotated[
+        SkipJsonSchema[datetime | None], Version(up_to=V2026_10)
+    ]
 
-    feature_settings: SkipJsonSchema[OrganizationFeatureSettings | None]
-    subscription_settings: SkipJsonSchema[OrganizationSubscriptionSettings]
-    customer_email_settings: SkipJsonSchema[CustomerEmailSettings]
+    feature_settings: Annotated[
+        SkipJsonSchema[OrganizationFeatureSettings | None], Version(up_to=V2026_10)
+    ]
+    subscription_settings: Annotated[
+        SkipJsonSchema[OrganizationSubscriptionSettings], Version(up_to=V2026_10)
+    ]
+    customer_email_settings: Annotated[
+        SkipJsonSchema[CustomerEmailSettings], Version(up_to=V2026_10)
+    ]
 
 
 class Organization(OrganizationBase):
@@ -564,7 +583,8 @@ class Organization(OrganizationBase):
     )
 
     @computed_field(  # type: ignore[prop-decorator]
-        deprecated="Notification preferences are now configured per member."
+        exclude_if=Version(up_to=V2026_10).exclude_if,
+        deprecated="Notification preferences are now configured per member.",
     )
     @property
     def notification_settings(self) -> SkipJsonSchema[OrganizationNotificationSettings]:

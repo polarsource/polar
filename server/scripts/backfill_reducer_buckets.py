@@ -13,6 +13,7 @@ from sqlalchemy import (
     and_,
     case,
     delete,
+    event,
     func,
     literal,
     null,
@@ -448,6 +449,12 @@ async def _insert_buckets(session: AsyncSession, buckets: list[BucketValues]) ->
     )
 
 
+def _prefer_organization_index(connection: Any, _: Any) -> None:
+    """Keeps the planner off the global timestamp index, which is slow where an
+    organization's events are sparse."""
+    connection.run_async(lambda raw: raw.execute("SET enable_incremental_sort = off"))
+
+
 @cli.command()
 @typer_async
 async def backfill(
@@ -466,6 +473,7 @@ async def backfill(
     )
     configure_script_logging()
     engine = create_async_engine("script")
+    event.listen(engine.sync_engine, "connect", _prefer_organization_index)
     sessionmaker = create_async_sessionmaker(engine)
     try:
         async with sessionmaker() as session:

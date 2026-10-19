@@ -34,9 +34,9 @@ class SimulationComponent(Schema):
     )
 
 
-class SimulationCohort(Schema):
+class SimulationBreakdownItem(Schema):
     product_external_id: str = Field(description="The product's `external_id`.")
-    price_label: str = Field(description="The price the cohort was billed on.")
+    price_label: str = Field(description="The price these subscribers were billed on.")
     archived: bool = Field(description="Whether that price is archived.")
     partial: bool = Field(
         description="Whether part of the bill wasn't simulated. The amounts then "
@@ -48,11 +48,10 @@ class SimulationCohort(Schema):
         description="Number of subscriptions billed on this price in the window."
     )
     baseline: int = Field(
-        description="What the cohort was billed in the window, in minor units."
+        description="What these subscribers were billed in the window, in minor units."
     )
     proposed: int = Field(
-        description="What the cohort would have been billed on the config, "
-        "in minor units."
+        description="What they would have been billed on the config, in minor units."
     )
     components: list[SimulationComponent]
 
@@ -83,5 +82,5 @@ class SimulationResult(Schema):
         description="Proposed minus baseline, per month of the window, in minor units."
     )
     counts: SimulationCounts
-    cohorts: list[SimulationCohort]
+    breakdown: list[SimulationBreakdownItem]
     not_simulated: list[SimulationNotSimulated]

@@ -16,7 +16,7 @@ interface Cell {
   readonly style?: (text: string) => string
 }
 
-type Cohort = AnalyzedResult['cohorts'][number]
+type Item = AnalyzedResult['breakdown'][number]
 
 const signed = (minor: number, currency: string) =>
   `${minor < 0 ? '-' : '+'}${money(Math.abs(minor), currency)}`
@@ -98,40 +98,40 @@ const BILLED = {
 const billed = ({
   recurring_interval: interval,
   recurring_interval_count: count,
-}: Cohort) => {
+}: Item) => {
   if (count > 1) return `billed every ${count} ${interval}s`
   return interval === 'month' ? undefined : `billed ${BILLED[interval]}`
 }
 
-const notes = (cohort: Cohort) =>
+const notes = (item: Item) =>
   [
-    cohort.archived && 'archived price',
-    billed(cohort),
-    cohort.partial && 'other charges not simulated',
+    item.archived && 'archived price',
+    billed(item),
+    item.partial && 'other charges not simulated',
   ]
     .filter(Boolean)
     .join(' · ')
 
-const cohortRows = ({ currency, cohorts }: AnalyzedResult): Cell[][] => {
-  const products = new Map<string, Cohort[]>()
-  for (const cohort of cohorts) {
-    const group = products.get(cohort.product_external_id) ?? []
-    products.set(cohort.product_external_id, [...group, cohort])
+const breakdownRows = ({ currency, breakdown }: AnalyzedResult): Cell[][] => {
+  const products = new Map<string, Item[]>()
+  for (const item of breakdown) {
+    const group = products.get(item.product_external_id) ?? []
+    products.set(item.product_external_id, [...group, item])
   }
   return [...products].flatMap(([product, group]) =>
-    group.map((cohort, index): Cell[] => {
-      const delta = cohort.proposed - cohort.baseline
+    group.map((item, index): Cell[] => {
+      const delta = item.proposed - item.baseline
       return [
         { text: index === 0 ? `${ui.INDENT}${product}` : '', style: ui.bold },
-        { text: String(cohort.subscribers), right: true },
+        { text: String(item.subscribers), right: true },
         {
-          text: `${money(cohort.baseline, currency)} → ${money(cohort.proposed, currency)}`,
+          text: `${money(item.baseline, currency)} → ${money(item.proposed, currency)}`,
           right: true,
         },
         { text: signed(delta, currency), right: true, style: tone(delta) },
-        percent(cohort.change_pct),
-        ...risk(cohort.churn_risk_pct),
-        { text: notes(cohort), style: ui.dim },
+        percent(item.change_pct),
+        ...risk(item.churn_risk_pct),
+        { text: notes(item), style: ui.dim },
       ]
     }),
   )
@@ -211,7 +211,7 @@ export const renderSimulation = (
   const window = formatWindow(results[0]!.window)
   const sections = results.map((result) => [
     heading(result, churn),
-    ...cohortRows(result),
+    ...breakdownRows(result),
   ])
   const widths = widthsOf([header(churn), ...sections.flat()])
   const indented = (rows: ReadonlyArray<ReadonlyArray<Cell>>) =>

@@ -49,7 +49,7 @@ async def simulate(
     declarative config document, without applying it.
 
     Each order item counts for the share of its billing period inside the window.
-    Subscribers are grouped into cohorts by the price they were billed on. Changes
+    The breakdown groups subscribers by the price they were billed on. Changes
     the simulation can't reprice are listed in `not_simulated`.
     """
     until = until or utc_now()

@@ -27,20 +27,20 @@ export const analyze = (
   assumptions: ChurnAssumptions | null,
 ): AnalyzedResult[] =>
   results.map((result) => {
-    const { cohorts } = result
-    const risks = cohorts.map((c) =>
+    const { breakdown } = result
+    const risks = breakdown.map((c) =>
       assumptions === null
         ? null
         : churnRisk(c.baseline, c.proposed, assumptions),
     )
     const { baseline, proposed, window } = result
-    const retained = cohorts.reduce(
+    const retained = breakdown.reduce(
       (sum, c, index) => sum + c.proposed * (1 - (risks[index] ?? 0)),
       0,
     )
     return {
       ...result,
-      cohorts: cohorts.map((c, index) => {
+      breakdown: breakdown.map((c, index) => {
         const risk = risks[index] ?? null
         return {
           ...c,
@@ -53,7 +53,7 @@ export const analyze = (
         assumptions && Math.round((retained - baseline) / window.months),
       subscribers_at_risk:
         assumptions &&
-        cohorts
+        breakdown
           .filter((_, index) => (risks[index] ?? 0) > 0)
           .reduce((sum, c) => sum + c.subscribers, 0),
     }

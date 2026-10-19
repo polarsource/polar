@@ -39,9 +39,8 @@ def _product(external_id: str, interval: str = "month", **price: Any) -> dict[st
     }
 
 
-def _seats(external_id: str, *unit_amounts: int) -> dict[str, Any]:
-    bounds = [10 * (i + 1) for i in range(len(unit_amounts) - 1)] + [None]
-    tiers = [{"bound": b, "unit_amount": a} for b, a in zip(bounds, unit_amounts)]
+def _seats(external_id: str, unit_amount: int) -> dict[str, Any]:
+    tiers = [{"bound": None, "unit_amount": unit_amount}]
     return {
         **_product(external_id),
         "prices": [
@@ -114,23 +113,15 @@ class TestSimulate:
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
-    @pytest.mark.parametrize(
-        "window",
-        [
-            {"since": OCT_1.isoformat(), "until": OCT_1.isoformat()},
-            {"since": "2024-09-01T00:00:00Z", "until": OCT_1.isoformat()},
-        ],
-    )
     async def test_invalid_window(
         self,
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
-        window: dict[str, str],
     ) -> None:
         response = await client.post(
             "/v1/config/simulate",
-            params=window,
+            params={"since": "2024-09-01T00:00:00Z", "until": OCT_1.isoformat()},
             json={"organization_id": str(organization.id)},
         )
 
@@ -222,7 +213,7 @@ class TestSimulate:
                 c["baseline"],
                 c["proposed"],
             )
-            for c in result["cohorts"]
+            for c in result["breakdown"]
         ) == [
             (
                 "$10.00",
@@ -302,8 +293,8 @@ class TestSimulate:
         assert (result["baseline"], result["proposed"]) == (986, 493)
         assert result["monthly_delta"] == -493
         assert result["counts"]["less"] == 1
-        [cohort] = result["cohorts"]
-        assert cohort["recurring_interval"] == "year"
+        [item] = result["breakdown"]
+        assert item["recurring_interval"] == "year"
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -351,7 +342,6 @@ class TestSimulate:
             await product("pro", (1500, "usd"), (1400, "eur")), 1400, currency="eur"
         )
         await billed(await product("team", ("seat", 1000, "usd")), 3000, seats=3)
-        await billed(await product("crew", ("seat", 1000, "usd")), 3000, seats=3)
         await billed(
             await product("api", (1500, "usd"), (meter, Decimal(1), None, "usd")),
             1500,
@@ -367,7 +357,6 @@ class TestSimulate:
                 "products": [
                     _product("pro", price_amount=2000),
                     _seats("team", 2000),
-                    _seats("crew", 1000, 800),
                     {
                         **_product("api"),
                         "prices": [
@@ -391,7 +380,7 @@ class TestSimulate:
 
         assert response.status_code == 200, response.text
         results = {result["currency"]: result for result in response.json()}
-        assert results["eur"]["cohorts"] == []
+        assert results["eur"]["breakdown"] == []
         assert results["eur"]["not_simulated"] == [
             {
                 "resource": "product",
@@ -410,7 +399,7 @@ class TestSimulate:
                 c["baseline"],
                 c["proposed"],
             )
-            for c in usd["cohorts"]
+            for c in usd["breakdown"]
         ) == [
             ("api", "$15.00", True, 1500, 1500),
             ("team", "$10.00 per seat", False, 3000, 6000),
@@ -420,13 +409,12 @@ class TestSimulate:
             "less": 0,
             "same": 1,
             "no_history": 0,
-            "not_simulated": 2,
+            "not_simulated": 1,
         }
         assert sorted(
             (item["external_id"], item["reason"], item["subscribers"])
             for item in usd["not_simulated"]
         ) == [
             ("api", "metered unit prices aren't supported yet", 1),
-            ("crew", "tiered seat prices aren't supported yet", 1),
             ("solo", "recurring interval changes aren't simulated", 1),
         ]

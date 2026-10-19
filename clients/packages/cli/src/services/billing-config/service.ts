@@ -7,10 +7,12 @@ import type {
   PlanResult,
   PullResult,
 } from '@/schemas/BillingConfig'
+import type { SimulationResponse } from '@/schemas/Simulation'
 import { apply } from '@/services/billing-config/apply'
 import { loader } from '@/services/billing-config/load'
 import { plan } from '@/services/billing-config/plan'
 import { pull } from '@/services/billing-config/pull'
+import { simulate, type WindowQuery } from '@/services/billing-config/simulate'
 import { authenticatedClient } from '@/services/client'
 
 export class BillingConfig extends Context.Service<
@@ -30,6 +32,11 @@ export class BillingConfig extends Context.Service<
       file: string | undefined,
       force: boolean,
     ) => Effect.Effect<PullResult, AuthError | BillingConfigError>
+    simulate: (
+      config: LoadedConfig,
+      organization: ActiveOrganization,
+      window: WindowQuery,
+    ) => Effect.Effect<SimulationResponse, AuthError | BillingConfigError>
   }
 >()('BillingConfig') {}
 
@@ -46,6 +53,7 @@ const make = Effect.gen(function* () {
     plan: plan(clients),
     apply: apply(clients),
     pull: pull(fs, load, clients),
+    simulate: simulate(clients),
   })
 })
 

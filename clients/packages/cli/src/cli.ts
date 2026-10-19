@@ -16,7 +16,6 @@ import * as Config from '@/services/config'
 import * as Organizations from '@/services/organizations'
 import * as OAuth from '@/services/oauth'
 import * as Polar from '@/services/polar'
-import * as Simulation from '@/services/simulation'
 import * as Telemetry from '@/services/telemetry'
 import * as TokenHandoff from '@/services/token-handoff'
 import * as Trigger from '@/services/trigger'
@@ -43,9 +42,6 @@ const billingConfigLayer = BillingConfig.layer.pipe(
     Layer.mergeAll(BunServices.layer, authLayer, FetchHttpClient.layer),
   ),
 )
-const simulationLayer = Simulation.layer.pipe(
-  Layer.provide(Layer.mergeAll(authLayer, FetchHttpClient.layer)),
-)
 const organizationsLayer = Organizations.layer.pipe(
   Layer.provide(Layer.mergeAll(authLayer, polarLayer, configLayer)),
 )
@@ -64,7 +60,6 @@ const services = Layer.mergeAll(
   ),
   authLayer,
   billingConfigLayer,
-  simulationLayer,
   Deliveries.layer,
   polarLayer,
   organizationsLayer,

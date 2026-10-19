@@ -2,7 +2,6 @@ import { Duration, Effect, Option } from 'effect'
 import { Command, Flag } from 'effect/cli'
 import { SimulateOutput } from '@/schemas/Simulation'
 import { BillingConfig } from '@/services/billing-config/service'
-import { Simulation } from '@/services/simulation'
 import { Organizations } from '@/services/organizations'
 import { output } from '@/utils/command'
 import { configFile as file, org } from '@/utils/flags'
@@ -104,7 +103,7 @@ export const simulate = Command.make('simulate', {
                 const organization = yield* (yield* Organizations).resolve(
                   Option.getOrUndefined(org),
                 )
-                const results = yield* (yield* Simulation).simulate(
+                const results = yield* (yield* BillingConfig).simulate(
                   config,
                   organization,
                   window,

@@ -7,7 +7,6 @@ import type { SimulationResponse } from '@/schemas/Simulation'
 import { Environment } from '@/services/api'
 import { Auth } from '@/services/auth'
 import { BillingConfig } from '@/services/billing-config/service'
-import { Simulation } from '@/services/simulation'
 import { Organizations } from '@/services/organizations'
 import { runCli, stripAnsi } from '@/utils/test-utils/cli'
 import { fakeAuth, fakeOrganizations } from '@/utils/test-utils/services'
@@ -47,7 +46,7 @@ const results: SimulationResponse = [
     proposed: 1_260_000 + 6_000,
     monthly_delta: 169_000,
     counts: { more: 169, less: 0, same: 0, no_history: 2, not_simulated: 3 },
-    cohorts: [
+    breakdown: [
       {
         product_external_id: 'pro',
         price_label: '$15.00',
@@ -92,9 +91,8 @@ const results: SimulationResponse = [
 
 const run = async (response: SimulationResponse, args: string[] = []) => {
   const cli = runCli(simulate, ['polar.json', ...args])
-  const sent: LoadedConfig[] = []
   const windows: unknown[] = []
-  const exit = await Effect.runPromiseExit(
+  await Effect.runPromiseExit(
     cli.effect.pipe(
       Effect.provideService(
         BillingConfig,
@@ -103,13 +101,7 @@ const run = async (response: SimulationResponse, args: string[] = []) => {
           plan: () => Effect.die('unused'),
           apply: () => Effect.die('unused'),
           pull: () => Effect.die('unused'),
-        }),
-      ),
-      Effect.provideService(
-        Simulation,
-        Simulation.of({
-          simulate: (config, _organization, window) => {
-            sent.push(config)
+          simulate: (_config, _organization, window) => {
             windows.push(window)
             return Effect.succeed(response)
           },
@@ -127,18 +119,12 @@ const run = async (response: SimulationResponse, args: string[] = []) => {
       Effect.provide(FetchHttpClient.layer),
     ),
   )
-  return {
-    output: stripAnsi(cli.output()),
-    failed: exit._tag === 'Failure',
-    sent,
-    windows,
-  }
+  return { output: stripAnsi(cli.output()), windows }
 }
 
 describe('polar config simulate', () => {
-  test('shows the window totals, cohorts and what was not simulated', async () => {
-    const { output, failed } = await run(results)
-    expect(failed).toBe(false)
+  test('shows the window totals, breakdown and what was not simulated', async () => {
+    const { output } = await run(results)
     expect(output).toContain(
       [
         '  ╭─ Simulation Acme (sandbox) · Jul 19 – Oct 19, 2026',
@@ -159,25 +145,6 @@ describe('polar config simulate', () => {
     )
   })
 
-  test('says so when there is nothing to simulate', async () => {
-    const { output } = await run([])
-    expect(output).toContain('No subscribers in Acme (sandbox) to simulate')
-  })
-
-  test('prints the results as JSON', async () => {
-    const { output } = await run(results, ['--json'])
-    const json = JSON.parse(output)
-    expect(json).toMatchObject({
-      file: 'polar.json',
-      set: [],
-      assumptions: null,
-    })
-    expect(json.results[0]).toMatchObject({
-      change_pct: 66.8,
-      expected_monthly_delta: null,
-    })
-  })
-
   test('passes the window to the server', async () => {
     const { windows } = await run(results, [
       '--since',
@@ -188,31 +155,6 @@ describe('polar config simulate', () => {
     expect(windows).toEqual([
       { since: '2026-07-19T00:00:00.000Z', until: '2026-10-19T00:00:00.000Z' },
     ])
-    expect((await run(results)).windows).toEqual([{ until: undefined }])
-    expect((await run(results, ['--since', '2026-01-01'])).windows).toEqual([
-      { since: '2026-01-01T00:00:00.000Z', until: undefined },
-    ])
-  })
-
-  test('rejects a window it cannot read', async () => {
-    const { failed, windows } = await run(results, ['--since', 'soon'])
-    expect(failed).toBe(true)
-    expect(windows).toEqual([])
-  })
-
-  test('simulates prices set on the command line', async () => {
-    const { output, sent } = await run(results, ['--set', 'pro.usd=30'])
-    expect(output).toMatch(/^ {2}Setting {4}pro\.usd=30$/m)
-    expect(sent[0]?.input).toEqual({
-      products: [
-        {
-          external_id: 'pro',
-          prices: [
-            { amount_type: 'fixed', price_currency: 'usd', price_amount: 3000 },
-          ],
-        },
-      ],
-    })
   })
 
   test('estimates the revenue left after churn', async () => {

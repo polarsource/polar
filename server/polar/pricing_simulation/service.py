@@ -26,7 +26,7 @@ from polar.product.repository import ProductRepository
 
 from .repository import BilledRow, PricingSimulationRepository
 from .schemas import (
-    SimulationCohort,
+    SimulationBreakdownItem,
     SimulationComponent,
     SimulationCounts,
     SimulationNotSimulated,
@@ -136,7 +136,7 @@ class PricingSimulationService:
 
         billed: dict[UUID, str] = {}
         deltas: dict[UUID, Decimal] = defaultdict(Decimal)
-        cohorts: dict[
+        breakdown: dict[
             tuple[str, UUID, SubscriptionRecurringInterval, int],
             list[tuple[UUID, Decimal, Decimal]],
         ] = defaultdict(list)
@@ -164,7 +164,7 @@ class PricingSimulationService:
                 )
                 unrepriced.add((subscription_id, price.product_id))
                 continue
-            cohorts[(currency, price_id, interval, interval_count)].append(
+            breakdown[(currency, price_id, interval, interval_count)].append(
                 (subscription_id, amount, amount * ratio)
             )
             deltas[subscription_id] += amount * ratio - amount
@@ -184,16 +184,21 @@ class PricingSimulationService:
                     counts=SimulationCounts(
                         more=0, less=0, same=0, no_history=0, not_simulated=0
                     ),
-                    cohorts=[],
+                    breakdown=[],
                     not_simulated=[],
                 ),
             )
 
-        for (currency, price_id, interval, interval_count), members in cohorts.items():
+        for (
+            currency,
+            price_id,
+            interval,
+            interval_count,
+        ), members in breakdown.items():
             price = prices[price_id]
             baseline = round(sum(amount for _, amount, _ in members))
             proposed = round(sum(amount for _, _, amount in members))
-            cohort = SimulationCohort(
+            item = SimulationBreakdownItem(
                 product_external_id=product_configs[price.product_id].external_id,
                 price_label=_price_label(price),
                 archived=price.is_archived,
@@ -218,7 +223,7 @@ class PricingSimulationService:
                 ],
             )
             currency_result = result(currency)
-            currency_result.cohorts.append(cohort)
+            currency_result.breakdown.append(item)
             currency_result.baseline += baseline
             currency_result.proposed += proposed
 

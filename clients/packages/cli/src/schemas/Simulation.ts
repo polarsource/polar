@@ -9,7 +9,7 @@ const Component = Schema.Struct({
   proposed: Schema.Finite,
 })
 
-const Cohort = Schema.Struct({
+const BreakdownItem = Schema.Struct({
   product_external_id: Schema.String,
   price_label: Schema.String,
   archived: Schema.Boolean,
@@ -42,7 +42,7 @@ export const SimulationResult = Schema.Struct({
     no_history: Schema.Finite,
     not_simulated: Schema.Finite,
   }),
-  cohorts: Schema.Array(Cohort),
+  breakdown: Schema.Array(BreakdownItem),
   not_simulated: Schema.Array(
     Schema.Struct({
       resource: ConfigResource,
@@ -63,15 +63,15 @@ export const ChurnAssumptions = Schema.Struct({
 })
 export type ChurnAssumptions = typeof ChurnAssumptions.Type
 
-const AnalyzedCohort = Schema.Struct({
-  ...Cohort.fields,
+const AnalyzedBreakdownItem = Schema.Struct({
+  ...BreakdownItem.fields,
   change_pct: Schema.NullOr(Schema.Finite),
   churn_risk_pct: Schema.NullOr(Schema.Finite),
 })
 
 export const AnalyzedResult = Schema.Struct({
   ...SimulationResult.fields,
-  cohorts: Schema.Array(AnalyzedCohort),
+  breakdown: Schema.Array(AnalyzedBreakdownItem),
   change_pct: Schema.NullOr(Schema.Finite),
   expected_monthly_delta: Schema.NullOr(Schema.Finite),
   subscribers_at_risk: Schema.NullOr(Schema.Finite),

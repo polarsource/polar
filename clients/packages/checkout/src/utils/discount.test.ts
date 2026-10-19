@@ -12,7 +12,7 @@ describe('getDiscountDisplay', () => {
       code: null,
     }
 
-    const result = getDiscountDisplay(discount, 'usd', 'en')
+    const result = getDiscountDisplay(discount, 'en')
     expect(result).toBe('-25%')
   })
 
@@ -26,7 +26,7 @@ describe('getDiscountDisplay', () => {
       code: null,
     }
 
-    const result = getDiscountDisplay(discount, 'usd', 'en')
+    const result = getDiscountDisplay(discount, 'en')
     expect(result).toBe('-12.5%')
   })
 
@@ -40,13 +40,15 @@ describe('getDiscountDisplay', () => {
       code: null,
     }
 
-    const result = getDiscountDisplay(discount, 'usd', 'en')
+    const result = getDiscountDisplay(discount, 'en')
     expect(result).toBe('-100%')
   })
 
   it('formats a fixed discount in USD', () => {
     const discount = {
       type: 'fixed' as const,
+      amount: 500,
+      currency: 'usd',
       amounts: { usd: 500 },
       duration: 'once' as const,
       duration_in_months: 0,
@@ -55,15 +57,17 @@ describe('getDiscountDisplay', () => {
       code: null,
     }
 
-    const result = getDiscountDisplay(discount, 'usd', 'en')
+    const result = getDiscountDisplay(discount, 'en')
     expect(result).toContain('5')
     expect(result).toContain('$')
   })
 
-  it('selects the checkout currency from a multi-currency discount', () => {
+  it('formats a fixed discount in EUR', () => {
     const discount = {
       type: 'fixed' as const,
-      amounts: { usd: 500, eur: 1000 },
+      amount: 1000,
+      currency: 'eur',
+      amounts: { eur: 1000 },
       duration: 'once' as const,
       duration_in_months: 0,
       id: 'd_1',
@@ -71,7 +75,7 @@ describe('getDiscountDisplay', () => {
       code: null,
     }
 
-    const result = getDiscountDisplay(discount, 'eur', 'en')
+    const result = getDiscountDisplay(discount, 'en')
     expect(result).toContain('10')
     expect(result).toContain('€')
   })

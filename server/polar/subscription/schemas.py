@@ -35,7 +35,7 @@ from polar.meter.schemas import Meter
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.openapi import destructive_when_equals
 from polar.product.schemas import Product, ProductPrice
-from polar.version import V2026_10, V2027_01
+from polar.version import V2027_01
 
 SubscriptionID = Annotated[UUID4, Path(description="The subscription ID.")]
 
@@ -167,7 +167,7 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     customer_cancellation_reason: CustomerCancellationReason | None
     customer_cancellation_comment: str | None
 
-    price_id: Annotated[SkipJsonSchema[UUID4], Version(up_to=V2026_10)] = Field(
+    price_id: SkipJsonSchema[UUID4] = Field(
         deprecated="Use `prices` instead.",
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
@@ -252,7 +252,7 @@ class PendingSubscriptionUpdate(IDSchema, TimestampedSchema):
 
 class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, SubscriptionBase):
     customer: SubscriptionCustomer
-    user_id: Annotated[SkipJsonSchema[UUID4], Version(up_to=V2026_10)] = Field(
+    user_id: SkipJsonSchema[UUID4] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user_id",
@@ -261,7 +261,7 @@ class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, Subscription
         ),
         deprecated="Use `customer_id`.",
     )
-    user: Annotated[SkipJsonSchema[SubscriptionUser], Version(up_to=V2026_10)] = Field(
+    user: SkipJsonSchema[SubscriptionUser] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user",
@@ -273,7 +273,7 @@ class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, Subscription
     product: Product
     discount: SubscriptionDiscount | None
 
-    price: Annotated[SkipJsonSchema[ProductPrice], Version(up_to=V2026_10)] = Field(
+    price: SkipJsonSchema[ProductPrice] = Field(
         deprecated="Use `prices` instead.",
         validation_alias=AliasChoices(
             # Validate from stored webhook payload

@@ -10,7 +10,6 @@ import BottomSheet, {
   BottomSheetScrollView,
 } from '@gorhom/bottom-sheet'
 import { schemas } from '@polar-sh/client'
-import { formatCurrency } from '@polar-sh/currency'
 import { useCallback, useContext, useMemo } from 'react'
 import { ActivityIndicator, StyleSheet } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -27,13 +26,8 @@ function getDiscountDisplay(discount: schemas['Discount']): string {
       return `${discount.basis_points / 100}% off`
     }
   }
-  if ('amounts' in discount) {
-    return Object.entries(discount.amounts)
-      .map(
-        ([currency, amount]) =>
-          `${formatCurrency('compact')(amount, currency)} off`,
-      )
-      .join(', ')
+  if ('amount' in discount && discount.amount) {
+    return `$${(discount.amount / 100).toFixed(2)} off`
   }
   return 'Discount'
 }

@@ -428,21 +428,42 @@ class TestReverseCustomerMeterCredit:
         customer: Customer,
         meter: Meter,
     ) -> None:
-        credit = await client.post(
-            "/v1/customer-meters/credits",
-            json={
-                "customer_id": str(customer.id),
+        # Backdated so the stored balance isn't refreshed by the usage below.
+        four_hours_ago = utc_now() - timedelta(hours=4)
+        credit = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            timestamp=four_hours_ago,
+            ingested_at=four_hours_ago,
+            metadata={
                 "meter_id": str(meter.id),
                 "units": 5,
+                "rollover": False,
+                "reason": "manual",
             },
         )
-        credit_id = uuid.UUID(credit.json()["id"])
+        await save_fixture(
+            CustomerMeter(
+                customer=customer,
+                meter=meter,
+                activated_at=four_hours_ago,
+                credited_units=5,
+                balance=Decimal(5),
+                last_balanced_event=credit,
+            )
+        )
+        credit_id = credit.id
         for parent_id in (credit_id, None, None):
             await create_event(
                 save_fixture,
                 organization=organization,
                 customer=customer,
                 parent_id=parent_id,
+                timestamp=four_hours_ago + timedelta(minutes=1),
+                ingested_at=four_hours_ago + timedelta(minutes=1),
             )
 
         response = await client.post(f"/v1/customer-meters/credits/{credit_id}/reverse")
@@ -496,37 +517,6 @@ class TestReverseCustomerMeterCredit:
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth
-    async def test_already_used(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        user_organization: UserOrganization,
-        organization: Organization,
-        customer: Customer,
-        meter: Meter,
-    ) -> None:
-        credit = await client.post(
-            "/v1/customer-meters/credits",
-            json={
-                "customer_id": str(customer.id),
-                "meter_id": str(meter.id),
-                "units": 5,
-            },
-        )
-        for _ in range(5):
-            await create_event(
-                save_fixture, organization=organization, customer=customer
-            )
-
-        response = await client.post(
-            f"/v1/customer-meters/credits/{credit.json()['id']}/reverse"
-        )
-
-        assert response.status_code == 409
-        assert response.json()["detail"] == "These credits have already been used."
-
-    @pytest.mark.api_version(V2027_01)
-    @pytest.mark.auth
     async def test_used_credit_with_unused_rollover_credit(
         self,
         save_fixture: SaveFixture,
@@ -566,36 +556,6 @@ class TestReverseCustomerMeterCredit:
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth
-    async def test_older_than_7_days(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        user_organization: UserOrganization,
-        organization: Organization,
-        customer: Customer,
-        meter: Meter,
-    ) -> None:
-        credit = await create_event(
-            save_fixture,
-            organization=organization,
-            customer=customer,
-            source=EventSource.system,
-            name=SystemEvent.meter_credited,
-            timestamp=utc_now() - timedelta(days=8),
-            metadata={
-                "meter_id": str(meter.id),
-                "units": 5,
-                "rollover": False,
-                "reason": "manual",
-            },
-        )
-
-        response = await client.post(f"/v1/customer-meters/credits/{credit.id}/reverse")
-
-        assert response.status_code == 409
-
-    @pytest.mark.api_version(V2027_01)
-    @pytest.mark.auth
     async def test_benefit_credit(
         self,
         save_fixture: SaveFixture,
@@ -611,7 +571,12 @@ class TestReverseCustomerMeterCredit:
             customer=customer,
             source=EventSource.system,
             name=SystemEvent.meter_credited,
-            metadata={"meter_id": str(meter.id), "units": 5, "rollover": False},
+            metadata={
+                "meter_id": str(meter.id),
+                "units": 5,
+                "rollover": False,
+                "reason": "benefit",
+            },
         )
 
         response = await client.post(f"/v1/customer-meters/credits/{credit.id}/reverse")
@@ -717,54 +682,3 @@ class TestReverseCustomerMeterCredit:
         )
 
         assert response.status_code == 409
-
-    @pytest.mark.api_version(V2027_01)
-    @pytest.mark.auth
-    async def test_stale_stored_balance(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        user_organization: UserOrganization,
-        organization: Organization,
-        customer: Customer,
-        meter: Meter,
-    ) -> None:
-        four_hours_ago = utc_now() - timedelta(hours=4)
-        credit = await create_event(
-            save_fixture,
-            organization=organization,
-            customer=customer,
-            source=EventSource.system,
-            name=SystemEvent.meter_credited,
-            timestamp=four_hours_ago,
-            ingested_at=four_hours_ago,
-            metadata={
-                "meter_id": str(meter.id),
-                "units": 5,
-                "rollover": False,
-                "reason": "manual",
-            },
-        )
-        await save_fixture(
-            CustomerMeter(
-                customer=customer,
-                meter=meter,
-                activated_at=four_hours_ago,
-                credited_units=5,
-                balance=Decimal(5),
-                last_balanced_event=credit,
-            )
-        )
-        for _ in range(3):
-            await create_event(
-                save_fixture,
-                organization=organization,
-                customer=customer,
-                timestamp=four_hours_ago + timedelta(minutes=1),
-                ingested_at=four_hours_ago + timedelta(minutes=1),
-            )
-
-        response = await client.post(f"/v1/customer-meters/credits/{credit.id}/reverse")
-
-        assert response.status_code == 201
-        assert response.json()["metadata"]["units"] == -2

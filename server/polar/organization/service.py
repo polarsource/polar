@@ -480,7 +480,12 @@ class OrganizationService:
             )
 
         create_data = create_schema.model_dump(exclude_unset=True, exclude_none=True)
-        create_data["feature_settings"] = create_data.get("feature_settings", {})
+        create_data["feature_settings"] = {
+            **create_data.get("feature_settings", {}),
+            # Meter cycling is GA, but API versions up to 2026-10 still expose the
+            # flag. Drop this once those versions no longer read it.
+            "meter_cycling_enabled": True,
+        }
 
         if settings.is_sandbox():
             create_data["status"] = OrganizationStatus.ACTIVE

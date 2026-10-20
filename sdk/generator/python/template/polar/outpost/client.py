@@ -48,8 +48,8 @@ from polar.ingestion.meter import CustomerMeter
 from polar.outpost.event import Event
 from polar.outpost.reducer import (
     BucketStatistics,
-    EventMatcher,
     Reducer,
+    ReducerMatcher,
     get_bucket_start,
     reduce,
     with_matchers,
@@ -314,24 +314,34 @@ def decode_state(values: collections.abc.Sequence[str | bytes]) -> ReducerState:
     decoded = [
         value.decode() if isinstance(value, bytes) else value for value in values
     ]
-    fields = dict(zip(decoded[::2], decoded[1::2], strict=True))
+    epoch = ""
+    revision = 0
+    cold_until: int | None = None
     cold = BucketStatistics()
     buckets: dict[int, BucketStatistics] = {}
     credited: dict[str, int | float] = {}
-    for field, value in fields.items():
-        if field.startswith("cold:"):
-            statistic = field.split(":")[1]
-            setattr(cold, statistic, _number(value))
-        elif field.startswith("bucket:"):
-            _, timestamp, statistic = field.split(":")
-            bucket = buckets.setdefault(int(timestamp), BucketStatistics())
+    for field, value in zip(decoded[::2], decoded[1::2], strict=True):
+        if field.startswith("bucket:"):
+            timestamp, _, statistic = field[7:].partition(":")
+            start = int(timestamp)
+            bucket = buckets.get(start)
+            if bucket is None:
+                bucket = buckets[start] = BucketStatistics()
             setattr(bucket, statistic, _number(value))
+        elif field.startswith("cold:"):
+            setattr(cold, field[5:], _number(value))
         elif field.startswith("credited:"):
-            credited[field.removeprefix("credited:")] = _number(value)
+            credited[field[9:]] = _number(value)
+        elif field == "epoch":
+            epoch = value
+        elif field == "revision":
+            revision = int(value)
+        elif field == "cold_until":
+            cold_until = int(value)
     return ReducerState(
-        epoch=fields["epoch"],
-        revision=int(fields["revision"]),
-        cold_until=int(fields["cold_until"]) if "cold_until" in fields else None,
+        epoch=epoch,
+        revision=revision,
+        cold_until=cold_until,
         cold=cold,
         buckets=buckets,
         credited=credited,
@@ -412,7 +422,7 @@ class Outpost:
         self._reconnect_attempts = 0
         self._tasks: anyio.abc.TaskGroup | None = None
         self._reducers: list[Reducer] = []
-        self._matchers: list[tuple[Reducer, EventMatcher]] = []
+        self._matchers: list[ReducerMatcher] = []
         self._actors: set[str] = set()
         self._configured = anyio.Event()
         self._apply_snapshot: AsyncScript | None = None
@@ -831,6 +841,15 @@ class Outpost:
             local.notify()
             return True
 
+    async def _receive_redis(self, data: bytes) -> None:
+        update: StateUpdate = json.loads(data)
+        applied = await self._receive_state(
+            update["customer"], decode_state(update["state"])
+        )
+        self._sync_received += 1
+        if applied:
+            self._sync_applied += 1
+
     async def _refresh_states(self) -> None:
         for customer, local in list(self._cache.items()):
             async with local.lock:
@@ -866,13 +885,7 @@ class Outpost:
                         ignore_subscribe_messages=True, timeout=1
                     )
                     if message is not None:
-                        update: StateUpdate = json.loads(message["data"])
-                        applied = await self._receive_state(
-                            update["customer"], decode_state(update["state"])
-                        )
-                        self._sync_received += 1
-                        if applied:
-                            self._sync_applied += 1
+                        await self._receive_redis(message["data"])
                     if anyio.current_time() >= next_refresh:
                         self._report_sync()
                         await self._refresh_states()

@@ -1,7 +1,7 @@
 import json
 import pathlib
 
-from polar.outpost.reducer import BUCKET_SIZE
+from polar.outpost.reducer import BUCKET_SIZE, Reducer
 
 # Shared benchmark data, copied from sdk/generator/benchmarks/outpost.json.
 DATA = json.loads(pathlib.Path(__file__).with_name("benchmark.json").read_text())
@@ -10,6 +10,7 @@ COLD_UNTIL: int = DATA["cold_until"]
 BUCKET_COUNTS: list[int] = DATA["bucket_counts"]
 CHANNEL: str = DATA["channel"]
 EPOCH: str = DATA["epoch"]
+REDUCER: Reducer = DATA["reducer"]
 
 
 # The flat field list decode_state reads: one `bucket:<start>:<statistic>` entry per bucket.

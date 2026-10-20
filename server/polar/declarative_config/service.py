@@ -5,6 +5,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, ValidationError, create_model
 from sqlalchemy.exc import IntegrityError
+from typing_extensions import TypeForm
 
 from polar.auth.models import AuthSubject, is_organization
 from polar.auth.permission import OrganizationPermission
@@ -167,7 +168,10 @@ class ConfigInvalid(PolarError):
         if cls._schema is None:
             cls._schema = create_model(
                 cls.__name__,
-                error=(Literal[cls.__name__], Field(examples=[cls.__name__])),
+                error=(
+                    TypeForm(Literal["ConfigInvalid"]),
+                    Field(examples=[cls.__name__]),
+                ),
                 detail=(list[ConfigIssue], ...),
             )
         return cls._schema

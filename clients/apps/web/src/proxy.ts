@@ -27,6 +27,7 @@ const IS_SANDBOX =
 // App routes allowed on sandbox — everything else (marketing, docs) is blocked
 // Strings match by prefix, RegExps are tested directly
 const SANDBOX_ALLOWED_PATHS: (string | RegExp)[] = [
+  '/agent',
   '/login',
   '/auth',
   '/dashboard',
@@ -47,6 +48,7 @@ const SANDBOX_ALLOWED_PATHS: (string | RegExp)[] = [
 ]
 
 const AUTHENTICATED_ROUTES = [
+  new RegExp('^/agent(/.*)?$'),
   new RegExp('^/start(/.*)?$'),
   new RegExp('^/onboarding(/.*)?$'),
   new RegExp('^/dashboard(/.*)?$'),

@@ -3507,6 +3507,70 @@ class TestRevoke:
             "order.void_pending_orders_for_subscription", subscription.id
         )
 
+    async def test_settles_metered_usage_without_meter_clock(
+        self,
+        frozen_time: datetime,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(1000, "usd"), (meter, Decimal(100), None, "usd")],
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        assert subscription.current_meter_period_end is None
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.revoke(session, ctx, subscription)
+
+        enqueue_job_mock.assert_any_call(
+            "order.create_meter_cycle_order",
+            subscription.id,
+            frozen_time.isoformat(),
+            [spp.product_price_id for spp in subscription.subscription_product_prices],
+            product.id,
+        )
+
+    async def test_trialing_does_not_settle_metered_usage(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(1000, "usd"), (meter, Decimal(100), None, "usd")],
+        )
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.revoke(session, ctx, subscription)
+
+        assert "order.create_meter_cycle_order" not in [
+            call.args[0] for call in enqueue_job_mock.call_args_list
+        ]
+
     async def test_revoke_scheduled_cancellation_sends_canceled_hook(
         self,
         frozen_time: datetime,

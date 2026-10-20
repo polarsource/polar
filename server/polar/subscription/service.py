@@ -3113,9 +3113,11 @@ class SubscriptionService:
             subscription.customer_cancellation_comment = customer_comment
 
         if immediately:
-            # Settle the final meter period before ending, so usage up to now isn't
+            # Settle the pending usage before ending, so usage up to now isn't
             # lost when the subscription closes.
-            if subscription.current_meter_period_end is not None:
+            if subscription.status != SubscriptionStatus.trialing and any(
+                is_metered_price(p) for p in subscription.prices
+            ):
                 self._enqueue_meter_cycle_order(subscription, now)
             subscription.ends_at = now
             subscription.ended_at = now

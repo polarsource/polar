@@ -104,6 +104,7 @@ from .product_price import (
     ProductPriceSeatUnit,
     ProductPriceUnit,
 )
+from .raw_event import RawEvent
 from .reducer import Reducer
 from .reducer_bucket import ReducerBucket
 from .refund import Refund
@@ -240,6 +241,7 @@ __all__ = [
     "ProductPriceSeatUnit",
     "ProductPriceUnit",
     "ProductVisibility",
+    "RawEvent",
     "Reducer",
     "ReducerBucket",
     "Refund",

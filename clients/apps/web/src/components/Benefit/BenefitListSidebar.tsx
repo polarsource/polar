@@ -8,6 +8,7 @@ import {
   resolveBenefitIcon,
 } from '@/components/Benefit/utils'
 import { useModal } from '@/components/Modal/useModal'
+import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useInfiniteBenefits } from '@/hooks/queries'
 import { useInViewport } from '@/hooks/utils'
 import { usePushRouteWithoutCache } from '@/utils/router'
@@ -77,6 +78,7 @@ export const BenefitListSidebar = ({
     hide: hideCreateBenefitModal,
     show: showCreateBenefitModal,
   } = useModal(false)
+  const managedAsCode = useIsManagedAsCode(organization.id)
 
   const { ref: loadingRef, inViewport } = useInViewport<HTMLDivElement>()
 
@@ -148,13 +150,15 @@ export const BenefitListSidebar = ({
                 <ArrowDownward fontSize="small" />
               )}
             </Button>
-            <Button
-              size="icon"
-              className="h-6 w-6"
-              onClick={toggleCreateBenefitModal}
-            >
-              <AddOutlined fontSize="small" />
-            </Button>
+            {!managedAsCode && (
+              <Button
+                size="icon"
+                className="h-6 w-6"
+                onClick={toggleCreateBenefitModal}
+              >
+                <AddOutlined fontSize="small" />
+              </Button>
+            )}
           </div>
         </div>
         <div className="flex flex-row items-center gap-3 px-4 py-2">
@@ -221,7 +225,7 @@ export const BenefitListSidebar = ({
         </div>
       </div>
       <InlineModal
-        isShown={isCreateBenefitModalShown}
+        isShown={isCreateBenefitModalShown && !managedAsCode}
         hide={hideCreateBenefitModal}
         modalContent={
           <CreateBenefitModalContent

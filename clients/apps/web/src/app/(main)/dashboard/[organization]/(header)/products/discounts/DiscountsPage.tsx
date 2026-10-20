@@ -13,6 +13,7 @@ import {
   useDeleteDiscounts,
   useDiscounts,
 } from '@/hooks/queries'
+import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { useSelection } from '@/hooks/useSelection'
 import { useDebouncedCallback } from '@/hooks/utils'
@@ -64,6 +65,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     resetPage()
   }, 500)
 
+  const managedAsCode = useIsManagedAsCode(organization.id)
   const discountsHook = useDiscounts(organization.id, {
     ...getAPIParams(pagination, sorting),
     query: query ?? undefined,
@@ -263,22 +265,28 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
               align="end"
               className="dark:bg-polar-800 bg-gray-50 shadow-lg"
             >
-              <DropdownMenuItem onClick={() => onDiscountSelected(discount)}>
-                Edit
-              </DropdownMenuItem>
+              {!managedAsCode && (
+                <DropdownMenuItem onClick={() => onDiscountSelected(discount)}>
+                  Edit
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={handleCopyDiscountId(discount)}>
                 Copy Discount ID
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => {
-                  setDiscountToDelete(discount)
-                  toggleDiscountModal()
-                }}
-                destructive
-              >
-                Delete Discount
-              </DropdownMenuItem>
+              {!managedAsCode && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setDiscountToDelete(discount)
+                      toggleDiscountModal()
+                    }}
+                    destructive
+                  >
+                    Delete Discount
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -323,7 +331,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                 Delete
               </Button>
             </BulkActionBar>
-          ) : (
+          ) : managedAsCode ? null : (
             <Button
               type="button"
               wrapperClassNames="flex flex-row items-center gap-x-2"
@@ -345,7 +353,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             sorting={sorting}
             onSortingChange={setSorting}
             isLoading={discountsHook.isLoading}
-            selection={selection}
+            selection={managedAsCode ? undefined : selection}
             getRowId={getDiscountId}
           />
         )}

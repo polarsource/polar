@@ -854,3 +854,67 @@ test('defineConfig rejects invalid discount values', () => {
     }),
   ).toThrow()
 })
+
+test('migrations serialize to the config document', () => {
+  const config = defineConfig({
+    meters: () => ({}),
+    products: ({ product, fixed }) => ({
+      starter: product('Starter')
+        .prices(fixed().amount(usd(10)))
+        .recurring('monthly'),
+      pro: product('Pro')
+        .prices(fixed().amount(usd(25)))
+        .recurring('monthly'),
+    }),
+    migrations: ({ migrate }) => ({
+      'pro-rollout': migrate.subscriptionsOf('pro').allCustomers().toCatalog(2),
+      'starter-to-pro': migrate
+        .subscriptionsOf('starter')
+        .allCustomers()
+        .toCatalog(2)
+        .toProduct('pro')
+        .atNextRenewal(),
+    }),
+  })
+
+  expect(config.toJSON().migrations).toEqual([
+    {
+      external_id: 'pro-rollout',
+      subscriptions_of: 'pro',
+      to_catalog: 2,
+      at: 'next_period',
+    },
+    {
+      external_id: 'starter-to-pro',
+      subscriptions_of: 'starter',
+      to_catalog: 2,
+      to_product: 'pro',
+      at: 'next_period',
+    },
+  ])
+})
+
+test('migrations without a target catalog are rejected', () => {
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      products: ({ product, fixed }) => ({
+        pro: product('Pro')
+          .prices(fixed().amount(usd(25)))
+          .recurring('monthly'),
+      }),
+      migrations: ({ migrate }) => ({
+        'pro-rollout': migrate.subscriptionsOf('pro').allCustomers(),
+      }),
+    }),
+  ).toThrow(
+    'Migration "pro-rollout" needs a target catalog. Call .toCatalog().',
+  )
+})
+
+test('configs without migrations omit the key', () => {
+  const config = defineConfig({
+    meters: ({ meter }) => ({ calls: meter().count() }),
+  })
+  expect('migrations' in config.toJSON()).toBe(false)
+})

@@ -142,6 +142,26 @@ class TestGetExternalWebhookEndpoint:
 
 @pytest.mark.anyio
 class TestCreateWebhookEndpoint:
+    @pytest.mark.api_version(V2026_04, V2026_10)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.webhooks_write}))
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_config_as_code_enabled(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        params = {
+            "url": "https://example.com/hook",
+            "format": "raw",
+            "events": [],
+            "organization_id": str(organization.id),
+        }
+        response = await client.post("/v1/webhooks/endpoints", json=params)
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "DeclarativeConfigManaged"
+
     @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
     async def test_user_missing_scope(self, client: AsyncClient) -> None:
         params = {"url": "https://example.com/hook", "format": "raw", "events": []}
@@ -245,6 +265,22 @@ class TestCreateWebhookEndpoint:
 
 @pytest.mark.anyio
 class TestUpdateWebhookEndpoint:
+    @pytest.mark.api_version(V2026_04, V2026_10)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.webhooks_write}))
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_config_as_code_enabled(
+        self,
+        client: AsyncClient,
+        webhook_endpoint_organization: WebhookEndpoint,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/webhooks/endpoints/{webhook_endpoint_organization.id}", json={}
+        )
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "DeclarativeConfigManaged"
+
     @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
     async def test_user_missing_scope(
         self,

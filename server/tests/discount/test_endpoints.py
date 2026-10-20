@@ -207,6 +207,29 @@ class TestCreateDiscount:
         assert response.status_code == 422
         assert any(error["loc"][-1] == "amounts" for error in response.json()["detail"])
 
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_config_as_code_enabled(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/discounts/",
+            json={
+                "name": "Discount",
+                "type": "percentage",
+                "code": "DISCOUNT",
+                "duration": "once",
+                "basis_points": 1000,
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "DeclarativeConfigManaged"
+
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
     ) -> None:
@@ -534,6 +557,22 @@ class TestUpdateDiscount:
         assert response.json()["amounts"] == amounts
         assert "amount" not in response.json()
         assert "currency" not in response.json()
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_config_as_code_enabled(
+        self,
+        client: AsyncClient,
+        discount_fixed_once: Discount,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/discounts/{discount_fixed_once.id}",
+            json={"name": "Updated"},
+        )
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "DeclarativeConfigManaged"
 
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.patch(f"/v1/discounts/{uuid.uuid4()}")

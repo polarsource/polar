@@ -15,7 +15,7 @@ uv run task lint_types   # Type checking with mypy
 # Database migrations
 uv run alembic revision --autogenerate -m "description"  # Create migration
 uv run alembic upgrade head                              # Apply migrations
-uv run task check_migrations                             # Check that the migration is fine to apply (single Alembic head, filename later, column drops are marked)
+uv run task check_migrations                             # single Alembic head + later filename
 ```
 
 When rebasing a PR that adds a migration, rename the file so its `YYYY-MM-DD-HHMM` prefix is after the latest migration on the target branch (`uv run task db_reparent` only updates `down_revision`).
@@ -397,14 +397,6 @@ Set `response_model` and return the ORM object; FastAPI serializes it via `from_
 async def create(...) -> Resource:   # ORM model, not the schema
     return await resource_service.create(...)
 ```
-
-### Destructive MCP and CLI operations
-Write endpoints, or request fields, that delete, revoke, archive, disable, rotate credentials or move
-money must be marked with the helpers in `polar/openapi.py`: `openapi_extra=destructive()` on the
-route, or `json_schema_extra=destructive_when_equals(...)` / `destructive_when_one_of(...)` on the
-field that makes it destructive. `DELETE` routes already are. This sets `destructive` in
-`x-tool-annotations`, which drives both the CLI confirmation prompt and the MCP `destructiveHint`.
-`tests/test_openapi.py` fails until every MCP or CLI write operation is classified.
 
 ## Tax ID Validation
 

@@ -8,7 +8,7 @@ export const FieldGuide = () => (
   <Chapter
     id="field-guide"
     name="New Usage Engine"
-    nameNote="Polar 2.0 coming soon"
+    nameNote="Coming soon"
     title="Agent-first billing, in early access"
     subtitle="a first look at our new usage billing engine"
     description="Billing as code, zero-latency checks and simulations before you ship a price. Read how it works, and join the first teams building on it."

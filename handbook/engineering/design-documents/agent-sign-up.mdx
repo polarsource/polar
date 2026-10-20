@@ -118,7 +118,8 @@ web) stay as they are. Token validation gains one sub type for unclaimed agents.
 - **Claim grant** (`urn:workos:agent-auth:grant-type:claim`): the agent polls with its claim token. Until the
   human enters the code, it gets the standard device-flow answers (`authorization_pending`, `slow_down`,
   `expired_token`). After that it gets the claiming user's access token and a new identity assertion. The
-  claim token works once.
+  claim token works once. The claim link, code and token expire after 7 days; nothing is deleted, and the
+  agent can start a new claim.
 - **JWT-bearer grant** (`urn:ietf:params:oauth:grant-type:jwt-bearer`, RFC 7523): the agent sends its identity
   assertion and gets an access token. We check the signature, issuer, type, audience (which must identify this
   authorization server) and expiry, that the agent isn't revoked, and that the assertion wasn't
@@ -165,9 +166,10 @@ In both grants, the client is taken from the agent the credential belongs to, no
 | Before the claim | Catalog setup only: organizations, products, meters, benefits, discounts, events and config. Checkout sessions and checkout links too, in sandbox and production alike, so the agent can test a checkout: a checkout only takes payment once the org is approved, which can't happen before the claim in production. Never orders, subscriptions, refunds, customers, payouts, review submission, members, webhooks (including config's webhook section) or organization access tokens. In production the org can't go live before the claim; in sandbox it can. Enforced by the endpoint allowlist, pinned by a test, with narrower scopes as a second layer. |
 | Orgs per agent | One. A second org means a new sign-up. |
 | After the claim | Anything the user can do. |
-| Org creation by an unclaimed agent | Polar's own billing customer and the Plain support records are created at the claim, not before. Nothing else changes. |
+| Org creation by an unclaimed agent | Skips the steps that need a human owner. At the claim, Polar runs them as if the human had just created the org: Polar's own billing customer and the Plain support records with the human as owner, the `organization.created` job and the analytics event. The human then goes through the usual onboarding (details, payout account, review) in the dashboard. |
 | Rollout | Both sign-up types ship together, starting in sandbox behind a feature flag, and go to production once sandbox abuse data looks fine. |
 | Unclaimed orgs | Kept, with no automatic cleanup for now. We can add cleanup jobs later if we need them. |
+| Claim link and code | Expire after 7 days. Nothing is deleted; the agent can start a new claim. |
 | Identity assertion | Lives 30 days and can be reused until it expires, as the auth.md spec expects. The claim issues a fresh one, which only yields the claiming user's tokens, and invalidates older ones. Revoking the agent stops it immediately. After 30 days the agent signs up again and the human re-approves it. |
 
 ## Options

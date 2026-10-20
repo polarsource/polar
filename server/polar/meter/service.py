@@ -347,6 +347,19 @@ class MeterService:
                 ]
             )
 
+        repository = MeterRepository.from_session(session)
+        if await repository.has_billable_subscriptions(meter.id):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "is_archived"),
+                        "msg": "Cannot archive meter that is still used by active subscriptions",
+                        "input": True,
+                    }
+                ]
+            )
+
         # Check if meter is referenced by any active Benefits with meter_credit type
         active_benefits = await session.scalar(
             select(func.count(Benefit.id)).where(
@@ -368,7 +381,6 @@ class MeterService:
                 ]
             )
 
-        repository = MeterRepository.from_session(session)
         return await repository.update(
             meter, update_dict={"archived_at": datetime.now(UTC)}
         )

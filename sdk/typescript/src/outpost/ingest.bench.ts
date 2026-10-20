@@ -5,32 +5,15 @@ import { WebSocketServer } from "ws";
 
 import { ClientBase } from "../base";
 import { BUCKET_COUNTS, COLD_UNTIL, encodeState } from "./benchmark";
+import benchmark from "./benchmark.json";
 import { Outpost } from "./client";
-import { BUCKET_SIZE, type Filter, type Reducer } from "./reducer";
+import { BUCKET_SIZE, type Reducer } from "./reducer";
 import { startRedisServer, type RedisServer } from "./testing";
 
 const OPTIONS = { warmupTime: 500, time: 2_000 };
 
-const llmCalls: Filter = {
-  conjunction: "and",
-  clauses: [{ property: "name", operator: "eq", value: "llm.call" }],
-};
 // Every event feeds `tokens`; an LLM call also feeds `calls` and `cost`.
-const REDUCERS: Reducer[] = [
-  {
-    id: "tokens",
-    meter_ids: ["tokens"],
-    filter: { conjunction: "and", clauses: [] },
-    aggregation: { func: "sum", property: "tokens" },
-  },
-  { id: "calls", meter_ids: ["calls"], filter: llmCalls, aggregation: { func: "count" } },
-  {
-    id: "cost",
-    meter_ids: ["cost"],
-    filter: llmCalls,
-    aggregation: { func: "sum", property: "cost" },
-  },
-];
+const REDUCERS = benchmark.ingest.reducers as Reducer[];
 
 const timestampOf = (bucketStart: number) => new Date(bucketStart / 1000).toISOString();
 
@@ -84,10 +67,9 @@ describe("Outpost.ingest", () => {
       `ingest one event into a ${buckets}-bucket state`,
       async () => {
         await outpost.ingest({
+          ...benchmark.ingest.embedding,
           external_customer_id: `alice-${buckets}`,
-          name: "embedding",
           timestamp,
-          metadata: { tokens: 7 },
         });
       },
       OPTIONS,
@@ -98,10 +80,9 @@ describe("Outpost.ingest", () => {
     "ingest one event matching three reducers",
     async () => {
       await outpost.ingest({
+        ...benchmark.ingest.llm_call,
         external_customer_id: "bob",
-        name: "llm.call",
         timestamp,
-        metadata: { tokens: 7, cost: 3 },
       });
     },
     OPTIONS,

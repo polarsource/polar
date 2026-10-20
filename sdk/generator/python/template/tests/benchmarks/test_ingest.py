@@ -12,36 +12,14 @@ from redis import Redis
 
 from polar.ingestion import EventInput
 from polar.outpost.client import Outpost
-from polar.outpost.reducer import BUCKET_SIZE, Filter, Reducer
-from tests.benchmarks import BUCKET_COUNTS, COLD_UNTIL, encode_state
+from polar.outpost.reducer import BUCKET_SIZE, Reducer
+from tests.benchmarks import BUCKET_COUNTS, COLD_UNTIL, DATA, encode_state
 
 pytestmark = pytest.mark.benchmark
 
-LLM_CALLS: Filter = {
-    "conjunction": "and",
-    "clauses": [{"property": "name", "operator": "eq", "value": "llm.call"}],
-}
+INGEST: dict[str, typing.Any] = DATA["ingest"]
 # Every event feeds `tokens`; an LLM call also feeds `calls` and `cost`.
-REDUCERS: list[Reducer] = [
-    {
-        "id": "tokens",
-        "meter_ids": ["tokens"],
-        "filter": {"conjunction": "and", "clauses": []},
-        "aggregation": {"func": "sum", "property": "tokens"},
-    },
-    {
-        "id": "calls",
-        "meter_ids": ["calls"],
-        "filter": LLM_CALLS,
-        "aggregation": {"func": "count"},
-    },
-    {
-        "id": "cost",
-        "meter_ids": ["cost"],
-        "filter": LLM_CALLS,
-        "aggregation": {"func": "sum", "property": "cost"},
-    },
-]
+REDUCERS: list[Reducer] = INGEST["reducers"]
 
 
 def timestamp_of(bucket_start: int) -> str:
@@ -123,22 +101,26 @@ def test_ingest_one_event(
     outpost: Outpost,
     buckets: int,
 ) -> None:
-    event: EventInput = {
-        "external_customer_id": f"alice-{buckets}",
-        "name": "embedding",
-        "timestamp": timestamp_of(COLD_UNTIL + (buckets - 1) * BUCKET_SIZE),
-        "metadata": {"tokens": 7},
-    }
+    event = typing.cast(
+        EventInput,
+        {
+            **INGEST["embedding"],
+            "external_customer_id": f"alice-{buckets}",
+            "timestamp": timestamp_of(COLD_UNTIL + (buckets - 1) * BUCKET_SIZE),
+        },
+    )
     benchmark(ingest, loop, outpost, event)
 
 
 def test_ingest_one_event_three_reducers(
     benchmark: BenchmarkFixture, loop: asyncio.AbstractEventLoop, outpost: Outpost
 ) -> None:
-    event: EventInput = {
-        "external_customer_id": "bob",
-        "name": "llm.call",
-        "timestamp": timestamp_of(COLD_UNTIL),
-        "metadata": {"tokens": 7, "cost": 3},
-    }
+    event = typing.cast(
+        EventInput,
+        {
+            **INGEST["llm_call"],
+            "external_customer_id": "bob",
+            "timestamp": timestamp_of(COLD_UNTIL),
+        },
+    )
     benchmark(ingest, loop, outpost, event)

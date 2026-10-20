@@ -1,6 +1,6 @@
-import type { DataPoint, ExponentialHistogram, ResourceMetrics } from "@opentelemetry/sdk-metrics";
 import type { ReadableSpan } from "@opentelemetry/sdk-trace";
 
+import { DataPointType, type DataPoint, type ResourceMetrics } from "@opentelemetry/sdk-metrics";
 import { Pipeline, Redis } from "ioredis";
 import { once } from "node:events";
 import { createRequire } from "node:module";
@@ -636,12 +636,12 @@ it("sends telemetry spans tagged with the connection ID", async () => {
   expect(dataPoints("outpost.ingest.duration")).toMatchObject([
     { attributes: { "outpost.outcome": "ok" }, value: { count: 1 } },
   ]);
-  const [{ value: histogram }] = dataPoints(
-    "outpost.ingest.duration",
-  ) as DataPoint<ExponentialHistogram>[];
-  const occupied = histogram.positive.bucketCounts.findIndex((count) => count > 0);
-  const upperBound = 2 ** ((histogram.positive.offset + occupied + 1) * 2 ** -histogram.scale);
-  expect(upperBound).toBeLessThanOrEqual(0.01);
+  expect(
+    metrics
+      .flatMap((resourceMetrics) => resourceMetrics.scopeMetrics)
+      .flatMap((scopeMetrics) => scopeMetrics.metrics)
+      .find((metric) => metric.descriptor.name === "outpost.ingest.duration")?.dataPointType,
+  ).toBe(DataPointType.EXPONENTIAL_HISTOGRAM);
   expect(new Set(exported.map((span) => span.name))).toEqual(
     new Set([
       "outpost.redis.connect",

@@ -4,6 +4,8 @@ import {
 } from "@opentelemetry/otlp-transformer";
 import { resourceFromAttributes } from "@opentelemetry/resources";
 import {
+  AggregationTemporality,
+  type InstrumentType,
   MeterProvider,
   PeriodicExportingMetricReader,
   type PushMetricExporter,
@@ -79,6 +81,10 @@ export class RelayMetricExporter implements PushMetricExporter {
       ProtobufMetricsSerializer.serializeRequest(metrics),
       resultCallback,
     );
+  }
+
+  selectAggregationTemporality(_instrument: InstrumentType): AggregationTemporality {
+    return AggregationTemporality.DELTA;
   }
 
   async forceFlush(): Promise<void> {}

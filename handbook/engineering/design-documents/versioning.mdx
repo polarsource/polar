@@ -162,7 +162,10 @@ WHERE organization_id = :organization_id
   AND is_current = true;
 ```
 
-Checkouts created with the old catalog should keep that pricing.
+Rules:
+- Checkouts created with the old catalog should keep that pricing.
+- Checkout links and discounts that point to a product are moved to it's newer version when the catalog is published. Discounts applied to existing subscriptions or checkouts 
+don't change. 
 
 #### Removing an entity
 
@@ -248,11 +251,11 @@ Opting in is one-way for now. Before activation, every product, benefit, and met
 
 ## Open questions
 
-1. **Meters.** How do we count, bill, and move customers who are on an old meter? What happens when two purchases share a meter? Can a meter change apply immediately?
-2. **Credits.** When recurring credits change, do we apply it at the next renewal? For one-time orders, do we keep what was already issued? How do we remove credits? How do we move credits between meters?
-3. **Migrations.** we need to decide which changes do we allow and which should we block. Those are mainly for benefits changes or billing changes. Some examples: should we allow to grant access to have a GitHub benefit attached to one repo and allow them to move to another Repo?
-4. **Adoption.** How do we move existing orgs to versioning? Should we enforce this behaviour at some point?
+1. **Meters and Credits.** how do those work with migrations?
+Like today behaviour, we settle the old usage, revoke the old credit grant, and grant the new prorrated credits. Extra usage is billed at the new price, similar to the subscription update behaviour that we have today.
 
+2. **Adoption.** How do we move existing orgs to versioning? Should we enforce this behaviour at some point?
+Pending
 
 ## Security considerations
 

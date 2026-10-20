@@ -92,8 +92,21 @@ async def check_migrations(
     issues: list[ConfigIssue] = []
     checks: list[MigrationCheck] = []
     seen_sources: set[str] = set()
+    seen_external_ids: set[str] = set()
     for index, migration in enumerate(config.migrations):
         loc: list[str | int] = ["body", "migrations", index]
+        if migration.external_id in seen_external_ids:
+            issues.append(
+                ConfigIssue(
+                    severity=ConfigIssueSeverity.error,
+                    type=ConfigIssueType.duplicate_external_id,
+                    loc=[*loc, "external_id"],
+                    msg="Another migration in this config has the same external_id.",
+                    input=migration.external_id,
+                )
+            )
+            continue
+        seen_external_ids.add(migration.external_id)
         if migration.subscriptions_of in seen_sources:
             issues.append(
                 ConfigIssue(

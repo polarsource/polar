@@ -2,9 +2,9 @@ import { Schema } from 'effect'
 
 export const MigrationConfig = Schema.Struct({
   external_id: Schema.String.check(Schema.isMinLength(1)),
-  subscriptions_of: Schema.String,
+  subscriptions_of: Schema.String.check(Schema.isMinLength(1)),
   to_catalog: Schema.Int.check(Schema.isGreaterThanOrEqualTo(1)),
-  to_product: Schema.optionalKey(Schema.String),
+  to_product: Schema.optionalKey(Schema.String.check(Schema.isMinLength(1))),
   at: Schema.Literal('next_period'),
 })
 

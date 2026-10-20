@@ -692,6 +692,43 @@ class TestCreateProduct:
         assert response.status_code == 201
         assert response.json()["external_id"] == "ext_1337"
 
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("api_version", "error"),
+        [(None, "NotPermitted"), (V2027_01, "ProductVersioned")],
+    )
+    async def test_catalog_versioning(
+        self,
+        api_version: Any,
+        error: str,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"catalog_versioning_enabled": True}
+        await save_fixture(organization)
+
+        response = await client.post(
+            "/v1/products/",
+            headers={} if api_version is None else {"Polar-Version": str(api_version)},
+            json={
+                "name": "Product",
+                "organization_id": str(organization.id),
+                "recurring_interval": "month",
+                "prices": [
+                    {
+                        "amount_type": "fixed",
+                        "price_amount": 1000,
+                        "price_currency": "usd",
+                    }
+                ],
+            },
+        )
+
+        assert response.status_code == 403
+        assert response.json()["error"] == error
+
 
 @pytest.mark.anyio
 class TestUpdateProduct:

@@ -395,15 +395,17 @@ class ConfigMigration(Schema):
         ),
     )
     subscriptions_of: str = Field(
+        min_length=1,
         description=(
             "`external_id` of the product whose subscriptions move, in any version."
-        )
+        ),
     )
     to_catalog: int = Field(
         ge=1, description="Catalog version to move to. Must be the live catalog."
     )
     to_product: str | None = Field(
         default=None,
+        min_length=1,
         description=(
             "`external_id` of the product to move to, in the target catalog. "
             "Defaults to `subscriptions_of`."

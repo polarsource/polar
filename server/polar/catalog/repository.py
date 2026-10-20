@@ -65,6 +65,7 @@ class CatalogProductRepository(
                 CatalogProduct.catalog_id == catalog_id,
                 CatalogProduct.external_id == external_id,
                 CatalogProduct.deleted_at.is_(None),
+                Product.deleted_at.is_(None),
             )
         )
         result = await self.session.execute(statement)

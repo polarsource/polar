@@ -13,6 +13,7 @@ from polar.kit.versioning import version
 from polar.models import Product
 from polar.models.product import ProductVisibility
 from polar.openapi import APITag, cli_preview, destructive, open_world
+from polar.organization.resolver import get_payload_organization
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
@@ -217,6 +218,9 @@ async def create(
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
     """Create a product."""
+    organization = await get_payload_organization(session, auth_subject, product_create)
+    if organization.is_catalog_versioning_enabled:
+        raise NotPermitted(ProductVersioned().message)
     return await product_service.create(session, product_create, auth_subject)
 
 
@@ -227,7 +231,13 @@ async def create(
     status_code=201,
     summary="Create Product",
     openapi_extra=open_world(),
-    responses={201: {"description": "Product created."}},
+    responses={
+        201: {"description": "Product created."},
+        403: {
+            "description": "The organization uses catalog versioning.",
+            "model": ProductVersioned.schema(),
+        },
+    },
 )
 @version(starting_from=V2027_01)
 async def create_v2027_01(
@@ -236,6 +246,9 @@ async def create_v2027_01(
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
     """Create a product."""
+    organization = await get_payload_organization(session, auth_subject, product_create)
+    if organization.is_catalog_versioning_enabled:
+        raise ProductVersioned()
     return await product_service.create(session, product_create, auth_subject)
 
 

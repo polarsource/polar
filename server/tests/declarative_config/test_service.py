@@ -2,6 +2,7 @@ from decimal import Decimal
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 from pytest_mock import MockerFixture
 from sqlalchemy.orm import selectinload
 
@@ -3136,6 +3137,45 @@ class TestPlanCatalogVersioning:
         assert plan.catalog == ConfigCatalogChange(before=1, after=2)
         version = plan.changes[0].diff[-1]
         assert (version.field, version.before, version.after) == ("version", 1, 2)
+
+    async def test_duplicate_migration_external_id(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "products": [MONTHLY_PRO_25],
+                    "migrations": [
+                        PRO_MIGRATION,
+                        {**PRO_MIGRATION, "subscriptions_of": "starter"},
+                    ],
+                }
+            ),
+        )
+
+        assert [(issue.type, issue.loc) for issue in plan.issues] == [
+            (
+                ConfigIssueType.duplicate_external_id,
+                ["body", "migrations", 1, "external_id"],
+            )
+        ]
+
+    @pytest.mark.parametrize("field", ["subscriptions_of", "to_product"])
+    async def test_empty_migration_references(self, field: str) -> None:
+        with pytest.raises(ValidationError):
+            Config.model_validate({"migrations": [{**PRO_MIGRATION, field: ""}]})
 
     async def test_migration_counts_subscriptions(
         self,

@@ -3,6 +3,7 @@ from typing import Annotated, Literal
 from fastapi import Depends, Path, Query
 from pydantic import UUID4, AwareDatetime
 
+from polar.declarative_config.guard import assert_catalog_editable
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter, SetSchemaReference
@@ -10,6 +11,7 @@ from polar.kit.versioning import version
 from polar.models import WebhookEndpoint
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.openapi import APITag, cli_preview, destructive, open_world
+from polar.organization.resolver import get_payload_organization
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
@@ -130,6 +132,10 @@ async def create_webhook_endpoint(
     """
     Create a webhook endpoint.
     """
+    organization = await get_payload_organization(
+        session, auth_subject, endpoint_create
+    )
+    await assert_catalog_editable(session, organization.id)
     return await webhook_service.create_endpoint(session, auth_subject, endpoint_create)
 
 
@@ -150,6 +156,10 @@ async def create_webhook_endpoint_v2026_10(
     """
     Create a webhook endpoint.
     """
+    organization = await get_payload_organization(
+        session, auth_subject, endpoint_create
+    )
+    await assert_catalog_editable(session, organization.id)
     return await webhook_service.create_endpoint(session, auth_subject, endpoint_create)
 
 
@@ -178,6 +188,7 @@ async def update_webhook_endpoint(
     if not endpoint:
         raise ResourceNotFound()
 
+    await assert_catalog_editable(session, endpoint.organization_id)
     return await webhook_service.update_endpoint(
         session, auth_subject, endpoint=endpoint, update_schema=update
     )
@@ -207,6 +218,7 @@ async def update_webhook_endpoint_v2026_10(
     if not endpoint:
         raise ResourceNotFound()
 
+    await assert_catalog_editable(session, endpoint.organization_id)
     return await webhook_service.update_endpoint(
         session, auth_subject, endpoint=endpoint, update_schema=update
     )

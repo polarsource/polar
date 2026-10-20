@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import Depends, Query
 
 from polar.benefit.schemas import BenefitID
+from polar.declarative_config.guard import assert_catalog_editable
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -13,6 +14,7 @@ from polar.kit.versioning import version
 from polar.models import Product
 from polar.models.product import ProductVisibility
 from polar.openapi import APITag, cli_preview, destructive, open_world
+from polar.organization.resolver import get_payload_organization
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
@@ -217,6 +219,8 @@ async def create(
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
     """Create a product."""
+    organization = await get_payload_organization(session, auth_subject, product_create)
+    await assert_catalog_editable(session, organization.id)
     return await product_service.create(session, product_create, auth_subject)
 
 
@@ -236,6 +240,8 @@ async def create_v2027_01(
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
     """Create a product."""
+    organization = await get_payload_organization(session, auth_subject, product_create)
+    await assert_catalog_editable(session, organization.id)
     return await product_service.create(session, product_create, auth_subject)
 
 
@@ -265,6 +271,7 @@ async def update(
     if product is None:
         raise ResourceNotFound()
 
+    await assert_catalog_editable(session, product.organization_id)
     return await product_service.update(session, product, product_update, auth_subject)
 
 
@@ -296,6 +303,7 @@ async def update_v2027_01(
     if product is None:
         raise ResourceNotFound()
 
+    await assert_catalog_editable(session, product.organization_id)
     return await product_service.update(session, product, product_update, auth_subject)
 
 
@@ -325,6 +333,7 @@ async def update_benefits(
     if product is None:
         raise ResourceNotFound()
 
+    await assert_catalog_editable(session, product.organization_id)
     product, _, _ = await product_service.update_benefits(
         session, product, benefits_update.benefits, auth_subject
     )

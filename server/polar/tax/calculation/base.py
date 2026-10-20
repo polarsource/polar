@@ -135,7 +135,7 @@ class TaxBreakdownItem(TypedDict):
     country: str | None
     state: str | None
     subdivision: str | None
-    amount: int
+    amount: float
     taxability_reason: TaxabilityReason
 
 

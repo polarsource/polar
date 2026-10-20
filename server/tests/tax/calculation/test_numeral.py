@@ -286,8 +286,18 @@ class TestNumeralCalculateTax:
         assert result["tax_behavior"] == TaxBehavior.exclusive
 
     @pytest.mark.parametrize(
-        ("tax_rate", "tax_due_decimal", "fee_amount", "expected_amount"),
-        [(0.07, 724.9275, 0, 725), (0, 0, 50, 50), (0.0275, 4400, 0, 4400)],
+        (
+            "tax_rate",
+            "tax_due_decimal",
+            "fee_amount",
+            "expected_jurisdiction_amount",
+            "expected_total_amount",
+        ),
+        [
+            (0.07, 724.9275, 0, 724.9275, 725),
+            (0, 0, 50, 50, 50),
+            (0.0275, 4400, 0, 4400, 4400),
+        ],
     )
     async def test_jurisdiction_amount(
         self,
@@ -296,12 +306,13 @@ class TestNumeralCalculateTax:
         tax_rate: float,
         tax_due_decimal: float,
         fee_amount: float,
-        expected_amount: int,
+        expected_jurisdiction_amount: float,
+        expected_total_amount: int,
     ) -> None:
         respx_mock.post("/tax/calculations").respond(
             json={
                 "id": "taxcalc_123",
-                "total_tax_amount": expected_amount,
+                "total_tax_amount": expected_total_amount,
                 "line_items": [
                     {
                         "tax_jurisdictions": [
@@ -330,9 +341,9 @@ class TestNumeralCalculateTax:
             tax_ids=[],
             customer_exempt=False,
         )
+        assert result["amount"] == expected_total_amount
         item = result["tax_breakdown"][0]
-        assert result["amount"] == item["amount"] == expected_amount
-        assert isinstance(item["amount"], int)
+        assert item["amount"] == expected_jurisdiction_amount
         assert item["rate"] == (None if fee_amount else tax_rate)
         assert item["rate_type"] == ("fixed" if fee_amount else "percentage")
 

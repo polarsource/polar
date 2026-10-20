@@ -100,6 +100,7 @@ class NumeralTaxRefundResponse(TypedDict):
 
 def _numeral_jurisdiction_to_breakdown_item(
     jurisdiction: NumeralTaxJurisdiction,
+    amount: float,
     country: str,
     state: str | None,
     customer_exempt: bool,
@@ -122,9 +123,7 @@ def _numeral_jurisdiction_to_breakdown_item(
         country=country,
         state=state,
         subdivision=subdivision,
-        amount=round(
-            jurisdiction["fee_amount"] if is_fixed else jurisdiction["tax_due_decimal"]
-        ),
+        amount=amount,
         taxability_reason=taxability_reason,
     )
 
@@ -137,11 +136,18 @@ def _build_numeral_tax_breakdown(
     customer_exempt: bool,
 ) -> list[TaxBreakdownItem]:
     tax_breakdown: list[TaxBreakdownItem] = []
+    amounts = [
+        jurisdiction["fee_amount"]
+        if jurisdiction["fee_amount"] > 0
+        else jurisdiction["tax_due_decimal"]
+        for jurisdiction in jurisdictions
+    ]
 
-    for jurisdiction in jurisdictions:
+    for jurisdiction, amount in zip(jurisdictions, amounts):
         tax_breakdown.append(
             _numeral_jurisdiction_to_breakdown_item(
                 jurisdiction,
+                amount=amount,
                 country=country,
                 state=state,
                 customer_exempt=customer_exempt,
@@ -300,14 +306,6 @@ class NumeralTaxService(TaxServiceProtocol):
             state=state,
             customer_exempt=customer_exempt,
         )
-
-        if sum(item["amount"] for item in tax_breakdown) != total_tax_amount:
-            log.warning(
-                "Numeral tax breakdown does not sum up to total tax amount",
-                calculation_id=calculation["id"],
-                total_tax_amount=total_tax_amount,
-                breakdown_sum=sum(item["amount"] for item in tax_breakdown),
-            )
 
         return TaxCalculation(
             processor_id=calculation["id"],

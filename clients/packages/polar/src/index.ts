@@ -60,6 +60,7 @@ export type { PriceConfig, PriceDefinition, TaxBehavior } from './schema/price'
 export { product } from './schema/product'
 export type { ProductConfig, ProductDefinition } from './schema/product'
 export { discount } from './schema/discount'
+export type { MigrationConfig, MigrationDefinition } from './schema/migration'
 export type { DiscountConfig, DiscountDefinition } from './schema/discount'
 export {
   defineWebhookHandler,

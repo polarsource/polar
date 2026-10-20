@@ -17,6 +17,8 @@ import {
 import { discount, DiscountConfig, discountConfig } from './discount'
 import type { DiscountDefinition, DiscountHelpers } from './discount'
 import { meter, MeterConfig } from './meter'
+import { MigrationConfig, migrationConfig, migrationHelpers } from './migration'
+import type { MigrationDefinition, MigrationHelpers } from './migration'
 import { Currency } from './money'
 import type { MeterDefinition } from './meter'
 import { fixed, free, metered, seats, TaxBehavior, tier, units } from './price'
@@ -51,6 +53,7 @@ export const PolarConfig = Schema.Struct({
   products: Schema.optionalKey(Schema.Array(ProductConfig)),
   discounts: Schema.optionalKey(Schema.Array(DiscountConfig)),
   webhooks: Schema.optionalKey(Schema.Array(WebhookEndpointConfig)),
+  migrations: Schema.optionalKey(Schema.Array(MigrationConfig)),
 })
 
 export type PolarConfig = typeof PolarConfig.Type
@@ -243,6 +246,9 @@ export const defineConfig = <
     helpers: DiscountHelpers<ProductKey<Products>>,
   ) => Discounts
   readonly webhooks?: (helpers: WebhookHelpers) => Webhooks
+  readonly migrations?: (
+    helpers: MigrationHelpers<ProductKey<Products>>,
+  ) => Readonly<Record<string, MigrationDefinition<ProductKey<Products>>>>
 }): Config<Meters, Benefits, Events, Webhooks> => {
   const events = input.events as Events
   const entries = toEntries(
@@ -270,6 +276,8 @@ export const defineConfig = <
   const productIds = new Set(productEntries.map(([external_id]) => external_id))
   const discounts = input.discounts?.({ discount })
   const webhooks = input.webhooks?.({ endpoint, slack, discord })
+  const migrations =
+    input.migrations?.(migrationHelpers<ProductKey<Products>>())
   const webhookEntries = Object.entries(webhooks ?? {})
   const secretEnvs = webhookEntries.flatMap(([, webhook]) =>
     webhook instanceof HandledWebhookEndpoint ? [webhook.secretEnv] : [],
@@ -382,6 +390,11 @@ export const defineConfig = <
           events,
           api_version: WEBHOOK_API_VERSION,
         }),
+      ),
+    }),
+    ...(migrations !== undefined && {
+      migrations: Object.entries(migrations).map(([external_id, migration]) =>
+        migrationConfig(external_id, migration),
       ),
     }),
   })

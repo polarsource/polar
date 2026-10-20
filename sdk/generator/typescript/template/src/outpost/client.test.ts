@@ -350,6 +350,19 @@ it("ignores old revisions above JS integer precision and reloads on an epoch cha
   expect((await outpost.meter(meter))?.consumed_units).toBe(22);
 });
 
+it("applies another instance's bucket updates and reloads after a missed revision", async () => {
+  await seed();
+  const reader = await start();
+  const writer = await start();
+  await reader.actor(customer);
+  await ingest(writer, 3);
+  await vi.waitFor(async () => expect((await reader.meter(meter))?.consumed_units).toBe(13));
+  await redis.hset(key, "cold:sum", 20);
+  await redis.hincrby(key, "revision", 1);
+  await ingest(writer, 2);
+  await vi.waitFor(async () => expect((await reader.meter(meter))?.consumed_units).toBe(25));
+});
+
 it("repairs a missed notification on periodic refresh", async () => {
   await seed();
   vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });

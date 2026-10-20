@@ -8,22 +8,17 @@ import { schemas } from '@polar-sh/client'
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
 import {
   AGENT_CLAIM_RESUME_PARAM,
-  getAgentClaimResumePath,
-  savePendingAgentClaim,
-  takePendingAgentClaim,
+  pendingAgentClaims,
 } from './claimContinuation'
 import {
-  type AgentClaimProblem,
-  getAgentClaimProblem,
-  INVALID_CODE_MESSAGE,
-  isInvalidCodeError,
+  type AgentClaimError,
+  getAgentClaimError,
   UNKNOWN_ERROR_MESSAGE,
 } from './claimErrors'
 
 export type ClaimState =
   | { status: 'idle' }
-  | { status: 'invalid'; message: string }
-  | { status: 'failed'; problem: AgentClaimProblem }
+  | AgentClaimError
   | { status: 'claimed' }
 
 export const useClaimAgent = (
@@ -35,6 +30,7 @@ export const useClaimAgent = (
   const { mutateAsync, isPending } = useConfirmAgentClaim()
   const [state, setState] = useState<ClaimState>({ status: 'idle' })
   const resumedActionId = useRef<string | null>(null)
+  const resumedCode = useRef<string | null>(null)
 
   const submitCode = useCallback(
     async (code: string): Promise<ClaimState | null> => {
@@ -57,22 +53,17 @@ export const useClaimAgent = (
 
       if (isSessionNotFreshError(error)) {
         const actionId = currentUser
-          ? savePendingAgentClaim(linkToken, currentUser.id, code)
+          ? pendingAgentClaims.save(linkToken, currentUser.id, code)
           : null
         if (actionId) {
-          promptSessionRefresh({ returnTo: getAgentClaimResumePath(actionId) })
+          promptSessionRefresh({
+            returnTo: pendingAgentClaims.getResumePath(actionId),
+          })
         }
         return null
       }
 
-      if (isInvalidCodeError(error)) {
-        return { status: 'invalid', message: INVALID_CODE_MESSAGE }
-      }
-
-      const problem = getAgentClaimProblem(error)
-      return problem
-        ? { status: 'failed', problem }
-        : { status: 'invalid', message: UNKNOWN_ERROR_MESSAGE }
+      return getAgentClaimError(error)
     },
     [claim, currentUser, linkToken, mutateAsync],
   )
@@ -85,7 +76,11 @@ export const useClaimAgent = (
     [submitCode],
   )
 
-  const resume = useEffectEvent((code: string) => {
+  const resumeOnceLoaded = useEffectEvent(() => {
+    const code = resumedCode.current
+    if (!claim || !code) return
+
+    resumedCode.current = null
     void confirm(code)
   })
 
@@ -94,7 +89,6 @@ export const useClaimAgent = (
     if (
       !resumeActionId ||
       !userId ||
-      !claim ||
       resumedActionId.current === resumeActionId
     ) {
       return
@@ -106,9 +100,17 @@ export const useClaimAgent = (
     url.searchParams.delete(AGENT_CLAIM_RESUME_PARAM)
     window.history.replaceState(window.history.state, '', url)
 
-    const code = takePendingAgentClaim(resumeActionId, linkToken, userId)
-    if (code) resume(code)
-  }, [claim, currentUser?.id, linkToken, resumeActionId])
+    resumedCode.current = pendingAgentClaims.take(
+      resumeActionId,
+      linkToken,
+      userId,
+    )
+    resumeOnceLoaded()
+  }, [currentUser?.id, linkToken, resumeActionId])
+
+  useEffect(() => {
+    resumeOnceLoaded()
+  }, [claim])
 
   return { state, confirm, isPending }
 }

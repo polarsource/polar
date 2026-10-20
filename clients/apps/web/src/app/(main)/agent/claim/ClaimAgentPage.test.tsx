@@ -88,6 +88,18 @@ describe('ClaimAgentPage', () => {
     expect(screen.getByText('Acme is yours')).toBeInTheDocument()
   })
 
+  it('falls back to a generic name for an unnamed agent', async () => {
+    serveClaim(() => HttpResponse.json({ ...claim, agent_name: null }))
+    renderPage()
+
+    expect(
+      await screen.findByText(
+        /^Once you claim it, the agent can do anything you can/,
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Claim your agent')).toBeInTheDocument()
+  })
+
   it('claims an agent that built no organization', async () => {
     serveClaim(() => HttpResponse.json({ ...claim, organization: null }))
     const assign = stubLocationAssign()
@@ -139,19 +151,19 @@ describe('ClaimAgentPage', () => {
     serveClaim(() => apiError(403, 'AgentClaimEmailMismatch', detail))
     renderPage()
 
-    expect(await screen.findByText(detail)).toBeInTheDocument()
+    expect(
+      await screen.findByText(
+        `${detail} Once you’re signed in with it, open the claim link from your agent again.`,
+      ),
+    ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeInTheDocument()
   })
 
-  it('asks for a fresh sign-in, then resumes the claim with the same code', async () => {
-    let fresh = false
-    const confirmations = serveClaim(undefined, () =>
-      fresh
-        ? new HttpResponse(null, { status: 204 })
-        : apiError(403, 'SessionNotFreshError'),
-    )
+  const requireFreshSignIn = async () => {
+    const original = `${window.location.pathname}${window.location.search}`
     window.history.replaceState(null, '', `/agent/claim?token=${LINK_TOKEN}`)
-    const assign = stubLocationAssign()
+    onTestFinished(() => window.history.replaceState(null, '', original))
+    sessionStorage.clear()
     const prompt = vi.fn()
     setSessionRefreshListener(prompt)
     onTestFinished(() => setSessionRefreshListener(null))
@@ -166,18 +178,52 @@ describe('ClaimAgentPage', () => {
         ),
       }),
     )
-    const returnTo = new URLSearchParams(
-      prompt.mock.lastCall?.[0].returnTo.split('?')[1],
-    )
     unmount()
+    const actionId = new URLSearchParams(
+      prompt.mock.lastCall?.[0].returnTo.split('?')[1],
+    ).get('resume_claim')
+    expect(actionId).not.toBeNull()
+    expect(sessionStorage).toHaveLength(1)
+    return actionId as string
+  }
+
+  it('asks for a fresh sign-in, then resumes the claim with the same code', async () => {
+    let fresh = false
+    const confirmations = serveClaim(undefined, () =>
+      fresh
+        ? new HttpResponse(null, { status: 204 })
+        : apiError(403, 'SessionNotFreshError'),
+    )
+    const actionId = await requireFreshSignIn()
+    const assign = stubLocationAssign()
 
     fresh = true
-    renderPage(returnTo.get('resume_claim') ?? undefined)
+    renderPage(actionId)
 
     await waitFor(() => expect(assign).toHaveBeenCalledWith('/dashboard/acme'))
     expect(confirmations).toEqual([
       { link_token: LINK_TOKEN, code: '123456' },
       { link_token: LINK_TOKEN, code: '123456' },
     ])
+    expect(sessionStorage).toHaveLength(0)
+  })
+
+  it('drops the saved code when the claim fails to load after the sign-in', async () => {
+    let expired = false
+    const confirmations = serveClaim(
+      () =>
+        expired ? apiError(410, 'AgentClaimExpired') : HttpResponse.json(claim),
+      () => apiError(403, 'SessionNotFreshError'),
+    )
+    const actionId = await requireFreshSignIn()
+
+    expired = true
+    renderPage(actionId)
+
+    expect(
+      await screen.findByText('This claim has expired'),
+    ).toBeInTheDocument()
+    expect(sessionStorage).toHaveLength(0)
+    expect(confirmations).toHaveLength(1)
   })
 })

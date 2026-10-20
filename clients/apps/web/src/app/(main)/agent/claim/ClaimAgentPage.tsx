@@ -12,17 +12,20 @@ import AgentClaimCodeForm, { CLAIM_CODE_LENGTH } from './AgentClaimCodeForm'
 import AgentClaimSummary from './AgentClaimSummary'
 import {
   type AgentClaimProblem,
-  getAgentClaimProblem,
+  getAgentClaimError,
   UNKNOWN_PROBLEM,
 } from './claimErrors'
 import { useClaimAgent } from './useClaimAgent'
 
 const FORM_ID = 'agent-claim'
 
-const getLoadProblem = (error: Error): AgentClaimProblem =>
-  (error instanceof ClientResponseError
-    ? getAgentClaimProblem(error.error)
-    : undefined) ?? UNKNOWN_PROBLEM
+const getLoadProblem = (error: Error): AgentClaimProblem => {
+  const claimError =
+    error instanceof ClientResponseError
+      ? getAgentClaimError(error.error)
+      : undefined
+  return claimError?.status === 'failed' ? claimError.problem : UNKNOWN_PROBLEM
+}
 
 export default function ClaimAgentPage({
   linkToken,
@@ -41,7 +44,6 @@ export default function ClaimAgentPage({
   )
   const [code, setCode] = useState('')
 
-  const agentName = claim?.agent_name || 'Your agent'
   const problem =
     state.status === 'failed'
       ? state.problem
@@ -87,8 +89,8 @@ export default function ClaimAgentPage({
       title={
         state.status === 'claimed'
           ? 'Agent claimed'
-          : isReady
-            ? `Claim ${agentName}`
+          : isReady && claim.agent_name
+            ? `Claim ${claim.agent_name}`
             : 'Claim your agent'
       }
       subtitle={
@@ -138,7 +140,7 @@ export default function ClaimAgentPage({
             <Alert
               variant="warning"
               title="The agent will act as you"
-              description={`Once you claim it, ${agentName} can do anything you can on Polar, in all your organizations.`}
+              description={`Once you claim it, ${claim.agent_name || 'the agent'} can do anything you can on Polar, in all your organizations.`}
             />
             <AgentClaimCodeForm
               id={FORM_ID}

@@ -45,6 +45,16 @@ class DisputeStatus(StrEnum):
     won = "won"
 
     @classmethod
+    def chargeback_stop_statuses(cls) -> set["DisputeStatus"]:
+        """Alerts that never became an actual dispute."""
+        return {cls.prevented, cls.early_warning}
+
+    @classmethod
+    def actual_statuses(cls) -> set["DisputeStatus"]:
+        """Actual disputes, excluding ChargebackStop alerts."""
+        return {cls.needs_response, cls.under_review, cls.lost, cls.won}
+
+    @classmethod
     def resolved_statuses(cls) -> set["DisputeStatus"]:
         return {cls.lost, cls.won}
 

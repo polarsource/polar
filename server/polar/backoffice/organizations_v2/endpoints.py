@@ -1172,6 +1172,9 @@ async def _build_payment_stats(
         chargeback_count,
         chargeback_amount,
     ) = await payment_analytics.get_dispute_stats(organization.id)
+    chargeback_stop_count = await payment_analytics.get_chargeback_stop_stats(
+        organization.id
+    )
 
     total_attempts = payment_count + failed_count
     auth_rate = (payment_count / total_attempts * 100) if total_attempts > 0 else 100.0
@@ -1203,6 +1206,7 @@ async def _build_payment_stats(
         "dispute_count": dispute_count,
         "dispute_amount": dispute_amount,
         "dispute_rate": dispute_rate,
+        "chargeback_stop_count": chargeback_stop_count,
         "chargeback_count": chargeback_count,
         "chargeback_amount": chargeback_amount,
         "chargeback_rate": chargeback_rate,

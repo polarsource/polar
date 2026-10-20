@@ -199,6 +199,10 @@ async def _collect_metrics(
         p50, p90 = await repo.get_risk_score_percentiles(organization_id)
         refund_count, refund_amount = await repo.get_refund_stats(organization_id)
         dispute_count, dispute_amount = await repo.get_dispute_stats(organization_id)
+        (
+            chargeback_stop_count,
+            chargeback_stop_amount,
+        ) = await repo.get_chargeback_stop_stats(organization_id)
         return collect_metrics_data(
             total_payments=total,
             succeeded_payments=succeeded,
@@ -209,6 +213,8 @@ async def _collect_metrics(
             refund_amount_cents=refund_amount,
             dispute_count=dispute_count,
             dispute_amount_cents=dispute_amount,
+            chargeback_stop_count=chargeback_stop_count,
+            chargeback_stop_amount_cents=chargeback_stop_amount,
         )
 
 

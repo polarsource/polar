@@ -187,18 +187,15 @@ class DeclarativeConfigService:
             )
         await _assert_webhooks_permission(session, auth_subject, config, organization)
         versioned = organization.is_catalog_versioning_enabled
-        live: Catalog | None = None
+        catalog_after: int | None = None
         if versioned:
             await catalog_service.lock(session, organization)
-            live = await catalog_service.get_or_create_live(session, organization)
         changes, issues = await validation.check(
             session, organization, config, for_update=True
         )
-        catalog_after = (
-            catalogs.catalog_after(0 if live is None else live.version, changes)
-            if versioned
-            else None
-        )
+        if versioned:
+            _, base = await catalog_service.get_base_version(session, organization)
+            catalog_after = catalogs.catalog_after(base, changes)
         migrations, migration_issues = await catalogs.check_migrations(
             session, organization, config, changes, catalog_after
         )
@@ -213,6 +210,9 @@ class DeclarativeConfigService:
         if errors:
             raise ConfigInvalid(errors)
 
+        live: Catalog | None = None
+        if versioned:
+            live = await catalog_service.get_or_create_live(session, organization)
         settings_result = await self._apply_settings(
             session, organization, changes.settings
         )

@@ -170,7 +170,7 @@ In both grants, the client is taken from the agent the credential belongs to, no
 | Rollout | Both sign-up types ship together, starting in sandbox behind a feature flag, and go to production once sandbox abuse data looks fine. |
 | Unclaimed orgs | Kept, with no automatic cleanup for now. We can add cleanup jobs later if we need them. |
 | Claim link and code | Expire after 7 days. Nothing is deleted; the agent can start a new claim. |
-| Identity assertion | Lives 30 days and can be reused until it expires, as the auth.md spec expects. The claim issues a fresh one, which only yields the claiming user's tokens, and invalidates older ones. Revoking the agent stops it immediately. After 30 days the agent signs up again and the human re-approves it. |
+| Identity assertion | Lives 30 days and can be reused until it expires, as the auth.md spec expects. The claim issues a fresh one, which only yields the claiming user's tokens, and invalidates older ones. Revoking the agent stops it immediately. After 30 days the agent keeps working on the claimed org through the MCP server or the CLI, signed in as the user like any other client. Signing up again is only for building a new org. |
 
 ## Options
 

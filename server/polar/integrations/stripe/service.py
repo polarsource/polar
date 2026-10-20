@@ -4,7 +4,6 @@ from collections.abc import AsyncGenerator, AsyncIterator, Sequence
 from typing import TYPE_CHECKING, Any, Final, Literal, Unpack, cast, overload
 from urllib.parse import urlencode
 
-import stripe as stripe_lib
 import structlog
 from stripe.params._customer_create_params import (
     CustomerCreateParams,
@@ -24,6 +23,7 @@ from stripe.params.tax._calculation_create_params import CalculationCreateParams
 
 from polar.config import settings
 from polar.exceptions import PolarError
+from polar.integrations.stripe import stripe_lib
 from polar.kit.http import get_safe_return_url
 from polar.logfire import instrument_httpx
 from polar.logging import Logger

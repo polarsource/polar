@@ -373,4 +373,5 @@ async def delete(
     if product is None:
         raise ResourceNotFound()
 
+    await assert_catalog_editable(session, product.organization_id)
     await product_service.delete(session, product, auth_subject)

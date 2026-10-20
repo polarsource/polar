@@ -270,6 +270,7 @@ async def delete_webhook_endpoint(
     if not endpoint:
         raise ResourceNotFound()
 
+    await assert_catalog_editable(session, endpoint.organization_id)
     await webhook_service.delete_endpoint(session, auth_subject, endpoint=endpoint)
 
 

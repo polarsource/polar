@@ -954,6 +954,19 @@ class TestUpdateProductBenefits:
 
 @pytest.mark.anyio
 class TestDeleteProduct:
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_config_as_code_enabled(
+        self,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.delete(f"/v1/products/{product.id}")
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "ConfigAsCodeManaged"
+
     async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
         response = await client.delete(f"/v1/products/{product.id}")
 

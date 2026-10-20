@@ -339,4 +339,5 @@ async def delete(
     if benefit is None:
         raise ResourceNotFound()
 
+    await assert_catalog_editable(session, benefit.organization_id)
     await benefit_service.delete(session, benefit, auth_subject)

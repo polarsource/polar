@@ -113,12 +113,7 @@ class PaymentAnalyticsService:
         Chargebacks = disputes with status 'lost'.
         """
         # All actual disputes (excludes prevented and early_warning)
-        actual_dispute_statuses = [
-            DisputeStatus.needs_response,
-            DisputeStatus.under_review,
-            DisputeStatus.lost,
-            DisputeStatus.won,
-        ]
+        actual_dispute_statuses = DisputeStatus.actual_statuses()
         result = await self.session.execute(
             select(
                 func.count(Dispute.id),
@@ -161,6 +156,21 @@ class PaymentAnalyticsService:
         chargeback_amount = cb_row[1] if cb_row else 0
 
         return dispute_count, dispute_amount, chargeback_count, chargeback_amount
+
+    async def get_chargeback_stop_stats(self, organization_id: UUID4) -> int:
+        """Get count of ChargebackStop alerts (prevented or early warning).
+
+        These are kept out of `get_dispute_stats` as they are not actual disputes.
+        """
+        result = await self.session.execute(
+            select(func.count(Dispute.id))
+            .join(Payment, Dispute.payment_id == Payment.id)
+            .where(
+                Payment.organization_id == organization_id,
+                Dispute.status.in_(DisputeStatus.chargeback_stop_statuses()),
+            )
+        )
+        return result.scalar() or 0
 
     @staticmethod
     def calculate_risk_percentiles(risk_scores: list[float]) -> tuple[float, float]:

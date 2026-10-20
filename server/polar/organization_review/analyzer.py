@@ -1050,6 +1050,13 @@ class ReviewAnalyzer:
             parts.append(
                 f"Disputes: {metrics.dispute_count} (${metrics.dispute_amount_cents / 100:,.2f})"
             )
+            if metrics.chargeback_stop_count > 0:
+                parts.append(
+                    f"ChargebackStop Alerts: {metrics.chargeback_stop_count} "
+                    f"(${metrics.chargeback_stop_amount_cents / 100:,.2f}) — "
+                    "pre-dispute alerts prevented or flagged early by ChargebackStop. "
+                    "These are NOT actual disputes and are not counted in Disputes above."
+                )
 
         # External risk signals (e.g. Stripe Radar for Platforms)
         risk_signals = snapshot.risk_signals

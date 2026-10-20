@@ -314,6 +314,8 @@ class PaymentMetrics(Schema):
     refund_amount_cents: int = 0
     dispute_count: int = 0
     dispute_amount_cents: int = 0
+    chargeback_stop_count: int = 0
+    chargeback_stop_amount_cents: int = 0
 
 
 class PriorOrganization(Schema):

@@ -98,7 +98,7 @@ export const gateways = landscape(
     [
       'Through your gateway',
       [
-        'If your model calls already go through an AI gateway, like OpenRouter, Vercel AI Gateway or LiteLLM, Polar connects to it and records every call as an event.',
+        'If your model calls already go through an AI gateway, Polar connects to it and records every call as an event.',
       ],
     ],
     [

@@ -831,6 +831,15 @@ class Outpost:
             local.notify()
             return True
 
+    async def _receive_redis(self, data: bytes) -> None:
+        update: StateUpdate = json.loads(data)
+        applied = await self._receive_state(
+            update["customer"], decode_state(update["state"])
+        )
+        self._sync_received += 1
+        if applied:
+            self._sync_applied += 1
+
     async def _refresh_states(self) -> None:
         for customer, local in list(self._cache.items()):
             async with local.lock:
@@ -866,13 +875,7 @@ class Outpost:
                         ignore_subscribe_messages=True, timeout=1
                     )
                     if message is not None:
-                        update: StateUpdate = json.loads(message["data"])
-                        applied = await self._receive_state(
-                            update["customer"], decode_state(update["state"])
-                        )
-                        self._sync_received += 1
-                        if applied:
-                            self._sync_applied += 1
+                        await self._receive_redis(message["data"])
                     if anyio.current_time() >= next_refresh:
                         self._report_sync()
                         await self._refresh_states()

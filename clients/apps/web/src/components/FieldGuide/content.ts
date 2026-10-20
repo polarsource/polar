@@ -64,7 +64,7 @@ export const CHAPTERS: Chapter[] = [
     title: 'Identities',
     intro:
       'You might sell to agents, spawn them on a customer’s behalf, or both. Polar calls every customer an identity, human or machine, and gives every one the same meters, credits and entitlements.',
-    ids: ['m-nesting', 'm-delegate'],
+    ids: ['m-nesting', 'm-rollup', 'm-economics', 'm-delegate'],
   },
   {
     n: '06',
@@ -100,11 +100,11 @@ export const CHAPTERS: Chapter[] = [
   },
   {
     n: '10',
-    name: 'Payments',
-    title: 'Payments',
+    name: 'Bring your own PSP',
+    title: 'Bring your own PSP',
     intro:
       'Polar works out what to charge. Who takes the payment is up to you: the processor you already use, like Stripe or Adyen, or Polar as your merchant of record.',
-    ids: ['m-mor', 'm-flow', 'm-psp'],
+    ids: ['m-psp', 'm-mor'],
   },
 ]
 

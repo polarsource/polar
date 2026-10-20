@@ -3,7 +3,7 @@ import { faultTolerance } from './principles'
 import type { ReactNode } from 'react'
 import { agentOps } from './agents'
 import { marginCheck } from './check'
-import { delegation } from './identities'
+import { delegation, economics, rollup } from './identities'
 import { polarBilling, psp } from './payments'
 import { branchReplay, simulationCompare } from './simulations'
 import { cover } from './cover'
@@ -53,18 +53,23 @@ export const chapters: { title: string; ids: string[] }[] = [
     ids: ['m-meter', 'm-fold', 'm-tiers'],
   },
   { title: '04 · Local-first', ids: ['m-igloo', 'm-latency', 'm-reconcile'] },
-  { title: '05 · Identities', ids: ['m-nesting', 'm-delegate'] },
+  {
+    title: '05 · Identities',
+    ids: ['m-nesting', 'm-rollup', 'm-economics', 'm-delegate'],
+  },
   { title: '06 · Guardrails', ids: ['m-signals', 'm-margin'] },
   { title: '07 · Simulations', ids: ['m-branch', 'm-compare'] },
   { title: '08 · Credits', ids: ['m-credits', 'm-grants', 'm-zero'] },
   { title: '09 · Entitlements', ids: ['m-gates', 'm-entitlements'] },
-  { title: '10 · Payments', ids: ['m-mor', 'm-flow', 'm-psp'] },
+  { title: '10 · Bring your own PSP', ids: ['m-psp', 'm-mor'] },
 ]
 const ORDER = chapters.flatMap((c) => c.ids)
 const all = [
   polarBilling,
   psp,
   delegation,
+  rollup,
+  economics,
   branchReplay,
   simulationCompare,
   agentOps,

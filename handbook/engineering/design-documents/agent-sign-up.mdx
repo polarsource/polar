@@ -5,7 +5,7 @@ description: "Let AI agents get Polar API access on their own, and let a human t
 
 <Info>
 
-**Status**: Draft
+**Status**: Active
 
 **Created**: October 2026
 
@@ -127,7 +127,8 @@ web) stay as they are. Token validation gains one sub type for unclaimed agents.
   user. No refresh tokens.
 
 In both grants, the client is taken from the agent the credential belongs to, not from a
-`client_id` the caller sends. So an existing OAuth app can't use them, and an agent can only ever get tokens for itself.
+`client_id` the caller sends. So an existing OAuth app can't use them, and an agent can only ever use its own
+credentials: before the claim they yield its own tokens, after it the claiming user's.
 
 **Agent clients**
 

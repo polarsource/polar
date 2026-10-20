@@ -22,7 +22,7 @@ export function EarlyAccess() {
       </div>
       <div className="relative border border-[#2a2a2a] [&>form]:bg-transparent!">
         <Corners />
-        <DesignPartnerForm submitLabel="Request early access" />
+        <DesignPartnerForm compact submitLabel="Request early access" />
       </div>
     </section>
   )

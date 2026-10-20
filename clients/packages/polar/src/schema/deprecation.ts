@@ -4,6 +4,10 @@ export const deprecatedKey: unique symbol = Symbol.for(
   '~@polar-sh/polar/Deprecated',
 )
 
+export type HasDeprecation = {
+  readonly [deprecatedKey]?: boolean | undefined
+}
+
 export interface DeprecationBuilder {
   readonly [deprecatedKey]: boolean
   deprecated(): this

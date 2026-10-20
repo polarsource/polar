@@ -2455,6 +2455,35 @@ class TestPlan:
         ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_deprecated_benefit_references(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "meters": [{**TOOL_CALLS_METER, "deprecated": True}],
+                    "benefits": [
+                        {**CREDITS_BENEFIT, "deprecated": True},
+                        {**BETA_BENEFIT, "deprecated": True},
+                    ],
+                    "products": [PRO_PRODUCT],
+                }
+            ),
+        )
+
+        assert [
+            (issue.loc, issue.input)
+            for issue in plan.issues
+            if issue.type == ConfigIssueType.deprecated_reference
+        ] == [
+            (["body", "products", 0, "prices", 1, "meter"], "sdk-tool-calls"),
+            (["body", "products", 0, "benefits", 0], "tool-call-credits"),
+            (["body", "products", 0, "benefits", 1], "beta"),
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_duplicate_external_ids_per_resource(
         self, session: AsyncSession, auth_subject: AuthSubject[Organization]
     ) -> None:

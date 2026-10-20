@@ -250,6 +250,9 @@ def invalid_references(config: Config) -> list[ConfigIssue]:
         meter.external_id for meter in config.meters if meter.deprecated
     }
     benefits = {benefit.external_id for benefit in config.benefits}
+    deprecated_benefits = {
+        benefit.external_id for benefit in config.benefits if benefit.deprecated
+    }
     issues: list[ConfigIssue] = []
     for index, benefit in enumerate(config.benefits):
         if isinstance(benefit, ConfigBenefitMeterCredit):
@@ -257,7 +260,7 @@ def invalid_references(config: Config) -> list[ConfigIssue]:
                 _reference_issues(
                     ConfigResource.meter,
                     meters,
-                    deprecated_meters,
+                    set() if benefit.deprecated else deprecated_meters,
                     benefit.properties.meter,
                     _loc(ConfigResource.benefit, index, "properties", "meter"),
                 )
@@ -295,9 +298,15 @@ def invalid_references(config: Config) -> list[ConfigIssue]:
                         input=benefit_external_id,
                     )
                 )
-            elif benefit_external_id not in benefits:
-                issues.append(
-                    _unknown_reference(ConfigResource.benefit, benefit_external_id, loc)
+            else:
+                issues.extend(
+                    _reference_issues(
+                        ConfigResource.benefit,
+                        benefits,
+                        deprecated_benefits,
+                        benefit_external_id,
+                        loc,
+                    )
                 )
             listed.add(benefit_external_id)
     products = {product.external_id for product in config.products}

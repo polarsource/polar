@@ -115,7 +115,7 @@ BenefitReference = Annotated[
 ]
 
 
-class ConfigBenefitBase(MetadataInputMixin, Schema):
+class ConfigBenefitBase(ConfigDeprecationMixin, MetadataInputMixin, Schema):
     model_config = ConfigDict(extra="forbid")
 
     external_id: str = Field(

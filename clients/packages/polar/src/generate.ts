@@ -28,6 +28,9 @@ const renderMetadata = (metadata: Metadata | undefined): string[] =>
 const renderVisibility = (visibility: Visibility | undefined): string[] =>
   visibility === 'private' ? ['.private()'] : []
 
+const renderDeprecated = (deprecated: true | undefined): string[] =>
+  deprecated ? ['.deprecated()'] : []
+
 const renderCondition = (
   condition: MeterFilter['clauses'][number],
   imports: Set<string>,
@@ -88,6 +91,7 @@ const renderBenefit = (
       `flag(${name})`,
       ...renderMetadata(benefit.metadata),
       ...renderVisibility(benefit.visibility),
+      ...renderDeprecated(benefit.deprecated),
     ].join('\n')
   }
   helpers.add('credits')
@@ -99,6 +103,7 @@ const renderBenefit = (
     ...(rollover ? ['.rollover()'] : []),
     ...renderMetadata(benefit.metadata),
     ...renderVisibility(benefit.visibility),
+    ...renderDeprecated(benefit.deprecated),
   ].join('\n')
 }
 

@@ -582,6 +582,52 @@ test('active products and benefits cannot use a deprecated meter', () => {
   ).toThrow('Benefit "included" uses meter "apples", which is deprecated.')
 })
 
+test('deprecated benefits stay in the config', () => {
+  const config = defineConfig({
+    meters: ({ meter }) => ({ calls: meter('Calls').count() }),
+    benefits: ({ flag, credits }) => ({
+      beta: flag('Beta').deprecated(),
+      calls: credits('Calls').meter('calls').units(10).deprecated(),
+      support: flag('Support'),
+    }),
+    products: ({ product, free }) => ({
+      pro: product().prices(free()).recurring('monthly').grants(['support']),
+    }),
+  })
+  const [beta, calls, support] = config.toJSON().benefits ?? []
+  expect(beta).toMatchObject({ external_id: 'beta', deprecated: true })
+  expect(calls).toMatchObject({ external_id: 'calls', deprecated: true })
+  expect(support).not.toHaveProperty('deprecated')
+})
+
+test('deprecated benefits can use a deprecated meter', () => {
+  expect(() =>
+    defineConfig({
+      meters: ({ meter }) => ({ apples: meter().deprecated().count() }),
+      benefits: ({ credits }) => ({
+        included: credits('Included apples')
+          .meter('apples')
+          .units(10)
+          .deprecated(),
+      }),
+    }),
+  ).not.toThrow()
+})
+
+test('active products cannot grant a deprecated benefit', () => {
+  expect(() =>
+    defineConfig({
+      meters: ({ meter }) => ({ calls: meter().count() }),
+      benefits: ({ flag }) => ({ beta: flag('Beta').deprecated() }),
+      products: ({ product, free }) => ({
+        pro: product().prices(free()).recurring('monthly').grants(['beta']),
+      }),
+    }),
+  ).toThrow(
+    'Product "pro" uses benefit "beta", which is deprecated. Undeprecate the benefit or create a new one.',
+  )
+})
+
 test('product names must be between 3 and 64 characters', () => {
   expect(() =>
     defineConfig({

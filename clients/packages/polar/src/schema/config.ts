@@ -7,6 +7,7 @@ import {
   type MetadataShape,
 } from './metadata'
 import type { BenefitDefinition, BenefitHelpers } from './benefit'
+import { deprecatedKey } from './deprecation'
 import {
   createEventReferences,
   type EventDefinitions,
@@ -275,6 +276,11 @@ export const defineConfig = <
   const benefitEntries =
     benefits === undefined ? [] : toEntries<BenefitDefinition>(benefits)
   const benefitIds = new Set(benefitEntries.map(([external_id]) => external_id))
+  const deprecatedBenefitIds = new Set(
+    benefitEntries.flatMap(([external_id, definition]) =>
+      definition[deprecatedKey] ? [external_id] : [],
+    ),
+  )
   const products = input.products?.({
     product,
     free,
@@ -321,6 +327,7 @@ export const defineConfig = <
             name,
             [metadataKey]: metadata,
             [visibilityKey]: visibility,
+            [deprecatedKey]: deprecated,
             ...definition
           },
         ]) => {
@@ -329,7 +336,14 @@ export const defineConfig = <
             const owner = `Benefit "${external_id}"`
             const references = [definition.properties.meter]
             assertKnown(owner, 'meter', meterIds, references)
-            assertNotDeprecated(owner, 'meter', deprecatedMeterIds, references)
+            if (!deprecated) {
+              assertNotDeprecated(
+                owner,
+                'meter',
+                deprecatedMeterIds,
+                references,
+              )
+            }
           }
           return {
             ...definition,
@@ -337,6 +351,7 @@ export const defineConfig = <
             description: name ?? external_id,
             ...(metadata !== undefined && { metadata }),
             ...(visibility === 'private' && { visibility }),
+            ...(deprecated && { deprecated: true as const }),
           }
         },
       ),
@@ -354,6 +369,12 @@ export const defineConfig = <
         assertKnown(owner, 'meter', meterIds, meterReferences)
         assertNotDeprecated(owner, 'meter', deprecatedMeterIds, meterReferences)
         assertKnown(owner, 'benefit', benefitIds, definition.benefits)
+        assertNotDeprecated(
+          owner,
+          'benefit',
+          deprecatedBenefitIds,
+          definition.benefits,
+        )
         return {
           external_id,
           name: name ?? external_id,

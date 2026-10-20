@@ -113,6 +113,8 @@ class Settings(BaseSettings):
     # SLO Report
     SLO_REPORT_ENABLED: bool = True
 
+    REDUCER_CUSTOMER_STATE_COMPARISON_SAMPLE_RATE: float = 0.01
+
     WEBHOOK_MAX_RETRIES: int = 10
     WEBHOOK_FIFO_GUARD_DELAY_MS: int = 300  # p95 is 236ms
     WEBHOOK_FIFO_GUARD_MAX_AGE: timedelta = timedelta(minutes=1)

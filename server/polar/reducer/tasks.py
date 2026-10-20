@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Annotated
 
 from polar.customer.repository import CustomerRepository
+from polar.customer.service import customer as customer_service
 from polar.exceptions import PolarTaskError
 from polar.observability.task_logging import LoggableField
 from polar.worker import (
@@ -28,6 +29,21 @@ async def invalidate_cache(
     organization_id: Annotated[uuid.UUID, LoggableField],
 ) -> None:
     await cache.invalidate(RedisMiddleware.get(), organization_id)
+
+
+@actor(actor_name="reducer.compare_customer_state", priority=TaskPriority.LOW)
+async def compare_customer_state(
+    customer_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
+    async with AsyncSessionMaker() as session:
+        customer = await CustomerRepository.from_session(session).get_by_id(customer_id)
+        if customer is None:
+            raise CustomerDoesNotExist(customer_id)
+        redis = RedisMiddleware.get()
+        state = await customer_service.get_state(session, redis, customer, cache=False)
+        await reducer_service.log_customer_state_comparison(
+            session, redis, customer, state
+        )
 
 
 @actor(actor_name="reducer.seal", priority=TaskPriority.LOW)

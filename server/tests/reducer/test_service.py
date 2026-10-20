@@ -8,6 +8,7 @@ import pytest
 from logfire.testing import CaptureLogfire
 from pytest_mock import MockerFixture
 
+from polar.config import settings
 from polar.customer.service import customer as customer_service
 from polar.event.system import SystemEvent
 from polar.meter.aggregation import (
@@ -1560,6 +1561,26 @@ class TestLogCustomerMeterComparison:
         )
 
         assert await session.get(CustomerMeter, customer_meter.id) is not None
+
+
+class TestEnqueueCustomerStateComparison:
+    @pytest.mark.parametrize("sample_rate", [0.0, 1.0])
+    def test_samples(
+        self, mocker: MockerFixture, customer: Customer, sample_rate: float
+    ) -> None:
+        mocker.patch.object(
+            settings, "REDUCER_CUSTOMER_STATE_COMPARISON_SAMPLE_RATE", sample_rate
+        )
+        enqueue_job = mocker.patch("polar.reducer.service.enqueue_job")
+
+        reducer_service.enqueue_customer_state_comparison(customer)
+
+        if sample_rate:
+            enqueue_job.assert_called_once_with(
+                "reducer.compare_customer_state", customer.id
+            )
+        else:
+            enqueue_job.assert_not_called()
 
 
 @pytest.mark.anyio

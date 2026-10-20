@@ -1,4 +1,5 @@
 import math
+import random
 from collections import defaultdict
 from collections.abc import Iterable, Sequence
 from datetime import UTC, datetime, timedelta
@@ -11,6 +12,7 @@ import structlog
 from redis.exceptions import RedisError
 from sqlalchemy import Row
 
+from polar.config import settings
 from polar.customer.schemas.state import CustomerState
 from polar.event.repository import EventRepository
 from polar.kit.db.postgres import AsyncReadSession
@@ -349,6 +351,10 @@ class ReducerService:
             )
 
         return _get_quantity(reducer.aggregation.func, totals)
+
+    def enqueue_customer_state_comparison(self, customer: Customer) -> None:
+        if random.random() < settings.REDUCER_CUSTOMER_STATE_COMPARISON_SAMPLE_RATE:
+            enqueue_job("reducer.compare_customer_state", customer.id)
 
     async def log_customer_state_comparison(
         self,

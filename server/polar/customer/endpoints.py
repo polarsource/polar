@@ -336,9 +336,9 @@ async def get_state(
     if customer is None:
         raise ResourceNotFound()
 
-    state = await customer_service.get_state(session, redis, customer)
-    await reducer_service.log_customer_state_comparison(session, redis, customer, state)
-    return state
+    reducer_service.enqueue_customer_state_comparison(customer)
+
+    return await customer_service.get_state(session, redis, customer)
 
 
 @router.get(
@@ -368,9 +368,9 @@ async def get_state_external(
     if customer is None:
         raise ResourceNotFound()
 
-    state = await customer_service.get_state(session, redis, customer)
-    await reducer_service.log_customer_state_comparison(session, redis, customer, state)
-    return state
+    reducer_service.enqueue_customer_state_comparison(customer)
+
+    return await customer_service.get_state(session, redis, customer)
 
 
 def _serialize_payment_method(

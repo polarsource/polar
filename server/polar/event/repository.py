@@ -273,6 +273,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         statement = (
             self.get_base_statement()
             .where(
+                Event.organization_id == customer.organization_id,
                 Event.customer_id == customer.id,
                 Event.source == EventSource.system,
                 Event.name == SystemEvent.meter_reset,

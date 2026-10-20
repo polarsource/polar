@@ -1,4 +1,4 @@
-import type { DataPoint, Histogram, ResourceMetrics } from "@opentelemetry/sdk-metrics";
+import type { DataPoint, ExponentialHistogram, ResourceMetrics } from "@opentelemetry/sdk-metrics";
 import type { ReadableSpan } from "@opentelemetry/sdk-trace";
 
 import { Pipeline, Redis } from "ioredis";
@@ -23,8 +23,9 @@ vi.mock("./telemetry", async (importOriginal) => {
   const { SimpleSpanProcessor, TracerProvider } = await import("@opentelemetry/sdk-trace");
   const { MeterProvider, PeriodicExportingMetricReader } =
     await import("@opentelemetry/sdk-metrics");
+  const actual = await importOriginal<typeof import("./telemetry")>();
   return {
-    ...(await importOriginal<typeof import("./telemetry")>()),
+    ...actual,
     createTracerProvider: () =>
       new TracerProvider({
         spanProcessors: [
@@ -41,6 +42,7 @@ vi.mock("./telemetry", async (importOriginal) => {
       }),
     createMeterProvider: () =>
       new MeterProvider({
+        views: actual.METRIC_VIEWS,
         readers: [
           new PeriodicExportingMetricReader({
             exporter: {
@@ -634,9 +636,12 @@ it("sends telemetry spans tagged with the connection ID", async () => {
   expect(dataPoints("outpost.ingest.duration")).toMatchObject([
     { attributes: { "outpost.outcome": "ok" }, value: { count: 1 } },
   ]);
-  const [{ value: histogram }] = dataPoints("outpost.ingest.duration") as DataPoint<Histogram>[];
-  const occupied = histogram.buckets.counts.findIndex((count) => count > 0);
-  expect(histogram.buckets.boundaries[occupied]).toBeLessThanOrEqual(0.01);
+  const [{ value: histogram }] = dataPoints(
+    "outpost.ingest.duration",
+  ) as DataPoint<ExponentialHistogram>[];
+  const occupied = histogram.positive.bucketCounts.findIndex((count) => count > 0);
+  const upperBound = 2 ** ((histogram.positive.offset + occupied + 1) * 2 ** -histogram.scale);
+  expect(upperBound).toBeLessThanOrEqual(0.01);
   expect(new Set(exported.map((span) => span.name))).toEqual(
     new Set([
       "outpost.redis.connect",

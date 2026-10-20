@@ -1083,8 +1083,11 @@ async def test_telemetry_spans(
         ({"outpost.outcome": "ok"}, 1)
     ]
     [duration] = durations
-    bucket = next(i for i, count in enumerate(duration.bucket_counts) if count)
-    assert duration.explicit_bounds[bucket] <= 0.01
+    occupied = next(
+        i for i, count in enumerate(duration.positive.bucket_counts) if count
+    )
+    upper_bound = 2 ** ((duration.positive.offset + occupied + 1) * 2**-duration.scale)
+    assert upper_bound <= 0.01
     names = {span.name for span in exported_spans}
     assert names == {
         "outpost.redis.connect",

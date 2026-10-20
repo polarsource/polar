@@ -204,23 +204,6 @@ async def connect_websocket(
 
 CACHE_SIZE = 1024
 REDIS_TIMEOUT = 5.0
-INGEST_DURATION_BUCKETS = [
-    0.0001,
-    0.00025,
-    0.0005,
-    0.001,
-    0.0025,
-    0.005,
-    0.01,
-    0.025,
-    0.05,
-    0.1,
-    0.25,
-    0.5,
-    1,
-    2.5,
-    5,
-]
 REDIS_RECONNECT_DELAY = 0.1
 MAX_REDIS_RECONNECT_DELAY = 2.0
 SYNC_INTERVAL = 30.0
@@ -464,9 +447,7 @@ class Outpost:
             self._meter_provider = create_meter_provider(self._client)
             meter = self._meter_provider.get_meter("polar.outpost")
             self._ingest_duration = meter.create_histogram(
-                "outpost.ingest.duration",
-                unit="s",
-                explicit_bucket_boundaries_advisory=INGEST_DURATION_BUCKETS,
+                "outpost.ingest.duration", unit="s"
             )
             self._ingest_events = meter.create_counter("outpost.ingest.events")
             self._ingest_buckets = meter.create_counter("outpost.ingest.buckets")

@@ -13,6 +13,7 @@ from opentelemetry.sdk.metrics.export import (
     MetricsData,
     PeriodicExportingMetricReader,
 )
+from opentelemetry.sdk.metrics.view import ExponentialBucketHistogramAggregation, View
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export import (
@@ -27,6 +28,12 @@ from polar import __version__
 TELEMETRY_ENV = "POLAR_OUTPOST_TELEMETRY"
 FORWARDED_HEADERS = ("Authorization", "Polar-Organization")
 EXPORT_INTERVAL_MILLIS = 30_000
+METRIC_VIEWS = [
+    View(
+        instrument_name="outpost.ingest.duration",
+        aggregation=ExponentialBucketHistogramAggregation(),
+    )
+]
 
 
 def is_telemetry_enabled(telemetry: bool) -> bool:
@@ -122,4 +129,6 @@ def create_meter_provider(client: httpx.AsyncClient) -> MeterProvider:
     reader = PeriodicExportingMetricReader(
         exporter, export_interval_millis=EXPORT_INTERVAL_MILLIS
     )
-    return MeterProvider(metric_readers=[reader], resource=_resource())
+    return MeterProvider(
+        metric_readers=[reader], resource=_resource(), views=METRIC_VIEWS
+    )

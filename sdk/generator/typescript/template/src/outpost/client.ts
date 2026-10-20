@@ -42,9 +42,6 @@ const TIMEOUT = 5_000;
 const RECONNECT_DELAY = 500;
 const MAX_RECONNECT_DELAY = 30_000;
 const REDIS_RECONNECT_DELAY = 100;
-const INGEST_DURATION_BUCKETS = [
-  0.0001, 0.00025, 0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5,
-];
 const MAX_REDIS_RECONNECT_DELAY = 2_000;
 export interface State {
   epoch: string;
@@ -337,10 +334,7 @@ export class Outpost {
       this.tracer = this.tracerProvider.getTracer("polar.outpost");
       this.meterProvider = createMeterProvider(this.options.client);
       const meter = this.meterProvider.getMeter("polar.outpost");
-      this.ingestDuration = meter.createHistogram("outpost.ingest.duration", {
-        unit: "s",
-        advice: { explicitBucketBoundaries: INGEST_DURATION_BUCKETS },
-      });
+      this.ingestDuration = meter.createHistogram("outpost.ingest.duration", { unit: "s" });
       this.ingestEvents = meter.createCounter("outpost.ingest.events");
       this.ingestBuckets = meter.createCounter("outpost.ingest.buckets");
     }

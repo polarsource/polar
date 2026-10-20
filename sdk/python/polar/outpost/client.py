@@ -69,9 +69,11 @@ class UnavailableRedisError(PolarOutpostError):
         super().__init__("Redis is unavailable")
 
 
-def _number(value: str | bytes) -> int | float:
-    number: int | float = json.loads(value)
-    if isinstance(number, float) and not math.isfinite(number):
+def _number(value: str) -> int | float:
+    if value.isdecimal() or (value[:1] == "-" and value[1:].isdecimal()):
+        return int(value)
+    number = float(value)
+    if not math.isfinite(number):
         raise ValueError("Stored aggregation values must be finite")
     return number
 

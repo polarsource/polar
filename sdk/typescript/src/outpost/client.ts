@@ -92,7 +92,7 @@ interface OutpostPipeline extends ChainableCommander {
 
 const generateEpoch = (): string => randomUUID().replaceAll("-", "");
 const number = (value: string): number => {
-  const parsed: number = JSON.parse(value);
+  const parsed = Number(value);
   if (!Number.isFinite(parsed))
     throw new TypeError("Stored aggregation values must be finite numbers");
   return parsed;

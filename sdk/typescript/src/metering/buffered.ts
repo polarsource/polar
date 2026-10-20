@@ -164,7 +164,7 @@ export class BufferedMeteringStrategy {
 
   private async run(): Promise<void> {
     let batch: EventInput[] = [];
-    let request: FlushRequest | undefined;
+    let requests: FlushRequest[] = [];
     try {
       while (!this.closing || this.queue.length) {
         this.abort.signal.throwIfAborted();
@@ -182,21 +182,18 @@ export class BufferedMeteringStrategy {
         while (batch.length < this.options.batchSize) {
           if (!this.queue.length) {
             const remaining = deadline - Date.now();
-            if (this.closing || remaining <= 0) break;
+            if (this.closing || requests.length || remaining <= 0) break;
             await this.waitForMessage(remaining);
           }
           const next = this.queue.shift();
           if (next === undefined) break;
-          if (next instanceof FlushRequest) {
-            request = next;
-            break;
-          }
-          batch.push(next);
+          if (next instanceof FlushRequest) requests.push(next);
+          else batch.push(next);
         }
         await this.processBatch(batch);
         batch = [];
-        request?.resolve();
-        request = undefined;
+        for (const request of requests) request.resolve();
+        requests = [];
       }
     } catch (error) {
       const failure = this.abort.signal.aborted
@@ -205,7 +202,7 @@ export class BufferedMeteringStrategy {
           ? error
           : new PolarError(String(error));
       if (!this.abort.signal.aborted) this.failure = failure;
-      request?.reject(failure);
+      for (const request of requests) request.reject(failure);
       for (const message of this.queue.splice(0)) {
         if (message instanceof FlushRequest) message.reject(failure);
         else batch.push(message);

@@ -102,6 +102,8 @@ const signal = () => {
   return { promise, resolve };
 };
 export class PolarOutpostError extends PolarError {}
+// What Polar has not sent yet: the configuration or a snapshot. A read that raises it is not ready.
+class NotReadyError extends PolarError {}
 export class UnavailableRedisError extends PolarOutpostError {
   constructor(options?: ErrorOptions) {
     super("Redis is unavailable", options);
@@ -138,7 +140,7 @@ const withTimeout = async <T>(promise: Promise<T>): Promise<T> => {
     return await Promise.race([
       promise,
       new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new PolarError("Outpost operation timed out")), TIMEOUT);
+        timer = setTimeout(() => reject(new NotReadyError("Outpost operation timed out")), TIMEOUT);
       }),
     ]);
   } finally {
@@ -280,6 +282,7 @@ export class Outpost {
   private meterProvider?: MeterProvider;
   private ingestDuration?: Histogram;
   private ingestBuckets?: Counter;
+  private readDuration?: Histogram;
   private reducers: Reducer[] = [];
   private matchers: ReducerMatchers = [];
   private readonly cache = new Map<string, LocalState>();
@@ -333,6 +336,7 @@ export class Outpost {
       const meter = this.meterProvider.getMeter("polar.outpost");
       this.ingestDuration = meter.createHistogram("outpost.ingest.duration", { unit: "s" });
       this.ingestBuckets = meter.createCounter("outpost.ingest.buckets");
+      this.readDuration = meter.createHistogram("outpost.read.duration", { unit: "s" });
     }
     try {
       this.redis = new Redis(this.redisUrl, {
@@ -455,6 +459,7 @@ export class Outpost {
     this.meterProvider = undefined;
     this.ingestDuration = undefined;
     this.ingestBuckets = undefined;
+    this.readDuration = undefined;
     await Promise.all([tracerProvider?.shutdown(), meterProvider?.shutdown()]);
   }
 
@@ -515,30 +520,28 @@ export class Outpost {
   }
 
   async meter(input: Customer & { meter_id: string }): Promise<CustomerMeter | null> {
-    return this.traceRead("outpost.customer_meter", async (span) => {
+    return this.measureRead("meter", async (read) => {
       const customer = customerKey(input);
       this.requireRedis();
       await this.waitConfigured();
       const reducer = this.reducers.find((item) => item.meter_ids?.includes(input.meter_id));
       if (!reducer) {
-        span.setAttribute("outpost.read.outcome", "unknown_meter");
+        read.outcome = "unknown_meter";
         return null;
       }
       const local = await this.warmCustomer(customer, reducer);
       await this.waitReady(reducer, local, [input.meter_id]);
       if (local.missing) {
-        span.setAttribute("outpost.read.outcome", "unknown_customer");
+        read.outcome = "unknown_customer";
         return null;
       }
       const state = local.state;
       if (!state || state.coldUntil === undefined)
-        throw new PolarError("Customer snapshot is not ready");
-      span.setAttribute(
-        "outpost.read.outcome",
+        throw new NotReadyError("Customer snapshot is not ready");
+      read.outcome =
         (reducer.aggregation.func as string) === "unique" || input.meter_id in state.credited
           ? "ready"
-          : "not_ready",
-      );
+          : "not_ready";
       const consumed = consumedUnits(state, reducer.aggregation.func);
       const credited = state.credited[input.meter_id] ?? 0;
       return {
@@ -551,7 +554,7 @@ export class Outpost {
   }
 
   async actor(input: Customer): Promise<void> {
-    return this.traceRead("outpost.actor", async (span) => {
+    return this.measureRead("actor", async (read) => {
       const warmed = await this.warmActor(customerKey(input));
       await Promise.all(
         warmed.map(([reducer, local]) => this.waitReady(reducer, local, reducer.meter_ids ?? [])),
@@ -560,14 +563,13 @@ export class Outpost {
       const snapshotted = warmed.filter(
         ([reducer]) => (reducer.aggregation.func as string) !== "unique",
       );
-      span.setAttribute(
-        "outpost.read.outcome",
-        !snapshotted.every(([reducer, local]) => isReady(local, reducer.meter_ids ?? []))
-          ? "not_ready"
-          : snapshotted.some(([, local]) => local.missing)
-            ? "unknown_customer"
-            : "ready",
-      );
+      read.outcome = !snapshotted.every(([reducer, local]) =>
+        isReady(local, reducer.meter_ids ?? []),
+      )
+        ? "not_ready"
+        : snapshotted.some(([, local]) => local.missing)
+          ? "unknown_customer"
+          : "ready";
     });
   }
 
@@ -873,17 +875,24 @@ export class Outpost {
     }
   }
 
-  private traceRead<T>(name: string, run: (span: Span) => Promise<T>): Promise<T> {
-    return this.trace(name, async (span) => {
-      span.setAttribute("outpost.read.outcome", "not_ready");
-      try {
-        return await run(span);
-      } catch (error) {
-        if (error instanceof UnavailableRedisError)
-          span.setAttribute("outpost.read.outcome", "redis_unavailable");
-        throw error;
-      }
-    });
+  private async measureRead<T>(
+    operation: "meter" | "actor",
+    run: (read: { outcome: string }) => Promise<T>,
+  ): Promise<T> {
+    const started = performance.now();
+    const read = { outcome: "not_ready" };
+    try {
+      return await run(read);
+    } catch (error) {
+      if (error instanceof UnavailableRedisError) read.outcome = "redis_unavailable";
+      else if (!(error instanceof NotReadyError)) read.outcome = "error";
+      throw error;
+    } finally {
+      this.readDuration?.record((performance.now() - started) / 1000, {
+        "outpost.read.operation": operation,
+        "outpost.read.outcome": read.outcome,
+      });
+    }
   }
 
   private event(name: string, error?: Error): void {

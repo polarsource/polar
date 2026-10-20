@@ -25,7 +25,7 @@ export const STATUS: Record<string, Status> = {
   'm-compare': 'development',
   'm-credits': 'production',
   'm-grants': 'production',
-  'm-zero': 'production',
+  'm-zero': 'development',
   'm-gates': 'production',
   'm-entitlements': 'production',
   'm-psp': 'development',

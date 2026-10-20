@@ -64,6 +64,9 @@ const renderMeter = (meter: MeterConfig, imports: Set<string>): string => {
   }
 
   lines.push(...renderMetadata(meter.metadata))
+  if (meter.deprecated) {
+    lines.push('.deprecated()')
+  }
 
   const aggregation = meter.aggregation
   lines.push(

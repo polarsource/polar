@@ -27,6 +27,7 @@ from polar.postgres import (
     get_db_session,
 )
 from polar.redis import Redis, get_redis
+from polar.reducer.service import reducer as reducer_service
 from polar.routing import APIRouter
 
 from . import auth, sorting
@@ -335,7 +336,9 @@ async def get_state(
     if customer is None:
         raise ResourceNotFound()
 
-    return await customer_service.get_state(session, redis, customer)
+    state = await customer_service.get_state(session, redis, customer)
+    await reducer_service.log_customer_state_comparison(session, redis, customer, state)
+    return state
 
 
 @router.get(
@@ -365,7 +368,9 @@ async def get_state_external(
     if customer is None:
         raise ResourceNotFound()
 
-    return await customer_service.get_state(session, redis, customer)
+    state = await customer_service.get_state(session, redis, customer)
+    await reducer_service.log_customer_state_comparison(session, redis, customer, state)
+    return state
 
 
 def _serialize_payment_method(

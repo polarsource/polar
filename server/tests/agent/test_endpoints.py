@@ -57,6 +57,7 @@ class TestCreateIdentity:
         assert oauth2_client.is_agent is True
         assert oauth2_client.user_id is None
         assert oauth2_client.client_secret_hash is None
+        assert oauth2_client.client_id_issued_at > 0
         assert oauth2_client.token_endpoint_auth_method == "none"
         assert oauth2_client.redirect_uris == []
         assert oauth2_client.grant_types == [JWT_BEARER_GRANT_TYPE]

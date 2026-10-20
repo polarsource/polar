@@ -355,17 +355,37 @@ class TestRefundsElevatedAndGetFallThrough:
         assert rule.zone == "api"
 
 
-@pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
 @pytest.mark.parametrize("path", ["/v1/agent/identity", "/v1/agent/identity/"])
-@pytest.mark.parametrize("group", list(RateLimitGroup))
 class TestAgentSignUpZone:
-    """Each sign-up creates an OAuth client and an agent, so no caller may reach
-    the catch-all "api" zone."""
+    """Each sign-up creates an OAuth client and an agent, so the cap holds per IP,
+    whatever credentials the caller sends."""
 
+    @pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
     def test_resolves_to_agent_sign_up_zone(
-        self, rules: dict[str, Sequence[Rule]], path: str, group: RateLimitGroup
+        self, rules: dict[str, Sequence[Rule]], path: str
     ) -> None:
-        rule = _select_rule(rules, path, group, method="POST")
+        rule = _select_rule(rules, path, RateLimitGroup.default, method="POST")
 
         assert rule is not None
         assert rule.zone == "agent-sign-up"
+
+    @pytest.mark.anyio
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="anonymous"),
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_keyed_by_ip(
+        self, auth_subject: AuthSubject[Subject], path: str
+    ) -> None:
+        identity = await _authenticate(
+            {
+                "type": "http",
+                "headers": [(b"authorization", b"Bearer random-token")],
+                "client": ("8.8.8.8", 1234),
+                "path": path,
+                "state": {"auth_subject": auth_subject},
+            }
+        )
+
+        assert identity == ("8.8.8.8", RateLimitGroup.default)

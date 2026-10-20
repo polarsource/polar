@@ -49,9 +49,16 @@ def create_identity_assertion(agent_id: UUID) -> IdentityAssertion:
 def decode_identity_assertion(token: str) -> IdentityAssertionClaims:
     """Raises `polar.kit.jwt.InvalidTokenError` if the assertion isn't valid."""
     claims = jwt.decode_sync(
-        token=token, type=IDENTITY_ASSERTION_TYPE, audience=ISSUER, issuer=ISSUER
+        token=token,
+        type=IDENTITY_ASSERTION_TYPE,
+        audience=ISSUER,
+        issuer=ISSUER,
+        require=["exp", "iat", "sub"],
     )
+    try:
+        agent_id = UUID(claims["sub"])
+    except ValueError as e:
+        raise jwt.InvalidTokenError("Invalid 'sub' claim") from e
     return IdentityAssertionClaims(
-        agent_id=UUID(claims["sub"]),
-        issued_at=datetime.fromtimestamp(claims["iat"], UTC),
+        agent_id=agent_id, issued_at=datetime.fromtimestamp(claims["iat"], UTC)
     )

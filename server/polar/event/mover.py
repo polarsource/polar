@@ -28,14 +28,13 @@ log: Logger = structlog.get_logger()
 
 BATCH_SIZE = 1000
 IDLE_SLEEP_SECONDS = 0.2
+ERROR_SLEEP_SECONDS = 5
 HEARTBEAT_STALENESS_SECONDS = 60
 
-_last_heartbeat: float = 0.0
+_last_heartbeat: float = time.monotonic()
 
 
 def _is_mover_healthy() -> bool:
-    if _last_heartbeat == 0.0:
-        return True
     return (time.monotonic() - _last_heartbeat) < HEARTBEAT_STALENESS_SECONDS
 
 
@@ -46,7 +45,6 @@ async def run() -> None:
     redis = create_redis("worker")
     broker = dramatiq.get_broker()
     while True:
-        moved = 0
         began = time.monotonic()
         try:
             async with JobQueueManager.open(broker, redis):
@@ -56,6 +54,8 @@ async def run() -> None:
             _last_heartbeat = time.monotonic()
         except Exception:
             log.exception("Failed to move staged events")
+            await asyncio.sleep(ERROR_SLEEP_SECONDS)
+            continue
         if moved:
             logfire.info(
                 "Moved staged events",

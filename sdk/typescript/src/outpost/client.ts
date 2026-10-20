@@ -69,10 +69,7 @@ type Message =
   | { type: "connection"; payload: { id: string } }
   | { type: "configuration"; payload: { reducers: Reducer[] } }
   | { type: "meter_usage"; payload: Snapshot };
-interface StateUpdate {
-  customer: string;
-  state: string[];
-}
+type StateUpdate = { customer: string } & ({ state: string[] } | { bucket: string[] });
 interface LocalState {
   state?: State;
   pending: Promise<unknown>;
@@ -504,9 +501,11 @@ export class Outpost {
           firstError ??= error;
           continue;
         }
+        // Empty when the bucket is older than the last snapshot: nothing changed.
+        if (!(state as string[]).length) continue;
         const update = updates[index];
         const identity = `${update.customer}:${update.reducer}`;
-        await this.receiveState(identity, decodeState(state as string[]));
+        await this.receiveState(identity, decodeState(state as string[]), true);
       }
       if (firstError) throw redisUnavailable(firstError);
     } catch (error) {
@@ -752,14 +751,21 @@ export class Outpost {
     );
   }
 
-  private async receiveState(customer: string, state: State): Promise<boolean> {
+  // A bucket update carries one bucket: it applies only on top of the revision just before it.
+  private async receiveState(customer: string, state: State, bucket = false): Promise<boolean> {
     const local = this.cache.get(customer);
     if (!local) return false;
     return locked(local, async () => {
       const current = local.state;
       if (!current) return false;
-      if (current.epoch !== state.epoch) state = await this.loadState(customer);
-      else if (current.revision >= state.revision) return false;
+      if (current.epoch === state.epoch && current.revision >= state.revision) return false;
+      if (current.epoch !== state.epoch || (bucket && state.revision !== current.revision + 1n))
+        state = await this.loadState(customer);
+      else if (bucket) {
+        for (const [start, statistics] of state.buckets) current.buckets.set(start, statistics);
+        current.revision = state.revision;
+        state = current;
+      }
       local.state = state;
       notify(local);
       return true;
@@ -768,7 +774,10 @@ export class Outpost {
 
   private async receiveRedis(data: string): Promise<void> {
     const update: StateUpdate = JSON.parse(data);
-    const applied = await this.receiveState(update.customer, decodeState(update.state));
+    const applied =
+      "bucket" in update
+        ? await this.receiveState(update.customer, decodeState(update.bucket), true)
+        : await this.receiveState(update.customer, decodeState(update.state));
     this.syncReceived += 1;
     if (applied) this.syncApplied += 1;
   }

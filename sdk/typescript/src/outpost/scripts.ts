@@ -8,7 +8,7 @@ return redis.call('HGETALL', KEYS[1])
 export const WRITE_BUCKET_SCRIPT = `
 local cutoff = redis.call('HGET', KEYS[1], 'cold_until')
 if cutoff and tonumber(ARGV[4]) < tonumber(cutoff) then
-    return redis.call('HGETALL', KEYS[1])
+    return {}
 end
 local prefix = 'bucket:' .. ARGV[4] .. ':'
 local total = tonumber(redis.call('HGET', KEYS[1], prefix .. 'sum') or '0') + tonumber(ARGV[6])
@@ -33,9 +33,17 @@ if not redis.call('HGET', KEYS[1], 'epoch') then
     redis.call('HSET', KEYS[1], 'epoch', ARGV[3], 'revision', '0')
 end
 redis.call('HINCRBY', KEYS[1], 'revision', 1)
-local state = redis.call('HGETALL', KEYS[1])
-redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], state = state}))
-return state
+local fields = {'epoch', 'revision', prefix .. 'count', prefix .. 'sum', prefix .. 'min', prefix .. 'max'}
+local values = redis.call('HMGET', KEYS[1], unpack(fields))
+local bucket = {}
+for i, field in ipairs(fields) do
+    if values[i] then
+        table.insert(bucket, field)
+        table.insert(bucket, values[i])
+    end
+end
+redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], bucket = bucket}))
+return bucket
 `;
 
 export const APPLY_SNAPSHOT_SCRIPT = `

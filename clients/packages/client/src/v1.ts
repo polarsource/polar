@@ -16833,6 +16833,12 @@ export interface components {
         [key: string]: string | number | boolean
       }
       /**
+       * Deprecated
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it.
+       * @default false
+       */
+      deprecated: boolean
+      /**
        * External Id
        * @description Your identifier for the product, used to match it.
        */

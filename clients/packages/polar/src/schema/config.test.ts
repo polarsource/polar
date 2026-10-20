@@ -614,6 +614,24 @@ test('deprecated benefits can use a deprecated meter', () => {
   ).not.toThrow()
 })
 
+test('deprecated products can use deprecated meters and benefits', () => {
+  const config = defineConfig({
+    meters: ({ meter }) => ({ apples: meter().deprecated().count() }),
+    benefits: ({ flag }) => ({ beta: flag('Beta').deprecated() }),
+    products: ({ product, meter, free }) => ({
+      legacy: product()
+        .prices(meter('apples').flat().amount(usd(0.01)))
+        .recurring('monthly')
+        .grants(['beta'])
+        .deprecated(),
+      pro: product().prices(free()).recurring('monthly'),
+    }),
+  })
+  const [legacy, pro] = config.toJSON().products ?? []
+  expect(legacy).toMatchObject({ external_id: 'legacy', deprecated: true })
+  expect(pro).not.toHaveProperty('deprecated')
+})
+
 test('active products cannot grant a deprecated benefit', () => {
   expect(() =>
     defineConfig({

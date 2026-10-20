@@ -266,6 +266,10 @@ def invalid_references(config: Config) -> list[ConfigIssue]:
                 )
             )
     for index, product in enumerate(config.products):
+        product_deprecated_meters = set() if product.deprecated else deprecated_meters
+        product_deprecated_benefits = (
+            set() if product.deprecated else deprecated_benefits
+        )
         for price_index, price in enumerate(product.prices):
             if isinstance(
                 price, (ConfigProductPriceMeteredUnit, ConfigProductPriceMeteredTiers)
@@ -274,7 +278,7 @@ def invalid_references(config: Config) -> list[ConfigIssue]:
                     _reference_issues(
                         ConfigResource.meter,
                         meters,
-                        deprecated_meters,
+                        product_deprecated_meters,
                         price.meter,
                         _loc(
                             ConfigResource.product,
@@ -303,7 +307,7 @@ def invalid_references(config: Config) -> list[ConfigIssue]:
                     _reference_issues(
                         ConfigResource.benefit,
                         benefits,
-                        deprecated_benefits,
+                        product_deprecated_benefits,
                         benefit_external_id,
                         loc,
                     )
@@ -567,7 +571,7 @@ def _create_update_dict(
     update_dict: dict[str, Any] = {}
     for field in type(config).model_fields:
         value = getattr(config, field)
-        if field == "external_id" or value in (None, [], {}):
+        if field in ("external_id", "deprecated") or value in (None, [], {}):
             continue
         update_dict["user_metadata" if field == "metadata" else field] = value
     return update_dict

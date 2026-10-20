@@ -366,15 +366,23 @@ export const defineConfig = <
         const meterReferences = definition.priceList.flatMap((price) =>
           price.kind === 'metered' ? [price.meter] : [],
         )
+        const deprecated = definition[deprecatedKey]
         assertKnown(owner, 'meter', meterIds, meterReferences)
-        assertNotDeprecated(owner, 'meter', deprecatedMeterIds, meterReferences)
         assertKnown(owner, 'benefit', benefitIds, definition.benefits)
-        assertNotDeprecated(
-          owner,
-          'benefit',
-          deprecatedBenefitIds,
-          definition.benefits,
-        )
+        if (!deprecated) {
+          assertNotDeprecated(
+            owner,
+            'meter',
+            deprecatedMeterIds,
+            meterReferences,
+          )
+          assertNotDeprecated(
+            owner,
+            'benefit',
+            deprecatedBenefitIds,
+            definition.benefits,
+          )
+        }
         return {
           external_id,
           name: name ?? external_id,
@@ -395,6 +403,7 @@ export const defineConfig = <
           ...(definition[visibilityKey] === 'private' && {
             visibility: definition[visibilityKey],
           }),
+          ...(deprecated && { deprecated: true as const }),
         }
       }),
     }),

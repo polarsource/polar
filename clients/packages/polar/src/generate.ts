@@ -395,6 +395,7 @@ const renderProduct =
         ? []
         : [`.description(${literal(product.description)})`]),
       ...renderVisibility(product.visibility),
+      ...renderDeprecated(product.deprecated),
     ].join('\n')
   }
 

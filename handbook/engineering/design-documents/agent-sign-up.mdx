@@ -9,7 +9,7 @@ description: "Let AI agents get Polar API access on their own, and let a human t
 
 **Created**: October 2026
 
-**Last Updated**: Oct 19, 2026
+**Last Updated**: Oct 20, 2026
 
 **Author**: Abris Simon
 </Info>
@@ -85,15 +85,17 @@ The decision and its rules are in [ADR-0014](/engineering/decisions/0014-agent-a
   user metrics only ever see people.
 - **Its own auth subject**, `Agent`. An unclaimed agent can only reach endpoints whose
   `Authenticator` lists `Agent`; see [Before the claim](#decisions) for which ones.
-- **One org per agent**, through an agent–organization link rather than a membership. The org-access helpers
+- **One org per agent**, through an `organization_id` on its row rather than a membership. The org-access helpers
   (`get_accessible_org_ids`, `get_accessible_organization`, `get_payload_organization`, the authz
   policies) resolve the agent to that org, so single-org event ingest and config apply work without an
   `organization_id`. An agent that wants a second org signs up again; parallel sessions are separate agents.
 - **A fixed role in its org**: org settings and catalog resources, never members or finance.
 - **No human owner until the claim.** Code that looks up an org's owner must handle that.
-- **Lifecycle**: created at sign-up; at the claim the human becomes the org's owner and the agent's
-  pre-claim credentials are revoked; if nobody claims it within 7 days, it is deleted with its org and OAuth
-  client. The row stays after the claim as the record of which agent built the org.
+- **Lifecycle**: created at sign-up. At the claim the human becomes the org's owner, the agent's
+  pre-claim credentials are revoked and the row is marked claimed (by whom and when). The row is kept, with
+  its `organization_id`: the token endpoint checks it on every exchange, for revocation and to reject
+  identity assertions issued before the claim. Unclaimed agents and their orgs are kept too; we can add
+  cleanup jobs later if we need them.
 
 ### Key pieces
 
@@ -159,13 +161,13 @@ In both grants, the client is taken from the agent the credential belongs to, no
 | Topic | Decision |
 |---|---|
 | Who the agent is | Before the claim, its own `Agent` subject ([ADR-0014](/engineering/decisions/0014-agent-auth-subject)). After the claim, it acts on behalf of the claiming user by design, like any OAuth app. Its OAuth client carries an "agent" marker so we can attribute actions and list or revoke agents. |
-| What a claim is | In one atomic step, the human becomes the owner of the agent's org and the agent's pre-claim credentials are revoked, so an org is either fully claimed or still unclaimed. Nothing moves between users. No identity-verification check at claim time, because claimed or not, the org still has to pass the normal verification before it can be paid out. |
-| Before the claim | Catalog setup only: organizations, products, meters, benefits, discounts, events and config. Checkout sessions and checkout links in sandbox only, to test a checkout with test cards. Never orders, subscriptions, refunds, customers, payouts, review submission, members, webhooks (including config's webhook section) or organization access tokens. In production the org can't go live before the claim; in sandbox it can. Enforced by the endpoint allowlist, pinned by a test, with narrower scopes as a second layer. |
+| What a claim is | In one atomic step, the human becomes the owner of the agent's org and the agent's pre-claim credentials are revoked, so an org is either fully claimed or still unclaimed. The agent's row is marked claimed and kept, and the org and its data stay as they are. Nothing moves between users. No identity-verification check at claim time, because claimed or not, the org still has to pass the normal verification before it can be paid out. |
+| Before the claim | Catalog setup only: organizations, products, meters, benefits, discounts, events and config. Checkout sessions and checkout links too, in sandbox and production alike, so the agent can test a checkout: a checkout only takes payment once the org is approved, which can't happen before the claim in production. Never orders, subscriptions, refunds, customers, payouts, review submission, members, webhooks (including config's webhook section) or organization access tokens. In production the org can't go live before the claim; in sandbox it can. Enforced by the endpoint allowlist, pinned by a test, with narrower scopes as a second layer. |
 | Orgs per agent | One. A second org means a new sign-up. |
 | After the claim | Anything the user can do. |
 | Org creation by an unclaimed agent | Polar's own billing customer and the Plain support records are created at the claim, not before. Nothing else changes. |
 | Rollout | Both sign-up types ship together, starting in sandbox behind a feature flag, and go to production once sandbox abuse data looks fine. |
-| Claim window | 7 days. After that we delete the unclaimed org, the agent and its OAuth client. |
+| Unclaimed orgs | Kept, with no automatic cleanup for now. We can add cleanup jobs later if we need them. |
 | Identity assertion | Lives 30 days and can be reused until it expires, as the auth.md spec expects. The claim issues a fresh one, which only yields the claiming user's tokens, and invalidates older ones. Revoking the agent stops it immediately. After 30 days the agent signs up again and the human re-approves it. |
 
 ## Options
@@ -203,7 +205,7 @@ every user endpoint opting in and agent membership in the dashboard. Possible la
   it can be revoked.
 - **Data we store**: an `agents` row (type, status, agent name, email hint, scopes, claim timestamps,
   links to its OAuth client, its org and the user who claimed it). Claim tokens and codes are stored hashed.
-  Unclaimed agents and everything they created are deleted after 7 days.
+  Unclaimed agents and everything they created are kept for now, with no automatic cleanup.
 - **Risks**:
   - *Old credentials still work after the claim.* Revoke pre-claim tokens and reject identity assertions
     issued before the claim.
@@ -221,6 +223,6 @@ every user endpoint opting in and agent membership in the dashboard. Possible la
     sign-in on the claim page.
   - *Abuse of open anonymous sign-up* (spam orgs, slug squatting). Every sign-up creates a new OAuth
     client, so per-client rate limits don't help: limit per agent and limit sign-ups per IP. Plus one org per
-    agent, the 7-day cleanup, and a feature flag to switch it off.
+    agent, a feature flag to switch it off, and cleanup jobs later if spam orgs pile up.
 
 These risks go into the risk register before this document is merged.

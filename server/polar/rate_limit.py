@@ -303,6 +303,13 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
             zone="compass-assistant",
         ),
     ],
+    # Each agent sign-up creates an OAuth client and an agent, so it's capped per
+    # caller: per IP, as callers are anonymous. All groups listed — an unmatched
+    # one falls through to `api`.
+    "^/v1/agent/identity/?$": [
+        Rule(group=group, minute=5, hour=20, block_time=3600, zone="agent-sign-up")
+        for group in RateLimitGroup
+    ],
     # SDK telemetry exports share the token with event ingestion; their own zone
     # keeps a chatty exporter from spending the `api` budget of the events.
     # Restricted and unvalidated tokens keep their tighter `^/v1` limits.

@@ -48895,13 +48895,15 @@ export interface operations {
           'application/json': components['schemas']['Product']
         }
       }
-      /** @description The organization uses catalog versioning. */
+      /** @description You don't have the permission to create this product, or the organization uses catalog versioning. */
       403: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ProductVersioned']
+          'application/json':
+            | components['schemas']['NotPermitted']
+            | components['schemas']['ProductVersioned']
         }
       }
       /** @description Validation Error */

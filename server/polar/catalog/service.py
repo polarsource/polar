@@ -254,7 +254,16 @@ class CatalogService:
         target = await CatalogProductRepository.from_session(session).get_product(
             migration.catalog_id, migration.target_external_id
         )
-        assert target is not None
+        # The target was deleted after the migration started: nothing can move
+        # anymore, so end the migration instead of failing every retry.
+        if target is None:
+            log.warning(
+                "Catalog migration target no longer exists",
+                migration_id=migration.id,
+                target_external_id=migration.target_external_id,
+            )
+            await repository.update(migration, update_dict={"completed_at": utc_now()})
+            return False
 
         subscription_repository = SubscriptionRepository.from_session(session)
         statement = (

@@ -234,8 +234,11 @@ async def create(
     responses={
         201: {"description": "Product created."},
         403: {
-            "description": "The organization uses catalog versioning.",
-            "model": ProductVersioned.schema(),
+            "description": (
+                "You don't have the permission to create this product, "
+                "or the organization uses catalog versioning."
+            ),
+            "model": NotPermitted.schema() | ProductVersioned.schema(),
         },
     },
 )

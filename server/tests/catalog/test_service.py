@@ -6,6 +6,7 @@ from pytest_mock import MockerFixture
 from polar.catalog.repository import CatalogProductRepository, CatalogRepository
 from polar.catalog.service import catalog as catalog_service
 from polar.enums import SubscriptionRecurringInterval
+from polar.kit.utils import utc_now
 from polar.models import CatalogMigration, Customer, Organization, Product
 from polar.postgres import AsyncSession
 from polar.subscription.repository import SubscriptionRepository
@@ -184,3 +185,34 @@ class TestMigrateSubscriptions:
         assert updated is not None
         assert updated.pending_update is not None
         assert updated.pending_update.product_id == third_pro.id
+
+    async def test_completes_when_target_is_deleted(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        publish_pro: PublishPro,
+        old_pro: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=old_pro, customer=customer
+        )
+        migration = await publish_pro("usd")
+        target = await CatalogProductRepository.from_session(session).get_product(
+            migration.catalog_id, "pro"
+        )
+        assert target is not None
+        target.deleted_at = utc_now()
+        await save_fixture(target)
+
+        has_more = await catalog_service.migrate_subscriptions(session, migration.id)
+
+        assert has_more is False
+        assert migration.completed_at is not None
+        assert migration.subscriptions_count == 0
+        repository = SubscriptionRepository.from_session(session)
+        updated = await repository.get_by_id(
+            subscription.id, options=repository.get_eager_options()
+        )
+        assert updated is not None
+        assert updated.pending_update is None

@@ -182,6 +182,19 @@ class PolarAsync:
         outpost: IngestionOutpostOptions | typing.Literal[False] | None = None,
         strategies: list[IngestionStrategyProtocol] | None = None,
     ) -> Ingestion:
+        """Create a helper for buffered event delivery and customer meter reads.
+
+        Args:
+            buffered: Batch and retry options; defaults to 100 events, a 1-second
+                collection interval, a 5-second shutdown timeout, and 3 attempts.
+            outpost: Outpost options, enabled automatically when REDIS_URL is set.
+                Pass False to disable; explicit options require a Redis URL.
+            strategies: Replace all defaults with custom strategies. Cannot be
+                combined with buffered or outpost.
+
+        Returns:
+            An unstarted helper to use with async with.
+        """
         return Ingestion.create(
             self, buffered=buffered, outpost=outpost, strategies=strategies
         )

@@ -23,6 +23,17 @@ DropReason = typing.Literal["retry_exhausted", "shutdown_timeout", "permanent_er
 
 
 class BufferedIngestionOptions(typing.TypedDict, total=False):
+    """Configure in-memory batching and delivery to Polar.
+
+    Attributes:
+        batch_size: Maximum events per request. Defaults to 100.
+        batch_interval: Seconds to collect a batch after its first event. Defaults to 1.
+        shutdown_timeout: Seconds allowed to drain on exit. Defaults to 5.
+        max_attempts: Total delivery attempts per batch, including the first. Defaults to 3.
+        on_dropped: Async callback for undelivered events and their DropReason.
+            Defaults to None; drops are always logged.
+    """
+
     batch_size: int
     batch_interval: float
     shutdown_timeout: float
@@ -39,6 +50,8 @@ class _FlushRequest:
 
 
 class BufferedIngestionStrategy:
+    """Batch events in memory and deliver them through Polar's HTTP API."""
+
     def __init__(
         self,
         polar: IngestionClient,
@@ -51,6 +64,19 @@ class BufferedIngestionStrategy:
         ]
         | None = None,
     ) -> None:
+        """Configure event delivery and retries.
+
+        Args:
+            polar: Client exposing the events.ingest API.
+            batch_size: Maximum events per request. Defaults to 100.
+            batch_interval: Batch collection interval in seconds. Defaults to 1.
+            shutdown_timeout: Drain deadline in seconds. Defaults to 5.
+            max_attempts: Total attempts per batch. Defaults to 3.
+            on_dropped: Awaited callback for dropped events and the drop reason.
+
+        Raises:
+            ValueError: batch_size is not positive.
+        """
         if batch_size <= 0:
             raise ValueError("batch_size must be greater than zero")
         self.polar = polar
@@ -90,6 +116,11 @@ class BufferedIngestionStrategy:
         self,
         event: EventInput,
     ) -> None:
+        """Queue an event without waiting for HTTP delivery.
+
+        Args:
+            event: Event including its customer identity.
+        """
         await self._send_queue.send(event)
 
     async def flush(self) -> None:

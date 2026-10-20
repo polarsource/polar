@@ -45,6 +45,17 @@ export function createPolar(options: PolarOptions) {
 
   return {
     ...services,
+    /**
+     * Create a helper for buffered event delivery and customer meter reads.
+     *
+     * @param options.buffered Batch and retry options; defaults to 100 events, a 1000-ms
+     * collection interval, a 5000-ms shutdown timeout, and 3 attempts.
+     * @param options.outpost Outpost options, enabled automatically when REDIS_URL is set.
+     * Pass false to disable; explicit options require a Redis URL.
+     * @param options.strategies Replace all defaults with custom strategies. Cannot be
+     * combined with buffered or outpost.
+     * @returns An ingestion helper to start before use.
+     */
     ingestion: (options?: IngestionOptions) => createIngestion(services, client, options),
   };
 }

@@ -453,7 +453,10 @@ it.each([false, true])(
       external_member_id: "member",
     });
     expect(await actor.meter("meter")).toEqual(missing ? null : value);
-    expect(await ingestion.meter({ customer_id: "customer", meter_id: "meter" })).toEqual(
+    expect(await ingestion.meter("meter", { customer_id: "customer" })).toEqual(
+      missing ? null : value,
+    );
+    expect(await ingestion.meter("meter", { external_customer_id: "external" })).toEqual(
       missing ? null : value,
     );
     const [rawUrl, request] = fetch.mock.calls[0];
@@ -463,6 +466,14 @@ it.each([false, true])(
     expect(url.searchParams.get("external_customer_id")).toBe("external");
     expect(url.searchParams.get("meter_id")).toBe("meter");
     expect(url.searchParams.has("external_member_id")).toBe(false);
+    for (const [index, key, identity] of [
+      [1, "customer_id", "customer"],
+      [2, "external_customer_id", "external"],
+    ] as const) {
+      const directUrl = new URL(String(fetch.mock.calls[index]![0]));
+      expect(directUrl.searchParams.get("meter_id")).toBe("meter");
+      expect(directUrl.searchParams.get(key)).toBe(identity);
+    }
     const headers = new Headers(request!.headers);
     expect(headers.get("Authorization")).toBe("Bearer token");
     expect(headers.get("Polar-Organization")).toBe("org");
@@ -498,7 +509,7 @@ it.each<CustomerMeter | null | Error>([
 it("propagates meter API errors", async () => {
   vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("Forbidden", { status: 403 }));
   await using ingestion = await createPolar({ accessToken: "token" }).ingestion().start();
-  await expect(ingestion.meter({ customer_id: "customer", meter_id: "meter" })).rejects.toThrow(
+  await expect(ingestion.meter("meter", { customer_id: "customer" })).rejects.toThrow(
     "403",
   );
 });
@@ -518,10 +529,10 @@ it("waits for active meter reads before closing", async () => {
     }),
   };
   const ingestion = await new Ingestion({ client, strategies: [strategy] }).start();
-  const read = ingestion.meter({ customer_id: "customer", meter_id: "meter" });
+  const read = ingestion.meter("meter", { customer_id: "customer" });
   const closing = ingestion.close();
   expect(strategy.close).not.toHaveBeenCalled();
-  await expect(ingestion.meter({ customer_id: "customer", meter_id: "meter" })).rejects.toThrow(
+  await expect(ingestion.meter("meter", { customer_id: "customer" })).rejects.toThrow(
     "not running",
   );
   release();

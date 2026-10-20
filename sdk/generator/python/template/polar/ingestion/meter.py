@@ -4,6 +4,17 @@ import typing
 
 @dataclasses.dataclass(kw_only=True)
 class CustomerMeter:
+    """Customer-wide usage and credits for a meter.
+
+    Attributes:
+        meter_id: Polar meter ID.
+        consumed_units: Aggregated usage.
+        credited_units: Units credited to the customer.
+        balance: Credited units minus consumed units; may be negative.
+        customer_id: Polar customer ID, when queried with it.
+        external_customer_id: Application customer ID, when queried with it.
+    """
+
     meter_id: str
     consumed_units: int | float
     credited_units: int | float

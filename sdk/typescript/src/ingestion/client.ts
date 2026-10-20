@@ -14,9 +14,14 @@ import {
   type IngestionClient,
 } from "./buffered";
 
+/** Base error for ingestion configuration and operations. */
 export class IngestionError extends PolarError {}
+/**
+ * Raised when customer or member identifiers are inconsistent.
+ */
 export class InvalidActorError extends IngestionError {}
 
+/** Exactly one customer identity, with an optional member of the same identifier kind. */
 export type ActorInput =
   | (Pick<EventCustomerInput, "customer_id" | "member_id"> & {
       external_customer_id?: never;
@@ -27,24 +32,65 @@ export type ActorInput =
       member_id?: never;
     });
 
+/**
+ * Customer-bound helper returned by Ingestion.actor().
+ *
+ * Member identifiers apply to events; meter reads remain customer-wide.
+ * The helper shares its parent's lifecycle and owns no resources.
+ */
 export interface ActorIngestion {
+  /**
+   * Ingest an event with this actor's identifiers attached.
+   *
+   * @param event Event name and optional metadata, timestamp, or external ID.
+   */
   ingest(event: ContextualEventInput): Promise<void>;
+  /**
+   * Read this customer's meter using the parent's read strategy.
+   *
+   * @param meterId Polar meter ID.
+   * @returns Consumption, credits, and balance, or null if no meter is found.
+   */
   meter(meterId: string): Promise<CustomerMeter | null>;
 }
 
+/**
+ * Strategy contract: manage resources with start() and close().
+ *
+ * Strategies receive events in order. Implement actor(), meter(), or flush()
+ * to opt into warmup, meter reads, or explicit draining respectively.
+ */
 export interface IngestionStrategy {
+  /** Start strategy resources. */
   start(): Promise<IngestionStrategy | void>;
+  /**
+   * Warm customer state using exactly one customer identifier.
+   *
+   * @param input Polar customer ID or customer ID in your application.
+   */
   actor?(input: ActorInput): Promise<void>;
-  meter?(input: MeterInput): Promise<CustomerMeter | null>;
+  meter?(input: MeterInput & { meter_id: string }): Promise<CustomerMeter | null>;
+  /**
+   * Accept an event for this strategy.
+   *
+   * @param event Event including its customer identity.
+   */
   ingest(event: EventInput): Promise<void>;
+  /** Wait until earlier events are delivered or reported as dropped. */
   flush?(): Promise<void>;
+  /** Drain pending work and release resources. */
   close(): Promise<void>;
 }
 
+/**
+ * Configure the optional Outpost strategy.
+ */
 export type IngestionOutpostOptions = Omit<OutpostOptions, "client"> & {
+  /** Redis connection URL. Defaults to the REDIS_URL environment variable. */
   redisUrl?: string;
 };
 
+/** Configure the built-in strategies, or replace them with an explicit strategies list. */
 export type IngestionOptions =
   | {
       buffered?: BufferedIngestionOptions;
@@ -57,6 +103,13 @@ export type IngestionOptions =
       outpost?: never;
     };
 
+/**
+ * Dispatch events, actor warmup, and meter reads to ingestion strategies.
+ *
+ * Create with polar.ingestion(), then await start() before use and close() on
+ * shutdown. By default, events are buffered for HTTP delivery, with Outpost added
+ * when a Redis URL is configured. Accepting an event does not confirm delivery.
+ */
 export class Ingestion {
   readonly strategies: readonly IngestionStrategy[];
   private stack?: AsyncDisposableStack;
@@ -66,6 +119,12 @@ export class Ingestion {
   private onDrained?: () => void;
   private readonly client: ClientBase;
 
+  /**
+   * Create a helper with explicit strategies.
+   *
+   * @param options.strategies Strategies to start and invoke in order.
+   * @param options.client Authenticated HTTP client.
+   */
   constructor({
     strategies,
     client,
@@ -97,6 +156,13 @@ export class Ingestion {
     }
   }
 
+  /**
+   * Ingest an event. It'll be dispatched to all configured strategies.
+   *
+   * @param event Event fields with exactly one customer_id or external_customer_id.
+   * Member IDs must match the identifier kind.
+   * @throws InvalidActorError if customer or member identifiers are inconsistent.
+   */
   async ingest(event: EventInput): Promise<void> {
     if (!this.started) throw new PolarError("Ingestion is not running");
     validateActor(event);
@@ -108,6 +174,15 @@ export class Ingestion {
     }
   }
 
+  /**
+   * Create customer-bound helper.
+   *
+   * For strategies that support it, it warms up their state in memory.
+   *
+   * @param input Customer identity and optional matching member identity.
+   * @returns A helper that attaches this identity to events and reads customer meters.
+   * @throws InvalidActorError if customer or member identifiers are inconsistent.
+   */
   async actor(input: ActorInput): Promise<ActorIngestion> {
     if (!this.started) throw new IngestionError("Ingestion is not running");
     validateActor(input);
@@ -123,27 +198,38 @@ export class Ingestion {
       for (const strategy of this.strategies) await strategy.actor?.(identity);
       return {
         ingest: (event) => this.ingest({ ...event, ...identity }),
-        meter: (meterId) => this.meter({ ...identity, meter_id: meterId }),
+        meter: (meterId) => this.meter(meterId, identity),
       };
     } finally {
       if (--this.activeOperations === 0) this.onDrained?.();
     }
   }
 
-  async meter(input: MeterInput): Promise<CustomerMeter | null> {
+  /**
+   * Read a meter value.
+   *
+   * If enabled, the local value from Outpost will be read. Otherwise, it'll
+   * fall back to the Polar API.
+   *
+   * @param meterId Polar meter ID.
+   * @param input Exactly one customer identifier.
+   * @returns Consumption, credits, and balance, or null if no meter is found.
+   * @throws InvalidActorError if exactly one customer identifier was not provided.
+   */
+  async meter(meterId: string, input: MeterInput): Promise<CustomerMeter | null> {
     if (!this.started) throw new IngestionError("Ingestion is not running");
     validateActor(input);
     this.activeOperations++;
     try {
       for (const strategy of this.strategies) {
-        if (strategy.meter) return await strategy.meter(input);
+        if (strategy.meter) return await strategy.meter({ ...input, meter_id: meterId });
       }
       const request = this.client.buildRequest(
         "GET",
         "/v1/customer-meters/",
         {},
         {
-          meter_id: input.meter_id,
+          meter_id: meterId,
           customer_id: input.customer_id,
           external_customer_id: input.external_customer_id,
           limit: 1,
@@ -157,6 +243,17 @@ export class Ingestion {
     }
   }
 
+  /**
+   * Flush every capable strategy without closing the helper.
+   *
+   * Call this explicitly in serverless environments before returning the
+   * response so pending events are processed while the request is active.
+   * Earlier buffered events are delivered or reported to onDropped before
+   * returning. Later events are outside this flush. A successful flush does
+   * not guarantee delivery or immediate visibility in Polar's meter reads.
+   *
+   * @throws AggregateError if one or more strategy flushes failed.
+   */
   async flush(): Promise<void> {
     if (!this.started) throw new IngestionError("Ingestion is not running");
     this.activeOperations++;
@@ -212,6 +309,19 @@ const validateActor = (input: {
   }
 };
 
+/**
+ * Create an unstarted helper, usually via polar.ingestion().
+ *
+ * @param polar Polar client used for event delivery.
+ * @param client Authenticated HTTP client used for meter reads.
+ * @param options.buffered Buffer options; omitted fields use BufferedIngestionOptions defaults.
+ * @param options.outpost Outpost options. Defaults to enabling Outpost when REDIS_URL
+ * is set. false disables it; explicit options require a Redis URL.
+ * @param options.strategies Replace all default strategies. Cannot be combined with
+ * buffered or outpost options.
+ * @returns A helper to start before use.
+ * @throws IngestionError if options conflict or Outpost has no Redis URL.
+ */
 export const createIngestion = (
   polar: IngestionClient,
   client: ClientBase,

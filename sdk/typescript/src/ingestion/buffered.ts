@@ -18,11 +18,30 @@ export interface IngestionClient {
   };
 }
 
+/**
+ * Configure in-memory batching and delivery to Polar.
+ */
 export interface BufferedIngestionOptions {
+  /**
+   * Maximum events per request. Defaults to 100.
+   */
   batchSize?: number;
+  /**
+   * Milliseconds to collect a batch after its first event. Defaults to 1000.
+   */
   batchIntervalMs?: number;
+  /**
+   * Milliseconds allowed to drain on exit. Defaults to 5000.
+   */
   shutdownTimeoutMs?: number;
+  /**
+   * Total delivery attempts per batch, including the first. Defaults to 3.
+   */
   maxAttempts?: number;
+  /**
+   * Callback for undelivered events and their DropReason; may be async.
+   * Defaults to undefined; drops are always logged.
+   */
   onDropped?: (events: EventInput[], reason: DropReason) => void | Promise<void>;
 }
 
@@ -35,6 +54,9 @@ class FlushRequest {
   });
 }
 
+/**
+ * Batch events in memory and deliver them through Polar's HTTP API.
+ */
 export class BufferedIngestionStrategy {
   private readonly options: Required<Omit<BufferedIngestionOptions, "onDropped">> &
     Pick<BufferedIngestionOptions, "onDropped">;
@@ -45,6 +67,13 @@ export class BufferedIngestionStrategy {
   private wake?: () => void;
   private failure?: Error;
 
+  /**
+   * Configure event delivery and retries.
+   *
+   * @param polar Client exposing the events.ingest API.
+   * @param options Batch size, timing in milliseconds, retries, and the drop callback.
+   * @throws RangeError if the batch size, max attempts, or intervals are invalid.
+   */
   constructor(
     private readonly polar: IngestionClient,
     options: BufferedIngestionOptions = {},
@@ -74,10 +103,16 @@ export class BufferedIngestionStrategy {
     return this;
   }
 
+  /**
+   * Queue an event without waiting for HTTP delivery.
+   *
+   * @param event Event including its customer identity.
+   */
   async ingest(event: EventInput): Promise<void> {
     this.enqueue(event);
   }
 
+  /** Wait until earlier events are delivered or reported as dropped. */
   async flush(): Promise<void> {
     const request = new FlushRequest();
     this.enqueue(request);

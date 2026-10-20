@@ -5,7 +5,6 @@ import anyio.lowlevel
 import pytest
 
 from polar import PolarClientError, PolarError, PolarNetworkError, PolarRateLimitError
-from polar.ingestion import FlushProtocol, IngestionClient
 from polar.ingestion.buffered import BufferedIngestionStrategy, DropReason
 from polar.ingestion.events import EventInput
 
@@ -27,7 +26,6 @@ async def test_flush_drains_batches_and_keeps_accepting_events(
     client: AsyncMock, events: list[EventInput]
 ) -> None:
     strategy = BufferedIngestionStrategy(client, batch_size=2, batch_interval=60)
-    assert isinstance(strategy, FlushProtocol)
     with pytest.raises(PolarError, match="has not started"):
         await strategy.flush()
     with anyio.fail_after(1):
@@ -322,7 +320,7 @@ async def test_structural_ingestion_client(events: list[EventInput]) -> None:
     class Client:
         events = Events()
 
-    client: IngestionClient = Client()
+    client = Client()
     async with BufferedIngestionStrategy(client, batch_interval=60) as strategy:
         await strategy.ingest(events[0])
     assert received == events[:1]

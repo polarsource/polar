@@ -5,8 +5,9 @@ import anyio.lowlevel
 import pytest
 
 from polar import PolarClientError, PolarError, PolarNetworkError, PolarRateLimitError
-from polar.ingestion import FlushProtocol, IngestionClient
+from polar.ingestion import FlushProtocol
 from polar.ingestion.buffered import BufferedIngestionStrategy, DropReason
+from polar.ingestion.client import IngestionClient
 from polar.ingestion.events import EventInput
 
 

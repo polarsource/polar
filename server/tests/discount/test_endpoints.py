@@ -285,7 +285,10 @@ class TestCreateDiscount:
 
         assert response.status_code == 422
 
-    @pytest.mark.auth
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="agent"),
+    )
     async def test_valid(
         self,
         client: AsyncClient,
@@ -305,24 +308,6 @@ class TestCreateDiscount:
         )
 
         assert response.status_code == 201
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent_valid(
-        self, client: AsyncClient, organization: Organization
-    ) -> None:
-        response = await client.post(
-            "/v1/discounts/",
-            json={
-                "name": "Discount",
-                "type": "percentage",
-                "code": "DISCOUNT",
-                "duration": "once",
-                "basis_points": 1000,
-            },
-        )
-
-        assert response.status_code == 201
-        assert response.json()["organization_id"] == str(organization.id)
 
     @pytest.mark.auth
     async def test_valid_max_redemptions_per_customer(

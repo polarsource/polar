@@ -365,7 +365,10 @@ class TestCreateProduct:
 
         assert response.status_code == 422
 
-    @pytest.mark.auth
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="agent"),
+    )
     @pytest.mark.parametrize(
         "payload",
         [
@@ -493,28 +496,6 @@ class TestCreateProduct:
         )
 
         assert response.status_code == 201
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent_valid(
-        self, client: AsyncClient, organization: Organization
-    ) -> None:
-        response = await client.post(
-            "/v1/products/",
-            json={
-                "name": "Product",
-                "recurring_interval": None,
-                "prices": [
-                    {
-                        "amount_type": "fixed",
-                        "price_amount": 1000,
-                        "price_currency": "usd",
-                    }
-                ],
-            },
-        )
-
-        assert response.status_code == 201
-        assert response.json()["organization_id"] == str(organization.id)
 
     @pytest.mark.auth
     async def test_legacy_free_price_accepted_as_fixed(

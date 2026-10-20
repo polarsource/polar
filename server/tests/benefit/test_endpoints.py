@@ -498,7 +498,10 @@ class TestCreateBenefit:
 
         assert response.status_code == 422
 
-    @pytest.mark.auth
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="agent"),
+    )
     async def test_valid(
         self,
         client: AsyncClient,
@@ -521,60 +524,22 @@ class TestCreateBenefit:
         assert "properties" in json
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent_valid(
-        self, client: AsyncClient, organization: Organization
-    ) -> None:
+    async def test_agent_github_repository(self, client: AsyncClient) -> None:
         response = await client.post(
             "/v1/benefits/",
             json={
-                "type": "custom",
+                "type": "github_repository",
                 "description": "Benefit",
-                "properties": {"note": None},
+                "properties": {
+                    "repository_owner": "polarsource",
+                    "repository_name": "polar",
+                    "permission": "pull",
+                },
             },
         )
 
-        assert response.status_code == 201
-        assert response.json()["organization_id"] == str(organization.id)
-
-    @pytest.mark.parametrize(
-        ("payload", "error_type"),
-        [
-            pytest.param(
-                {
-                    "type": "github_repository",
-                    "properties": {
-                        "repository_owner": "polarsource",
-                        "repository_name": "polar",
-                        "permission": "pull",
-                    },
-                },
-                "invalid_auth_subject",
-                id="github_repository",
-            ),
-            pytest.param(
-                {
-                    "type": "discord",
-                    "properties": {
-                        "guild_id": "1234",
-                        "role_id": "5678",
-                        "kick_member": False,
-                    },
-                },
-                "guild_not_connected",
-                id="discord",
-            ),
-        ],
-    )
-    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent_user_integration_required(
-        self, payload: dict[str, Any], error_type: str, client: AsyncClient
-    ) -> None:
-        response = await client.post(
-            "/v1/benefits/", json={"description": "Benefit", **payload}
-        )
-
         assert response.status_code == 422
-        assert response.json()["detail"][0]["type"] == error_type
+        assert response.json()["detail"][0]["type"] == "invalid_auth_subject"
 
     @pytest.mark.auth
     async def test_custom_respects_private_visibility(

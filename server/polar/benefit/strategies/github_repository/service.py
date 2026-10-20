@@ -272,15 +272,13 @@ class BenefitGitHubRepositoryService(
         properties: dict[str, Any],
     ) -> BenefitGitHubRepositoryProperties:
         if not is_user(auth_subject):
-            # TODO: Support organization tokens
             raise BenefitPropertiesValidationError(
                 [
                     {
                         "type": "invalid_auth_subject",
                         "msg": (
-                            "This benefit needs a user's linked GitHub account, "
-                            "so it can't be created with an organization token "
-                            "or by an unclaimed agent."
+                            "This benefit needs a user's linked GitHub account; "
+                            "create it with a user token."
                         ),
                         "loc": ("repository_owner",),
                         "input": properties["repository_owner"],

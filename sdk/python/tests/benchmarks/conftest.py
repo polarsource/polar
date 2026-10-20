@@ -1,12 +1,21 @@
 import asyncio
 import collections.abc
 import gc
+import json
 import os
 import subprocess
 import tempfile
 import time
+import typing
 
+import httpx
 import pytest
+from httpx_ws.transport import ASGIWebSocketTransport
+from redis import Redis
+
+from polar.outpost import telemetry
+from polar.outpost.client import Outpost
+from polar.outpost.reducer import Reducer
 
 
 # A collection landing inside a measured call costs more than the call; measure allocations, not
@@ -58,3 +67,65 @@ def redis_socket() -> collections.abc.Iterator[str]:
         finally:
             process.terminate()
             process.wait()
+
+
+# Polar's side of the WebSocket: the configuration, nothing else.
+def polar_server(reducers: list[Reducer]) -> typing.Any:
+    async def app(scope: typing.Any, receive: typing.Any, send: typing.Any) -> None:
+        await receive()
+        await send({"type": "websocket.accept"})
+        await send(
+            {
+                "type": "websocket.send",
+                "text": json.dumps({"type": "connection", "payload": {"id": "bench"}}),
+            }
+        )
+        while (message := await receive())["type"] != "websocket.disconnect":
+            if json.loads(message["text"])["type"] == "configuration":
+                payload = {"reducers": reducers}
+                await send(
+                    {
+                        "type": "websocket.send",
+                        "text": json.dumps(
+                            {"type": "configuration", "payload": payload}
+                        ),
+                    }
+                )
+
+    return app
+
+
+# One task holds the Outpost open, since a task group must close in the task that opened it;
+# the benchmarks drive it from their own tasks on the same loop.
+@pytest.fixture(scope="module")
+def outpost(
+    loop: asyncio.AbstractEventLoop,
+    redis: Redis,
+    redis_socket: str,
+    reducers: list[Reducer],
+) -> collections.abc.Iterator[Outpost]:
+    client = httpx.AsyncClient(
+        base_url="http://polar.test",
+        transport=ASGIWebSocketTransport(polar_server(reducers)),
+    )
+    outpost = Outpost(f"unix://{redis_socket}", client=client)
+    stop = asyncio.Event()
+    ready = loop.create_future()
+
+    async def hold() -> None:
+        async with client, outpost:
+            ready.set_result(None)
+            await stop.wait()
+
+    # Telemetry records as in production; only its export to Polar stays on the machine.
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr(telemetry._Relay, "_post", lambda self, body: True)
+        held = loop.create_task(hold())
+        loop.run_until_complete(
+            asyncio.wait({ready, held}, return_when=asyncio.FIRST_COMPLETED)
+        )
+        if held.done():
+            held.result()
+        yield outpost
+        stop.set()
+        loop.run_until_complete(held)

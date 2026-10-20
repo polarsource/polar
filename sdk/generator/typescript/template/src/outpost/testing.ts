@@ -4,6 +4,11 @@ import { access, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { vi } from "vitest";
+import { WebSocketServer } from "ws";
+
+import type { Reducer } from "./reducer";
+
+import { ClientBase } from "../base";
 
 export interface RedisServer {
   socket: string;
@@ -36,6 +41,38 @@ export const startRedisServer = async (): Promise<RedisServer> => {
         await exited;
       }
       await rm(directory, { recursive: true, force: true });
+    },
+  };
+};
+
+export interface PolarServer {
+  client: ClientBase;
+  stop(): Promise<void>;
+}
+
+// Polar's side of the WebSocket: the configuration, nothing else.
+export const startPolarServer = async (reducers: Reducer[]): Promise<PolarServer> => {
+  const server = new WebSocketServer({ port: 0, host: "127.0.0.1", path: "/v1/outpost/" });
+  await once(server, "listening");
+  server.on("connection", (ws) => {
+    ws.send(JSON.stringify({ type: "connection", payload: { id: "bench" } }));
+    ws.on("message", (data) => {
+      if (JSON.parse(data.toString()).type === "configuration")
+        ws.send(JSON.stringify({ type: "configuration", payload: { reducers } }));
+    });
+  });
+  const address = server.address();
+  if (typeof address === "string" || !address) throw new Error("Missing WebSocket address");
+  return {
+    client: new ClientBase({
+      baseUrl: `http://127.0.0.1:${address.port}`,
+      accessToken: "bench-token",
+      version: "2026-10",
+      organizationId: "org",
+    }),
+    async stop() {
+      for (const ws of server.clients) ws.terminate();
+      await new Promise<void>((resolve) => server.close(() => resolve()));
     },
   };
 };

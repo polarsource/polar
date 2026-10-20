@@ -159,6 +159,7 @@ class PythonEmitter(EmitterBase):
             ("tests", "benchmarks", "test_client.py"),
             ("tests", "benchmarks", "test_scripts.py"),
             ("tests", "benchmarks", "test_ingest.py"),
+            ("tests", "benchmarks", "test_read.py"),
             (".python-version",),
             ("justfile",),
             ("LICENSE",),

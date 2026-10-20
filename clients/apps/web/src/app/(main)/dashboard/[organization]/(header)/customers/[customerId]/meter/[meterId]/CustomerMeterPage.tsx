@@ -1,6 +1,6 @@
 'use client'
 
-import { AddCreditsButton } from '@/components/Customer/AddCredits/AddCreditsButton'
+import { MeterPeriodDetails } from '@/components/Customer/CustomerMeter/MeterPeriodDetails'
 import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import DateRangePicker, {
   DateRangeInterval,
@@ -8,35 +8,22 @@ import DateRangePicker, {
 import IntervalPicker, {
   getNextValidInterval,
 } from '@/components/Metrics/IntervalPicker'
-import FormattedUnits from '@/components/Meter/FormattedUnits'
-import MetricChart from '@/components/Metrics/MetricChart'
-import { StatisticCard } from '@/components/Shared/StatisticCard'
 import { useCustomerMeters } from '@/hooks/queries/customerMeters'
-import { useInfiniteEvents } from '@/hooks/queries/events'
-import { useMeterQuantities } from '@/hooks/queries/meters'
-import { Events } from '@/components/Events/Events'
-import { estimateMeteredCost } from '@/components/Products/ProductForm/Pricing/utils'
-import { isMeteredPrice, MeteredPrice } from '@/utils/product'
-import { ParsedMetricPeriod } from '@/hooks/queries/metrics'
 import { useSubscriptions } from '@/hooks/queries/subscriptions'
-import { getCustomerActivityStart } from '@/utils/customer'
+import { isMeteredPrice, MeteredPrice } from '@/utils/product'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import { schemas } from '@polar-sh/client'
-import { formatCurrency } from '@polar-sh/currency'
-import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { endOfMonth, startOfMonth, subMonths } from 'date-fns'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from '@polar-sh/ui/components/atoms/Card'
-import Link from 'next/link'
-import { parseAsIsoDateTime, parseAsStringLiteral, useQueryState } from 'nuqs'
-import { useInViewport } from '@/hooks/utils'
-import { useCallback, useEffect, useMemo } from 'react'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { endOfMonth, startOfMonth } from 'date-fns'
+import Link from 'next/link'
+import {
+  parseAsInteger,
+  parseAsIsoDateTime,
+  parseAsStringLiteral,
+  useQueryState,
+} from 'nuqs'
+import { useCallback, useMemo } from 'react'
 
 interface CustomerMeterPageProps {
   organization: schemas['Organization']
@@ -57,7 +44,6 @@ const CustomerMeterPage = ({
     'endDate',
     parseAsIsoDateTime,
   )
-
   const [interval, setInterval] = useQueryState(
     'interval',
     parseAsStringLiteral([
@@ -69,20 +55,24 @@ const CustomerMeterPage = ({
     ] as schemas['TimeInterval'][]).withDefault('day'),
   )
 
+  const [, setPage] = useQueryState('page', parseAsInteger)
+
   const onDateChange = useCallback(
     (date: { from: Date; to: Date }) => {
       const valid = getNextValidInterval(interval, date.from, date.to)
       setStartDate(date.from)
       setEndDate(date.to)
+      setPage(null)
       if (valid !== interval) setInterval(valid)
     },
-    [interval, setStartDate, setEndDate, setInterval],
+    [interval, setStartDate, setEndDate, setInterval, setPage],
   )
 
-  const { data: subscriptionsData } = useSubscriptions(organization.id, {
-    customer_id: customer.id,
-    active: true,
-  })
+  const { data: subscriptionsData, isPending: subscriptionsPending } =
+    useSubscriptions(organization.id, {
+      customer_id: customer.id,
+      active: true,
+    })
 
   const subscription = useMemo(
     () =>
@@ -91,13 +81,6 @@ const CustomerMeterPage = ({
       ) ?? null,
     [subscriptionsData, meter.id],
   )
-
-  const { data: customerMetersData } = useCustomerMeters(organization.id, {
-    customer_id: customer.id,
-    meter_id: meter.id,
-  })
-
-  const customerMeter = customerMetersData?.items[0] ?? null
 
   const billingPeriodInterval = useMemo((): DateRangeInterval | null => {
     if (!subscription?.current_period_end) return null
@@ -111,20 +94,19 @@ const CustomerMeterPage = ({
     }
   }, [subscription])
 
-  // Derive effective dates: explicit user selection > billing period > this month
-  const startDate =
-    startDateParam ??
-    billingPeriodInterval?.value[0] ??
-    startOfMonth(new Date())
-  const endDate =
-    endDateParam ?? billingPeriodInterval?.value[1] ?? endOfMonth(new Date())
-
-  const { data: quantities } = useMeterQuantities(meter.id, {
-    start_timestamp: startDate.toISOString(),
-    end_timestamp: endDate.toISOString(),
-    interval,
-    customer_id: customer.id,
-  })
+  const { startDate, endDate } = useMemo(
+    () => ({
+      startDate:
+        startDateParam ??
+        billingPeriodInterval?.value[0] ??
+        startOfMonth(new Date()),
+      endDate:
+        endDateParam ??
+        billingPeriodInterval?.value[1] ??
+        endOfMonth(new Date()),
+    }),
+    [startDateParam, endDateParam, billingPeriodInterval],
+  )
 
   const unitPrice = useMemo(
     () =>
@@ -134,46 +116,17 @@ const CustomerMeterPage = ({
     [subscription, meter.id],
   )
 
-  const {
-    data: eventsData,
-    fetchNextPage,
-    isFetching,
-    hasNextPage,
-  } = useInfiniteEvents(organization.id, {
-    meter_id: meter.id,
-    customer_id: customer.id,
-    start_timestamp: startDate.toISOString(),
-    end_timestamp: endDate.toISOString(),
-  })
+  const { data: customerMetersData, isPending: customerMetersPending } =
+    useCustomerMeters(organization.id, {
+      customer_id: customer.id,
+      meter_id: meter.id,
+    })
+  const customerMeter = customerMetersData?.items[0] ?? null
 
-  const meterEvents = useMemo(
-    () => eventsData?.pages.flatMap((page) => page.items) ?? [],
-    [eventsData],
-  )
-
-  const { ref: sentinelRef, inViewport } = useInViewport()
-
-  useEffect(() => {
-    if (inViewport && hasNextPage && !isFetching) {
-      fetchNextPage()
-    }
-  }, [inViewport, hasNextPage, isFetching, fetchNextPage])
-
-  const overages = useMemo(() => {
-    if (!unitPrice || !customerMeter || customerMeter.balance >= 0) return null
-    return {
-      cost: estimateMeteredCost(unitPrice, Math.abs(customerMeter.balance)),
-      currency: unitPrice.price_currency,
-    }
-  }, [customerMeter, unitPrice])
-
-  const addCreditsButton = (
-    <AddCreditsButton
-      organization={organization}
-      customer={customer}
-      meterId={meter.id}
-    />
-  )
+  const isCurrentPeriod =
+    billingPeriodInterval !== null &&
+    startDate.getTime() === billingPeriodInterval.value[0].getTime() &&
+    endDate.getTime() === billingPeriodInterval.value[1].getTime()
 
   return (
     <MasterDetailLayoutContent
@@ -200,23 +153,16 @@ const CustomerMeterPage = ({
                 {subscription && ` · ${subscription.product.name}`}
               </Text>
             </Box>
-            <Box
-              display={{ base: 'flex', md: 'none' }}
-              marginLeft="auto"
-              flexShrink={0}
-            >
-              {addCreditsButton}
-            </Box>
           </Box>
           <Box alignItems="center" flexWrap="wrap" gap="s">
-            <div>
+            <Box display="block">
               <IntervalPicker
                 interval={interval}
                 onChange={setInterval}
                 startDate={startDate}
                 endDate={endDate}
               />
-            </div>
+            </Box>
             <DateRangePicker
               date={{ from: startDate, to: endDate }}
               onDateChange={onDateChange}
@@ -224,182 +170,28 @@ const CustomerMeterPage = ({
                 billingPeriodInterval ? [billingPeriodInterval] : undefined
               }
             />
-            <Box display={{ base: 'none', md: 'flex' }}>{addCreditsButton}</Box>
           </Box>
         </>
       }
     >
-      <div className="flex flex-col gap-y-8">
-        {customerMeter && (
-          <div className="flex flex-row flex-wrap gap-4">
-            {subscription?.current_period_end && (
-              <StatisticCard title="Current Billing Period">
-                <FormattedInterval
-                  startDatetime={subscription.current_period_start}
-                  endDatetime={subscription.current_period_end}
-                />
-              </StatisticCard>
-            )}
-            <StatisticCard title="Consumed">
-              <FormattedUnits value={customerMeter.consumed_units} />
-            </StatisticCard>
-            <StatisticCard title="Credited">
-              <FormattedUnits value={customerMeter.credited_units} />
-            </StatisticCard>
-            <StatisticCard title="Balance">
-              <FormattedUnits value={customerMeter.balance} />
-            </StatisticCard>
-            <StatisticCard title="Overages">
-              {overages
-                ? formatCurrency('compact')(overages.cost, overages.currency)
-                : unitPrice
-                  ? formatCurrency('compact')(0, unitPrice.price_currency)
-                  : '—'}
-            </StatisticCard>
-          </div>
-        )}
-        <ShadowBox className="dark:bg-polar-800 flex flex-col gap-y-0 p-2">
-          <div className="dark:bg-polar-900 rounded-3xl bg-white p-4">
-            <MetricChart
-              data={
-                (quantities?.quantities ??
-                  []) as unknown as ParsedMetricPeriod[]
-              }
-              interval={interval}
-              height={300}
-              metric={{
-                slug: 'quantity',
-                display_name: meter.name,
-                type: 'scalar',
-              }}
-              showYAxis
-              chartType={meter.aggregation.func === 'count' ? 'bar' : 'line'}
-            />
-          </div>
-          <div className="flex flex-row items-center justify-between px-6 py-4">
-            <div className="flex flex-row items-center gap-x-2">
-              <span className="h-2 w-2 rounded-full bg-blue-500" />
-              <span className="dark:text-polar-500 text-gray-500">Total</span>
-            </div>
-            <span className="font-medium">
-              <FormattedUnits value={quantities?.total ?? 0} />
-            </span>
-          </div>
-        </ShadowBox>
-        <div className="flex flex-col gap-y-6">
-          <h2 className="text-xl">Activity</h2>
-          <CustomerMeterActivityCards meter={meter} customer={customer} />
-        </div>
-        {meterEvents.length > 0 && (
-          <div className="flex flex-col gap-y-6">
-            <div className="flex flex-col gap-y-1">
-              <h3 className="text-xl">Events</h3>
-              <p className="dark:text-polar-500 text-gray-500">
-                Ingested events for the selected period
-              </p>
-            </div>
-            <Events events={meterEvents} organization={organization} />
-            <div ref={sentinelRef} />
-          </div>
-        )}
-      </div>
+      {!subscriptionsPending && !customerMetersPending && (
+        <MeterPeriodDetails
+          organization={organization}
+          customer={customer}
+          meter={meter}
+          currentPeriod={
+            isCurrentPeriod && subscription && customerMetersData
+              ? { subscription, customerMeter, unitPrice }
+              : null
+          }
+          currentPeriodStart={billingPeriodInterval?.value[0] ?? null}
+          startDate={startDate}
+          endDate={endDate}
+          interval={interval}
+        />
+      )}
     </MasterDetailLayoutContent>
   )
 }
 
 export default CustomerMeterPage
-
-export const CustomerMeterActivityCards = ({
-  meter,
-  customer,
-}: {
-  meter: schemas['Meter']
-  customer: schemas['Customer']
-}) => {
-  const dates = useMemo(
-    () => ({
-      currentMonthStart: startOfMonth(new Date()),
-      currentMonthEnd: endOfMonth(new Date()),
-      lastMonthStart: startOfMonth(subMonths(new Date(), 1)),
-      lastMonthEnd: endOfMonth(subMonths(new Date(), 1)),
-      allTimeStart: getCustomerActivityStart(customer),
-      allTimeEnd: new Date(),
-    }),
-    [customer],
-  )
-
-  const { data: figuresQuantities } = useMeterQuantities(meter.id, {
-    start_timestamp: dates.lastMonthStart.toISOString(),
-    end_timestamp: dates.currentMonthEnd.toISOString(),
-    interval: 'month',
-    customer_id: customer.id,
-  })
-
-  const { data: allTimeQuantities } = useMeterQuantities(meter.id, {
-    start_timestamp: dates.allTimeStart.toISOString(),
-    end_timestamp: dates.allTimeEnd.toISOString(),
-    interval: 'month',
-    customer_id: customer.id,
-  })
-
-  return (
-    <div className="flex flex-row gap-x-4">
-      {[
-        {
-          title: 'Current Month',
-          value: figuresQuantities?.quantities[1]?.quantity,
-          startDate: dates.currentMonthStart,
-          endDate: dates.currentMonthEnd,
-        },
-        {
-          title: 'Previous Month',
-          value: figuresQuantities?.quantities[0]?.quantity,
-          startDate: dates.lastMonthStart,
-          endDate: dates.lastMonthEnd,
-        },
-        {
-          title: 'All Time',
-          value: allTimeQuantities?.quantities.reduce(
-            (acc, curr) => acc + curr.quantity,
-            0,
-          ),
-          startDate: dates.allTimeStart,
-          endDate: dates.allTimeEnd,
-        },
-      ].map((card, i) => (
-        <Card key={i} className="flex-1 rounded-3xl">
-          <CardHeader className="flex flex-col gap-y-0">
-            <h3 className="text-lg">{card.title}</h3>
-            <span className="dark:text-polar-500 text-gray-500">
-              {card.startDate.toLocaleDateString('en-US', {
-                month: 'long',
-                day: 'numeric',
-                ...(card.startDate.getFullYear() !==
-                  new Date().getFullYear() && {
-                  year: 'numeric',
-                }),
-              })}{' '}
-              -{' '}
-              {card.endDate.toLocaleDateString('en-US', {
-                month: 'long',
-                day: 'numeric',
-                ...(card.endDate.getFullYear() !== new Date().getFullYear() && {
-                  year: 'numeric',
-                }),
-              })}
-            </span>
-          </CardHeader>
-          <CardContent>
-            <span className="text-4xl">
-              {card.value !== undefined ? (
-                <FormattedUnits value={card.value} />
-              ) : (
-                '—'
-              )}
-            </span>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  )
-}

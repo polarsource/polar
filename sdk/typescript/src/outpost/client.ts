@@ -605,7 +605,7 @@ export class Outpost {
   }
 
   private async waitConfigured(): Promise<void> {
-    await withTimeout(this.configured.promise);
+    if (!this.isConfigured) await withTimeout(this.configured.promise);
     this.requireRedis();
   }
 

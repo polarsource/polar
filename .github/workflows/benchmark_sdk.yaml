@@ -29,15 +29,17 @@ jobs:
       matrix:
         include:
           # Instruction counts: deterministic, on the runners the rest of CI uses. Not for the
-          # Redis benchmarks, whose cost is in another process.
+          # Redis benchmarks, whose cost is in another process, nor the warm read, which a few
+          # simulated calls measure cold.
           - mode: simulation
             runner: blacksmith-4vcpu-ubuntu-2404
-            benchmarks: --exclude src/outpost/scripts.bench.ts --exclude src/outpost/ingest.bench.ts
+            benchmarks: --exclude src/outpost/scripts.bench.ts --exclude src/outpost/ingest.bench.ts --exclude src/outpost/read.bench.ts
           # Real time: on CodSpeed's dedicated ARM64 machines, registered in the org by the app.
-          # Only the Redis benchmarks: wall time adds noise, not information, on pure CPU code.
+          # The Redis benchmarks and the warm read: wall time adds noise, not information, on
+          # pure CPU code.
           - mode: walltime
             runner: codspeed-macro
-            benchmarks: src/outpost/scripts.bench.ts src/outpost/ingest.bench.ts
+            benchmarks: src/outpost/scripts.bench.ts src/outpost/ingest.bench.ts src/outpost/read.bench.ts
     defaults:
       run:
         working-directory: sdk/typescript
@@ -82,10 +84,10 @@ jobs:
         include:
           - mode: simulation
             runner: blacksmith-4vcpu-ubuntu-2404
-            benchmarks: tests/benchmarks --ignore=tests/benchmarks/test_scripts.py --ignore=tests/benchmarks/test_ingest.py
+            benchmarks: tests/benchmarks --ignore=tests/benchmarks/test_scripts.py --ignore=tests/benchmarks/test_ingest.py --ignore=tests/benchmarks/test_read.py
           - mode: walltime
             runner: codspeed-macro
-            benchmarks: tests/benchmarks/test_scripts.py tests/benchmarks/test_ingest.py
+            benchmarks: tests/benchmarks/test_scripts.py tests/benchmarks/test_ingest.py tests/benchmarks/test_read.py
     defaults:
       run:
         working-directory: sdk/python

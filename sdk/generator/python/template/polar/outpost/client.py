@@ -48,8 +48,8 @@ from polar.ingestion.meter import CustomerMeter
 from polar.outpost.event import Event
 from polar.outpost.reducer import (
     BucketStatistics,
-    EventMatcher,
     Reducer,
+    ReducerMatcher,
     get_bucket_start,
     reduce,
     with_matchers,
@@ -422,7 +422,7 @@ class Outpost:
         self._reconnect_attempts = 0
         self._tasks: anyio.abc.TaskGroup | None = None
         self._reducers: list[Reducer] = []
-        self._matchers: list[tuple[Reducer, EventMatcher]] = []
+        self._matchers: list[ReducerMatcher] = []
         self._actors: set[str] = set()
         self._configured = anyio.Event()
         self._apply_snapshot: AsyncScript | None = None

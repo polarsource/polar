@@ -1,6 +1,10 @@
 import asyncio
 import collections.abc
 import gc
+import os
+import subprocess
+import tempfile
+import time
 
 import pytest
 
@@ -22,3 +26,35 @@ def loop() -> collections.abc.Iterator[asyncio.AbstractEventLoop]:
     loop = asyncio.new_event_loop()
     yield loop
     loop.close()
+
+
+# A throwaway redis-server on a Unix socket.
+@pytest.fixture(scope="session")
+def redis_socket() -> collections.abc.Iterator[str]:
+    with tempfile.TemporaryDirectory(prefix="polar-outpost-bench-") as directory:
+        socket = os.path.join(directory, "redis.sock")
+        process = subprocess.Popen(
+            [
+                "redis-server",
+                "--port",
+                "0",
+                "--unixsocket",
+                socket,
+                "--save",
+                "",
+                "--appendonly",
+                "no",
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        try:
+            deadline = time.monotonic() + 5
+            while not os.path.exists(socket):
+                if process.poll() is not None or time.monotonic() > deadline:
+                    raise RuntimeError("redis-server did not start")
+                time.sleep(0.01)
+            yield socket
+        finally:
+            process.terminate()
+            process.wait()

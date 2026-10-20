@@ -17,6 +17,8 @@ beforeAll(async () => {
   polar = await startPolarServer([REDUCER], SNAPSHOT);
   outpost = await new Outpost(redisServer.socket, { client: polar.client }).start();
   await outpost.actor({ external_customer_id: meter.external_customer_id });
+  // The simulation measures a few reads: settle the read path, telemetry included, before them.
+  for (let read = 0; read < 100; read++) await outpost.meter(meter);
   if ((await outpost.meter(meter))?.credited_units !== 1_000_000)
     throw new Error("The warm read benchmark needs a ready meter");
 });

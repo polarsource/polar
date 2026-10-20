@@ -60,6 +60,9 @@ def test_warm_meter_read(
         )
 
     loop.run_until_complete(outpost.actor(external_customer_id="alice"))
+    # The simulation measures a few reads: settle the read path, telemetry included, before them.
+    for _ in range(100):
+        read()
     meter = read()
     assert meter is not None and meter.credited_units == 1_000_000
     benchmark(read)

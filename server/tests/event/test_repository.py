@@ -7,6 +7,7 @@ from sqlalchemy import event as sqlalchemy_event
 from sqlalchemy import select
 
 from polar.event.repository import EventRepository
+from polar.event.system import SystemEvent
 from polar.kit.utils import utc_now
 from polar.models import Event, Organization
 from polar.models.event import EventSource
@@ -436,3 +437,37 @@ class TestInsertBatch:
         assert inserted[events[0]["id"]].root_id == events[0]["id"]
         assert inserted[events[1]["id"]].root_id is None
         assert inserted[events[2]["id"]].external_id == "event-1"
+
+
+@pytest.mark.anyio
+class TestGetLatestMeterReset:
+    async def test_returns_latest_reset_for_meter(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        meter_id = uuid.uuid4()
+        now = utc_now()
+
+        for timestamp, reset_meter_id in [
+            (now - timedelta(days=2), meter_id),
+            (now - timedelta(days=1), meter_id),
+            (now, uuid.uuid4()),
+        ]:
+            await _create_event(
+                save_fixture,
+                organization=organization,
+                ingested_at=timestamp,
+                source=EventSource.system,
+                name=SystemEvent.meter_reset,
+                user_metadata={"meter_id": str(reset_meter_id)},
+                customer_id=customer.id,
+            )
+
+        repository = EventRepository.from_session(session)
+        reset = await repository.get_latest_meter_reset(customer, meter_id)
+
+        assert reset is not None
+        assert reset.timestamp == now - timedelta(days=1)

@@ -11,7 +11,7 @@ from httpx_ws.transport import ASGIWebSocketTransport
 from pytest_codspeed import BenchmarkFixture
 from redis import Redis
 
-from polar.ingestion import EventInput
+from polar.metering import EventInput
 from polar.outpost import telemetry
 from polar.outpost.client import Outpost
 from polar.outpost.reducer import BUCKET_SIZE, Reducer
@@ -138,7 +138,7 @@ def benchmark_ingest(
 
     def ingest() -> None:
         nonlocal ingested
-        loop.run_until_complete(outpost.ingest(event))
+        loop.run_until_complete(outpost.track(event))
         ingested += 1
 
     benchmark(ingest)

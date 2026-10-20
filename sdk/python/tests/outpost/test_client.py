@@ -1119,10 +1119,6 @@ async def test_telemetry_spans(
                 await anyio.lowlevel.checkpoint()
         await outpost.meter(meter_id="meter", external_customer_id="alice")
 
-    events = _data_points(exported_metrics, "outpost.ingest.events")
-    assert [(point.attributes, point.value) for point in events] == [
-        ({"outpost.outcome": "ok"}, 1)
-    ]
     buckets = _data_points(exported_metrics, "outpost.ingest.buckets")
     assert [point.value for point in buckets] == [1]
     durations = _data_points(exported_metrics, "outpost.ingest.duration")
@@ -1314,7 +1310,7 @@ async def test_flush_telemetry_exports_buffered_spans(
         assert exported_metrics == []
         assert await outpost.flush_telemetry()
         assert "outpost.redis.connect" in {span.name for span in exported_spans}
-        assert _data_points(exported_metrics, "outpost.ingest.events") != []
+        assert _data_points(exported_metrics, "outpost.ingest.duration") != []
 
 
 @pytest.mark.anyio

@@ -427,7 +427,6 @@ class Outpost:
         self._tracer: trace.Tracer = trace.NoOpTracer()
         self._meter_provider: MeterProvider | None = None
         self._ingest_duration: Histogram | None = None
-        self._ingest_events: Counter | None = None
         self._ingest_buckets: Counter | None = None
         self._stack = contextlib.AsyncExitStack()
         self._redis: Redis | None = None
@@ -474,7 +473,6 @@ class Outpost:
             self._ingest_duration = meter.create_histogram(
                 "outpost.ingest.duration", unit="s"
             )
-            self._ingest_events = meter.create_counter("outpost.ingest.events")
             self._ingest_buckets = meter.create_counter("outpost.ingest.buckets")
         try:
             with self._span("outpost.redis.connect"):
@@ -614,8 +612,6 @@ class Outpost:
             attributes = {"outpost.outcome": outcome}
             if self._ingest_duration is not None:
                 self._ingest_duration.record(time.perf_counter() - started, attributes)
-            if self._ingest_events is not None:
-                self._ingest_events.add(1, attributes)
 
     @_raise_redis_unavailable
     async def meter(
@@ -769,7 +765,6 @@ class Outpost:
         self._tracer = trace.NoOpTracer()
         self._meter_provider = None
         self._ingest_duration = None
-        self._ingest_events = None
         self._ingest_buckets = None
         with anyio.CancelScope(shield=True):
             if tracer_provider is not None:

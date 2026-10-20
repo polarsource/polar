@@ -30,7 +30,7 @@ class CheckoutProductsCreate(schemas.CheckoutProductsCreateBase):
         ),
         min_length=1,
     )
-    prices: dict[UUID4, ProductPriceCreateList] | None = Field(  # type: ignore[assignment]
+    prices: dict[UUID4, ProductPriceCreateList] | None = Field(
         default=None, description=CHECKOUT_PRICES_DESCRIPTION
     )
 

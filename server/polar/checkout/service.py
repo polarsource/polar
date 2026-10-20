@@ -1,7 +1,7 @@
 import contextlib
 import typing
 import uuid
-from collections.abc import AsyncGenerator, Sequence
+from collections.abc import AsyncGenerator, Mapping, Sequence
 from datetime import datetime
 
 import sentry_sdk
@@ -95,7 +95,6 @@ from polar.observability.checkout_metrics import (
 )
 from polar.order.service import order as order_service
 from polar.organization.embed_hosts import match_origin, parse_origin
-from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.posthog import posthog
 from polar.product.custom_price import validate_custom_price_amount
@@ -415,10 +414,7 @@ class CheckoutService:
             ):
                 products_field = "external_product_ids"
                 products = await self._get_validated_external_products(
-                    session,
-                    auth_subject,
-                    checkout_create,
-                    checkout_create.external_product_ids,
+                    session, auth_subject, checkout_create.external_product_ids
                 )
             else:
                 assert checkout_create.products is not None
@@ -434,6 +430,7 @@ class CheckoutService:
                     product.organization,
                     products,
                     checkout_create.prices,  # type: ignore[arg-type]
+                    by_external_id=products_field == "external_product_ids",
                 )
 
             currencies = self._get_currencies(
@@ -661,7 +658,6 @@ class CheckoutService:
                     "product_id",
                     "products",
                     "external_product_ids",
-                    "organization_id",
                     "prices",
                     "amount",
                     "currency",
@@ -1991,21 +1987,33 @@ class CheckoutService:
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
-        checkout_create: CheckoutProductsCreate,
         external_product_ids: Sequence[str],
     ) -> Sequence[Product]:
-        organization = await get_payload_organization(
-            session, auth_subject, checkout_create
-        )
-        repository = ProductRepository.from_session(session)
-        products_by_external_id = {
-            product.external_id: product
-            for product in await repository.get_all_by_external_ids(
-                organization.id, external_product_ids
-            )
-        }
+        products_by_external_id: dict[str | None, list[Product]] = {}
+        for product in await product_service.get_by_external_ids(
+            session, auth_subject, external_product_ids
+        ):
+            products_by_external_id.setdefault(product.external_id, []).append(product)
+
+        errors: list[ValidationError] = []
+        for index, external_product_id in enumerate(external_product_ids):
+            if len(products_by_external_id.get(external_product_id, [])) > 1:
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "external_product_ids", index),
+                        "msg": (
+                            "Several products match this external ID "
+                            "across your organizations."
+                        ),
+                        "input": external_product_id,
+                    }
+                )
+        if len(errors) > 0:
+            raise PolarRequestValidationError(errors)
+
         products = [
-            products_by_external_id.get(external_product_id)
+            next(iter(products_by_external_id.get(external_product_id, [])), None)
             for external_product_id in external_product_ids
         ]
         return self._validate_products(
@@ -2079,20 +2087,28 @@ class CheckoutService:
         auth_subject: AuthSubject[User | Organization],
         organization: Organization,
         products: Sequence[Product],
-        prices: dict[uuid.UUID, ProductPriceCreateList],
+        prices: Mapping[uuid.UUID, ProductPriceCreateList]
+        | Mapping[str, ProductPriceCreateList],
+        *,
+        by_external_id: bool = False,
     ) -> dict[Product, Sequence[ProductPrice]]:
+        products_by_key = {
+            (product.external_id if by_external_id else str(product.id)): product
+            for product in products
+        }
         validated_prices: dict[Product, Sequence[ProductPrice]] = {}
         errors: list[ValidationError] = []
-        for product_id, product_prices in prices.items():
-            try:
-                product = next(p for p in products if p.id == product_id)
-            except StopIteration:
+        for key, product_prices in prices.items():
+            product = products_by_key.get(
+                str(key) if by_external_id else str(key).lower()
+            )
+            if product is None:
                 errors.append(
                     {
                         "type": "value_error",
-                        "loc": ("body", "prices", str(product_id)),
+                        "loc": ("body", "prices", str(key)),
                         "msg": "Product is not set on that checkout.",
-                        "input": product_id,
+                        "input": key,
                     }
                 )
                 continue
@@ -2113,7 +2129,7 @@ class CheckoutService:
                 error_prefix=(
                     "body",
                     "prices",
-                    str(product_id),
+                    str(key),
                 ),
             )
             errors = [*errors, *price_errors]

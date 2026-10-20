@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from typing import Literal
 
 from sqlalchemy import select
-from sqlalchemy.orm import contains_eager, selectinload
+from sqlalchemy.orm import contains_eager, selectinload, undefer
 
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
@@ -192,6 +192,23 @@ class ProductService:
             .options(*repository.get_eager_options())
         )
         return await repository.get_one_or_none(statement)
+
+    async def get_by_external_ids(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        external_ids: Sequence[str],
+    ) -> Sequence[Product]:
+        repository = ProductRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.products_read
+        )
+        statement = (
+            repository.get_statement_by_org_ids(org_ids)
+            .where(Product.external_id.in_(external_ids))
+            .options(undefer(Product.external_id), *repository.get_eager_options())
+        )
+        return await repository.get_all(statement)
 
     async def create(
         self,

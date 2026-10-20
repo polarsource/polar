@@ -61,7 +61,7 @@ from polar.models.checkout import (
     CheckoutStatus,
 )
 from polar.models.discount import DiscountDuration, DiscountType
-from polar.organization.schemas import OrganizationID, OrganizationPublicBase
+from polar.organization.schemas import OrganizationPublicBase
 from polar.product.schemas import (
     BenefitPublicList,
     ProductBase,
@@ -365,9 +365,6 @@ CHECKOUT_PRICES_DESCRIPTION = (
 
 class CheckoutProductsCreateBase(CheckoutCreateBase):
     currency: CheckoutCurrency | None = None
-    prices: dict[UUID4, ProductPriceCreateList] | None = Field(
-        default=None, description=CHECKOUT_PRICES_DESCRIPTION
-    )
 
 
 class CheckoutProductsCreate(CheckoutProductsCreateBase):
@@ -400,12 +397,13 @@ class CheckoutProductsCreate(CheckoutProductsCreateBase):
         ),
         min_length=1,
     )
-    organization_id: OrganizationID | None = Field(
+    prices: dict[str, ProductPriceCreateList] | None = Field(
         default=None,
         description=(
-            "The ID of the organization owning the products. "
-            "**Required with `external_product_ids` "
-            "unless you use an organization token.**"
+            "Optional mapping of product IDs, or product external IDs "
+            "when using `external_product_ids`, to a list of ad-hoc prices "
+            "to create for that product. "
+            "If not set, catalog prices of the product will be used."
         ),
     )
 

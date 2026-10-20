@@ -15170,6 +15170,9 @@ export interface components {
      * @description Create a new checkout session from a list of products.
      *     Customers will be able to switch between those products.
      *
+     *     Products can be referenced either by their Polar ID with `products`,
+     *     or by their external ID with `external_product_ids`.
+     *
      *     Metadata set on the checkout will be copied
      *     to the resulting order and/or subscription.
      */
@@ -15329,12 +15332,17 @@ export interface components {
       currency?: components['schemas']['PresentmentCurrency'] | null
       /**
        * Products
-       * @description List of product IDs available to select at that checkout. The first one will be selected by default.
+       * @description List of product IDs available to select at that checkout. The first one will be selected by default. Mutually exclusive with `external_product_ids`.
        */
-      products: string[]
+      products?: string[] | null
+      /**
+       * External Product Ids
+       * @description List of product external IDs available to select at that checkout. The first one will be selected by default. Mutually exclusive with `products`.
+       */
+      external_product_ids?: string[] | null
       /**
        * Prices
-       * @description Optional mapping of product IDs to a list of ad-hoc prices to create for that product. If not set, catalog prices of the product will be used.
+       * @description Optional mapping of product IDs, or product external IDs when using `external_product_ids`, to a list of ad-hoc prices to create for that product. If not set, catalog prices of the product will be used.
        */
       prices?: {
         [key: string]: (

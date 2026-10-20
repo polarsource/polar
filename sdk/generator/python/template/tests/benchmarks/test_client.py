@@ -1,4 +1,5 @@
 import asyncio
+import json
 
 import httpx
 import pytest
@@ -55,3 +56,24 @@ def test_warm_meter_read(
             outpost.meter(meter_id="meter", external_customer_id="alice")
         )
     )
+
+
+@pytest.mark.parametrize("buckets", BUCKET_COUNTS)
+def test_receive_state_update(
+    benchmark: BenchmarkFixture, loop: asyncio.AbstractEventLoop, buckets: int
+) -> None:
+    outpost = loop.run_until_complete(warm_outpost())
+    identity = f"external:alice:{REDUCER['id']}"
+    local = outpost._cache[identity]
+    current = decode_state(encode_state(buckets))
+    # Another instance wrote one event: the next revision of the same state.
+    newer = encode_state(buckets)
+    newer[newer.index("revision") + 1] = str(current.revision + 1)
+    data = json.dumps({"customer": identity, "state": newer}).encode()
+
+    def receive() -> None:
+        local.state = current
+        loop.run_until_complete(outpost._receive_redis(data))
+
+    benchmark(receive)
+    assert outpost._sync_applied == outpost._sync_received

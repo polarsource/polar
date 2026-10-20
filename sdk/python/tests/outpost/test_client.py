@@ -1842,7 +1842,7 @@ async def test_stored_values_parse_the_same_with_and_without_json(
             while not await redis.hexists(key, "cold:sum"):
                 await anyio.lowlevel.checkpoint()
         for tokens in (0, -0.0, 1, -2, 0.1, 0.2, 1e-7, 1e21, 2**53, -1.5e300):
-            await outpost.ingest(
+            await outpost.track(
                 {
                     "name": "call",
                     "external_customer_id": "alice",

@@ -45,8 +45,8 @@ There are two ways to sign up. Agents pick one by reading our `/auth.md` file.
 The agent doesn't need anything from the human to start.
 
 1. The agent calls `POST /v1/agent/identity` with `{"type": "anonymous"}` and gets credentials right away.
-2. Polar creates an [agent identity](#agent-identity) for it.
-3. The agent creates its org, products, meters and config. The org belongs to the agent identity.
+2. Polar creates an [agent](#agent-subject) for it: its own auth subject, not a user.
+3. The agent creates its org, products, meters and config. The org belongs to the agent.
 4. When it's done, it asks the human for their email and starts a claim.
 5. The agent gives the human a link and a 6-digit code.
 6. The human signs in, sees what was built, and types the code.
@@ -76,15 +76,15 @@ sequenceDiagram
 The agent registers with the user's email. The human approves with the link and code first, then the agent
 starts working.
 
-### Agent identity
+### Agent subject
 
 The decision and its rules are in [ADR-0014](/engineering/decisions/0014-agent-auth-subject). In short:
 
-- **A row in `agent_identities`**, created at sign-up. It holds the agent's OAuth client, its status, its
+- **A row in `agents`**, created at sign-up. It holds the agent's OAuth client, its status, its
   one org and, once claimed, who claimed it. Agents never appear in the `users` table, so login, emails and
   user metrics only ever see people.
-- **Its own auth subject**, `AgentIdentity`. An unclaimed agent can only reach endpoints whose
-  `Authenticator` lists `AgentIdentity`; see [Before the claim](#decisions) for which ones.
+- **Its own auth subject**, `Agent`. An unclaimed agent can only reach endpoints whose
+  `Authenticator` lists `Agent`; see [Before the claim](#decisions) for which ones.
 - **One org per agent**, through an agent–organization link rather than a membership. The org-access helpers
   (`get_accessible_org_ids`, `get_accessible_organization`, `get_payload_organization`, the authz
   policies) resolve the agent to that org, so single-org event ingest and config apply work without an
@@ -119,22 +119,22 @@ web) stay as they are. Token validation gains one sub type for unclaimed agents.
   claim token works once.
 - **JWT-bearer grant** (`urn:ietf:params:oauth:grant-type:jwt-bearer`, RFC 7523): the agent sends its identity
   assertion and gets an access token. We check the signature, issuer, type, audience (which must identify this
-  authorization server) and expiry, that the agent identity isn't revoked, and that the assertion wasn't
+  authorization server) and expiry, that the agent isn't revoked, and that the assertion wasn't
   issued before the claim. Before the claim it returns an agent token; after it, a token for the claiming
   user. No refresh tokens.
 
-In both grants, the client is taken from the agent identity the credential belongs to, not from a
+In both grants, the client is taken from the agent the credential belongs to, not from a
 `client_id` the caller sends. So an existing OAuth app can't use them, and an agent can only ever get tokens for itself.
 
 **Agent clients**
 
-- One OAuth client per agent identity: public (no secret), no redirect URIs, and only the two grants above.
+- One OAuth client per agent: public (no secret), no redirect URIs, and only the two grants above.
 - Marked as an agent client, so it can't be mistaken for a normal OAuth app.
 
 **Tokens**
 
 - **Before the claim**: OAuth tokens, grants and authorization codes have a new sub type,
-  `SubType.agent_identity`, and resolve to the `AgentIdentity` subject. Agent access tokens get their own
+  `SubType.agent`, and resolve to the `Agent` subject. Agent access tokens get their own
   prefix (`polar_at_a_`) so they're recognizable in logs and secret scanning. They carry only the scopes of
   the resources an unclaimed agent may use.
 - **After the claim**: the same user access tokens as any OAuth app, with the full agent scope: same table,
@@ -158,14 +158,14 @@ In both grants, the client is taken from the agent identity the credential belon
 
 | Topic | Decision |
 |---|---|
-| Who the agent is | Before the claim, its own `AgentIdentity` subject ([ADR-0014](/engineering/decisions/0014-agent-auth-subject)). After the claim, it acts on behalf of the claiming user by design, like any OAuth app. Its OAuth client carries an "agent" marker so we can attribute actions and list or revoke agents. |
+| Who the agent is | Before the claim, its own `Agent` subject ([ADR-0014](/engineering/decisions/0014-agent-auth-subject)). After the claim, it acts on behalf of the claiming user by design, like any OAuth app. Its OAuth client carries an "agent" marker so we can attribute actions and list or revoke agents. |
 | What a claim is | In one atomic step, the human becomes the owner of the agent's org and the agent's pre-claim credentials are revoked, so an org is either fully claimed or still unclaimed. Nothing moves between users. No identity-verification check at claim time, because claimed or not, the org still has to pass the normal verification before it can be paid out. |
 | Before the claim | Catalog setup only: organizations, products, meters, benefits, discounts, events and config. Checkout sessions and checkout links in sandbox only, to test a checkout with test cards. Never orders, subscriptions, refunds, customers, payouts, review submission, members, webhooks (including config's webhook section) or organization access tokens. In production the org can't go live before the claim; in sandbox it can. Enforced by the endpoint allowlist, pinned by a test, with narrower scopes as a second layer. |
 | Orgs per agent | One. A second org means a new sign-up. |
 | After the claim | Anything the user can do. |
 | Org creation by an unclaimed agent | Polar's own billing customer and the Plain support records are created at the claim, not before. Nothing else changes. |
 | Rollout | Both sign-up types ship together, starting in sandbox behind a feature flag, and go to production once sandbox abuse data looks fine. |
-| Claim window | 7 days. After that we delete the unclaimed org, the agent identity and its OAuth client. |
+| Claim window | 7 days. After that we delete the unclaimed org, the agent and its OAuth client. |
 | Identity assertion | Lives 30 days and can be reused until it expires, as the auth.md spec expects. The claim issues a fresh one, which only yields the claiming user's tokens, and invalidates older ones. Revoking the agent stops it immediately. After 30 days the agent signs up again and the human re-approves it. |
 
 ## Options
@@ -188,10 +188,10 @@ draft. It doesn't work for us today. We can revisit it later.
 
 **Placeholder user.** A fake `User` with an unreachable email would own the org until the claim. No new
 subject, but non-people in the users table and guards on login, emails, metrics and every endpoint that
-must stay off-limits. Replaced by the agent identity ([ADR-0014](/engineering/decisions/0014-agent-auth-subject)).
+must stay off-limits. Replaced by the `Agent` subject ([ADR-0014](/engineering/decisions/0014-agent-auth-subject)).
 
 **Agents as org members.** After the claim, an agent would keep acting as itself, with its own role in the
-org, instead of on behalf of the user. The agent identity is the foundation for this, but it would mean
+org, instead of on behalf of the user. The `Agent` subject is the foundation for this, but it would mean
 every user endpoint opting in and agent membership in the dashboard. Possible later.
 
 ## Security considerations
@@ -201,19 +201,19 @@ every user endpoint opting in and agent membership in the dashboard. Possible la
 - **Who can access it**: anyone can start an anonymous sign-up, but it only gives access to the agent's own
   org, through the endpoints opened to unclaimed agents. After the claim, the agent has the claiming user's access, and
   it can be revoked.
-- **Data we store**: an agent identity (type, status, agent name, email hint, scopes, claim timestamps,
+- **Data we store**: an `agents` row (type, status, agent name, email hint, scopes, claim timestamps,
   links to its OAuth client, its org and the user who claimed it). Claim tokens and codes are stored hashed.
-  Unclaimed agent identities and everything they created are deleted after 7 days.
+  Unclaimed agents and everything they created are deleted after 7 days.
 - **Risks**:
   - *Old credentials still work after the claim.* Revoke pre-claim tokens and reject identity assertions
     issued before the claim.
   - *An endpoint is opened to unclaimed agents by mistake.* A test pins the routes that accept
-    `AgentIdentity`, so every opt-in shows up in review, and pre-claim scopes block resources with their own
+    `Agent`, so every opt-in shows up in review, and pre-claim scopes block resources with their own
     scope.
   - *An unclaimed agent creates an organization access token* and escapes the allowlist. Creating one stays
     limited to users.
   - *A leaked identity assertion.* It's a bearer credential, so whoever holds it can use it until it's revoked or
-    expires. We accept that for now and limit the damage: every exchange is checked against the agent identity, so
+    expires. We accept that for now and limit the damage: every exchange is checked against the agent's row, so
     revoking the agent stops it immediately, access tokens are short-lived, and the assertion expires after 30 days at
     most. Only binding it to a key the agent holds (DPoP) would prevent a stolen copy from working; that's a possible
     later addition, optional for agents that support it.

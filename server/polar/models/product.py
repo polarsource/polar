@@ -107,7 +107,9 @@ class Product(
             "organization_id",
             "external_id",
             unique=True,
-            postgresql_where=text("deleted_at IS NULL AND external_id IS NOT NULL"),
+            postgresql_where=text(
+                "deleted_at IS NULL AND external_id IS NOT NULL AND is_current"
+            ),
         ),
     )
 
@@ -116,6 +118,10 @@ class Product(
     name: Mapped[str] = mapped_column(CITEXT(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    version: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    is_current: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=text("true")
+    )
     recurring_interval: Mapped[SubscriptionRecurringInterval | None] = mapped_column(
         StringEnum(SubscriptionRecurringInterval),
         nullable=True,

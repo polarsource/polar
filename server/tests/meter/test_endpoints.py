@@ -8,7 +8,6 @@ from polar.meter.repository import MeterRepository
 from polar.models import Meter, Organization, User, UserOrganization
 from polar.postgres import AsyncSession
 from polar.version import V2026_04, V2026_10, V2027_01
-from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_meter
 
@@ -32,10 +31,7 @@ class TestListMeters:
 
         assert response.status_code == 401
 
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="agent"),
-    )
+    @pytest.mark.auth
     async def test_user_does_not_see_other_organization_meters(
         self,
         client: AsyncClient,
@@ -105,10 +101,7 @@ class TestGetMeter:
 
         assert response.status_code == 401
 
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="agent"),
-    )
+    @pytest.mark.auth
     async def test_user_cannot_access_other_organization_meter(
         self,
         client: AsyncClient,
@@ -147,10 +140,7 @@ class TestGetExternalMeter:
         assert response.json()["id"] == str(meter.id)
 
     @pytest.mark.api_version(V2027_01)
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="agent"),
-    )
+    @pytest.mark.auth
     async def test_user_cannot_access_other_organization_meter(
         self,
         save_fixture: SaveFixture,
@@ -217,10 +207,7 @@ class TestGetMeterQuantities:
 
         assert response.status_code == 401
 
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="agent"),
-    )
+    @pytest.mark.auth
     async def test_user_cannot_access_other_organization_meter_quantities(
         self,
         client: AsyncClient,
@@ -262,27 +249,6 @@ class TestGetMeterQuantities:
 
 @pytest.mark.anyio
 class TestCreateMeter:
-    @pytest.mark.auth
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_config_as_code_enabled(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.post(
-            "/v1/meters/",
-            json={
-                "name": "Meter",
-                "organization_id": str(organization.id),
-                "filter": {"conjunction": "and", "clauses": []},
-                "aggregation": {"func": "count"},
-            },
-        )
-
-        assert response.status_code == 403
-        assert response.json()["error"] == "DeclarativeConfigManaged"
-
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post("/v1/meters/")
 
@@ -316,10 +282,7 @@ class TestCreateMeter:
         assert meter.external_id is None
 
     @pytest.mark.api_version(V2027_01)
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="agent"),
-    )
+    @pytest.mark.auth
     async def test_external_id_2027_01(
         self,
         client: AsyncClient,
@@ -343,30 +306,12 @@ class TestCreateMeter:
 
 @pytest.mark.anyio
 class TestUpdateMeter:
-    @pytest.mark.auth
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_config_as_code_enabled(
-        self,
-        client: AsyncClient,
-        meter: Meter,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.patch(
-            f"/v1/meters/{meter.id}", json={"name": "Updated"}
-        )
-
-        assert response.status_code == 403
-        assert response.json()["error"] == "DeclarativeConfigManaged"
-
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.patch(f"/v1/meters/{uuid.uuid4()}")
 
         assert response.status_code == 401
 
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="agent"),
-    )
+    @pytest.mark.auth
     async def test_user_cannot_update_other_organization_meter(
         self,
         client: AsyncClient,

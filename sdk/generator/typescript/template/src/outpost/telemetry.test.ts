@@ -1,6 +1,6 @@
 import type { AddressInfo } from "node:net";
 
-import { MeterProvider } from "@opentelemetry/sdk-metrics";
+import { AggregationTemporality, InstrumentType, MeterProvider } from "@opentelemetry/sdk-metrics";
 import { TracerProvider } from "@opentelemetry/sdk-trace";
 import { once } from "node:events";
 import { createServer, type IncomingHttpHeaders } from "node:http";
@@ -8,7 +8,7 @@ import { afterEach, expect, it, vi } from "vitest";
 
 import { ClientBase } from "../base";
 import { VERSION } from "../version";
-import { createMeterProvider, createTracerProvider } from "./telemetry";
+import { RelayMetricExporter, createMeterProvider, createTracerProvider } from "./telemetry";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -81,4 +81,10 @@ it("relays metrics to the metrics endpoint", async () => {
   expect(request.headers["x-vendor-key"]).toBeUndefined();
   expect(request.body.toString()).toContain("outpost.test");
   expect(request.body.toString()).toContain(VERSION);
+});
+
+it("exports metrics as deltas", () => {
+  const exporter = new RelayMetricExporter("http://127.0.0.1", new Headers());
+  for (const instrument of [InstrumentType.COUNTER, InstrumentType.HISTOGRAM])
+    expect(exporter.selectAggregationTemporality(instrument)).toBe(AggregationTemporality.DELTA);
 });

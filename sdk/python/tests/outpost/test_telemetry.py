@@ -11,6 +11,7 @@ from opentelemetry.proto.collector.metrics.v1.metrics_service_pb2 import (
 from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import (
     ExportTraceServiceRequest,
 )
+from opentelemetry.proto.metrics.v1.metrics_pb2 import AggregationTemporality
 
 from polar.outpost.telemetry import create_meter_provider, create_tracer_provider
 
@@ -81,3 +82,6 @@ def test_relays_metrics_to_the_metrics_endpoint(
     request.ParseFromString(body)
     metric = request.resource_metrics[0].scope_metrics[0].metrics[0]
     assert metric.name == "outpost.test"
+    assert metric.sum.aggregation_temporality == AggregationTemporality.Value(
+        "AGGREGATION_TEMPORALITY_DELTA"
+    )

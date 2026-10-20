@@ -44,7 +44,9 @@ from polar.outpost.client import (
     UnavailableRedisError,
     _backoff_delay,
     _is_connection_error,
+    _number,
     connect_websocket,
+    decode_state,
 )
 from polar.outpost.reducer import BUCKET_SIZE, get_bucket_start
 from polar.outpost.telemetry import TELEMETRY_ENV
@@ -1805,3 +1807,51 @@ async def test_failed_resync_wakes_waiting_reads(
                 tasks.start_soon(read)
                 await anyio.sleep(0.05)
                 gate.set()
+
+
+@pytest.mark.parametrize("value", ["abc", "Infinity", "NaN", "1e999"])
+def test_decode_state_rejects_unparsable_values(value: str) -> None:
+    with pytest.raises(ValueError):
+        decode_state(["epoch", "epoch", "revision", "1", "cold:sum", value])
+
+
+# Fails the day a write stores a value JSON rejects but a plain number parser accepts.
+@pytest.mark.anyio
+async def test_stored_values_parse_the_same_with_and_without_json(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+) -> None:
+    url, redis = redis_connection
+    key = "outpost:state:external:alice:tokens"
+    snapshots["external:alice"] = {
+        "customer_id": None,
+        "external_customer_id": "alice",
+        "meter_id": "meter",
+        "version": 1791807000000001,
+        "cold_until": BUCKET,
+        "count": 3,
+        "sum": 0.30000000000000004,
+        "min": -1e-7,
+        "max": 1e21,
+        "credited_units": 2**53 + 2,
+    }
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        with anyio.fail_after(1):
+            while not await redis.hexists(key, "cold:sum"):
+                await anyio.lowlevel.checkpoint()
+        for tokens in (0, -0.0, 1, -2, 0.1, 0.2, 1e-7, 1e21, 2**53, -1.5e300):
+            await outpost.ingest(
+                {
+                    "name": "call",
+                    "external_customer_id": "alice",
+                    "timestamp": TIMESTAMP,
+                    "metadata": {"tokens": tokens},
+                }
+            )
+    stored = await redis.hgetall(key)
+    del stored[b"epoch"]
+    for field, value in stored.items():
+        assert isinstance(value, bytes)
+        assert (field, _number(value.decode())) == (field, json.loads(value))

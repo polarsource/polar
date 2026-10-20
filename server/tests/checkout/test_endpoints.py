@@ -823,6 +823,35 @@ class TestCreateCheckoutExternalProducts:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.checkouts_write})
     )
+    async def test_products_and_external_products(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="product_one",
+        )
+
+        response = await client.post(
+            f"{api_prefix}/",
+            json={
+                "payment_processor": "stripe",
+                "products": [str(product.id)],
+                "external_products": ["product_one"],
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.checkouts_write})
+    )
     async def test_deprecated_product_id(
         self,
         api_prefix: str,

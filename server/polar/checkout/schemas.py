@@ -412,6 +412,13 @@ class CheckoutProductsExternalCreate(CheckoutCreateBase):
         min_length=1,
     )
 
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_products(cls, data: Any) -> Any:
+        if isinstance(data, dict) and "products" in data:
+            raise ValueError("products and external_products are mutually exclusive.")
+        return data
+
     @field_validator("external_products")
     @classmethod
     def external_products_must_be_unique(cls, v: list[str]) -> list[str]:

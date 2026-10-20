@@ -22,9 +22,10 @@ class SubType(StrEnum):
     def __get_pydantic_json_schema__(
         cls, core_schema: cs.CoreSchema, handler: GetJsonSchemaHandler
     ) -> JsonSchemaValue:
-        # The OAuth2 API never returns the agent sub type: introspection needs a
-        # client secret, which agent clients don't have. Keep it out of the
-        # API contract.
+        # The OAuth2 API never exposes the agent sub type: introspection needs a
+        # client secret, which agent clients don't have, and a client's
+        # `default_sub_type` is never persisted (authlib only keeps registered
+        # claims). Keep it out of the API contract.
         json_schema = handler(core_schema)
         json_schema = handler.resolve_ref_schema(json_schema)
         json_schema["enum"] = [SubType.user, SubType.organization]

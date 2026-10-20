@@ -190,6 +190,19 @@ class TestGetAccessibleOrgIds:
         assert result == ({organization.id} if allowed else set())
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_excludes_soft_deleted_org(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Agent],
+        organization: Organization,
+    ) -> None:
+        organization.set_deleted_at()
+        await session.flush()
+
+        result = await get_accessible_org_ids(session, auth_subject)
+        assert result == set()
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
     async def test_agent_without_org(
         self, session: AsyncSession, auth_subject: AuthSubject[Agent]
     ) -> None:

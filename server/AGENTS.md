@@ -192,7 +192,8 @@ An AI agent that signed up on its own and isn't claimed yet is an `Agent` subjec
 with one organization and only `UNCLAIMED_AGENT_SCOPES`. To open an endpoint to it, list
 `Agent` in the authenticator's `allowed_subjects`, handle `is_agent` in the service's subject
 branches, test it with `AuthSubjectFixture(subject="agent")`, and add the route to
-`AGENT_ROUTES` in `tests/test_agent_routes.py`.
+`AGENT_ROUTES` in `tests/test_agent_routes.py`. That test also catches routes that take any
+OAuth2 access token directly (`get_token`, like `/v1/oauth2/userinfo`), so pin those too.
 
 Define per-module authenticators in the module's `auth.py`:
 

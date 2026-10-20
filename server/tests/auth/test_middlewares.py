@@ -1,6 +1,7 @@
 import json
 import time
 from datetime import timedelta
+from typing import Any
 from uuid import UUID
 
 import pytest
@@ -46,6 +47,7 @@ from polar.personal_access_token.service import TOKEN_PREFIX
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_agent
 
 
 def _request(
@@ -230,41 +232,31 @@ class TestGetAuthSubjectAgentToken:
         assert auth_subject.scopes == UNCLAIMED_AGENT_SCOPES
         assert auth_subject.organization_ids is None
 
-    async def test_claimed(
+    @pytest.mark.parametrize(
+        "update",
+        [
+            pytest.param(
+                {"status": AgentStatus.claimed, "claimed_at": utc_now()},
+                id="claimed",
+            ),
+            pytest.param(
+                {"status": AgentStatus.revoked, "revoked_at": utc_now()},
+                id="revoked",
+            ),
+            pytest.param({"deleted_at": utc_now()}, id="deleted"),
+        ],
+    )
+    async def test_not_unclaimed(
         self,
+        update: dict[str, Any],
         save_fixture: SaveFixture,
         session: AsyncSession,
         agent: Agent,
-        user: User,
     ) -> None:
         access_token = f"{ACCESS_TOKEN_PREFIX[SubType.agent]}test"
         await _create_oauth2_token(save_fixture, access_token, agent=agent)
-        agent.status = AgentStatus.claimed
-        agent.claimed_at = utc_now()
-        agent.claimed_by_user = user
-        await save_fixture(agent)
-
-        with pytest.raises(InvalidTokenError):
-            await get_auth_subject(_request_with_bearer_token(access_token), session)
-
-    async def test_revoked(
-        self, save_fixture: SaveFixture, session: AsyncSession, agent: Agent
-    ) -> None:
-        access_token = f"{ACCESS_TOKEN_PREFIX[SubType.agent]}test"
-        await _create_oauth2_token(save_fixture, access_token, agent=agent)
-        agent.status = AgentStatus.revoked
-        agent.revoked_at = utc_now()
-        await save_fixture(agent)
-
-        with pytest.raises(InvalidTokenError):
-            await get_auth_subject(_request_with_bearer_token(access_token), session)
-
-    async def test_deleted(
-        self, save_fixture: SaveFixture, session: AsyncSession, agent: Agent
-    ) -> None:
-        access_token = f"{ACCESS_TOKEN_PREFIX[SubType.agent]}test"
-        await _create_oauth2_token(save_fixture, access_token, agent=agent)
-        agent.set_deleted_at()
+        for attribute, value in update.items():
+            setattr(agent, attribute, value)
         await save_fixture(agent)
 
         with pytest.raises(InvalidTokenError):
@@ -491,6 +483,24 @@ class TestGetAuthSubjectRequestedOrganization:
             await get_auth_subject(
                 _request_with_bearer_token(
                     access_token, requested_organization=organization_second.id
+                ),
+                session,
+            )
+
+    async def test_agent_token_without_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        agent = await create_agent(save_fixture)
+        access_token = f"{ACCESS_TOKEN_PREFIX[SubType.agent]}test"
+        await _create_oauth2_token(save_fixture, access_token, agent=agent)
+
+        with pytest.raises(RequestedOrganizationNotAccessible):
+            await get_auth_subject(
+                _request_with_bearer_token(
+                    access_token, requested_organization=organization.id
                 ),
                 session,
             )

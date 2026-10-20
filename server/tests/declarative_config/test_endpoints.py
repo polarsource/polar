@@ -92,6 +92,85 @@ class TestApply:
 
         assert response.status_code == 200
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_agent(self, mocker: MockerFixture, client: AsyncClient) -> None:
+        mocker.patch("polar.meter.service.enqueue_job")
+
+        response = await client.post(
+            "/v1/config/apply",
+            json={
+                "meters": [METER],
+                "benefits": [
+                    {
+                        "type": "meter_credit",
+                        "external_id": "credits",
+                        "description": "1,000 tool calls",
+                        "properties": {"meter": "sdk-tool-calls", "units": 1000},
+                    }
+                ],
+                "products": [
+                    {
+                        "external_id": "pro",
+                        "name": "Pro",
+                        "recurring_interval": "month",
+                        "prices": [
+                            {
+                                "amount_type": "metered_unit",
+                                "meter": "sdk-tool-calls",
+                                "unit_amount": "0.5",
+                            }
+                        ],
+                        "benefits": ["credits"],
+                    }
+                ],
+                "discounts": [
+                    {
+                        "external_id": "launch",
+                        "name": "Launch",
+                        "type": "percentage",
+                        "basis_points": 2000,
+                        "duration": "once",
+                        "products": ["pro"],
+                    }
+                ],
+            },
+        )
+
+        assert response.status_code == 200
+        assert [
+            (change["resource"], change["action"])
+            for change in response.json()["changes"]
+        ] == [
+            ("meter", "created"),
+            ("benefit", "created"),
+            ("product", "created"),
+            ("discount", "created"),
+        ]
+
+    @pytest.mark.parametrize("path", ["/v1/config/apply", "/v1/config/plan"])
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_agent_webhooks(self, path: str, client: AsyncClient) -> None:
+        response = await client.post(
+            path,
+            json={
+                "webhooks": [
+                    {
+                        "external_id": "orders",
+                        "url": "https://example.com/webhook",
+                        "format": "raw",
+                        "events": ["order.paid"],
+                        "api_version": "2026-04",
+                    }
+                ]
+            },
+        )
+
+        assert response.status_code == 422
+        [error] = response.json()["detail"]
+        assert error["loc"] == ["body", "webhooks"]
+
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_unknown_key(
@@ -557,6 +636,31 @@ class TestExport:
     ) -> None:
         await create_meter(
             save_fixture, organization=organization, external_id="my-meter"
+        )
+
+        response = await client.get("/v1/config/")
+
+        assert response.status_code == 200
+        [meter] = response.json()["config"]["meters"]
+        assert meter["external_id"] == "my-meter"
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_agent(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        await create_meter(
+            save_fixture, organization=organization, external_id="my-meter"
+        )
+        await create_meter(
+            save_fixture,
+            id=uuid.uuid4(),
+            organization=organization_second,
+            external_id="other-meter",
         )
 
         response = await client.get("/v1/config/")

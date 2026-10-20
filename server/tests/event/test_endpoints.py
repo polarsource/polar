@@ -419,6 +419,16 @@ class TestIngest:
 
         assert response.status_code == 403
 
+    @pytest.mark.api_version(V2026_10, V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent(self, client: AsyncClient) -> None:
+        events = [{"name": "event1", "external_customer_id": "CUSTOMER_ID"}]
+
+        response = await client.post("/v1/events/ingest", json={"events": events})
+
+        assert response.status_code == 200
+        assert response.json() == {"inserted": 1, "duplicates": 0}
+
     @pytest.mark.api_version(V2026_10)
     @pytest.mark.auth
     async def test_2026_10_user_session(
@@ -575,6 +585,29 @@ class TestListEventNames:
         response = await client.get("/v1/events/names")
 
         assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent(
+        self,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
+        client: AsyncClient,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        await create_event(
+            buffered_save_fixture, organization=organization, name="tool_call"
+        )
+        await create_event(
+            buffered_save_fixture, organization=organization_second, name="other"
+        )
+        await flush_tinybird_events()
+
+        response = await client.get("/v1/events/names")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert [item["name"] for item in json["items"]] == ["tool_call"]
 
 
 @pytest.mark.anyio

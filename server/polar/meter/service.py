@@ -22,7 +22,7 @@ from sqlalchemy import (
 from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import aliased, joinedload
 
-from polar.auth.models import AuthSubject, Organization, User
+from polar.auth.models import Agent, AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
@@ -95,7 +95,7 @@ class MeterService:
     async def list(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         external_id: Sequence[str] | None = None,
@@ -149,7 +149,7 @@ class MeterService:
     async def get(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         id: uuid.UUID,
     ) -> Meter | None:
         repository = MeterRepository.from_session(session)
@@ -166,7 +166,7 @@ class MeterService:
     async def get_external(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         external_id: str,
     ) -> Meter | None:
         repository = MeterRepository.from_session(session)
@@ -187,7 +187,7 @@ class MeterService:
         self,
         session: AsyncSession,
         meter_create: MeterCreate,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> Meter:
         organization = await get_payload_organization(
             session, auth_subject, meter_create
@@ -265,7 +265,7 @@ class MeterService:
         session: AsyncSession,
         meter: Meter,
         meter_update: MeterUpdate,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> Meter:
         await assert_resource_permission(
             session, auth_subject, meter, OrganizationPermission.products_manage

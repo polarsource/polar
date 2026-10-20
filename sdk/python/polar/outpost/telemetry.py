@@ -5,8 +5,9 @@ from typing import Any
 import httpx
 from opentelemetry.exporter.otlp.proto.common.metrics_encoder import encode_metrics
 from opentelemetry.exporter.otlp.proto.common.trace_encoder import encode_spans
-from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics import Counter, Histogram, MeterProvider
 from opentelemetry.sdk.metrics.export import (
+    AggregationTemporality,
     MetricExporter,
     MetricExportResult,
     MetricsData,
@@ -67,7 +68,13 @@ class RelaySpanExporter(_Relay, SpanExporter):
 class RelayMetricExporter(_Relay, MetricExporter):
     def __init__(self, url: str, headers: dict[str, str]) -> None:
         _Relay.__init__(self, url, headers)
-        MetricExporter.__init__(self)
+        MetricExporter.__init__(
+            self,
+            preferred_temporality={
+                Counter: AggregationTemporality.DELTA,
+                Histogram: AggregationTemporality.DELTA,
+            },
+        )
 
     def export(
         self, metrics_data: MetricsData, timeout_millis: float = 10_000, **kwargs: Any

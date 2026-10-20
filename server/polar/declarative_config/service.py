@@ -11,11 +11,13 @@ from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.service import benefit as benefit_service
+from polar.catalog.repository import CatalogMigrationRepository, CatalogRepository
+from polar.catalog.service import catalog as catalog_service
 from polar.discount.service import discount as discount_service
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
-from polar.models import Organization, User
+from polar.models import Catalog, CatalogMigration, Organization, Product, User
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.oauth2.exceptions import InsufficientScopeError
 from polar.organization.repository import OrganizationRepository
@@ -35,14 +37,17 @@ from .schemas import (
     Config,
     ConfigAction,
     ConfigApplyResult,
+    ConfigCatalogChange,
     ConfigChange,
     ConfigExport,
     ConfigExportDocument,
     ConfigExportMeter,
+    ConfigFieldChange,
     ConfigIssue,
     ConfigIssueSeverity,
     ConfigIssueType,
     ConfigMeter,
+    ConfigMigration,
     ConfigPlan,
     ConfigResource,
     ConfigResult,
@@ -53,6 +58,7 @@ from .schemas import (
 )
 from .validation import (
     BenefitChange,
+    ConfigChanges,
     DiscountChange,
     MeterChange,
     ProductChange,
@@ -103,6 +109,13 @@ def _constraint_name(error: IntegrityError) -> str | None:
 @dataclass
 class _OrganizationTarget:
     organization_id: UUID | None
+
+
+@dataclass
+class _MigrationCheck:
+    config: ConfigMigration
+    action: ConfigAction
+    subscriptions: int
 
 
 class ConfigAsCodeNotEnabled(PolarError):
@@ -180,9 +193,23 @@ class DeclarativeConfigService:
                 OrganizationPermission.organization_manage,
             )
         await _assert_webhooks_permission(session, auth_subject, config, organization)
+        versioned = organization.is_catalog_versioning_enabled
+        live: Catalog | None = None
+        if versioned:
+            await catalog_service.lock(session, organization)
+            live = await catalog_service.get_or_create_live(session, organization)
         changes, issues = await validation.check(
             session, organization, config, for_update=True
         )
+        catalog_after = (
+            self._get_catalog_after(0 if live is None else live.version, changes)
+            if versioned
+            else None
+        )
+        migrations, migration_issues = await self._check_migrations(
+            session, organization, config, changes, catalog_after
+        )
+        issues.extend(migration_issues)
         errors = [
             issue for issue in issues if issue.severity == ConfigIssueSeverity.error
         ]
@@ -201,13 +228,27 @@ class DeclarativeConfigService:
         benefit_results, benefit_ids = await self._apply_benefits(
             session, redis, auth_subject, organization, changes.benefits, meter_ids
         )
-        product_results, product_ids = await self._apply_products(
+        product_results, product_ids, new_products = await self._apply_products(
             session,
             auth_subject,
             organization,
             changes.products,
             meter_ids,
             benefit_ids,
+            versioned=versioned,
+        )
+        catalog_change: ConfigCatalogChange | None = None
+        if new_products:
+            published = await catalog_service.publish(
+                session, organization, live, new_products
+            )
+            catalog_change = ConfigCatalogChange(
+                before=None if live is None else live.version,
+                after=published.version,
+            )
+            live = published
+        migration_results = await self._apply_migrations(
+            session, organization, live, migrations
         )
         discount_results = await self._apply_discounts(
             session, auth_subject, organization, changes.discounts, product_ids
@@ -231,7 +272,9 @@ class DeclarativeConfigService:
                 *benefit_results,
                 *product_results,
                 *discount_results,
+                *migration_results,
             ],
+            catalog=catalog_change,
             settings=settings_result,
         )
 
@@ -249,14 +292,64 @@ class DeclarativeConfigService:
         changes, issues = await validation.check(
             session, organization, config, for_update=False
         )
+        catalog_before: int | None = None
+        catalog_after: int | None = None
+        if organization.is_catalog_versioning_enabled:
+            catalog_before, base = await catalog_service.get_base_version(
+                session, organization
+            )
+            catalog_after = self._get_catalog_after(base, changes)
+        migrations, migration_issues = await self._check_migrations(
+            session, organization, config, changes, catalog_after
+        )
+        issues.extend(migration_issues)
+        product_changes = self._plan_changes(ConfigResource.product, changes.products)
+        if catalog_after and catalog_after != catalog_before:
+            for product_change, change in zip(
+                product_changes, changes.products, strict=True
+            ):
+                if change.existing is not None and change.update_dict:
+                    product_change.diff.append(
+                        ConfigFieldChange(
+                            field="version",
+                            before=change.existing.version,
+                            after=catalog_after,
+                        )
+                    )
         return ConfigPlan(
             changes=[
                 *self._plan_changes(ConfigResource.webhook, changes.webhooks),
                 *self._plan_changes(ConfigResource.meter, changes.meters),
                 *self._plan_changes(ConfigResource.benefit, changes.benefits),
-                *self._plan_changes(ConfigResource.product, changes.products),
+                *product_changes,
                 *self._plan_changes(ConfigResource.discount, changes.discounts),
+                *[
+                    ConfigChange(
+                        resource=ConfigResource.migration,
+                        external_id=migration.config.external_id,
+                        action=migration.action,
+                        diff=[
+                            ConfigFieldChange(
+                                field="subscriptions",
+                                before=None,
+                                after=migration.subscriptions,
+                            ),
+                            ConfigFieldChange(
+                                field="target",
+                                before=None,
+                                after=(
+                                    f"{migration.config.target_external_id}"
+                                    f"@{migration.config.to_catalog}"
+                                ),
+                            ),
+                        ],
+                    )
+                    for migration in migrations
+                ],
             ],
+            catalog=ConfigCatalogChange(before=catalog_before, after=catalog_after)
+            if catalog_after and catalog_after != catalog_before
+            else None,
             settings=None
             if changes.settings is None
             else ConfigSettingsChange(
@@ -319,6 +412,186 @@ class DeclarativeConfigService:
                     )
                 )
         return ConfigExport(config=ConfigExportDocument(meters=meters), skipped=skipped)
+
+    def _get_catalog_after(self, base: int, changes: ConfigChanges) -> int:
+        if any(
+            change.existing is None or change.update_dict for change in changes.products
+        ):
+            return base + 1
+        return base
+
+    async def _check_migrations(
+        self,
+        session: AsyncReadSession,
+        organization: Organization,
+        config: Config,
+        changes: ConfigChanges,
+        catalog_after: int | None,
+    ) -> tuple[list[_MigrationCheck], list[ConfigIssue]]:
+        if not config.migrations:
+            return [], []
+        if catalog_after is None:
+            return [], [
+                ConfigIssue(
+                    severity=ConfigIssueSeverity.error,
+                    type=ConfigIssueType.not_supported,
+                    loc=["body", "migrations"],
+                    msg="Migrations need catalog versioning, which isn't enabled.",
+                    input=None,
+                )
+            ]
+
+        product_changes = {
+            change.config.external_id: change for change in changes.products
+        }
+        live_product_ids = await catalog_service.get_live_product_ids(
+            session, organization
+        )
+        repository = CatalogMigrationRepository.from_session(session)
+        issues: list[ConfigIssue] = []
+        checks: list[_MigrationCheck] = []
+        seen_sources: set[str] = set()
+        for index, migration in enumerate(config.migrations):
+            loc: list[str | int] = ["body", "migrations", index]
+            if migration.subscriptions_of in seen_sources:
+                issues.append(
+                    ConfigIssue(
+                        severity=ConfigIssueSeverity.error,
+                        type=ConfigIssueType.duplicate_external_id,
+                        loc=[*loc, "subscriptions_of"],
+                        msg=(
+                            "Two migrations in the same apply can't move "
+                            "the same subscriptions."
+                        ),
+                        input=migration.subscriptions_of,
+                    )
+                )
+                continue
+            seen_sources.add(migration.subscriptions_of)
+
+            existing = await repository.get_by_external_id(
+                organization.id, migration.external_id
+            )
+            if existing is not None:
+                existing_catalog = await CatalogRepository.from_session(
+                    session
+                ).get_by_id(existing.catalog_id)
+                assert existing_catalog is not None
+                if (
+                    existing_catalog.version != migration.to_catalog
+                    or existing.source_external_id != migration.subscriptions_of
+                    or existing.target_external_id != migration.target_external_id
+                ):
+                    issues.append(
+                        ConfigIssue(
+                            severity=ConfigIssueSeverity.error,
+                            type=ConfigIssueType.migration_changed,
+                            loc=loc,
+                            msg=(
+                                "This migration was already applied with a "
+                                "different definition. Use a new external_id."
+                            ),
+                            input=migration.external_id,
+                        )
+                    )
+                    continue
+                checks.append(
+                    _MigrationCheck(
+                        migration, ConfigAction.unchanged, existing.subscriptions_count
+                    )
+                )
+                continue
+
+            if migration.to_catalog != catalog_after:
+                issues.append(
+                    ConfigIssue(
+                        severity=ConfigIssueSeverity.error,
+                        type=ConfigIssueType.unknown_reference,
+                        loc=[*loc, "to_catalog"],
+                        msg=(
+                            "Migrations can only target the live catalog: "
+                            f"version {catalog_after}."
+                        ),
+                        input=migration.to_catalog,
+                    )
+                )
+                continue
+
+            target_change = product_changes.get(migration.target_external_id)
+            target_id = live_product_ids.get(migration.target_external_id)
+            if target_change is None and target_id is None:
+                issues.append(
+                    ConfigIssue(
+                        severity=ConfigIssueSeverity.error,
+                        type=ConfigIssueType.unknown_reference,
+                        loc=[
+                            *loc,
+                            "to_product"
+                            if migration.to_product
+                            else "subscriptions_of",
+                        ],
+                        msg="This product isn't in the target catalog.",
+                        input=migration.target_external_id,
+                    )
+                )
+                continue
+            if target_change is not None and (
+                target_change.existing is None or target_change.update_dict
+            ):
+                target_id = None
+
+            checks.append(
+                _MigrationCheck(
+                    migration,
+                    ConfigAction.created,
+                    await catalog_service.count_migratable_subscriptions(
+                        session,
+                        organization,
+                        migration.subscriptions_of,
+                        exclude_product_id=target_id,
+                    ),
+                )
+            )
+        return checks, issues
+
+    async def _apply_migrations(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        live: Catalog | None,
+        migrations: Sequence[_MigrationCheck],
+    ) -> list[ConfigResult]:
+        results: list[ConfigResult] = []
+        repository = CatalogMigrationRepository.from_session(session)
+        for migration in migrations:
+            if migration.action == ConfigAction.created:
+                assert live is not None
+                target = await catalog_service.get_catalog_product(
+                    session, live, migration.config.target_external_id
+                )
+                assert target is not None
+                migrated = await catalog_service.migrate_subscriptions(
+                    session, organization, migration.config.subscriptions_of, target
+                )
+                await repository.create(
+                    CatalogMigration(
+                        organization_id=organization.id,
+                        external_id=migration.config.external_id,
+                        catalog_id=live.id,
+                        source_external_id=migration.config.subscriptions_of,
+                        target_external_id=migration.config.target_external_id,
+                        subscriptions_count=migrated,
+                    ),
+                    flush=True,
+                )
+            results.append(
+                ConfigResult(
+                    resource=ConfigResource.migration,
+                    external_id=migration.config.external_id,
+                    action=migration.action,
+                )
+            )
+        return results
 
     def _plan_changes(
         self, resource: ConfigResource, changes: Sequence[ResourceChange[Any, Any]]
@@ -538,7 +811,9 @@ class DeclarativeConfigService:
         changes: Sequence[ProductChange],
         meter_ids: dict[str, UUID],
         benefit_ids: dict[str, UUID],
-    ) -> tuple[list[ConfigResult], dict[str, UUID]]:
+        *,
+        versioned: bool,
+    ) -> tuple[list[ConfigResult], dict[str, UUID], dict[str, Product]]:
         repository = ProductRepository.from_session(session)
         external_ids = {
             str(id): external_id
@@ -547,10 +822,18 @@ class DeclarativeConfigService:
         }
         results: list[ConfigResult] = []
         product_ids: dict[str, UUID] = {}
+        new_products: dict[str, Product] = {}
         for change in changes:
             config = change.config
             product = change.existing
+            copy_on_write = versioned and product is not None and change.update_dict
             try:
+                if copy_on_write:
+                    assert product is not None
+                    await repository.update(
+                        product, update_dict={"is_current": False}, flush=True
+                    )
+                    product = None
                 if product is None:
                     try:
                         async with session.begin_nested():
@@ -581,8 +864,8 @@ class DeclarativeConfigService:
                         ),
                         auth_subject,
                     )
-                if (change.existing is None and config.benefits) or (
-                    "benefits" in change.update_dict
+                if ((change.existing is None or copy_on_write) and config.benefits) or (
+                    "benefits" in change.update_dict and not copy_on_write
                 ):
                     await product_service.update_benefits(
                         session,
@@ -593,6 +876,8 @@ class DeclarativeConfigService:
             except PolarRequestValidationError as e:
                 raise products.product_error(e, change.index, external_ids) from e
             product_ids[config.external_id] = product.id
+            if versioned and (change.existing is None or copy_on_write):
+                new_products[config.external_id] = product
             results.append(
                 ConfigResult(
                     resource=ConfigResource.product,
@@ -600,7 +885,7 @@ class DeclarativeConfigService:
                     action=change.action,
                 )
             )
-        return results, product_ids
+        return results, product_ids, new_products
 
     async def _apply_discounts(
         self,

@@ -134,6 +134,8 @@ class ProductService:
             isouter=True,
         )
 
+        statement = statement.where(Product.is_current)
+
         if id is not None:
             statement = statement.where(Product.id.in_(id))
 

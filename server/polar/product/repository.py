@@ -53,6 +53,16 @@ class ProductRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_by_external_id_and_organization(
+        self, external_id: str, organization_id: UUID
+    ) -> Product | None:
+        statement = self.get_base_statement().where(
+            Product.external_id == external_id,
+            Product.organization_id == organization_id,
+            Product.is_current,
+        )
+        return await self.get_one_or_none(statement)
+
     async def get_all_by_external_ids(
         self,
         organization_id: UUID,
@@ -65,6 +75,7 @@ class ProductRepository(
             .where(
                 Product.organization_id == organization_id,
                 Product.external_id.in_(external_ids),
+                Product.is_current,
             )
             .options(undefer(Product.external_id), *self.get_eager_options())
         )

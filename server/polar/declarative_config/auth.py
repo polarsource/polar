@@ -14,6 +14,7 @@ SECTION_SCOPES = {
     "products": (Scope.products_read, Scope.products_write),
     "discounts": (Scope.discounts_read, Scope.discounts_write),
     "webhooks": (Scope.webhooks_read, Scope.webhooks_write),
+    "migrations": (Scope.subscriptions_read, Scope.subscriptions_write),
 }
 
 _ConfigRead = Authenticator(

@@ -63,6 +63,7 @@ MAXIMUM_BENEFITS = 100
 MAXIMUM_PRODUCTS = 100
 MAXIMUM_DISCOUNTS = 100
 MAXIMUM_WEBHOOK_ENDPOINTS = 25
+MAXIMUM_MIGRATIONS = 20
 
 
 class ConfigMeter(MeterCreateBase):
@@ -383,6 +384,43 @@ class ConfigWebhookEndpoint(Schema):
     )
 
 
+class ConfigMigration(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    external_id: str = Field(
+        min_length=1,
+        description=(
+            "Your identifier for the migration. "
+            "Applying the same migration again does nothing."
+        ),
+    )
+    subscriptions_of: str = Field(
+        min_length=1,
+        description=(
+            "`external_id` of the product whose subscriptions move, in any version."
+        ),
+    )
+    to_catalog: int = Field(
+        ge=1, description="Catalog version to move to. Must be the live catalog."
+    )
+    to_product: str | None = Field(
+        default=None,
+        min_length=1,
+        description=(
+            "`external_id` of the product to move to, in the target catalog. "
+            "Defaults to `subscriptions_of`."
+        ),
+    )
+    at: Literal["next_period"] = Field(
+        default="next_period",
+        description="When each subscription moves. Each one moves at its own renewal.",
+    )
+
+    @property
+    def target_external_id(self) -> str:
+        return self.to_product or self.subscriptions_of
+
+
 class ConfigSettingsPayments(Schema):
     model_config = ConfigDict(extra="forbid")
 
@@ -463,6 +501,14 @@ class Config(Schema):
             "Existing endpoints that aren't listed are left untouched."
         ),
     )
+    migrations: list[ConfigMigration] = Field(
+        default_factory=list,
+        max_length=MAXIMUM_MIGRATIONS,
+        description=(
+            "Migrations that move existing subscriptions to a catalog version. "
+            "Requires catalog versioning."
+        ),
+    )
     organization_id: OrganizationID | None = Field(
         default=None,
         description=(
@@ -478,12 +524,16 @@ class ConfigIssueSeverity(StrEnum):
 
 
 class ConfigIssueType(StrEnum):
+    catalog_not_live = "catalog_not_live"
     currency_changed = "currency_changed"
     discount_locked = "discount_locked"
     duplicate_code = "duplicate_code"
     duplicate_external_id = "duplicate_external_id"
+    duplicate_migration_source = "duplicate_migration_source"
     duration_changed = "duration_changed"
     interval_changed = "interval_changed"
+    migration_changed = "migration_changed"
+    migration_running = "migration_running"
     meter_locked = "meter_locked"
     missing_currency = "missing_currency"
     not_supported = "not_supported"
@@ -516,6 +566,7 @@ class ConfigResource(StrEnum):
     product = "product"
     discount = "discount"
     webhook = "webhook"
+    migration = "migration"
 
 
 class ConfigResult(Schema):
@@ -528,8 +579,16 @@ class ConfigSettingsResult(Schema):
     action: ConfigAction = Field(description="What applying the config does.")
 
 
+class ConfigCatalogChange(Schema):
+    before: int | None = Field(description="Live catalog version before applying.")
+    after: int = Field(description="Live catalog version after applying.")
+
+
 class ConfigApplyResult(Schema):
     changes: list[ConfigResult]
+    catalog: ConfigCatalogChange | None = Field(
+        description="The published catalog, if applying published a new one."
+    )
     settings: ConfigSettingsResult | None = Field(
         description="Result for `settings`, if in the config."
     )
@@ -558,6 +617,9 @@ class ConfigSettingsChange(ConfigSettingsResult):
 
 class ConfigPlan(Schema):
     changes: list[ConfigChange]
+    catalog: ConfigCatalogChange | None = Field(
+        description="The catalog that applying publishes, if any."
+    )
     settings: ConfigSettingsChange | None = Field(
         description="Change for `settings`, if in the config."
     )

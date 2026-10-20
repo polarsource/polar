@@ -13,6 +13,7 @@ from polar.kit.versioning import version
 from polar.models import Product
 from polar.models.product import ProductVisibility
 from polar.openapi import APITag, cli_preview, destructive, open_world
+from polar.organization.resolver import get_payload_organization
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
@@ -31,7 +32,7 @@ from .schemas import (
     ProductID,
     ProductUpdate,
 )
-from .service import ProductNotDeletable
+from .service import ProductNotDeletable, ProductVersioned
 from .service import product as product_service
 from .sorting import ProductSortProperty
 
@@ -217,6 +218,9 @@ async def create(
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
     """Create a product."""
+    organization = await get_payload_organization(session, auth_subject, product_create)
+    if organization.is_catalog_versioning_enabled:
+        raise NotPermitted(ProductVersioned().message)
     return await product_service.create(session, product_create, auth_subject)
 
 
@@ -227,7 +231,16 @@ async def create(
     status_code=201,
     summary="Create Product",
     openapi_extra=open_world(),
-    responses={201: {"description": "Product created."}},
+    responses={
+        201: {"description": "Product created."},
+        403: {
+            "description": (
+                "You don't have the permission to create this product, "
+                "or the organization uses catalog versioning."
+            ),
+            "model": NotPermitted.schema() | ProductVersioned.schema(),
+        },
+    },
 )
 @version(starting_from=V2027_01)
 async def create_v2027_01(
@@ -236,6 +249,9 @@ async def create_v2027_01(
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
     """Create a product."""
+    organization = await get_payload_organization(session, auth_subject, product_create)
+    if organization.is_catalog_versioning_enabled:
+        raise ProductVersioned()
     return await product_service.create(session, product_create, auth_subject)
 
 
@@ -265,6 +281,9 @@ async def update(
     if product is None:
         raise ResourceNotFound()
 
+    if product.organization.is_catalog_versioning_enabled:
+        raise NotPermitted(ProductVersioned().message)
+
     return await product_service.update(session, product, product_update, auth_subject)
 
 
@@ -277,8 +296,11 @@ async def update(
     responses={
         200: {"description": "Product updated."},
         403: {
-            "description": "You don't have the permission to update this product.",
-            "model": NotPermitted.schema(),
+            "description": (
+                "You don't have the permission to update this product, "
+                "or the organization uses catalog versioning."
+            ),
+            "model": NotPermitted.schema() | ProductVersioned.schema(),
         },
         404: ProductNotFound,
     },
@@ -295,6 +317,9 @@ async def update_v2027_01(
 
     if product is None:
         raise ResourceNotFound()
+
+    if product.organization.is_catalog_versioning_enabled:
+        raise ProductVersioned()
 
     return await product_service.update(session, product, product_update, auth_subject)
 
@@ -324,6 +349,9 @@ async def update_benefits(
 
     if product is None:
         raise ResourceNotFound()
+
+    if product.organization.is_catalog_versioning_enabled:
+        raise NotPermitted(ProductVersioned().message)
 
     product, _, _ = await product_service.update_benefits(
         session, product, benefits_update.benefits, auth_subject

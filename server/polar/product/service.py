@@ -76,6 +76,15 @@ from .sorting import ProductSortProperty
 class ProductError(PolarError): ...
 
 
+class ProductVersioned(ProductError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This organization uses catalog versioning. "
+            "Change products by applying a config.",
+            403,
+        )
+
+
 class ProductNotDeletable(ProductError):
     def __init__(self, product_id: uuid.UUID) -> None:
         self.product_id = product_id

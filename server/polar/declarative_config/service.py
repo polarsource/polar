@@ -37,6 +37,7 @@ from .schemas import (
     Config,
     ConfigAction,
     ConfigApplyResult,
+    ConfigCatalogChange,
     ConfigChange,
     ConfigExport,
     ConfigExportDocument,
@@ -186,11 +187,23 @@ class DeclarativeConfigService:
             )
         await _assert_webhooks_permission(session, auth_subject, config, organization)
         versioned = organization.is_catalog_versioning_enabled
+        catalog_after: int | None = None
         if versioned:
             await catalog_service.lock(session, organization)
         changes, issues = await validation.check(
             session, organization, config, for_update=True
         )
+        if versioned:
+            _, base = await catalog_service.get_base_version(session, organization)
+            catalog_after = catalogs.catalog_after(base, changes)
+        migrations, migration_issues = await catalogs.check_migrations(
+            session, organization, config, changes, catalog_after
+        )
+        issues.extend(migration_issues)
+        if catalog_after is not None:
+            issues.extend(
+                await catalogs.running_migration_issues(session, organization, changes)
+            )
         errors = [
             issue for issue in issues if issue.severity == ConfigIssueSeverity.error
         ]
@@ -221,8 +234,19 @@ class DeclarativeConfigService:
             benefit_ids,
             versioned=versioned,
         )
+        catalog_change: ConfigCatalogChange | None = None
         if new_products:
-            await catalog_service.publish(session, organization, live, new_products)
+            published = await catalog_service.publish(
+                session, organization, live, new_products
+            )
+            catalog_change = ConfigCatalogChange(
+                before=None if live is None else live.version,
+                after=published.version,
+            )
+            live = published
+        migration_results = await catalogs.apply_migrations(
+            session, organization, live, migrations
+        )
         discount_results = await self._apply_discounts(
             session, auth_subject, organization, changes.discounts, product_ids
         )
@@ -246,7 +270,9 @@ class DeclarativeConfigService:
                 *benefit_results,
                 *product_results,
                 *discount_results,
+                *migration_results,
             ],
+            catalog=catalog_change,
             settings=settings_result,
         )
 
@@ -271,6 +297,14 @@ class DeclarativeConfigService:
                 session, organization
             )
             catalog_after = catalogs.catalog_after(base, changes)
+        migrations, migration_issues = await catalogs.check_migrations(
+            session, organization, config, changes, catalog_after
+        )
+        issues.extend(migration_issues)
+        if catalog_after is not None:
+            issues.extend(
+                await catalogs.running_migration_issues(session, organization, changes)
+            )
         product_changes = self._plan_changes(ConfigResource.product, changes.products)
         if catalog_after and catalog_after != catalog_before:
             catalogs.add_version_diffs(
@@ -283,7 +317,11 @@ class DeclarativeConfigService:
                 *self._plan_changes(ConfigResource.benefit, changes.benefits),
                 *product_changes,
                 *self._plan_changes(ConfigResource.discount, changes.discounts),
+                *catalogs.migration_changes(migrations),
             ],
+            catalog=ConfigCatalogChange(before=catalog_before, after=catalog_after)
+            if catalog_after and catalog_after != catalog_before
+            else None,
             settings=None
             if changes.settings is None
             else ConfigSettingsChange(

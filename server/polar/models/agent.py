@@ -55,6 +55,12 @@ class Agent(RecordModel):
     claim_token_hash: Mapped[str | None] = mapped_column(
         String(80), nullable=True, unique=True, default=None
     )
+    claim_token_expires_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+    claim_link_token_hash: Mapped[str | None] = mapped_column(
+        String(80), nullable=True, unique=True, default=None
+    )
     claim_code_hash: Mapped[str | None] = mapped_column(
         String(80), nullable=True, default=None
     )

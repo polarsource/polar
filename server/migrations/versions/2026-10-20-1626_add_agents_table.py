@@ -32,6 +32,8 @@ def upgrade() -> None:
         sa.Column("organization_id", sa.Uuid(), nullable=True),
         sa.Column("claim_email", sa.String(length=320), nullable=True),
         sa.Column("claim_token_hash", sa.String(length=80), nullable=True),
+        sa.Column("claim_token_expires_at", sa.TIMESTAMP(timezone=True), nullable=True),
+        sa.Column("claim_link_token_hash", sa.String(length=80), nullable=True),
         sa.Column("claim_code_hash", sa.String(length=80), nullable=True),
         sa.Column("claim_expires_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("claim_failed_attempts", sa.Integer(), nullable=False),
@@ -61,6 +63,9 @@ def upgrade() -> None:
             ondelete="set null",
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("agents_pkey")),
+        sa.UniqueConstraint(
+            "claim_link_token_hash", name=op.f("agents_claim_link_token_hash_key")
+        ),
         sa.UniqueConstraint(
             "claim_token_hash", name=op.f("agents_claim_token_hash_key")
         ),

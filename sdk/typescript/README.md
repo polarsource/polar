@@ -137,6 +137,9 @@ The metering helper can read meters. Under the hood, it can leverage Outpost to 
 const meter = await metering.meter("meter_uuid", {
     external_customer_id: "customer_123",
 });
+if (meter !== null) {
+    console.log(meter.consumed_units, meter.credited_units, meter.balance);
+}
 ```
 
 With an actor context:
@@ -144,6 +147,9 @@ With an actor context:
 ```typescript
 const actor = await metering.actor({ external_customer_id: "customer_123" });
 const meter = await actor.meter("meter_uuid");
+if (meter !== null) {
+    console.log(meter.consumed_units, meter.credited_units, meter.balance);
+}
 ```
 
 ### Local reduction with Outpost

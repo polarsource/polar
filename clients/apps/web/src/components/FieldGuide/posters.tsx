@@ -250,6 +250,6 @@ export const POSTERS: Record<string, ReactNode> = {
   Simulations: simulations,
   Credits: credits,
   Entitlements: gates,
-  Payments: payments,
+  'Bring your own PSP': payments,
   Identities: identities,
 }

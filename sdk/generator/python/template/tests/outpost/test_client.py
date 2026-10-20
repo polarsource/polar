@@ -14,6 +14,7 @@ import pytest
 from fakeredis import FakeAsyncRedis, FakeServer
 from httpx_ws.transport import ASGIWebSocketTransport
 from opentelemetry.sdk.metrics.export import (
+    ExponentialHistogramDataPoint,
     MetricExporter,
     MetricExportResult,
     MetricsData,
@@ -1082,6 +1083,7 @@ async def test_telemetry_spans(
     assert [(point.attributes, point.count) for point in durations] == [
         ({"outpost.outcome": "ok"}, 1)
     ]
+    assert all(isinstance(point, ExponentialHistogramDataPoint) for point in durations)
     names = {span.name for span in exported_spans}
     assert names == {
         "outpost.redis.connect",

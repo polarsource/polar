@@ -1,6 +1,6 @@
-import type { DataPoint, ResourceMetrics } from "@opentelemetry/sdk-metrics";
 import type { ReadableSpan } from "@opentelemetry/sdk-trace";
 
+import { DataPointType, type DataPoint, type ResourceMetrics } from "@opentelemetry/sdk-metrics";
 import { Pipeline, Redis } from "ioredis";
 import { once } from "node:events";
 import { createRequire } from "node:module";
@@ -23,8 +23,9 @@ vi.mock("./telemetry", async (importOriginal) => {
   const { SimpleSpanProcessor, TracerProvider } = await import("@opentelemetry/sdk-trace");
   const { MeterProvider, PeriodicExportingMetricReader } =
     await import("@opentelemetry/sdk-metrics");
+  const actual = await importOriginal<typeof import("./telemetry")>();
   return {
-    ...(await importOriginal<typeof import("./telemetry")>()),
+    ...actual,
     createTracerProvider: () =>
       new TracerProvider({
         spanProcessors: [
@@ -41,6 +42,7 @@ vi.mock("./telemetry", async (importOriginal) => {
       }),
     createMeterProvider: () =>
       new MeterProvider({
+        views: actual.METRIC_VIEWS,
         readers: [
           new PeriodicExportingMetricReader({
             exporter: {
@@ -634,6 +636,12 @@ it("sends telemetry spans tagged with the connection ID", async () => {
   expect(dataPoints("outpost.ingest.duration")).toMatchObject([
     { attributes: { "outpost.outcome": "ok" }, value: { count: 1 } },
   ]);
+  expect(
+    metrics
+      .flatMap((resourceMetrics) => resourceMetrics.scopeMetrics)
+      .flatMap((scopeMetrics) => scopeMetrics.metrics)
+      .find((metric) => metric.descriptor.name === "outpost.ingest.duration")?.dataPointType,
+  ).toBe(DataPointType.EXPONENTIAL_HISTOGRAM);
   expect(new Set(exported.map((span) => span.name))).toEqual(
     new Set([
       "outpost.redis.connect",

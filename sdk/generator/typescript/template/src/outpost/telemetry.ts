@@ -5,11 +5,13 @@ import {
 import { resourceFromAttributes } from "@opentelemetry/resources";
 import {
   AggregationTemporality,
+  AggregationType,
   type InstrumentType,
   MeterProvider,
   PeriodicExportingMetricReader,
   type PushMetricExporter,
   type ResourceMetrics,
+  type ViewOptions,
 } from "@opentelemetry/sdk-metrics";
 import {
   AlwaysOnSampler,
@@ -26,6 +28,12 @@ import { VERSION } from "../version";
 export const TELEMETRY_ENV = "POLAR_OUTPOST_TELEMETRY";
 const FORWARDED_HEADERS = ["Authorization", "Polar-Organization"];
 const EXPORT_INTERVAL = 30_000;
+export const METRIC_VIEWS: ViewOptions[] = [
+  {
+    instrumentName: "outpost.ingest.duration",
+    aggregation: { type: AggregationType.EXPONENTIAL_HISTOGRAM },
+  },
+];
 type ExportResult = Parameters<Parameters<SpanExporter["export"]>[1]>[0];
 
 export const isTelemetryEnabled = (telemetry: boolean): boolean =>
@@ -126,6 +134,7 @@ export const createMeterProvider = (client: Pick<ClientBase, "buildRequest">): M
   const [url, headers] = relayTarget(client, "/v1/outpost/telemetry/metrics");
   return new MeterProvider({
     resource: resource(),
+    views: METRIC_VIEWS,
     readers: [
       new PeriodicExportingMetricReader({
         exporter: new RelayMetricExporter(url, headers),

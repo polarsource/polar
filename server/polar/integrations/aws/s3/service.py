@@ -135,14 +135,14 @@ class S3Service:
             upload_id=multipart_upload_id,
         )
 
-        upload = S3FileUpload(
+        upload = S3FileUpload.model_validate_overlay(
+            file,
             upload=S3FileUploadMultipart(
                 id=multipart_upload_id,
                 # Keep a shorthand for path here too for upload
                 path=file.path,
                 parts=parts,
             ),
-            **file.model_dump(),
         )
         return upload
 

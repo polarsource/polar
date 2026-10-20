@@ -163,12 +163,10 @@ class SlackIntegration(SlackIntegrationListItem):
 
     @classmethod
     async def from_slack_app(cls, slack_app: SlackApp) -> Self:
-        return cls.model_validate(
-            {
-                **SlackIntegrationListItem.model_validate(slack_app).model_dump(),
-                "client_secret": await slack_app.get_client_secret() or "",
-                "signing_secret": await slack_app.get_signing_secret() or "",
-            }
+        return cls.model_validate_overlay(
+            slack_app,
+            client_secret=await slack_app.get_client_secret() or "",
+            signing_secret=await slack_app.get_signing_secret() or "",
         )
 
 

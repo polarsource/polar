@@ -631,12 +631,8 @@ class OrganizationWithRole(Organization):
         cls, organization: Any, role: OrganizationRole
     ) -> "OrganizationWithRole":
         """Build from a SQLAlchemy `Organization` plus the user's role."""
-        return cls.model_validate(
-            {
-                **Organization.model_validate(organization).model_dump(),
-                "role": role,
-                "permissions": sorted(ROLE_PERMISSIONS[role]),
-            }
+        return cls.model_validate_overlay(
+            organization, role=role, permissions=sorted(ROLE_PERMISSIONS[role])
         )
 
 

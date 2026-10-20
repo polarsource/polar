@@ -848,6 +848,25 @@ class TestUpdateProduct:
 
         assert response.status_code == 422
 
+    @pytest.mark.auth
+    async def test_catalog_versioning(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"catalog_versioning_enabled": True}
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/products/{product.id}", json={"name": "Updated Name"}
+        )
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "ProductVersioned"
+
 
 @pytest.mark.anyio
 class TestUpdateProductBenefits:

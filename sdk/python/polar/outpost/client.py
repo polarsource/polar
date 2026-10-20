@@ -69,9 +69,11 @@ class UnavailableRedisError(PolarOutpostError):
         super().__init__("Redis is unavailable")
 
 
-def _number(value: str | bytes) -> int | float:
-    number: int | float = json.loads(value)
-    if isinstance(number, float) and not math.isfinite(number):
+def _number(value: str) -> int | float:
+    if value.isdecimal() or (value[:1] == "-" and value[1:].isdecimal()):
+        return int(value)
+    number = float(value)
+    if not math.isfinite(number):
         raise ValueError("Stored aggregation values must be finite")
     return number
 
@@ -227,11 +229,10 @@ local state = redis.call('HGETALL', KEYS[1])
 redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], state = state}))
 """
 
-WRITE_BUCKET_SCRIPT = (
-    """
+WRITE_BUCKET_SCRIPT = """
 local cutoff = redis.call('HGET', KEYS[1], 'cold_until')
 if cutoff and tonumber(ARGV[4]) < tonumber(cutoff) then
-    return redis.call('HGETALL', KEYS[1])
+    return {}
 end
 local prefix = 'bucket:' .. ARGV[4] .. ':'
 local total = tonumber(redis.call('HGET', KEYS[1], prefix .. 'sum') or '0') + tonumber(ARGV[6])
@@ -251,10 +252,23 @@ for i, func in ipairs({'min', 'max'}) do
         end
     end
 end
+
+if not redis.call('HGET', KEYS[1], 'epoch') then
+    redis.call('HSET', KEYS[1], 'epoch', ARGV[3], 'revision', '0')
+end
+redis.call('HINCRBY', KEYS[1], 'revision', 1)
+local fields = {'epoch', 'revision', prefix .. 'count', prefix .. 'sum', prefix .. 'min', prefix .. 'max'}
+local values = redis.call('HMGET', KEYS[1], unpack(fields))
+local bucket = {}
+for i, field in ipairs(fields) do
+    if values[i] then
+        table.insert(bucket, field)
+        table.insert(bucket, values[i])
+    end
+end
+redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], bucket = bucket}))
+return bucket
 """
-    + PUBLISH_STATE_SCRIPT
-    + "return state\n"
-)
 
 WRITE_BUCKET_SHA = hashlib.sha1(WRITE_BUCKET_SCRIPT.encode()).hexdigest()
 
@@ -297,7 +311,8 @@ end
 
 class StateUpdate(typing.TypedDict):
     customer: str
-    state: list[str]
+    state: typing.NotRequired[list[str]]
+    bucket: typing.NotRequired[list[str]]
 
 
 @dataclasses.dataclass
@@ -586,7 +601,10 @@ class Outpost:
                     if first_error is None:
                         first_error = state
                     continue
-                await self._receive_state(identity, decode_state(state))
+                # Empty when the bucket is older than the last snapshot: nothing changed.
+                if not state:
+                    continue
+                await self._receive_state(identity, decode_state(state), bucket=True)
             if first_error is not None:
                 raise first_error
         except BaseException:
@@ -825,7 +843,10 @@ class Outpost:
         )
         return decode_state(state)
 
-    async def _receive_state(self, customer: str, state: ReducerState) -> bool:
+    # A bucket update carries one bucket: it applies only on top of the revision just before it.
+    async def _receive_state(
+        self, customer: str, state: ReducerState, *, bucket: bool = False
+    ) -> bool:
         local = self._cache.get(customer)
         if local is None:
             return False
@@ -833,19 +854,30 @@ class Outpost:
             current = local.state
             if current is None:
                 return False
-            if current.epoch != state.epoch:
-                state = await self._load_state(customer)
-            elif current.revision >= state.revision:
+            if current.epoch == state.epoch and current.revision >= state.revision:
                 return False
+            if current.epoch != state.epoch or (
+                bucket and state.revision != current.revision + 1
+            ):
+                state = await self._load_state(customer)
+            elif bucket:
+                current.buckets.update(state.buckets)
+                current.revision = state.revision
+                state = current
             local.state = state
             local.notify()
             return True
 
     async def _receive_redis(self, data: bytes) -> None:
         update: StateUpdate = json.loads(data)
-        applied = await self._receive_state(
-            update["customer"], decode_state(update["state"])
-        )
+        if "bucket" in update:
+            applied = await self._receive_state(
+                update["customer"], decode_state(update["bucket"]), bucket=True
+            )
+        else:
+            applied = await self._receive_state(
+                update["customer"], decode_state(update["state"])
+            )
         self._sync_received += 1
         if applied:
             self._sync_applied += 1

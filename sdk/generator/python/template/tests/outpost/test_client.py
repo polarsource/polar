@@ -44,7 +44,9 @@ from polar.outpost.client import (
     UnavailableRedisError,
     _backoff_delay,
     _is_connection_error,
+    _number,
     connect_websocket,
+    decode_state,
 )
 from polar.outpost.reducer import BUCKET_SIZE, get_bucket_start
 from polar.outpost.telemetry import TELEMETRY_ENV
@@ -684,8 +686,10 @@ async def test_old_messages_and_redis_reset_do_not_roll_back_cache(
         received = anyio.Event()
         original = outpost._receive_state
 
-        async def receive_state(customer: str, state: ReducerState) -> None:
-            await original(customer, state)
+        async def receive_state(
+            customer: str, state: ReducerState, *, bucket: bool = False
+        ) -> None:
+            await original(customer, state, bucket=bucket)
             if state.cold.sum == 1:
                 received.set()
 
@@ -733,6 +737,48 @@ async def test_old_messages_and_redis_reset_do_not_roll_back_cache(
             await received.wait()
         meter = await outpost.meter(external_customer_id="alice", meter_id="meter")
         assert meter is not None and meter.consumed_units == 22
+
+
+@pytest.mark.anyio
+async def test_bucket_updates_apply_in_order_and_reload_after_a_missed_revision(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+) -> None:
+    url, redis = redis_connection
+    key = "outpost:state:external:alice:tokens"
+    await redis.hset(key, mapping={"cold_until": BUCKET, "cold:sum": 10})
+
+    async def ingest(writer: Outpost, tokens: int) -> None:
+        await writer.track(
+            {
+                "name": "call",
+                "external_customer_id": "alice",
+                "timestamp": TIMESTAMP,
+                "metadata": {"tokens": tokens},
+            }
+        )
+
+    async def wait_for(reader: Outpost, consumed_units: int) -> None:
+        with anyio.fail_after(1):
+            while True:
+                meter = await reader.meter(
+                    external_customer_id="alice", meter_id="meter"
+                )
+                if meter is not None and meter.consumed_units == consumed_units:
+                    return
+                await anyio.lowlevel.checkpoint()
+
+    async with (
+        Outpost(url, client=polar_client) as writer,
+        Outpost(url, client=polar_client) as reader,
+    ):
+        await reader.actor(external_customer_id="alice")
+        await ingest(writer, 3)
+        await wait_for(reader, 13)
+        await redis.hset(key, "cold:sum", 20)
+        await redis.hincrby(key, "revision", 1)
+        await ingest(writer, 2)
+        await wait_for(reader, 25)
 
 
 @pytest.mark.anyio
@@ -1173,7 +1219,9 @@ async def test_sync_report_does_not_split_a_message_in_flight(
         receiving = anyio.Event()
         release = anyio.Event()
 
-        async def receive_state(customer: str, state: ReducerState) -> bool:
+        async def receive_state(
+            customer: str, state: ReducerState, *, bucket: bool = False
+        ) -> bool:
             receiving.set()
             await release.wait()
             return True
@@ -1805,3 +1853,51 @@ async def test_failed_resync_wakes_waiting_reads(
                 tasks.start_soon(read)
                 await anyio.sleep(0.05)
                 gate.set()
+
+
+@pytest.mark.parametrize("value", ["abc", "Infinity", "NaN", "1e999"])
+def test_decode_state_rejects_unparsable_values(value: str) -> None:
+    with pytest.raises(ValueError):
+        decode_state(["epoch", "epoch", "revision", "1", "cold:sum", value])
+
+
+# Fails the day a write stores a value that JSON and _number don't read the same way.
+@pytest.mark.anyio
+async def test_stored_values_parse_the_same_with_and_without_json(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+) -> None:
+    url, redis = redis_connection
+    key = "outpost:state:external:alice:tokens"
+    snapshots["external:alice"] = {
+        "customer_id": None,
+        "external_customer_id": "alice",
+        "meter_id": "meter",
+        "version": 1791807000000001,
+        "cold_until": BUCKET,
+        "count": 3,
+        "sum": 0.30000000000000004,
+        "min": -1e-7,
+        "max": 1e21,
+        "credited_units": 2**53 + 2,
+    }
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        with anyio.fail_after(1):
+            while not await redis.hexists(key, "cold:sum"):
+                await anyio.lowlevel.checkpoint()
+        for tokens in (0, -0.0, 1, -2, 0.1, 0.2, 1e-7, 1e21, 2**53, -1.5e300):
+            await outpost.track(
+                {
+                    "name": "call",
+                    "external_customer_id": "alice",
+                    "timestamp": TIMESTAMP,
+                    "metadata": {"tokens": tokens},
+                }
+            )
+    stored = await redis.hgetall(key)
+    del stored[b"epoch"]
+    for field, value in stored.items():
+        assert isinstance(value, bytes)
+        assert (field, _number(value.decode())) == (field, json.loads(value))

@@ -10,7 +10,7 @@ from redis.asyncio import Redis
 from polar.metering import CustomerMeter
 from polar.outpost.client import LocalState, Outpost, consumed_units, decode_state
 from polar.outpost.reducer import Reducer
-from tests.benchmarks import BUCKET_COUNTS, REDUCER, SNAPSHOT, encode_state
+from tests.benchmarks import BUCKET_COUNTS, EPOCH, REDUCER, SNAPSHOT, encode_state
 
 pytestmark = pytest.mark.benchmark
 
@@ -73,12 +73,13 @@ def test_receive_state_update(
     identity = f"external:alice:{REDUCER['id']}"
     local = outpost._cache[identity]
     current = decode_state(encode_state(buckets))
-    # Another instance wrote one event: the next revision of the same state.
-    newer = encode_state(buckets)
-    newer[newer.index("revision") + 1] = str(current.revision + 1)
-    data = json.dumps({"customer": identity, "state": newer}).encode()
+    revision = current.revision
+    # Another instance wrote one event: the next revision, with the newest bucket.
+    bucket = ["epoch", EPOCH, "revision", str(revision + 1), *encode_state(buckets)[-8:]]
+    data = json.dumps({"customer": identity, "bucket": bucket}).encode()
 
     def receive() -> None:
+        current.revision = revision
         local.state = current
         loop.run_until_complete(outpost._receive_redis(data))
 

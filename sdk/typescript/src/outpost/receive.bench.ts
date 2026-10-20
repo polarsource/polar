@@ -1,7 +1,7 @@
 import { afterAll, bench, describe } from "vitest";
 
 import { ClientBase } from "../base";
-import { BUCKET_COUNTS, encodeState } from "./benchmark";
+import { BUCKET_COUNTS, encodeState, EPOCH } from "./benchmark";
 import { decodeState, Outpost, type State } from "./client";
 
 interface Receiver {
@@ -40,11 +40,18 @@ describe("receiveRedis", () => {
       changed: { resolve() {} },
     };
     receiver.cache.set(identity, local);
-    // Another instance wrote one event: the next revision of the same state.
-    const newer = encodeState(buckets);
-    newer[newer.indexOf("revision") + 1] = String(current.revision + 1n);
-    const data = JSON.stringify({ customer: identity, state: newer });
+    const { revision } = current;
+    // Another instance wrote one event: the next revision, with the newest bucket.
+    const bucket = [
+      "epoch",
+      EPOCH,
+      "revision",
+      String(revision + 1n),
+      ...encodeState(buckets).slice(-8),
+    ];
+    const data = JSON.stringify({ customer: identity, bucket });
     bench(`receive a ${buckets}-bucket state update`, async () => {
+      current.revision = revision;
       local.state = current;
       await receiver.receiveRedis(data);
     });

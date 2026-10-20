@@ -16,7 +16,8 @@ from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy.exc import IntegrityError
 
 from polar.account.service import account as account_service
-from polar.auth.models import AuthSubject, is_user
+from polar.agent.repository import AgentRepository
+from polar.auth.models import AuthSubject, is_agent, is_user
 from polar.authz.service import get_accessible_org_ids
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.config import settings
@@ -48,6 +49,7 @@ from polar.kit.sorting import Sorting
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.models import (
+    Agent,
     Customer,
     Organization,
     OrganizationRiskSignal,
@@ -343,12 +345,14 @@ class CannotChangeOwnerError(OrganizationError):
 
 
 class CannotCreateOrganizationError(OrganizationError):
-    def __init__(self) -> None:
-        super().__init__(
+    def __init__(
+        self,
+        message: str = (
             "You cannot create an organization from a session restricted to a "
-            "specific organization.",
-            403,
-        )
+            "specific organization."
+        ),
+    ) -> None:
+        super().__init__(message, 403)
 
 
 class DisputeAutoAcceptNotEnabled(OrganizationError):
@@ -381,7 +385,7 @@ class OrganizationService:
     async def list(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         *,
         slug: str | None = None,
         pagination: PaginationParams,
@@ -461,7 +465,7 @@ class OrganizationService:
         self,
         session: AsyncSession,
         create_schema: OrganizationCreate,
-        auth_subject: AuthSubject[User],
+        auth_subject: AuthSubject[User | Agent],
     ) -> Organization:
         if auth_subject.organization_ids is not None:
             raise CannotCreateOrganizationError()
@@ -515,6 +519,20 @@ class OrganizationService:
                     }
                 ]
             ) from e
+
+        # The steps below need a human owner: they run when the agent is claimed.
+        if is_agent(auth_subject):
+            agent_repository = AgentRepository.from_session(session)
+            agent = await agent_repository.set_organization(
+                auth_subject.subject, organization
+            )
+            if agent is None:
+                raise CannotCreateOrganizationError(
+                    "An agent can only create one organization."
+                )
+            return organization
+
+        assert is_user(auth_subject)
         owner = auth_subject.subject
         polar_self_service.enqueue_create_customer(
             organization_id=organization.id,

@@ -6,13 +6,21 @@ import pytest
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
+from polar.agent.repository import AgentRepository
 from polar.auth.models import AuthSubject
 from polar.auth.service import auth as auth_service
 from polar.config import settings
 from polar.integrations.polar.service import PolarSelfService
 from polar.kit.versioning import APIVersion
-from polar.models import OAuth2Token, OrganizationSSOConnection, Product, User
+from polar.models import (
+    Agent,
+    OAuth2Token,
+    OrganizationSSOConnection,
+    Product,
+    User,
+)
 from polar.models.account import Account
+from polar.models.agent import AgentStatus
 from polar.models.organization import (
     Organization,
     OrganizationStatus,
@@ -69,6 +77,7 @@ class TestListOrganizations:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
+        AuthSubjectFixture(subject="agent"),
     )
     async def test_valid(
         self,
@@ -156,6 +165,7 @@ class TestGetOrganization:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
+        AuthSubjectFixture(subject="agent"),
     )
     async def test_valid(
         self,
@@ -169,6 +179,65 @@ class TestGetOrganization:
 
         json = response.json()
         assert json["id"] == str(organization.id)
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_other_organization(
+        self, client: AsyncClient, organization_second: Organization
+    ) -> None:
+        response = await client.get(f"/v1/organizations/{organization_second.id}")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_claimed_agent(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        auth_subject: AuthSubject[Agent],
+        organization: Organization,
+    ) -> None:
+        auth_subject.subject.status = AgentStatus.claimed
+        await save_fixture(auth_subject.subject)
+
+        response = await client.get(f"/v1/organizations/{organization.id}")
+
+        assert response.status_code == 404
+
+
+@pytest.mark.anyio
+class TestCreateOrganization:
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        client: AsyncClient,
+        auth_subject: AuthSubject[Agent],
+    ) -> None:
+        auth_subject.subject.organization = None
+        await save_fixture(auth_subject.subject)
+
+        response = await client.post(
+            "/v1/organizations/",
+            json={"name": "Agent Organization", "slug": "agent-organization"},
+        )
+
+        assert response.status_code == 201
+        agent = await AgentRepository.from_session(session).get_by_id(
+            auth_subject.subject.id
+        )
+        assert agent is not None
+        assert str(agent.organization_id) == response.json()["id"]
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_with_organization(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/v1/organizations/",
+            json={"name": "Second Organization", "slug": "second-organization"},
+        )
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "CannotCreateOrganizationError"
 
 
 @pytest.mark.anyio
@@ -320,6 +389,27 @@ class TestUpdateOrganization:
 
         json = response.json()
         assert json["name"] == "Updated"
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_valid_agent(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}", json={"name": "Updated"}
+        )
+
+        assert response.status_code == 200
+        assert response.json()["name"] == "Updated"
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_other_organization(
+        self, client: AsyncClient, organization_second: Organization
+    ) -> None:
+        response = await client.patch(
+            f"/v1/organizations/{organization_second.id}", json={"name": "Updated"}
+        )
+
+        assert response.status_code == 404
 
     @pytest.mark.auth
     async def test_negative_revenue_validation(
@@ -1583,7 +1673,9 @@ class TestCheckSlugAvailability:
 
         assert response.status_code == 401
 
-    @pytest.mark.auth
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="agent")
+    )
     async def test_taken(self, client: AsyncClient, organization: Organization) -> None:
         response = await client.post(
             "/v1/organizations/check-slug", json={"slug": organization.slug}
@@ -1800,3 +1892,32 @@ class TestUpdateSSOEnforced:
 
         assert response.status_code == 200
         assert response.json()["sso_enforced"] is False
+
+
+@pytest.mark.anyio
+class TestAgentClosedRoutes:
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    @pytest.mark.parametrize(
+        ("method", "path"),
+        [
+            ("GET", "/account"),
+            ("PATCH", "/payout-account"),
+            ("POST", "/submit-review"),
+            ("POST", "/appeal"),
+            ("POST", "/ai-validation"),
+            ("GET", "/members"),
+            ("POST", "/members/invite"),
+            ("POST", "/subscription"),
+            ("DELETE", ""),
+        ],
+    )
+    async def test_agent_rejected(
+        self, client: AsyncClient, organization: Organization, method: str, path: str
+    ) -> None:
+        response = await client.request(
+            method,
+            f"/v1/organizations/{organization.id}{path}",
+            json={} if method != "GET" else None,
+        )
+
+        assert response.status_code == 401

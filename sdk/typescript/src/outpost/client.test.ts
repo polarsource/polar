@@ -9,7 +9,7 @@ import { WebSocketServer, type WebSocket } from "ws";
 
 import { createPolar } from "../2026-10/client";
 import { ClientBase } from "../base";
-import { Outpost, type OutpostOptions, UnavailableRedisError } from "./client";
+import { decodeState, Outpost, type OutpostOptions, UnavailableRedisError } from "./client";
 import { BUCKET_SIZE, getBucketStart, type Reducer } from "./reducer";
 import { APPLY_SNAPSHOT_SCRIPT } from "./scripts";
 import { TELEMETRY_ENV } from "./telemetry";
@@ -1023,4 +1023,33 @@ it("composes buffered Polar delivery with Outpost through the client factory", a
     expect(fetch).not.toHaveBeenCalled();
   }
   expect(fetch).toHaveBeenCalledOnce();
+});
+
+it.each(["abc", "Infinity", "NaN", "1e999"])("rejects the stored value %j", (value) => {
+  expect(() => decodeState(["epoch", "epoch", "revision", "1", "cold:sum", value])).toThrow();
+});
+
+// Fails the day a write stores a value that JSON and Number don't read the same way.
+it("stores values that parse the same with and without JSON", async () => {
+  snapshot = {
+    ...customer,
+    customer_id: null,
+    meter_id: "meter",
+    cold_until: bucket,
+    version: 1791807000000001,
+    count: 3,
+    sum: 0.30000000000000004,
+    min: -1e-7,
+    max: 1e21,
+    credited_units: 2 ** 53 + 2,
+  };
+  const outpost = await start();
+  await outpost.actor(customer);
+  await vi.waitFor(async () => expect(await redis.hexists(key, "cold:sum")).toBe(1));
+  for (const tokens of [0, -0, 1, -2, 0.1, 0.2, 1e-7, 1e21, 2 ** 53, -1.5e300])
+    await ingest(outpost, tokens);
+  const stored = await redis.hgetall(key);
+  delete stored.epoch;
+  for (const [field, value] of Object.entries(stored))
+    expect([field, Number(value)]).toEqual([field, JSON.parse(value)]);
 });

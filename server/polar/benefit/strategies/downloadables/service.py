@@ -4,7 +4,7 @@ from uuid import UUID
 
 import structlog
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import Agent, AuthSubject
 from polar.customer_portal.service.downloadables import (
     downloadable as downloadable_service,
 )
@@ -148,7 +148,7 @@ class BenefitDownloadablesService(
 
     async def validate_properties(
         self,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         organization: Organization,
         properties: dict[str, Any],
     ) -> BenefitDownloadablesProperties:

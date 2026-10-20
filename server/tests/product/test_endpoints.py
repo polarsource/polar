@@ -16,6 +16,7 @@ from polar.models import (
 from polar.models.custom_field import CustomFieldType
 from polar.postgres import AsyncSession
 from polar.version import V2026_04, V2026_10, V2027_01
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_custom_field,
@@ -493,6 +494,28 @@ class TestCreateProduct:
 
         assert response.status_code == 201
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_valid(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.post(
+            "/v1/products/",
+            json={
+                "name": "Product",
+                "recurring_interval": None,
+                "prices": [
+                    {
+                        "amount_type": "fixed",
+                        "price_amount": 1000,
+                        "price_currency": "usd",
+                    }
+                ],
+            },
+        )
+
+        assert response.status_code == 201
+        assert response.json()["organization_id"] == str(organization.id)
+
     @pytest.mark.auth
     async def test_legacy_free_price_accepted_as_fixed(
         self,
@@ -712,8 +735,11 @@ class TestUpdateProduct:
 
         assert response.status_code == 404
 
-    @pytest.mark.auth
-    async def test_user_cannot_access_other_organization_product(
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="agent"),
+    )
+    async def test_cannot_access_other_organization_product(
         self,
         client: AsyncClient,
         user_organization: UserOrganization,

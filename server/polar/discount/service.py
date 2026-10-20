@@ -7,7 +7,7 @@ import structlog
 from sqlalchemy import Select, UnaryExpression, asc, delete, desc, func, or_, select
 from sqlalchemy.exc import DBAPIError, IntegrityError
 
-from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.auth.models import Agent, AuthSubject, is_agent, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
 from polar.authz.repository import select_accessible_org_ids
 from polar.authz.service import (
@@ -69,7 +69,7 @@ class DiscountService(ResourceServiceReader[Discount]):
     async def list(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         external_id: Sequence[str] | None = None,
@@ -115,7 +115,7 @@ class DiscountService(ResourceServiceReader[Discount]):
     async def get_by_id(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         id: uuid.UUID,
     ) -> Discount | None:
         statement = self._get_readable_discount_statement(auth_subject).where(
@@ -128,7 +128,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         self,
         session: AsyncSession,
         discount_create: DiscountCreate,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         *,
         notify: bool = True,
     ) -> Discount:
@@ -259,7 +259,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         session: AsyncSession,
         discount: Discount,
         discount_update: DiscountUpdate,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> Discount:
         await assert_resource_permission(
             session, auth_subject, discount, OrganizationPermission.products_manage
@@ -402,7 +402,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         self,
         session: AsyncSession,
         discount: Discount,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> Discount:
         await assert_resource_permission(
             session, auth_subject, discount, OrganizationPermission.products_manage
@@ -618,11 +618,11 @@ class DiscountService(ResourceServiceReader[Discount]):
         await webhook_service.send(session, discount.organization, event_type, discount)
 
     def _get_readable_discount_statement(
-        self, auth_subject: AuthSubject[User | Organization]
+        self, auth_subject: AuthSubject[User | Organization | Agent]
     ) -> Select[tuple[Discount]]:
         statement = select(Discount).where(~Discount.is_deleted)
 
-        if is_user(auth_subject):
+        if is_user(auth_subject) or is_agent(auth_subject):
             statement = statement.where(
                 Discount.organization_id.in_(
                     select_accessible_org_ids(

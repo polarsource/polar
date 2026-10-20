@@ -15,6 +15,7 @@ from polar.models.discount import (
 )
 from polar.postgres import AsyncSession
 from polar.version import V2026_10, V2027_01
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_discount
 
@@ -40,8 +41,11 @@ class TestListDiscounts:
 
         assert response.status_code == 401
 
-    @pytest.mark.auth
-    async def test_user_does_not_see_other_organization_discounts(
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="agent"),
+    )
+    async def test_does_not_see_other_organization_discounts(
         self,
         client: AsyncClient,
         user_organization: UserOrganization,
@@ -301,6 +305,24 @@ class TestCreateDiscount:
         )
 
         assert response.status_code == 201
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_valid(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.post(
+            "/v1/discounts/",
+            json={
+                "name": "Discount",
+                "type": "percentage",
+                "code": "DISCOUNT",
+                "duration": "once",
+                "basis_points": 1000,
+            },
+        )
+
+        assert response.status_code == 201
+        assert response.json()["organization_id"] == str(organization.id)
 
     @pytest.mark.auth
     async def test_valid_max_redemptions_per_customer(

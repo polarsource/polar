@@ -12,7 +12,7 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 from polar.version import V2027_01
 
-from ..auth import BenefitsRead
+from ..auth import BenefitGrantsRead
 from ..schemas import BenefitGrant
 from .service import benefit_grant as benefit_grant_service
 from .sorting import ListSorting
@@ -29,7 +29,7 @@ router = APIRouter(
     summary="List Benefit Grants",
 )
 async def list(
-    auth_subject: BenefitsRead,
+    auth_subject: BenefitGrantsRead,
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
@@ -80,7 +80,7 @@ async def list(
 )
 @version(starting_from=V2027_01)
 async def list_v2027_01(
-    auth_subject: BenefitsRead,
+    auth_subject: BenefitGrantsRead,
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(

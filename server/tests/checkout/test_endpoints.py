@@ -348,7 +348,10 @@ class TestCreateCheckout:
 
         assert response.status_code == 422
 
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.checkouts_write}),
+        AuthSubjectFixture(subject="agent"),
+    )
     async def test_valid(
         self,
         api_prefix: str,
@@ -374,6 +377,23 @@ class TestCreateCheckout:
             json["success_url"]
             == f"https://example.com/success?checkout_id={json['id']}"
         )
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_other_organization_product(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        product_organization_second: Product,
+    ) -> None:
+        response = await client.post(
+            f"{api_prefix}/",
+            json={
+                "payment_processor": "stripe",
+                "product_id": str(product_organization_second.id),
+            },
+        )
+
+        assert response.status_code == 422
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
     @pytest.mark.parametrize(

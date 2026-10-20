@@ -41,6 +41,19 @@ class TestEndpoints:
 
         assert response.status_code == 422
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_create(
+        self, client: AsyncClient, organization: Organization, logo_png: TestFile
+    ) -> None:
+        response = await client.post(
+            "/v1/files/",
+            json=logo_png.build_create(organization.id).model_dump(
+                mode="json", exclude={"organization_id"}
+            ),
+        )
+
+        logo_png.validate_create_response(response, organization.id)
+
     @pytest.mark.auth
     async def test_create_with_too_many_parts(
         self, client: AsyncClient, organization: Organization, logo_png: TestFile
@@ -374,9 +387,28 @@ class TestDownload:
         assert response.status_code == 403
         assert "download" not in response.json()
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_other_organization(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization_second: Organization,
+    ) -> None:
+        file = await create_support_case_attachment_file(
+            save_fixture,
+            organization_second,
+            name="release.zip",
+            service=FileServiceTypes.downloadable,
+        )
+
+        response = await client.get(f"/v1/files/{file.id}/download")
+
+        assert response.status_code == 404
+
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
+        AuthSubjectFixture(subject="agent"),
     )
     async def test_valid(
         self,

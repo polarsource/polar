@@ -23,11 +23,17 @@ something has to own that org and make the API calls, and neither a placeholder 
 
 **Before the claim, an agent is an `Agent` auth subject**: a row in one `agents` table, created at
 sign-up, which also holds its OAuth client, its status and who claimed it. It authenticates as
-itself, owns exactly one org through an agent–organization link (not a `UserOrganization`
+itself, owns exactly one org through an `organization_id` on its row (not a `UserOrganization`
 membership), and can only reach endpoints whose `Authenticator` lists `Agent` in `allowed_subjects`.
 **After the claim, it acts on behalf of the claiming user by design, with ordinary user OAuth
 tokens**: the claim replaces its identity assertion with one that only yields that user's tokens. Its
 OAuth client stays marked as an agent, which is what still identifies it, for example in logs.
+
+**The claim**, in one transaction: the human becomes the org's owner, everything issued to the agent
+before the claim is revoked, and the agent's row is marked claimed (by whom and when). The row is
+kept, with its `organization_id`: the token endpoint checks it on every exchange, so revoking the
+agent stops it and identity assertions issued before the claim are rejected. The org and its data
+stay as they are.
 
 ## Consequences
 
@@ -36,12 +42,13 @@ OAuth client stays marked as an agent, which is what still identifies it, for ex
   `@pytest.mark.auth(AuthSubjectFixture(subject="agent"))`. Check the existing `if is_user(...) else`
   branches: code that treats every non-user as an `Organization` will misread an `Agent`.
 - Only endpoints that set up the org's catalog may accept `Agent`: organizations, products, meters,
-  benefits, discounts, events and config. Endpoints that take payments, hold buyer data or pay out
-  never do: orders, subscriptions, refunds, customers and payouts. Neither do members or webhooks,
+  benefits, discounts, events and config. Endpoints that hold buyer data or move money never do:
+  orders, subscriptions, refunds, customers and payouts. Neither do members or webhooks,
   including config's webhook section, because a webhook set up before the claim keeps receiving data
   after it. In production the org can't go live before the claim; in sandbox it can.
-- Checkout sessions and checkout links accept `Agent` in sandbox only, so the agent can test a
-  checkout end to end with test cards. In production they stay closed until the claim.
+- Checkout sessions and checkout links accept `Agent`, in sandbox and production alike, so the agent
+  can test a checkout end to end. No per-environment rule is needed: a checkout only takes payment
+  once the org is approved, and in production that can't happen before the claim.
 - Unclaimed agents can't create organization access tokens: one would be an `Organization` caller
   that skips this allowlist and keeps working after the claim. App-side testing that needs one waits
   for the claim.
@@ -51,9 +58,8 @@ OAuth client stays marked as an agent, which is what still identifies it, for ex
   such as refunds. It doesn't help where scopes are shared: the payout-account, member-invite and
   review-submission routes need `organizations:write`, like editing the org itself, so only the
   allowlist keeps agents out of them.
-- No placeholder users: the users table, login, emails and user metrics only ever see people. The claim
-  adds the human as owner and revokes everything the agent was issued before it; nothing moves between
-  users.
+- No placeholder users: the users table, login, emails and user metrics only ever see people, and
+  nothing moves between users at the claim.
 - The org-access helpers and authz policies resolve an `Agent` to its one org, so it behaves like a
   single-organization credential. Inside that org it has its own role in
   [ADR-0005](/engineering/decisions/0005-auth-subject-and-scopes)'s role layer (`ROLE_PERMISSIONS`):
@@ -63,7 +69,7 @@ OAuth client stays marked as an agent, which is what still identifies it, for ex
   handle that.
 - OAuth tokens, grants and authorization codes gain a third sub type, `SubType.agent`.
 - Accepted trade-off: a new kind of caller across the auth model. Every authz path and subject branch
-  must account for `Agent`, and the agent–organization link is a second ownership path next to
+  must account for `Agent`, and the agent's `organization_id` is a second ownership path next to
   memberships.
 
 ## Alternatives considered

@@ -48,6 +48,7 @@ const FORCED_DARK_PREFIXES = [
   '/downloads',
   '/legal',
   '/midday/portal',
+  '/field-guide',
 ]
 
 const isForcedDarkPath = (pathname: string): boolean =>

@@ -11,7 +11,7 @@ const LANDING_DIR = path.join(
   'src/app/(main)/(website)/(landing)',
 )
 
-const EXTRA_ROUTES = ['/docs', '/brand']
+const EXTRA_ROUTES = ['/docs', '/brand', '/field-guide']
 
 function collectLandingRoutes(): string[] {
   const routes: string[] = []

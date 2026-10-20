@@ -206,7 +206,6 @@ skip_cache_mtime_checks = true
 init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = false
-warn_untyped_fields = true
 
 [tool.uv]
 exclude-newer = "1 week"

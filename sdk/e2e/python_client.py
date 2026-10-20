@@ -42,7 +42,7 @@ async def main() -> None:
                     break
                 if operation == "ingest":
                     for event in command["arguments"]["events"]:
-                        await outpost.ingest(event)
+                        await outpost.track(event)
                     print(json.dumps({"result": None}), flush=True)
                     continue
                 methods = {

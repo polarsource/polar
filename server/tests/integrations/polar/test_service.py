@@ -1336,6 +1336,7 @@ def _make_product(
             "meter_interval": None,
             "meter_interval_count": None,
             "is_recurring": True,
+            "is_deletable": False,
             "is_archived": False,
             "organization_id": str(SELF_ORG_ID),
             "metadata": metadata or {},

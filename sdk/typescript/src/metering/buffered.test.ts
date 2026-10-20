@@ -9,7 +9,7 @@ import {
   PolarServerError,
   type RequestOptions,
 } from "../base";
-import { BufferedIngestionStrategy } from "./buffered";
+import { BufferedMeteringStrategy } from "./buffered";
 
 const events: EventInput[] = Array.from({ length: 5 }, (_, i) => ({
   name: `usage-${i}`,
@@ -23,24 +23,24 @@ afterEach(() => {
 
 it("flushes empty and bounded batches, then accepts more events", async () => {
   const ingest = vi.fn().mockResolvedValue(undefined);
-  const strategy = new BufferedIngestionStrategy(
+  const strategy = new BufferedMeteringStrategy(
     { events: { ingest } },
     { batchSize: 2, batchIntervalMs: 60_000 },
   );
-  await expect(strategy.ingest(events[0])).rejects.toThrow("not running");
+  await expect(strategy.track(events[0])).rejects.toThrow("not running");
   await expect(strategy.flush()).rejects.toThrow("not running");
   await strategy.start();
   await expect(strategy.start()).rejects.toThrow("already started");
   await strategy.flush();
   expect(ingest).not.toHaveBeenCalled();
-  for (const event of events) await strategy.ingest(event);
+  for (const event of events) await strategy.track(event);
   await strategy.flush();
   expect(ingest.mock.calls.map(([body]) => body.events)).toEqual([
     events.slice(0, 2),
     events.slice(2, 4),
     events.slice(4),
   ]);
-  await strategy.ingest(events[0]);
+  await strategy.track(events[0]);
   await strategy.flush();
   expect(ingest).toHaveBeenCalledTimes(4);
   await strategy.close();
@@ -50,15 +50,15 @@ it("flushes empty and bounded batches, then accepts more events", async () => {
 it("starts the batch interval with the first event without resetting it", async () => {
   vi.useFakeTimers();
   const ingest = vi.fn().mockResolvedValue(undefined);
-  await using strategy = await new BufferedIngestionStrategy(
+  await using strategy = await new BufferedMeteringStrategy(
     { events: { ingest } },
     { batchIntervalMs: 100 },
   ).start();
   expect(vi.getTimerCount()).toBe(0);
   await vi.advanceTimersByTimeAsync(50);
-  await strategy.ingest(events[0]);
+  await strategy.track(events[0]);
   await vi.advanceTimersByTimeAsync(50);
-  await strategy.ingest(events[1]);
+  await strategy.track(events[1]);
   expect(ingest).not.toHaveBeenCalled();
   await vi.advanceTimersByTimeAsync(50);
   expect(ingest).toHaveBeenCalledExactlyOnceWith({ events: events.slice(0, 2) }, expect.anything());
@@ -73,16 +73,16 @@ it("keeps concurrent flush boundaries separate while a batch is in flight", asyn
         finishDelivery = resolve;
       }),
   );
-  await using strategy = await new BufferedIngestionStrategy(
+  await using strategy = await new BufferedMeteringStrategy(
     { events: { ingest } },
     { batchSize: 1 },
   ).start();
   try {
-    await strategy.ingest(events[0]);
+    await strategy.track(events[0]);
     await vi.waitFor(() => expect(ingest).toHaveBeenCalledOnce());
     const firstDone = vi.fn();
     const firstFlush = strategy.flush().then(firstDone);
-    await strategy.ingest(events[1]);
+    await strategy.track(events[1]);
     const secondDone = vi.fn();
     const secondFlush = strategy.flush().then(secondDone);
     const closed = vi.fn();
@@ -117,21 +117,21 @@ it.each(["shutdown timeout", "worker error"])(
       });
     });
     const onDropped = vi.fn();
-    const strategy = await new BufferedIngestionStrategy(
+    const strategy = await new BufferedMeteringStrategy(
       { events: { ingest } },
       { batchIntervalMs: 60_000, shutdownTimeoutMs: 10, onDropped },
     ).start();
-    await strategy.ingest(events[0]);
+    await strategy.track(events[0]);
     const firstFlush = strategy.flush();
     await vi.waitFor(() => expect(ingest).toHaveBeenCalledOnce());
-    await strategy.ingest(events[1]);
+    await strategy.track(events[1]);
     const flushes = Promise.allSettled([firstFlush, strategy.flush()]);
     const error = failure === "worker error" ? "broken transport" : "shutdown timed out";
     if (failure === "worker error") {
       failDelivery(new TypeError(error));
       await expect(strategy.close()).rejects.toThrow(error);
       await expect(strategy.flush()).rejects.toThrow(error);
-      await expect(strategy.ingest(events[0])).rejects.toThrow(error);
+      await expect(strategy.track(events[0])).rejects.toThrow(error);
       expect(onDropped).not.toHaveBeenCalled();
     } else {
       await strategy.close();
@@ -149,11 +149,11 @@ it.each(["shutdown timeout", "worker error"])(
 it.each([0, 1, 5])("drains %i events in bounded batches on disposal", async (count) => {
   const ingest = vi.fn().mockResolvedValue(undefined);
   {
-    await using strategy = await new BufferedIngestionStrategy(
+    await using strategy = await new BufferedMeteringStrategy(
       { events: { ingest } },
       { batchSize: 2, batchIntervalMs: 60_000 },
     ).start();
-    for (const event of events.slice(0, count)) await strategy.ingest(event);
+    for (const event of events.slice(0, count)) await strategy.track(event);
   }
   const batches = ingest.mock.calls.map(([body]) => body.events as EventInput[]);
   expect(batches.flat()).toEqual(events.slice(0, count));
@@ -167,11 +167,11 @@ it.each([
   "automatically sends with batch size $batchSize and interval $batchIntervalMs",
   async (options) => {
     const ingest = vi.fn().mockResolvedValue(undefined);
-    await using strategy = await new BufferedIngestionStrategy(
+    await using strategy = await new BufferedMeteringStrategy(
       { events: { ingest } },
       options,
     ).start();
-    await strategy.ingest(events[0]);
+    await strategy.track(events[0]);
     await vi.waitFor(() => expect(ingest).toHaveBeenCalledOnce());
     expect(ingest.mock.calls[0][0]).toEqual({ events: [events[0]] });
   },
@@ -183,11 +183,11 @@ it("honors Retry-After and preserves the batch through retries", async () => {
     .fn()
     .mockRejectedValueOnce(new PolarRateLimitError(429, 0.001))
     .mockResolvedValue(undefined);
-  await using strategy = await new BufferedIngestionStrategy(
+  await using strategy = await new BufferedMeteringStrategy(
     { events: { ingest } },
     { onDropped },
   ).start();
-  await strategy.ingest(events[0]);
+  await strategy.track(events[0]);
   await strategy.flush();
   expect(ingest).toHaveBeenCalledTimes(2);
   expect(ingest.mock.calls[0]).toEqual(ingest.mock.calls[1]);
@@ -209,11 +209,11 @@ it.each([
         finishDrop = resolve;
       }),
   );
-  await using strategy = await new BufferedIngestionStrategy(
+  await using strategy = await new BufferedMeteringStrategy(
     { events: { ingest } },
     { maxAttempts: 1, onDropped },
   ).start();
-  await strategy.ingest(events[0]);
+  await strategy.track(events[0]);
   const flushed = vi.fn();
   const flushing = strategy.flush().then(flushed);
   try {
@@ -245,7 +245,7 @@ it.each([false, true])(
         });
       },
     );
-    const strategy = await new BufferedIngestionStrategy(
+    const strategy = await new BufferedMeteringStrategy(
       { events: { ingest } },
       {
         batchSize: 1,
@@ -253,7 +253,7 @@ it.each([false, true])(
         onDropped,
       },
     ).start();
-    for (const event of events) await strategy.ingest(event);
+    for (const event of events) await strategy.track(event);
     await strategy.close();
     expect(onDropped.mock.calls).toEqual([
       ...(dropFirst ? [[[events[0]], "permanent_error"]] : []),
@@ -267,14 +267,14 @@ it("cancels a retry wait at the shutdown deadline", async () => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
   const ingest = vi.fn().mockRejectedValue(new PolarNetworkError("offline"));
   const onDropped = vi.fn();
-  const strategy = await new BufferedIngestionStrategy(
+  const strategy = await new BufferedMeteringStrategy(
     { events: { ingest } },
     {
       shutdownTimeoutMs: 10,
       onDropped,
     },
   ).start();
-  await strategy.ingest(events[0]);
+  await strategy.track(events[0]);
   await strategy.close();
   expect(ingest).toHaveBeenCalledOnce();
   expect(onDropped).toHaveBeenCalledExactlyOnceWith([events[0]], "shutdown_timeout");
@@ -283,8 +283,8 @@ it("cancels a retry wait at the shutdown deadline", async () => {
 it("flushes before propagating the scope error", async () => {
   const ingest = vi.fn().mockResolvedValue(undefined);
   await expect(async () => {
-    await using strategy = await new BufferedIngestionStrategy({ events: { ingest } }).start();
-    await strategy.ingest(events[0]);
+    await using strategy = await new BufferedMeteringStrategy({ events: { ingest } }).start();
+    await strategy.track(events[0]);
     throw new Error("body failed");
   }).rejects.toThrow("body failed");
   expect(ingest).toHaveBeenCalledOnce();

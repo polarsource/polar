@@ -1,4 +1,4 @@
-import type { EventInput } from "../ingestion/event";
+import type { EventInput } from "../metering/event";
 
 export interface Event {
   name: string;

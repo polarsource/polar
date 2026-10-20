@@ -6,12 +6,12 @@ import { estimateMeteredCost } from '@/components/Products/ProductForm/Pricing/u
 import { ParsedMeterQuantities } from '@/hooks/queries/meters'
 import { ParsedMetricPeriod } from '@/hooks/queries/metrics'
 import { formatScalar } from '@/utils/formatters'
-import { getTimestampFormatter } from '@/utils/metrics'
 import { MeteredPrice } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { ReactNode } from 'react'
 
 const formatDay = (value: Date | string) => {
   const date = new Date(value)
@@ -24,12 +24,7 @@ const formatDay = (value: Date | string) => {
   })
 }
 
-interface Figure {
-  label: string
-  value: string
-  note?: string
-  danger?: boolean
-}
+const CARD_HEIGHT = 400
 
 export interface CurrentPeriod {
   subscription: schemas['Subscription']
@@ -37,65 +32,53 @@ export interface CurrentPeriod {
   unitPrice: MeteredPrice | null
 }
 
-const sumUnits = (credits: schemas['MeterCreditEvent'][]) =>
-  credits.reduce((sum, credit) => sum + credit.metadata.units, 0)
-
-const getCreditedNote = (credits: schemas['MeterCreditEvent'][]) => {
-  const credited = sumUnits(credits)
-  const manualCredited = sumUnits(
-    credits.filter((credit) => credit.metadata.reason === 'manual'),
-  )
-  if (manualCredited && manualCredited !== credited) {
-    return `Incl. ${formatScalar(manualCredited)} manual`
-  }
-  if (manualCredited) return 'Added manually'
-  return credited ? 'From benefits' : undefined
+interface Usage {
+  headline: string
+  note: string
+  danger?: boolean
+  progress?: number
 }
 
-const getCurrentPeriodFigures = (
-  { subscription, customerMeter, unitPrice }: CurrentPeriod,
-  credits: schemas['MeterCreditEvent'][],
-): Figure[] => {
+const getCurrentPeriodUsage = ({
+  subscription,
+  customerMeter,
+  unitPrice,
+}: CurrentPeriod): Usage => {
   const credited = customerMeter?.credited_units ?? 0
   const used = customerMeter?.consumed_units ?? 0
-  const balance = customerMeter?.balance ?? 0
-  const overage = Math.max(0, -balance)
+  const overage = Math.max(0, -(customerMeter?.balance ?? 0))
   const periodEnd = subscription.current_period_end
+  const nextCycle = periodEnd && `Next cycle ${formatDay(periodEnd)}`
 
-  return [
-    {
-      label: 'Credited',
-      value: formatScalar(credited),
-      note: getCreditedNote(credits),
-    },
-    {
-      label: 'Used',
-      value: formatScalar(used),
-      note:
-        overage > 0
-          ? `${formatScalar(overage)} over credits`
-          : credited > 0
-            ? `${Math.round((used / credited) * 100)}% of credits`
-            : undefined,
-      danger: overage > 0,
-    },
-    {
-      label: 'Remaining',
-      value: formatScalar(Math.max(0, balance)),
-      note: periodEnd ? `Renews ${formatDay(periodEnd)}` : undefined,
-    },
-    {
-      label: 'Overage',
-      value: unitPrice
-        ? formatCurrency('compact')(
+  if (credited === 0) {
+    const cost =
+      unitPrice &&
+      formatCurrency('compact')(
+        estimateMeteredCost(unitPrice, used),
+        unitPrice.price_currency,
+      )
+    return {
+      headline: `${formatScalar(used)} used`,
+      note: [cost && `${cost} so far`, nextCycle].filter(Boolean).join(' · '),
+    }
+  }
+
+  return {
+    headline: `${formatScalar(used)} / ${formatScalar(credited)}`,
+    note: [
+      unitPrice
+        ? `${formatCurrency('compact')(
             estimateMeteredCost(unitPrice, overage),
             unitPrice.price_currency,
-          )
-        : '—',
-      note:
-        unitPrice && periodEnd ? `Billed ${formatDay(periodEnd)}` : undefined,
-    },
-  ]
+          )} overages`
+        : overage > 0 && `${formatScalar(overage)} over credits`,
+      nextCycle,
+    ]
+      .filter(Boolean)
+      .join(' · '),
+    danger: overage > 0,
+    progress: Math.min(1, used / credited),
+  }
 }
 
 const getRangeLabel = (
@@ -109,38 +92,21 @@ const getRangeLabel = (
     : `${formatDay(from)} – ${formatDay(to)}`
 }
 
-const getRangeFigures = (
+const getRangeUsage = (
   rangeLabel: string,
   quantities: ParsedMeterQuantities | undefined,
   credits: schemas['MeterCreditEvent'][],
-  interval: schemas['TimeInterval'],
-): Figure[] => {
-  const buckets = quantities?.quantities ?? []
-  const peak = buckets.length
-    ? buckets.reduce((max, bucket) =>
-        bucket.quantity > max.quantity ? bucket : max,
-      )
-    : undefined
-
-  return [
-    {
-      label: 'Used',
-      value: formatScalar(quantities?.total ?? 0),
-      note: rangeLabel,
-    },
-    {
-      label: 'Credited',
-      value: formatScalar(sumUnits(credits)),
-      note: getCreditedNote(credits),
-    },
-    {
-      label: `Peak ${interval}`,
-      value: peak?.quantity ? formatScalar(peak.quantity) : '—',
-      note: peak?.quantity
-        ? getTimestampFormatter(interval)(new Date(peak.timestamp))
-        : undefined,
-    },
-  ]
+): Usage => {
+  const credited = credits.reduce(
+    (sum, credit) => sum + credit.metadata.units,
+    0,
+  )
+  return {
+    headline: `${formatScalar(quantities?.total ?? 0)} used`,
+    note: [credited && `${formatScalar(credited)} credited`, rangeLabel]
+      .filter(Boolean)
+      .join(' · '),
+  }
 }
 
 export const MeterPeriodSummary = ({
@@ -152,6 +118,7 @@ export const MeterPeriodSummary = ({
   startDate,
   endDate,
   interval,
+  children,
 }: {
   organization: schemas['Organization']
   meter: schemas['Meter']
@@ -161,75 +128,74 @@ export const MeterPeriodSummary = ({
   startDate: Date
   endDate: Date
   interval: schemas['TimeInterval']
+  children: ReactNode
 }) => {
-  const figures = currentPeriod
-    ? getCurrentPeriodFigures(currentPeriod, credits)
-    : getRangeFigures(
+  const usage = currentPeriod
+    ? getCurrentPeriodUsage(currentPeriod)
+    : getRangeUsage(
         getRangeLabel(organization, startDate, endDate),
         quantities,
         credits,
-        interval,
       )
 
+  const chart = (height: number) => (
+    <MetricChart
+      data={(quantities?.quantities ?? []) as unknown as ParsedMetricPeriod[]}
+      interval={interval}
+      height={height}
+      metric={{ slug: 'quantity', display_name: meter.name, type: 'scalar' }}
+      chartType="bar"
+    />
+  )
   return (
-    <Box
-      flexDirection="column"
+    <Grid
+      templateColumns={{ base: '1fr', lg: 'minmax(0, 3fr) minmax(0, 2fr)' }}
+      templateRows={{ lg: 'minmax(0, 1fr)' }}
+      height={{ lg: CARD_HEIGHT }}
       borderWidth={1}
       borderStyle="solid"
       borderColor="border-primary"
       borderRadius="l"
       overflow="hidden"
     >
-      <Grid
-        templateColumns={
-          figures.length === 4
-            ? { base: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }
-            : { base: '1fr', md: 'repeat(3, 1fr)' }
-        }
-        style={{ clipPath: 'inset(0 1px 0 0)' }}
-      >
-        {figures.map((figure) => (
-          <Box
-            key={figure.label}
-            flexDirection="column"
-            rowGap="xs"
-            padding="xl"
-            borderRightWidth={1}
-            borderBottomWidth={1}
-            borderStyle="solid"
-            borderColor="border-primary"
-          >
-            <Text color="muted">{figure.label}</Text>
-            <Text variant="heading-xs" tabularNums>
-              {figure.value}
-            </Text>
-            {figure.note && (
-              <Text
-                variant="caption"
-                color={figure.danger ? 'danger' : 'muted'}
-              >
-                {figure.note}
-              </Text>
-            )}
-          </Box>
-        ))}
-      </Grid>
-      <Box display="block" padding="l">
-        <MetricChart
-          data={
-            (quantities?.quantities ?? []) as unknown as ParsedMetricPeriod[]
-          }
-          interval={interval}
-          height={240}
-          metric={{
-            slug: 'quantity',
-            display_name: meter.name,
-            type: 'scalar',
-          }}
-          showYAxis
-          chartType={meter.aggregation.func === 'count' ? 'bar' : 'line'}
-        />
+      <Box display="block" padding="l" alignSelf="center">
+        {chart(CARD_HEIGHT - 48)}
       </Box>
-    </Box>
+      <Box
+        flexDirection="column"
+        minHeight={0}
+        borderLeftWidth={{ base: 0, lg: 1 }}
+        borderTopWidth={{ base: 1, lg: 0 }}
+        borderStyle="solid"
+        borderColor="border-primary"
+      >
+        <Box flexDirection="column" rowGap="l" padding="xl">
+          {usage.progress !== undefined && (
+            <Box
+              display="block"
+              height={6}
+              borderRadius="full"
+              backgroundColor="background-card"
+              overflow="hidden"
+            >
+              <Box
+                display="block"
+                height={6}
+                borderRadius="full"
+                backgroundColor="background-inverse"
+                width={`${usage.progress * 100}%`}
+              />
+            </Box>
+          )}
+          <Box flexDirection="column" rowGap="xs">
+            <Text variant="heading-xs" tabularNums>
+              {usage.headline}
+            </Text>
+            <Text color={usage.danger ? 'danger' : 'muted'}>{usage.note}</Text>
+          </Box>
+        </Box>
+        {children}
+      </Box>
+    </Grid>
   )
 }

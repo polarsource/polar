@@ -45,7 +45,7 @@ export const ReverseCreditButton = ({
     <>
       <Button
         size="sm"
-        variant="secondary"
+        variant="ghost"
         loading={reverseCredit.isPending}
         onClick={show}
       >

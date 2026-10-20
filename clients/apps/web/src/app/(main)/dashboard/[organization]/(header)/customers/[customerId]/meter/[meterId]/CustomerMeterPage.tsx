@@ -1,6 +1,5 @@
 'use client'
 
-import { AddCreditsButton } from '@/components/Customer/AddCredits/AddCreditsButton'
 import { MeterPeriodDetails } from '@/components/Customer/CustomerMeter/MeterPeriodDetails'
 import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import DateRangePicker, {
@@ -144,17 +143,6 @@ const CustomerMeterPage = ({
                 {subscription && ` · ${subscription.product.name}`}
               </Text>
             </Box>
-            <Box
-              display={{ base: 'flex', md: 'none' }}
-              marginLeft="auto"
-              flexShrink={0}
-            >
-              <AddCreditsButton
-                organization={organization}
-                customer={customer}
-                meterId={meter.id}
-              />
-            </Box>
           </Box>
           <Box alignItems="center" flexWrap="wrap" gap="s">
             <Box display="block">
@@ -172,13 +160,6 @@ const CustomerMeterPage = ({
                 billingPeriodInterval ? [billingPeriodInterval] : undefined
               }
             />
-            <Box display={{ base: 'none', md: 'flex' }}>
-              <AddCreditsButton
-                organization={organization}
-                customer={customer}
-                meterId={meter.id}
-              />
-            </Box>
           </Box>
         </>
       }

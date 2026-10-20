@@ -4,6 +4,7 @@ import { formatScalar } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { ReactNode } from 'react'
 import { ReverseCreditButton } from './ReverseCreditButton'
 
 const describeSource = ({
@@ -23,34 +24,17 @@ export const CreditRow = ({
   reversedUnits,
   reversible,
   hasActions,
-  divided,
 }: {
   credit: schemas['MeterCreditEvent']
   reversedUnits: number | undefined
   reversible: boolean
   hasActions: boolean
-  divided: boolean
 }) => {
   const { units } = credit.metadata
   const reversed = reversedUnits !== undefined
 
   return (
-    <Grid
-      templateColumns={`64px minmax(0, 1fr) auto${hasActions ? ' 88px' : ''}`}
-      columnGap="l"
-      alignItems="center"
-      paddingHorizontal="l"
-      height={48}
-      borderTopWidth={divided ? 1 : 0}
-      borderStyle="solid"
-      borderColor="border-primary"
-    >
-      <Text color="muted" tabularNums>
-        {new Date(credit.timestamp).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-        })}
-      </Text>
+    <HistoryRow timestamp={credit.timestamp} hasActions={hasActions}>
       <Box columnGap="s" minWidth={0} alignItems="baseline">
         <Text truncate>{describeSource(credit)}</Text>
         {reversed && (
@@ -73,6 +57,36 @@ export const CreditRow = ({
           {reversible && <ReverseCreditButton credit={credit} />}
         </Box>
       )}
-    </Grid>
+    </HistoryRow>
   )
 }
+
+export const HistoryRow = ({
+  timestamp,
+  hasActions,
+  children,
+}: {
+  timestamp: string
+  hasActions: boolean
+  children: ReactNode
+}) => (
+  <Grid
+    templateColumns={`64px minmax(0, 1fr) auto${hasActions ? ' 88px' : ''}`}
+    columnGap="l"
+    alignItems="center"
+    paddingHorizontal="xl"
+    height={48}
+    flexShrink={0}
+    borderTopWidth={1}
+    borderStyle="solid"
+    borderColor="border-primary"
+  >
+    <Text color="muted" tabularNums>
+      {new Date(timestamp).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+      })}
+    </Text>
+    {children}
+  </Grid>
+)

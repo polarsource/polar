@@ -747,7 +747,7 @@ async def test_bucket_updates_apply_in_order_and_reload_after_a_missed_revision(
     await redis.hset(key, mapping={"cold_until": BUCKET, "cold:sum": 10})
 
     async def ingest(writer: Outpost, tokens: int) -> None:
-        await writer.ingest(
+        await writer.track(
             {
                 "name": "call",
                 "external_customer_id": "alice",

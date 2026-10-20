@@ -73,33 +73,40 @@ export const getMatcher = (filter: Filter | FilterClause): EventMatcher => {
       : (event) => children.some((match) => match(event));
   }
   const read = getPropertyReader(filter.property);
-  return (event) => {
-    const actual = read(event);
-    if (actual === undefined || actual === null) return false;
-    if (filter.operator === "eq" || filter.operator === "ne") {
-      const actualValue = typeof actual === "boolean" ? Number(actual) : actual;
-      const expectedValue = typeof filter.value === "boolean" ? Number(filter.value) : filter.value;
-      return filter.operator === "eq"
-        ? actualValue === expectedValue
-        : actualValue !== expectedValue;
-    }
-    if (typeof actual !== typeof filter.value) return false;
-    if (
-      (typeof actual !== "number" && typeof actual !== "string") ||
-      (typeof filter.value !== "number" && typeof filter.value !== "string")
-    )
-      return false;
-    switch (filter.operator) {
-      case "gt":
-        return actual > filter.value;
-      case "gte":
-        return actual >= filter.value;
-      case "lt":
-        return actual < filter.value;
-      case "lte":
-        return actual <= filter.value;
-    }
-  };
+  if (filter.operator === "eq" || filter.operator === "ne") {
+    const expected = typeof filter.value === "boolean" ? Number(filter.value) : filter.value;
+    const equal = filter.operator === "eq";
+    return (event) => {
+      const actual = read(event);
+      if (actual === undefined || actual === null) return false;
+      return ((typeof actual === "boolean" ? Number(actual) : actual) === expected) === equal;
+    };
+  }
+  const expected = filter.value;
+  if (typeof expected !== "number" && typeof expected !== "string") return () => false;
+  const type = typeof expected;
+  switch (filter.operator) {
+    case "gt":
+      return (event) => {
+        const actual = read(event);
+        return typeof actual === type && (actual as number | string) > expected;
+      };
+    case "gte":
+      return (event) => {
+        const actual = read(event);
+        return typeof actual === type && (actual as number | string) >= expected;
+      };
+    case "lt":
+      return (event) => {
+        const actual = read(event);
+        return typeof actual === type && (actual as number | string) < expected;
+      };
+    case "lte":
+      return (event) => {
+        const actual = read(event);
+        return typeof actual === type && (actual as number | string) <= expected;
+      };
+  }
 };
 
 export const withMatchers = (reducers: readonly Reducer[]): ReducerMatchers =>
@@ -123,13 +130,14 @@ export const reduce = (
   for (const event of events) {
     const bucketStart = getBucketStart(event.timestamp);
     if (bucketStart < oldestBucketStart) continue;
-    for (const [reducer, match, read] of matchers) {
+    for (let index = 0; index < matchers.length; index++) {
+      const [reducer, match, read] = matchers[index];
       if (!match(event)) continue;
-      const { aggregation } = reducer;
       const value = read(event);
       if (typeof value !== "number") continue;
       if (!Number.isFinite(value)) throw new TypeError("Aggregation values must be finite");
-      const key = JSON.stringify([event.customer, reducer.id, bucketStart]);
+      // The customer comes last: the index and the bucket hold no ":".
+      const key = `${index}:${bucketStart}:${event.customer}`;
       let update = updates.get(key);
       if (!update) {
         update = {
@@ -140,12 +148,17 @@ export const reduce = (
         };
         updates.set(key, update);
       }
-      addStatistics(
-        update.statistics,
-        aggregation.func === "count"
-          ? { count: 1, sum: 0, min: null, max: null }
-          : { count: 1, sum: value, min: value, max: value },
-      );
+      const { statistics } = update;
+      if (reducer.aggregation.func === "count") {
+        statistics.count += 1;
+        continue;
+      }
+      const total = statistics.sum + value;
+      if (!Number.isFinite(total)) throw new TypeError("Aggregation values must be finite");
+      statistics.count += 1;
+      statistics.sum = total;
+      statistics.min = statistics.min === null ? value : Math.min(statistics.min, value);
+      statistics.max = statistics.max === null ? value : Math.max(statistics.max, value);
     }
   }
   return [...updates.values()];

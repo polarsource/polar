@@ -1,8 +1,4 @@
 import collections.abc
-import os
-import subprocess
-import tempfile
-import time
 
 import pytest
 from pytest_codspeed import BenchmarkFixture
@@ -45,42 +41,16 @@ def seed_state(redis: Redis, identity: str, buckets: int) -> None:
 
 
 @pytest.fixture(scope="module")
-def redis() -> collections.abc.Iterator[Redis]:
-    with tempfile.TemporaryDirectory(prefix="polar-outpost-bench-") as directory:
-        socket = os.path.join(directory, "redis.sock")
-        process = subprocess.Popen(
-            [
-                "redis-server",
-                "--port",
-                "0",
-                "--unixsocket",
-                socket,
-                "--save",
-                "",
-                "--appendonly",
-                "no",
-            ],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        try:
-            deadline = time.monotonic() + 5
-            while not os.path.exists(socket):
-                if process.poll() is not None or time.monotonic() > deadline:
-                    raise RuntimeError("redis-server did not start")
-                time.sleep(0.01)
-            # No coroutine can be benchmarked (see the `loop` fixture in conftest.py): the sync
-            # client stands in for redis.asyncio; both share the connection and parser code.
-            client = Redis(unix_socket_path=socket)
-            for buckets in BUCKET_COUNTS:
-                seed_state(client, identity_of(buckets), buckets)
-            for reducer in REDUCERS:
-                seed_state(client, f"external:alice:{reducer}", 1)
-            yield client
-            client.close()
-        finally:
-            process.terminate()
-            process.wait()
+def redis(redis_socket: str) -> collections.abc.Iterator[Redis]:
+    # No coroutine can be benchmarked (see the `loop` fixture in conftest.py): the sync client
+    # stands in for redis.asyncio; both share the connection and parser code.
+    client = Redis(unix_socket_path=redis_socket)
+    for buckets in BUCKET_COUNTS:
+        seed_state(client, identity_of(buckets), buckets)
+    for reducer in REDUCERS:
+        seed_state(client, f"external:alice:{reducer}", 1)
+    yield client
+    client.close()
 
 
 @pytest.mark.parametrize("buckets", BUCKET_COUNTS)

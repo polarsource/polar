@@ -1,12 +1,21 @@
+import json
 import uuid
 
+import httpx
 import pytest
 import respx
 
 from polar.enums import TaxBehavior
 from polar.kit.address import Address, CountryAlpha2
 from polar.tax.calculation import TaxCode
-from polar.tax.calculation.base import TaxabilityReason
+from polar.tax.calculation.base import (
+    CalculationExpiredError,
+    InvalidTaxIDError,
+    TaxabilityReason,
+    TaxCalculationLogicalError,
+    TaxCalculationTechnicalError,
+    TaxRecordError,
+)
 from polar.tax.calculation.numeral import numeral_tax_service
 from polar.tax.tax_id import TaxIDFormat
 
@@ -27,115 +36,63 @@ def sample_address() -> Address:
 @pytest.mark.respx(base_url="https://api.numeralhq.com")
 class TestNumeralCalculateTax:
     @pytest.mark.parametrize(
-        (
-            "tax_rate",
-            "rate_type",
-            "tax_authority_type",
-            "tax_type",
-            "customer_exempt",
-            "tax_ids",
-            "expected_reason",
-        ),
+        ("note", "customer_exempt", "tax_ids", "expected_reason"),
         [
             (
-                0,
-                "EXEMPT STATE SALES TAX",
-                "",
-                "SALES",
+                "no_collection_exempt_customer",
                 False,
-                [],
-                TaxabilityReason.product_exempt,
-            ),
-            (
-                0,
-                "EXEMPT STATE SALES TAX",
-                "",
-                "SALES",
-                False,
-                [("911144442", TaxIDFormat.us_ein)],
-                TaxabilityReason.product_exempt,
-            ),
-            (
-                0,
-                "VAT",
-                "Country",
-                "VAT",
-                False,
-                [("FR61954506077", TaxIDFormat.eu_vat)],
-                TaxabilityReason.reverse_charge,
-            ),
-            (
-                0,
-                "EXEMPT STATE SALES TAX",
-                "",
-                "SALES",
-                True,
                 [],
                 TaxabilityReason.customer_exempt,
             ),
             (
-                0,
-                "VAT",
-                "",
-                "VAT",
+                "b2b_reverse_charge",
                 False,
-                [],
+                [("FR40303265045", TaxIDFormat.eu_vat)],
+                TaxabilityReason.reverse_charge,
+            ),
+            ("b2b reverse charge", False, [], TaxabilityReason.reverse_charge),
+            (
+                "no_collection",
+                False,
+                [("911144442", TaxIDFormat.us_ein)],
                 TaxabilityReason.not_collecting,
             ),
-            (
-                0,
-                "VAT",
-                "",
-                "VAT",
-                False,
-                [("123456789", TaxIDFormat.eg_tin)],
-                TaxabilityReason.not_subject_to_tax,
-            ),
-            (
-                0.2,
-                "GENERAL STATE SALES TAX",
-                "",
-                "SALES",
-                False,
-                [],
-                TaxabilityReason.standard_rated,
-            ),
+            ("", True, [], TaxabilityReason.customer_exempt),
+            ("", False, [], TaxabilityReason.standard_rated),
         ],
     )
     async def test_taxability_reason(
         self,
         sample_address: Address,
         respx_mock: respx.MockRouter,
-        tax_rate: float,
-        rate_type: str,
-        tax_authority_type: str,
-        tax_type: str,
+        note: str,
         customer_exempt: bool,
         tax_ids: list[tuple[str, TaxIDFormat]],
         expected_reason: TaxabilityReason,
     ) -> None:
-        tax_amount = round(100_00 * tax_rate)
-        respx_mock.post("/tax/calculations").respond(
+        route = respx_mock.post("/tax/calculations").respond(
             json={
                 "id": "taxcalc_123",
                 "object": "tax.calculation",
                 "customer_currency_code": "USD",
                 "tax_included_in_amount": False,
-                "total_tax_amount": tax_amount,
+                "total_tax_amount": 0,
                 "total_amount_excluding_tax": 100_00,
-                "total_amount_including_tax": 100_00 + tax_amount,
+                "total_amount_including_tax": 100_00,
+                "effective_tax_rate": 0,
                 "line_items": [
                     {
                         "product": {"reference_product_id": "prod_123"},
                         "tax_jurisdictions": [
                             {
-                                "tax_rate": tax_rate,
-                                "rate_type": rate_type,
+                                "tax_rate": 0,
+                                "rate_type": "VAT",
                                 "fee_amount": 0,
-                                "tax_due_decimal": tax_amount,
-                                "tax_authority_name": "Texas",
-                                "tax_authority_type": tax_authority_type,
-                                "tax_type": tax_type,
+                                "tax_due_decimal": 0,
+                                "tax_authority_name": "FR",
+                                "tax_authority_type": "Country",
+                                "tax_type": "VAT",
+                                "note": note,
                             }
                         ],
                     }
@@ -155,54 +112,16 @@ class TestNumeralCalculateTax:
         )
 
         assert result["tax_breakdown"][0]["taxability_reason"] == expected_reason
-
-    @pytest.mark.parametrize(
-        ("tax_ids", "expected_reason"),
-        [
-            ([], TaxabilityReason.not_collecting),
-            (
-                [("FR61954506077", TaxIDFormat.eu_vat)],
-                TaxabilityReason.not_subject_to_tax,
-            ),
-        ],
-    )
-    async def test_taxability_reason_without_jurisdictions(
-        self,
-        sample_address: Address,
-        respx_mock: respx.MockRouter,
-        tax_ids: list[tuple[str, TaxIDFormat]],
-        expected_reason: TaxabilityReason,
-    ) -> None:
-        respx_mock.post("/tax/calculations").respond(
-            json={
-                "id": "taxcalc_123",
-                "object": "tax.calculation",
-                "customer_currency_code": "USD",
-                "tax_included_in_amount": False,
-                "total_tax_amount": 0,
-                "total_amount_excluding_tax": 100_00,
-                "total_amount_including_tax": 100_00,
-                "line_items": [
-                    {
-                        "product": {"reference_product_id": "prod_123"},
-                        "tax_jurisdictions": [],
-                    }
-                ],
-            }
+        request = route.calls.last.request
+        assert request.headers["X-API-Version"] == "2026-11-01"
+        payload = json.loads(request.content)
+        assert payload["customer"]["tax_ids"] == [
+            {"type": format, "value": value} for value, format in tax_ids
+        ]
+        assert payload["customer"]["type"] == ("BUSINESS" if tax_ids else "CONSUMER")
+        assert payload["order_details"]["line_items"][0]["product_category"] == (
+            "EXEMPT" if customer_exempt else "SAAS_GENERAL"
         )
-
-        result = await numeral_tax_service.calculate(
-            identifier=uuid.uuid4(),
-            currency="usd",
-            amount=100_00,
-            tax_behavior=TaxBehavior.exclusive,
-            tax_code=TaxCode.general_electronically_supplied_services,
-            address=sample_address,
-            tax_ids=tax_ids,
-            customer_exempt=False,
-        )
-
-        assert result["tax_breakdown"][0]["taxability_reason"] == expected_reason
 
     async def test_inclusive(
         self, sample_address: Address, respx_mock: respx.MockRouter
@@ -230,6 +149,7 @@ class TestNumeralCalculateTax:
                                 "tax_authority_name": "Texas",
                                 "tax_authority_type": "state",
                                 "tax_type": "sales tax",
+                                "note": "",
                             },
                         ],
                     }
@@ -290,6 +210,7 @@ class TestNumeralCalculateTax:
                                 "tax_authority_name": "Texas",
                                 "tax_authority_type": "state",
                                 "tax_type": "sales tax",
+                                "note": "",
                             },
                             {
                                 "tax_rate": 0.015,
@@ -299,6 +220,7 @@ class TestNumeralCalculateTax:
                                 "tax_authority_name": "Anderson",
                                 "tax_authority_type": "county",
                                 "tax_type": "sales tax",
+                                "note": "",
                             },
                             {
                                 "tax_rate": 0.00375,
@@ -308,6 +230,7 @@ class TestNumeralCalculateTax:
                                 "tax_authority_name": "Foobar",
                                 "tax_authority_type": "other",
                                 "tax_type": "sales tax",
+                                "note": "",
                             },
                         ],
                     }
@@ -361,3 +284,176 @@ class TestNumeralCalculateTax:
         ]
         assert result["processor_id"] == "taxcalc_123"
         assert result["tax_behavior"] == TaxBehavior.exclusive
+
+    @pytest.mark.parametrize(
+        ("tax_rate", "tax_due_decimal", "fee_amount", "expected_amount"),
+        [(0.07, 724.9275, 0, 725), (0, 0, 50, 50), (0.0275, 4400, 0, 4400)],
+    )
+    async def test_jurisdiction_amount(
+        self,
+        sample_address: Address,
+        respx_mock: respx.MockRouter,
+        tax_rate: float,
+        tax_due_decimal: float,
+        fee_amount: float,
+        expected_amount: int,
+    ) -> None:
+        respx_mock.post("/tax/calculations").respond(
+            json={
+                "id": "taxcalc_123",
+                "total_tax_amount": expected_amount,
+                "line_items": [
+                    {
+                        "tax_jurisdictions": [
+                            {
+                                "tax_rate": tax_rate,
+                                "tax_due_decimal": tax_due_decimal,
+                                "fee_amount": fee_amount,
+                                "rate_type": "Sales Tax",
+                                "tax_authority_name": "State Tax",
+                                "tax_authority_type": "STATE",
+                                "tax_type": "SALES",
+                                "note": "",
+                            }
+                        ]
+                    }
+                ],
+            }
+        )
+        result = await numeral_tax_service.calculate(
+            identifier=uuid.uuid4(),
+            currency="usd",
+            amount=100_0000,
+            tax_behavior=TaxBehavior.exclusive,
+            tax_code=TaxCode.general_electronically_supplied_services,
+            address=sample_address,
+            tax_ids=[],
+            customer_exempt=False,
+        )
+        item = result["tax_breakdown"][0]
+        assert result["amount"] == item["amount"] == expected_amount
+        assert isinstance(item["amount"], int)
+        assert item["rate"] == (None if fee_amount else tax_rate)
+        assert item["rate_type"] == ("fixed" if fee_amount else "percentage")
+
+    @pytest.mark.parametrize(
+        ("status", "error_type", "expected_error"),
+        [
+            (400, "ZIP_STATE_MISMATCH", TaxCalculationLogicalError),
+            (400, "MALFORMED_ADDRESS", TaxCalculationLogicalError),
+            (400, "INVALID_TAX_ID", InvalidTaxIDError),
+            (429, "ERROR", TaxCalculationTechnicalError),
+            (500, "ERROR", TaxCalculationTechnicalError),
+            (400, "ERROR", httpx.HTTPStatusError),
+        ],
+    )
+    async def test_error(
+        self,
+        sample_address: Address,
+        respx_mock: respx.MockRouter,
+        status: int,
+        error_type: str,
+        expected_error: type[Exception],
+    ) -> None:
+        respx_mock.post("/tax/calculations").respond(
+            status, json={"code": status, "type": error_type, "message": "Error"}
+        )
+        with pytest.raises(expected_error):
+            await numeral_tax_service.calculate(
+                identifier=uuid.uuid4(),
+                currency="usd",
+                amount=100_00,
+                tax_behavior=TaxBehavior.exclusive,
+                tax_code=TaxCode.general_electronically_supplied_services,
+                address=sample_address,
+                tax_ids=[],
+                customer_exempt=False,
+            )
+
+    async def test_unsupported_country(
+        self, sample_address: Address, respx_mock: respx.MockRouter
+    ) -> None:
+        respx_mock.post("/tax/calculations").respond(
+            400, json={"code": 400, "type": "INVALID_COUNTRY_CODE", "message": "Error"}
+        )
+        result = await numeral_tax_service.calculate(
+            identifier=uuid.uuid4(),
+            currency="usd",
+            amount=100_00,
+            tax_behavior=TaxBehavior.exclusive,
+            tax_code=TaxCode.general_electronically_supplied_services,
+            address=sample_address,
+            tax_ids=[],
+            customer_exempt=False,
+        )
+        assert result["processor_id"] is None
+        assert result["amount"] == 0
+        assert (
+            result["tax_breakdown"][0]["taxability_reason"]
+            == TaxabilityReason.not_supported
+        )
+
+
+@pytest.mark.anyio
+@pytest.mark.respx(base_url="https://api.numeralhq.com")
+class TestNumeralRecord:
+    async def test_record(self, respx_mock: respx.MockRouter) -> None:
+        route = respx_mock.post("/tax/transactions").respond(json={"id": "tr_123"})
+        assert await numeral_tax_service.record("calc_123", "order_123") == "tr_123"
+        assert json.loads(route.calls.last.request.content) == {
+            "calculation_id": "calc_123",
+            "reference_order_id": "order_123",
+        }
+
+    @pytest.mark.parametrize(
+        ("error_type", "expected_error"),
+        [("CALCULATION_EXPIRED", CalculationExpiredError), ("ERROR", TaxRecordError)],
+    )
+    async def test_error(
+        self,
+        respx_mock: respx.MockRouter,
+        error_type: str,
+        expected_error: type[Exception],
+    ) -> None:
+        respx_mock.post("/tax/transactions").respond(
+            400, json={"code": 400, "type": error_type, "message": "Error"}
+        )
+        with pytest.raises(expected_error):
+            await numeral_tax_service.record("calc_123", "order_123")
+
+
+@pytest.mark.anyio
+@pytest.mark.respx(base_url="https://api.numeralhq.com")
+class TestNumeralRevert:
+    async def test_full(self, respx_mock: respx.MockRouter) -> None:
+        route = respx_mock.post("/tax/refunds").respond(json={"id": "ref_123"})
+        assert await numeral_tax_service.revert("tr_123", "refund_123") == "ref_123"
+        assert json.loads(route.calls.last.request.content) == {
+            "transaction_id": "tr_123",
+            "type": "full",
+        }
+
+    async def test_partial(self, respx_mock: respx.MockRouter) -> None:
+        respx_mock.get("/tax/transactions/tr_123").respond(
+            json={
+                "id": "tr_123",
+                "line_items": [{"product": {"reference_product_id": "prod_123"}}],
+            }
+        )
+        route = respx_mock.post("/tax/refunds").respond(json={"id": "ref_123"})
+        assert (
+            await numeral_tax_service.revert("tr_123", "refund_123", 1200, 200)
+            == "ref_123"
+        )
+        assert json.loads(route.calls.last.request.content) == {
+            "transaction_id": "tr_123",
+            "type": "partial",
+            "line_items": [
+                {
+                    "reference_product_id": "prod_123",
+                    "quantity": 1,
+                    "sales_amount_refunded": -1000,
+                    "tax_amount_refunded": -200,
+                }
+            ],
+        }

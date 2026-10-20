@@ -28,17 +28,18 @@ from .base import (
 
 log: Logger = structlog.get_logger()
 
-NUMERAL_API_VERSION = "2026-03-01"
+NUMERAL_API_VERSION = "2026-11-01"
 
 
 class NumeralTaxJurisdiction(TypedDict):
     tax_rate: float
     rate_type: str
-    fee_amount: int
-    tax_due_decimal: int
+    fee_amount: float
+    tax_due_decimal: float
     tax_authority_name: str
     tax_authority_type: str
     tax_type: str
+    note: str
 
 
 class NumeralLineItemProduct(TypedDict):
@@ -102,16 +103,9 @@ def _numeral_jurisdiction_to_breakdown_item(
     country: str,
     state: str | None,
     customer_exempt: bool,
-    has_tax_ids: bool,
 ) -> TaxBreakdownItem:
     taxability_reason = TaxabilityReason.from_numeral(
-        tax_rate=jurisdiction["tax_rate"],
-        fee_amount=jurisdiction["fee_amount"],
-        rate_type=jurisdiction["rate_type"],
-        tax_authority_type=jurisdiction["tax_authority_type"],
-        tax_type=jurisdiction["tax_type"],
-        customer_exempt=customer_exempt,
-        has_tax_ids=has_tax_ids,
+        jurisdiction["note"], customer_exempt
     )
 
     is_fixed = jurisdiction["fee_amount"] > 0
@@ -128,7 +122,9 @@ def _numeral_jurisdiction_to_breakdown_item(
         country=country,
         state=state,
         subdivision=subdivision,
-        amount=jurisdiction["tax_due_decimal"],
+        amount=round(
+            jurisdiction["fee_amount"] if is_fixed else jurisdiction["tax_due_decimal"]
+        ),
         taxability_reason=taxability_reason,
     )
 
@@ -139,31 +135,7 @@ def _build_numeral_tax_breakdown(
     country: str,
     state: str | None,
     customer_exempt: bool,
-    has_tax_ids: bool,
 ) -> list[TaxBreakdownItem]:
-    if not jurisdictions:
-        return [
-            TaxBreakdownItem(
-                rate_type="percentage",
-                rate=0,
-                display_name="",
-                country=country,
-                state=state,
-                subdivision=None,
-                amount=0,
-                taxability_reason=TaxabilityReason.from_numeral(
-                    tax_rate=0,
-                    fee_amount=0,
-                    rate_type="",
-                    tax_authority_type="",
-                    tax_type="",
-                    customer_exempt=customer_exempt,
-                    has_tax_ids=has_tax_ids,
-                    has_jurisdiction=False,
-                ),
-            )
-        ]
-
     tax_breakdown: list[TaxBreakdownItem] = []
 
     for jurisdiction in jurisdictions:
@@ -173,7 +145,6 @@ def _build_numeral_tax_breakdown(
                 country=country,
                 state=state,
                 customer_exempt=customer_exempt,
-                has_tax_ids=has_tax_ids,
             )
         )
 
@@ -303,7 +274,11 @@ class NumeralTaxService(TaxServiceProtocol):
             if error_type == "INVALID_TAX_ID":
                 raise InvalidTaxIDError() from e
 
-            log.warning("Unhandled Numeral tax calculation error: %s", e.response.text)
+            log.warning(
+                "Unhandled Numeral tax calculation error",
+                status_code=e.response.status_code,
+                identifier=identifier,
+            )
             raise
         except httpx.RequestError as e:
             log.debug("Numeral tax calculation request error: %s", str(e))
@@ -324,7 +299,6 @@ class NumeralTaxService(TaxServiceProtocol):
             country=country,
             state=state,
             customer_exempt=customer_exempt,
-            has_tax_ids=len(tax_ids) > 0,
         )
 
         if sum(item["amount"] for item in tax_breakdown) != total_tax_amount:

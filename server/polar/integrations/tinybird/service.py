@@ -129,7 +129,6 @@ events_table = Table(
     Column("llm_output_tokens", Float),
     Column("user_metadata", String),
     Column("ancestors", String),
-    Column("meter_id", String),
 )
 
 event_types_by_customer_id_table = Table(
@@ -159,11 +158,6 @@ DENORMALIZED_COLUMNS: dict[str, Any] = {
     "_llm.model": events_table.c.llm_model,
     "_llm.input_tokens": events_table.c.llm_input_tokens,
     "_llm.output_tokens": events_table.c.llm_output_tokens,
-}
-
-# System events store these keys in their own column instead of user_metadata.
-SYSTEM_METADATA_COLUMNS: dict[str, Any] = {
-    "meter_id": events_table.c.meter_id,
 }
 
 
@@ -665,14 +659,12 @@ class TinybirdEventsQuery:
     def filter_by_metadata(self, query: dict[str, list[str]]) -> Self:
         for key, values in query.items():
             col = DENORMALIZED_COLUMNS.get(key)
-            attrs = [
+            attr = (
                 col
                 if col is not None
                 else func.JSONExtractString(events_table.c.user_metadata, key)
-            ]
-            if (system_col := SYSTEM_METADATA_COLUMNS.get(key)) is not None:
-                attrs.append(func.toString(system_col))
-            self._filters.append(or_(*[attr == v for attr in attrs for v in values]))
+            )
+            self._filters.append(or_(*[attr == v for v in values]))
         return self
 
     def filter_by_query(

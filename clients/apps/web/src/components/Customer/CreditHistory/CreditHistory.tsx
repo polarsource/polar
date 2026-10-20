@@ -1,48 +1,41 @@
 'use client'
 
-import { useBenefits } from '@/hooks/queries/benefits'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { CreditRow } from './CreditRow'
 
-// Mirrors the reversal endpoint's window; the server enforces the other rules.
+// Mirroring backend limit
 const REVERSIBLE_FOR_MS = 7 * 24 * 60 * 60 * 1000
 
 export const CreditHistory = ({
-  organization,
   credits,
 }: {
-  organization: schemas['Organization']
   credits: schemas['MeterCreditEvent'][]
 }) => {
   const [reversibleSince] = useState(() => Date.now() - REVERSIBLE_FOR_MS)
-  const { data: benefits } = useBenefits(organization.id, {
-    type: 'meter_credit',
-    limit: 100,
-  })
 
-  // A reversal shows on the credit it undoes rather than as its own row.
-  const reversedUnits = new Map(
-    credits.flatMap(({ metadata }) =>
-      metadata.reversed_event_id
-        ? [[metadata.reversed_event_id, -metadata.units] as const]
-        : [],
-    ),
-  )
-  const rows = credits
-    .filter(({ metadata }) => !metadata.reversed_event_id)
-    .map((credit) => ({
-      credit,
-      reversedUnits: reversedUnits.get(credit.id),
-      reversible:
-        credit.metadata.reason === 'manual' &&
-        credit.metadata.units > 0 &&
-        !reversedUnits.has(credit.id) &&
-        new Date(credit.timestamp).getTime() > reversibleSince,
-    }))
-  const hasActions = rows.some(({ reversible }) => reversible)
+  const { rows, hasActions } = useMemo(() => {
+    const reversedUnits = new Map(
+      credits.flatMap(({ parent_id, metadata }) =>
+        parent_id ? [[parent_id, -metadata.units] as const] : [],
+      ),
+    )
+    const creditIds = new Set(credits.map(({ id }) => id))
+    const rows = credits
+      .filter(({ parent_id }) => !parent_id || !creditIds.has(parent_id))
+      .map((credit) => ({
+        credit,
+        reversedUnits: reversedUnits.get(credit.id),
+        reversible:
+          credit.metadata.reason === 'manual' &&
+          credit.metadata.units > 0 &&
+          !reversedUnits.has(credit.id) &&
+          new Date(credit.timestamp).getTime() > reversibleSince,
+      }))
+    return { rows, hasActions: rows.some(({ reversible }) => reversible) }
+  }, [credits, reversibleSince])
 
   return (
     <Box flexDirection="column" rowGap="m">
@@ -62,14 +55,13 @@ export const CreditHistory = ({
             <CreditRow
               key={row.credit.id}
               {...row}
-              benefits={benefits?.items ?? []}
               hasActions={hasActions}
               divided={index > 0}
             />
           ))}
         </Box>
       ) : (
-        <Text color="muted">No credits this period.</Text>
+        <Text color="muted">No credits in this date range.</Text>
       )}
     </Box>
   )

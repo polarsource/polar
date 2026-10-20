@@ -1,7 +1,6 @@
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import select
 
 from polar.auth.models import AuthSubject
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
@@ -9,12 +8,10 @@ from polar.benefit.strategies.base.service import BenefitPropertiesValidationErr
 from polar.benefit.strategies.meter_credit.service import BenefitMeterCreditService
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.customer_meter.service import customer_meter as customer_meter_service
-from polar.event.system import SystemEvent
 from polar.meter.aggregation import AggregationFunction, PropertyAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import (
     Customer,
-    Event,
     Organization,
     Product,
     Subscription,
@@ -152,15 +149,6 @@ class TestMeterCreditBenefitIntegration:
         assert customer_meter.credited_units == 100
         assert customer_meter.consumed_units == 0
         assert customer_meter.balance == 100
-
-        credit_event = await session.scalar(
-            select(Event).where(
-                Event.customer_id == customer.id,
-                Event.name == SystemEvent.meter_credited,
-            )
-        )
-        assert credit_event is not None
-        assert credit_event.user_metadata["benefit_id"] == str(benefit.id)
 
     async def test_upgrade_balance_without_meter_reset(
         self,

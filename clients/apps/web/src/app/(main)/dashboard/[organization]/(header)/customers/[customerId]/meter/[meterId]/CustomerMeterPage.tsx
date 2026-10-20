@@ -1,15 +1,14 @@
 'use client'
 
 import { AddCreditsButton } from '@/components/Customer/AddCredits/AddCreditsButton'
-import { CreditHistory } from '@/components/Customer/CreditHistory/CreditHistory'
-import { MeterPeriodEvents } from '@/components/Customer/CustomerMeter/MeterPeriodEvents'
-import { MeterPeriodSelect } from '@/components/Customer/CustomerMeter/MeterPeriodSelect'
-import { MeterPeriodSummary } from '@/components/Customer/CustomerMeter/MeterPeriodSummary'
-import {
-  useMeterPeriods,
-  useMeterPeriodUsage,
-} from '@/components/Customer/CustomerMeter/useMeterPeriods'
+import { MeterPeriodDetails } from '@/components/Customer/CustomerMeter/MeterPeriodDetails'
 import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
+import DateRangePicker, {
+  DateRangeInterval,
+} from '@/components/Metrics/DateRangePicker'
+import IntervalPicker, {
+  getNextValidInterval,
+} from '@/components/Metrics/IntervalPicker'
 import { useCustomerMeters } from '@/hooks/queries/customerMeters'
 import { useSubscriptions } from '@/hooks/queries/subscriptions'
 import { isMeteredPrice, MeteredPrice } from '@/utils/product'
@@ -17,9 +16,10 @@ import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { endOfMonth, startOfMonth } from 'date-fns'
 import Link from 'next/link'
-import { parseAsInteger, useQueryState } from 'nuqs'
-import { useMemo } from 'react'
+import { parseAsIsoDateTime, parseAsStringLiteral, useQueryState } from 'nuqs'
+import { useCallback, useMemo } from 'react'
 
 interface CustomerMeterPageProps {
   organization: schemas['Organization']
@@ -32,6 +32,35 @@ const CustomerMeterPage = ({
   customer,
   meter,
 }: CustomerMeterPageProps) => {
+  const [startDateParam, setStartDate] = useQueryState(
+    'startDate',
+    parseAsIsoDateTime,
+  )
+  const [endDateParam, setEndDate] = useQueryState(
+    'endDate',
+    parseAsIsoDateTime,
+  )
+  const [interval, setInterval] = useQueryState(
+    'interval',
+    parseAsStringLiteral([
+      'hour',
+      'day',
+      'week',
+      'month',
+      'year',
+    ] as schemas['TimeInterval'][]).withDefault('day'),
+  )
+
+  const onDateChange = useCallback(
+    (date: { from: Date; to: Date }) => {
+      const valid = getNextValidInterval(interval, date.from, date.to)
+      setStartDate(date.from)
+      setEndDate(date.to)
+      if (valid !== interval) setInterval(valid)
+    },
+    [interval, setStartDate, setEndDate, setInterval],
+  )
+
   const { data: subscriptionsData } = useSubscriptions(organization.id, {
     customer_id: customer.id,
     active: true,
@@ -43,6 +72,32 @@ const CustomerMeterPage = ({
         sub.meters.some((m) => m.meter_id === meter.id),
       ) ?? null,
     [subscriptionsData, meter.id],
+  )
+
+  const billingPeriodInterval = useMemo((): DateRangeInterval | null => {
+    if (!subscription?.current_period_end) return null
+    return {
+      slug: 'currentBillingPeriod',
+      label: 'Current Billing Period',
+      value: [
+        new Date(subscription.current_period_start),
+        new Date(subscription.current_period_end),
+      ],
+    }
+  }, [subscription])
+
+  const { startDate, endDate } = useMemo(
+    () => ({
+      startDate:
+        startDateParam ??
+        billingPeriodInterval?.value[0] ??
+        startOfMonth(new Date()),
+      endDate:
+        endDateParam ??
+        billingPeriodInterval?.value[1] ??
+        endOfMonth(new Date()),
+    }),
+    [startDateParam, endDateParam, billingPeriodInterval],
   )
 
   const unitPrice = useMemo(
@@ -59,34 +114,10 @@ const CustomerMeterPage = ({
   })
   const customerMeter = customerMetersData?.items[0] ?? null
 
-  const periods = useMeterPeriods({
-    organization,
-    customer,
-    meter,
-    subscription,
-  })
-  const [periodParam, setPeriodParam] = useQueryState(
-    'period',
-    parseAsInteger.withDefault(0),
-  )
-  const periodIndex = Math.min(Math.max(periodParam, 0), periods.length - 1)
-  const period = periods[periodIndex]
-
-  const usage = useMeterPeriodUsage({
-    organization,
-    customer,
-    meter,
-    period,
-    customerMeter,
-  })
-
-  const addCreditsButton = (
-    <AddCreditsButton
-      organization={organization}
-      customer={customer}
-      meterId={meter.id}
-    />
-  )
+  const isCurrentPeriod =
+    billingPeriodInterval !== null &&
+    startDate.getTime() === billingPeriodInterval.value[0].getTime() &&
+    endDate.getTime() === billingPeriodInterval.value[1].getTime()
 
   return (
     <MasterDetailLayoutContent
@@ -118,38 +149,55 @@ const CustomerMeterPage = ({
               marginLeft="auto"
               flexShrink={0}
             >
-              {addCreditsButton}
+              <AddCreditsButton
+                organization={organization}
+                customer={customer}
+                meterId={meter.id}
+              />
             </Box>
           </Box>
           <Box alignItems="center" flexWrap="wrap" gap="s">
-            {periods.length > 1 && (
-              <MeterPeriodSelect
-                periods={periods}
-                selected={periodIndex}
-                onSelect={setPeriodParam}
+            <Box display="block">
+              <IntervalPicker
+                interval={interval}
+                onChange={setInterval}
+                startDate={startDate}
+                endDate={endDate}
               />
-            )}
-            <Box display={{ base: 'none', md: 'flex' }}>{addCreditsButton}</Box>
+            </Box>
+            <DateRangePicker
+              date={{ from: startDate, to: endDate }}
+              onDateChange={onDateChange}
+              additionalIntervals={
+                billingPeriodInterval ? [billingPeriodInterval] : undefined
+              }
+            />
+            <Box display={{ base: 'none', md: 'flex' }}>
+              <AddCreditsButton
+                organization={organization}
+                customer={customer}
+                meterId={meter.id}
+              />
+            </Box>
           </Box>
         </>
       }
     >
-      <Box flexDirection="column" rowGap="3xl">
-        <MeterPeriodSummary
-          meter={meter}
-          period={period}
-          usage={usage}
-          unitPrice={unitPrice}
-        />
-        <CreditHistory organization={organization} credits={usage.credits} />
-        <MeterPeriodEvents
-          key={period.start.toISOString()}
+      {subscriptionsData && (
+        <MeterPeriodDetails
           organization={organization}
           customer={customer}
           meter={meter}
-          period={period}
+          currentPeriod={
+            isCurrentPeriod && subscription
+              ? { subscription, customerMeter, unitPrice }
+              : null
+          }
+          startDate={startDate}
+          endDate={endDate}
+          interval={interval}
         />
-      </Box>
+      )}
     </MasterDetailLayoutContent>
   )
 }

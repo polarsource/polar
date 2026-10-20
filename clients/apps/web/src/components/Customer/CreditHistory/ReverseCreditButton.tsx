@@ -17,7 +17,6 @@ export const ReverseCreditButton = ({
 }) => {
   const { show, hide, isShown } = useModal()
   const reverseCredit = useReverseMeterCredit()
-  // The history refetches from the event index, which lags the write.
   const [reversed, setReversed] = useState(false)
 
   const onConfirm = async () => {

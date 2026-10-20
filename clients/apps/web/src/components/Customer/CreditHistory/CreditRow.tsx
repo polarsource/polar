@@ -1,34 +1,31 @@
 'use client'
 
+import { formatScalar } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ReverseCreditButton } from './ReverseCreditButton'
 
-const describeSource = (
-  { metadata }: schemas['MeterCreditEvent'],
-  benefits: schemas['Benefit'][],
-) => {
+const describeSource = ({
+  metadata,
+  parent_id,
+}: schemas['MeterCreditEvent']) => {
+  if (parent_id) return 'Manual credit reversal'
   if (metadata.reason === 'manual') return 'Manual credit'
-  const name =
-    benefits.find(({ id }) => id === metadata.benefit_id)?.description ??
-    'Plan credits'
-  return metadata.units < 0 ? `${name} revoked` : name
+  return metadata.units < 0 ? 'Benefit credits revoked' : 'Benefit credits'
 }
 
 const formatUnits = (units: number) =>
-  `${units < 0 ? '−' : '+'}${Math.abs(units).toLocaleString('en-US')}`
+  `${units < 0 ? '−' : '+'}${formatScalar(Math.abs(units))}`
 
 export const CreditRow = ({
   credit,
-  benefits,
   reversedUnits,
   reversible,
   hasActions,
   divided,
 }: {
   credit: schemas['MeterCreditEvent']
-  benefits: schemas['Benefit'][]
   reversedUnits: number | undefined
   reversible: boolean
   hasActions: boolean
@@ -55,11 +52,11 @@ export const CreditRow = ({
         })}
       </Text>
       <Box columnGap="s" minWidth={0} alignItems="baseline">
-        <Text truncate>{describeSource(credit, benefits)}</Text>
+        <Text truncate>{describeSource(credit)}</Text>
         {reversed && (
           <Text color="muted" wrap="nowrap">
             {reversedUnits < units
-              ? `${reversedUnits.toLocaleString('en-US')} reversed`
+              ? `${formatScalar(reversedUnits)} reversed`
               : 'Reversed'}
           </Text>
         )}

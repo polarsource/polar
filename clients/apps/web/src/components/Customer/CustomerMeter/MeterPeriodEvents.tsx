@@ -1,6 +1,6 @@
 'use client'
 
-import { Events } from '@/components/Events/Events'
+import { EventRow } from '@/components/Events/EventRow'
 import Pagination from '@/components/Pagination/Pagination'
 import { useEvents } from '@/hooks/queries/events'
 import { schemas } from '@polar-sh/client'
@@ -8,29 +8,29 @@ import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useSearchParams } from 'next/navigation'
 import { useState } from 'react'
-import { MeterPeriod } from './useMeterPeriods'
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 25
 
 export const MeterPeriodEvents = ({
   organization,
   customer,
   meter,
-  period,
+  startDate,
+  endDate,
 }: {
   organization: schemas['Organization']
   customer: schemas['Customer']
   meter: schemas['Meter']
-  period: MeterPeriod
+  startDate: Date
+  endDate: Date
 }) => {
   const searchParams = useSearchParams()
   const [page, setPage] = useState(1)
-  const [now] = useState(() => new Date())
   const { data } = useEvents(organization.id, {
     meter_id: meter.id,
     customer_id: customer.id,
-    start_timestamp: period.start.toISOString(),
-    end_timestamp: (period.end ?? now).toISOString(),
+    start_timestamp: startDate.toISOString(),
+    end_timestamp: endDate.toISOString(),
     page,
     limit: PAGE_SIZE,
   })
@@ -45,7 +45,7 @@ export const MeterPeriodEvents = ({
         </Text>
         {data?.items.length ? (
           <Text color="muted" tabularNums>
-            {totalCount.toLocaleString('en-US')} this period
+            {totalCount.toLocaleString('en-US')} total
           </Text>
         ) : null}
       </Box>
@@ -57,10 +57,19 @@ export const MeterPeriodEvents = ({
           currentURL={searchParams}
           onPageChange={setPage}
         >
-          <Events events={data.items} organization={organization} />
+          <Box flexDirection="column" rowGap="m">
+            {data.items.map((event) => (
+              <EventRow
+                key={event.id}
+                event={event}
+                organization={organization}
+                renderChildren={false}
+              />
+            ))}
+          </Box>
         </Pagination>
       ) : (
-        <Text color="muted">No events this period.</Text>
+        <Text color="muted">No events in this date range.</Text>
       )}
     </Box>
   )

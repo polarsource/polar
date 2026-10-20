@@ -61,7 +61,7 @@ from polar.models.checkout import (
     CheckoutStatus,
 )
 from polar.models.discount import DiscountDuration, DiscountType
-from polar.organization.schemas import OrganizationPublicBase
+from polar.organization.schemas import OrganizationID, OrganizationPublicBase
 from polar.product.schemas import (
     BenefitPublicList,
     ProductBase,
@@ -363,34 +363,66 @@ CHECKOUT_PRICES_DESCRIPTION = (
 )
 
 
-class CheckoutProductsCreate(CheckoutCreateBase):
+class CheckoutProductsCreateBase(CheckoutCreateBase):
+    currency: CheckoutCurrency | None = None
+    prices: dict[UUID4, ProductPriceCreateList] | None = Field(
+        default=None, description=CHECKOUT_PRICES_DESCRIPTION
+    )
+
+
+class CheckoutProductsCreate(CheckoutProductsCreateBase):
     """
     Create a new checkout session from a list of products.
     Customers will be able to switch between those products.
+
+    Products can be referenced either by their Polar ID with `products`,
+    or by their external ID with `external_product_ids`.
 
     Metadata set on the checkout will be copied
     to the resulting order and/or subscription.
     """
 
-    currency: CheckoutCurrency | None = None
-    products: list[UUID4] = Field(
+    products: list[UUID4] | None = Field(
+        default=None,
         description=(
             "List of product IDs available to select at that checkout. "
-            "The first one will be selected by default."
+            "The first one will be selected by default. "
+            "Mutually exclusive with `external_product_ids`."
         ),
         min_length=1,
     )
+    external_product_ids: list[str] | None = Field(
+        default=None,
+        description=(
+            "List of product external IDs available to select at that checkout. "
+            "The first one will be selected by default. "
+            "Mutually exclusive with `products`."
+        ),
+        min_length=1,
+    )
+    organization_id: OrganizationID | None = Field(
+        default=None,
+        description=(
+            "The ID of the organization owning the products. "
+            "**Required with `external_product_ids` "
+            "unless you use an organization token.**"
+        ),
+    )
 
-    @field_validator("products")
+    @field_validator("products", "external_product_ids")
     @classmethod
-    def products_must_be_unique(cls, v: list[UUID4]) -> list[UUID4]:
-        if len(v) != len(set(v)):
-            raise ValueError("Product IDs must be unique.")
+    def products_must_be_unique[T](cls, v: list[T] | None) -> list[T] | None:
+        if v is not None and len(v) != len(set(v)):
+            raise ValueError("Products must be unique.")
         return v
 
-    prices: dict[UUID4, ProductPriceCreateList] | None = Field(
-        default=None, description=CHECKOUT_PRICES_DESCRIPTION
-    )
+    @model_validator(mode="after")
+    def _validate_product_references(self) -> "CheckoutProductsCreate":
+        if (self.products is None) == (self.external_product_ids is None):
+            raise ValueError(
+                "Exactly one of products or external_product_ids must be set."
+            )
+        return self
 
 
 CheckoutCreate = Annotated[

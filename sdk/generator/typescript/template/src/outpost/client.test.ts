@@ -1,4 +1,4 @@
-import type { DataPoint, ResourceMetrics } from "@opentelemetry/sdk-metrics";
+import type { DataPoint, Histogram, ResourceMetrics } from "@opentelemetry/sdk-metrics";
 import type { ReadableSpan } from "@opentelemetry/sdk-trace";
 
 import { Pipeline, Redis } from "ioredis";
@@ -634,6 +634,9 @@ it("sends telemetry spans tagged with the connection ID", async () => {
   expect(dataPoints("outpost.ingest.duration")).toMatchObject([
     { attributes: { "outpost.outcome": "ok" }, value: { count: 1 } },
   ]);
+  const [{ value: histogram }] = dataPoints("outpost.ingest.duration") as DataPoint<Histogram>[];
+  const occupied = histogram.buckets.counts.findIndex((count) => count > 0);
+  expect(histogram.buckets.boundaries[occupied]).toBeLessThanOrEqual(0.01);
   expect(new Set(exported.map((span) => span.name))).toEqual(
     new Set([
       "outpost.redis.connect",

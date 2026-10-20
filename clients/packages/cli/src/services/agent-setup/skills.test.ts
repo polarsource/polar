@@ -3,6 +3,7 @@ import {
   mkdir,
   mkdtemp,
   readFile,
+  readdir,
   rm,
   symlink,
   writeFile,
@@ -127,11 +128,13 @@ test('replaces a symlinked skill directory instead of writing through it', async
       Effect.provide(Layer.merge(BunFileSystem.layer, http.layer)),
     ),
   )
+  const entries = await readdir(directory)
   const kept = await readFile(join(outside, 'SKILL.md'), 'utf8')
   const installed = await lstat(join(directory, 'setup-polar'))
   await rm(directory, { recursive: true, force: true })
   await rm(outside, { recursive: true, force: true })
 
+  expect(entries).toEqual(['setup-polar'])
   expect(kept).toBe('keep me\n')
   expect(installed.isSymbolicLink()).toBe(false)
 })

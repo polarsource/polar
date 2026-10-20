@@ -122,8 +122,9 @@ export const checkSkills = (
   })
 
 // Each skill is written to a fresh staging directory and then swapped in, so a
-// failed download changes nothing and a symlink planted in the destination is
-// replaced rather than written through.
+// failed download changes nothing, a symlink planted in the destination is
+// replaced rather than written through, and the installed copy is only deleted
+// once the new one is in place.
 export const writeSkills = (directory: string, skills: ReadonlyArray<Skill>) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem
@@ -159,8 +160,25 @@ export const writeSkills = (directory: string, skills: ReadonlyArray<Skill>) =>
             yield* fs.writeFile(target, content)
           }
           const destination = path.join(directory, name)
-          yield* fs.remove(destination, { recursive: true, force: true })
-          yield* fs.rename(staging, destination)
+          const previous = `${staging}.previous`
+          const replacing = yield* fs.rename(destination, previous).pipe(
+            Effect.as(true),
+            Effect.orElseSucceed(() => false),
+          )
+          yield* fs
+            .rename(staging, destination)
+            .pipe(
+              Effect.tapError(() =>
+                replacing
+                  ? fs.rename(previous, destination).pipe(Effect.ignore)
+                  : Effect.void,
+              ),
+            )
+          if (replacing) {
+            yield* fs
+              .remove(previous, { recursive: true, force: true })
+              .pipe(Effect.ignore)
+          }
         }).pipe(
           Effect.onError(() =>
             fs

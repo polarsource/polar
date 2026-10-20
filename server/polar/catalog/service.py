@@ -222,7 +222,8 @@ class CatalogService:
         """Move one batch of subscriptions, and return whether more may remain.
 
         Subscriptions are taken in id order after the last one handled, so a
-        subscription that can't move is skipped once instead of retried forever.
+        subscription rejected by a business rule is skipped once instead of
+        retried forever. Any other error aborts the batch, so the task retries it.
         The migration row is locked, so overlapping runs don't process a batch twice.
         """
         repository = CatalogMigrationRepository.from_session(session)
@@ -274,15 +275,6 @@ class CatalogService:
                     migration_id=migration.id,
                     subscription_id=subscription.id,
                     error=type(e).__name__,
-                )
-                skipped += 1
-            # A failure that isn't a business rule must not stall the migration
-            # on this subscription forever: report it and move past it.
-            except Exception:
-                log.exception(
-                    "Catalog migration failed on a subscription",
-                    migration_id=migration.id,
-                    subscription_id=subscription.id,
                 )
                 skipped += 1
 

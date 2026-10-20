@@ -3,6 +3,12 @@
   "bucket_counts": [1, 12, 288],
   "epoch": "0123456789abcdef0123456789abcdef",
   "channel": "outpost:bench:updates",
+  "reducer": {
+    "id": "tokens",
+    "meter_ids": ["meter"],
+    "filter": { "conjunction": "and", "clauses": [] },
+    "aggregation": { "func": "sum", "property": "tokens" }
+  },
   "events": {
     "seed": 4242,
     "count": 1000,

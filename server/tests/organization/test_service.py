@@ -359,6 +359,7 @@ class TestCreate:
 
         assert agent.organization_id == organization.id
         assert organization.account is not None
+        await session.refresh(organization)
         assert organization.is_config_as_code_enabled
         assert (
             await user_organization_service.get_member_count(session, organization.id)

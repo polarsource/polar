@@ -7,16 +7,24 @@ description: "How meters, products, and benefits get versions."
 
 **Created**: 2026-10-06
 
-**Last Updated**: 2026-10-10
+**Last Updated**: 2026-10-20
 
 **Author**: Petru Rares Sincraian
 </Info>
 
 ## Summary
 
-We want to let agents start doing changes on the Polar side. Agents will write config files to create products, benefits, and meters. But we want agents to do that in a safe manner, for merchants and for customers.
+We want to let agents start making changes on the Polar side. Agents will write config files to create products, benefits, and meters. But we want agents to do that safely, for merchants and for customers.
 
-To do that, we propose that every change the agent does creates a new version of the product, meter, or benefit. So changes only impact new customers, and existing customers stay on the old version. We will allow agents to write migrations, so customers can be moved to newer versions of the billing config.
+To achieve that, we propose to follow some design principles:
+
+1. Every change goes into a **draft catalog**. The merchant can publish it, then it becomes the **live catalog**. Every new checkout goes through the live catalog.
+2. Every change in product, benefit, or meter gets a **new row with a new ID**. Old rows don't change, and existing orders and subscriptions continue pointing to them.
+3. To change how customers are billed or to grant new benefits, merchants should create a new **migration**.
+
+This versioning behavior is an opt-in feature that the merchants must agree to. Every new org will get this behavior from now on.
+
+Merchants will be able to make multiple changes on the Dashboard, and those changes will be saved in a draft. Saving a draft does not affect new purchases or existing ones. Publishing a draft will make it the live catalog. Merchants will be able to inspect every catalog version and compare it to old ones.
 
 ## Current state
 
@@ -38,162 +46,256 @@ Product benefit updates apply to all customers, old and new. And a meter cannot 
 
 | Option | We pick it? |
 |---|---|
-| **Hidden versions**: the merchant edits in place and Polar creates new versions | Yes |
-| **Explicit versions**: the merchant writes `pro@v1` and `pro@v2` for everything | No, the config grows and doesn't provide real value |
-| **No versions**: keep `external_id` unique, and the merchant writes `pro_v2` as the `external_id` | No, the merchant is responsible for managing versions |
+| **Catalogs**: immutable rows grouped by a Catalog entity | Yes |
+| **Stable ids with version tables**: the product id never changes and versions live in another table | No. Has better compatibility but we need two models for every resource |
+| **One catalog version per customer** | No. Purchases made at different times can't live side by side |
+| **New logical_id attribute** | No. Merchants can set external_id and logical_id that have a similar behavior |
+| **No versioning**: the merchant writes `pro_v2` for external id | No way |
 
-See the appendix for how other providers do it.
+## Solution
 
-### Option 1 - Hidden versions
+There are only 4 concepts that make all of this possible:
 
-We will follow 3 rules:
+1. **Catalog.** It contains the full list of products, meters, and benefits at a point in time. It has different states: `draft`, `live`, or `archived`. Every organization has at most one draft and one live catalog. 
+2. **Copy-on-write** for products, meters, and benefits. Changes to entities cannot have an impact on existing customers; therefore, every change to a product, meter, or benefit will create a new row in a draft catalog. Once the catalog is live, the changes are locked, and no more edits can happen to those rows.
+3. `external_id` is the stable name. A row is now unique by `(organization_id, external_id, version)`. `version` is the catalog where the entity was created.
+4. **`is_current`.** It is `true` for rows in the live catalog. It is a fast way to filter for current entities and new sales. The list of rows in each catalog (catalog membership) is the source of truth.
 
-1. Every change creates a new version.
-2. Customers stay on previous versions.
-3. Migrations move customers to new versions.
+### What we store
 
-Every time the merchant calls apply and there is a modification in the config file, this creates a new version of the entity and of the entities that depend on it. This includes labels, and even products without a subscription. This should be easier to understand, and we can do storage optimizations if this becomes a problem in the future.
+If ACME sells a Pro product at $20 and another Starter at $10 in catalog 1. Then, the merchant change Pro to $25 and publish a new catalog version. We can see that Starter didn't change so the product is reused in Catalog 2.
 
-The product id does not change. A version is a snapshot of the product, and the product row always has the current values. So checkout links, integrations, and merchant code that use the product id keep working, and they always sell the current version.
+`catalogs`
 
-| Change | Result |
+| id | version | status |
+|---|---|---|
+| `cat_1` | 1 | `archived` |
+| `cat_2` | 2 | `live` |
+
+`products`
+
+| id | external_id | version | price | is_current |
+|---|---|---|---|---|
+| `prod_A` | `pro` | 1 | $20 | `false` |
+| `prod_B` | `pro` | 2 | $25 | `true` |
+| `prod_C` | `starter` | 1 | $10 | `true` |
+
+Catalog membership
+
+`catalog_products`
+
+| catalog | external_id | product |
+|---|---|---|
+| 1 | `pro` | `prod_A` |
+| 1 | `starter` | `prod_C` |
+| 2 | `pro` | `prod_B` |
+| 2 | `starter` | `prod_C` |
+
+`subscriptions`
+
+| id | product_id | pays |
+|---|---|---|
+| `sub_1` (bought in catalog 1) | `prod_A` | $20, until a migration |
+| `sub_2` (bought in catalog 2) | `prod_B` | $25 |
+
+Things to notice:
+
+- `prod_A` still exists and still costs $20. Reading `prod_A` always returns the $20 definition. An old id never redirects to the new one.
+- `prod_C` was created in catalog 1 and reused in catalog 2. It keeps `version = 1`, and it is still current.
+- A purchase reads its own row directly. We never search "which version does this customer have".
+
+### What creates a new row
+
+| Change at publication | Result |
 |---|---|
-| Any change to a meter | New meter version, plus new versions of the products and credit benefits using it |
-| Any change to a benefit | New benefit version, plus new versions of the products granting it |
-| Any change to a product | New product version |
-| Same config applied again | Nothing |
+| Any change to a product, including its name | New product row |
+| Any change to a benefit | New benefit row, plus new rows for the products granting it |
+| Any change to a meter, including its name | New meter row, plus new rows for the credit benefits and products using it |
+| Same definitions applied again | No new catalog |
 
-### Example
+The review screen and the plan show all the extra rows for dependent products.
 
-1. Imagine that ACME sells Pro for $20.00. Apply will create `pro@v1`.
+### Main flows
+
+#### Making a change
+
+From the dashboard the flow is: edit → save draft → review → publish.
+
+1. The merchant opens the Pro product, changes the price to $25, and clicks Save. New sales still use $20. On the dashboard we will show that this is only in draft.
+2. Another member edits another product. This change goes to the same draft.
+3. The dashboard will have an option to Review the draft to see the changes.
+4. And finally a member can Publish. At this point, catalog 2 goes live.
+
+For the code, the behaviour it's the same and merchants edit the code inplace. The only difference is that any apply should have no effect on existing customers or subscriptions, only to new checkouts:
 
 ```tsx
+import { defineConfig, usd } from "@polar-sh/polar"
+
 export default defineConfig({
-  products: [
-    product({ externalId: "pro", name: "Pro", recurringInterval: "month", prices: [usd(20.00)] }),
-  ],
-});
+  meters: () => ({}),
+  products: ({ product, fixed }) => ({
+    pro: product("Pro").prices(fixed().amount(usd(25))).recurring("monthly"), // was usd(20)
+  }),
+})
 ```
 
-2. Later, ACME changes the price to $25.00. Same config file, only the price changes. Apply will create `pro@v2`, and the subscriptions will stay on `pro@v1`.
+```text
+~ catalog   1 → 2
+~ pro       prod_A → prod_B · price $20.00 → $25.00 · 168 subscriptions stay on prod_A
+```
+
+There are some rules:
+
+- Entities in draft cannot be sold, they act like in an archived version, but they are editable.
+- Every save should leave the draft in a complete and valid state, it should have the next Catalog version. This means that if we change a benefit, the related product should be changed also.
+- If a draft exists, `apply` will raise a conflict error. The merchant should be able to force apply or to do a pull of the draft changes.
+- Publishing a catalog is an atomic operation.
+- There is no revert. To have the same config, the merchant should publish a new catalog with the old definition.
+
+#### New sales
+Every new checkout should only use the live catalog, identified by `is_current`:
+
+```sql
+SELECT * FROM products
+WHERE organization_id = :organization_id
+  AND external_id = 'pro'
+  AND is_current = true;
+```
+
+Checkouts created with the old catalog should keep that pricing.
+
+#### Removing an entity
+
+Removing an entity from the catalog means that the entity is not in the draft catalog relationship. When publishing, we set the deleted entity to `is_current = false`.
+
+```text
+Catalog 2: pro → prod_B, starter → prod_C
+Draft:                   starter → prod_C
+Publish catalog 3:  prod_B.is_current = false
+```
+
+#### Migrations
+
+A migration moves an existing customer to a new catalog version. This is a separate action from publishing, but merchants can combine publishing a nnew catalog and doing a migration.
+
+Imagine that ACME also sells a one-time Download bundle: `prod_D`, with 2 files. Catalog 2 adds a third file, so the bundle is now `prod_E`. ACME moves everyone:
 
 ```tsx
-export default defineConfig({
-  products: [
-    product({ externalId: "pro", name: "Pro", recurringInterval: "month", prices: [usd(25.00)] }),
-  ],
-});
+migrations: ({ migrate }) => ({
+  "catalog-2-rollout": migrate
+    .customers()
+    .all()
+    .toCatalog(2)
+    .subscriptions({ at: "next_period" })
+    .oneTimeBenefits({ at: "immediate" }),
+}),
 ```
 
-```
-~ pro   v1 → v2 · price $20.00 → $25.00 · 168 subscriptions stay on v1
+```text
++ catalog-2-rollout   → catalog 2
+  pro              168 subscriptions · prod_A → prod_B at next renewal · 168 pay more ($20.00 → $25.00)
+  download-bundle   40 one-time purchases · prod_D → prod_E now · +1 file
 ```
 
-3. ACME decides to move all subscriptions to the new price. Then, they can write a migration.
+
+We can move customers to use different products using `toProduct`:
 
 ```tsx
-export default defineConfig({
-  products: [
-    product({ externalId: "pro", name: "Pro", recurringInterval: "month", prices: [usd(25.00)] }),
-  ],
-  migrations: [
-    migration({ externalId: "pro-price-update", from: ["pro@v1"], to: "pro@latest", at: "next-period" }),
-  ],
-});
+"starter-to-pro": migrate.subscriptionsOf("starter").allCustomers().toCatalog(2).toProduct("pro").atNextRenewal(),
 ```
 
-```
-+ pro-price-update   pro@v1 → pro@v2 · 168 subscriptions · 168 pay more ($20.00 → $25.00)
-```
+Some rules apply:
 
-### Migrations
+- Products are matched by `external_id` in the target catalog.
+- Merchants can decide to move subscriptions or one-time benefits.
+- The list of customers is fixed when running the plan, so rerunning the apply should be idempotent.
+- Two migrations on the same apply cannot target the same subscriptions or customers.
+- Manual changes take priority over migrations.
 
-Migrations can run on different schedules by changing `at`.
+**Subscriptions.** `next_period` moves each subscription on the next billing period, `immediate` needs an explicit `prorate` or `invoice` choice. Similar to today's API.
 
-- `next-period`: the subscription moves on the next renewal. We already have this feature with `next_period` in the subscription update endpoint.
-- `immediately`: the subscription changes now, and the old usage is settled. The merchant can decide to `prorate` or `invoice`, similar to now.
+**One-time purchases.** The orders don't change, only the benefit grants can change.
 
-A subscription can only have one migration. If two migrations target the same subscription, the newest one wins, with a notice in the plan. There are some limitations, but this makes the model easier:
+**Benefits.** A migration doesn't revoke the old grant and create a new one. It keeps the grant and points it to the new benefit row. Example: the License key benefit allows 3 activations (`ben_1`). Catalog 2 allows 5 (`ben_2`):
 
-1. A replaced migration is gone. If we delete or cancel the newer migration, those subscriptions stay unchanged.
-2. Two new migrations in the same apply that move the same subscriptions are an error, in plan and in apply.
-3. Manual changes win. Subscriptions with a manual change by the merchant or the customer are not migrated. If the merchant or customer schedules a subscription update after the migration, that one wins.
+| | Before migration | After migration |
+|---|---|---|
+| Grant | `grant_1` → `ben_1` | `grant_1` → `ben_2` |
+| License key | `ABC-123`, 2 devices active | `ABC-123`, 2 devices active |
+| Activation limit | 3 | 5 |
 
-**Data model**
+Some rules apply:
 
-We have two concepts to define: versions and migrations.
-
-*Versions*
-
-This is the complex part, and here we need to make a decision:
-
-| Option | We pick it? |
-|---|---|
-| **Mandatory `external_id`**: each version is a new row, so the product id changes on every version. Checkout links, the API, and merchant code must use `external_id` instead of the id | No, it breaks merchants and integrations |
-| **Stable id with snapshots**: the id never changes, and each version is a snapshot in a new table | Yes, nothing changes outside Polar, but we add complexity in the backend |
-
-I propose the second option: the id of a product, benefit, or meter never changes, and their rows hold the current values as of today. Then each version is a snapshot, saved in a new table:
-
-- **Products**: `product_versions` stores the name, description, prices, benefits, interval, and metadata. Prices and subscriptions get a `product_version_id`, so a subscription knows the exact version it is on. The portal, invoices, and emails of a subscription read the labels from its version.
-- **Benefits**: `benefit_versions` stores the description and the properties, like the credit units. A product version points to the benefit versions it grants. Grants stay on the benefit, so when a customer is migrated, they keep the grant and only get the new properties.
-- **Meters**: `meter_versions` stores the name, filter, and aggregation. When the filter or aggregation changes, the new version has to match events again, so meter events and billing entries get a `meter_version_id`.
-
-For example, `pro` (`prod_A`) costs $20 and has one subscription. After changing the price to $25:
-
-| Table | Rows |
-|---|---|
-| `products` | `prod_A`, `pro`, current version 2 |
-| `product_versions` | `pv_1` (v1, $20) and `pv_2` (v2, $25) |
-| `subscriptions` | `sub_1` on `prod_A` and `pv_1`, still paying $20 |
-
-Checkout for `prod_A` sells `pv_2`. A migration moves `sub_1` to `pv_2`, and its product stays `prod_A`.
-
-*Migrations*
-
-A new `migrations` table, with one row per migration: the versions it migrates from, the target version, and who created it. There is no table with one item per subscription. Each migration reuses the existing subscription update functionality that we have now, with a new column on `subscription_updates` to identify the migration.
-
-**API**
-
-- The config gets a new `migrations` section.
-- Each change in plan and apply gets a new `version` field, for example `{ "from": 1, "to": 2 }`. This can be null for non-versioned entities, like the organization configuration.
-- Plan returns a migration report: subscriptions affected, and who pays more or less.
-- `GET /v1/config` exports only current versions.
-- Checkout links can reference a product by `external_id`, not only by id. Both always sell the current version.
-- Maybe: dashboard UI for migrations, and API endpoints.
-
-**Where merchants see versions**
-
-Merchants will see versions in:
-
-- The product, meter, and benefit pages. We can add a new versions tab, showing what changed between each version and the subscriptions on each version.
-- The subscription and order pages. We should show the version of the product the customer is on, with the labels from that version.
-- The API. Every product, meter, and benefit gets a version. We return current versions by default.
+- If the new benefit is stricter than the grant, the migration should block it. For example, a merchant cannot move a customer with 5 devices to a new benefit that allows 3 devices.
 
 
-**Rollout**
+**Meters and credits** are still open for discussion. This may be a design doc on its own. See [Open questions](#open-questions).
 
-1. Versions for products: snapshots, and the portal, invoices, and emails read from them.
-2. Versions for benefits.
-3. Versions for meters. We can remove the `meter_locked` error.
-4. Migrations.
+#### What changes for merchants
+
+| | Today | With catalogs |
+|---|---|---|
+| Change a price | Old prices are archived. Existing subscriptions keep them | New product row in a new catalog. Existing subscriptions use the old product row |
+| Change a benefit | Changes for all customers | New benefit row. Existing grants keep the old definition |
+| Change a meter | Locked once billing starts | New meter row. Existing customers keep the old meter. How they migrate is open |
+| Product id after a change | Same id | New id. `external_id` stays the same |
+| Dashboard edit | Live right away | Saved in a draft. Live when the catalog is published |
+| Past one-time buyers | Get benefit changes automatically | Get them only through a migration |
+| Move existing customers | By hand, one by one | A migration, with a plan that shows the impact |
+
+Opting in is one-way for now. Before activation, every product, benefit, and meter needs an `external_id`. Activation creates catalog 1 from today's state, and existing purchases keep their rows and prices.
+
 
 ## Open questions
 
-1. **Checkout in progress.** If a customer opens checkout on v1 and the merchant applies v2 before the payment, the checkout should keep v1's price. Checkout needs to save the version when it starts.
-2. **Webhooks and API payloads.** Does `subscription.product` return the current labels, or the labels of the subscription's version?
-3. **One customer, two versions of the same benefit.** For example, credits of 1,000 and 5,000 from two subscriptions. Which properties apply?
-4. **Archived prices.** Today, archived prices already keep old subscriptions on the old price. How does `product_version_id` work together with that?
-5. **Reverting a change.** Going back to the old price creates v3, equal to v1. Should plan detect it and suggest a migration back to v1 instead?
-6. **Dashboard edits.** Do edits from the dashboard and the API also create versions? A unified approach means yes.
+1. **Meters.** How do we count, bill, and move customers who are on an old meter? What happens when two purchases share a meter? Can a meter change apply immediately?
+2. **Credits.** When recurring credits change, do we apply it at the next renewal? For one-time orders, do we keep what was already issued? How do we remove credits? How do we move credits between meters?
+3. **Migrations.** we need to decide which changes do we allow and which should we block. Those are mainly for benefits changes or billing changes. Some examples: should we allow to grant access to have a GitHub benefit attached to one repo and allow them to move to another Repo?
+4. **Adoption.** How do we move existing orgs to versioning? Should we enforce this behaviour at some point?
+
 
 ## Security considerations
 
-- **Data in and out**: config from merchants and agents, and plan reports with counts and amounts.
-- **Who can access it**: same as today. Plan needs read scopes and `products_read`, and apply needs write scopes and `products_manage`. Running a migration also needs `subscriptions:write`.
-- **Data we store**: version snapshots and migration records, kept like other billing history. No new personal data.
-- **Risks**: an agent moves many customers to a more expensive version by mistake. Mitigations: migrations run at the next renewal by default, plan shows who pays more, and merchants can cancel a migration.
+- **Data in and out:** config from merchants and agents, and plan reports with counts and amounts.
+- **Who can access it:** the existing read and write scopes. Subscription migrations also need `subscriptions:write`. One-time migrations need their own write permission. Apply checks permissions again.
+- **Data we store:** draft and published rows, catalogs, and migration records. No new personal data.
+- **Risks:** an agent moves many customers to higher prices. Mitigations: plan before apply, idempotent work, and cancel of migrations.
 
-## Appendix: how others do it
+## Appendix: Milestones
+
+**POC goal.** Prove the core loop on one internal organization:
+
+1. Change Pro from $20 to $25 in config.
+2. `plan` shows `prod_A → prod_B`. `apply` publishes catalog 2.
+3. A new checkout sells `prod_B` at $25.
+4. The old subscription stays on `prod_A` at $20.
+5. A migration moves it to `prod_B` at its next renewal.
+
+**POC scope (M1)**
+
+| In | Out (later milestones) |
+|---|---|
+| Products with fixed prices. Benefit links are copied as they are | Benefit edits, one-time benefits (M2) |
+| `catalogs`, `catalog_products`, row `version`, `is_current` | Meters and credits (M3) |
+| Config `plan` / `apply`. Apply creates the draft and publishes it in one transaction | Shared dashboard draft, review, history (M4) |
+| Checkout and product lists filter on `is_current` | Checkout link and discount modes, webhooks, analytics (M6) |
+| `subscriptionsOf("pro").allCustomers().toCatalog(n)` with `next_period` only | Other selectors, `immediate`, cancel, manual-wins rules (M5) |
+| Dashboard and API product edits are blocked for the flagged org | Draft isolation on every path (M6) |
+
+**Milestones**
+
+| Milestone | Goal | Depends on | Done when |
+|---|---|---|---|
+| M0 Design Doc | Features and architecture agreed | — | Design doc reviewed |
+| M1 POC | The scope above | M0 | Demo passes |
+| M2 Benefits | Benefits versioning and one-time products | M1 | Versioning benefit work. Think about License Keys and OAuth benefits. |
+| M3 Meters and credits | Resolve the open questions, then build meter and credit migrations | M1 | Can bill two customers on same event type but different meter |
+| M4 Dashboard drafts | Shared draft, diff view, publish view, and history | M1 | Two members edit same org and publish it |
+| M5 Migrations | Selectors, coding, cancel operation | M1 | Plan + execution testes |
+| M6 Hardening | Analytics, API access, webhooks, etc. | M2–M5 | Check main flows and make sure that eveyrthing works smoothly |
+| M7 Release | Opt-in + docs | M6 | First external organization opted in |
+
+## Appendix: How others do it
 
 | Provider | When the price changes | Existing customers | How to move them |
 |---|---|---|---|
@@ -205,11 +307,4 @@ Merchants will see versions in:
 | Autumn | A new version is created, if the plan has customers | Stay on their version | Migrations from the CLI |
 | `void` branch (our prototype) | The whole config gets a new version | Stay on their version | Not possible |
 | **Polar today** | Old prices are archived, other fields change in place | Keep the old price, but get the other changes | By hand |
-| **This design** | A new version is created | Stay on their version | Migrations in the config |
-
-Most providers do the same: they don't change existing customers when the price changes, and moving customers is a separate step. Orb is the closest to what we want. Lago is what we want to avoid :D
-
-**The `void` branch.** `void` is our first prototype of "Polar as code".
-
-- We keep: every change creates a version, applying the same config again does nothing, there is one current version for new sales, and subscriptions point to the exact version they bought.
-- We change: we version each product, meter, and benefit instead of the whole config, so unchanged ones don't get new data. We also add migrations.
+| **This design** | A new catalog with new rows for changes | Keep their rows | Explicit migrations |

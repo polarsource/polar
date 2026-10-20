@@ -84,6 +84,47 @@ class SubscriptionRepository(
 ):
     model = Subscription
 
+    def get_catalog_migration_statement(
+        self,
+        organization_id: UUID,
+        product_external_id: str,
+        *,
+        exclude_product_id: UUID | None,
+        after_id: UUID | None = None,
+    ) -> Select[tuple[Subscription]]:
+        """Active subscriptions of any version of a product that a catalog
+        migration can move: not canceling, and without a pending change to
+        another product. A pending move to a version of the same product is
+        replaced by the newer migration."""
+        source_product_ids = select(Product.id).where(
+            Product.organization_id == organization_id,
+            Product.external_id == product_external_id,
+        )
+        statement = (
+            self.get_base_statement()
+            .join(Product, Product.id == Subscription.product_id)
+            .where(
+                Product.organization_id == organization_id,
+                Product.external_id == product_external_id,
+                Subscription.active,
+                ~Subscription.cancel_at_period_end,
+                ~sa.exists().where(
+                    SubscriptionUpdate.subscription_id == Subscription.id,
+                    SubscriptionUpdate.applied_at.is_(None),
+                    SubscriptionUpdate.deleted_at.is_(None),
+                    or_(
+                        SubscriptionUpdate.product_id.is_(None),
+                        SubscriptionUpdate.product_id.not_in(source_product_ids),
+                    ),
+                ),
+            )
+        )
+        if exclude_product_id is not None:
+            statement = statement.where(Subscription.product_id != exclude_product_id)
+        if after_id is not None:
+            statement = statement.where(Subscription.id > after_id)
+        return statement
+
     async def release_scheduler_lock(self, subscription: Subscription) -> Subscription:
         statement = (
             sa.update(Subscription)

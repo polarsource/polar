@@ -1,22 +1,41 @@
 import uuid
 from collections.abc import Mapping
 
+import structlog
+
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.discount.repository import DiscountRepository
+from polar.enums import SubscriptionProrationBehavior
+from polar.exceptions import PolarError
 from polar.kit.utils import utc_now
+from polar.logging import Logger
 from polar.models import (
     Catalog,
+    CatalogMigration,
     CatalogProduct,
     Organization,
     Product,
     ProductCustomField,
     ProductMedia,
+    Subscription,
 )
 from polar.models.catalog import CatalogStatus
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.repository import ProductRepository
+from polar.subscription.repository import SubscriptionRepository
+from polar.subscription.service import SubscriptionUpdateContext
+from polar.subscription.service import subscription as subscription_service
+from polar.worker import enqueue_job
 
-from .repository import CatalogProductRepository, CatalogRepository
+from .repository import (
+    CatalogMigrationRepository,
+    CatalogProductRepository,
+    CatalogRepository,
+)
+
+log: Logger = structlog.get_logger()
+
+MIGRATION_BATCH_SIZE = 100
 
 
 class CatalogService:
@@ -147,6 +166,135 @@ class CatalogService:
         for product_id, new_product_id in replaced.items():
             await checkout_link_repository.replace_product(product_id, new_product_id)
             await discount_repository.replace_product(product_id, new_product_id)
+
+    async def count_migratable_subscriptions(
+        self,
+        session: AsyncReadSession,
+        organization: Organization,
+        source_external_id: str,
+        *,
+        exclude_product_id: uuid.UUID | None,
+    ) -> int:
+        repository = SubscriptionRepository.from_session(session)
+        return await repository.count(
+            repository.get_catalog_migration_statement(
+                organization.id,
+                source_external_id,
+                exclude_product_id=exclude_product_id,
+            )
+        )
+
+    async def start_migration(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        catalog: Catalog,
+        *,
+        external_id: str,
+        source_external_id: str,
+        target_external_id: str,
+    ) -> CatalogMigration:
+        migration = await CatalogMigrationRepository.from_session(session).create(
+            CatalogMigration(
+                organization=organization,
+                catalog=catalog,
+                external_id=external_id,
+                source_external_id=source_external_id,
+                target_external_id=target_external_id,
+            ),
+            flush=True,
+        )
+        enqueue_job("catalog.migrate_subscriptions", migration_id=migration.id)
+        return migration
+
+    async def migrate_subscriptions(
+        self,
+        session: AsyncSession,
+        migration_id: uuid.UUID,
+        *,
+        batch_size: int = MIGRATION_BATCH_SIZE,
+    ) -> bool:
+        """Move one batch of subscriptions, and return whether more may remain.
+
+        Subscriptions are taken in id order after the last one handled, so a
+        subscription rejected by a business rule is skipped once instead of
+        retried forever. Any other error aborts the batch, so the task retries it.
+        The migration row is locked, so overlapping runs don't process a batch twice.
+        """
+        repository = CatalogMigrationRepository.from_session(session)
+        migration = await repository.get_by_id(migration_id, for_update=True)
+        if migration is None or migration.completed_at is not None:
+            return False
+
+        target = await CatalogProductRepository.from_session(session).get_product(
+            migration.catalog_id, migration.target_external_id
+        )
+        # The target was deleted after the migration started: nothing can move
+        # anymore, so end the migration instead of failing every retry.
+        if target is None:
+            log.warning(
+                "Catalog migration target no longer exists",
+                migration_id=migration.id,
+                target_external_id=migration.target_external_id,
+            )
+            await repository.update(migration, update_dict={"completed_at": utc_now()})
+            return False
+
+        subscription_repository = SubscriptionRepository.from_session(session)
+        statement = (
+            subscription_repository.get_catalog_migration_statement(
+                migration.organization_id,
+                migration.source_external_id,
+                exclude_product_id=target.id,
+                after_id=migration.last_subscription_id,
+            )
+            .order_by(Subscription.id)
+            .limit(batch_size)
+            .options(*subscription_repository.get_eager_options())
+            .with_for_update(of=Subscription)
+        )
+        subscriptions = await subscription_repository.get_all(statement)
+
+        migrated = skipped = 0
+        for subscription in subscriptions:
+            try:
+                async with session.begin_nested():
+                    async with SubscriptionUpdateContext(
+                        session,
+                        subscription,
+                        subscription_service,
+                        notify_customer=False,
+                    ) as ctx:
+                        await subscription_service.update_product(
+                            session,
+                            ctx,
+                            subscription,
+                            product_id=target.id,
+                            proration_behavior=SubscriptionProrationBehavior.next_period,
+                        )
+                migrated += 1
+            except PolarError as e:
+                log.info(
+                    "Subscription skipped by catalog migration",
+                    migration_id=migration.id,
+                    subscription_id=subscription.id,
+                    error=type(e).__name__,
+                )
+                skipped += 1
+
+        has_more = len(subscriptions) == batch_size
+        await repository.update(
+            migration,
+            update_dict={
+                "subscriptions_count": migration.subscriptions_count + migrated,
+                "skipped_count": migration.skipped_count + skipped,
+                "last_subscription_id": subscriptions[-1].id
+                if subscriptions
+                else migration.last_subscription_id,
+                "completed_at": None if has_more else utc_now(),
+            },
+        )
+        return has_more
 
 
 catalog = CatalogService()

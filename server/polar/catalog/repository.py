@@ -10,7 +10,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import Catalog, CatalogProduct, Product
+from polar.models import Catalog, CatalogMigration, CatalogProduct, Product
 from polar.models.catalog import CatalogStatus
 
 
@@ -68,3 +68,37 @@ class CatalogProductRepository(
         )
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()
+
+
+class CatalogMigrationRepository(
+    RepositorySoftDeletionIDMixin[CatalogMigration, UUID],
+    RepositorySoftDeletionMixin[CatalogMigration],
+    RepositoryBase[CatalogMigration],
+):
+    model = CatalogMigration
+
+    async def get_by_external_id(
+        self, organization_id: UUID, external_id: str
+    ) -> CatalogMigration | None:
+        statement = self.get_base_statement().where(
+            CatalogMigration.organization_id == organization_id,
+            CatalogMigration.external_id == external_id,
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_all_open(self, organization_id: UUID) -> Sequence[CatalogMigration]:
+        statement = self.get_base_statement().where(
+            CatalogMigration.organization_id == organization_id,
+            CatalogMigration.completed_at.is_(None),
+        )
+        return await self.get_all(statement)
+
+    async def get_open_by_source(
+        self, organization_id: UUID, source_external_id: str
+    ) -> CatalogMigration | None:
+        statement = self.get_base_statement().where(
+            CatalogMigration.organization_id == organization_id,
+            CatalogMigration.source_external_id == source_external_id,
+            CatalogMigration.completed_at.is_(None),
+        )
+        return await self.get_one_or_none(statement)

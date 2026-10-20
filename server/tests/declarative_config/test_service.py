@@ -2880,6 +2880,57 @@ class TestApplyCatalogVersioning:
 
         assert error.value.errors[0].type == ConfigIssueType.migration_changed
 
+    async def test_migration_running(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        mocker.patch("polar.catalog.service.enqueue_job")
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"products": [MONTHLY_PRO_25], "migrations": [PRO_MIGRATION]}
+            ),
+        )
+
+        with pytest.raises(ConfigInvalid) as error:
+            await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate(
+                    {
+                        "products": [
+                            {
+                                **MONTHLY_PRO,
+                                "prices": [
+                                    {"amount_type": "fixed", "price_amount": 3000}
+                                ],
+                            }
+                        ],
+                        "migrations": [
+                            {
+                                **PRO_MIGRATION,
+                                "external_id": "pro-to-30",
+                                "to_catalog": 3,
+                            }
+                        ],
+                    }
+                ),
+            )
+
+        assert error.value.errors[0].type == ConfigIssueType.migration_running
+
     async def test_migration_to_old_catalog(
         self,
         session: AsyncSession,

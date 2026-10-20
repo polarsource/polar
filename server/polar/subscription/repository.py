@@ -93,7 +93,13 @@ class SubscriptionRepository(
         after_id: UUID | None = None,
     ) -> Select[tuple[Subscription]]:
         """Active subscriptions of any version of a product that a catalog
-        migration can move: not canceling, and without a pending change."""
+        migration can move: not canceling, and without a pending change to
+        another product. A pending move to a version of the same product is
+        replaced by the newer migration."""
+        source_product_ids = select(Product.id).where(
+            Product.organization_id == organization_id,
+            Product.external_id == product_external_id,
+        )
         statement = (
             self.get_base_statement()
             .join(Product, Product.id == Subscription.product_id)
@@ -106,6 +112,10 @@ class SubscriptionRepository(
                     SubscriptionUpdate.subscription_id == Subscription.id,
                     SubscriptionUpdate.applied_at.is_(None),
                     SubscriptionUpdate.deleted_at.is_(None),
+                    or_(
+                        SubscriptionUpdate.product_id.is_(None),
+                        SubscriptionUpdate.product_id.not_in(source_product_ids),
+                    ),
                 ),
             )
         )

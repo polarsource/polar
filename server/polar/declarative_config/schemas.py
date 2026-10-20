@@ -529,6 +529,7 @@ class ConfigIssueType(StrEnum):
     duration_changed = "duration_changed"
     interval_changed = "interval_changed"
     migration_changed = "migration_changed"
+    migration_running = "migration_running"
     meter_locked = "meter_locked"
     missing_currency = "missing_currency"
     not_supported = "not_supported"

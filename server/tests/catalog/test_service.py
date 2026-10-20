@@ -3,6 +3,7 @@ from collections.abc import Awaitable, Callable
 import pytest
 from pytest_mock import MockerFixture
 
+from polar.catalog.repository import CatalogProductRepository, CatalogRepository
 from polar.catalog.service import catalog as catalog_service
 from polar.enums import SubscriptionRecurringInterval
 from polar.models import CatalogMigration, Customer, Organization, Product
@@ -130,3 +131,56 @@ class TestMigrateSubscriptions:
         assert migration.subscriptions_count == 0
         assert migration.skipped_count == 1
         assert migration.last_subscription_id == subscription.id
+
+    async def test_replaces_pending_move_to_older_version(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        publish_pro: PublishPro,
+        old_pro: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=old_pro, customer=customer
+        )
+        first = await publish_pro("usd")
+        await catalog_service.migrate_subscriptions(session, first.id)
+        live = await CatalogRepository.from_session(session).get_live(organization.id)
+        assert live is not None
+        second_pro = await CatalogProductRepository.from_session(session).get_product(
+            live.id, "pro"
+        )
+        assert second_pro is not None
+        second_pro.is_current = False
+        await save_fixture(second_pro)
+        third_pro = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            name="Pro",
+            external_id="pro",
+            prices=[(3000, "usd")],
+        )
+        catalog = await catalog_service.publish(
+            session, organization, live, {"pro": third_pro}
+        )
+        second = await catalog_service.start_migration(
+            session,
+            organization,
+            catalog,
+            external_id="pro-to-30",
+            source_external_id="pro",
+            target_external_id="pro",
+        )
+
+        await catalog_service.migrate_subscriptions(session, second.id)
+
+        assert second.subscriptions_count == 1
+        repository = SubscriptionRepository.from_session(session)
+        updated = await repository.get_by_id(
+            subscription.id, options=repository.get_eager_options()
+        )
+        assert updated is not None
+        assert updated.pending_update is not None
+        assert updated.pending_update.product_id == third_pro.id

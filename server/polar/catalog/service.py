@@ -98,7 +98,16 @@ class CatalogService:
         repository = CatalogRepository.from_session(session)
         catalog_product_repository = CatalogProductRepository.from_session(session)
 
-        members = {} if live is None else await self.get_product_ids(session, live)
+        members = (
+            {}
+            if live is None
+            else {
+                member.external_id: member.product
+                for member in await catalog_product_repository.get_all_by_catalog(
+                    live.id, with_products=True
+                )
+            }
+        )
         if live is not None:
             await repository.update(
                 live, update_dict={"status": CatalogStatus.archived}, flush=True
@@ -120,13 +129,12 @@ class CatalogService:
                     catalog=catalog, product=product, external_id=external_id
                 )
             )
-        for external_id, product_id in members.items():
+        for external_id, product in members.items():
             await catalog_product_repository.create(
                 CatalogProduct(
-                    catalog=catalog, product_id=product_id, external_id=external_id
+                    catalog=catalog, product=product, external_id=external_id
                 )
             )
-        await session.flush()
         return catalog
 
     async def carry_over_references(
@@ -215,9 +223,10 @@ class CatalogService:
 
         Subscriptions are taken in id order after the last one handled, so a
         subscription that can't move is skipped once instead of retried forever.
+        The migration row is locked, so overlapping runs don't process a batch twice.
         """
         repository = CatalogMigrationRepository.from_session(session)
-        migration = await repository.get_by_id(migration_id)
+        migration = await repository.get_by_id(migration_id, for_update=True)
         if migration is None or migration.completed_at is not None:
             return False
 
@@ -237,6 +246,7 @@ class CatalogService:
             .order_by(Subscription.id)
             .limit(batch_size)
             .options(*subscription_repository.get_eager_options())
+            .with_for_update(of=Subscription)
         )
         subscriptions = await subscription_repository.get_all(statement)
 
@@ -264,6 +274,15 @@ class CatalogService:
                     migration_id=migration.id,
                     subscription_id=subscription.id,
                     error=type(e).__name__,
+                )
+                skipped += 1
+            # A failure that isn't a business rule must not stall the migration
+            # on this subscription forever: report it and move past it.
+            except Exception:
+                log.exception(
+                    "Catalog migration failed on a subscription",
+                    migration_id=migration.id,
+                    subscription_id=subscription.id,
                 )
                 skipped += 1
 

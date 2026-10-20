@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import func, select
+from sqlalchemy.orm import joinedload
 
 from polar.kit.repository import (
     RepositoryBase,
@@ -41,10 +42,14 @@ class CatalogProductRepository(
 ):
     model = CatalogProduct
 
-    async def get_all_by_catalog(self, catalog_id: UUID) -> Sequence[CatalogProduct]:
+    async def get_all_by_catalog(
+        self, catalog_id: UUID, *, with_products: bool = False
+    ) -> Sequence[CatalogProduct]:
         statement = self.get_base_statement().where(
             CatalogProduct.catalog_id == catalog_id
         )
+        if with_products:
+            statement = statement.options(joinedload(CatalogProduct.product))
         return await self.get_all(statement)
 
     async def get_product(self, catalog_id: UUID, external_id: str) -> Product | None:
@@ -74,5 +79,15 @@ class CatalogMigrationRepository(
         statement = self.get_base_statement().where(
             CatalogMigration.organization_id == organization_id,
             CatalogMigration.external_id == external_id,
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_open_by_source(
+        self, organization_id: UUID, source_external_id: str
+    ) -> CatalogMigration | None:
+        statement = self.get_base_statement().where(
+            CatalogMigration.organization_id == organization_id,
+            CatalogMigration.source_external_id == source_external_id,
+            CatalogMigration.completed_at.is_(None),
         )
         return await self.get_one_or_none(statement)

@@ -515,6 +515,24 @@ class DeclarativeConfigService:
                 )
                 continue
 
+            running = await repository.get_open_by_source(
+                organization.id, migration.subscriptions_of
+            )
+            if running is not None:
+                issues.append(
+                    ConfigIssue(
+                        severity=ConfigIssueSeverity.error,
+                        type=ConfigIssueType.migration_running,
+                        loc=[*loc, "subscriptions_of"],
+                        msg=(
+                            f"Migration {running.external_id} is still moving these "
+                            "subscriptions. Wait for it to finish."
+                        ),
+                        input=migration.subscriptions_of,
+                    )
+                )
+                continue
+
             if migration.to_catalog != catalog_after:
                 issues.append(
                     ConfigIssue(

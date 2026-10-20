@@ -266,7 +266,7 @@ async def update(
         raise ResourceNotFound()
 
     if product.organization.is_catalog_versioning_enabled:
-        raise ProductVersioned()
+        raise NotPermitted(ProductVersioned().message)
 
     return await product_service.update(session, product, product_update, auth_subject)
 
@@ -335,7 +335,7 @@ async def update_benefits(
         raise ResourceNotFound()
 
     if product.organization.is_catalog_versioning_enabled:
-        raise ProductVersioned()
+        raise NotPermitted(ProductVersioned().message)
 
     product, _, _ = await product_service.update_benefits(
         session, product, benefits_update.benefits, auth_subject

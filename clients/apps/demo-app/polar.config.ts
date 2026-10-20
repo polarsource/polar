@@ -20,9 +20,7 @@ export default defineConfig({
       .count(),
   }),
   benefits: ({ flag, credits }) => ({
-    custom_servers: flag('Custom servers')
-      .metadata({ tag: 'primary' })
-      .deprecated(),
+    custom_servers: flag('Custom servers').metadata({ tag: 'primary' }),
     tool_calls: credits('Included tool calls').meter('tool_call').units(1200),
     free_tool_calls: credits('Free tool calls').meter('tool_call').units(5),
     // Rollover keeps purchased credits across the Pro billing cycle reset

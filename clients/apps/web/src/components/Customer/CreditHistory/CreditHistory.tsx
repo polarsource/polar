@@ -11,12 +11,15 @@ const REVERSIBLE_FOR_MS = 7 * 24 * 60 * 60 * 1000
 
 export const CreditHistory = ({
   credits,
+  currentPeriodStart,
 }: {
   credits: schemas['MeterCreditEvent'][]
+  currentPeriodStart: Date | null
 }) => {
   const [reversibleSince] = useState(() => Date.now() - REVERSIBLE_FOR_MS)
 
   const { rows, hasActions } = useMemo(() => {
+    const since = Math.max(reversibleSince, currentPeriodStart?.getTime() ?? 0)
     const reversedUnits = new Map(
       credits.flatMap(({ parent_id, metadata }) =>
         parent_id ? [[parent_id, -metadata.units] as const] : [],
@@ -32,10 +35,10 @@ export const CreditHistory = ({
           credit.metadata.reason === 'manual' &&
           credit.metadata.units > 0 &&
           !reversedUnits.has(credit.id) &&
-          new Date(credit.timestamp).getTime() > reversibleSince,
+          new Date(credit.timestamp).getTime() >= since,
       }))
     return { rows, hasActions: rows.some(({ reversible }) => reversible) }
-  }, [credits, reversibleSince])
+  }, [credits, reversibleSince, currentPeriodStart])
 
   return (
     <Box flexDirection="column" rowGap="m">

@@ -14,6 +14,7 @@ export const MeterPeriodDetails = ({
   customer,
   meter,
   currentPeriod,
+  currentPeriodStart,
   startDate,
   endDate,
   interval,
@@ -22,6 +23,7 @@ export const MeterPeriodDetails = ({
   customer: schemas['Customer']
   meter: schemas['Meter']
   currentPeriod: CurrentPeriod | null
+  currentPeriodStart: Date | null
   startDate: Date
   endDate: Date
   interval: schemas['TimeInterval']
@@ -63,7 +65,10 @@ export const MeterPeriodDetails = ({
         endDate={endDate}
         interval={interval}
       />
-      <CreditHistory credits={credits} />
+      <CreditHistory
+        credits={credits}
+        currentPeriodStart={currentPeriodStart}
+      />
       <MeterPeriodEvents
         key={`${startDate.toISOString()}-${endDate.toISOString()}`}
         organization={organization}

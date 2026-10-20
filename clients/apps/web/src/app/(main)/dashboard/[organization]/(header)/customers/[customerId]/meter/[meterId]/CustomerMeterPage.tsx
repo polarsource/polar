@@ -193,6 +193,7 @@ const CustomerMeterPage = ({
               ? { subscription, customerMeter, unitPrice }
               : null
           }
+          currentPeriodStart={billingPeriodInterval?.value[0] ?? null}
           startDate={startDate}
           endDate={endDate}
           interval={interval}

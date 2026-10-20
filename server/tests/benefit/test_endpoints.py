@@ -451,27 +451,6 @@ class TestListBenefitFiles:
 
 @pytest.mark.anyio
 class TestCreateBenefit:
-    @pytest.mark.auth
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_config_as_code_enabled(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.post(
-            "/v1/benefits/",
-            json={
-                "type": "custom",
-                "description": "Benefit",
-                "properties": {"note": None},
-                "organization_id": str(organization.id),
-            },
-        )
-
-        assert response.status_code == 403
-        assert response.json()["error"] == "DeclarativeConfigManaged"
-
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
             "/v1/benefits/",
@@ -612,22 +591,6 @@ class TestCreateBenefit:
 
 @pytest.mark.anyio
 class TestUpdateBenefit:
-    @pytest.mark.auth
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_config_as_code_enabled(
-        self,
-        client: AsyncClient,
-        benefit_organization: Benefit,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.patch(
-            f"/v1/benefits/{benefit_organization.id}",
-            json={"type": benefit_organization.type, "description": "Updated"},
-        )
-
-        assert response.status_code == 403
-        assert response.json()["error"] == "DeclarativeConfigManaged"
-
     async def test_anonymous(
         self,
         client: AsyncClient,

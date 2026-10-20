@@ -15,8 +15,9 @@ Polar creates an order in all of these cases:
 - **Subscription created** — the initial order generated when a customer subscribes.
 - **Subscription renewal** — every billing cycle of an active subscription.
 - **Subscription change** — when a plan or seat update is prorated with `invoice` behavior and charges the difference immediately. See [Proration](/features/subscriptions/proration).
+- **Usage charge** — at the end of each meter period, for products with a [meter cycle](/features/usage-based-billing/billing#meter-cycle) shorter than the billing interval.
 
-Each order carries a `billing_reason` that tells you which of these it is: `purchase`, `subscription_create`, `subscription_cycle`, or `subscription_update`.
+Each order carries a `billing_reason` that tells you which of these it is: `purchase`, `subscription_create`, `subscription_cycle`, `subscription_update`, or `subscription_meter_cycle`.
 
 ## Arbitrary charges
 

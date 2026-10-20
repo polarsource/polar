@@ -1126,12 +1126,13 @@ async def test_telemetry_spans(
         ({"outpost.outcome": "ok"}, 1)
     ]
     assert all(isinstance(point, ExponentialHistogramDataPoint) for point in durations)
+    reads = _data_points(exported_metrics, "outpost.read.duration")
+    assert all(isinstance(point, ExponentialHistogramDataPoint) for point in reads)
     names = {span.name for span in exported_spans}
     assert names == {
         "outpost.redis.connect",
         "outpost.redis.subscribe",
         "outpost.websocket.connect",
-        "outpost.customer_meter",
         "outpost.snapshot.received",
         "outpost.sync",
         "outpost.websocket.disconnect",
@@ -1553,11 +1554,13 @@ ALICE_SNAPSHOT: dict[str, typing.Any] = {
 }
 
 
-def read_outcomes(spans: list[ReadableSpan]) -> list[tuple[str, typing.Any]]:
+def read_outcomes(exported: list[MetricsData]) -> list[tuple[str, typing.Any]]:
     return [
-        (span.name, (span.attributes or {}).get("outpost.read.outcome"))
-        for span in spans
-        if span.name in {"outpost.actor", "outpost.customer_meter"}
+        (
+            point.attributes["outpost.read.operation"],
+            point.attributes["outpost.read.outcome"],
+        )
+        for point in _data_points(exported, "outpost.read.duration")
     ]
 
 
@@ -1566,7 +1569,7 @@ async def test_cold_read_waits_for_the_snapshot(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
-    exported_spans: list[ReadableSpan],
+    exported_metrics: list[MetricsData],
 ) -> None:
     url, _ = redis_connection
     snapshots["external:alice"] = ALICE_SNAPSHOT
@@ -1575,9 +1578,9 @@ async def test_cold_read_waits_for_the_snapshot(
         meter = await outpost.meter(meter_id="meter", external_customer_id="alice")
     assert meter is not None
     assert meter.balance == 7
-    assert read_outcomes(exported_spans) == [
-        ("outpost.actor", "ready"),
-        ("outpost.customer_meter", "ready"),
+    assert read_outcomes(exported_metrics) == [
+        ("actor", "ready"),
+        ("meter", "ready"),
     ]
 
 
@@ -1585,23 +1588,21 @@ async def test_cold_read_waits_for_the_snapshot(
 async def test_unknown_meter_reads_none(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,
-    exported_spans: list[ReadableSpan],
+    exported_metrics: list[MetricsData],
 ) -> None:
     url, _ = redis_connection
     async with Outpost(url, client=polar_client) as outpost:
         assert (
             await outpost.meter(meter_id="other", external_customer_id="alice") is None
         )
-    assert read_outcomes(exported_spans) == [
-        ("outpost.customer_meter", "unknown_meter")
-    ]
+    assert read_outcomes(exported_metrics) == [("meter", "unknown_meter")]
 
 
 @pytest.mark.anyio
 async def test_reads_without_configuration_are_not_ready(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,
-    exported_spans: list[ReadableSpan],
+    exported_metrics: list[MetricsData],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class Unconfigured:
@@ -1620,10 +1621,25 @@ async def test_reads_without_configuration_are_not_ready(
             await outpost.actor(external_customer_id="alice")
         with pytest.raises(TimeoutError):
             await outpost.meter(meter_id="meter", external_customer_id="alice")
-    assert read_outcomes(exported_spans) == [
-        ("outpost.actor", "not_ready"),
-        ("outpost.customer_meter", "not_ready"),
+    assert read_outcomes(exported_metrics) == [
+        ("actor", "not_ready"),
+        ("meter", "not_ready"),
     ]
+
+
+@pytest.mark.anyio
+async def test_failed_read_is_an_error(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    exported_metrics: list[MetricsData],
+) -> None:
+    url, _ = redis_connection
+    async with Outpost(url, client=polar_client) as outpost:
+        outpost._failure = PolarOutpostError("Outpost stopped")
+        with pytest.raises(PolarOutpostError, match="Outpost stopped"):
+            await outpost.meter(meter_id="meter", external_customer_id="alice")
+        outpost._failure = None
+    assert read_outcomes(exported_metrics) == [("meter", "error")]
 
 
 @pytest.mark.anyio
@@ -1631,7 +1647,7 @@ async def test_unknown_customer_reads_none(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
-    exported_spans: list[ReadableSpan],
+    exported_metrics: list[MetricsData],
 ) -> None:
     url, _ = redis_connection
     snapshots["external:alice"] = {**ALICE_SNAPSHOT, "customer_exists": False}
@@ -1640,9 +1656,9 @@ async def test_unknown_customer_reads_none(
         assert (
             await outpost.meter(meter_id="meter", external_customer_id="alice") is None
         )
-    assert read_outcomes(exported_spans) == [
-        ("outpost.actor", "unknown_customer"),
-        ("outpost.customer_meter", "unknown_customer"),
+    assert read_outcomes(exported_metrics) == [
+        ("actor", "unknown_customer"),
+        ("meter", "unknown_customer"),
     ]
 
 
@@ -1650,16 +1666,16 @@ async def test_unknown_customer_reads_none(
 async def test_missing_snapshot_times_out(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,
-    exported_spans: list[ReadableSpan],
+    exported_metrics: list[MetricsData],
 ) -> None:
     url, _ = redis_connection
     async with Outpost(url, client=polar_client) as outpost:
         await outpost.actor(external_customer_id="alice")
         with pytest.raises(PolarOutpostError, match="not ready"):
             await outpost.meter(meter_id="meter", external_customer_id="alice")
-    assert read_outcomes(exported_spans) == [
-        ("outpost.actor", "not_ready"),
-        ("outpost.customer_meter", "not_ready"),
+    assert read_outcomes(exported_metrics) == [
+        ("actor", "not_ready"),
+        ("meter", "not_ready"),
     ]
 
 
@@ -1669,7 +1685,7 @@ async def test_missing_snapshot_times_out(
 )
 async def test_cold_read_waits_for_its_own_meter(
     redis_connection: tuple[str, Redis],
-    exported_spans: list[ReadableSpan],
+    exported_metrics: list[MetricsData],
     delay: float,
     credited: int,
     outcome: str,
@@ -1715,7 +1731,7 @@ async def test_cold_read_waits_for_its_own_meter(
         meter = await outpost.meter(meter_id="shared", external_customer_id="alice")
     assert meter is not None
     assert meter.credited_units == credited
-    assert read_outcomes(exported_spans) == [("outpost.customer_meter", outcome)]
+    assert read_outcomes(exported_metrics) == [("meter", outcome)]
 
 
 @pytest.mark.anyio
@@ -1743,7 +1759,7 @@ async def test_redis_errors_raise_outpost_errors(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
-    exported_spans: list[ReadableSpan],
+    exported_metrics: list[MetricsData],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr("polar.outpost.client.REDIS_TIMEOUT", 0.2)
@@ -1754,9 +1770,8 @@ async def test_redis_errors_raise_outpost_errors(
         server.connected = False
         with pytest.raises(UnavailableRedisError):
             await outpost.meter(meter_id="meter", external_customer_id="alice")
-        assert read_outcomes(exported_spans) == [
-            ("outpost.customer_meter", "redis_unavailable")
-        ]
+        await outpost.flush_telemetry()
+        assert read_outcomes(exported_metrics) == [("meter", "redis_unavailable")]
         with pytest.raises(UnavailableRedisError):
             await outpost.track({"name": "call", "external_customer_id": "alice"})
         server.connected = True
@@ -1789,7 +1804,7 @@ async def test_redis_unavailable_at_startup(
 async def test_redis_outage_fails_fast(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,
-    exported_spans: list[ReadableSpan],
+    exported_metrics: list[MetricsData],
 ) -> None:
     url, redis = redis_connection
     server: FakeServer = redis.connection_pool.connection_kwargs["server"]
@@ -1802,9 +1817,7 @@ async def test_redis_outage_fails_fast(
         with anyio.fail_after(0.5):
             with pytest.raises(UnavailableRedisError):
                 await outpost.meter(meter_id="meter", external_customer_id="bob")
-    assert read_outcomes(exported_spans) == [
-        ("outpost.customer_meter", "redis_unavailable")
-    ]
+    assert read_outcomes(exported_metrics) == [("meter", "redis_unavailable")]
 
 
 @pytest.mark.anyio

@@ -8,10 +8,10 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any, TypeVar
 
-import stripe as stripe_lib
 from pydantic import ValidationError
 
 from polar.enums import TaxBehavior
+from polar.integrations.stripe import stripe_lib
 from polar.kit.address import Address
 from polar.kit.schemas import Schema
 from polar.kit.utils import utc_now

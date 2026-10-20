@@ -15,6 +15,7 @@ classifiers = [
 ]
 requires-python = ">=3.11"
 dependencies = [
+  "certifi>=2026.10.19",
   "httpx>=0.28.1",
   "adaptix==3.0.0b12",
   "typing-extensions>=4.13.0",
@@ -55,3 +56,4 @@ ignore = ["B006"]
 [tool.uv]
 default-groups = ["dev"]
 exclude-newer = "1 week"
+exclude-newer-package = { certifi = false }

@@ -1,6 +1,6 @@
 import { Redis } from "ioredis";
 import { once } from "node:events";
-import { afterAll, beforeAll, bench, describe } from "vitest";
+import { afterAll, beforeAll, bench, describe, vi } from "vitest";
 import { WebSocketServer } from "ws";
 
 import { ClientBase } from "../base";
@@ -11,11 +11,43 @@ import { BUCKET_SIZE, type Reducer } from "./reducer";
 import { startRedisServer, type RedisServer } from "./testing";
 
 const OPTIONS = { warmupTime: 500, time: 2_000 };
+// encodeState seeds every bucket with 10 events.
+const SEEDED = 10;
 
 // Every event feeds `tokens`; an LLM call also feeds `calls` and `cost`.
 const REDUCERS = benchmark.ingest.reducers as Reducer[];
 
-const timestampOf = (bucketStart: number) => new Date(bucketStart / 1000).toISOString();
+interface Scenario {
+  name: string;
+  customer: string;
+  buckets: number;
+  event: { name: string; metadata: Record<string, number> };
+  reducers: string[];
+  ingested: number;
+}
+
+const SCENARIOS: Scenario[] = [
+  ...BUCKET_COUNTS.map((buckets) => ({
+    name: `ingest one event into a ${buckets}-bucket state`,
+    customer: `alice-${buckets}`,
+    buckets,
+    event: benchmark.ingest.embedding,
+    reducers: ["tokens"],
+    ingested: 0,
+  })),
+  {
+    name: "ingest one event matching three reducers",
+    customer: "bob",
+    buckets: 1,
+    event: benchmark.ingest.llm_call,
+    reducers: REDUCERS.map((reducer) => reducer.id),
+    ingested: 0,
+  },
+];
+
+const newestBucketStart = (scenario: Scenario) => COLD_UNTIL + (scenario.buckets - 1) * BUCKET_SIZE;
+const stateKey = (scenario: Scenario, reducer: string) =>
+  `outpost:state:external:${scenario.customer}:${reducer}`;
 
 let redisServer: RedisServer;
 let redis: Redis;
@@ -23,13 +55,14 @@ let server: WebSocketServer;
 let outpost: Outpost;
 
 beforeAll(async () => {
+  // Telemetry records as in production; only its export to Polar stays on the machine.
+  vi.stubGlobal("fetch", async () => new Response(null, { status: 200 }));
   redisServer = await startRedisServer();
   redis = new Redis(redisServer.socket);
   await once(redis, "ready");
-  for (const buckets of BUCKET_COUNTS)
-    await redis.hset(`outpost:state:external:alice-${buckets}:tokens`, ...encodeState(buckets));
-  for (const reducer of REDUCERS)
-    await redis.hset(`outpost:state:external:bob:${reducer.id}`, ...encodeState(1));
+  for (const scenario of SCENARIOS)
+    for (const reducer of scenario.reducers)
+      await redis.hset(stateKey(scenario, reducer), ...encodeState(scenario.buckets));
 
   // Polar's side of the WebSocket: the configuration, nothing else. Snapshots only matter to reads.
   server = new WebSocketServer({ port: 0, host: "127.0.0.1", path: "/v1/outpost/" });
@@ -49,42 +82,44 @@ beforeAll(async () => {
     version: "2026-10",
     organizationId: "org",
   });
-  outpost = await new Outpost(redisServer.socket, { client, telemetry: false }).start();
+  outpost = await new Outpost(redisServer.socket, { client }).start();
 });
 
+// Vitest runs no hook nested in a describe during benchmarks.
 afterAll(async () => {
-  await outpost?.close();
-  for (const ws of server?.clients ?? []) ws.terminate();
-  if (server) await new Promise<void>((resolve) => server.close(() => resolve()));
-  redis?.disconnect();
-  await redisServer?.stop();
+  try {
+    for (const scenario of SCENARIOS) {
+      const field = `bucket:${newestBucketStart(scenario)}:count`;
+      for (const reducer of scenario.reducers) {
+        const count = Number(await redis.hget(stateKey(scenario, reducer), field));
+        if (count !== SEEDED + scenario.ingested)
+          throw new Error(`${scenario.name}: ${reducer} counted ${count - SEEDED} events`);
+      }
+    }
+  } finally {
+    await outpost?.close();
+    for (const ws of server?.clients ?? []) ws.terminate();
+    if (server) await new Promise<void>((resolve) => server.close(() => resolve()));
+    redis?.disconnect();
+    await redisServer?.stop();
+    vi.unstubAllGlobals();
+  }
 });
 
 describe("Outpost.ingest", () => {
-  for (const buckets of BUCKET_COUNTS) {
-    const timestamp = timestampOf(COLD_UNTIL + (buckets - 1) * BUCKET_SIZE);
+  for (const scenario of SCENARIOS) {
+    const event = {
+      ...scenario.event,
+      external_customer_id: scenario.customer,
+      timestamp: new Date(newestBucketStart(scenario) / 1000).toISOString(),
+    };
     bench(
-      `ingest one event into a ${buckets}-bucket state`,
+      scenario.name,
       async () => {
-        await outpost.ingest({
-          ...benchmark.ingest.embedding,
-          external_customer_id: `alice-${buckets}`,
-          timestamp,
-        });
+        await outpost.ingest(event);
+        scenario.ingested += 1;
       },
       OPTIONS,
     );
   }
-  const timestamp = timestampOf(COLD_UNTIL);
-  bench(
-    "ingest one event matching three reducers",
-    async () => {
-      await outpost.ingest({
-        ...benchmark.ingest.llm_call,
-        external_customer_id: "bob",
-        timestamp,
-      });
-    },
-    OPTIONS,
-  );
 });

@@ -1,17 +1,16 @@
 import asyncio
-import collections.abc
 import json
+import typing
 
 import httpx
 import pytest
 from pytest_codspeed import BenchmarkFixture
-from redis import Redis as SyncRedis
 from redis.asyncio import Redis
 
 from polar.metering import CustomerMeter
 from polar.outpost.client import LocalState, Outpost, consumed_units, decode_state
 from polar.outpost.reducer import Reducer
-from tests.benchmarks import BUCKET_COUNTS, REDUCER, encode_state
+from tests.benchmarks import BUCKET_COUNTS, REDUCER, SNAPSHOT, encode_state
 
 pytestmark = pytest.mark.benchmark
 
@@ -47,14 +46,9 @@ def reducers() -> list[Reducer]:
     return [REDUCER]
 
 
-# A snapshotted state: no read waits for Polar.
 @pytest.fixture(scope="module")
-def redis(redis_socket: str) -> collections.abc.Iterator[SyncRedis]:
-    with SyncRedis(unix_socket_path=redis_socket) as client:
-        client.hset(
-            f"outpost:state:external:alice:{REDUCER['id']}", items=encode_state(1)
-        )
-        yield client
+def snapshot() -> dict[str, typing.Any]:
+    return SNAPSHOT
 
 
 def test_warm_meter_read(
@@ -65,6 +59,7 @@ def test_warm_meter_read(
             outpost.meter(meter_id="meter", external_customer_id="alice")
         )
 
+    loop.run_until_complete(outpost.actor(external_customer_id="alice"))
     meter = read()
     assert meter is not None and meter.credited_units == 1_000_000
     benchmark(read)

@@ -9,6 +9,16 @@
     "filter": { "conjunction": "and", "clauses": [] },
     "aggregation": { "func": "sum", "property": "tokens" }
   },
+  "snapshot": {
+    "customer_id": null,
+    "cold_until": 1790856000000000,
+    "version": 1790856000000001,
+    "count": 1000,
+    "sum": 123456,
+    "min": 1,
+    "max": 999,
+    "credited_units": 1000000
+  },
   "events": {
     "seed": 4242,
     "count": 1000,

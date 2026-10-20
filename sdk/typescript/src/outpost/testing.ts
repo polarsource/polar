@@ -50,15 +50,23 @@ export interface PolarServer {
   stop(): Promise<void>;
 }
 
-// Polar's side of the WebSocket: the configuration, nothing else.
-export const startPolarServer = async (reducers: Reducer[]): Promise<PolarServer> => {
+// Polar's side of the WebSocket: the configuration, and the snapshot when given one.
+export const startPolarServer = async (
+  reducers: Reducer[],
+  snapshot?: Record<string, unknown>,
+): Promise<PolarServer> => {
   const server = new WebSocketServer({ port: 0, host: "127.0.0.1", path: "/v1/outpost/" });
   await once(server, "listening");
   server.on("connection", (ws) => {
     ws.send(JSON.stringify({ type: "connection", payload: { id: "bench" } }));
     ws.on("message", (data) => {
-      if (JSON.parse(data.toString()).type === "configuration")
+      const message = JSON.parse(data.toString());
+      if (message.type === "configuration")
         ws.send(JSON.stringify({ type: "configuration", payload: { reducers } }));
+      if (message.type === "meter_usage" && snapshot) {
+        const payload = { customer_exists: true, ...snapshot, ...message.payload };
+        ws.send(JSON.stringify({ type: "meter_usage", payload }));
+      }
     });
   });
   const address = server.address();

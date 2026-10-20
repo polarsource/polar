@@ -1,7 +1,6 @@
-import { Redis } from "ioredis";
 import { afterAll, beforeAll, bench, describe, vi } from "vitest";
 
-import { encodeState, REDUCER } from "./benchmark";
+import { REDUCER, SNAPSHOT } from "./benchmark";
 import { Outpost } from "./client";
 import { startPolarServer, startRedisServer, type PolarServer, type RedisServer } from "./testing";
 
@@ -15,12 +14,9 @@ beforeAll(async () => {
   // Telemetry on, as in production, with its export stubbed.
   vi.stubGlobal("fetch", async () => new Response(null, { status: 200 }));
   redisServer = await startRedisServer();
-  // A snapshotted state: no read waits for Polar.
-  const redis = new Redis(redisServer.socket);
-  await redis.hset(`outpost:state:external:alice:${REDUCER.id}`, ...encodeState(1));
-  redis.disconnect();
-  polar = await startPolarServer([REDUCER]);
+  polar = await startPolarServer([REDUCER], SNAPSHOT);
   outpost = await new Outpost(redisServer.socket, { client: polar.client }).start();
+  await outpost.actor({ external_customer_id: meter.external_customer_id });
   if ((await outpost.meter(meter))?.credited_units !== 1_000_000)
     throw new Error("The warm read benchmark needs a ready meter");
 });

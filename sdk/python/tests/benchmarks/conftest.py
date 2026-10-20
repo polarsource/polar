@@ -11,7 +11,6 @@ import typing
 import httpx
 import pytest
 from httpx_ws.transport import ASGIWebSocketTransport
-from redis import Redis
 
 from polar.outpost import telemetry
 from polar.outpost.client import Outpost
@@ -69,8 +68,10 @@ def redis_socket() -> collections.abc.Iterator[str]:
             process.wait()
 
 
-# Polar's side of the WebSocket: the configuration, nothing else.
-def polar_server(reducers: list[Reducer]) -> typing.Any:
+# Polar's side of the WebSocket: the configuration, and the snapshot when given one.
+def polar_server(
+    reducers: list[Reducer], snapshot: dict[str, typing.Any] | None
+) -> typing.Any:
     async def app(scope: typing.Any, receive: typing.Any, send: typing.Any) -> None:
         await receive()
         await send({"type": "websocket.accept"})
@@ -81,18 +82,22 @@ def polar_server(reducers: list[Reducer]) -> typing.Any:
             }
         )
         while (message := await receive())["type"] != "websocket.disconnect":
-            if json.loads(message["text"])["type"] == "configuration":
-                payload = {"reducers": reducers}
-                await send(
-                    {
-                        "type": "websocket.send",
-                        "text": json.dumps(
-                            {"type": "configuration", "payload": payload}
-                        ),
-                    }
-                )
+            request = json.loads(message["text"])
+            if request["type"] == "configuration":
+                response = {"type": "configuration", "payload": {"reducers": reducers}}
+            elif request["type"] == "meter_usage" and snapshot is not None:
+                payload = {"customer_exists": True, **snapshot, **request["payload"]}
+                response = {"type": "meter_usage", "payload": payload}
+            else:
+                continue
+            await send({"type": "websocket.send", "text": json.dumps(response)})
 
     return app
+
+
+@pytest.fixture(scope="module")
+def snapshot() -> dict[str, typing.Any] | None:
+    return None
 
 
 # One task holds the Outpost open, since a task group must close in the task that opened it;
@@ -100,13 +105,13 @@ def polar_server(reducers: list[Reducer]) -> typing.Any:
 @pytest.fixture(scope="module")
 def outpost(
     loop: asyncio.AbstractEventLoop,
-    redis: Redis,
     redis_socket: str,
     reducers: list[Reducer],
+    snapshot: dict[str, typing.Any] | None,
 ) -> collections.abc.Iterator[Outpost]:
     client = httpx.AsyncClient(
         base_url="http://polar.test",
-        transport=ASGIWebSocketTransport(polar_server(reducers)),
+        transport=ASGIWebSocketTransport(polar_server(reducers, snapshot)),
     )
     outpost = Outpost(f"unix://{redis_socket}", client=client)
     stop = asyncio.Event()

@@ -7,7 +7,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 if TYPE_CHECKING:
-    from polar.models import Organization, User
+    from polar.models import Agent, Organization, User
 
 
 class SubType(StrEnum):
@@ -36,6 +36,9 @@ class SubTypeModelMixin:
     organization_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("organizations.id", ondelete="cascade"), nullable=True
     )
+    agent_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("agents.id", ondelete="cascade"), nullable=True, index=True
+    )
 
     @declared_attr
     def user(cls) -> Mapped["User | None"]:
@@ -44,6 +47,10 @@ class SubTypeModelMixin:
     @declared_attr
     def organization(cls) -> Mapped["Organization | None"]:
         return relationship("Organization", lazy="joined")
+
+    @declared_attr
+    def agent(cls) -> Mapped["Agent | None"]:
+        return relationship("Agent", lazy="joined")
 
     @hybrid_property
     def sub(self) -> "User | Organization":

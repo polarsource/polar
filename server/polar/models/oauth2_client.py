@@ -53,6 +53,9 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
         default=None,
     )
     first_party: Mapped[bool] = mapped_column(nullable=False, default=False)
+    is_agent: Mapped[bool] = mapped_column(
+        nullable=False, default=False, server_default="false"
+    )
 
     user_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("users.id"), nullable=True, index=True

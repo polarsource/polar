@@ -2638,6 +2638,10 @@ class OrderService:
         if not recipients:
             return
 
+        billing_recipients = await customer_service.get_billing_email_recipients(
+            session, customer, exclude=recipients
+        )
+
         subject = subject_template.format(description=order.description)
 
         # Generate invoice to attach to the email
@@ -2656,12 +2660,6 @@ class OrderService:
             attachments = [
                 {"remote_url": invoice.url, "filename": order.invoice_filename}
             ]
-
-        billing_recipients: Sequence[str] = []
-        if attachments:
-            billing_recipients = await customer_service.get_billing_email_recipients(
-                session, customer, exclude=recipients
-            )
 
         previous_billing_provider: str | None = None
         if subscription is not None and template_name != "order_confirmation":

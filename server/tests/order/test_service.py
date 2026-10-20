@@ -3202,7 +3202,7 @@ class TestSendConfirmationEmail:
         billing_email = enqueue_email_mock.call_args_list[1].args[0]
         assert "customer_session_token" not in billing_email.props.url
 
-    async def test_billing_emails_skipped_without_invoice(
+    async def test_billing_emails_without_invoice(
         self,
         mocker: MockerFixture,
         enqueue_email_mock: MagicMock,
@@ -3225,8 +3225,10 @@ class TestSendConfirmationEmail:
 
         await order_service.send_confirmation_email(session, order)
 
-        enqueue_email_mock.assert_called_once()
-        assert enqueue_email_mock.call_args.kwargs["to_email_addr"] == customer.email
+        assert [
+            email_call.kwargs["to_email_addr"]
+            for email_call in enqueue_email_mock.call_args_list
+        ] == [customer.email, "finance@example.com"]
 
     async def test_excludes_non_public_benefits(
         self,

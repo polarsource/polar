@@ -6174,7 +6174,7 @@ export interface paths {
      *
      *     Each section requires the write scope for its resource.
      *
-     *     **Scopes**: `benefits:write` `discounts:write` `meters:write` `organizations:write` `products:write` `webhooks:write`
+     *     **Scopes**: `benefits:write` `discounts:write` `meters:write` `organizations:write` `products:write` `subscriptions:write` `webhooks:write`
      */
     post: operations['config:apply']
     delete?: never
@@ -6201,7 +6201,7 @@ export interface paths {
      *
      *     Each section requires the read or write scope for its resource.
      *
-     *     **Scopes**: `benefits:read` `benefits:write` `discounts:read` `discounts:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
+     *     **Scopes**: `benefits:read` `benefits:write` `discounts:read` `discounts:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `subscriptions:read` `subscriptions:write` `webhooks:read` `webhooks:write`
      */
     post: operations['config:plan']
     delete?: never
@@ -16257,6 +16257,11 @@ export interface components {
        */
       webhooks?: components['schemas']['ConfigWebhookEndpoint'][]
       /**
+       * Migrations
+       * @description Migrations that move existing subscriptions to a catalog version. Requires catalog versioning.
+       */
+      migrations?: components['schemas']['ConfigMigration'][]
+      /**
        * Organization Id
        * @description The ID of the organization to apply the config to. **Required unless you use an organization token.**
        */
@@ -16271,6 +16276,8 @@ export interface components {
     ConfigApplyResult: {
       /** Changes */
       changes: components['schemas']['ConfigResult'][]
+      /** @description The published catalog, if applying published a new one. */
+      catalog: components['schemas']['ConfigCatalogChange'] | null
       /** @description Result for `settings`, if in the config. */
       settings: components['schemas']['ConfigSettingsResult'] | null
     }
@@ -16398,6 +16405,19 @@ export interface components {
        * @default false
        */
       rollover: boolean
+    }
+    /** ConfigCatalogChange */
+    ConfigCatalogChange: {
+      /**
+       * Before
+       * @description Live catalog version before applying.
+       */
+      before: number | null
+      /**
+       * After
+       * @description Live catalog version after applying.
+       */
+      after: number
     }
     /** ConfigChange */
     ConfigChange: {
@@ -16700,12 +16720,16 @@ export interface components {
      * @enum {string}
      */
     ConfigIssueType:
+      | 'catalog_not_live'
       | 'currency_changed'
       | 'discount_locked'
       | 'duplicate_code'
       | 'duplicate_external_id'
+      | 'duplicate_migration_source'
       | 'duration_changed'
       | 'interval_changed'
+      | 'migration_changed'
+      | 'migration_running'
       | 'meter_locked'
       | 'missing_currency'
       | 'not_supported'
@@ -16778,10 +16802,42 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** ConfigMigration */
+    ConfigMigration: {
+      /**
+       * External Id
+       * @description Your identifier for the migration. Applying the same migration again does nothing.
+       */
+      external_id: string
+      /**
+       * Subscriptions Of
+       * @description `external_id` of the product whose subscriptions move, in any version.
+       */
+      subscriptions_of: string
+      /**
+       * To Catalog
+       * @description Catalog version to move to. Must be the live catalog.
+       */
+      to_catalog: number
+      /**
+       * To Product
+       * @description `external_id` of the product to move to, in the target catalog. Defaults to `subscriptions_of`.
+       */
+      to_product?: string | null
+      /**
+       * At
+       * @description When each subscription moves. Each one moves at its own renewal.
+       * @default next_period
+       * @constant
+       */
+      at: 'next_period'
+    }
     /** ConfigPlan */
     ConfigPlan: {
       /** Changes */
       changes: components['schemas']['ConfigChange'][]
+      /** @description The catalog that applying publishes, if any. */
+      catalog: components['schemas']['ConfigCatalogChange'] | null
       /** @description Change for `settings`, if in the config. */
       settings: components['schemas']['ConfigSettingsChange'] | null
       /** Issues */
@@ -17003,7 +17059,13 @@ export interface components {
      * ConfigResource
      * @enum {string}
      */
-    ConfigResource: 'meter' | 'benefit' | 'product' | 'discount' | 'webhook'
+    ConfigResource:
+      | 'meter'
+      | 'benefit'
+      | 'product'
+      | 'discount'
+      | 'webhook'
+      | 'migration'
     /** ConfigResult */
     ConfigResult: {
       /** @description The type of resource. */
@@ -35545,6 +35607,17 @@ export interface components {
         | components['schemas']['AttachedCustomFieldCreate'][]
         | null
     }
+    /** ProductVersioned */
+    ProductVersioned: {
+      /**
+       * Error
+       * @example ProductVersioned
+       * @constant
+       */
+      error: 'ProductVersioned'
+      /** Detail */
+      detail: string
+    }
     /**
      * Visibility
      * @enum {string}
@@ -48822,6 +48895,15 @@ export interface operations {
           'application/json': components['schemas']['Product']
         }
       }
+      /** @description The organization uses catalog versioning. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ProductVersioned']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -48953,13 +49035,15 @@ export interface operations {
           'application/json': components['schemas']['Product']
         }
       }
-      /** @description You don't have the permission to update this product. */
+      /** @description You don't have the permission to update this product, or the organization uses catalog versioning. */
       403: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['NotPermitted']
+          'application/json':
+            | components['schemas']['NotPermitted']
+            | components['schemas']['ProductVersioned']
         }
       }
       /** @description Product not found. */
@@ -72239,12 +72323,16 @@ export const configIssueSeverityValues: ReadonlyArray<
 export const configIssueTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueType']
 > = [
+  'catalog_not_live',
   'currency_changed',
   'discount_locked',
   'duplicate_code',
   'duplicate_external_id',
+  'duplicate_migration_source',
   'duration_changed',
   'interval_changed',
+  'migration_changed',
+  'migration_running',
   'meter_locked',
   'missing_currency',
   'not_supported',
@@ -72269,7 +72357,7 @@ export const configProductPriceUnitBasedAmount_typeValues: ReadonlyArray<
 > = ['unit_based']
 export const configResourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigResource']
-> = ['meter', 'benefit', 'product', 'discount', 'webhook']
+> = ['meter', 'benefit', 'product', 'discount', 'webhook', 'migration']
 export const configSkippedReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigSkippedReason']
 > = ['missing_external_id', 'archived', 'invalid', 'over_limit']

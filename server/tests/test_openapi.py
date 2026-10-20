@@ -113,6 +113,7 @@ NON_DESTRUCTIVE_TOOL_OPERATIONS = {
 
 DESTRUCTIVE_TOOL_OPERATIONS_SINCE: dict[str, APIVersion] = {
     "customer_meters:credits": V2027_01,
+    "customer_meters:reverse_credit": V2027_01,
 }
 
 

@@ -546,6 +546,35 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         )
         return await self.get_one_or_none(statement)
 
+    async def get_reversible_meter_credit(
+        self, id: UUID, org_ids: set[AccessibleOrganizationID]
+    ) -> Event | None:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Event.id == id,
+                Event.organization_id.in_(org_ids),
+                Event.is_meter_credit,
+                Event.user_metadata["reason"].as_string() == "manual",
+                Event.user_metadata["units"].as_integer() > 0,
+            )
+            .options(joinedload(Event.customer).joinedload(Customer.organization))
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_meter_credit_reversal(self, credit: Event) -> Event | None:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Event.organization_id == credit.organization_id,
+                Event.customer_id == credit.customer_id,
+                Event.is_meter_credit,
+                Event.parent_id == credit.id,
+            )
+            .limit(1)
+        )
+        return await self.get_one_or_none(statement)
+
     async def get_by_id_with_eager(self, id: UUID) -> Event | None:
         statement = (
             self.get_base_statement()

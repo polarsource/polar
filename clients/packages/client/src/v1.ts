@@ -6319,6 +6319,32 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/customer-meters/credits/{id}/reverse': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Reverse Customer Meter Credit
+     * @description Reverse a manual credit, removing the units the customer hasn't used yet.
+     *
+     *     Works once per credit, within 7 days and in the current billing period.
+     *     Returns a `meter.credited` event with negative units and
+     *     `parent_id` set to the reversed credit.
+     *
+     *     **Scopes**: `customers:write`
+     */
+    post: operations['customer_meters:reverse_credit']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/payments/': {
     parameters: {
       query?: never
@@ -19455,6 +19481,17 @@ export interface components {
        * @constant
        */
       error: 'CustomerMeterCreditExternalIDConflict'
+      /** Detail */
+      detail: string
+    }
+    /** CustomerMeterCreditNotReversible */
+    CustomerMeterCreditNotReversible: {
+      /**
+       * Error
+       * @example CustomerMeterCreditNotReversible
+       * @constant
+       */
+      error: 'CustomerMeterCreditNotReversible'
       /** Detail */
       detail: string
     }
@@ -63724,6 +63761,65 @@ export interface operations {
           'application/json':
             | components['schemas']['CustomerMeterCreditExternalIDConflict']
             | components['schemas']['AmbiguousExternalCustomerID']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_meters:reverse_credit': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The ID of the `meter.credited` event returned when the credit was granted. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Credit reversed. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MeterCreditEvent']
+        }
+      }
+      /** @description You don't have permission to manage customers. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Manual credit not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The credit can't be reversed, or the customer meter is being updated: retry shortly. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerMeterCreditNotReversible']
         }
       }
       /** @description Validation Error */

@@ -1,5 +1,5 @@
 import benchmark from "./benchmark.json";
-import { BUCKET_SIZE } from "./reducer";
+import { BUCKET_SIZE, type Reducer } from "./reducer";
 
 // 5-minute buckets: 5 minutes, 1 hour, 24 hours of usage since the last snapshot.
 export const {
@@ -8,6 +8,7 @@ export const {
   channel: CHANNEL,
   epoch: EPOCH,
 } = benchmark;
+export const REDUCER = benchmark.reducer as Reducer;
 
 // The flat field list decodeState reads: one `bucket:<start>:<statistic>` entry per bucket.
 export const encodeState = (buckets: number): string[] => {

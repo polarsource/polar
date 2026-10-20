@@ -4,7 +4,7 @@ import { bench, describe } from "vitest";
 import type { Reducer } from "./reducer";
 
 import { ClientBase } from "../base";
-import { encodeState } from "./benchmark";
+import { encodeState, REDUCER } from "./benchmark";
 import { decodeState, Outpost, type State } from "./client";
 
 interface Reader {
@@ -18,13 +18,6 @@ interface Reader {
   >;
   actors: Set<string>;
 }
-
-const REDUCER: Reducer = {
-  id: "tokens",
-  meter_ids: ["meter"],
-  filter: { conjunction: "and", clauses: [] },
-  aggregation: { func: "sum", property: "tokens" },
-};
 
 // Configured, synced, state cached and actor known: a read touches neither Redis nor Polar.
 const outpost = new Outpost("redis://127.0.0.1:1", {

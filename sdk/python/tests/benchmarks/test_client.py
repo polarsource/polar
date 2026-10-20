@@ -6,8 +6,7 @@ from pytest_codspeed import BenchmarkFixture
 from redis.asyncio import Redis
 
 from polar.outpost.client import LocalState, Outpost, consumed_units, decode_state
-from polar.outpost.reducer import Reducer
-from tests.benchmarks import BUCKET_COUNTS, encode_state
+from tests.benchmarks import BUCKET_COUNTS, REDUCER, encode_state
 
 pytestmark = pytest.mark.benchmark
 
@@ -20,14 +19,6 @@ def test_decode_state(benchmark: BenchmarkFixture, buckets: int) -> None:
 @pytest.mark.parametrize("buckets", BUCKET_COUNTS)
 def test_consumed_units_sum(benchmark: BenchmarkFixture, buckets: int) -> None:
     benchmark(consumed_units, decode_state(encode_state(buckets)), "sum")
-
-
-REDUCER: Reducer = {
-    "id": "tokens",
-    "meter_ids": ["meter"],
-    "filter": {"conjunction": "and", "clauses": []},
-    "aggregation": {"func": "sum", "property": "tokens"},
-}
 
 
 async def warm_outpost() -> Outpost:

@@ -90,6 +90,8 @@ interface FormState {
   role: string
   email: string
   linkedin: string
+  /** The compact form asks for one name, split into first and last on submit. */
+  contactName: string
 }
 
 const INITIAL: FormState = {
@@ -112,9 +114,15 @@ const INITIAL: FormState = {
   role: '',
   email: '',
   linkedin: '',
+  contactName: '',
 }
 
 type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error'
+
+const splitName = (name: string) => {
+  const [firstName = '', ...rest] = name.trim().split(/\s+/)
+  return { firstName, lastName: rest.join(' ') }
+}
 
 export const DesignPartnerForm = ({
   compact = false,
@@ -155,7 +163,7 @@ export const DesignPartnerForm = ({
                     startupName: form.startupName,
                     website: form.website,
                     email: form.email,
-                    linkedin: form.linkedin,
+                    ...splitName(form.contactName),
                   }
                 : form,
             ),
@@ -385,18 +393,27 @@ export const DesignPartnerForm = ({
         />
       </Field>
 
-      <Field
-        label={compact ? 'Contact LinkedIn' : 'LinkedIn Profile'}
-        htmlFor="linkedin"
-      >
-        <Input
-          id="linkedin"
-          type="url"
-          value={form.linkedin}
-          onChange={(e) => set('linkedin')(e.target.value)}
-          placeholder="https://linkedin.com/in/janedoe"
-        />
-      </Field>
+      {compact ? (
+        <Field label="Contact Name" htmlFor="contactName">
+          <Input
+            id="contactName"
+            value={form.contactName}
+            onChange={(e) => set('contactName')(e.target.value)}
+            placeholder="Jane Doe"
+            required
+          />
+        </Field>
+      ) : (
+        <Field label="LinkedIn Profile" htmlFor="linkedin">
+          <Input
+            id="linkedin"
+            type="url"
+            value={form.linkedin}
+            onChange={(e) => set('linkedin')(e.target.value)}
+            placeholder="https://linkedin.com/in/janedoe"
+          />
+        </Field>
+      )}
 
       <Button
         type="submit"

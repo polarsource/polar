@@ -104,7 +104,7 @@ export const CHAPTERS: Chapter[] = [
     title: 'Bring your own PSP',
     intro:
       'Polar works out what to charge. Who takes the payment is up to you: the processor you already use, like Stripe or Adyen, or Polar as your merchant of record.',
-    ids: ['m-mor', 'm-flow', 'm-psp'],
+    ids: ['m-psp', 'm-mor'],
   },
 ]
 

@@ -58,7 +58,7 @@ export const chapters: { title: string; ids: string[] }[] = [
   { title: '07 · Simulations', ids: ['m-branch', 'm-compare'] },
   { title: '08 · Credits', ids: ['m-credits', 'm-grants', 'm-zero'] },
   { title: '09 · Entitlements', ids: ['m-gates', 'm-entitlements'] },
-  { title: '10 · Bring your own PSP', ids: ['m-mor', 'm-flow', 'm-psp'] },
+  { title: '10 · Bring your own PSP', ids: ['m-psp', 'm-mor'] },
 ]
 const ORDER = chapters.flatMap((c) => c.ids)
 const all = [

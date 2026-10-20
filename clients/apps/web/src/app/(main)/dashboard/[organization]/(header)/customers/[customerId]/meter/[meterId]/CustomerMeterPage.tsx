@@ -60,10 +60,11 @@ const CustomerMeterPage = ({
     [interval, setStartDate, setEndDate, setInterval],
   )
 
-  const { data: subscriptionsData } = useSubscriptions(organization.id, {
-    customer_id: customer.id,
-    active: true,
-  })
+  const { data: subscriptionsData, isPending: subscriptionsPending } =
+    useSubscriptions(organization.id, {
+      customer_id: customer.id,
+      active: true,
+    })
 
   const subscription = useMemo(
     () =>
@@ -107,10 +108,11 @@ const CustomerMeterPage = ({
     [subscription, meter.id],
   )
 
-  const { data: customerMetersData } = useCustomerMeters(organization.id, {
-    customer_id: customer.id,
-    meter_id: meter.id,
-  })
+  const { data: customerMetersData, isPending: customerMetersPending } =
+    useCustomerMeters(organization.id, {
+      customer_id: customer.id,
+      meter_id: meter.id,
+    })
   const customerMeter = customerMetersData?.items[0] ?? null
 
   const isCurrentPeriod =
@@ -164,13 +166,13 @@ const CustomerMeterPage = ({
         </>
       }
     >
-      {subscriptionsData && (
+      {!subscriptionsPending && !customerMetersPending && (
         <MeterPeriodDetails
           organization={organization}
           customer={customer}
           meter={meter}
           currentPeriod={
-            isCurrentPeriod && subscription
+            isCurrentPeriod && subscription && customerMetersData
               ? { subscription, customerMeter, unitPrice }
               : null
           }

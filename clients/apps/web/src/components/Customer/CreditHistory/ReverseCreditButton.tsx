@@ -4,6 +4,7 @@ import { formatCredits } from '@/components/Customer/AddCredits/creditPreview'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
+import { useHasPermission } from '@/hooks/permissions'
 import { useReverseMeterCredit } from '@/hooks/queries/customerMeters'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
@@ -18,6 +19,10 @@ export const ReverseCreditButton = ({
   const { show, hide, isShown } = useModal()
   const reverseCredit = useReverseMeterCredit()
   const [reversed, setReversed] = useState(false)
+  const canManageCustomers = useHasPermission(
+    credit.organization_id,
+    'customers:manage',
+  )
 
   const onConfirm = async () => {
     const { data, error } = await reverseCredit.mutateAsync(credit.id)
@@ -39,7 +44,7 @@ export const ReverseCreditButton = ({
     })
   }
 
-  if (reversed) return null
+  if (reversed || !canManageCustomers) return null
 
   return (
     <>

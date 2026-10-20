@@ -307,17 +307,20 @@ class LicenseKeyCreate(LicenseKeyUpdate):
 
     @classmethod
     def generate_expiration_dt(
-        cls, ttl: int, timeframe: Literal["year", "month", "day"]
+        cls,
+        ttl: int,
+        timeframe: Literal["year", "month", "day"],
+        start: datetime | None = None,
     ) -> datetime:
-        now = utc_now()
+        start = start or utc_now()
         try:
             match timeframe:
                 case "year":
-                    return now + relativedelta(years=ttl)
+                    return start + relativedelta(years=ttl)
                 case "month":
-                    return now + relativedelta(months=ttl)
+                    return start + relativedelta(months=ttl)
                 case _:
-                    return now + relativedelta(days=ttl)
+                    return start + relativedelta(days=ttl)
         except ValueError, OverflowError:
             raise ValueError(
                 f"Expiration date overflows: ttl={ttl} with timeframe='{timeframe}' "

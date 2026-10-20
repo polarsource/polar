@@ -9,6 +9,7 @@ import pytest
 from pydantic import ValidationError
 from pytest_mock import MockerFixture
 from redis.exceptions import ConnectionError as RedisConnectionError
+from sqlalchemy import func, select
 
 from polar.auth.models import AuthSubject, is_user
 from polar.event.repository import EventRepository
@@ -39,9 +40,11 @@ from polar.models import (
     CustomerMeter,
     EventType,
     Meter,
+    MeterEvent,
     Organization,
     Product,
     Reducer,
+    StagedEvent,
     User,
     UserOrganization,
 )
@@ -1463,6 +1466,123 @@ class TestIngest:
         assert len(events) == 1
         assert events[0].member_id is None
         assert events[0].external_member_id is None
+
+
+@pytest.mark.anyio
+class TestMoveStagedEvents:
+    async def test_empty(
+        self, enqueue_events_mock: AsyncMock, session: AsyncSession
+    ) -> None:
+        assert await event_service.move_staged_events(session, 1000) == 0
+        enqueue_events_mock.assert_not_called()
+
+    async def test_moves_events(
+        self,
+        enqueue_events_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        ingested_at = utc_now() - timedelta(minutes=1)
+        root = StagedEvent(
+            name=METER_TEST_EVENT,
+            source=EventSource.user,
+            timestamp=ingested_at,
+            ingested_at=ingested_at,
+            organization_id=organization.id,
+            external_customer_id="test",
+            external_id="root",
+            user_metadata={"tokens": 1},
+        )
+        child = StagedEvent(
+            name="other",
+            source=EventSource.user,
+            timestamp=ingested_at,
+            organization_id=organization.id,
+            external_customer_id="test",
+            pending_parent_external_id="root",
+        )
+        await save_fixture(root)
+        await save_fixture(child)
+
+        assert await event_service.move_staged_events(session, 1000) == 2
+
+        events = {
+            event.id: event
+            for event in await get_all_by_organization(session, organization.id)
+        }
+        assert set(events) == {root.id, child.id}
+        assert events[root.id].ingested_at == ingested_at
+        assert events[root.id].external_id == "root"
+        assert events[root.id].user_metadata == {"tokens": 1}
+        assert events[root.id].root_id == root.id
+        assert events[child.id].root_id is None
+        assert events[child.id].pending_parent_external_id == "root"
+        assert set(enqueue_events_mock.call_args.args) == {root.id, child.id}
+
+        meter_events = await session.scalar(
+            select(func.count()).select_from(MeterEvent)
+        )
+        assert meter_events == 1
+        staged_events = await session.scalar(
+            select(func.count()).select_from(StagedEvent)
+        )
+        assert staged_events == 0
+
+    async def test_limit(
+        self,
+        enqueue_events_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        for _ in range(3):
+            await save_fixture(
+                StagedEvent(
+                    name=METER_TEST_EVENT,
+                    source=EventSource.user,
+                    timestamp=utc_now(),
+                    organization_id=organization.id,
+                    external_customer_id="test",
+                )
+            )
+
+        assert await event_service.move_staged_events(session, 2) == 2
+        assert len(await get_all_by_organization(session, organization.id)) == 2
+        assert await event_service.move_staged_events(session, 2) == 1
+        assert len(await get_all_by_organization(session, organization.id)) == 3
+
+    async def test_external_id_already_in_events(
+        self,
+        enqueue_events_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        event = await create_event(
+            save_fixture, organization=organization, external_id="duplicate"
+        )
+        await save_fixture(
+            StagedEvent(
+                name=METER_TEST_EVENT,
+                source=EventSource.user,
+                timestamp=utc_now(),
+                organization_id=organization.id,
+                external_customer_id="test",
+                external_id="duplicate",
+            )
+        )
+
+        assert await event_service.move_staged_events(session, 1000) == 1
+
+        events = await get_all_by_organization(session, organization.id)
+        assert [e.id for e in events] == [event.id]
+        enqueue_events_mock.assert_not_called()
+        staged_events = await session.scalar(
+            select(func.count()).select_from(StagedEvent)
+        )
+        assert staged_events == 0
 
 
 @pytest.mark.anyio

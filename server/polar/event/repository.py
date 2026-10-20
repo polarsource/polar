@@ -12,7 +12,9 @@ from sqlalchemy import (
     Select,
     String,
     and_,
+    case,
     cast,
+    delete,
     func,
     literal,
     or_,
@@ -34,6 +36,7 @@ from polar.models import (
     Event,
     Meter,
     MeterEvent,
+    StagedEvent,
 )
 from polar.models.event import EventSource
 from polar.models.product_price import ProductPrice
@@ -121,6 +124,46 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         duplicates_count = len(events) - len(inserted_ids)
 
         return inserted_ids, duplicates_count
+
+    async def move_staged_events(self, limit: int) -> tuple[int, Sequence[UUID]]:
+        """Move up to `limit` rows from `staged_events` to `events`, returning how
+        many were moved and the IDs inserted into `events`."""
+        claimed = (
+            select(StagedEvent.id)
+            .limit(limit)
+            .with_for_update(skip_locked=True)
+            .scalar_subquery()
+        )
+        moved = (
+            delete(StagedEvent)
+            .where(StagedEvent.id.in_(claimed))
+            .returning(*StagedEvent.__table__.columns)
+            .cte("moved")
+        )
+        columns = [column.name for column in StagedEvent.__table__.columns]
+        inserted = (
+            insert(Event)
+            .from_select(
+                [*columns, "root_id"],
+                select(
+                    *(moved.c[name] for name in columns),
+                    case(
+                        (moved.c.pending_parent_external_id.is_(None), moved.c.id),
+                        else_=None,
+                    ),
+                ),
+            )
+            .on_conflict_do_nothing()
+            .returning(Event.id)
+            .cte("inserted")
+        )
+        statement = select(
+            select(func.count()).select_from(moved).scalar_subquery(),
+            select(func.array_agg(inserted.c.id)).scalar_subquery(),
+        )
+        result = await self.session.execute(statement)
+        moved_count, inserted_ids = result.one()
+        return moved_count, inserted_ids or []
 
     async def resolve_pending_parents(
         self, inserted_ids: Sequence[UUID]

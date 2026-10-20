@@ -1010,6 +1010,27 @@ class EventService:
             inserted=len(event_ids), duplicates=duplicates_count
         )
 
+    async def move_staged_events(self, session: AsyncSession, limit: int) -> int:
+        """Move up to `limit` ingested events from `staged_events` to `events` and
+        return how many were moved."""
+        repository = EventRepository.from_session(session)
+        moved_count, event_ids = await repository.move_staged_events(limit)
+        trace.get_current_span().set_attributes(
+            {"moved_events": moved_count, "inserted_events": len(event_ids)}
+        )
+        if event_ids:
+            # Temporarily: create meter_events for the moved events
+            with logfire.span("create_meter_events", event_count=len(event_ids)):
+                inserted_events = await repository.get_all(
+                    repository.get_base_statement().where(Event.id.in_(event_ids))
+                )
+                await self._create_meter_events(session, inserted_events)
+
+            # Parent resolution and root_id propagation run out-of-band in the
+            # `event.ingested` task.
+            enqueue_events(*event_ids)
+        return moved_count
+
     async def create_event(self, session: AsyncSession, event: Event) -> Event:
         repository = EventRepository.from_session(session)
         if (

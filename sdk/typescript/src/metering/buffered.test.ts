@@ -103,6 +103,52 @@ it("keeps concurrent flush boundaries separate while a batch is in flight", asyn
   }
 });
 
+it.each([
+  { batchSize: 100, batches: [[1, 2, 3]] },
+  { batchSize: 2, batches: [[1, 2], [3]] },
+])(
+  "batches events queued behind pending flushes (batch size $batchSize)",
+  async ({ batchSize, batches }) => {
+    const deliveries: (() => void)[] = [];
+    const ingest = vi.fn(
+      (_body: { events: EventInput[] }) =>
+        new Promise<void>((resolve) => {
+          deliveries.push(resolve);
+        }),
+    );
+    await using strategy = await new BufferedMeteringStrategy(
+      { events: { ingest } },
+      { batchSize, batchIntervalMs: 60_000 },
+    ).start();
+    try {
+      await strategy.track(events[0]);
+      const first = strategy.flush();
+      await vi.waitFor(() => expect(ingest).toHaveBeenCalledOnce());
+      const flushed = [1, 2, 3].map(() => vi.fn());
+      const flushes: Promise<void>[] = [];
+      for (const [index, event] of events.slice(1, 4).entries()) {
+        await strategy.track(event);
+        flushes.push(strategy.flush().then(flushed[index]));
+      }
+      deliveries.shift()!();
+      await first;
+      let delivered = 0;
+      for (const [index, batch] of batches.entries()) {
+        await vi.waitFor(() => expect(ingest).toHaveBeenCalledTimes(index + 2));
+        expect(ingest.mock.calls[index + 1][0].events).toEqual(batch.map((i) => events[i]));
+        expect(flushed.filter((done) => done.mock.calls.length)).toHaveLength(delivered);
+        deliveries.shift()!();
+        delivered += batch.length;
+        await Promise.all(flushes.slice(0, delivered));
+      }
+      expect(ingest).toHaveBeenCalledTimes(batches.length + 1);
+    } finally {
+      ingest.mockResolvedValue(undefined);
+      for (const finishDelivery of deliveries) finishDelivery();
+    }
+  },
+);
+
 it.each(["shutdown timeout", "worker error"])(
   "rejects active and queued flushes on %s",
   async (failure) => {

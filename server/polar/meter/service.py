@@ -49,10 +49,8 @@ from polar.models import (
     MeterEvent,
     Product,
     ProductPrice,
-    Subscription,
     SubscriptionProductPrice,
 )
-from polar.models.subscription import SubscriptionStatus
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.reducer.service import reducer as reducer_service
@@ -349,26 +347,8 @@ class MeterService:
                 ]
             )
 
-        active_subscriptions = await session.scalar(
-            select(func.count(func.distinct(Subscription.id)))
-            .join(
-                SubscriptionProductPrice,
-                SubscriptionProductPrice.subscription_id == Subscription.id,
-            )
-            .join(
-                ProductPrice,
-                ProductPrice.id == SubscriptionProductPrice.product_price_id,
-            )
-            .where(
-                ProductPrice.is_metered,
-                ProductPrice.__table__.c.meter_id == meter.id,
-                Subscription.status.in_(SubscriptionStatus.billable_statuses()),
-                ~Subscription.is_deleted,
-                ~SubscriptionProductPrice.is_deleted,
-            )
-        )
-
-        if active_subscriptions and active_subscriptions > 0:
+        repository = MeterRepository.from_session(session)
+        if await repository.has_billable_subscriptions(meter.id):
             raise PolarRequestValidationError(
                 [
                     {
@@ -401,7 +381,6 @@ class MeterService:
                 ]
             )
 
-        repository = MeterRepository.from_session(session)
         return await repository.update(
             meter, update_dict={"archived_at": datetime.now(UTC)}
         )

@@ -113,13 +113,23 @@ def _numeral_jurisdiction_to_breakdown_item(
     rate = None if is_fixed else jurisdiction["tax_rate"]
 
     subdivision: str | None = None
-    if "general state" not in jurisdiction["rate_type"]:
+    if jurisdiction["tax_authority_type"].upper() not in {
+        "STATE",
+        "COUNTRY",
+    } and not any(
+        level in jurisdiction["rate_type"].upper() for level in ("STATE", "COUNTRY")
+    ):
         subdivision = jurisdiction["tax_authority_name"]
 
     return TaxBreakdownItem(
         rate_type="fixed" if is_fixed else "percentage",
         rate=rate,
-        display_name=jurisdiction["tax_authority_name"],
+        display_name={
+            "SALES": "Sales Tax",
+            "USE": "Use Tax",
+            "VAT": "VAT",
+            "GST": "GST",
+        }.get(jurisdiction["tax_type"].upper(), "Tax"),
         country=country,
         state=state,
         subdivision=subdivision,

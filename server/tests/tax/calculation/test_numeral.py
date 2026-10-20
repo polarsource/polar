@@ -16,7 +16,10 @@ from polar.tax.calculation.base import (
     TaxCalculationTechnicalError,
     TaxRecordError,
 )
-from polar.tax.calculation.numeral import numeral_tax_service
+from polar.tax.calculation.numeral import (
+    _numeral_jurisdiction_to_breakdown_item,
+    numeral_tax_service,
+)
 from polar.tax.tax_id import TaxIDFormat
 
 
@@ -112,6 +115,8 @@ class TestNumeralCalculateTax:
         )
 
         assert result["tax_breakdown"][0]["taxability_reason"] == expected_reason
+        assert result["tax_breakdown"][0]["display_name"] == "VAT"
+        assert result["tax_breakdown"][0]["subdivision"] is None
         request = route.calls.last.request
         assert request.headers["X-API-Version"] == "2026-11-01"
         payload = json.loads(request.content)
@@ -123,8 +128,16 @@ class TestNumeralCalculateTax:
             "EXEMPT" if customer_exempt else "SAAS_GENERAL"
         )
 
+    @pytest.mark.parametrize(
+        "rate_type",
+        [
+            "general state sales tax",
+            "GENERAL STATE SALES TAX",
+            "SINGLE_ARTICLE STATE SALES TAX",
+        ],
+    )
     async def test_inclusive(
-        self, sample_address: Address, respx_mock: respx.MockRouter
+        self, sample_address: Address, respx_mock: respx.MockRouter, rate_type: str
     ) -> None:
         respx_mock.post("/tax/calculations").respond(
             json={
@@ -143,12 +156,12 @@ class TestNumeralCalculateTax:
                         "tax_jurisdictions": [
                             {
                                 "tax_rate": 0.2,
-                                "rate_type": "general state sales tax",
+                                "rate_type": rate_type,
                                 "fee_amount": 0,
                                 "tax_due_decimal": 16_67,
                                 "tax_authority_name": "Texas",
-                                "tax_authority_type": "state",
-                                "tax_type": "sales tax",
+                                "tax_authority_type": "",
+                                "tax_type": "SALES",
                                 "note": "",
                             },
                         ],
@@ -173,7 +186,7 @@ class TestNumeralCalculateTax:
             {
                 "rate_type": "percentage",
                 "rate": 0.2,
-                "display_name": "Texas",
+                "display_name": "Sales Tax",
                 "country": CountryAlpha2("US"),
                 "state": "TX",
                 "subdivision": None,
@@ -209,7 +222,7 @@ class TestNumeralCalculateTax:
                                 "tax_due_decimal": 625,
                                 "tax_authority_name": "Texas",
                                 "tax_authority_type": "state",
-                                "tax_type": "sales tax",
+                                "tax_type": "SALES",
                                 "note": "",
                             },
                             {
@@ -219,7 +232,7 @@ class TestNumeralCalculateTax:
                                 "tax_due_decimal": 150,
                                 "tax_authority_name": "Anderson",
                                 "tax_authority_type": "county",
-                                "tax_type": "sales tax",
+                                "tax_type": "SALES",
                                 "note": "",
                             },
                             {
@@ -229,7 +242,7 @@ class TestNumeralCalculateTax:
                                 "tax_due_decimal": 38,
                                 "tax_authority_name": "Foobar",
                                 "tax_authority_type": "other",
-                                "tax_type": "sales tax",
+                                "tax_type": "SALES",
                                 "note": "",
                             },
                         ],
@@ -254,7 +267,7 @@ class TestNumeralCalculateTax:
             {
                 "rate_type": "percentage",
                 "rate": 0.0625,
-                "display_name": "Texas",
+                "display_name": "Sales Tax",
                 "country": CountryAlpha2("US"),
                 "state": "TX",
                 "subdivision": None,
@@ -264,7 +277,7 @@ class TestNumeralCalculateTax:
             {
                 "rate_type": "percentage",
                 "rate": 0.015,
-                "display_name": "Anderson",
+                "display_name": "Sales Tax",
                 "country": CountryAlpha2("US"),
                 "state": "TX",
                 "subdivision": "Anderson",
@@ -274,7 +287,7 @@ class TestNumeralCalculateTax:
             {
                 "rate_type": "percentage",
                 "rate": 0.00375,
-                "display_name": "Foobar",
+                "display_name": "Sales Tax",
                 "country": CountryAlpha2("US"),
                 "state": "TX",
                 "subdivision": "Foobar",
@@ -403,6 +416,74 @@ class TestNumeralCalculateTax:
             result["tax_breakdown"][0]["taxability_reason"]
             == TaxabilityReason.not_supported
         )
+
+    @pytest.mark.parametrize(
+        (
+            "rate_type",
+            "authority_type",
+            "tax_type",
+            "authority_name",
+            "expected_subdivision",
+            "expected_display_name",
+        ),
+        [
+            ("STANDARD COUNTRY LOCAL VAT TAX", "", "VAT", "FR", None, "VAT"),
+            ("GST", "Country", "GST", "SG", None, "GST"),
+            (
+                "GENERAL COUNTY LOCAL SALES TAX",
+                "",
+                "SALES",
+                "Erie",
+                "Erie",
+                "Sales Tax",
+            ),
+            (
+                "GENERAL CITY LOCAL USE TAX",
+                "",
+                "USE",
+                "New York",
+                "New York",
+                "Use Tax",
+            ),
+            (
+                "GENERAL DISTRICT LOCAL SALES TAX",
+                "",
+                "SALES",
+                "Transportation District",
+                "Transportation District",
+                "Sales Tax",
+            ),
+        ],
+    )
+    def test_label_and_subdivision(
+        self,
+        rate_type: str,
+        authority_type: str,
+        tax_type: str,
+        authority_name: str,
+        expected_subdivision: str | None,
+        expected_display_name: str,
+    ) -> None:
+        item = _numeral_jurisdiction_to_breakdown_item(
+            {
+                "tax_rate": 0.00375,
+                "tax_due_decimal": 0.375,
+                "fee_amount": 0,
+                "rate_type": rate_type,
+                "tax_authority_name": authority_name,
+                "tax_authority_type": authority_type,
+                "tax_type": tax_type,
+                "note": "",
+            },
+            amount=0.375,
+            country="US",
+            state="NY",
+            customer_exempt=False,
+        )
+
+        assert item["display_name"] == expected_display_name
+        assert item["subdivision"] == expected_subdivision
+        assert item["amount"] == 0.375
 
 
 @pytest.mark.anyio

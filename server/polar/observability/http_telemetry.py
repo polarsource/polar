@@ -60,6 +60,8 @@ def sanitize_http_span(span: APISpan) -> None:
 class HttpURLSpanProcessor(SpanProcessor):
     def on_start(self, span: Span, parent_context: Context | None = None) -> None:
         if span.instrumentation_scope and span.instrumentation_scope.name in (
+            # FastAPI's native telemetry traces mounted and host-routed sub-apps.
+            "fastapi",
             "opentelemetry.instrumentation.fastapi",
             "opentelemetry.instrumentation.httpx",
         ):

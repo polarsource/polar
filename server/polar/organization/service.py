@@ -533,6 +533,10 @@ class OrganizationService:
             )
             if agent is None:
                 raise CannotCreateOrganizationError(_AGENT_ONE_ORGANIZATION_MESSAGE)
+            organization.feature_settings = {
+                **organization.feature_settings,
+                "config_as_code_enabled": True,
+            }
             return organization
 
         assert is_user(auth_subject)

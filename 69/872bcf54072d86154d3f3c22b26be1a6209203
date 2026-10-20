@@ -1,0 +1,9 @@
+handbook/engineering/decisions/0014-agent-auth-subject.mdx
+  ai_agent 63-64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "69872bcf54072d86154d3f3c22b26be1a6209203",
+  "prompts": {}
+}

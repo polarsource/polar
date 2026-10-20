@@ -220,15 +220,6 @@ end
 return redis.call('HGETALL', KEYS[1])
 """
 
-PUBLISH_STATE_SCRIPT = """
-if not redis.call('HGET', KEYS[1], 'epoch') then
-    redis.call('HSET', KEYS[1], 'epoch', ARGV[3], 'revision', '0')
-end
-redis.call('HINCRBY', KEYS[1], 'revision', 1)
-local state = redis.call('HGETALL', KEYS[1])
-redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], state = state}))
-"""
-
 WRITE_BUCKET_SCRIPT = """
 local cutoff = redis.call('HGET', KEYS[1], 'cold_until')
 if cutoff and tonumber(ARGV[4]) < tonumber(cutoff) then
@@ -272,8 +263,7 @@ return bucket
 
 WRITE_BUCKET_SHA = hashlib.sha1(WRITE_BUCKET_SCRIPT.encode()).hexdigest()
 
-APPLY_SNAPSHOT_SCRIPT = (
-    """
+APPLY_SNAPSHOT_SCRIPT = """
 local cutoff = tonumber(ARGV[4])
 local current = redis.call('HGET', KEYS[1], 'cold_until')
 if current and tonumber(current) > cutoff then
@@ -303,10 +293,15 @@ if not credit_version or version >= tonumber(credit_version) then
     redis.call('HSET', KEYS[1], 'credited:' .. ARGV[6], ARGV[7],
         'credited_version:' .. ARGV[6], ARGV[5])
 end
+
+if not redis.call('HGET', KEYS[1], 'epoch') then
+    redis.call('HSET', KEYS[1], 'epoch', ARGV[3], 'revision', '0')
+end
+redis.call('HINCRBY', KEYS[1], 'revision', 1)
+local state = redis.call('HGETALL', KEYS[1])
+redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], state = state}))
+return {state, replaced}
 """
-    + PUBLISH_STATE_SCRIPT
-    + "return {state, replaced}\n"
-)
 
 
 class StateUpdate(typing.TypedDict):

@@ -13,7 +13,6 @@ import { Chapter } from './Chapter'
 import { EarlyAccess } from './EarlyAccess'
 import { RequestAccess } from './RequestAccess'
 import { CHAPTERS, chapterKey } from './content'
-import { KeyRow } from './Keys'
 import { Ruler } from './Ruler'
 import { pieces } from './pages'
 import { emit, reset } from './simulation'
@@ -32,7 +31,6 @@ export default function FieldGuideReader() {
   useTrafficDriver()
   const scrollRef = useRef<HTMLDivElement>(null)
   const [current, setCurrent] = useState(ids[0])
-  const [keys, setKeys] = useState(true)
 
   const plate = useCallback(
     (id: string) =>
@@ -127,7 +125,6 @@ export default function FieldGuideReader() {
         goChapter(CHAPTERS.findIndex((c) => c.n === `0${k}`))
       else if (k === 'e' || k === 'E') emit()
       else if (k === 'r' || k === 'R') reset()
-      else if (k === 'h' || k === 'H') setKeys((v) => !v)
       else return
       e.preventDefault()
     }

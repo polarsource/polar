@@ -1,6 +1,7 @@
 from typing import Literal
 
 from pydantic import BaseModel, Field, create_model
+from typing_extensions import TypeForm
 
 from polar.config import settings
 from polar.exceptions import PolarError
@@ -76,7 +77,10 @@ class SSORequired(PolarAuthError):
         if cls._schema is None:
             cls._schema = create_model(
                 cls.__name__,
-                error=(Literal["SSORequired"], Field(examples=[cls.__name__])),
+                error=(
+                    TypeForm(Literal["SSORequired"]),
+                    Field(examples=[cls.__name__]),
+                ),
                 detail=(str, ...),
                 redirect_url=(str, ...),
             )

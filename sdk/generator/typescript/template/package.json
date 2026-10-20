@@ -15,9 +15,9 @@
       "import": { "types": "./dist/index.d.mts", "default": "./dist/index.mjs" },
       "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
     },
-    "./ingestion": {
-      "import": { "types": "./dist/ingestion/index.d.mts", "default": "./dist/ingestion/index.mjs" },
-      "require": { "types": "./dist/ingestion/index.d.cts", "default": "./dist/ingestion/index.cjs" }
+    "./metering": {
+      "import": { "types": "./dist/metering/index.d.mts", "default": "./dist/metering/index.mjs" },
+      "require": { "types": "./dist/metering/index.d.cts", "default": "./dist/metering/index.cjs" }
     },
     "./outpost": {
       "import": { "types": "./dist/outpost/index.d.mts", "default": "./dist/outpost/index.mjs" },

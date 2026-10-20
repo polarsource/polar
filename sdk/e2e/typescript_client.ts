@@ -29,7 +29,7 @@ try {
       }
       switch (command.operation) {
         case "ingest":
-          for (const event of command.arguments.events) await outpost.ingest(event);
+          for (const event of command.arguments.events) await outpost.track(event);
           respond({ result: null });
           break;
         case "read":

@@ -22,6 +22,7 @@ _PRODUCT_BASE: dict[str, Any] = {
     "meter_interval": None,
     "meter_interval_count": None,
     "is_recurring": True,
+    "is_deletable": False,
     "is_archived": False,
     "organization_id": "org_1",
     "metadata": {},

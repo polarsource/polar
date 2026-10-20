@@ -97,6 +97,107 @@ const customerState = await getStateExternalCustomers(polar)("customer_external_
 console.log(customerState);
 ```
 
+## Metering
+
+The metering helper adds buffering, batching, and optional local reduction to the Polar Event Ingestion API.
+
+### Basic usage
+
+```typescript
+import { createPolar } from "@polar-sh/sdk/2026-10";
+
+const polar = createPolar({ accessToken: "polar_oat_xxx" });
+
+async function recordUsage() {
+    await using metering = await polar.metering().start();
+    await metering.track({
+        name: "api_request",
+        external_customer_id: "customer_123",
+        metadata: { tokens: 42 },
+    });
+}
+```
+
+### Actor context
+
+It's common to have several events for the same customer in the same session. You can create an actor context, so you don't have to pass the customer identifier for each event:
+
+```typescript
+await using metering = await polar.metering().start();
+const actor = await metering.actor({ external_customer_id: "customer_123" });
+await actor.track({ name: "api_request", metadata: { tokens: 42 } });
+await actor.track({ name: "api_request", metadata: { tokens: 17 } });
+```
+
+### Read meters
+
+The metering helper can read meters. Under the hood, it can leverage Outpost to have low-latency reads.
+
+```typescript
+const meter = await metering.meter("meter_uuid", {
+    external_customer_id: "customer_123",
+});
+if (meter !== null) {
+    console.log(meter.consumed_units, meter.credited_units, meter.balance);
+}
+```
+
+With an actor context:
+
+```typescript
+const actor = await metering.actor({ external_customer_id: "customer_123" });
+const meter = await actor.meter("meter_uuid");
+if (meter !== null) {
+    console.log(meter.consumed_units, meter.credited_units, meter.balance);
+}
+```
+
+### Local reduction with Outpost
+
+Outpost is our local reduction engine. It can reduce events locally and share a state across all your clients via Redis. It's enabled automatically when you set the `REDIS_URL` environment variable.
+
+In high throughput scenarios, Outpost can return you accurate meter reads only milliseconds after the event is ingested.
+
+To disable it, pass `outpost: false` to `polar.metering()`. You can also configure it explicitly with an object.
+
+### Serverless environments
+
+In serverless environments such as AWS Lambda or Vercel, background work may stop when the
+handler returns. Explicitly await `flush()` before returning so buffered events are processed
+while the invocation is still active.
+
+```typescript
+async function handleRequest() {
+    await metering.track({ name: "api_request", external_customer_id: "customer_123" });
+    await metering.flush();
+    return { ok: true };
+}
+```
+
+### Options
+
+#### Buffered
+
+The metering helper buffers events in memory and sends them in batches to Polar. It retries network errors, rate limits, and server errors with exponential backoff and jitter. Other Polar API errors drop the batch without retrying.
+
+| Option              | Default     | Meaning                                                         |
+| ------------------- | ----------- | --------------------------------------------------------------- |
+| `batchSize`         | `100`       | Maximum events per HTTP request.                                |
+| `batchIntervalMs`   | `1000`      | Milliseconds to collect a batch, starting with its first event. |
+| `shutdownTimeoutMs` | `5000`      | Milliseconds allowed to drain on scope exit.                    |
+| `maxAttempts`       | `3`         | Total attempts per batch, including the first.                  |
+| `onDropped`         | `undefined` | Callback receiving the dropped events and reason; may be async. |
+
+#### Outpost
+
+| Option            | Default                          | Meaning                                                  |
+| ----------------- | -------------------------------- | -------------------------------------------------------- |
+| `redisUrl`        | `REDIS_URL` environment variable | Redis instance used by Outpost.                          |
+| `telemetry`       | `true`                           | Send Outpost metrics and traces to Polar.                |
+| `snapshotTimeout` | `5000`                           | Milliseconds a cold read waits for its initial snapshot. |
+
+Telemetry can also be disabled with the `POLAR_OUTPOST_TELEMETRY=0` environment variable.
+
 ## Webhooks
 
 Use `webhooks.validateEvent` to verify that a webhook was sent by Polar and parse it into a typed

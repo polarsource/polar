@@ -8,9 +8,9 @@ import typing
 import anyio
 
 from polar import PolarError, PolarNetworkError, PolarRateLimitError, PolarServerError
-from polar.ingestion.client import IngestionClient
-from polar.ingestion.events import EventInput
 from polar.logging import get_logger
+from polar.metering.client import MeteringClient
+from polar.metering.events import EventInput
 
 log = get_logger(__name__)
 
@@ -22,7 +22,18 @@ def _jittered_delay(base: float, jitter: float = 0.1) -> float:
 DropReason = typing.Literal["retry_exhausted", "shutdown_timeout", "permanent_error"]
 
 
-class BufferedIngestionOptions(typing.TypedDict, total=False):
+class BufferedMeteringOptions(typing.TypedDict, total=False):
+    """Configure in-memory batching and delivery to Polar.
+
+    Attributes:
+        batch_size: Maximum events per request. Defaults to 100.
+        batch_interval: Seconds to collect a batch after its first event. Defaults to 1.
+        shutdown_timeout: Seconds allowed to drain on exit. Defaults to 5.
+        max_attempts: Total delivery attempts per batch, including the first. Defaults to 3.
+        on_dropped: Async callback for undelivered events and their DropReason.
+            Defaults to None; drops are always logged.
+    """
+
     batch_size: int
     batch_interval: float
     shutdown_timeout: float
@@ -38,10 +49,12 @@ class _FlushRequest:
     error: BaseException | None = None
 
 
-class BufferedIngestionStrategy:
+class BufferedMeteringStrategy:
+    """Batch events in memory and deliver them through Polar's HTTP API."""
+
     def __init__(
         self,
-        polar: IngestionClient,
+        polar: MeteringClient,
         batch_size: int = 100,
         batch_interval: float = 1.0,
         shutdown_timeout: float = 5.0,
@@ -51,6 +64,19 @@ class BufferedIngestionStrategy:
         ]
         | None = None,
     ) -> None:
+        """Configure event delivery and retries.
+
+        Args:
+            polar: Client exposing the events.ingest API.
+            batch_size: Maximum events per request. Defaults to 100.
+            batch_interval: Batch collection interval in seconds. Defaults to 1.
+            shutdown_timeout: Drain deadline in seconds. Defaults to 5.
+            max_attempts: Total attempts per batch. Defaults to 3.
+            on_dropped: Awaited callback for dropped events and the drop reason.
+
+        Raises:
+            ValueError: batch_size is not positive.
+        """
         if batch_size <= 0:
             raise ValueError("batch_size must be greater than zero")
         self.polar = polar
@@ -67,7 +93,7 @@ class BufferedIngestionStrategy:
 
     async def __aenter__(self) -> typing.Self:
         if self._flush_cancel_scope is not None:
-            raise PolarError("Buffered ingestion has already started")
+            raise PolarError("Buffered metering has already started")
         self._worker_task_group = await self._stack.enter_async_context(
             anyio.create_task_group()
         )
@@ -86,16 +112,21 @@ class BufferedIngestionStrategy:
         self._send_queue.close()
         await self._stack.aclose()
 
-    async def ingest(
+    async def track(
         self,
         event: EventInput,
     ) -> None:
+        """Queue an event without waiting for HTTP delivery.
+
+        Args:
+            event: Event including its customer identity.
+        """
         await self._send_queue.send(event)
 
     async def flush(self) -> None:
         """Wait until earlier events are delivered or reported as dropped."""
         if self._flush_cancel_scope is None:
-            raise PolarError("Buffered ingestion has not started")
+            raise PolarError("Buffered metering has not started")
         request = _FlushRequest()
         await self._send_queue.send(request)
         await request.completed.wait()
@@ -145,7 +176,7 @@ class BufferedIngestionStrategy:
                             request.completed.set()
                             request = None
                 if cancel_scope.cancelled_caught:
-                    failure = TimeoutError("Buffered ingestion shutdown timed out")
+                    failure = TimeoutError("Buffered metering shutdown timed out")
             except BaseException as error:
                 failure = error
                 raise

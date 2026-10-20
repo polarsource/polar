@@ -16,8 +16,8 @@ import { randomUUID } from "node:crypto";
 import { once } from "node:events";
 import WebSocket from "ws";
 
-import type { EventInput } from "../ingestion/event";
-import type { CustomerMeter } from "../ingestion/meter";
+import type { EventInput } from "../metering/event";
+import type { CustomerMeter } from "../metering/meter";
 
 import { ClientBase, PolarError } from "../base";
 import { customerKey, parseEvent } from "./event";
@@ -110,8 +110,7 @@ export class UnavailableRedisError extends PolarOutpostError {
 const redisUnavailable = (error: unknown): UnavailableRedisError =>
   new UnavailableRedisError({ cause: error });
 const isRedisConnectionError = (error: unknown): boolean => {
-  if (error instanceof UnavailableRedisError)
-    return isRedisConnectionError(error.cause);
+  if (error instanceof UnavailableRedisError) return isRedisConnectionError(error.cause);
   return (
     error instanceof Error &&
     (error.name === "MaxRetriesPerRequestError" ||
@@ -466,7 +465,7 @@ export class Outpost {
     await this.close();
   }
 
-  async ingest(event: EventInput): Promise<void> {
+  async track(event: EventInput): Promise<void> {
     const redis = this.requireRedis();
     const started = performance.now();
     let outcome = "ok";

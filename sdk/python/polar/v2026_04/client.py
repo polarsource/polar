@@ -2,11 +2,11 @@ import types
 import typing
 
 from polar.base import AsyncClientBase, RequestTimeout, SyncClientBase, resolve_base_url
-from polar.ingestion import (
-    BufferedIngestionOptions,
-    Ingestion,
-    IngestionOutpostOptions,
-    IngestionStrategyProtocol,
+from polar.metering import (
+    BufferedMeteringOptions,
+    Metering,
+    MeteringOutpostOptions,
+    MeteringStrategyProtocol,
 )
 from polar.v2026_04.services.benefit_grants import BenefitGrantsAsync, BenefitGrantsSync
 from polar.v2026_04.services.benefits import BenefitsAsync, BenefitsSync
@@ -163,26 +163,37 @@ class PolarAsync:
         await self._client.__aexit__(exc_type, exc_val, exc_tb)
 
     @typing.overload
-    def ingestion(
+    def metering(
         self,
         *,
-        buffered: BufferedIngestionOptions | None = None,
-        outpost: IngestionOutpostOptions | typing.Literal[False] | None = None,
-    ) -> Ingestion: ...
+        buffered: BufferedMeteringOptions | None = None,
+        outpost: MeteringOutpostOptions | typing.Literal[False] | None = None,
+    ) -> Metering: ...
 
     @typing.overload
-    def ingestion(
-        self, *, strategies: list[IngestionStrategyProtocol]
-    ) -> Ingestion: ...
+    def metering(self, *, strategies: list[MeteringStrategyProtocol]) -> Metering: ...
 
-    def ingestion(
+    def metering(
         self,
         *,
-        buffered: BufferedIngestionOptions | None = None,
-        outpost: IngestionOutpostOptions | typing.Literal[False] | None = None,
-        strategies: list[IngestionStrategyProtocol] | None = None,
-    ) -> Ingestion:
-        return Ingestion.create(
+        buffered: BufferedMeteringOptions | None = None,
+        outpost: MeteringOutpostOptions | typing.Literal[False] | None = None,
+        strategies: list[MeteringStrategyProtocol] | None = None,
+    ) -> Metering:
+        """Create a helper for buffered event delivery and customer meter reads.
+
+        Args:
+            buffered: Batch and retry options; defaults to 100 events, a 1-second
+                collection interval, a 5-second shutdown timeout, and 3 attempts.
+            outpost: Outpost options, enabled automatically when REDIS_URL is set.
+                Pass False to disable; explicit options require a Redis URL.
+            strategies: Replace all defaults with custom strategies. Cannot be
+                combined with buffered or outpost.
+
+        Returns:
+            An unstarted helper to use with async with.
+        """
+        return Metering.create(
             self, buffered=buffered, outpost=outpost, strategies=strategies
         )
 

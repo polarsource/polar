@@ -147,6 +147,102 @@ from polar.v{{ (ir.versions[-2] | default({})).version | replace("-", "_") | rep
 customer = deserialize(data, Customer)
 ```
 
+## Metering
+
+The metering helper adds buffering, batching, and optional local reduction to the Polar Event Ingestion API.
+
+### Basic usage
+
+```python
+from polar.v{{ (ir.versions[-2] | default({})).version | replace("-", "_") | replace(".", "_") }} import PolarAsync
+
+
+async def record_usage() -> None:
+    async with PolarAsync("polar_oat_xxx") as polar:
+        async with polar.metering() as metering:
+            await metering.track(
+                name="api_request",
+                external_customer_id="customer_123",
+                metadata={"tokens": 42},
+            )
+```
+
+### Actor context
+
+It's common to have several events for the same customer in the same session. You can create an actor context, so you don't have to pass the customer identifier for each event:
+
+```python
+async with polar.metering() as metering:
+    actor = await metering.actor(external_customer_id="customer_123")
+    await actor.track(name="api_request", metadata={"tokens": 42})
+    await actor.track(name="api_request", metadata={"tokens": 17})
+```
+
+### Read meters
+
+The metering helper can read meters. Under the hood, it can leverage Outpost to have low-latency reads.
+
+```python
+meter = await metering.meter(
+    "meter_uuid", external_customer_id="customer_123"
+)
+if meter is not None:
+    print(meter.consumed_units, meter.credited_units, meter.balance)
+```
+
+With an actor context:
+
+```python
+actor = await metering.actor(external_customer_id="customer_123")
+meter = await actor.meter("meter_uuid")
+if meter is not None:
+    print(meter.consumed_units, meter.credited_units, meter.balance)
+```
+
+### Local reduction with Outpost
+
+Outpost is our local reduction engine. It can reduce events locally and share a state across all your clients via Redis. It's enabled automatically when you set the `REDIS_URL` environment variable.
+
+In high throughput scenarios, Outpost can return you accurate meter reads only milliseconds after the event is ingested.
+
+To disable it, pass `outpost=False` to `polar.metering()`. You can also configure it explicitly with a dictionary.
+
+### Serverless environments
+
+In serverless environments such as AWS Lambda or Vercel, background work may stop when the
+handler returns. Explicitly await `flush()` before returning so buffered events are processed
+while the invocation is still active.
+
+```python
+async def handle_request() -> dict[str, bool]:
+    await metering.track(name="api_request", external_customer_id="customer_123")
+    await metering.flush()
+    return {"ok": True}
+```
+
+### Options
+
+#### Buffered
+
+The metering helper buffers events in memory and sends them in batches to Polar. It retries network errors, rate limits, and server errors with exponential backoff and jitter. Other Polar API errors drop the batch without retrying.
+
+| Option             | Default | Meaning                                                    |
+| ------------------ | ------- | ---------------------------------------------------------- |
+| `batch_size`       | `100`   | Maximum events per HTTP request.                           |
+| `batch_interval`   | `1.0`   | Seconds to collect a batch, starting with its first event. |
+| `shutdown_timeout` | `5.0`   | Seconds allowed to drain on context exit.                  |
+| `max_attempts`     | `3`     | Total attempts per batch, including the first.             |
+| `on_dropped`       | `None`  | Async callback receiving the dropped events and reason.    |
+
+#### Outpost
+
+| Option      | Default                          | Meaning                                   |
+| ----------- | -------------------------------- | ----------------------------------------- |
+| `redis_url` | `REDIS_URL` environment variable | Redis instance used by Outpost.           |
+| `telemetry` | `True`                           | Send Outpost metrics and traces to Polar. |
+
+Telemetry can also be disabled with the `POLAR_OUTPOST_TELEMETRY=0` environment variable.
+
 ## Webhooks
 
 Use `validate_event` to verify that a webhook was sent by Polar and parse it into a typed payload

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { customerKey, parseEvent, getProperty } from "./event";
+import { customerKey, parseEvent, getPropertyReader } from "./event";
 import {
   BUCKET_SIZE,
   getBucketStart,
@@ -34,7 +34,7 @@ describe("reduction", () => {
       timestamp: "2026-10-12T12:00:00.123456Z",
     });
     expect(precise.timestamp).toBe(1791806400123456);
-    expect(getProperty(precise, "timestamp")).toBe(1791806400);
+    expect(getPropertyReader("timestamp")(precise)).toBe(1791806400);
     expect(getBucketStart(BUCKET_SIZE - 1)).toBe(0);
     expect(getBucketStart(BUCKET_SIZE)).toBe(BUCKET_SIZE);
     expect(getBucketStart(-1)).toBe(-BUCKET_SIZE);
@@ -86,7 +86,7 @@ describe("reduction", () => {
       timestamp: "1969-12-31T23:59:59.500Z",
     });
     expect(getBucketStart(fractional.timestamp)).toBe(-BUCKET_SIZE);
-    expect(getProperty(fractional, "timestamp")).toBe(-0);
+    expect(getPropertyReader("timestamp")(fractional)).toBe(-0);
   });
 
   it("matches nested filters and ignores missing properties", () => {
@@ -110,8 +110,8 @@ describe("reduction", () => {
     expect(getMatcher({ property: "nested.flag", operator: "gt", value: false })(event)).toBe(
       false,
     );
-    expect(getProperty(event, "metadata.__proto__.toString")).toBeUndefined();
-    expect(getProperty(event, "timestamp")).toBe(event.timestamp / 1_000_000);
+    expect(getPropertyReader("metadata.__proto__.toString")(event)).toBeUndefined();
+    expect(getPropertyReader("timestamp")(event)).toBe(event.timestamp / 1_000_000);
   });
 
   it.each([

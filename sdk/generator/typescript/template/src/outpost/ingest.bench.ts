@@ -106,7 +106,7 @@ afterAll(async () => {
   }
 });
 
-describe("Outpost.ingest", () => {
+describe("Outpost.track", () => {
   for (const scenario of SCENARIOS) {
     const event = {
       ...scenario.event,
@@ -116,7 +116,7 @@ describe("Outpost.ingest", () => {
     bench(
       scenario.name,
       async () => {
-        await outpost.ingest(event);
+        await outpost.track(event);
         scenario.ingested += 1;
       },
       OPTIONS,

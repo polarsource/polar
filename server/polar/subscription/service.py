@@ -3022,6 +3022,8 @@ class SubscriptionService:
                     immediately=True,
                     # Benefits are revoked through `benefit.revoke_customer`
                     revoke_benefits=False,
+                    # Pending orders are voided, so don't bill the final usage either
+                    settle_usage=False,
                 )
 
     async def cancel_for_organization(
@@ -3079,7 +3081,13 @@ class SubscriptionService:
                     session, subscription, self, notify_customer=False
                 ) as ctx:
                     await self._perform_cancellation(
-                        session, ctx, subscription, immediately=True
+                        session,
+                        ctx,
+                        subscription,
+                        immediately=True,
+                        # Pending orders are voided, so don't bill the final usage
+                        # either
+                        settle_usage=False,
                     )
             except AlreadyCanceledSubscription:
                 continue
@@ -3096,6 +3104,7 @@ class SubscriptionService:
         customer_comment: str | None = None,
         immediately: bool = False,
         revoke_benefits: bool = True,
+        settle_usage: bool = True,
     ) -> Subscription:
         if not subscription.can_cancel(immediately):
             raise AlreadyCanceledSubscription(subscription)
@@ -3115,8 +3124,10 @@ class SubscriptionService:
         if immediately:
             # Settle the pending usage before ending, so usage up to now isn't
             # lost when the subscription closes.
-            if subscription.status != SubscriptionStatus.trialing and any(
-                is_metered_price(p) for p in subscription.prices
+            if (
+                settle_usage
+                and subscription.status != SubscriptionStatus.trialing
+                and any(is_metered_price(p) for p in subscription.prices)
             ):
                 self._enqueue_meter_cycle_order(subscription, now)
             subscription.ends_at = now

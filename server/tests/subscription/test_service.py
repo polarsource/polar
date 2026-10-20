@@ -11294,6 +11294,31 @@ class TestCancelCustomer:
             f"but found {len(void_calls)} void call(s)"
         )
 
+    async def test_does_not_settle_metered_usage(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(1000, "usd"), (meter, Decimal(100), None, "usd")],
+        )
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        await subscription_service.cancel_customer(session, customer.id)
+
+        assert "order.create_meter_cycle_order" not in [
+            call.args[0] for call in enqueue_job_mock.call_args_list
+        ]
+
 
 @pytest.mark.anyio
 class TestCancelForOrganization:
@@ -11335,6 +11360,33 @@ class TestCancelForOrganization:
         enqueue_job_mock.assert_any_call(
             "customer.state_changed", subscription.customer_id
         )
+
+    async def test_does_not_settle_metered_usage(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        organization.status = OrganizationStatus.DENIED
+        await save_fixture(organization)
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(1000, "usd"), (meter, Decimal(100), None, "usd")],
+        )
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        await subscription_service.cancel_for_organization(session, organization.id)
+
+        assert "order.create_meter_cycle_order" not in [
+            call.args[0] for call in enqueue_job_mock.call_args_list
+        ]
 
     async def test_skips_already_ended_subscriptions(
         self,

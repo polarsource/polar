@@ -167,22 +167,17 @@ class CatalogService:
             await checkout_link_repository.replace_product(product_id, new_product_id)
             await discount_repository.replace_product(product_id, new_product_id)
 
-    async def get_product_ids(
-        self, session: AsyncReadSession, catalog: Catalog
-    ) -> dict[str, uuid.UUID]:
-        return {
-            member.external_id: member.product_id
-            for member in await CatalogProductRepository.from_session(
-                session
-            ).get_all_by_catalog(catalog.id)
-        }
-
     async def get_live_product_ids(
         self, session: AsyncReadSession, organization: Organization
     ) -> dict[str, uuid.UUID]:
         live = await CatalogRepository.from_session(session).get_live(organization.id)
         if live is not None:
-            return await self.get_product_ids(session, live)
+            return {
+                member.external_id: member.product_id
+                for member in await CatalogProductRepository.from_session(
+                    session
+                ).get_all_by_catalog(live.id)
+            }
         products = await ProductRepository.from_session(session).get_catalog_baseline(
             organization.id
         )

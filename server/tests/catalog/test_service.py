@@ -288,3 +288,36 @@ class TestMigrateSubscriptions:
         assert updated is not None
         assert updated.pending_update is not None
         assert updated.pending_update.product_id == other.id
+
+    async def test_count_matches_migrated_subscriptions(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        publish_pro: PublishPro,
+        old_pro: Product,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        await create_active_subscription(
+            save_fixture, product=old_pro, customer=customer
+        )
+        await create_active_subscription(
+            save_fixture,
+            product=old_pro,
+            customer=customer_second,
+            cancel_at_period_end=True,
+        )
+        migration = await publish_pro("usd")
+        target = await CatalogProductRepository.from_session(session).get_product(
+            migration.catalog_id, "pro"
+        )
+        assert target is not None
+
+        count = await catalog_service.count_migratable_subscriptions(
+            session, organization, "pro", exclude_product_id=target.id
+        )
+        await catalog_service.migrate_subscriptions(session, migration.id)
+
+        assert count == 1
+        assert migration.subscriptions_count == count

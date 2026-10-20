@@ -16728,9 +16728,9 @@ export interface components {
       | 'duplicate_migration_source'
       | 'duration_changed'
       | 'interval_changed'
+      | 'meter_locked'
       | 'migration_changed'
       | 'migration_running'
-      | 'meter_locked'
       | 'missing_currency'
       | 'not_supported'
       | 'type_changed'
@@ -72333,9 +72333,9 @@ export const configIssueTypeValues: ReadonlyArray<
   'duplicate_migration_source',
   'duration_changed',
   'interval_changed',
+  'meter_locked',
   'migration_changed',
   'migration_running',
-  'meter_locked',
   'missing_currency',
   'not_supported',
   'type_changed',

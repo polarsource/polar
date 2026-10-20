@@ -886,8 +886,14 @@ class TestUpdateProduct:
         assert response.status_code == 422
 
     @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("api_version", "error"),
+        [(None, "NotPermitted"), (V2027_01, "ProductVersioned")],
+    )
     async def test_catalog_versioning(
         self,
+        api_version: Any,
+        error: str,
         save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
@@ -898,31 +904,13 @@ class TestUpdateProduct:
         await save_fixture(organization)
 
         response = await client.patch(
-            f"/v1/products/{product.id}", json={"name": "Updated Name"}
+            f"/v1/products/{product.id}",
+            headers={} if api_version is None else {"Polar-Version": str(api_version)},
+            json={"name": "Updated Name"},
         )
 
         assert response.status_code == 403
-        assert response.json()["error"] == "NotPermitted"
-
-    @pytest.mark.api_version(V2027_01)
-    @pytest.mark.auth
-    async def test_catalog_versioning_2027_01(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization: Organization,
-        product: Product,
-        user_organization: UserOrganization,
-    ) -> None:
-        organization.feature_settings = {"catalog_versioning_enabled": True}
-        await save_fixture(organization)
-
-        response = await client.patch(
-            f"/v1/products/{product.id}", json={"name": "Updated Name"}
-        )
-
-        assert response.status_code == 403
-        assert response.json()["error"] == "ProductVersioned"
+        assert response.json()["error"] == error
 
 
 @pytest.mark.anyio
@@ -975,6 +963,25 @@ class TestUpdateProductBenefits:
 
         json = response.json()
         assert len(json["benefits"]) == 1
+
+    @pytest.mark.auth
+    async def test_catalog_versioning(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"catalog_versioning_enabled": True}
+        await save_fixture(organization)
+
+        response = await client.post(
+            f"/v1/products/{product.id}/benefits", json={"benefits": []}
+        )
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "NotPermitted"
 
 
 @pytest.mark.anyio

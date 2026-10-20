@@ -7,12 +7,14 @@ from uuid import UUID
 from sqlalchemy import (
     ColumnElement,
     Row,
+    Select,
     and_,
     func,
     literal,
     null,
     or_,
     select,
+    true,
     update,
 )
 from sqlalchemy.dialects.postgresql import insert
@@ -21,14 +23,14 @@ from polar.kit.db.locking import pg_advisory_xact_lock
 from polar.kit.repository import RepositoryBase
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import PropertyAggregation
-from polar.models import Event, Reducer, ReducerBucket
+from polar.models import Event, Reducer, ReducerBucket, StagedEvent
 from polar.models.event import EventSource
 
 from .redis_store import get_reducer_bucket_key
 
 
 def _is_customer(
-    model: type[Event | ReducerBucket],
+    model: type[Event | StagedEvent | ReducerBucket],
     customer_id: UUID | None,
     external_customer_id: str | None,
 ) -> ColumnElement[bool]:
@@ -79,6 +81,38 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
     ) -> Row[Any]:
         """count, sum, min and max of the customer identity's user events for the
         reducer in the range, ingested after its latest sealed bucket."""
+        # Events still waiting in `staged_events` count too: the mover takes each one
+        # out of `staged_events` and into `events` in a single transaction, so this
+        # one statement sees every event exactly once.
+        events = self._aggregate_statement(
+            Event, reducer, bucket_start, bucket_end, customer_id, external_customer_id
+        ).subquery("events_statistics")
+        staged_events = self._aggregate_statement(
+            StagedEvent,
+            reducer,
+            bucket_start,
+            bucket_end,
+            customer_id,
+            external_customer_id,
+        ).subquery("staged_events_statistics")
+        statement = select(
+            (events.c.count + staged_events.c.count).label("count"),
+            (events.c.sum + staged_events.c.sum).label("sum"),
+            func.least(events.c.min, staged_events.c.min).label("min"),
+            func.greatest(events.c.max, staged_events.c.max).label("max"),
+        ).select_from(events.join(staged_events, true()))
+        result = await self.session.execute(statement)
+        return result.one()
+
+    def _aggregate_statement(
+        self,
+        model: type[Event | StagedEvent],
+        reducer: Reducer,
+        bucket_start: datetime,
+        bucket_end: datetime,
+        customer_id: UUID | None,
+        external_customer_id: str | None,
+    ) -> Select[Any]:
         sealed_at = (
             select(func.max(ReducerBucket.sealed_at))
             .where(
@@ -92,7 +126,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         aggregation = reducer.aggregation
         statistics: tuple[Any, Any, Any]
         if isinstance(aggregation, PropertyAggregation):
-            value = aggregation.get_sql_value(Event)
+            value = aggregation.get_sql_value(model)
             statistics = (
                 func.coalesce(func.sum(value), 0),
                 func.min(value),
@@ -100,23 +134,21 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             )
         else:
             statistics = (literal(0), null(), null())
-        statement = select(
+        return select(
             func.count().label("count"),
             statistics[0].label("sum"),
             statistics[1].label("min"),
             statistics[2].label("max"),
         ).where(
-            Event.organization_id == reducer.organization_id,
-            Event.source == EventSource.user,
-            Event.timestamp >= bucket_start,
-            Event.timestamp < bucket_end,
-            _is_customer(Event, customer_id, external_customer_id),
-            reducer.filter.get_sql_clause(Event),
-            aggregation.get_sql_clause(Event),
-            or_(sealed_at.is_(None), Event.ingested_at > sealed_at),
+            model.organization_id == reducer.organization_id,
+            model.source == EventSource.user,
+            model.timestamp >= bucket_start,
+            model.timestamp < bucket_end,
+            _is_customer(model, customer_id, external_customer_id),
+            reducer.filter.get_sql_clause(model),
+            aggregation.get_sql_clause(model),
+            or_(sealed_at.is_(None), model.ingested_at > sealed_at),
         )
-        result = await self.session.execute(statement)
-        return result.one()
 
     async def get_all_starting_within(
         self,

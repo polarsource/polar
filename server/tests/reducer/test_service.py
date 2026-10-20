@@ -25,6 +25,7 @@ from polar.models import (
     Organization,
     Reducer,
     ReducerBucket,
+    StagedEvent,
 )
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
@@ -489,6 +490,40 @@ class TestSyncBucket:
         assert bucket.generation == 1
         assert bucket.sealed_at is None
         assert bucket.synced_at is not None
+
+    async def test_counts_events_waiting_in_staged_events(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        sum_reducer: Reducer,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.reducer.service.enqueue_outpost_event")
+        await create_tokens_event(save_fixture, organization, 3)
+        for external_customer_id, tokens in (("external", 4), ("other", 5)):
+            await save_fixture(
+                StagedEvent(
+                    name=METER_TEST_EVENT,
+                    source=EventSource.user,
+                    timestamp=CLOSED,
+                    organization_id=organization.id,
+                    external_customer_id=external_customer_id,
+                    user_metadata={"tokens": tokens},
+                )
+            )
+
+        await reducer_service.sync_bucket(
+            session, sum_reducer.id, BUCKET_START, None, "external"
+        )
+
+        [bucket] = await get_buckets(session)
+        assert (bucket.count, bucket.sum, bucket.min, bucket.max) == (
+            2,
+            Decimal(7),
+            Decimal(3),
+            Decimal(4),
+        )
 
     async def test_marks_closed_bucket_contributions_synced(
         self,

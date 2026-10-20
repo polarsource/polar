@@ -173,27 +173,29 @@ const locked = <T>(local: LocalState, action: () => Promise<T>): Promise<T> => {
   return result;
 };
 export const decodeState = (value: string[]): State => {
-  const fields: Record<string, string> = {};
-  for (let i = 0; i < value.length; i += 2) fields[value[i]] = value[i + 1];
   const state: State = {
-    epoch: fields.epoch,
-    revision: BigInt(fields.revision),
-    coldUntil: fields.cold_until === undefined ? undefined : number(fields.cold_until),
+    epoch: "",
+    revision: 0n,
+    coldUntil: undefined,
     cold: emptyStatistics(),
     buckets: new Map(),
     credited: {},
   };
-  for (const [field, value] of Object.entries(fields)) {
-    if (field.startsWith("cold:")) {
-      const statistic = field.slice(5) as keyof BucketStatistics;
-      state.cold[statistic] = number(value);
-    } else if (field.startsWith("bucket:")) {
-      const [, timestamp, statistic] = field.split(":");
-      const start = Number(timestamp);
-      const bucket = state.buckets.get(start) ?? emptyStatistics();
-      bucket[statistic as keyof BucketStatistics] = number(value);
-      state.buckets.set(start, bucket);
-    } else if (field.startsWith("credited:")) state.credited[field.slice(9)] = number(value);
+  for (let i = 0; i < value.length; i += 2) {
+    const field = value[i];
+    const raw = value[i + 1];
+    if (field.startsWith("bucket:")) {
+      const separator = field.lastIndexOf(":");
+      const start = Number(field.slice(7, separator));
+      let bucket = state.buckets.get(start);
+      if (!bucket) state.buckets.set(start, (bucket = emptyStatistics()));
+      bucket[field.slice(separator + 1) as keyof BucketStatistics] = number(raw);
+    } else if (field.startsWith("cold:"))
+      state.cold[field.slice(5) as keyof BucketStatistics] = number(raw);
+    else if (field.startsWith("credited:")) state.credited[field.slice(9)] = number(raw);
+    else if (field === "epoch") state.epoch = raw;
+    else if (field === "revision") state.revision = BigInt(raw);
+    else if (field === "cold_until") state.coldUntil = number(raw);
   }
   return state;
 };

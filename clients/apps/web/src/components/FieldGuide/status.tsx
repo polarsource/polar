@@ -33,9 +33,9 @@ export const STATUS: Record<string, Status> = {
 }
 
 const LABEL: Record<Status, string> = {
-  development: 'In development',
-  'early-access': 'Early access',
-  production: 'Production',
+  development: 'Currently in development',
+  'early-access': 'Available in early access',
+  production: 'Available in production',
 }
 
 const DOT: Record<Status, string> = {

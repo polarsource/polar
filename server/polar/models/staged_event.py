@@ -12,22 +12,22 @@ from polar.kit.utils import generate_uuid, utc_now
 from polar.models.event import EventSource
 
 
-class RawEvent(Model, MetadataMixin):
+class StagedEvent(Model, MetadataMixin):
     """Ingested user event waiting to be moved to `events`. Kept lean so ingest
     writes stay cheap: no foreign keys and only the indexes dedup and reducer
     bucket syncs need."""
 
-    __tablename__ = "raw_events"
+    __tablename__ = "staged_events"
     __table_args__ = (
         Index(
-            "ix_raw_events_organization_id_external_id",
+            "ix_staged_events_organization_id_external_id",
             "organization_id",
             "external_id",
             unique=True,
             postgresql_where="external_id IS NOT NULL",
         ),
         Index(
-            "ix_raw_events_organization_id_timestamp", "organization_id", "timestamp"
+            "ix_staged_events_organization_id_timestamp", "organization_id", "timestamp"
         ),
         # Every row is deleted soon after it's inserted: vacuum on a fixed number of
         # dead rows, not a share of a table that's usually close to empty.

@@ -1,4 +1,4 @@
-"""add raw_events
+"""add staged_events
 
 Revision ID: 9d3b7e1f4a62
 Revises: 7c1e4a9b2d3f
@@ -21,7 +21,7 @@ depends_on: tuple[str] | None = None
 
 def upgrade() -> None:
     op.create_table(
-        "raw_events",
+        "staged_events",
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("ingested_at", sa.TIMESTAMP(timezone=True), nullable=False),
         sa.Column("timestamp", sa.TIMESTAMP(timezone=True), nullable=False),
@@ -38,7 +38,7 @@ def upgrade() -> None:
         sa.Column(
             "user_metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=False
         ),
-        sa.PrimaryKeyConstraint("id", name=op.f("raw_events_pkey")),
+        sa.PrimaryKeyConstraint("id", name=op.f("staged_events_pkey")),
         postgresql_with={
             "autovacuum_vacuum_scale_factor": 0,
             "autovacuum_vacuum_threshold": 10000,
@@ -46,19 +46,19 @@ def upgrade() -> None:
         },
     )
     op.create_index(
-        "ix_raw_events_organization_id_external_id",
-        "raw_events",
+        "ix_staged_events_organization_id_external_id",
+        "staged_events",
         ["organization_id", "external_id"],
         unique=True,
         postgresql_where="external_id IS NOT NULL",
     )
     op.create_index(
-        "ix_raw_events_organization_id_timestamp",
-        "raw_events",
+        "ix_staged_events_organization_id_timestamp",
+        "staged_events",
         ["organization_id", "timestamp"],
         unique=False,
     )
 
 
 def downgrade() -> None:
-    op.drop_table("raw_events")
+    op.drop_table("staged_events")

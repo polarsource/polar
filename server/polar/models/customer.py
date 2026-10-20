@@ -182,6 +182,9 @@ class Customer(MetadataMixin, RecordModel):
         AddressType, nullable=True, default=None
     )
     tax_id: Mapped[TaxID | None] = mapped_column(TaxIDType, nullable=True, default=None)
+    billing_emails: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
 
     _oauth_accounts: Mapped[dict[str, dict[str, Any]]] = mapped_column(
         "oauth_accounts", JSONB, nullable=False, default=dict

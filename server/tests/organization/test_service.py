@@ -367,6 +367,37 @@ class TestCreate:
         enqueue_job_mock.assert_not_called()
         posthog_mock.assert_not_called()
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_concurrent_creation(
+        self,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[Agent],
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """
+        A concurrent create links its organization after this request loaded
+        the agent, so the early check passes but the conditional update doesn't.
+        """
+        agent = auth_subject.subject
+        agent.organization = None
+        await save_fixture(agent)
+        await session.execute(
+            update(Agent)
+            .where(Agent.id == agent.id)
+            .values(organization_id=organization.id)
+            .execution_options(synchronize_session=False)
+        )
+
+        with pytest.raises(CannotCreateOrganizationError):
+            await organization_service.create(
+                session,
+                OrganizationCreate(
+                    name="Agent Organization", slug="agent-organization"
+                ),
+                auth_subject,
+            )
+
 
 @pytest.mark.anyio
 class TestUpdateReviewSubmission:

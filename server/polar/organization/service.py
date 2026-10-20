@@ -344,6 +344,9 @@ class CannotChangeOwnerError(OrganizationError):
         super().__init__(f"Cannot change organization owner: {reason}")
 
 
+_AGENT_ONE_ORGANIZATION_MESSAGE = "An agent can only create one organization."
+
+
 class CannotCreateOrganizationError(OrganizationError):
     def __init__(
         self,
@@ -469,6 +472,8 @@ class OrganizationService:
     ) -> Organization:
         if auth_subject.organization_ids is not None:
             raise CannotCreateOrganizationError()
+        if is_agent(auth_subject) and auth_subject.subject.organization_id is not None:
+            raise CannotCreateOrganizationError(_AGENT_ONE_ORGANIZATION_MESSAGE)
 
         repository = OrganizationRepository.from_session(session)
         if await repository.slug_exists(create_schema.slug):
@@ -527,9 +532,7 @@ class OrganizationService:
                 auth_subject.subject, organization
             )
             if agent is None:
-                raise CannotCreateOrganizationError(
-                    "An agent can only create one organization."
-                )
+                raise CannotCreateOrganizationError(_AGENT_ONE_ORGANIZATION_MESSAGE)
             return organization
 
         assert is_user(auth_subject)

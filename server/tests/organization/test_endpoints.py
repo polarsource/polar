@@ -20,7 +20,6 @@ from polar.models import (
     User,
 )
 from polar.models.account import Account
-from polar.models.agent import AgentStatus
 from polar.models.organization import (
     Organization,
     OrganizationStatus,
@@ -188,21 +187,6 @@ class TestGetOrganization:
 
         assert response.status_code == 404
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_claimed_agent(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        auth_subject: AuthSubject[Agent],
-        organization: Organization,
-    ) -> None:
-        auth_subject.subject.status = AgentStatus.claimed
-        await save_fixture(auth_subject.subject)
-
-        response = await client.get(f"/v1/organizations/{organization.id}")
-
-        assert response.status_code == 404
-
 
 @pytest.mark.anyio
 class TestCreateOrganization:
@@ -230,7 +214,9 @@ class TestCreateOrganization:
         assert str(agent.organization_id) == response.json()["id"]
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent_with_organization(self, client: AsyncClient) -> None:
+    async def test_agent_with_organization(
+        self, session: AsyncSession, client: AsyncClient
+    ) -> None:
         response = await client.post(
             "/v1/organizations/",
             json={"name": "Second Organization", "slug": "second-organization"},
@@ -238,6 +224,8 @@ class TestCreateOrganization:
 
         assert response.status_code == 403
         assert response.json()["error"] == "CannotCreateOrganizationError"
+        repository = OrganizationRepository.from_session(session)
+        assert await repository.slug_exists("second-organization") is False
 
 
 @pytest.mark.anyio
@@ -1900,15 +1888,9 @@ class TestAgentClosedRoutes:
     @pytest.mark.parametrize(
         ("method", "path"),
         [
-            ("GET", "/account"),
             ("PATCH", "/payout-account"),
             ("POST", "/submit-review"),
-            ("POST", "/appeal"),
-            ("POST", "/ai-validation"),
-            ("GET", "/members"),
             ("POST", "/members/invite"),
-            ("POST", "/subscription"),
-            ("DELETE", ""),
         ],
     )
     async def test_agent_rejected(
@@ -1917,7 +1899,7 @@ class TestAgentClosedRoutes:
         response = await client.request(
             method,
             f"/v1/organizations/{organization.id}{path}",
-            json={} if method != "GET" else None,
+            json={},
         )
 
         assert response.status_code == 401

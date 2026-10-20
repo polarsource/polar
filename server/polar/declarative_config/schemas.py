@@ -522,10 +522,12 @@ class ConfigIssueSeverity(StrEnum):
 
 
 class ConfigIssueType(StrEnum):
+    catalog_not_live = "catalog_not_live"
     currency_changed = "currency_changed"
     discount_locked = "discount_locked"
     duplicate_code = "duplicate_code"
     duplicate_external_id = "duplicate_external_id"
+    duplicate_migration_source = "duplicate_migration_source"
     duration_changed = "duration_changed"
     interval_changed = "interval_changed"
     migration_changed = "migration_changed"

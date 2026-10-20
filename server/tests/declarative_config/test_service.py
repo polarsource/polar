@@ -2802,6 +2802,70 @@ class TestApplyCatalogVersioning:
         assert existing.version == 1
         assert existing.is_current is False
 
+    async def test_update_keeps_settings_outside_config(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            name="Pro",
+            is_tax_applicable=False,
+        )
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO_25]}),
+        )
+
+        [new_product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pro"])
+        assert new_product.version == 2
+        assert new_product.is_tax_applicable is False
+
+    async def test_archived_product_stays_archived(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            name="Pro",
+            is_archived=True,
+        )
+
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO_25]}),
+        )
+
+        assert result.catalog is None
+        [new_product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pro"])
+        assert new_product.is_archived is True
+        assert (
+            await CatalogRepository.from_session(session).get_live(organization.id)
+            is None
+        )
+
     async def test_migration(
         self,
         mocker: MockerFixture,
@@ -2957,7 +3021,7 @@ class TestApplyCatalogVersioning:
                 ),
             )
 
-        assert error.value.errors[0].type == ConfigIssueType.unknown_reference
+        assert error.value.errors[0].type == ConfigIssueType.catalog_not_live
         assert error.value.errors[0].loc == ["body", "migrations", 0, "to_catalog"]
 
 
@@ -3049,6 +3113,29 @@ class TestPlanCatalogVersioning:
             1,
             2,
         )
+
+    async def test_baseline_from_existing_products(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            name="Pro",
+        )
+
+        plan = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate({"products": [MONTHLY_PRO_25]})
+        )
+
+        assert plan.catalog == ConfigCatalogChange(before=1, after=2)
+        version = plan.changes[0].diff[-1]
+        assert (version.field, version.before, version.after) == ("version", 1, 2)
 
     async def test_migration_counts_subscriptions(
         self,

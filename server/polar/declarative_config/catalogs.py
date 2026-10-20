@@ -30,10 +30,40 @@ class MigrationCheck:
 
 def catalog_after(base: int, changes: ConfigChanges) -> int:
     if any(
-        change.existing is None or change.update_dict for change in changes.products
+        change.existing is None
+        or (change.update_dict and not change.existing.is_archived)
+        for change in changes.products
     ):
         return base + 1
     return base
+
+
+async def running_migration_issues(
+    session: AsyncReadSession, organization: Organization, changes: ConfigChanges
+) -> list[ConfigIssue]:
+    """Block changes to a product that a running migration is moving customers to."""
+    running = {
+        migration.target_external_id: migration
+        for migration in await CatalogMigrationRepository.from_session(
+            session
+        ).get_all_open(organization.id)
+    }
+    return [
+        ConfigIssue(
+            severity=ConfigIssueSeverity.error,
+            type=ConfigIssueType.migration_running,
+            loc=["body", "products", change.index],
+            msg=(
+                f"Migration {running[change.config.external_id].external_id} is "
+                "still moving customers to this product. Wait for it to finish."
+            ),
+            input=change.config.external_id,
+        )
+        for change in changes.products
+        if change.existing is not None
+        and change.update_dict
+        and change.config.external_id in running
+    ]
 
 
 async def check_migrations(
@@ -68,7 +98,7 @@ async def check_migrations(
             issues.append(
                 ConfigIssue(
                     severity=ConfigIssueSeverity.error,
-                    type=ConfigIssueType.duplicate_external_id,
+                    type=ConfigIssueType.duplicate_migration_source,
                     loc=[*loc, "subscriptions_of"],
                     msg=(
                         "Two migrations in the same apply can't move "
@@ -135,7 +165,7 @@ async def check_migrations(
             issues.append(
                 ConfigIssue(
                     severity=ConfigIssueSeverity.error,
-                    type=ConfigIssueType.unknown_reference,
+                    type=ConfigIssueType.catalog_not_live,
                     loc=[*loc, "to_catalog"],
                     msg=(
                         "Migrations can only target the live catalog: "
@@ -213,14 +243,19 @@ async def apply_migrations(
 def add_version_diffs(
     product_changes: Sequence[ConfigChange],
     changes: Sequence[ProductChange],
+    catalog_before: int | None,
     catalog_after: int,
 ) -> None:
     for product_change, change in zip(product_changes, changes, strict=True):
-        if change.existing is not None and change.update_dict:
+        if (
+            change.existing is not None
+            and change.update_dict
+            and not change.existing.is_archived
+        ):
             product_change.diff.append(
                 ConfigFieldChange(
                     field="version",
-                    before=change.existing.version,
+                    before=change.existing.version or catalog_before,
                     after=catalog_after,
                 )
             )

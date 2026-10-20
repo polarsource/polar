@@ -203,6 +203,10 @@ class DeclarativeConfigService:
             session, organization, config, changes, catalog_after
         )
         issues.extend(migration_issues)
+        if catalog_after is not None:
+            issues.extend(
+                await catalogs.running_migration_issues(session, organization, changes)
+            )
         errors = [
             issue for issue in issues if issue.severity == ConfigIssueSeverity.error
         ]
@@ -297,9 +301,15 @@ class DeclarativeConfigService:
             session, organization, config, changes, catalog_after
         )
         issues.extend(migration_issues)
+        if catalog_after is not None:
+            issues.extend(
+                await catalogs.running_migration_issues(session, organization, changes)
+            )
         product_changes = self._plan_changes(ConfigResource.product, changes.products)
         if catalog_after and catalog_after != catalog_before:
-            catalogs.add_version_diffs(product_changes, changes.products, catalog_after)
+            catalogs.add_version_diffs(
+                product_changes, changes.products, catalog_before, catalog_after
+            )
         return ConfigPlan(
             changes=[
                 *self._plan_changes(ConfigResource.webhook, changes.webhooks),
@@ -630,6 +640,10 @@ class DeclarativeConfigService:
                                 ),
                                 auth_subject,
                             )
+                            if change.existing is not None:
+                                catalog_service.copy_product_settings(
+                                    change.existing, product
+                                )
                             await repository.update(
                                 product, update_dict={"external_id": config.external_id}
                             )
@@ -658,7 +672,11 @@ class DeclarativeConfigService:
             except PolarRequestValidationError as e:
                 raise products.product_error(e, change.index, external_ids) from e
             product_ids[config.external_id] = product.id
-            if versioned and (change.existing is None or copy_on_write):
+            if (
+                versioned
+                and (change.existing is None or copy_on_write)
+                and not product.is_archived
+            ):
                 new_products[config.external_id] = product
             results.append(
                 ConfigResult(

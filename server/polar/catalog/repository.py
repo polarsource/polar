@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
+from polar.kit.db.locking import pg_advisory_xact_lock
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -19,6 +20,10 @@ class CatalogRepository(
     RepositoryBase[Catalog],
 ):
     model = Catalog
+
+    async def lock(self, organization_id: UUID) -> None:
+        """Serialize catalog writes for an organization."""
+        await pg_advisory_xact_lock(self.session, "catalog", organization_id)
 
     async def get_live(self, organization_id: UUID) -> Catalog | None:
         statement = self.get_base_statement().where(
@@ -81,6 +86,13 @@ class CatalogMigrationRepository(
             CatalogMigration.external_id == external_id,
         )
         return await self.get_one_or_none(statement)
+
+    async def get_all_open(self, organization_id: UUID) -> Sequence[CatalogMigration]:
+        statement = self.get_base_statement().where(
+            CatalogMigration.organization_id == organization_id,
+            CatalogMigration.completed_at.is_(None),
+        )
+        return await self.get_all(statement)
 
     async def get_open_by_source(
         self, organization_id: UUID, source_external_id: str

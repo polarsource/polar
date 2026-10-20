@@ -7,7 +7,6 @@ from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.discount.repository import DiscountRepository
 from polar.enums import SubscriptionProrationBehavior
 from polar.exceptions import PolarError
-from polar.kit.db.locking import pg_advisory_xact_lock
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import (
@@ -16,6 +15,8 @@ from polar.models import (
     CatalogProduct,
     Organization,
     Product,
+    ProductCustomField,
+    ProductMedia,
     Subscription,
 )
 from polar.models.catalog import CatalogStatus
@@ -39,7 +40,7 @@ MIGRATION_BATCH_SIZE = 100
 
 class CatalogService:
     async def lock(self, session: AsyncSession, organization: Organization) -> None:
-        await pg_advisory_xact_lock(session, "catalog", organization.id)
+        await CatalogRepository.from_session(session).lock(organization.id)
 
     async def get_base_version(
         self, session: AsyncReadSession, organization: Organization
@@ -51,7 +52,8 @@ class CatalogService:
         has_baseline = await ProductRepository.from_session(
             session
         ).has_catalog_baseline(organization.id)
-        return None, 1 if has_baseline else 0
+        # Apply creates catalog 1 from the existing products before publishing.
+        return (1, 1) if has_baseline else (None, 0)
 
     async def get_or_create_live(
         self, session: AsyncSession, organization: Organization
@@ -136,6 +138,24 @@ class CatalogService:
                 )
             )
         return catalog
+
+    def copy_product_settings(self, product: Product, new_product: Product) -> None:
+        """Copy what config doesn't describe onto a product's new version."""
+        new_product.is_archived = product.is_archived
+        new_product.is_tax_applicable = product.is_tax_applicable
+        new_product.tax_code = product.tax_code
+        new_product.product_medias = [
+            ProductMedia(file=media.file, order=media.order)
+            for media in product.product_medias
+        ]
+        new_product.attached_custom_fields = [
+            ProductCustomField(
+                custom_field=field.custom_field,
+                order=field.order,
+                required=field.required,
+            )
+            for field in product.attached_custom_fields
+        ]
 
     async def carry_over_references(
         self, session: AsyncSession, replaced: Mapping[uuid.UUID, uuid.UUID]

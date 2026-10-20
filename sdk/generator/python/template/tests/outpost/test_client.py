@@ -1127,6 +1127,9 @@ async def test_telemetry_spans(
     ]
     assert all(isinstance(point, ExponentialHistogramDataPoint) for point in durations)
     reads = _data_points(exported_metrics, "outpost.read.duration")
+    assert [(point.attributes, point.count) for point in reads] == [
+        ({"outpost.read.operation": "meter", "outpost.read.outcome": "ready"}, 1)
+    ]
     assert all(isinstance(point, ExponentialHistogramDataPoint) for point in reads)
     names = {span.name for span in exported_spans}
     assert names == {

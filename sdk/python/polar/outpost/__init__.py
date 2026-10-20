@@ -1,4 +1,4 @@
-from polar.ingestion import EventInput
+from polar.metering import EventInput
 from polar.outpost.client import (
     CustomerMeter,
     IngestResult,

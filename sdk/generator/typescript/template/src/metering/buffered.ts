@@ -12,17 +12,36 @@ import {
 
 export type DropReason = "retry_exhausted" | "shutdown_timeout" | "permanent_error";
 
-export interface IngestionClient {
+export interface MeteringClient {
   events: {
     ingest(body: { events: EventInput[] }, options?: RequestOptions): Promise<unknown>;
   };
 }
 
-export interface BufferedIngestionOptions {
+/**
+ * Configure in-memory batching and delivery to Polar.
+ */
+export interface BufferedMeteringOptions {
+  /**
+   * Maximum events per request. Defaults to 100.
+   */
   batchSize?: number;
+  /**
+   * Milliseconds to collect a batch after its first event. Defaults to 1000.
+   */
   batchIntervalMs?: number;
+  /**
+   * Milliseconds allowed to drain on exit. Defaults to 5000.
+   */
   shutdownTimeoutMs?: number;
+  /**
+   * Total delivery attempts per batch, including the first. Defaults to 3.
+   */
   maxAttempts?: number;
+  /**
+   * Callback for undelivered events and their DropReason; may be async.
+   * Defaults to undefined; drops are always logged.
+   */
   onDropped?: (events: EventInput[], reason: DropReason) => void | Promise<void>;
 }
 
@@ -35,9 +54,12 @@ class FlushRequest {
   });
 }
 
-export class BufferedIngestionStrategy {
-  private readonly options: Required<Omit<BufferedIngestionOptions, "onDropped">> &
-    Pick<BufferedIngestionOptions, "onDropped">;
+/**
+ * Batch events in memory and deliver them through Polar's HTTP API.
+ */
+export class BufferedMeteringStrategy {
+  private readonly options: Required<Omit<BufferedMeteringOptions, "onDropped">> &
+    Pick<BufferedMeteringOptions, "onDropped">;
   private readonly queue: (EventInput | FlushRequest)[] = [];
   private readonly abort = new AbortController();
   private worker?: Promise<void>;
@@ -45,9 +67,16 @@ export class BufferedIngestionStrategy {
   private wake?: () => void;
   private failure?: Error;
 
+  /**
+   * Configure event delivery and retries.
+   *
+   * @param polar Client exposing the events.ingest API.
+   * @param options Batch size, timing in milliseconds, retries, and the drop callback.
+   * @throws RangeError if the batch size, max attempts, or intervals are invalid.
+   */
   constructor(
-    private readonly polar: IngestionClient,
-    options: BufferedIngestionOptions = {},
+    private readonly polar: MeteringClient,
+    options: BufferedMeteringOptions = {},
   ) {
     this.options = {
       batchSize: options.batchSize ?? 100,
@@ -62,22 +91,28 @@ export class BufferedIngestionStrategy {
     }
     for (const value of [this.options.batchIntervalMs, this.options.shutdownTimeoutMs]) {
       if (!Number.isFinite(value) || value < 0 || value > 2_147_483_647)
-        throw new RangeError("Ingestion intervals must be between 0 and 2147483647 milliseconds");
+        throw new RangeError("Metering intervals must be between 0 and 2147483647 milliseconds");
     }
   }
 
   async start(): Promise<this> {
-    if (this.worker) throw new PolarError("Buffered ingestion has already started");
+    if (this.worker) throw new PolarError("Buffered metering has already started");
     this.worker = this.run().catch((error: unknown) => {
       this.failure = error instanceof Error ? error : new PolarError(String(error));
     });
     return this;
   }
 
-  async ingest(event: EventInput): Promise<void> {
+  /**
+   * Queue an event without waiting for HTTP delivery.
+   *
+   * @param event Event including its customer identity.
+   */
+  async track(event: EventInput): Promise<void> {
     this.enqueue(event);
   }
 
+  /** Wait until earlier events are delivered or reported as dropped. */
   async flush(): Promise<void> {
     const request = new FlushRequest();
     this.enqueue(request);
@@ -99,7 +134,7 @@ export class BufferedIngestionStrategy {
 
   private enqueue(message: EventInput | FlushRequest): void {
     if (this.failure) throw this.failure;
-    if (!this.worker || this.closing) throw new PolarError("Buffered ingestion is not running");
+    if (!this.worker || this.closing) throw new PolarError("Buffered metering is not running");
     this.queue.push(message);
     this.wake?.();
   }
@@ -165,7 +200,7 @@ export class BufferedIngestionStrategy {
       }
     } catch (error) {
       const failure = this.abort.signal.aborted
-        ? new PolarError("Buffered ingestion shutdown timed out")
+        ? new PolarError("Buffered metering shutdown timed out")
         : error instanceof Error
           ? error
           : new PolarError(String(error));

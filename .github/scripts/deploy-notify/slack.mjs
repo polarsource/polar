@@ -1,12 +1,12 @@
 import { setTimeout } from 'node:timers/promises';
-import { buildParentMessage, prepareNotification } from './messages.mjs';
-import { resolveDeployer } from './deployer.mjs';
+import { buildParentMessage, getPullRequests, prepareNotification } from './messages.mjs';
+import { resolveDeployer, resolveMerger } from './deployer.mjs';
 import { postEnvironmentUpdates, watchDeployment } from './progress.mjs';
 import { postReplyOnce } from './replies.mjs';
 
 export function slackClient(token, fetchResponse = fetch) {
   return async (method, payload = {}) => {
-    const read = method === 'conversations.history' || method === 'conversations.replies';
+    const read = ['conversations.history', 'conversations.replies', 'users.info'].includes(method);
     const url = new URL(`https://slack.com/api/${method}`);
     if (read) url.search = new URLSearchParams(payload).toString();
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -38,11 +38,26 @@ export function slackClient(token, fetchResponse = fetch) {
   };
 }
 
+async function slackDisplayName(login, slack, core) {
+  if (!login) return login;
+  try {
+    const slackUsers = JSON.parse(process.env.SLACK_USERS_JSON || '{}');
+    const key = login.toLowerCase();
+    const slackId = Object.hasOwn(slackUsers, key) ? slackUsers[key] : undefined;
+    if (!slackId) return login;
+    const { user } = await slack('users.info', { user: slackId });
+    return user?.profile?.display_name?.trim() || login;
+  } catch (error) {
+    core.warning(`Could not look up Slack display name for ${login}: ${error.message}`);
+    return login;
+  }
+}
+
 export async function notifyDeployment({ github, context, core, slack = slackClient(process.env.SLACK_BOT_TOKEN), watch = false }) {
   const channel = process.env.DEPLOY_SLACK_CHANNEL_ID;
   if (!channel) throw new Error('Set DEPLOY_SLACK_CHANNEL_ID and invite the Slack bot to that channel');
   const run = context.payload.workflow_run;
-  const parentPayload = buildParentMessage({ run, channel });
+  let parentPayload = buildParentMessage({ run, channel });
   const parentBlockId = parentPayload.blocks[0].block_id;
   const completedBlockId = `${parentBlockId}-completed`;
   const { user_id: botUser } = await slack('auth.test');
@@ -62,9 +77,33 @@ export async function notifyDeployment({ github, context, core, slack = slackCli
     cursor = history.response_metadata?.next_cursor;
   } while (!parent && cursor);
 
+  let pullRequests;
   if (!parent) {
+    pullRequests = await getPullRequests({ github, context, core });
+    const merged = pullRequests.find(pr =>
+      pr.merged_at && pr.base.ref === run.head_branch && pr.merge_commit_sha === run.head_sha,
+    );
+    let merger;
+    if (merged) {
+      try {
+        merger = await resolveMerger({ github, repo: context.repo, run, pullRequest: merged });
+      } catch (error) {
+        core.warning(`Could not identify merger: ${error.message}`);
+      }
+    }
+    const author = merged?.user?.login;
+    const authorDisplayName = await slackDisplayName(author, slack, core);
+    const mergerDisplayName = merger?.toLowerCase() === author?.toLowerCase()
+      ? authorDisplayName
+      : await slackDisplayName(merger, slack, core);
+    parentPayload = buildParentMessage({ run, channel, author, merger, authorDisplayName, mergerDisplayName });
     const posted = await slack('chat.postMessage', parentPayload);
     parent = { ts: posted.ts };
+  } else {
+    parentPayload = {
+      ...parentPayload, text: parent.text,
+      blocks: [{ ...parent.blocks[0], block_id: parentBlockId }, ...parent.blocks.slice(1)],
+    };
   }
   if (context.payload.action !== 'completed') {
     if (watch) await watchDeployment({ github, context, core, slack, botUser, parent, parentPayload });
@@ -78,14 +117,14 @@ export async function notifyDeployment({ github, context, core, slack = slackCli
     return;
   }
 
-  const { message, pullRequests, jobs } = await prepareNotification({ github, context, core });
+  const { message, pullRequests: completedPullRequests, jobs } = await prepareNotification({ github, context, core, pullRequests });
   await postEnvironmentUpdates({ run, jobs, slack, botUser, parent, parentPayload });
   let attributionError;
   if (failed) {
     const slackUsers = JSON.parse(process.env.SLACK_USERS_JSON || '{}');
     let deployer;
     try {
-      deployer = await resolveDeployer({ github, repo: context.repo, run, pullRequests });
+      deployer = await resolveDeployer({ github, repo: context.repo, run, pullRequests: completedPullRequests });
     } catch (error) {
       core.warning(`Could not identify deployer: ${error.message}`);
     }

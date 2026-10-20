@@ -25,7 +25,10 @@ function jobStatus(job) {
   return `${icon} ${link(job.html_url, conclusion)}`;
 }
 
-export function buildParentMessage({ run, channel }) {
+export function buildParentMessage({
+  run, channel, author = run.head_commit?.author?.name, merger,
+  authorDisplayName = author, mergerDisplayName = merger,
+}) {
   const title = escapeText((run.head_commit?.message ?? '').split('\n')[0].slice(0, 200));
   const pullRequest = title.match(/\(#(\d+)\)$/)?.[1];
   const attempt = run.run_attempt > 1 ? ` (attempt ${run.run_attempt})` : '';
@@ -34,14 +37,19 @@ export function buildParentMessage({ run, channel }) {
     link(`${run.repository.html_url}/commit/${run.head_sha}`, run.head_sha.slice(0, 7)),
     pullRequest && link(`${run.repository.html_url}/pull/${pullRequest}`, `PR #${pullRequest}`),
   ].filter(Boolean).join('  ·  ');
+  const attribution = [
+    author && `Author: ${escapeText(authorDisplayName)}`,
+    merger && merger.toLowerCase() !== author?.toLowerCase() && `Merged by: ${escapeText(mergerDisplayName)}`,
+  ].filter(Boolean).join('  ·  ');
+  const text = [`Deploying: ${title}`, attribution].filter(Boolean).join('\n');
   return {
     channel, unfurl_links: false, unfurl_media: false,
-    text: `Deploying: ${title}`,
+    text,
     blocks: [
       {
         type: 'section',
         block_id: `deployment-${run.id}-${run.run_attempt}`,
-        text: { type: 'mrkdwn', text: `Deploying: ${title}` },
+        text: { type: 'mrkdwn', text },
       },
       { type: 'context', elements: [{ type: 'mrkdwn', text: meta }] },
     ],
@@ -109,7 +117,20 @@ export function buildMessage({ run, jobs, channel }) {
   return { channel, text: lines.join('\n'), unfurl_links: false, unfurl_media: false };
 }
 
-export async function prepareNotification({ github, context, core }) {
+export async function getPullRequests({ github, context, core }) {
+  try {
+    return await github.paginate(github.rest.repos.listPullRequestsAssociatedWithCommit, {
+      ...context.repo,
+      commit_sha: context.payload.workflow_run.head_sha,
+      per_page: 100,
+    });
+  } catch (error) {
+    core.warning(`Could not look up head commit PRs: ${error.message}`);
+    return [];
+  }
+}
+
+export async function prepareNotification({ github, context, core, pullRequests }) {
   const run = context.payload.workflow_run;
   const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, {
     ...context.repo,
@@ -117,16 +138,7 @@ export async function prepareNotification({ github, context, core }) {
     attempt_number: run.run_attempt,
     per_page: 100,
   });
-  let pullRequests = [];
-  try {
-    pullRequests = await github.paginate(github.rest.repos.listPullRequestsAssociatedWithCommit, {
-      ...context.repo,
-      commit_sha: run.head_sha,
-      per_page: 100,
-    });
-  } catch (error) {
-    core.warning(`Could not look up head commit PRs: ${error.message}`);
-  }
+  pullRequests ??= await getPullRequests({ github, context, core });
   const message = buildMessage({ run, jobs, channel: process.env.DEPLOY_SLACK_CHANNEL_ID });
   await core.summary.addRaw(message.text.replace(/<(https:\/\/[^|]+)\|([^>]+)>/g, '[$2]($1)')).write();
   return { message, pullRequests, jobs };

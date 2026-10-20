@@ -2657,17 +2657,23 @@ class OrderService:
                 {"remote_url": invoice.url, "filename": order.invoice_filename}
             ]
 
+        billing_recipients: Sequence[str] = []
+        if attachments:
+            billing_recipients = await customer_service.get_billing_email_recipients(
+                session, customer, exclude=recipients
+            )
+
         previous_billing_provider: str | None = None
         if subscription is not None and template_name != "order_confirmation":
             previous_billing_provider = await previous_billing_provider_for_notice(
                 session, subscription, EmailTemplate(template_name)
             )
 
-        for recipient_email in recipients:
+        for recipient_email in [*recipients, *billing_recipients]:
             token = await customer_service.create_session_token_for_recipient(
                 session, customer, recipient_email
             )
-            if token is None:
+            if token is None and recipient_email not in billing_recipients:
                 continue
 
             # Build query parameters with per-recipient email
@@ -2679,6 +2685,7 @@ class OrderService:
                     email=recipient_email,
                 )
                 for key, value in url_params.items()
+                if token is not None or key != "customer_session_token"
             }
             override_url = settings.get_customer_portal_url_override(
                 str(organization.id), str(product.id) if product is not None else None

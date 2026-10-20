@@ -3162,6 +3162,72 @@ class TestSendConfirmationEmail:
         attachments = enqueue_email_mock.call_args[1]["attachments"]
         assert len(attachments) == 1
 
+    async def test_billing_emails_receive_invoice(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+            return_value="invoices/mock-invoice.pdf",
+        )
+        mocker.patch(
+            "polar.order.service.invoice_service.get_order_invoice_url",
+            new_callable=AsyncMock,
+            return_value=("https://mock-s3/invoices/mock-invoice.pdf", utc_now()),
+        )
+        customer.billing_emails = "finance@example.com, ap@example.com"
+        await save_fixture(customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            billing_name="John Doe",
+            billing_address=Address(country=CountryAlpha2("US")),
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        assert [
+            email_call.kwargs["to_email_addr"]
+            for email_call in enqueue_email_mock.call_args_list
+        ] == [customer.email, "finance@example.com", "ap@example.com"]
+        for email_call in enqueue_email_mock.call_args_list:
+            assert len(email_call.kwargs["attachments"]) == 1
+        billing_email = enqueue_email_mock.call_args_list[1].args[0]
+        assert "customer_session_token" not in billing_email.props.url
+
+    async def test_billing_emails_skipped_without_invoice(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
+        customer.billing_emails = "finance@example.com"
+        await save_fixture(customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        enqueue_email_mock.assert_called_once()
+        assert enqueue_email_mock.call_args.kwargs["to_email_addr"] == customer.email
+
     async def test_excludes_non_public_benefits(
         self,
         mocker: MockerFixture,

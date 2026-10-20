@@ -807,6 +807,32 @@ class CustomerService:
 
         return emails
 
+    async def get_billing_email_recipients(
+        self,
+        session: AsyncReadSession,
+        customer: Customer,
+        *,
+        exclude: Sequence[str],
+    ) -> Sequence[str]:
+        """Return the customer's billing emails that aren't already in `exclude`.
+
+        `customer.billing_emails` is a comma-separated list of addresses.
+        """
+        if not customer.billing_emails:
+            return []
+
+        seen = {email.lower() for email in exclude}
+        emails: list[str] = []
+        for email in (e.strip() for e in customer.billing_emails.split(",")):
+            if email and email.lower() not in seen:
+                seen.add(email.lower())
+                emails.append(email)
+
+        if settings.is_sandbox():
+            return await self._filter_sandbox_recipients(session, customer, emails)
+
+        return emails
+
     async def _filter_sandbox_recipients(
         self,
         session: AsyncReadSession,

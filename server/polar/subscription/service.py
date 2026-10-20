@@ -2154,11 +2154,10 @@ class SubscriptionService:
                         entry.event = event
                         session.add(entry)
 
-                # Settle the old product's overage before the switch: its metered
-                # prices and meters disappear once apply_update() runs.
-                if (
-                    not was_trialing
-                    and subscription.current_meter_period_end is not None
+                # Settle the old product's usage before the switch: its metered
+                # prices disappear once apply_update() runs.
+                if not was_trialing and any(
+                    is_metered_price(p) for p in previous_prices
                 ):
                     self._enqueue_meter_cycle_order(subscription, utc_now())
 

@@ -1815,7 +1815,7 @@ def test_decode_state_rejects_unparsable_values(value: str) -> None:
         decode_state(["epoch", "epoch", "revision", "1", "cold:sum", value])
 
 
-# Fails the day a write stores a value JSON rejects but a plain number parser accepts.
+# Fails the day a write stores a value that JSON and _number don't read the same way.
 @pytest.mark.anyio
 async def test_stored_values_parse_the_same_with_and_without_json(
     redis_connection: tuple[str, Redis],

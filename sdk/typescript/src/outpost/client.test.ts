@@ -1016,7 +1016,7 @@ it.each(["abc", "Infinity", "NaN", "1e999"])("rejects the stored value %j", (val
   expect(() => decodeState(["epoch", "epoch", "revision", "1", "cold:sum", value])).toThrow();
 });
 
-// Fails the day a write stores a value JSON rejects but a plain number parser accepts.
+// Fails the day a write stores a value that JSON and Number don't read the same way.
 it("stores values that parse the same with and without JSON", async () => {
   snapshot = {
     ...customer,

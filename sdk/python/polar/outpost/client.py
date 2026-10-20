@@ -647,8 +647,9 @@ class Outpost:
                 span.set_attribute("outpost.read.outcome", "unknown_meter")
                 return None
             local = await self._warm_customer(customer, reducer)
-            with anyio.move_on_after(SNAPSHOT_TIMEOUT):
-                await self._wait_ready(reducer, local, [meter_id])
+            if not local.is_ready([meter_id]):
+                with anyio.move_on_after(SNAPSHOT_TIMEOUT):
+                    await self._wait_ready(reducer, local, [meter_id])
             if local.missing:
                 span.set_attribute("outpost.read.outcome", "unknown_customer")
                 return None
@@ -683,9 +684,15 @@ class Outpost:
         with self._span("outpost.actor") as span, _tag_read_outcome(span):
             customer = self._customer_key(customer_id, external_customer_id)
             warmed = await self._warm_actor(customer)
-            with anyio.move_on_after(SNAPSHOT_TIMEOUT):
-                for reducer, local in warmed:
-                    await self._wait_ready(reducer, local, reducer.get("meter_ids", []))
+            if not all(
+                local.is_ready(reducer.get("meter_ids", []))
+                for reducer, local in warmed
+            ):
+                with anyio.move_on_after(SNAPSHOT_TIMEOUT):
+                    for reducer, local in warmed:
+                        await self._wait_ready(
+                            reducer, local, reducer.get("meter_ids", [])
+                        )
             # Polar sends no snapshot for unique reducers.
             snapshotted = [
                 (reducer, local)

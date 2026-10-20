@@ -665,6 +665,29 @@ async def test_warmed_reads_do_not_use_redis(
 
 
 @pytest.mark.anyio
+async def test_ready_reads_do_not_wait_for_a_snapshot(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, redis = redis_connection
+    await redis.hset(
+        "outpost:state:external:alice:tokens",
+        mapping={"cold_until": BUCKET, "cold:sum": 10, "credited:meter": 20},
+    )
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+
+        def unexpected_wait(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
+            pytest.fail("A ready read must not wait for a snapshot")
+
+        monkeypatch.setattr("polar.outpost.client.anyio.move_on_after", unexpected_wait)
+        await outpost.actor(external_customer_id="alice")
+        meter = await outpost.meter(external_customer_id="alice", meter_id="meter")
+        assert meter is not None and meter.balance == 10
+
+
+@pytest.mark.anyio
 async def test_old_messages_and_redis_reset_do_not_roll_back_cache(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,

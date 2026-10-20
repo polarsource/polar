@@ -49,8 +49,10 @@ from polar.models import (
     MeterEvent,
     Product,
     ProductPrice,
+    Subscription,
     SubscriptionProductPrice,
 )
+from polar.models.subscription import SubscriptionStatus
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.reducer.service import reducer as reducer_service
@@ -342,6 +344,37 @@ class MeterService:
                         "type": "value_error",
                         "loc": ("body", "is_archived"),
                         "msg": "Cannot archive meter that is still attached to active products",
+                        "input": True,
+                    }
+                ]
+            )
+
+        active_subscriptions = await session.scalar(
+            select(func.count(func.distinct(Subscription.id)))
+            .join(
+                SubscriptionProductPrice,
+                SubscriptionProductPrice.subscription_id == Subscription.id,
+            )
+            .join(
+                ProductPrice,
+                ProductPrice.id == SubscriptionProductPrice.product_price_id,
+            )
+            .where(
+                ProductPrice.is_metered,
+                ProductPrice.__table__.c.meter_id == meter.id,
+                Subscription.status.in_(SubscriptionStatus.billable_statuses()),
+                ~Subscription.is_deleted,
+                ~SubscriptionProductPrice.is_deleted,
+            )
+        )
+
+        if active_subscriptions and active_subscriptions > 0:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "is_archived"),
+                        "msg": "Cannot archive meter that is still used by active subscriptions",
                         "input": True,
                     }
                 ]

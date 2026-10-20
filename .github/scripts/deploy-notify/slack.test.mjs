@@ -4,7 +4,7 @@ import { buildParentMessage } from './messages.mjs';
 import { notifyDeployment, slackClient } from './slack.mjs';
 
 process.env.DEPLOY_SLACK_CHANNEL_ID = 'CDEPLOY';
-process.env.SLACK_USERS_JSON = JSON.stringify({ deployer: 'UTESTDEPLOYER' });
+process.env.SLACK_USERS_JSON = JSON.stringify({ deployer: 'UTESTDEPLOYER', author: 'UAUTHOR', merger: 'UMERGER' });
 const run = {
   id: 123, run_number: 42, run_attempt: 1, event: 'workflow_dispatch',
   html_url: 'https://github.com/polarsource/polar/actions/runs/123',
@@ -17,6 +17,137 @@ const github = {
   paginate: async () => [],
 };
 const repo = { owner: 'polarsource', repo: 'polar' };
+
+for (const attempt of [
+  { event: 'push', run_attempt: 1 },
+  { event: 'workflow_dispatch', run_attempt: 1 },
+  { event: 'push', run_attempt: 2 },
+]) {
+  test(`parent credits PR author and merger through completion (${attempt.event}, attempt ${attempt.run_attempt})`, async () => {
+    const messages = [];
+    const deployment = {
+      ...run, ...attempt,
+      head_commit: { message: 'Ship a change', author: { name: 'Commit Author' } },
+    };
+    const slack = async (method, payload) => {
+      if (method === 'auth.test') return { user_id: 'BOT' };
+      if (method === 'users.info') {
+        assert.ok(['UAUTHOR', 'UMERGER'].includes(payload.user));
+        return { user: { profile: { display_name: payload.user === 'UAUTHOR' ? 'Alex Author' : 'Morgan Merger' } } };
+      }
+      if (method === 'conversations.history' || method === 'conversations.replies') return { messages };
+      if (method === 'chat.postMessage') {
+        const ts = String(messages.length + 1);
+        messages.push({ ...structuredClone(payload), user: 'BOT', ts });
+        return { ts };
+      }
+      if (method === 'chat.update') {
+        Object.assign(messages.find(message => message.ts === payload.ts), payload);
+        return { ok: true };
+      }
+      if (method === 'reactions.add') return { ok: true };
+      assert.fail(`Unexpected Slack method: ${method}`);
+    };
+    const args = {
+      github: {
+        ...github,
+        async paginate(endpoint) {
+          if (endpoint === 'jobs') return [{
+            name: 'Deploy to Test 🧰 / Backend: Deploy to test',
+            status: 'completed', conclusion: 'success', html_url: `${run.html_url}/job/456`,
+          }];
+          return [
+            { number: 1, merged_at: '2026-10-16T11:00:00Z', base: { ref: 'main' }, merge_commit_sha: 'other', user: { login: 'unrelated' } },
+            { number: 42, merged_at: '2026-10-16T12:00:00Z', base: { ref: 'main' }, merge_commit_sha: run.head_sha, user: { login: 'author' } },
+          ];
+        },
+        async graphql(query, parameters) {
+          assert.equal(parameters.number, 42);
+          return { repository: { pullRequest: { mergedBy: { login: 'merger', __typename: 'User' } } } };
+        },
+      },
+      slack,
+      context: { repo, payload: { action: 'in_progress', workflow_run: deployment } },
+      core: { warning: assert.fail, summary: { addRaw: () => ({ write: async () => {} }) } },
+    };
+    await notifyDeployment(args);
+    assert.equal(messages[0].text, 'Deploying: Ship a change\nAuthor: Alex Author  ·  Merged by: Morgan Merger');
+    args.context.payload = { action: 'completed', workflow_run: { ...deployment, status: 'completed', conclusion: 'success' } };
+    await notifyDeployment(args);
+    assert.equal(messages[0].text, 'Deploying: Ship a change\nAuthor: Alex Author  ·  Merged by: Morgan Merger');
+    assert.equal(messages[0].blocks[0].text.text, messages[0].text);
+    assert.equal(messages[0].blocks[0].block_id, `deployment-123-${attempt.run_attempt}-completed`);
+  });
+}
+
+for (const scenario of [
+  { name: 'mapped user', login: 'Deployer', profile: { display_name: '  Alex  ' }, expected: 'Alex', lookups: 1 },
+  { name: 'unmapped user', login: 'unmapped', expected: 'unmapped', lookups: 0 },
+  { name: 'empty display name', login: 'Deployer', profile: { display_name: '  ' }, expected: 'Deployer', lookups: 1 },
+  { name: 'missing profile', login: 'Deployer', expected: 'Deployer', lookups: 1 },
+  { name: 'lookup failure', login: 'Deployer', error: 'missing_scope', expected: 'Deployer', lookups: 1 },
+]) {
+  test(`initial attribution uses plain display names or GitHub fallback: ${scenario.name}`, async () => {
+    const posts = [];
+    const warnings = [];
+    let lookups = 0;
+    await notifyDeployment({
+      github: {
+        ...github,
+        paginate: async () => [{
+          number: 42, merged_at: '2026-10-16T12:00:00Z', base: { ref: 'main' },
+          merge_commit_sha: run.head_sha, user: { login: scenario.login },
+        }],
+        graphql: async () => ({ repository: { pullRequest: {
+          mergedBy: { login: scenario.login.toLowerCase(), __typename: 'User' },
+        } } }),
+      },
+      context: { repo, payload: { action: 'in_progress', workflow_run: run } },
+      core: { warning: message => warnings.push(message) },
+      slack: async (method, payload) => {
+        if (method === 'auth.test') return { user_id: 'BOT' };
+        if (method === 'conversations.history') return { messages: [] };
+        if (method === 'users.info') {
+          lookups++;
+          assert.equal(payload.user, 'UTESTDEPLOYER');
+          if (scenario.error) throw new Error(scenario.error);
+          return { user: { profile: scenario.profile } };
+        }
+        assert.equal(method, 'chat.postMessage');
+        posts.push(payload);
+        return { ts: '1' };
+      },
+    });
+    assert.equal(posts[0].text, `Deploying: Ship a change\nAuthor: ${scenario.expected}`);
+    assert.equal(posts[0].blocks[0].text.text, posts[0].text);
+    assert.doesNotMatch(JSON.stringify(posts[0]), /<@/);
+    assert.equal(lookups, scenario.lookups);
+    assert.deepEqual(warnings, scenario.error
+      ? [`Could not look up Slack display name for Deployer: ${scenario.error}`]
+      : []);
+  });
+}
+
+test('PR lookup failure still posts the initial message with the commit author', async () => {
+  const posts = [];
+  const warnings = [];
+  await notifyDeployment({
+    github: { ...github, paginate: async () => { throw new Error('GitHub unavailable'); } },
+    context: { repo, payload: { action: 'in_progress', workflow_run: {
+      ...run, head_commit: { message: 'Hotfix', author: { name: 'Alice' } },
+    } } },
+    core: { warning: message => warnings.push(message) },
+    slack: async (method, payload) => {
+      if (method === 'auth.test') return { user_id: 'BOT' };
+      if (method === 'conversations.history') return { messages: [] };
+      assert.equal(method, 'chat.postMessage');
+      posts.push(payload);
+      return { ts: '1' };
+    },
+  });
+  assert.equal(posts[0].text, 'Deploying: Hotfix\nAuthor: Alice');
+  assert.deepEqual(warnings, ['Could not look up head commit PRs: GitHub unavailable']);
+});
 
 for (const [conclusion, reaction] of [['success', 'white_check_mark'], ['failure', 'x'], ['cancelled', 'no_entry_sign']]) {
   test(`${conclusion}: one thread, a final reaction, and only failure mentions the deployer`, async t => {
@@ -191,13 +322,14 @@ test('Slack API errors fail notification; an existing reaction is safe to retry'
   await assert.rejects(existing('chat.postMessage'), /already_reacted/);
 });
 
-test('Slack conversation reads send thread and pagination arguments as GET query parameters', async () => {
+test('Slack reads send user, thread and pagination arguments as GET query parameters', async () => {
   const requests = [];
   const slack = slackClient('test-token', async (url, options) => {
     requests.push({ url: new URL(url), options });
     return { ok: true, json: async () => ({ ok: true, messages: [] }) };
   });
   const payloads = {
+    'users.info': { user: 'UAUTHOR' },
     'conversations.history': { channel: 'CDEPLOY', oldest: '1792152000.000001', limit: 100 },
     'conversations.replies': {
       channel: 'CDEPLOY', ts: '1792152000.000001', limit: 100,

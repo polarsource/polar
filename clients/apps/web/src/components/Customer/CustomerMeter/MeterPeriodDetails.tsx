@@ -83,7 +83,6 @@ export const MeterPeriodDetails = ({
         />
       </MeterPeriodSummary>
       <MeterPeriodEvents
-        key={`${startDate.toISOString()}-${endDate.toISOString()}`}
         organization={organization}
         customer={customer}
         meter={meter}

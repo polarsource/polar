@@ -7,7 +7,7 @@ import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useSearchParams } from 'next/navigation'
-import { useState } from 'react'
+import { parseAsInteger, useQueryState } from 'nuqs'
 
 const PAGE_SIZE = 25
 
@@ -25,7 +25,7 @@ export const MeterPeriodEvents = ({
   endDate: Date
 }) => {
   const searchParams = useSearchParams()
-  const [page, setPage] = useState(1)
+  const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1))
   const { data } = useEvents(organization.id, {
     meter_id: meter.id,
     customer_id: customer.id,

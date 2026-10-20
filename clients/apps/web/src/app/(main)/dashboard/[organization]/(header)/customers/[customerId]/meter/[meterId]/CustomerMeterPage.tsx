@@ -17,7 +17,12 @@ import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { endOfMonth, startOfMonth } from 'date-fns'
 import Link from 'next/link'
-import { parseAsIsoDateTime, parseAsStringLiteral, useQueryState } from 'nuqs'
+import {
+  parseAsInteger,
+  parseAsIsoDateTime,
+  parseAsStringLiteral,
+  useQueryState,
+} from 'nuqs'
 import { useCallback, useMemo } from 'react'
 
 interface CustomerMeterPageProps {
@@ -50,14 +55,17 @@ const CustomerMeterPage = ({
     ] as schemas['TimeInterval'][]).withDefault('day'),
   )
 
+  const [, setPage] = useQueryState('page', parseAsInteger)
+
   const onDateChange = useCallback(
     (date: { from: Date; to: Date }) => {
       const valid = getNextValidInterval(interval, date.from, date.to)
       setStartDate(date.from)
       setEndDate(date.to)
+      setPage(null)
       if (valid !== interval) setInterval(valid)
     },
-    [interval, setStartDate, setEndDate, setInterval],
+    [interval, setStartDate, setEndDate, setInterval, setPage],
   )
 
   const { data: subscriptionsData, isPending: subscriptionsPending } =

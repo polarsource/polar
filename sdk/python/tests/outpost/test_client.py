@@ -684,8 +684,10 @@ async def test_old_messages_and_redis_reset_do_not_roll_back_cache(
         received = anyio.Event()
         original = outpost._receive_state
 
-        async def receive_state(customer: str, state: ReducerState) -> None:
-            await original(customer, state)
+        async def receive_state(
+            customer: str, state: ReducerState, *, bucket: bool = False
+        ) -> None:
+            await original(customer, state, bucket=bucket)
             if state.cold.sum == 1:
                 received.set()
 
@@ -733,6 +735,48 @@ async def test_old_messages_and_redis_reset_do_not_roll_back_cache(
             await received.wait()
         meter = await outpost.meter(external_customer_id="alice", meter_id="meter")
         assert meter is not None and meter.consumed_units == 22
+
+
+@pytest.mark.anyio
+async def test_bucket_updates_apply_in_order_and_reload_after_a_missed_revision(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+) -> None:
+    url, redis = redis_connection
+    key = "outpost:state:external:alice:tokens"
+    await redis.hset(key, mapping={"cold_until": BUCKET, "cold:sum": 10})
+
+    async def ingest(writer: Outpost, tokens: int) -> None:
+        await writer.ingest(
+            {
+                "name": "call",
+                "external_customer_id": "alice",
+                "timestamp": TIMESTAMP,
+                "metadata": {"tokens": tokens},
+            }
+        )
+
+    async def wait_for(reader: Outpost, consumed_units: int) -> None:
+        with anyio.fail_after(1):
+            while True:
+                meter = await reader.meter(
+                    external_customer_id="alice", meter_id="meter"
+                )
+                if meter is not None and meter.consumed_units == consumed_units:
+                    return
+                await anyio.lowlevel.checkpoint()
+
+    async with (
+        Outpost(url, client=polar_client) as writer,
+        Outpost(url, client=polar_client) as reader,
+    ):
+        await reader.actor(external_customer_id="alice")
+        await ingest(writer, 3)
+        await wait_for(reader, 13)
+        await redis.hset(key, "cold:sum", 20)
+        await redis.hincrby(key, "revision", 1)
+        await ingest(writer, 2)
+        await wait_for(reader, 25)
 
 
 @pytest.mark.anyio
@@ -1173,7 +1217,9 @@ async def test_sync_report_does_not_split_a_message_in_flight(
         receiving = anyio.Event()
         release = anyio.Event()
 
-        async def receive_state(customer: str, state: ReducerState) -> bool:
+        async def receive_state(
+            customer: str, state: ReducerState, *, bucket: bool = False
+        ) -> bool:
             receiving.set()
             await release.wait()
             return True

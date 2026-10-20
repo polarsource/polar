@@ -262,6 +262,27 @@ class TestGetMeterQuantities:
 
 @pytest.mark.anyio
 class TestCreateMeter:
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_config_as_code_enabled(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/meters/",
+            json={
+                "name": "Meter",
+                "organization_id": str(organization.id),
+                "filter": {"conjunction": "and", "clauses": []},
+                "aggregation": {"func": "count"},
+            },
+        )
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "DeclarativeConfigManaged"
+
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post("/v1/meters/")
 
@@ -322,6 +343,21 @@ class TestCreateMeter:
 
 @pytest.mark.anyio
 class TestUpdateMeter:
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_config_as_code_enabled(
+        self,
+        client: AsyncClient,
+        meter: Meter,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/meters/{meter.id}", json={"name": "Updated"}
+        )
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "DeclarativeConfigManaged"
+
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.patch(f"/v1/meters/{uuid.uuid4()}")
 

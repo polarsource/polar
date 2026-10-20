@@ -842,6 +842,16 @@ it("waits for the first snapshot on a cold read", async () => {
   ]);
 });
 
+it("arms no timer on a warm read", async () => {
+  snapshot = aliceSnapshot;
+  const outpost = await start();
+  await outpost.actor(customer);
+  await outpost.meter(meter);
+  const setTimeout = vi.spyOn(globalThis, "setTimeout");
+  expect((await outpost.meter(meter))?.balance).toBe(7);
+  expect(setTimeout).not.toHaveBeenCalled();
+});
+
 it("reads null for a meter Outpost does not know", async () => {
   const outpost = await start();
   expect(await outpost.meter({ ...customer, meter_id: "other" })).toBeNull();

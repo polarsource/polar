@@ -136,6 +136,8 @@ class ProductService:
 
         if id is not None:
             statement = statement.where(Product.id.in_(id))
+        else:
+            statement = statement.where(Product.is_current)
 
         if external_id is not None:
             statement = statement.where(Product.external_id.in_(external_id))

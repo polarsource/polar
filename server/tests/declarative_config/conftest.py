@@ -13,3 +13,15 @@ async def config_as_code_enabled(
         "config_as_code_enabled": True,
     }
     await save_fixture(organization)
+
+
+@pytest.fixture
+async def catalog_versioning_enabled(
+    save_fixture: SaveFixture, organization: Organization
+) -> None:
+    organization.feature_settings = {
+        **organization.feature_settings,
+        "config_as_code_enabled": True,
+        "catalog_versioning_enabled": True,
+    }
+    await save_fixture(organization)

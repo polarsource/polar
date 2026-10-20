@@ -747,6 +747,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return self.feature_settings.get("config_as_code_enabled", False)
 
     @property
+    def is_catalog_versioning_enabled(self) -> bool:
+        return self.feature_settings.get("catalog_versioning_enabled", False)
+
+    @property
     def is_agentic_payments_enabled(self) -> bool:
         return self.feature_settings.get("agentic_payments_enabled", False)
 

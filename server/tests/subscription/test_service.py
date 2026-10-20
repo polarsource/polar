@@ -6012,6 +6012,37 @@ class TestUpdateProduct:
         else:
             assert updated_call.kwargs == {}
 
+    async def test_not_current_product(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        old_version = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        old_version.is_current = False
+        await save_fixture(old_version)
+
+        with pytest.raises(PolarRequestValidationError) as error:
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session, ctx, subscription, product_id=old_version.id
+                )
+
+        assert error.value.errors()[0]["msg"] == (
+            "Product is no longer sold. Use the current version."
+        )
+
     @freeze_time("2026-06-15")
     async def test_meter_clock_contains_now_when_period_started_in_past(
         self,

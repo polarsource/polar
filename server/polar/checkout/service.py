@@ -773,7 +773,11 @@ class CheckoutService:
 
         products: list[Product] = []
         for product in checkout_link.products:
-            if not product.is_archived and product.visibility != Visibility.draft:
+            if (
+                not product.is_archived
+                and product.is_current
+                and product.visibility != Visibility.draft
+            ):
                 products.append(product)
 
         if len(products) == 0:
@@ -1847,6 +1851,18 @@ class CheckoutService:
                 ]
             )
 
+        if not product.is_current:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Product is no longer sold. Use the current version.",
+                        "input": product_price_id,
+                    }
+                ]
+            )
+
         currency = price.price_currency
 
         # Legacy explicit-price checkout: the caller picked one price by ID, so
@@ -1920,6 +1936,18 @@ class CheckoutService:
                 ]
             )
 
+        if not product.is_current:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product is no longer sold. Use the current version.",
+                        "input": product_id,
+                    }
+                ]
+            )
+
         if product.visibility == Visibility.draft:
             raise PolarRequestValidationError(
                 [
@@ -1982,6 +2010,17 @@ class CheckoutService:
                         "type": "value_error",
                         "loc": ("body", "products", index),
                         "msg": "Product is archived.",
+                        "input": product_id,
+                    }
+                )
+                continue
+
+            if not product.is_current:
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "products", index),
+                        "msg": "Product is no longer sold. Use the current version.",
                         "input": product_id,
                     }
                 )

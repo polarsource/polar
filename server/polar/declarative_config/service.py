@@ -12,11 +12,12 @@ from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.service import benefit as benefit_service
+from polar.catalog.service import catalog as catalog_service
 from polar.discount.service import discount as discount_service
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
-from polar.models import Organization, User
+from polar.models import Catalog, Organization, Product, User
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.oauth2.exceptions import InsufficientScopeError
 from polar.organization.repository import OrganizationRepository
@@ -29,7 +30,7 @@ from polar.webhook.repository import WebhookEndpointRepository
 from polar.webhook.schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from polar.webhook.service import webhook as webhook_service
 
-from . import benefits, discounts, products, validation
+from . import benefits, catalogs, discounts, products, validation
 from .auth import SECTION_SCOPES
 from .schemas import (
     MAXIMUM_METERS,
@@ -184,6 +185,9 @@ class DeclarativeConfigService:
                 OrganizationPermission.organization_manage,
             )
         await _assert_webhooks_permission(session, auth_subject, config, organization)
+        versioned = organization.is_catalog_versioning_enabled
+        if versioned:
+            await catalog_service.lock(session, organization)
         changes, issues = await validation.check(
             session, organization, config, for_update=True
         )
@@ -193,6 +197,9 @@ class DeclarativeConfigService:
         if errors:
             raise ConfigInvalid(errors)
 
+        live: Catalog | None = None
+        if versioned:
+            live = await catalog_service.get_or_create_live(session, organization)
         settings_result = await self._apply_settings(
             session, organization, changes.settings
         )
@@ -205,17 +212,21 @@ class DeclarativeConfigService:
         benefit_results, benefit_ids = await self._apply_benefits(
             session, redis, auth_subject, organization, changes.benefits, meter_ids
         )
-        product_results, product_ids = await self._apply_products(
+        product_results, product_ids, new_products = await self._apply_products(
             session,
             auth_subject,
             organization,
             changes.products,
             meter_ids,
             benefit_ids,
+            versioned=versioned,
         )
+        if new_products:
+            await catalog_service.publish(session, organization, live, new_products)
         discount_results = await self._apply_discounts(
             session, auth_subject, organization, changes.discounts, product_ids
         )
+        await catalogs.carry_over_references(session, changes.products, new_products)
         if (
             changes.settings is not None
             and changes.settings.action == ConfigAction.updated
@@ -253,12 +264,24 @@ class DeclarativeConfigService:
         changes, issues = await validation.check(
             session, organization, config, for_update=False
         )
+        catalog_before: int | None = None
+        catalog_after: int | None = None
+        if organization.is_catalog_versioning_enabled:
+            catalog_before, base = await catalog_service.get_base_version(
+                session, organization
+            )
+            catalog_after = catalogs.catalog_after(base, changes)
+        product_changes = self._plan_changes(ConfigResource.product, changes.products)
+        if catalog_after and catalog_after != catalog_before:
+            catalogs.add_version_diffs(
+                product_changes, changes.products, catalog_before, catalog_after
+            )
         return ConfigPlan(
             changes=[
                 *self._plan_changes(ConfigResource.webhook, changes.webhooks),
                 *self._plan_changes(ConfigResource.meter, changes.meters),
                 *self._plan_changes(ConfigResource.benefit, changes.benefits),
-                *self._plan_changes(ConfigResource.product, changes.products),
+                *product_changes,
                 *self._plan_changes(ConfigResource.discount, changes.discounts),
             ],
             settings=None
@@ -542,7 +565,9 @@ class DeclarativeConfigService:
         changes: Sequence[ProductChange],
         meter_ids: dict[str, UUID],
         benefit_ids: dict[str, UUID],
-    ) -> tuple[list[ConfigResult], dict[str, UUID]]:
+        *,
+        versioned: bool,
+    ) -> tuple[list[ConfigResult], dict[str, UUID], dict[str, Product]]:
         repository = ProductRepository.from_session(session)
         external_ids = {
             str(id): external_id
@@ -551,13 +576,21 @@ class DeclarativeConfigService:
         }
         results: list[ConfigResult] = []
         product_ids: dict[str, UUID] = {}
+        new_products: dict[str, Product] = {}
         for change in changes:
             config = change.config
             product = change.existing
+            copy_on_write = versioned and product is not None and change.update_dict
             try:
-                if product is None:
+                if product is None or copy_on_write:
                     try:
                         async with session.begin_nested():
+                            if product is not None:
+                                await repository.update(
+                                    product,
+                                    update_dict={"is_current": False},
+                                    flush=True,
+                                )
                             product = await product_service.create(
                                 session,
                                 products.product_create(
@@ -569,6 +602,10 @@ class DeclarativeConfigService:
                                 ),
                                 auth_subject,
                             )
+                            if change.existing is not None:
+                                catalog_service.copy_product_settings(
+                                    change.existing, product
+                                )
                             await repository.update(
                                 product, update_dict={"external_id": config.external_id}
                             )
@@ -585,8 +622,8 @@ class DeclarativeConfigService:
                         ),
                         auth_subject,
                     )
-                if (change.existing is None and config.benefits) or (
-                    "benefits" in change.update_dict
+                if ((change.existing is None or copy_on_write) and config.benefits) or (
+                    "benefits" in change.update_dict and not copy_on_write
                 ):
                     await product_service.update_benefits(
                         session,
@@ -597,6 +634,12 @@ class DeclarativeConfigService:
             except PolarRequestValidationError as e:
                 raise products.product_error(e, change.index, external_ids) from e
             product_ids[config.external_id] = product.id
+            if (
+                versioned
+                and (change.existing is None or copy_on_write)
+                and not product.is_archived
+            ):
+                new_products[config.external_id] = product
             results.append(
                 ConfigResult(
                     resource=ConfigResource.product,
@@ -604,7 +647,7 @@ class DeclarativeConfigService:
                     action=change.action,
                 )
             )
-        return results, product_ids
+        return results, product_ids, new_products
 
     async def _apply_discounts(
         self,

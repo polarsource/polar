@@ -3,10 +3,16 @@ from typing import Any
 
 import pytest
 from pytest_mock import MockerFixture
+from sqlalchemy.orm import selectinload
 
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.benefit.repository import BenefitRepository
+from polar.catalog.repository import (
+    CatalogProductRepository,
+    CatalogRepository,
+)
+from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.declarative_config.schemas import (
     Config,
     ConfigAction,
@@ -32,7 +38,11 @@ from polar.kit.visibility import Visibility
 from polar.meter.repository import MeterRepository
 from polar.meter.unit import MeterUnit
 from polar.models import (
+    CheckoutLink,
+    Customer,
+    Discount,
     Organization,
+    ProductPriceFixed,
     ProductPriceMeteredTiers,
     ProductPriceUnit,
     User,
@@ -54,7 +64,9 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
+    create_active_subscription,
     create_benefit,
+    create_checkout_link,
     create_discount,
     create_event,
     create_meter,
@@ -2584,3 +2596,363 @@ class TestPlan:
                 "Another discount in this config has the same code.",
             ),
         ]
+
+
+MONTHLY_PRO = {
+    "external_id": "pro",
+    "name": "Pro",
+    "recurring_interval": "month",
+    "prices": [{"amount_type": "fixed", "price_amount": 2000}],
+}
+MONTHLY_PRO_25 = {
+    **MONTHLY_PRO,
+    "prices": [{"amount_type": "fixed", "price_amount": 2500}],
+}
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+@pytest.mark.usefixtures("catalog_versioning_enabled")
+class TestApplyCatalogVersioning:
+    async def test_create_publishes_first_catalog(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pro"])
+        assert product.version == 1
+        live = await CatalogRepository.from_session(session).get_live(organization.id)
+        assert live is not None
+        assert live.version == 1
+        assert (
+            await CatalogProductRepository.from_session(session).get_product(
+                live.id, "pro"
+            )
+            == product
+        )
+
+    async def test_unchanged_does_not_publish(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        config = Config.model_validate({"products": [MONTHLY_PRO]})
+        await declarative_config_service.apply(session, redis, auth_subject, config)
+
+        result = await declarative_config_service.apply(
+            session, redis, auth_subject, config
+        )
+
+        assert result.changes[0].action == ConfigAction.unchanged
+        live = await CatalogRepository.from_session(session).get_live(organization.id)
+        assert live is not None
+        assert live.version == 1
+
+    async def test_update_creates_new_row(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+        repository = ProductRepository.from_session(session)
+        [old_product] = await repository.get_all_by_external_ids(
+            organization.id, ["pro"]
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=old_product, customer=customer
+        )
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO_25]}),
+        )
+
+        [new_product] = await repository.get_all_by_external_ids(
+            organization.id, ["pro"]
+        )
+        assert new_product.id != old_product.id
+        assert new_product.version == 2
+        [new_price] = new_product.prices
+        assert isinstance(new_price, ProductPriceFixed)
+        assert new_price.price_amount == 2500
+        await session.refresh(old_product)
+        assert old_product.is_current is False
+        assert old_product.is_archived is False
+        [old_price] = old_product.prices
+        assert isinstance(old_price, ProductPriceFixed)
+        assert old_price.price_amount == 2000
+        await session.refresh(subscription)
+        assert subscription.product_id == old_product.id
+        live = await CatalogRepository.from_session(session).get_live(organization.id)
+        assert live is not None
+        assert live.version == 2
+        assert (
+            await CatalogProductRepository.from_session(session).get_product(
+                live.id, "pro"
+            )
+            == new_product
+        )
+
+    async def test_update_moves_checkout_links_and_discounts(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+        repository = ProductRepository.from_session(session)
+        [old_product] = await repository.get_all_by_external_ids(
+            organization.id, ["pro"]
+        )
+        checkout_link = await create_checkout_link(save_fixture, products=[old_product])
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization,
+            products=[old_product],
+        )
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO_25]}),
+        )
+
+        [new_product] = await repository.get_all_by_external_ids(
+            organization.id, ["pro"]
+        )
+        session.expunge_all()
+        link = await CheckoutLinkRepository.from_session(session).get_by_id(
+            checkout_link.id,
+            options=(selectinload(CheckoutLink.checkout_link_products),),
+        )
+        assert link is not None
+        assert [item.product_id for item in link.checkout_link_products] == [
+            new_product.id
+        ]
+        updated_discount = await DiscountRepository.from_session(session).get_by_id(
+            discount.id, options=(selectinload(Discount.discount_products),)
+        )
+        assert updated_discount is not None
+        assert [item.product_id for item in updated_discount.discount_products] == [
+            new_product.id
+        ]
+
+    async def test_baseline_from_existing_products(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        existing = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            name="Pro",
+        )
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO_25]}),
+        )
+
+        await session.refresh(existing)
+        assert existing.version == 1
+        assert existing.is_current is False
+        live = await CatalogRepository.from_session(session).get_live(organization.id)
+        assert live is not None
+        assert live.version == 2
+
+    async def test_update_keeps_settings_outside_config(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            name="Pro",
+            is_tax_applicable=False,
+        )
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO_25]}),
+        )
+
+        [new_product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pro"])
+        assert new_product.version == 2
+        assert new_product.is_tax_applicable is False
+
+    async def test_archived_product_stays_archived(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            name="Pro",
+            is_archived=True,
+        )
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO_25]}),
+        )
+
+        [new_product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pro"])
+        assert new_product.is_archived is True
+        assert (
+            await CatalogRepository.from_session(session).get_live(organization.id)
+            is None
+        )
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+@pytest.mark.usefixtures("config_as_code_enabled")
+class TestApplyWithoutCatalogVersioning:
+    async def test_update_in_place(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+        repository = ProductRepository.from_session(session)
+        [product] = await repository.get_all_by_external_ids(organization.id, ["pro"])
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO_25]}),
+        )
+
+        assert await repository.get_all_by_external_ids(organization.id, ["pro"]) == [
+            product
+        ]
+        assert (
+            await CatalogRepository.from_session(session).get_live(organization.id)
+            is None
+        )
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+@pytest.mark.usefixtures("catalog_versioning_enabled")
+class TestPlanCatalogVersioning:
+    async def test_new_version(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+
+        plan = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate({"products": [MONTHLY_PRO_25]})
+        )
+
+        [change] = plan.changes
+        assert change.action == ConfigAction.updated
+        assert (
+            change.diff[-1].field,
+            change.diff[-1].before,
+            change.diff[-1].after,
+        ) == (
+            "version",
+            1,
+            2,
+        )
+
+    async def test_baseline_from_existing_products(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            name="Pro",
+        )
+
+        plan = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate({"products": [MONTHLY_PRO_25]})
+        )
+
+        version = plan.changes[0].diff[-1]
+        assert (version.field, version.before, version.after) == ("version", 1, 2)

@@ -167,23 +167,6 @@ class CatalogService:
             await checkout_link_repository.replace_product(product_id, new_product_id)
             await discount_repository.replace_product(product_id, new_product_id)
 
-    async def count_migratable_subscriptions(
-        self,
-        session: AsyncReadSession,
-        organization: Organization,
-        source_external_id: str,
-        *,
-        exclude_product_id: uuid.UUID | None,
-    ) -> int:
-        repository = SubscriptionRepository.from_session(session)
-        return await repository.count(
-            repository.get_catalog_migration_statement(
-                organization.id,
-                source_external_id,
-                exclude_product_id=exclude_product_id,
-            )
-        )
-
     async def start_migration(
         self,
         session: AsyncSession,
@@ -235,7 +218,6 @@ class CatalogService:
             log.warning(
                 "Catalog migration target no longer exists",
                 migration_id=migration.id,
-                target_external_id=migration.target_external_id,
             )
             await repository.update(migration, update_dict={"completed_at": utc_now()})
             return False

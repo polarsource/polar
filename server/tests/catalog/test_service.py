@@ -5,11 +5,13 @@ from pytest_mock import MockerFixture
 
 from polar.catalog.repository import CatalogProductRepository, CatalogRepository
 from polar.catalog.service import catalog as catalog_service
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.kit.utils import utc_now
 from polar.models import CatalogMigration, Customer, Organization, Product
 from polar.postgres import AsyncSession
 from polar.subscription.repository import SubscriptionRepository
+from polar.subscription.service import SubscriptionUpdateContext
+from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_active_subscription, create_product
 
@@ -216,3 +218,73 @@ class TestMigrateSubscriptions:
         )
         assert updated is not None
         assert updated.pending_update is None
+
+    async def test_leaves_canceling_subscriptions(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        publish_pro: PublishPro,
+        old_pro: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=old_pro, customer=customer, cancel_at_period_end=True
+        )
+        migration = await publish_pro("usd")
+
+        await catalog_service.migrate_subscriptions(session, migration.id)
+
+        assert migration.subscriptions_count == 0
+        assert migration.skipped_count == 0
+        repository = SubscriptionRepository.from_session(session)
+        updated = await repository.get_by_id(
+            subscription.id, options=repository.get_eager_options()
+        )
+        assert updated is not None
+        assert updated.pending_update is None
+
+    async def test_leaves_pending_change_to_another_product(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        publish_pro: PublishPro,
+        old_pro: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=old_pro, customer=customer
+        )
+        other = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            name="Other",
+            external_id="other",
+        )
+        repository = SubscriptionRepository.from_session(session)
+        loaded = await repository.get_by_id(
+            subscription.id, options=repository.get_eager_options()
+        )
+        assert loaded is not None
+        async with SubscriptionUpdateContext(
+            session, loaded, subscription_service, notify_customer=False
+        ) as ctx:
+            await subscription_service.update_product(
+                session,
+                ctx,
+                loaded,
+                product_id=other.id,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
+        migration = await publish_pro("usd")
+
+        await catalog_service.migrate_subscriptions(session, migration.id)
+
+        assert migration.subscriptions_count == 0
+        updated = await repository.get_by_id(
+            subscription.id, options=repository.get_eager_options()
+        )
+        assert updated is not None
+        assert updated.pending_update is not None
+        assert updated.pending_update.product_id == other.id

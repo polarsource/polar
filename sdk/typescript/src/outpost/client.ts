@@ -279,7 +279,6 @@ export class Outpost {
   private tracer?: Tracer;
   private meterProvider?: MeterProvider;
   private ingestDuration?: Histogram;
-  private ingestEvents?: Counter;
   private ingestBuckets?: Counter;
   private reducers: Reducer[] = [];
   private matchers: ReducerMatchers = [];
@@ -333,7 +332,6 @@ export class Outpost {
       this.meterProvider = createMeterProvider(this.options.client);
       const meter = this.meterProvider.getMeter("polar.outpost");
       this.ingestDuration = meter.createHistogram("outpost.ingest.duration", { unit: "s" });
-      this.ingestEvents = meter.createCounter("outpost.ingest.events");
       this.ingestBuckets = meter.createCounter("outpost.ingest.buckets");
     }
     try {
@@ -456,7 +454,6 @@ export class Outpost {
     this.tracer = undefined;
     this.meterProvider = undefined;
     this.ingestDuration = undefined;
-    this.ingestEvents = undefined;
     this.ingestBuckets = undefined;
     await Promise.all([tracerProvider?.shutdown(), meterProvider?.shutdown()]);
   }
@@ -514,7 +511,6 @@ export class Outpost {
     } finally {
       const attributes = { "outpost.outcome": outcome };
       this.ingestDuration?.record((performance.now() - started) / 1000, attributes);
-      this.ingestEvents?.add(1, attributes);
     }
   }
 

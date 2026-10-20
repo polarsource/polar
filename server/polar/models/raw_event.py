@@ -9,6 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from polar.kit.db.models import Model
 from polar.kit.metadata import MetadataMixin
 from polar.kit.utils import generate_uuid, utc_now
+from polar.models.event import EventSource
 
 
 class RawEvent(Model, MetadataMixin):
@@ -47,7 +48,7 @@ class RawEvent(Model, MetadataMixin):
         TIMESTAMP(timezone=True), nullable=False
     )
     name: Mapped[str] = mapped_column(String(128), nullable=False)
-    source: Mapped[str] = mapped_column(String, nullable=False)
+    source: Mapped[EventSource] = mapped_column(String, nullable=False)
     organization_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
     customer_id: Mapped[UUID | None] = mapped_column(Uuid, nullable=True)
     external_customer_id: Mapped[str | None] = mapped_column(String, nullable=True)

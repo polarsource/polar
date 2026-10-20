@@ -1,5 +1,15 @@
 import { MONO } from '../sheet'
-import { DIM, HAIR, LINE, MID, RULE, term, type TermTok } from '../kit'
+import {
+  DEL,
+  DIM,
+  DOTTED,
+  HAIR,
+  LINE,
+  MID,
+  RULE,
+  term,
+  type TermTok,
+} from '../kit'
 import { landscape } from './more'
 
 /**
@@ -83,25 +93,25 @@ export const delegation = landscape(
  * its parent's, so the rows under a node visibly add up to it.
  */
 const ROLLUP: {
-  branch: string
+  depth: number
   kind: string
   name: string
   from: number
   to: number
 }[] = [
-  { branch: '', kind: 'customer', name: 'acme', from: 0, to: 12_750 },
-  { branch: '├ ', kind: 'team', name: 'research', from: 0, to: 8_020 },
-  { branch: '│ ├ ', kind: 'person', name: 'ada@acme.io', from: 0, to: 1_900 },
+  { depth: 0, kind: 'customer', name: 'acme', from: 0, to: 12_750 },
+  { depth: 1, kind: 'team', name: 'research', from: 0, to: 8_020 },
+  { depth: 2, kind: 'person', name: 'ada@acme.io', from: 0, to: 1_900 },
   {
-    branch: '│ └ ',
+    depth: 2,
     kind: 'agent',
     name: 'research-bot',
     from: 1_900,
     to: 8_020,
   },
-  { branch: '├ ', kind: 'agent', name: 'support-bot', from: 8_020, to: 11_500 },
+  { depth: 1, kind: 'agent', name: 'support-bot', from: 8_020, to: 11_500 },
   {
-    branch: '└ ',
+    depth: 1,
     kind: 'service',
     name: 'nightly-sync',
     from: 11_500,
@@ -117,6 +127,45 @@ const BAR_X = 260,
 const TOTAL = ROLLUP[0].to
 const barX = (v: number) => BAR_X + (v / TOTAL) * BAR_W
 const num = (v: number) => v.toLocaleString('en-US')
+const INDENT = 12
+const usageRowY = (i: number) => R_TOP + 32 + i * R_LH + (i === 0 ? 0 : 10)
+const economicsRowY = (i: number) => R_TOP + 46 + i * R_LH + (i === 0 ? 0 : 10)
+
+/** Each row's parent: the nearest row above it one level up. */
+const parentOf = (i: number) => {
+  for (let j = i - 1; j >= 0; j--)
+    if (ROLLUP[j].depth === ROLLUP[i].depth - 1) return j
+  return -1
+}
+
+/**
+ * The tree's connectors, drawn rather than set in box-drawing glyphs so the verticals run unbroken: from each child a
+ * stub left to its parent's line, which runs down from the parent, or the sibling above, to it.
+ */
+const treeLines = (rowY: (i: number) => number) =>
+  ROLLUP.map((r, i) => {
+    if (i === 0) return null
+    const p = parentOf(i)
+    const x = R_X0 + ROLLUP[p].depth * INDENT + 3
+    const y = rowY(i) - 3
+    let above = -1
+    for (let j = i - 1; j > p; j--)
+      if (parentOf(j) === p) {
+        above = j
+        break
+      }
+    const top =
+      above >= 0 ? rowY(above) - 3 : p === 0 ? rowY(0) + 14 : rowY(p) + 3
+    return (
+      <path
+        key={r.name}
+        d={`M${x} ${top}V${y}H${x + INDENT - 5}`}
+        fill="none"
+        stroke={MID}
+        strokeWidth={HAIR}
+      />
+    )
+  })
 
 const rollupFigure = (
   <g style={{ ...MONO, letterSpacing: 0 }} fontSize={8}>
@@ -134,13 +183,13 @@ const rollupFigure = (
       stroke={RULE}
       strokeWidth={HAIR}
     />
+    {treeLines(usageRowY)}
     {ROLLUP.map((r, i) => {
       const root = i === 0
-      const y = R_TOP + 32 + i * R_LH + (root ? 0 : 10)
+      const y = usageRowY(i)
       return (
         <g key={r.name}>
-          <text x={R_X0} y={y} fill={LINE}>
-            <tspan fill={DIM}>{r.branch}</tspan>
+          <text x={R_X0 + r.depth * INDENT} y={y} fill={LINE}>
             <tspan fill={DIM}>{r.kind} </tspan>
             {r.name}
           </text>
@@ -193,6 +242,138 @@ export const rollup = landscape(
       'One bill',
       [
         'The customer pays for the total, and the breakdown shows which agent or person it came from.',
+      ],
+    ],
+  ],
+)
+
+/**
+ * Unit economics down the same tree: each identity's revenue at the plan's price, what its usage cost to serve, and
+ * the margin between them, with the floor drawn across the margin bars.
+ */
+const PRICE = 0.3
+/** What serving each row's usage cost, in the order of `ROLLUP`. Parents are the sum of their children. */
+const COST = [2_133, 1_640, 171, 1_469, 418, 75]
+const FLOOR = 0.25
+const E_REV = 300,
+  E_COST = 360,
+  E_PCT = 410,
+  E_BAR = 424,
+  E_BAR_W = 96
+const usd = (v: number) => `$${Math.round(v).toLocaleString('en-US')}`
+
+const economicsFigure = (
+  <g style={{ ...MONO, letterSpacing: 0 }} fontSize={8}>
+    <text x={R_X0} y={R_TOP} fill={DIM}>
+      UNIT ECONOMICS · LAST 30 DAYS
+    </text>
+    <text x={R_X1} y={R_TOP} fill={LINE} textAnchor="end">
+      customer: acme
+    </text>
+    <line
+      x1={R_X0}
+      x2={R_X1}
+      y1={R_TOP + 10}
+      y2={R_TOP + 10}
+      stroke={RULE}
+      strokeWidth={HAIR}
+    />
+    {(
+      [
+        [E_REV, 'REVENUE'],
+        [E_COST, 'COST'],
+        [E_PCT, 'MARGIN'],
+      ] as const
+    ).map(([x, t]) => (
+      <text key={t} x={x} y={R_TOP + 26} fill={DIM} textAnchor="end">
+        {t}
+      </text>
+    ))}
+    {treeLines(economicsRowY)}
+    {ROLLUP.map((r, i) => {
+      const root = i === 0
+      const y = economicsRowY(i)
+      const revenue = (r.to - r.from) * PRICE
+      const margin = (revenue - COST[i]) / revenue
+      const under = margin < FLOOR
+      return (
+        <g key={r.name}>
+          <text x={R_X0 + r.depth * INDENT} y={y} fill={LINE}>
+            <tspan fill={DIM}>{r.kind} </tspan>
+            {r.name}
+          </text>
+          <text x={E_REV} y={y} fill={LINE} textAnchor="end">
+            {usd(revenue)}
+          </text>
+          <text x={E_COST} y={y} fill={DIM} textAnchor="end">
+            {usd(COST[i])}
+          </text>
+          <text x={E_PCT} y={y} fill={under ? DEL : LINE} textAnchor="end">
+            {Math.round(margin * 100)}%
+          </text>
+          <rect
+            x={E_BAR}
+            y={y - (root ? 5 : 4.5)}
+            width={margin * E_BAR_W}
+            height={root ? 4 : 3}
+            fill={under ? DEL : root ? LINE : MID}
+          />
+          {root ? (
+            <line
+              x1={R_X0}
+              x2={R_X1}
+              y1={y + 11}
+              y2={y + 11}
+              stroke={RULE}
+              strokeWidth={HAIR}
+            />
+          ) : null}
+        </g>
+      )
+    })}
+    <line
+      x1={E_BAR + FLOOR * E_BAR_W}
+      x2={E_BAR + FLOOR * E_BAR_W}
+      y1={R_TOP + 34}
+      y2={R_TOP + 56 + (ROLLUP.length - 1) * R_LH + 14}
+      stroke={DIM}
+      strokeWidth={HAIR}
+      {...DOTTED}
+    />
+    <text
+      x={E_BAR + FLOOR * E_BAR_W}
+      y={R_TOP + 56 + (ROLLUP.length - 1) * R_LH + 26}
+      fill={DIM}
+      textAnchor="middle"
+    >
+      FLOOR 25%
+    </text>
+  </g>
+)
+
+export const economics = landscape(
+  'm-economics',
+  'Unit economics',
+  'Revenue, cost and margin for every identity in the tree.',
+  'Thirty days of acme at $0.30 a credit: revenue, cost and margin for the customer and each identity beneath it, with margin drawn as a bar against a 25% floor. The research agent sits under it at 20%.',
+  economicsFigure,
+  [
+    [
+      'Per identity',
+      [
+        'Events carry their cost, and usage is priced as it lands, so every identity has its own revenue, cost and margin.',
+      ],
+    ],
+    [
+      'Where the margin goes',
+      [
+        'Rolled up, acme runs at a healthy 44%. One level down, research-bot runs at 20%, under the floor, while the people and services around it make up the difference.',
+      ],
+    ],
+    [
+      'Act on one identity',
+      [
+        'A guardrail on an agent’s margin can move it to a cheaper model or slow it down, and leave the rest of the customer alone.',
       ],
     ],
   ],

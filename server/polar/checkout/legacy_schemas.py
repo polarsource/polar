@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from pydantic import UUID4, Field, field_validator
+from pydantic import UUID4, Field
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.kit.schemas import SetSchemaReference
@@ -14,7 +14,7 @@ from .schemas import (
 )
 
 
-class CheckoutProductsCreate(schemas.CheckoutProductsCreateBase):
+class CheckoutProductsCreate(schemas.CheckoutProductsCreate):
     """
     Create a new checkout session from a list of products.
     Customers will be able to switch between those products.
@@ -23,23 +23,9 @@ class CheckoutProductsCreate(schemas.CheckoutProductsCreateBase):
     to the resulting order and/or subscription.
     """
 
-    products: list[UUID4] = Field(
-        description=(
-            "List of product IDs available to select at that checkout. "
-            "The first one will be selected by default."
-        ),
-        min_length=1,
-    )
-    prices: dict[UUID4, ProductPriceCreateList] | None = Field(
+    prices: dict[UUID4, ProductPriceCreateList] | None = Field(  # type: ignore[assignment]
         default=None, description=CHECKOUT_PRICES_DESCRIPTION
     )
-
-    @field_validator("products")
-    @classmethod
-    def products_must_be_unique(cls, v: list[UUID4]) -> list[UUID4]:
-        if len(v) != len(set(v)):
-            raise ValueError("Product IDs must be unique.")
-        return v
 
 
 CheckoutCreate = Annotated[

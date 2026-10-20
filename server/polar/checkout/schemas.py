@@ -363,70 +363,82 @@ CHECKOUT_PRICES_DESCRIPTION = (
 )
 
 
-class CheckoutProductsCreateBase(CheckoutCreateBase):
-    currency: CheckoutCurrency | None = None
-
-
-class CheckoutProductsCreate(CheckoutProductsCreateBase):
+class CheckoutProductsCreate(CheckoutCreateBase):
     """
     Create a new checkout session from a list of products.
     Customers will be able to switch between those products.
-
-    Products can be referenced either by their Polar ID with `products`,
-    or by their external ID with `external_product_ids`.
 
     Metadata set on the checkout will be copied
     to the resulting order and/or subscription.
     """
 
-    products: list[UUID4] | None = Field(
-        default=None,
+    currency: CheckoutCurrency | None = None
+    products: list[UUID4] = Field(
         description=(
             "List of product IDs available to select at that checkout. "
-            "The first one will be selected by default. "
-            "Mutually exclusive with `external_product_ids`."
+            "The first one will be selected by default."
         ),
         min_length=1,
     )
-    external_product_ids: list[str] | None = Field(
-        default=None,
+
+    @field_validator("products")
+    @classmethod
+    def products_must_be_unique(cls, v: list[UUID4]) -> list[UUID4]:
+        if len(v) != len(set(v)):
+            raise ValueError("Product IDs must be unique.")
+        return v
+
+    prices: dict[UUID4, ProductPriceCreateList] | None = Field(
+        default=None, description=CHECKOUT_PRICES_DESCRIPTION
+    )
+
+
+class CheckoutProductsExternalCreate(CheckoutCreateBase):
+    """
+    Create a new checkout session from a list of products,
+    referenced by their external ID.
+    Customers will be able to switch between those products.
+
+    Metadata set on the checkout will be copied
+    to the resulting order and/or subscription.
+    """
+
+    currency: CheckoutCurrency | None = None
+    external_products: list[str] = Field(
         description=(
             "List of product external IDs available to select at that checkout. "
-            "The first one will be selected by default. "
-            "Mutually exclusive with `products`."
+            "The first one will be selected by default."
         ),
         min_length=1,
     )
+
+    @field_validator("external_products")
+    @classmethod
+    def external_products_must_be_unique(cls, v: list[str]) -> list[str]:
+        if len(v) != len(set(v)):
+            raise ValueError("Product external IDs must be unique.")
+        return v
+
     prices: dict[str, ProductPriceCreateList] | None = Field(
         default=None,
         description=(
-            "Optional mapping of product IDs, or product external IDs "
-            "when using `external_product_ids`, to a list of ad-hoc prices "
+            "Optional mapping of product external IDs to a list of ad-hoc prices "
             "to create for that product. "
             "If not set, catalog prices of the product will be used."
         ),
     )
 
-    @field_validator("products", "external_product_ids")
-    @classmethod
-    def products_must_be_unique[T](cls, v: list[T] | None) -> list[T] | None:
-        if v is not None and len(v) != len(set(v)):
-            raise ValueError("Products must be unique.")
-        return v
 
-    @model_validator(mode="after")
-    def _validate_product_references(self) -> "CheckoutProductsCreate":
-        if (self.products is None) == (self.external_product_ids is None):
-            raise ValueError(
-                "Exactly one of products or external_product_ids must be set."
-            )
-        return self
+def _checkout_create_discriminator(v: Any) -> str:
+    if isinstance(v, dict):
+        return "external" if "external_products" in v else "products"
+    return "external" if isinstance(v, CheckoutProductsExternalCreate) else "products"
 
 
 CheckoutCreate = Annotated[
-    CheckoutProductsCreate
-    | SkipJsonSchema[CheckoutProductCreate]
-    | SkipJsonSchema[CheckoutPriceCreate],
+    Annotated[CheckoutProductsCreate, Tag("products")]
+    | Annotated[CheckoutProductsExternalCreate, Tag("external")],
+    Discriminator(_checkout_create_discriminator),
     SetSchemaReference("CheckoutCreate"),
 ]
 

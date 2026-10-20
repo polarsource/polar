@@ -25,7 +25,7 @@ from polar.checkout.schemas import (
     CheckoutCreate,
     CheckoutPriceCreate,
     CheckoutProductCreate,
-    CheckoutProductsCreate,
+    CheckoutProductsExternalCreate,
     CheckoutUpdate,
     CheckoutUpdatePublic,
     CustomerIPAddress,
@@ -133,7 +133,7 @@ from polar.trial_redemption.service import trial_redemption as trial_redemption_
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
-from . import ip_geolocation, legacy_schemas
+from . import ip_geolocation
 from .eventstream import CheckoutEvent, publish_checkout_event
 from .repository import CheckoutRepository
 from .sorting import CheckoutSortProperty
@@ -386,7 +386,7 @@ class CheckoutService:
     async def create(
         self,
         session: AsyncSession,
-        checkout_create: CheckoutCreate | legacy_schemas.CheckoutCreate,
+        checkout_create: CheckoutCreate | CheckoutProductCreate | CheckoutPriceCreate,
         auth_subject: AuthSubject[User | Organization],
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
     ) -> Checkout:
@@ -408,16 +408,12 @@ class CheckoutService:
                 ip_country,
             )
         else:
-            if (
-                isinstance(checkout_create, CheckoutProductsCreate)
-                and checkout_create.external_product_ids is not None
-            ):
-                products_field = "external_product_ids"
+            if isinstance(checkout_create, CheckoutProductsExternalCreate):
+                products_field = "external_products"
                 products = await self._get_validated_external_products(
-                    session, auth_subject, checkout_create.external_product_ids
+                    session, auth_subject, checkout_create.external_products
                 )
             else:
-                assert checkout_create.products is not None
                 products_field = "products"
                 products = await self._get_validated_products(
                     session, auth_subject, checkout_create.products
@@ -429,8 +425,8 @@ class CheckoutService:
                     auth_subject,
                     product.organization,
                     products,
-                    checkout_create.prices,  # type: ignore[arg-type]
-                    by_external_id=products_field == "external_product_ids",
+                    checkout_create.prices,
+                    by_external_id=products_field == "external_products",
                 )
 
             currencies = self._get_currencies(
@@ -454,7 +450,7 @@ class CheckoutService:
                             "msg": "Product is not available in the specified currency.",
                             "input": (
                                 product.external_id
-                                if products_field == "external_product_ids"
+                                if products_field == "external_products"
                                 else product.id
                             ),
                         }
@@ -657,7 +653,7 @@ class CheckoutService:
                     "product_price_id",
                     "product_id",
                     "products",
-                    "external_product_ids",
+                    "external_products",
                     "prices",
                     "amount",
                     "currency",
@@ -2001,7 +1997,7 @@ class CheckoutService:
                 errors.append(
                     {
                         "type": "value_error",
-                        "loc": ("body", "external_product_ids", index),
+                        "loc": ("body", "external_products", index),
                         "msg": (
                             "Several products match this external ID "
                             "across your organizations."
@@ -2017,7 +2013,7 @@ class CheckoutService:
             for external_product_id in external_product_ids
         ]
         return self._validate_products(
-            products, external_product_ids, "external_product_ids"
+            products, external_product_ids, "external_products"
         )
 
     def _validate_products(

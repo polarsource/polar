@@ -2575,7 +2575,7 @@ class TestCreate:
                 CheckoutProductsCreate(
                     products=[product.id],
                     prices={
-                        str(product_one_time.id): [
+                        product_one_time.id: [
                             ProductPriceFixedCreate(
                                 amount_type=ProductPriceAmountType.fixed,
                                 price_amount=100_00,
@@ -2603,7 +2603,7 @@ class TestCreate:
             CheckoutProductsCreate(
                 products=[product.id],
                 prices={
-                    str(product.id): [
+                    product.id: [
                         ProductPriceFixedCreate(
                             amount_type=ProductPriceAmountType.fixed,
                             price_amount=100_00,

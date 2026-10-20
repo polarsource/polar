@@ -606,7 +606,7 @@ class TestCreateCheckout:
 
 
 @pytest.mark.anyio
-class TestCreateCheckoutExternalProductIDs:
+class TestCreateCheckoutExternalProducts:
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user", scopes={Scope.checkouts_write}),
@@ -637,7 +637,7 @@ class TestCreateCheckoutExternalProductIDs:
             f"{api_prefix}/",
             json={
                 "payment_processor": "stripe",
-                "external_product_ids": ["product_two", "product_one"],
+                "external_products": ["product_two", "product_one"],
             },
         )
 
@@ -671,7 +671,7 @@ class TestCreateCheckoutExternalProductIDs:
             f"{api_prefix}/",
             json={
                 "payment_processor": "stripe",
-                "external_product_ids": ["product_one"],
+                "external_products": ["product_one"],
                 "prices": {
                     "product_one": [
                         {
@@ -711,7 +711,7 @@ class TestCreateCheckoutExternalProductIDs:
             f"{api_prefix}/",
             json={
                 "payment_processor": "stripe",
-                "external_product_ids": ["product_one"],
+                "external_products": ["product_one"],
                 "prices": {
                     str(product.id): [
                         {
@@ -762,14 +762,14 @@ class TestCreateCheckoutExternalProductIDs:
             f"{api_prefix}/",
             json={
                 "payment_processor": "stripe",
-                "external_product_ids": ["product_one"],
+                "external_products": ["product_one"],
             },
         )
 
         assert response.status_code == 422
         assert response.json()["detail"][0]["loc"] == [
             "body",
-            "external_product_ids",
+            "external_products",
             0,
         ]
 
@@ -803,7 +803,7 @@ class TestCreateCheckoutExternalProductIDs:
             f"{api_prefix}/",
             json={
                 "payment_processor": "stripe",
-                "external_product_ids": [
+                "external_products": [
                     "archived",
                     "other_organization",
                     "unknown",
@@ -814,16 +814,16 @@ class TestCreateCheckoutExternalProductIDs:
         assert response.status_code == 422
         errors = response.json()["detail"]
         assert [(e["loc"], e["msg"]) for e in errors] == [
-            (["body", "external_product_ids", 0], "Product is archived."),
-            (["body", "external_product_ids", 1], "Product does not exist."),
-            (["body", "external_product_ids", 2], "Product does not exist."),
+            (["body", "external_products", 0], "Product is archived."),
+            (["body", "external_products", 1], "Product does not exist."),
+            (["body", "external_products", 2], "Product does not exist."),
         ]
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.checkouts_write})
     )
-    async def test_products_and_external_product_ids(
+    async def test_deprecated_product_id(
         self,
         api_prefix: str,
         client: AsyncClient,
@@ -831,19 +831,12 @@ class TestCreateCheckoutExternalProductIDs:
         organization: Organization,
     ) -> None:
         product = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=None,
-            external_id="product_one",
+            save_fixture, organization=organization, recurring_interval=None
         )
 
         response = await client.post(
             f"{api_prefix}/",
-            json={
-                "payment_processor": "stripe",
-                "products": [str(product.id)],
-                "external_product_ids": ["product_one"],
-            },
+            json={"payment_processor": "stripe", "product_id": str(product.id)},
         )
 
         assert response.status_code == 422
@@ -869,7 +862,7 @@ class TestCreateCheckoutExternalProductIDs:
             f"{api_prefix}/",
             json={
                 "payment_processor": "stripe",
-                "external_product_ids": ["product_one"],
+                "external_products": ["product_one"],
             },
         )
 

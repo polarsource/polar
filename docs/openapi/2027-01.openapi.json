@@ -40402,7 +40402,14 @@
         "description": "Confirm a checkout session using a Stripe confirmation token."
       },
       "CheckoutCreate": {
-        "$ref": "#/components/schemas/CheckoutProductsCreate"
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CheckoutProductsCreate"
+          },
+          {
+            "$ref": "#/components/schemas/CheckoutProductsExternalCreate"
+          }
+        ]
       },
       "CheckoutCreatedEvent": {
         "properties": {
@@ -42108,437 +42115,6 @@
           }
         ]
       },
-      "CheckoutPriceCreate": {
-        "properties": {
-          "trial_interval": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/TrialInterval"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The interval unit for the trial period."
-          },
-          "trial_interval_count": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 1000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Trial Interval Count",
-            "description": "The number of interval units for the trial period."
-          },
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "maxLength": 500,
-                  "minLength": 1
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "propertyNames": {
-              "maxLength": 40,
-              "minLength": 1
-            },
-            "type": "object",
-            "maxProperties": 50,
-            "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
-          },
-          "custom_field_data": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "string",
-                  "format": "date-time",
-                  "examples": [
-                    "2026-01-01T00:00:00.000000Z"
-                  ]
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "type": "object",
-            "title": "Custom Field Data",
-            "description": "Key-value object storing custom field values."
-          },
-          "discount_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Discount Id",
-            "description": "ID of the discount to apply to the checkout."
-          },
-          "allow_discount_codes": {
-            "type": "boolean",
-            "title": "Allow Discount Codes",
-            "description": "Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.",
-            "default": true
-          },
-          "require_billing_address": {
-            "type": "boolean",
-            "title": "Require Billing Address",
-            "description": "Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.",
-            "default": false
-          },
-          "amount": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 0.0,
-                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amount"
-          },
-          "seats": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 10000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Seats",
-            "description": "Predefined number of seats (works with seat-based pricing only)"
-          },
-          "min_seats": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 10000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Min Seats",
-            "description": "Minimum number of seats (works with seat-based pricing only)"
-          },
-          "max_seats": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 10000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Max Seats",
-            "description": "Maximum number of seats (works with seat-based pricing only)"
-          },
-          "units": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 2147483647.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Units",
-            "description": "Predefined number of units (works with unit-based pricing only)"
-          },
-          "min_units": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 2147483647.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Min Units",
-            "description": "Minimum number of units (works with unit-based pricing only)"
-          },
-          "max_units": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 2147483647.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Max Units",
-            "description": "Maximum number of units (works with unit-based pricing only)"
-          },
-          "allow_trial": {
-            "type": "boolean",
-            "title": "Allow Trial",
-            "description": "Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.",
-            "default": true
-          },
-          "customer_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Customer Id",
-            "description": "ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer."
-          },
-          "is_business_customer": {
-            "type": "boolean",
-            "title": "Is Business Customer",
-            "description": "Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.",
-            "default": false
-          },
-          "external_customer_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Customer Id",
-            "description": "ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set."
-          },
-          "customer_name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 256,
-                "description": "The name of the customer.",
-                "examples": [
-                  "John Doe"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Customer Name"
-          },
-          "customer_email": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "email",
-                "description": "Email address of the customer."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Customer Email"
-          },
-          "customer_ip_address": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "ipvanyaddress"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Customer Ip Address"
-          },
-          "customer_billing_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Customer Billing Name"
-          },
-          "customer_billing_address": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AddressInput",
-                "description": "Billing address of the customer."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "customer_tax_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Customer Tax Id"
-          },
-          "customer_metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "maxLength": 500,
-                  "minLength": 1
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "propertyNames": {
-              "maxLength": 40,
-              "minLength": 1
-            },
-            "type": "object",
-            "maxProperties": 50,
-            "title": "Customer Metadata",
-            "description": "Key-value object allowing you to store additional information that'll be copied to the created customer.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
-          },
-          "subscription_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Subscription Id",
-            "description": "ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten."
-          },
-          "success_url": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Success Url",
-            "description": "URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."
-          },
-          "return_url": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Return Url",
-            "description": "When set, a back button will be shown in the checkout to return to this URL."
-          },
-          "embed_origin": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Embed Origin",
-            "description": "If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page."
-          },
-          "locale": {
-            "anyOf": [
-              {
-                "type": "string",
-                "description": "Locale of the customer, given as an IETF BCP 47 language tag, e.g. `en`, `en-US` or `en-GB-oxendict`. If `null` or unsupported, the locale will default to `en`.",
-                "examples": [
-                  "en",
-                  "en-US",
-                  "fr",
-                  "fr-CA"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Locale"
-          },
-          "product_price_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout."
-          }
-        },
-        "type": "object",
-        "required": [
-          "product_price_id"
-        ],
-        "title": "CheckoutPriceCreate",
-        "description": "Create a new checkout session from a product price.\n\n**Deprecated**: Use `CheckoutProductsCreate` instead.\n\nMetadata set on the checkout will be copied\nto the resulting order and/or subscription."
-      },
       "CheckoutProduct": {
         "properties": {
           "id": {
@@ -42734,449 +42310,6 @@
         ],
         "title": "CheckoutProduct",
         "description": "Product data for a checkout session."
-      },
-      "CheckoutProductCreate": {
-        "properties": {
-          "trial_interval": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/TrialInterval"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The interval unit for the trial period."
-          },
-          "trial_interval_count": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 1000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Trial Interval Count",
-            "description": "The number of interval units for the trial period."
-          },
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "maxLength": 500,
-                  "minLength": 1
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "propertyNames": {
-              "maxLength": 40,
-              "minLength": 1
-            },
-            "type": "object",
-            "maxProperties": 50,
-            "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
-          },
-          "custom_field_data": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "string",
-                  "format": "date-time",
-                  "examples": [
-                    "2026-01-01T00:00:00.000000Z"
-                  ]
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "type": "object",
-            "title": "Custom Field Data",
-            "description": "Key-value object storing custom field values."
-          },
-          "discount_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Discount Id",
-            "description": "ID of the discount to apply to the checkout."
-          },
-          "allow_discount_codes": {
-            "type": "boolean",
-            "title": "Allow Discount Codes",
-            "description": "Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.",
-            "default": true
-          },
-          "require_billing_address": {
-            "type": "boolean",
-            "title": "Require Billing Address",
-            "description": "Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.",
-            "default": false
-          },
-          "amount": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 0.0,
-                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amount"
-          },
-          "seats": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 10000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Seats",
-            "description": "Predefined number of seats (works with seat-based pricing only)"
-          },
-          "min_seats": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 10000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Min Seats",
-            "description": "Minimum number of seats (works with seat-based pricing only)"
-          },
-          "max_seats": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 10000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Max Seats",
-            "description": "Maximum number of seats (works with seat-based pricing only)"
-          },
-          "units": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 2147483647.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Units",
-            "description": "Predefined number of units (works with unit-based pricing only)"
-          },
-          "min_units": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 2147483647.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Min Units",
-            "description": "Minimum number of units (works with unit-based pricing only)"
-          },
-          "max_units": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 2147483647.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Max Units",
-            "description": "Maximum number of units (works with unit-based pricing only)"
-          },
-          "allow_trial": {
-            "type": "boolean",
-            "title": "Allow Trial",
-            "description": "Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.",
-            "default": true
-          },
-          "customer_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Customer Id",
-            "description": "ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer."
-          },
-          "is_business_customer": {
-            "type": "boolean",
-            "title": "Is Business Customer",
-            "description": "Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.",
-            "default": false
-          },
-          "external_customer_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Customer Id",
-            "description": "ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set."
-          },
-          "customer_name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 256,
-                "description": "The name of the customer.",
-                "examples": [
-                  "John Doe"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Customer Name"
-          },
-          "customer_email": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "email",
-                "description": "Email address of the customer."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Customer Email"
-          },
-          "customer_ip_address": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "ipvanyaddress"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Customer Ip Address"
-          },
-          "customer_billing_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Customer Billing Name"
-          },
-          "customer_billing_address": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AddressInput",
-                "description": "Billing address of the customer."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "customer_tax_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Customer Tax Id"
-          },
-          "customer_metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "maxLength": 500,
-                  "minLength": 1
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "propertyNames": {
-              "maxLength": 40,
-              "minLength": 1
-            },
-            "type": "object",
-            "maxProperties": 50,
-            "title": "Customer Metadata",
-            "description": "Key-value object allowing you to store additional information that'll be copied to the created customer.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
-          },
-          "subscription_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Subscription Id",
-            "description": "ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten."
-          },
-          "success_url": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Success Url",
-            "description": "URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."
-          },
-          "return_url": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Return Url",
-            "description": "When set, a back button will be shown in the checkout to return to this URL."
-          },
-          "embed_origin": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Embed Origin",
-            "description": "If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page."
-          },
-          "locale": {
-            "anyOf": [
-              {
-                "type": "string",
-                "description": "Locale of the customer, given as an IETF BCP 47 language tag, e.g. `en`, `en-US` or `en-GB-oxendict`. If `null` or unsupported, the locale will default to `en`.",
-                "examples": [
-                  "en",
-                  "en-US",
-                  "fr",
-                  "fr-CA"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Locale"
-          },
-          "currency": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PresentmentCurrency",
-                "maxLength": 3,
-                "minLength": 3
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "product_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Product Id",
-            "description": "ID of the product to checkout. First available price will be selected."
-          }
-        },
-        "type": "object",
-        "required": [
-          "product_id"
-        ],
-        "title": "CheckoutProductCreate",
-        "description": "Create a new checkout session from a product.\n\n**Deprecated**: Use `CheckoutProductsCreate` instead.\n\nMetadata set on the checkout will be copied\nto the resulting order and/or subscription."
       },
       "CheckoutProductsCreate": {
         "properties": {
@@ -43677,6 +42810,502 @@
         ],
         "title": "CheckoutProductsCreate",
         "description": "Create a new checkout session from a list of products.\nCustomers will be able to switch between those products.\n\nMetadata set on the checkout will be copied\nto the resulting order and/or subscription."
+      },
+      "CheckoutProductsExternalCreate": {
+        "properties": {
+          "trial_interval": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TrialInterval"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The interval unit for the trial period."
+          },
+          "trial_interval_count": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trial Interval Count",
+            "description": "The number of interval units for the trial period."
+          },
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 50,
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+          },
+          "custom_field_data": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "examples": [
+                    "2026-01-01T00:00:00.000000Z"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Custom Field Data",
+            "description": "Key-value object storing custom field values."
+          },
+          "discount_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discount Id",
+            "description": "ID of the discount to apply to the checkout."
+          },
+          "allow_discount_codes": {
+            "type": "boolean",
+            "title": "Allow Discount Codes",
+            "description": "Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.",
+            "default": true
+          },
+          "require_billing_address": {
+            "type": "boolean",
+            "title": "Require Billing Address",
+            "description": "Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.",
+            "default": false
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0,
+                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "seats": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seats",
+            "description": "Predefined number of seats (works with seat-based pricing only)"
+          },
+          "min_seats": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Seats",
+            "description": "Minimum number of seats (works with seat-based pricing only)"
+          },
+          "max_seats": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Seats",
+            "description": "Maximum number of seats (works with seat-based pricing only)"
+          },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "Predefined number of units (works with unit-based pricing only)"
+          },
+          "min_units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Units",
+            "description": "Minimum number of units (works with unit-based pricing only)"
+          },
+          "max_units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Units",
+            "description": "Maximum number of units (works with unit-based pricing only)"
+          },
+          "allow_trial": {
+            "type": "boolean",
+            "title": "Allow Trial",
+            "description": "Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.",
+            "default": true
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id",
+            "description": "ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer."
+          },
+          "is_business_customer": {
+            "type": "boolean",
+            "title": "Is Business Customer",
+            "description": "Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.",
+            "default": false
+          },
+          "external_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Customer Id",
+            "description": "ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set."
+          },
+          "customer_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256,
+                "description": "The name of the customer.",
+                "examples": [
+                  "John Doe"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Name"
+          },
+          "customer_email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "email",
+                "description": "Email address of the customer."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Email"
+          },
+          "customer_ip_address": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "ipvanyaddress"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Ip Address"
+          },
+          "customer_billing_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Billing Name"
+          },
+          "customer_billing_address": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AddressInput",
+                "description": "Billing address of the customer."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "customer_tax_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Tax Id"
+          },
+          "customer_metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 50,
+            "title": "Customer Metadata",
+            "description": "Key-value object allowing you to store additional information that'll be copied to the created customer.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+          },
+          "subscription_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Id",
+            "description": "ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten."
+          },
+          "success_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2083,
+                "minLength": 1,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Url",
+            "description": "URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."
+          },
+          "return_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2083,
+                "minLength": 1,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Return Url",
+            "description": "When set, a back button will be shown in the checkout to return to this URL."
+          },
+          "embed_origin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embed Origin",
+            "description": "If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page."
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Locale of the customer, given as an IETF BCP 47 language tag, e.g. `en`, `en-US` or `en-GB-oxendict`. If `null` or unsupported, the locale will default to `en`.",
+                "examples": [
+                  "en",
+                  "en-US",
+                  "fr",
+                  "fr-CA"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PresentmentCurrency",
+                "maxLength": 3,
+                "minLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "external_products": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "External Products",
+            "description": "List of product external IDs available to select at that checkout. The first one will be selected by default."
+          },
+          "prices": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "items": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/ProductPriceFixedCreate"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ProductPriceCustomCreate"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ProductPriceSeatBasedCreate"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ProductPriceUnitBasedCreate"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ProductPriceMeteredUnitCreate"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ProductPriceMeteredTiersCreate"
+                      }
+                    ],
+                    "discriminator": {
+                      "propertyName": "amount_type",
+                      "mapping": {
+                        "custom": "#/components/schemas/ProductPriceCustomCreate",
+                        "fixed": "#/components/schemas/ProductPriceFixedCreate",
+                        "metered_tiers": "#/components/schemas/ProductPriceMeteredTiersCreate",
+                        "metered_unit": "#/components/schemas/ProductPriceMeteredUnitCreate",
+                        "seat_based": "#/components/schemas/ProductPriceSeatBasedCreate",
+                        "unit_based": "#/components/schemas/ProductPriceUnitBasedCreate"
+                      }
+                    }
+                  },
+                  "type": "array",
+                  "minItems": 1,
+                  "description": "List of prices for the product. At most one fixed price and one seat-based price may be combined (billed as `fixed + seat_charge`), or a single custom price may stand alone, plus any number of metered prices. A custom price cannot be combined with a fixed or seat-based price."
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prices",
+            "description": "Optional mapping of product external IDs to a list of ad-hoc prices to create for that product. If not set, catalog prices of the product will be used."
+          }
+        },
+        "type": "object",
+        "required": [
+          "external_products"
+        ],
+        "title": "CheckoutProductsExternalCreate",
+        "description": "Create a new checkout session from a list of products,\nreferenced by their external ID.\nCustomers will be able to switch between those products.\n\nMetadata set on the checkout will be copied\nto the resulting order and/or subscription."
       },
       "CheckoutPublic": {
         "properties": {

@@ -108,6 +108,7 @@ from .reducer import Reducer
 from .reducer_bucket import ReducerBucket
 from .refund import Refund
 from .slack_app import SlackApp
+from .staged_event import StagedEvent
 from .subscription import Subscription
 from .subscription_meter import SubscriptionMeter
 from .subscription_product_price import SubscriptionProductPrice
@@ -246,6 +247,7 @@ __all__ = [
     "ReviewAppealSupportCase",
     "SeatStatus",
     "SlackApp",
+    "StagedEvent",
     "Subscription",
     "SubscriptionMeter",
     "SubscriptionProductPrice",

@@ -112,7 +112,7 @@ class BufferedMeteringStrategy:
         self._send_queue.close()
         await self._stack.aclose()
 
-    async def ingest(
+    async def track(
         self,
         event: EventInput,
     ) -> None:

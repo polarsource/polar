@@ -179,7 +179,7 @@ const readOutcomes = () =>
     .filter((span) => ["outpost.actor", "outpost.customer_meter"].includes(span.name))
     .map((span) => [span.name, span.attributes["outpost.read.outcome"]]);
 const ingest = (outpost: Outpost, tokens: number) =>
-  outpost.ingest({ ...customer, name: "api_call", timestamp, metadata: { tokens } });
+  outpost.track({ ...customer, name: "api_call", timestamp, metadata: { tokens } });
 
 it.each([
   ["count", 12],
@@ -314,7 +314,7 @@ it("propagates snapshots, removes cold buckets, and rejects older cutoffs", asyn
     1,
   );
   expect(await redis.hget(key, "cold:sum")).toBe("8");
-  await writer.ingest({
+  await writer.track({
     ...customer,
     name: "api",
     timestamp: "2026-10-12T11:55:00Z",
@@ -478,7 +478,7 @@ it("keeps reducer cutoffs and meter credits independent under concurrent writes"
     min: 2,
     max: 8,
   });
-  await first.ingest({
+  await first.track({
     ...customer,
     name: "api",
     timestamp: "2026-10-12T12:05:00Z",
@@ -577,7 +577,7 @@ it("preserves microsecond cutoffs when removing and rejecting local buckets", as
   await outpost.actor(customer);
   await vi.waitFor(async () => expect((await outpost.meter(meter))?.consumed_units).toBe(0));
   await ingest(outpost, 2);
-  await outpost.ingest({
+  await outpost.track({
     ...customer,
     name: "api",
     timestamp: "2026-10-12T12:05:00Z",
@@ -904,7 +904,7 @@ it("reports sync counts when telemetry is flushed", async () => {
     { ...customer, name: "api_call", timestamp, metadata: { tokens: 1 } },
     { external_customer_id: "bob", name: "api_call", timestamp, metadata: { tokens: 1 } },
   ])
-    await writer.ingest(event);
+    await writer.track(event);
   await vi.waitFor(() => expect(reader["syncReceived"]).toBe(2));
   exported.length = 0;
   await reader.flushTelemetry();
@@ -1005,7 +1005,7 @@ it("composes buffered Polar delivery with Outpost through the client factory", a
     await using metering = await polar
       .metering({ outpost: { redisUrl: redisServer.socket } })
       .start();
-    await metering.ingest({ ...customer, name: "api", timestamp, metadata: { tokens: 2 } });
+    await metering.track({ ...customer, name: "api", timestamp, metadata: { tokens: 2 } });
     expect((await reader.meter(meter))?.consumed_units).toBe(12);
     expect(fetch).not.toHaveBeenCalled();
   }

@@ -110,7 +110,7 @@ const polar = createPolar({ accessToken: "polar_oat_xxx" });
 
 async function recordUsage() {
   await using metering = await polar.metering().start();
-  await metering.ingest({
+  await metering.track({
     name: "api_request",
     external_customer_id: "customer_123",
     metadata: { tokens: 42 },
@@ -125,8 +125,8 @@ It's common to have several events for the same customer in the same session. Yo
 ```typescript
 await using metering = await polar.metering().start();
 const actor = await metering.actor({ external_customer_id: "customer_123" });
-await actor.ingest({ name: "api_request", metadata: { tokens: 42 } });
-await actor.ingest({ name: "api_request", metadata: { tokens: 17 } });
+await actor.track({ name: "api_request", metadata: { tokens: 42 } });
+await actor.track({ name: "api_request", metadata: { tokens: 17 } });
 ```
 
 ### Read meters
@@ -162,7 +162,7 @@ while the invocation is still active.
 
 ```typescript
 async function handleRequest() {
-  await metering.ingest({ name: "api_request", external_customer_id: "customer_123" });
+  await metering.track({ name: "api_request", external_customer_id: "customer_123" });
   await metering.flush();
   return { ok: true };
 }

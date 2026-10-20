@@ -526,7 +526,7 @@ class Outpost:
         )
 
     @_raise_redis_unavailable
-    async def ingest(self, event: EventInput) -> None:
+    async def track(self, event: EventInput) -> None:
         self._require_redis()
         started = time.perf_counter()
         outcome = "ok"

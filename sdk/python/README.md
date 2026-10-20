@@ -44,9 +44,7 @@ from polar.v2026_10 import PolarAsync
 
 async def main() -> None:
     polar = PolarAsync("polar_oat_xxx")
-    customer_state = await polar.customers.get_state_external(
-        "customer_external_id"
-    )
+    customer_state = await polar.customers.get_state_external("customer_external_id")
     print(customer_state)
 
 
@@ -160,7 +158,7 @@ from polar.v2026_10 import PolarAsync
 async def record_usage() -> None:
     async with PolarAsync("polar_oat_xxx") as polar:
         async with polar.metering() as metering:
-            await metering.ingest(
+            await metering.track(
                 name="api_request",
                 external_customer_id="customer_123",
                 metadata={"tokens": 42},
@@ -174,8 +172,8 @@ It's common to have several events for the same customer in the same session. Yo
 ```python
 async with polar.metering() as metering:
     actor = await metering.actor(external_customer_id="customer_123")
-    await actor.ingest(name="api_request", metadata={"tokens": 42})
-    await actor.ingest(name="api_request", metadata={"tokens": 17})
+    await actor.track(name="api_request", metadata={"tokens": 42})
+    await actor.track(name="api_request", metadata={"tokens": 17})
 ```
 
 ### Read meters
@@ -183,9 +181,7 @@ async with polar.metering() as metering:
 The metering helper can read meters. Under the hood, it can leverage Outpost to have low-latency reads.
 
 ```python
-meter = await metering.meter(
-    "meter_uuid", external_customer_id="customer_123"
-)
+meter = await metering.meter("meter_uuid", external_customer_id="customer_123")
 ```
 
 With an actor context:
@@ -211,7 +207,7 @@ while the invocation is still active.
 
 ```python
 async def handle_request() -> dict[str, bool]:
-    await metering.ingest(name="api_request", external_customer_id="customer_123")
+    await metering.track(name="api_request", external_customer_id="customer_123")
     await metering.flush()
     return {"ok": True}
 ```
@@ -269,7 +265,9 @@ async def polar_webhook(request: Request) -> dict[str, bool]:
             webhook_secret,
         )
     except PolarWebhookVerificationError as exc:
-        raise HTTPException(status_code=403, detail="Invalid webhook signature") from exc
+        raise HTTPException(
+            status_code=403, detail="Invalid webhook signature"
+        ) from exc
     except PolarWebhookError as exc:
         raise HTTPException(status_code=400, detail="Invalid webhook payload") from exc
 

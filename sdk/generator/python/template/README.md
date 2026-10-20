@@ -160,7 +160,7 @@ from polar.v{{ (ir.versions[-2] | default({})).version | replace("-", "_") | rep
 async def record_usage() -> None:
     async with PolarAsync("polar_oat_xxx") as polar:
         async with polar.metering() as metering:
-            await metering.ingest(
+            await metering.track(
                 name="api_request",
                 external_customer_id="customer_123",
                 metadata={"tokens": 42},
@@ -174,8 +174,8 @@ It's common to have several events for the same customer in the same session. Yo
 ```python
 async with polar.metering() as metering:
     actor = await metering.actor(external_customer_id="customer_123")
-    await actor.ingest(name="api_request", metadata={"tokens": 42})
-    await actor.ingest(name="api_request", metadata={"tokens": 17})
+    await actor.track(name="api_request", metadata={"tokens": 42})
+    await actor.track(name="api_request", metadata={"tokens": 17})
 ```
 
 ### Read meters
@@ -211,7 +211,7 @@ while the invocation is still active.
 
 ```python
 async def handle_request() -> dict[str, bool]:
-    await metering.ingest(name="api_request", external_customer_id="customer_123")
+    await metering.track(name="api_request", external_customer_id="customer_123")
     await metering.flush()
     return {"ok": True}
 ```

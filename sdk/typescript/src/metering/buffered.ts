@@ -108,7 +108,7 @@ export class BufferedMeteringStrategy {
    *
    * @param event Event including its customer identity.
    */
-  async ingest(event: EventInput): Promise<void> {
+  async track(event: EventInput): Promise<void> {
     this.enqueue(event);
   }
 

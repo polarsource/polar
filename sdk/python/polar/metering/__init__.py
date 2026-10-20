@@ -50,7 +50,7 @@ class MeteringStrategyProtocol(
     to opt into warmup, meter reads, or explicit draining respectively.
     """
 
-    async def ingest(self, event: EventInput) -> None:
+    async def track(self, event: EventInput) -> None:
         """Accept an event for this strategy.
 
         Args:
@@ -118,19 +118,19 @@ class ActorMetering:
         self.external_customer_id = external_customer_id
         self.external_member_id = external_member_id
 
-    async def ingest(self, **event: typing.Unpack[ContextualEventInput]) -> None:
-        """Ingest an event with this actor's identifiers attached.
+    async def track(self, **event: typing.Unpack[ContextualEventInput]) -> None:
+        """Track an event with this actor's identifiers attached.
 
         Args:
             **event: Event name and optional metadata, timestamp, or external ID.
         """
         if self.customer_id is not None:
-            await self.metering.ingest(
+            await self.metering.track(
                 customer_id=self.customer_id, member_id=self.member_id, **event
             )
         else:
             assert self.external_customer_id is not None
-            await self.metering.ingest(
+            await self.metering.track(
                 external_customer_id=self.external_customer_id,
                 external_member_id=self.external_member_id,
                 **event,
@@ -219,15 +219,15 @@ class Metering:
             raise ExceptionGroup("Metering flush failed", errors)
 
     @typing.overload
-    async def ingest(self, **event: typing.Unpack[EventCustomerInput]) -> None: ...
+    async def track(self, **event: typing.Unpack[EventCustomerInput]) -> None: ...
 
     @typing.overload
-    async def ingest(
+    async def track(
         self, **event: typing.Unpack[EventExternalCustomerInput]
     ) -> None: ...
 
-    async def ingest(self, **event: typing.Any) -> None:
-        """Ingest an event. It'll be dispatched to all configured strategies.
+    async def track(self, **event: typing.Any) -> None:
+        """Track an event. It'll be dispatched to all configured strategies.
 
         Args:
             **event: Event fields with exactly one customer_id or
@@ -244,7 +244,7 @@ class Metering:
         )
         actor_event = typing.cast(EventInput, event)
         for strategy in self.strategies:
-            await strategy.ingest(actor_event)
+            await strategy.track(actor_event)
 
     @typing.overload
     async def actor(

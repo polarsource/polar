@@ -40,11 +40,11 @@ export type ActorInput =
  */
 export interface ActorMetering {
   /**
-   * Ingest an event with this actor's identifiers attached.
+   * Track an event with this actor's identifiers attached.
    *
    * @param event Event name and optional metadata, timestamp, or external ID.
    */
-  ingest(event: ContextualEventInput): Promise<void>;
+  track(event: ContextualEventInput): Promise<void>;
   /**
    * Read this customer's meter using the parent's read strategy.
    *
@@ -75,7 +75,7 @@ export interface MeteringStrategy {
    *
    * @param event Event including its customer identity.
    */
-  ingest(event: EventInput): Promise<void>;
+  track(event: EventInput): Promise<void>;
   /** Wait until earlier events are delivered or reported as dropped. */
   flush?(): Promise<void>;
   /** Drain pending work and release resources. */
@@ -157,18 +157,18 @@ export class Metering {
   }
 
   /**
-   * Ingest an event. It'll be dispatched to all configured strategies.
+   * Track an event. It'll be dispatched to all configured strategies.
    *
    * @param event Event fields with exactly one customer_id or external_customer_id.
    * Member IDs must match the identifier kind.
    * @throws InvalidActorError if customer or member identifiers are inconsistent.
    */
-  async ingest(event: EventInput): Promise<void> {
+  async track(event: EventInput): Promise<void> {
     if (!this.started) throw new PolarError("Metering is not running");
     validateActor(event);
     this.activeOperations++;
     try {
-      for (const strategy of this.strategies) await strategy.ingest(event);
+      for (const strategy of this.strategies) await strategy.track(event);
     } finally {
       if (--this.activeOperations === 0) this.onDrained?.();
     }
@@ -197,7 +197,7 @@ export class Metering {
     try {
       for (const strategy of this.strategies) await strategy.actor?.(identity);
       return {
-        ingest: (event) => this.ingest({ ...event, ...identity }),
+        track: (event) => this.track({ ...event, ...identity }),
         meter: (meterId) => this.meter(meterId, identity),
       };
     } finally {
@@ -347,8 +347,8 @@ export const createMetering = (
         outpost = new Outpost(redisUrl, { ...outpostOptions, client });
         await outpost.start();
       },
-      async ingest(event) {
-        await outpost!.ingest(event);
+      async track(event) {
+        await outpost!.track(event);
       },
       async actor(input) {
         await outpost!.actor(input);

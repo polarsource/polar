@@ -52,8 +52,8 @@ async def test_flush_optional_strategies(fail: bool) -> None:
         first.flush.assert_awaited_once_with()
         second.flush.assert_awaited_once_with()
         first.__aexit__.assert_not_awaited()
-        await metering.ingest(name="usage", external_customer_id="customer")
-        first.ingest.assert_awaited_once()
+        await metering.track(name="usage", external_customer_id="customer")
+        first.track.assert_awaited_once()
 
 
 @pytest.mark.anyio
@@ -134,9 +134,9 @@ async def test_factory_explicit_strategies(
     ):
         assert metering.strategies == strategies
         assert metering._client is polar._client
-        await metering.ingest(name="usage", external_customer_id="customer")
+        await metering.track(name="usage", external_customer_id="customer")
     assert strategy.__aenter__.await_count == (0 if empty else 1)
-    assert strategy.ingest.await_count == (0 if empty else 1)
+    assert strategy.track.await_count == (0 if empty else 1)
     assert strategy.__aexit__.await_count == (0 if empty else 1)
 
 
@@ -151,7 +151,7 @@ async def test_factory_buffer_options(monkeypatch: pytest.MonkeyPatch) -> None:
                 batch_size=1, batch_interval=60, max_attempts=1, on_dropped=on_dropped
             )
         ) as metering:
-            await metering.ingest(name="usage", external_customer_id="customer")
+            await metering.track(name="usage", external_customer_id="customer")
             with anyio.fail_after(1):
                 while not on_dropped.await_count:
                     await anyio.lowlevel.checkpoint()
@@ -180,7 +180,7 @@ async def test_factory_outpost_options_and_startup_failure(
             async with metering:
                 pytest.fail("Startup should have failed")
         with pytest.raises(anyio.ClosedResourceError):
-            await metering.strategies[0].ingest(
+            await metering.strategies[0].track(
                 {"name": "usage", "external_customer_id": "customer"}
             )
 
@@ -199,7 +199,7 @@ async def test_metering_enters_and_calls_both_strategies(
             ingest = AsyncMock()
             monkeypatch.setattr(type(strategy), "__aenter__", enter)
             monkeypatch.setattr(type(strategy), "__aexit__", exit)
-            monkeypatch.setattr(strategy, "ingest", ingest)
+            monkeypatch.setattr(strategy, "track", ingest)
             mocks.append((enter, exit, ingest))
 
         event: EventInput = {"name": "usage", "external_customer_id": "customer"}
@@ -211,7 +211,7 @@ async def test_metering_enters_and_calls_both_strategies(
                 exit.assert_not_awaited()
                 ingest.assert_not_awaited()
 
-            await metering.ingest(**event)
+            await metering.track(**event)
 
             for _, _, ingest in mocks:
                 ingest.assert_awaited_once_with(event)
@@ -232,7 +232,7 @@ async def test_failed_strategy_startup_closes_buffered_strategy(
         outpost = Outpost("redis://localhost:6379", client=client)
 
         async def fail_startup(self: Outpost) -> Outpost:
-            await buffered.ingest(event)
+            await buffered.track(event)
             raise RuntimeError("startup failed")
 
         monkeypatch.setattr(Outpost, "__aenter__", fail_startup)
@@ -245,7 +245,7 @@ async def test_failed_strategy_startup_closes_buffered_strategy(
 
         ingest.assert_awaited_once_with(events=[event])
         with pytest.raises(anyio.ClosedResourceError):
-            await buffered.ingest(event)
+            await buffered.track(event)
 
 
 @pytest.mark.anyio
@@ -270,14 +270,14 @@ async def test_actor_metering(identity: dict[str, typing.Any]) -> None:
             customer_id=identity.get("customer_id"),
             external_customer_id=identity.get("external_customer_id"),
         )
-        await actor.ingest(name="usage", metadata={"tokens": 3})
+        await actor.track(name="usage", metadata={"tokens": 3})
         expected_event = {**identity, "name": "usage", "metadata": {"tokens": 3}}
-        strategy.ingest.assert_awaited_once_with(expected_event)
-        ordinary_strategy.ingest.assert_awaited_once_with(expected_event)
+        strategy.track.assert_awaited_once_with(expected_event)
+        ordinary_strategy.track.assert_awaited_once_with(expected_event)
 
-        strategy.ingest.reset_mock()
-        await metering.ingest(name="usage", metadata={"tokens": 3}, **identity)
-        strategy.ingest.assert_awaited_once_with(expected_event)
+        strategy.track.reset_mock()
+        await metering.track(name="usage", metadata={"tokens": 3}, **identity)
+        strategy.track.assert_awaited_once_with(expected_event)
 
 
 @pytest.mark.anyio
@@ -304,8 +304,8 @@ async def test_invalid_actor(identity: dict[str, typing.Any]) -> None:
         assert isinstance(exc_info.value, PolarError)
 
         with pytest.raises(InvalidActorError):
-            await metering.ingest(name="usage", **identity)
-        strategy.ingest.assert_not_awaited()
+            await metering.track(name="usage", **identity)
+        strategy.track.assert_not_awaited()
         strategy.actor.assert_not_awaited()
 
 
@@ -334,7 +334,7 @@ async def main():
         client=AsyncMock(spec=AsyncClientBase),
     ) as metering:
         actor = await metering.actor(external_customer_id="customer")
-        await actor.ingest(name="usage")
+        await actor.track(name="usage")
 
 asyncio.run(main())
 """,

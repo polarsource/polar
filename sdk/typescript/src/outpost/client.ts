@@ -466,7 +466,7 @@ export class Outpost {
     await this.close();
   }
 
-  async ingest(event: EventInput): Promise<void> {
+  async track(event: EventInput): Promise<void> {
     const redis = this.requireRedis();
     const started = performance.now();
     let outcome = "ok";

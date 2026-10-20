@@ -27,7 +27,7 @@ class CatalogProduct(RecordModel):
 
     @declared_attr
     def catalog(cls) -> Mapped["Catalog"]:
-        return relationship("Catalog", lazy="raise", back_populates="catalog_products")
+        return relationship("Catalog", lazy="raise")
 
     @declared_attr
     def product(cls) -> Mapped["Product"]:

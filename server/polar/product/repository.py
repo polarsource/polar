@@ -63,6 +63,26 @@ class ProductRepository(
         )
         return await self.get_one_or_none(statement)
 
+    def get_catalog_baseline_statement(
+        self, organization_id: UUID
+    ) -> Select[tuple[Product]]:
+        return self.get_base_statement().where(
+            Product.organization_id == organization_id,
+            Product.external_id.is_not(None),
+            Product.is_current,
+            ~Product.is_archived,
+        )
+
+    async def get_catalog_baseline(self, organization_id: UUID) -> Sequence[Product]:
+        statement = self.get_catalog_baseline_statement(organization_id).options(
+            undefer(Product.external_id)
+        )
+        return await self.get_all(statement)
+
+    async def has_catalog_baseline(self, organization_id: UUID) -> bool:
+        statement = self.get_catalog_baseline_statement(organization_id).limit(1)
+        return await self.get_one_or_none(statement) is not None
+
     async def get_all_by_external_ids(
         self,
         organization_id: UUID,

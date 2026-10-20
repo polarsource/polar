@@ -17,6 +17,7 @@ from polar.models import (
     Checkout,
     Customer,
     Discount,
+    DiscountProduct,
     DiscountRedemption,
     Order,
     Payment,
@@ -30,6 +31,15 @@ from polar.models.refund import RefundReason, RefundStatus
 
 class DiscountRepository(RepositoryBase[Discount], RepositoryIDMixin[Discount, UUID]):
     model = Discount
+
+    async def replace_product(self, product_id: UUID, new_product_id: UUID) -> None:
+        statement = (
+            update(DiscountProduct)
+            .where(DiscountProduct.product_id == product_id)
+            .values(product_id=new_product_id)
+            .execution_options(synchronize_session=False)
+        )
+        await self.session.execute(statement)
 
     async def get_by_code_and_organization_for_update(
         self,

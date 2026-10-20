@@ -17,7 +17,7 @@ from polar.discount.service import discount as discount_service
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
-from polar.models import Catalog, CatalogMigration, Organization, Product, User
+from polar.models import Catalog, Organization, Product, User
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.oauth2.exceptions import InsufficientScopeError
 from polar.organization.repository import OrganizationRepository
@@ -252,6 +252,15 @@ class DeclarativeConfigService:
         )
         discount_results = await self._apply_discounts(
             session, auth_subject, organization, changes.discounts, product_ids
+        )
+        await catalog_service.carry_over_references(
+            session,
+            {
+                change.existing.id: new_products[change.config.external_id].id
+                for change in changes.products
+                if change.existing is not None
+                and change.config.external_id in new_products
+            },
         )
         if (
             changes.settings is not None
@@ -562,27 +571,16 @@ class DeclarativeConfigService:
         migrations: Sequence[_MigrationCheck],
     ) -> list[ConfigResult]:
         results: list[ConfigResult] = []
-        repository = CatalogMigrationRepository.from_session(session)
         for migration in migrations:
             if migration.action == ConfigAction.created:
                 assert live is not None
-                target = await catalog_service.get_catalog_product(
-                    session, live, migration.config.target_external_id
-                )
-                assert target is not None
-                migrated = await catalog_service.migrate_subscriptions(
-                    session, organization, migration.config.subscriptions_of, target
-                )
-                await repository.create(
-                    CatalogMigration(
-                        organization_id=organization.id,
-                        external_id=migration.config.external_id,
-                        catalog_id=live.id,
-                        source_external_id=migration.config.subscriptions_of,
-                        target_external_id=migration.config.target_external_id,
-                        subscriptions_count=migrated,
-                    ),
-                    flush=True,
+                await catalog_service.start_migration(
+                    session,
+                    organization,
+                    live,
+                    external_id=migration.config.external_id,
+                    source_external_id=migration.config.subscriptions_of,
+                    target_external_id=migration.config.target_external_id,
                 )
             results.append(
                 ConfigResult(

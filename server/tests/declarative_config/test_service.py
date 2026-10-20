@@ -3,13 +3,21 @@ from typing import Any
 
 import pytest
 from pytest_mock import MockerFixture
+from sqlalchemy.orm import selectinload
 
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.benefit.repository import BenefitRepository
+from polar.catalog.repository import (
+    CatalogMigrationRepository,
+    CatalogProductRepository,
+    CatalogRepository,
+)
+from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.declarative_config.schemas import (
     Config,
     ConfigAction,
+    ConfigCatalogChange,
     ConfigIssueSeverity,
     ConfigIssueType,
     ConfigResource,
@@ -32,7 +40,11 @@ from polar.kit.visibility import Visibility
 from polar.meter.repository import MeterRepository
 from polar.meter.unit import MeterUnit
 from polar.models import (
+    CheckoutLink,
+    Customer,
+    Discount,
     Organization,
+    ProductPriceFixed,
     ProductPriceMeteredTiers,
     ProductPriceUnit,
     User,
@@ -54,7 +66,9 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
+    create_active_subscription,
     create_benefit,
+    create_checkout_link,
     create_discount,
     create_event,
     create_meter,
@@ -2583,4 +2597,449 @@ class TestPlan:
                 ["body", "discounts", 1, "code"],
                 "Another discount in this config has the same code.",
             ),
+        ]
+
+
+MONTHLY_PRO = {
+    "external_id": "pro",
+    "name": "Pro",
+    "recurring_interval": "month",
+    "prices": [{"amount_type": "fixed", "price_amount": 2000}],
+}
+MONTHLY_PRO_25 = {
+    **MONTHLY_PRO,
+    "prices": [{"amount_type": "fixed", "price_amount": 2500}],
+}
+PRO_MIGRATION = {"external_id": "pro-to-25", "subscriptions_of": "pro", "to_catalog": 2}
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+@pytest.mark.usefixtures("catalog_versioning_enabled")
+class TestApplyCatalogVersioning:
+    async def test_create_publishes_first_catalog(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+
+        assert result.catalog == ConfigCatalogChange(before=None, after=1)
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pro"])
+        assert product.version == 1
+        live = await CatalogRepository.from_session(session).get_live(organization.id)
+        assert live is not None
+        assert live.version == 1
+        assert (
+            await CatalogProductRepository.from_session(session).get_product(
+                live.id, "pro"
+            )
+            == product
+        )
+
+    async def test_unchanged_does_not_publish(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        config = Config.model_validate({"products": [MONTHLY_PRO]})
+        await declarative_config_service.apply(session, redis, auth_subject, config)
+
+        result = await declarative_config_service.apply(
+            session, redis, auth_subject, config
+        )
+
+        assert result.catalog is None
+        assert result.changes[0].action == ConfigAction.unchanged
+
+    async def test_update_creates_new_row(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+        repository = ProductRepository.from_session(session)
+        [old_product] = await repository.get_all_by_external_ids(
+            organization.id, ["pro"]
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=old_product, customer=customer
+        )
+
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO_25]}),
+        )
+
+        assert result.catalog == ConfigCatalogChange(before=1, after=2)
+        [new_product] = await repository.get_all_by_external_ids(
+            organization.id, ["pro"]
+        )
+        assert new_product.id != old_product.id
+        assert new_product.version == 2
+        [new_price] = new_product.prices
+        assert isinstance(new_price, ProductPriceFixed)
+        assert new_price.price_amount == 2500
+        await session.refresh(old_product)
+        assert old_product.is_current is False
+        assert old_product.is_archived is False
+        [old_price] = old_product.prices
+        assert isinstance(old_price, ProductPriceFixed)
+        assert old_price.price_amount == 2000
+        await session.refresh(subscription)
+        assert subscription.product_id == old_product.id
+        live = await CatalogRepository.from_session(session).get_live(organization.id)
+        assert live is not None
+        assert live.version == 2
+        assert (
+            await CatalogProductRepository.from_session(session).get_product(
+                live.id, "pro"
+            )
+            == new_product
+        )
+
+    async def test_update_moves_checkout_links_and_discounts(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+        repository = ProductRepository.from_session(session)
+        [old_product] = await repository.get_all_by_external_ids(
+            organization.id, ["pro"]
+        )
+        checkout_link = await create_checkout_link(save_fixture, products=[old_product])
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization,
+            products=[old_product],
+        )
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO_25]}),
+        )
+
+        [new_product] = await repository.get_all_by_external_ids(
+            organization.id, ["pro"]
+        )
+        session.expunge_all()
+        link = await CheckoutLinkRepository.from_session(session).get_by_id(
+            checkout_link.id,
+            options=(selectinload(CheckoutLink.checkout_link_products),),
+        )
+        assert link is not None
+        assert [item.product_id for item in link.checkout_link_products] == [
+            new_product.id
+        ]
+        updated_discount = await DiscountRepository.from_session(session).get_by_id(
+            discount.id, options=(selectinload(Discount.discount_products),)
+        )
+        assert updated_discount is not None
+        assert [item.product_id for item in updated_discount.discount_products] == [
+            new_product.id
+        ]
+
+    async def test_baseline_from_existing_products(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        existing = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            name="Pro",
+        )
+
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO_25]}),
+        )
+
+        assert result.catalog == ConfigCatalogChange(before=1, after=2)
+        await session.refresh(existing)
+        assert existing.version == 1
+        assert existing.is_current is False
+
+    async def test_migration(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.catalog.service.enqueue_job")
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+        config = Config.model_validate(
+            {"products": [MONTHLY_PRO_25], "migrations": [PRO_MIGRATION]}
+        )
+
+        result = await declarative_config_service.apply(
+            session, redis, auth_subject, config
+        )
+        rerun = await declarative_config_service.apply(
+            session, redis, auth_subject, config
+        )
+
+        assert result.changes[-1].action == ConfigAction.created
+        migration = await CatalogMigrationRepository.from_session(
+            session
+        ).get_by_external_id(organization.id, "pro-to-25")
+        assert migration is not None
+        assert migration.target_external_id == "pro"
+        enqueue_job_mock.assert_called_once_with(
+            "catalog.migrate_subscriptions", migration_id=migration.id
+        )
+        assert rerun.catalog is None
+        assert rerun.changes[-1].action == ConfigAction.unchanged
+
+    async def test_changed_migration(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        mocker.patch("polar.catalog.service.enqueue_job")
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"products": [MONTHLY_PRO_25], "migrations": [PRO_MIGRATION]}
+            ),
+        )
+
+        with pytest.raises(ConfigInvalid) as error:
+            await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate(
+                    {
+                        "products": [MONTHLY_PRO_25],
+                        "migrations": [{**PRO_MIGRATION, "to_catalog": 3}],
+                    }
+                ),
+            )
+
+        assert error.value.errors[0].type == ConfigIssueType.migration_changed
+
+    async def test_migration_to_old_catalog(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+
+        with pytest.raises(ConfigInvalid) as error:
+            await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate(
+                    {
+                        "products": [MONTHLY_PRO_25],
+                        "migrations": [{**PRO_MIGRATION, "to_catalog": 1}],
+                    }
+                ),
+            )
+
+        assert error.value.errors[0].type == ConfigIssueType.unknown_reference
+        assert error.value.errors[0].loc == ["body", "migrations", 0, "to_catalog"]
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+@pytest.mark.usefixtures("config_as_code_enabled")
+class TestApplyWithoutCatalogVersioning:
+    async def test_migrations_rejected(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        with pytest.raises(ConfigInvalid) as error:
+            await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate(
+                    {"products": [MONTHLY_PRO], "migrations": [PRO_MIGRATION]}
+                ),
+            )
+
+        assert error.value.errors[0].type == ConfigIssueType.not_supported
+
+    async def test_update_in_place(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+        repository = ProductRepository.from_session(session)
+        [product] = await repository.get_all_by_external_ids(organization.id, ["pro"])
+
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO_25]}),
+        )
+
+        assert result.catalog is None
+        assert await repository.get_all_by_external_ids(organization.id, ["pro"]) == [
+            product
+        ]
+        assert (
+            await CatalogRepository.from_session(session).get_live(organization.id)
+            is None
+        )
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+@pytest.mark.usefixtures("catalog_versioning_enabled")
+class TestPlanCatalogVersioning:
+    async def test_new_version(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+
+        plan = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate({"products": [MONTHLY_PRO_25]})
+        )
+
+        assert plan.catalog == ConfigCatalogChange(before=1, after=2)
+        [change] = plan.changes
+        assert change.action == ConfigAction.updated
+        assert (
+            change.diff[-1].field,
+            change.diff[-1].before,
+            change.diff[-1].after,
+        ) == (
+            "version",
+            1,
+            2,
+        )
+
+    async def test_migration_counts_subscriptions(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pro"])
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer_second,
+            cancel_at_period_end=True,
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {"products": [MONTHLY_PRO_25], "migrations": [PRO_MIGRATION]}
+            ),
+        )
+
+        change = plan.changes[-1]
+        assert change.resource == ConfigResource.migration
+        assert change.action == ConfigAction.created
+        assert [(field.field, field.after) for field in change.diff] == [
+            ("subscriptions", 1),
+            ("target", "pro@2"),
         ]

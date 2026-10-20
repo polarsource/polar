@@ -247,11 +247,8 @@ async def create_v2027_01(
     responses={
         200: {"description": "Product updated."},
         403: {
-            "description": (
-                "You don't have the permission to update this product, "
-                "or the organization uses catalog versioning."
-            ),
-            "model": NotPermitted.schema() | ProductVersioned.schema(),
+            "description": "You don't have the permission to update this product.",
+            "model": NotPermitted.schema(),
         },
         404: ProductNotFound,
     },
@@ -319,11 +316,8 @@ async def update_v2027_01(
     responses={
         200: {"description": "Product benefits updated."},
         403: {
-            "description": (
-                "You don't have the permission to update this product, "
-                "or the organization uses catalog versioning."
-            ),
-            "model": NotPermitted.schema() | ProductVersioned.schema(),
+            "description": "You don't have the permission to update this product.",
+            "model": NotPermitted.schema(),
         },
         404: ProductNotFound,
     },

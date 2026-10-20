@@ -18,7 +18,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 
 if TYPE_CHECKING:
-    from polar.models import CatalogProduct, Organization
+    from polar.models import Organization
 
 
 class CatalogStatus(StrEnum):
@@ -53,7 +53,3 @@ class Catalog(RecordModel):
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
-
-    @declared_attr
-    def catalog_products(cls) -> Mapped[list["CatalogProduct"]]:
-        return relationship("CatalogProduct", lazy="raise", back_populates="catalog")

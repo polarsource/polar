@@ -3,27 +3,26 @@ from uuid import UUID
 
 from sqlalchemy import func, select
 
-from polar.kit.repository import RepositoryBase, RepositoryIDMixin
+from polar.kit.repository import (
+    RepositoryBase,
+    RepositorySoftDeletionIDMixin,
+    RepositorySoftDeletionMixin,
+)
 from polar.models import Catalog, CatalogMigration, CatalogProduct, Product
 from polar.models.catalog import CatalogStatus
 
 
-class CatalogRepository(RepositoryBase[Catalog], RepositoryIDMixin[Catalog, UUID]):
+class CatalogRepository(
+    RepositorySoftDeletionIDMixin[Catalog, UUID],
+    RepositorySoftDeletionMixin[Catalog],
+    RepositoryBase[Catalog],
+):
     model = Catalog
 
     async def get_live(self, organization_id: UUID) -> Catalog | None:
         statement = self.get_base_statement().where(
             Catalog.organization_id == organization_id,
             Catalog.status == CatalogStatus.live,
-        )
-        return await self.get_one_or_none(statement)
-
-    async def get_by_version(
-        self, organization_id: UUID, version: int
-    ) -> Catalog | None:
-        statement = self.get_base_statement().where(
-            Catalog.organization_id == organization_id,
-            Catalog.version == version,
         )
         return await self.get_one_or_none(statement)
 
@@ -36,7 +35,9 @@ class CatalogRepository(RepositoryBase[Catalog], RepositoryIDMixin[Catalog, UUID
 
 
 class CatalogProductRepository(
-    RepositoryBase[CatalogProduct], RepositoryIDMixin[CatalogProduct, UUID]
+    RepositorySoftDeletionIDMixin[CatalogProduct, UUID],
+    RepositorySoftDeletionMixin[CatalogProduct],
+    RepositoryBase[CatalogProduct],
 ):
     model = CatalogProduct
 
@@ -53,6 +54,7 @@ class CatalogProductRepository(
             .where(
                 CatalogProduct.catalog_id == catalog_id,
                 CatalogProduct.external_id == external_id,
+                CatalogProduct.deleted_at.is_(None),
             )
         )
         result = await self.session.execute(statement)
@@ -60,7 +62,9 @@ class CatalogProductRepository(
 
 
 class CatalogMigrationRepository(
-    RepositoryBase[CatalogMigration], RepositoryIDMixin[CatalogMigration, UUID]
+    RepositorySoftDeletionIDMixin[CatalogMigration, UUID],
+    RepositorySoftDeletionMixin[CatalogMigration],
+    RepositoryBase[CatalogMigration],
 ):
     model = CatalogMigration
 

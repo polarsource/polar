@@ -32,7 +32,11 @@ METRIC_VIEWS = [
     View(
         instrument_name="outpost.ingest.duration",
         aggregation=ExponentialBucketHistogramAggregation(),
-    )
+    ),
+    View(
+        instrument_name="outpost.read.duration",
+        aggregation=ExponentialBucketHistogramAggregation(),
+    ),
 ]
 
 

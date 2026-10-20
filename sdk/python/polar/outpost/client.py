@@ -64,6 +64,10 @@ from polar.outpost.telemetry import (
 class PolarOutpostError(PolarError): ...
 
 
+# What Polar has not sent yet: a snapshot. A read that raises it is not ready.
+class _NotReadyError(PolarOutpostError): ...
+
+
 class UnavailableRedisError(PolarOutpostError):
     def __init__(self) -> None:
         super().__init__("Redis is unavailable")
@@ -151,14 +155,9 @@ def _raise_redis_unavailable(
     return wrapper
 
 
-@contextlib.contextmanager
-def _tag_read_outcome(span: Span) -> collections.abc.Generator[None]:
-    span.set_attribute("outpost.read.outcome", "not_ready")
-    try:
-        yield
-    except (UnavailableRedisError, RedisConnectionError, RedisTimeoutError):
-        span.set_attribute("outpost.read.outcome", "redis_unavailable")
-        raise
+@dataclasses.dataclass
+class _Read:
+    outcome: str = "not_ready"
 
 
 def _is_connection_error(error: BaseException) -> bool:
@@ -422,8 +421,8 @@ class Outpost:
         self._tracer: trace.Tracer = trace.NoOpTracer()
         self._meter_provider: MeterProvider | None = None
         self._ingest_duration: Histogram | None = None
-        self._ingest_events: Counter | None = None
         self._ingest_buckets: Counter | None = None
+        self._read_duration: Histogram | None = None
         self._stack = contextlib.AsyncExitStack()
         self._redis: Redis | None = None
         self._websocket: AsyncWebSocketSession | None = None
@@ -469,8 +468,10 @@ class Outpost:
             self._ingest_duration = meter.create_histogram(
                 "outpost.ingest.duration", unit="s"
             )
-            self._ingest_events = meter.create_counter("outpost.ingest.events")
             self._ingest_buckets = meter.create_counter("outpost.ingest.buckets")
+            self._read_duration = meter.create_histogram(
+                "outpost.read.duration", unit="s"
+            )
         try:
             with self._span("outpost.redis.connect"):
                 self._redis = await self._stack.enter_async_context(
@@ -609,8 +610,6 @@ class Outpost:
             attributes = {"outpost.outcome": outcome}
             if self._ingest_duration is not None:
                 self._ingest_duration.record(time.perf_counter() - started, attributes)
-            if self._ingest_events is not None:
-                self._ingest_events.add(1, attributes)
 
     @_raise_redis_unavailable
     async def meter(
@@ -620,10 +619,7 @@ class Outpost:
         customer_id: str | None = None,
         external_customer_id: str | None = None,
     ) -> CustomerMeter | None:
-        with (
-            self._span("outpost.customer_meter") as span,
-            _tag_read_outcome(span),
-        ):
+        with self._measure_read("meter") as read:
             customer = self._customer_key(customer_id, external_customer_id)
             self._require_redis()
             if not self._configured.is_set():
@@ -639,24 +635,23 @@ class Outpost:
                 None,
             )
             if reducer is None:
-                span.set_attribute("outpost.read.outcome", "unknown_meter")
+                read.outcome = "unknown_meter"
                 return None
             local = await self._warm_customer(customer, reducer)
             if not local.is_ready([meter_id]):
                 with anyio.move_on_after(SNAPSHOT_TIMEOUT):
                     await self._wait_ready(reducer, local, [meter_id])
             if local.missing:
-                span.set_attribute("outpost.read.outcome", "unknown_customer")
+                read.outcome = "unknown_customer"
                 return None
             state = local.state
             if state is None or state.cold_until is None:
-                raise PolarOutpostError("Customer snapshot is not ready")
-            span.set_attribute(
-                "outpost.read.outcome",
+                raise _NotReadyError("Customer snapshot is not ready")
+            read.outcome = (
                 "ready"
                 if reducer["aggregation"]["func"] == "unique"
                 or meter_id in state.credited
-                else "not_ready",
+                else "not_ready"
             )
             consumed = consumed_units(state, reducer["aggregation"]["func"])
             credited = state.credited.get(meter_id, 0)
@@ -676,7 +671,7 @@ class Outpost:
         customer_id: str | None = None,
         external_customer_id: str | None = None,
     ) -> None:
-        with self._span("outpost.actor") as span, _tag_read_outcome(span):
+        with self._measure_read("actor") as read:
             customer = self._customer_key(customer_id, external_customer_id)
             warmed = await self._warm_actor(customer)
             if not all(
@@ -698,12 +693,11 @@ class Outpost:
                 local.is_ready(reducer.get("meter_ids", []))
                 for reducer, local in snapshotted
             ):
-                outcome = "not_ready"
+                read.outcome = "not_ready"
             elif any(local.missing for _, local in snapshotted):
-                outcome = "unknown_customer"
+                read.outcome = "unknown_customer"
             else:
-                outcome = "ready"
-            span.set_attribute("outpost.read.outcome", outcome)
+                read.outcome = "ready"
 
     async def flush_telemetry(self) -> bool:
         tracer_provider = self._tracer_provider
@@ -731,6 +725,30 @@ class Outpost:
             return
         while not local.is_ready(meter_ids):
             await local.changed.wait()
+
+    @contextlib.contextmanager
+    def _measure_read(self, operation: str) -> collections.abc.Generator[_Read]:
+        read = _Read()
+        started = time.perf_counter()
+        try:
+            yield read
+        except (UnavailableRedisError, RedisConnectionError, RedisTimeoutError):
+            read.outcome = "redis_unavailable"
+            raise
+        except (TimeoutError, _NotReadyError):
+            raise
+        except Exception:
+            read.outcome = "error"
+            raise
+        finally:
+            if self._read_duration is not None:
+                self._read_duration.record(
+                    time.perf_counter() - started,
+                    {
+                        "outpost.read.operation": operation,
+                        "outpost.read.outcome": read.outcome,
+                    },
+                )
 
     @contextlib.contextmanager
     def _span(
@@ -771,8 +789,8 @@ class Outpost:
         self._tracer = trace.NoOpTracer()
         self._meter_provider = None
         self._ingest_duration = None
-        self._ingest_events = None
         self._ingest_buckets = None
+        self._read_duration = None
         with anyio.CancelScope(shield=True):
             if tracer_provider is not None:
                 await anyio.to_thread.run_sync(tracer_provider.shutdown)

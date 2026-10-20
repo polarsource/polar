@@ -9,7 +9,13 @@ import { WebSocketServer, type WebSocket } from "ws";
 
 import { createPolar } from "../2026-10/client";
 import { ClientBase } from "../base";
-import { decodeState, Outpost, type OutpostOptions, UnavailableRedisError } from "./client";
+import {
+  decodeState,
+  Outpost,
+  type OutpostOptions,
+  PolarOutpostError,
+  UnavailableRedisError,
+} from "./client";
 import { BUCKET_SIZE, getBucketStart, type Reducer } from "./reducer";
 import { APPLY_SNAPSHOT_SCRIPT } from "./scripts";
 import { TELEMETRY_ENV } from "./telemetry";
@@ -174,10 +180,13 @@ const seed = async (cold = 10): Promise<void> => {
     "credited:meter": 100,
   });
 };
-const readOutcomes = () =>
-  exported
-    .filter((span) => ["outpost.actor", "outpost.customer_meter"].includes(span.name))
-    .map((span) => [span.name, span.attributes["outpost.read.outcome"]]);
+const readOutcomes = async (outpost: Outpost) => {
+  await outpost.flushTelemetry();
+  return dataPoints("outpost.read.duration").map(({ attributes }) => [
+    attributes["outpost.read.operation"],
+    attributes["outpost.read.outcome"],
+  ]);
+};
 const ingest = (outpost: Outpost, tokens: number) =>
   outpost.track({ ...customer, name: "api_call", timestamp, metadata: { tokens } });
 
@@ -642,25 +651,22 @@ it("sends telemetry spans tagged with the connection ID", async () => {
   await outpost.meter(meter);
   await outpost.close();
 
-  expect(dataPoints("outpost.ingest.events")).toMatchObject([
-    { attributes: { "outpost.outcome": "ok" }, value: 1 },
-  ]);
   expect(dataPoints("outpost.ingest.buckets")).toMatchObject([{ value: 1 }]);
   expect(dataPoints("outpost.ingest.duration")).toMatchObject([
     { attributes: { "outpost.outcome": "ok" }, value: { count: 1 } },
   ]);
-  expect(
-    metrics
-      .flatMap((resourceMetrics) => resourceMetrics.scopeMetrics)
-      .flatMap((scopeMetrics) => scopeMetrics.metrics)
-      .find((metric) => metric.descriptor.name === "outpost.ingest.duration")?.dataPointType,
-  ).toBe(DataPointType.EXPONENTIAL_HISTOGRAM);
+  for (const name of ["outpost.ingest.duration", "outpost.read.duration"])
+    expect(
+      metrics
+        .flatMap((resourceMetrics) => resourceMetrics.scopeMetrics)
+        .flatMap((scopeMetrics) => scopeMetrics.metrics)
+        .find((metric) => metric.descriptor.name === name)?.dataPointType,
+    ).toBe(DataPointType.EXPONENTIAL_HISTOGRAM);
   expect(new Set(exported.map((span) => span.name))).toEqual(
     new Set([
       "outpost.redis.connect",
       "outpost.redis.subscribe",
       "outpost.websocket.connect",
-      "outpost.customer_meter",
       "outpost.snapshot.received",
       "outpost.sync",
       "outpost.websocket.disconnect",
@@ -836,9 +842,9 @@ it("waits for the first snapshot on a cold read", async () => {
   const outpost = await start();
   await outpost.actor(customer);
   expect((await outpost.meter(meter))?.balance).toBe(7);
-  expect(readOutcomes()).toEqual([
-    ["outpost.actor", "ready"],
-    ["outpost.customer_meter", "ready"],
+  expect(await readOutcomes(outpost)).toEqual([
+    ["actor", "ready"],
+    ["meter", "ready"],
   ]);
 });
 
@@ -855,19 +861,29 @@ it("arms no timer on a warm read", async () => {
 it("reads null for a meter Outpost does not know", async () => {
   const outpost = await start();
   expect(await outpost.meter({ ...customer, meter_id: "other" })).toBeNull();
-  expect(readOutcomes()).toEqual([["outpost.customer_meter", "unknown_meter"]]);
+  expect(await readOutcomes(outpost)).toEqual([["meter", "unknown_meter"]]);
 });
 
 it("reports reads without configuration as not ready", async () => {
+  delayConfiguration = true;
   const outpost = await start();
-  const timedOut = new Error("Outpost operation timed out");
-  outpost["waitConfigured"] = () => Promise.reject(timedOut);
-  await expect(outpost.actor(customer)).rejects.toBe(timedOut);
-  await expect(outpost.meter(meter)).rejects.toBe(timedOut);
-  expect(readOutcomes()).toEqual([
-    ["outpost.actor", "not_ready"],
-    ["outpost.customer_meter", "not_ready"],
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  const reads = [outpost.actor(customer), outpost.meter(meter)].map((read) =>
+    expect(read).rejects.toThrow("timed out"),
+  );
+  await vi.advanceTimersByTimeAsync(5_000);
+  await Promise.all(reads);
+  expect(await readOutcomes(outpost)).toEqual([
+    ["actor", "not_ready"],
+    ["meter", "not_ready"],
   ]);
+});
+
+it("reports a failed read as an error", async () => {
+  const outpost = await start();
+  outpost["failure"] = new PolarOutpostError("Outpost stopped");
+  await expect(outpost.meter(meter)).rejects.toThrow("Outpost stopped");
+  expect(await readOutcomes(outpost)).toEqual([["meter", "error"]]);
 });
 
 it("reads null for a customer Polar does not know", async () => {
@@ -875,9 +891,9 @@ it("reads null for a customer Polar does not know", async () => {
   const outpost = await start();
   await outpost.actor(customer);
   expect(await outpost.meter(meter)).toBeNull();
-  expect(readOutcomes()).toEqual([
-    ["outpost.actor", "unknown_customer"],
-    ["outpost.customer_meter", "unknown_customer"],
+  expect(await readOutcomes(outpost)).toEqual([
+    ["actor", "unknown_customer"],
+    ["meter", "unknown_customer"],
   ]);
 });
 
@@ -885,9 +901,9 @@ it("reports a read whose snapshot never arrives as not ready", async () => {
   const outpost = await start();
   await outpost.actor(customer);
   await expect(outpost.meter(meter)).rejects.toThrow("snapshot is not ready");
-  expect(readOutcomes()).toEqual([
-    ["outpost.actor", "not_ready"],
-    ["outpost.customer_meter", "not_ready"],
+  expect(await readOutcomes(outpost)).toEqual([
+    ["actor", "not_ready"],
+    ["meter", "not_ready"],
   ]);
 });
 
@@ -907,7 +923,7 @@ it.each([
     expect((await outpost.meter({ ...customer, meter_id: "shared" }))?.credited_units).toBe(
       credited,
     );
-    expect(readOutcomes()).toEqual([["outpost.customer_meter", outcome]]);
+    expect(await readOutcomes(outpost)).toEqual([["meter", outcome]]);
   },
 );
 
@@ -987,7 +1003,7 @@ it("raises Outpost errors when Redis fails", async () => {
   const readError = outpost.meter(meter);
   await expect(readError).rejects.toBeInstanceOf(UnavailableRedisError);
   await expect(readError).rejects.toMatchObject({ cause: redisError });
-  expect(readOutcomes()).toEqual([["outpost.customer_meter", "redis_unavailable"]]);
+  expect(await readOutcomes(outpost)).toEqual([["meter", "redis_unavailable"]]);
   read.mockRestore();
   const pipeline = outpost["redis"]!.pipeline();
   vi.spyOn(outpost["redis"]!, "pipeline").mockReturnValue(pipeline);
@@ -1013,7 +1029,7 @@ it("fails fast while Redis is unavailable", async () => {
     outpost.meter({ external_customer_id: "bob", meter_id: "meter" }),
   ).rejects.toBeInstanceOf(UnavailableRedisError);
   expect(performance.now() - started).toBeLessThan(500);
-  expect(readOutcomes()).toEqual([["outpost.customer_meter", "redis_unavailable"]]);
+  expect(await readOutcomes(outpost)).toEqual([["meter", "redis_unavailable"]]);
 });
 
 it("composes buffered Polar delivery with Outpost through the client factory", async () => {

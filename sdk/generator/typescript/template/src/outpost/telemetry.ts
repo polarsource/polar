@@ -33,6 +33,10 @@ export const METRIC_VIEWS: ViewOptions[] = [
     instrumentName: "outpost.ingest.duration",
     aggregation: { type: AggregationType.EXPONENTIAL_HISTOGRAM },
   },
+  {
+    instrumentName: "outpost.read.duration",
+    aggregation: { type: AggregationType.EXPONENTIAL_HISTOGRAM },
+  },
 ];
 type ExportResult = Parameters<Parameters<SpanExporter["export"]>[1]>[0];
 

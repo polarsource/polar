@@ -52,7 +52,7 @@ export const manual: Piece[] = [
   page(
     'm-meter',
     'How does a meter work?',
-    'The fold: every event is a strand, all of them bend to one point, and from that point one line leaves for the reading. Chapter 2 of the manual.',
+    'The fold: every event is a strand, all of them bend to one point, and from that point one line leaves for the reading. Chapter 3.',
     960,
     540,
     2,
@@ -137,7 +137,7 @@ export const manual: Piece[] = [
         [
           'What it counts',
           [
-            'A meter picks the events it cares about, like tokens.out, and adds them up: a count, a sum, a maximum.',
+            'A meter picks the events it cares about, like llm.completion, and adds them up: a count, a sum of output tokens, a maximum.',
           ],
         ],
         [
@@ -149,7 +149,7 @@ export const manual: Piece[] = [
         [
           'No drift',
           [
-            'The number can always be rebuilt from the events behind it, so it never quietly drifts from what happened.',
+            'The number can always be rebuilt from the events behind it, so it always matches what happened.',
           ],
         ],
       ],
@@ -168,29 +168,30 @@ export const manual: Piece[] = [
       const fx = 44,
         fy = 170,
         fw = 212,
-        fh = 250,
+        fh = 246,
         R = fx + fw
       const lines = [
         { t: 'export default defineConfig({' },
         { t: '  events: {' },
         { t: "    'llm.completion': z.object({" },
         { t: '      model: z.string(),' },
-        { t: '      tokens: z.int(),' },
+        { t: '      input_tokens: z.int(),' },
+        { t: '      output_tokens: z.int(),' },
         { t: '    }),' },
         { t: '  },' },
         { t: '  meters: ({ meter, events }) => ({' },
-        { t: "    tokens: meter('Tokens')" },
+        { t: "    tokens: meter('Output tokens')" },
         { t: "      .on(events['llm.completion'])" },
         { t: "      .unit('token')" },
-        { t: "      .sum('tokens')," },
+        { t: "      .sum('output_tokens')," },
         { t: '  }),' },
         { t: '  products: ({ product, meter }) => ({' },
         { t: "    pro: product('Pro')" },
+        { t: "      .recurring('monthly')" },
         { t: '      .prices(' },
-        { t: "        meter('tokens').flat()" },
+        { t: "        meter('tokens')" },
         { t: '          .amount(perMillion(usd(3))),' },
-        { t: '      )' },
-        { t: "      .recurring('monthly')," },
+        { t: '      ),' },
         { t: '  }),' },
         { t: '})' },
       ]
@@ -334,18 +335,18 @@ export const manual: Piece[] = [
       )
     },
     {
-      sub: 'A product is a file: declared, reviewed, applied.',
+      sub: 'A product is a file you review and apply.',
       notes: [
         [
           'The file',
           [
-            'A product is declared, not configured. Its events, meters and prices live in one typed file, beside the code that emits the events, and the types flow from the event schema to the meter to the price.',
+            'A product’s events, meters and prices live in one typed file, beside the code that emits the events, and the types flow from the event schema to the meter to the price.',
           ],
         ],
         [
           'The review',
           [
-            'The file goes through the same pull request as everything else. A price change is a diff; a reviewer reads it; the build type-checks it against the schemas before anyone can apply it.',
+            'The file goes through the same pull request as everything else. A price change is a diff that a reviewer reads, and the build type-checks it against the schemas before anyone can apply it.',
           ],
         ],
         [
@@ -425,7 +426,7 @@ export const manual: Piece[] = [
         [
           'The plan',
           [
-            'The CLI reads the file, computes the diff against what is deployed, and shows it before anything changes. The dashboard still works too; the next plan picks up whatever was changed there.',
+            'The CLI reads the file, computes the diff against what is deployed, and shows it before anything changes. The dashboard still works too, and the next plan picks up whatever was changed there.',
           ],
         ],
         [
@@ -441,8 +442,8 @@ export const manual: Piece[] = [
   // 00 Core principles: the fold as the figure, the three principles beside it
   page(
     'm-principle',
-    'Three ideas',
-    'The whole idea on one page: state is a function of events. The fold as its figure, and the three claims the rest of the book makes good on.',
+    'Everything is an event',
+    'State is a function of events: every event a strand, all of them folding into one value.',
     960,
     540,
     2,
@@ -456,7 +457,7 @@ export const manual: Piece[] = [
       return sheet(
         960,
         540,
-        'Three ideas',
+        'Everything is an event',
         <Figure x={40} y={156} w={620} h={300}>
           <g transform="translate(150 60)">
             <g fill="none" stroke={MID} strokeWidth={HAIR}>
@@ -497,24 +498,24 @@ export const manual: Piece[] = [
       )
     },
     {
-      sub: 'The rest of this guide is built on them.',
+      sub: 'Every number Polar shows is computed from the events you send.',
       notes: [
         [
-          'Everything is an event',
+          'One record',
           [
-            'Usage is recorded as events and nothing else. Meters, credit balances and invoice lines are all computed from them, so there is no second count to drift out of sync.',
+            'Usage is recorded as events and nothing else. Each one says who did what, when, and how much.',
           ],
         ],
         [
-          'Native to agentic workflows',
+          'Everything derived',
           [
-            'Customers hold their agents, and every event says which one acted. Usage rolls up to whoever pays, and agents can read and change billing themselves through Polar’s MCP.',
+            'Meters, credit balances and invoice lines are all computed from the events, so there is no second count to drift out of sync.',
           ],
         ],
         [
-          'Zero latency and fault tolerant by design',
+          'Traceable',
           [
-            'Checks are answered next to your code, from state kept in your own Redis, with no round trip to Polar. If Polar is unreachable, your app keeps answering and the two reconcile when it is back.',
+            'Any number can be rebuilt from the events behind it, so a line on an invoice leads back to what happened.',
           ],
         ],
       ],
@@ -525,7 +526,7 @@ export const manual: Piece[] = [
   page(
     'm-event',
     'What’s in an event',
-    'An event drawn as a frame, the way a protocol specification draws a packet: a ruler, the fields in order, and the metadata at the end. Chapter 1.',
+    'An event drawn as a frame, the way a protocol specification draws a packet: a ruler, the fields in order, and the metadata at the end. Chapter 2.',
     960,
     540,
     2,
@@ -591,7 +592,7 @@ export const manual: Piece[] = [
         [
           'When',
           [
-            'The timestamp is when it happened, not when Polar heard about it, so a late event still lands in the right period.',
+            'The timestamp is when it happened, so a late event still lands in the right period.',
           ],
         ],
         [
@@ -603,13 +604,13 @@ export const manual: Piece[] = [
         [
           'What',
           [
-            'The name says what happened, like tokens.out. Meters pick the events they count by name.',
+            'The name says what happened, like llm.completion. Meters pick the events they count by name.',
           ],
         ],
         [
           'How much',
           [
-            'The metadata holds the numbers, like 1,240 tokens, in any shape you like. Meters add them up.',
+            'The metadata holds the numbers, like 3,120 input and 1,240 output tokens, in any shape you like. Meters add them up.',
           ],
         ],
       ],
@@ -620,7 +621,7 @@ export const manual: Piece[] = [
   page(
     'm-credits',
     'The credit balance',
-    'The balance as a statement: a grant adds, every metered event takes away at its rate, and the running balance is read off the last line. Chapter 3.',
+    'The balance as a statement: a grant adds, every metered event takes away at its rate, and the running balance is read off the last line. Chapter 8.',
     960,
     540,
     2,
@@ -648,7 +649,7 @@ export const manual: Piece[] = [
       )
     },
     {
-      sub: 'A grant fills it; every metered event drains it.',
+      sub: 'A grant fills it and every metered event drains it.',
       notes: [
         [
           'Two kinds of event',
@@ -659,7 +660,7 @@ export const manual: Piece[] = [
         [
           'Never stored',
           [
-            'The balance is never stored; it is the last line of this statement, recomputed from the events above it.',
+            'The balance is the last line of this statement, recomputed from the events above it.',
           ],
         ],
       ],
@@ -670,7 +671,7 @@ export const manual: Piece[] = [
   page(
     'm-gates',
     'How entitlements work',
-    'A switch panel: the subscription’s state runs along one bus, and every entitlement is a switch on it. Active closes them; canceled opens them. Chapter 5.',
+    'A switch panel: the subscription’s state runs along one bus, and every entitlement is a switch on it. Active closes them and canceled opens them. Chapter 9.',
     960,
     540,
     2,
@@ -838,7 +839,7 @@ export const manual: Piece[] = [
       )
     },
     {
-      sub: 'One state, every gate.',
+      sub: 'The subscription’s state moves every gate.',
       notes: [
         [
           'The switch',
@@ -849,7 +850,7 @@ export const manual: Piece[] = [
         [
           'The states',
           [
-            'Active closes them; past due keeps them closed; canceled opens them.',
+            'Active closes them, past due keeps them closed, and canceled opens them.',
           ],
         ],
         ['A history', ['Each move is an event, so access has a history.']],
@@ -861,7 +862,7 @@ export const manual: Piece[] = [
   page(
     'm-latency',
     'Local-first checks',
-    'A timeline: a check is answered from the state on hand in no time; the stream arrives behind it and steps the state up, so the next check is answered from a newer one. Chapter 2.',
+    'A timeline: a check is answered from the state on hand in no time. The stream arrives behind it and steps the state up, so the next check is answered from a newer one. Chapter 4.',
     960,
     540,
     2,
@@ -989,19 +990,19 @@ export const manual: Piece[] = [
         [
           'No round trip',
           [
-            'A check, "may this customer call the API?", is answered by Igloo from the state it holds: the fold of every event seen so far. It does not wait on Polar.',
+            'A check, "may this customer call the API?", is answered by Outpost from the state it holds: the fold of every event seen so far. It does not wait on Polar.',
           ],
         ],
         [
           'Same reducers',
           [
-            'When Igloo connects, Polar sends it the organization\u2019s reducers, so an event is folded locally exactly as Polar folds it, into the same five-minute buckets.',
+            'When Outpost connects, Polar sends it the organization\u2019s reducers, so an event is folded locally exactly as Polar folds it, into the same five-minute buckets.',
           ],
         ],
         [
           'First sight',
           [
-            'The only round trip is the first check for a customer Igloo has not seen yet: it fetches their usage from Polar once, and every check after that is answered locally.',
+            'The only round trip is the first check for a customer Outpost has not seen yet: it fetches their usage from Polar once, and every check after that is answered locally.',
           ],
         ],
       ],
@@ -1012,7 +1013,7 @@ export const manual: Piece[] = [
   page(
     'm-ledger',
     'The event log',
-    'The event log as a strip: numbered rows from the first event down, the head in ink at the bottom. Chapter 1.',
+    'The event log as a strip: numbered rows from the first event down, the head in ink at the bottom. Chapter 2.',
     960,
     540,
     2,
@@ -1066,7 +1067,7 @@ export const manual: Piece[] = [
   page(
     'm-nesting',
     'Nested identities',
-    'A tree of identities: a company at the root, a human team and an agent beneath it, and the people, agents and runs beneath those. Usage is counted at the leaves and summed upward; access is set higher up and inherited. Chapter 9.',
+    'A tree of identities: a company at the root, a human team and an agent beneath it, and the people, agents and runs beneath those. Usage is counted at the leaves and summed upward, while access is set higher up and inherited. Chapter 5.',
     960,
     540,
     2,
@@ -1391,11 +1392,11 @@ export const manual: Piece[] = [
     { sub: 'A preface, seven chapters and an appendix.' },
   ),
 
-  // 10 From checkout to access: a flow
+  // From checkout to access: the checkout, in the Payments chapter
   page(
     'm-flow',
     'From checkout to access',
-    'The checkout form, drawn as a schematic: what it shows, what it asks for, and the event each part of it writes. Pay once and four facts land in the event log. Chapter 5.',
+    'The checkout form, drawn as a schematic: your brand, a short form, wallets, tax and fraud screening, and access granted the moment the payment clears. Chapter 10.',
     960,
     540,
     2,
@@ -1509,16 +1510,13 @@ export const manual: Piece[] = [
               SECURED BY POLAR
             </text>
             <Callout at={[R, y + 15]} to={[R + 28, y + 15]}>
-              checkout.created
+              YOUR BRAND
             </Callout>
             <Callout at={[R, y + 35]} to={[R + 28, y + 35]}>
-              PRODUCT · pro
-            </Callout>
-            <Callout at={[R, y + 78]} to={[R + 28, y + 78]}>
-              CUSTOMER · acme
+              PRICE · TAX INCLUDED
             </Callout>
             <Callout at={[R, y + 194]} to={[R + 28, y + 194]}>
-              order.paid
+              APPLE PAY · GOOGLE PAY
             </Callout>
             <line
               x1={R + 14}
@@ -1529,7 +1527,7 @@ export const manual: Piece[] = [
               strokeWidth={HAIR}
               {...DOTTED}
             />
-            {['subscription.active', 'entitlement.granted'].map((ev, i) => (
+            {['FRAUD SCREENING', 'ACCESS ON PAYMENT'].map((ev, i) => (
               <g key={ev}>
                 <line
                   x1={R + 14}
@@ -1556,23 +1554,25 @@ export const manual: Piece[] = [
       )
     },
     {
-      sub: 'One form. Four events. Then the gates open.',
+      sub: 'A checkout built to convert, and secure by default.',
       notes: [
         [
-          'The form',
+          'Built to convert',
           [
-            'The form is the only thing the customer sees. Opening it writes an event; paying writes another.',
+            'A short form with only the fields a sale needs, wallets like Apple Pay and Google Pay, and your branding. It works on any screen, hosted or embedded in your app.',
           ],
         ],
         [
-          'What follows',
+          'Secure',
           [
-            'Two more follow without anyone typing: the subscription, and the entitlements that open the gates.',
+            'Card details go straight to the payment processor and never touch your servers. Every payment is screened for fraud, with 3D Secure when the bank asks for it.',
           ],
         ],
         [
-          'Traceable',
-          ['Each step can be traced back to the event that caused it.'],
+          'Access on payment',
+          [
+            'When the payment clears, the subscription starts and the customer gets access straight away.',
+          ],
         ],
       ],
     },

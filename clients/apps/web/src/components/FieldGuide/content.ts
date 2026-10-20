@@ -24,7 +24,7 @@ export const CHAPTERS: Chapter[] = [
     title: 'Core principles',
     intro:
       'Three ideas run through everything that follows. Every number comes from events, agents are customers like any other, and billing answers next to your code without waiting on Polar.',
-    ids: ['m-principle', 'm-agents'],
+    ids: ['m-principle', 'm-agents', 'm-tolerant'],
   },
   {
     n: '01',
@@ -40,7 +40,7 @@ export const CHAPTERS: Chapter[] = [
     title: 'Events',
     intro:
       'An event is a fact: at this time, this customer, through this actor, did this thing, this much. The event log only grows, and every usage number is derived from it.',
-    ids: ['m-event', 'm-ledger', 'm-ingest'],
+    ids: ['m-event', 'm-ledger', 'm-ingest', 'm-gateways'],
   },
   {
     n: '03',
@@ -55,11 +55,19 @@ export const CHAPTERS: Chapter[] = [
     name: 'Local-first',
     title: 'Local-first',
     intro:
-      'Igloo runs inside your own process. It folds every event with the reducers Polar runs, in your own Redis, so a check is answered where your code is. Polar settles the usage behind it and sends that back.',
+      'Outpost runs inside your own process. It folds every event with the reducers Polar runs, in your own Redis, so a check is answered where your code is. Polar settles the usage behind it and sends that back.',
     ids: ['m-igloo', 'm-latency', 'm-reconcile'],
   },
   {
     n: '05',
+    name: 'Identities',
+    title: 'Identities',
+    intro:
+      'You might sell to agents, spawn them on a customer’s behalf, or both. Polar calls every customer an identity, human or machine, and gives every one the same meters, credits and entitlements.',
+    ids: ['m-nesting', 'm-delegate'],
+  },
+  {
+    n: '06',
     name: 'Guardrails',
     title: 'Guardrails',
     intro:
@@ -67,7 +75,7 @@ export const CHAPTERS: Chapter[] = [
     ids: ['m-signals', 'm-margin'],
   },
   {
-    n: '06',
+    n: '07',
     name: 'Simulations',
     title: 'Simulations',
     intro:
@@ -75,28 +83,28 @@ export const CHAPTERS: Chapter[] = [
     ids: ['m-branch', 'm-compare'],
   },
   {
-    n: '07',
+    n: '08',
     name: 'Credits',
     title: 'Credits',
     intro:
-      'Credits are a balance derived from two kinds of event: grants, which add, and usage, which takes away at the meter’s rate. Run out, and Polar keeps counting: what happens at zero is up to your app.',
+      'Credits are a balance derived from two kinds of event: grants, which add, and usage, which takes away at the meter’s rate. When they run out, Polar keeps counting, and your app decides what happens at zero.',
     ids: ['m-credits', 'm-grants', 'm-zero'],
   },
   {
-    n: '08',
+    n: '09',
     name: 'Entitlements',
     title: 'Entitlements',
     intro:
-      'Access is one state line from the subscription, and it drives every switch. From checkout to access there is one path, and entitlements are what it switches on.',
-    ids: ['m-gates', 'm-flow', 'm-entitlements'],
+      'Entitlements are what a subscription unlocks. When the subscription changes state, every entitlement on it switches with it.',
+    ids: ['m-gates', 'm-entitlements'],
   },
   {
-    n: '09',
-    name: 'Identities',
-    title: 'Identities',
+    n: '10',
+    name: 'Payments',
+    title: 'Payments',
     intro:
-      'Customers are not all humans anymore. You might sell to agents, spawn them on a customer’s behalf, or both. Polar calls each of them an identity, human or machine, and gives every one the same meters, credits and entitlements.',
-    ids: ['m-nesting', 'm-delegate'],
+      'Polar works out what to charge. Who takes the payment is up to you: the processor you already use, like Stripe or Adyen, or Polar as your merchant of record.',
+    ids: ['m-mor', 'm-flow', 'm-psp'],
   },
 ]
 

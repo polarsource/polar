@@ -1,11 +1,10 @@
 import type { ReactNode } from 'react'
 import { MONO } from '../sheet'
 import { LINE, MID, DIM, BG, HAIR, DOTTED, FAINT } from '../kit'
-import { LOGO_MARK_PATH, LOGO_MARK_SIZE } from '../logo/geometry'
 import { landscape } from './more'
 
 /**
- * Where Igloo sits: between your app and Polar, as a proxy. Your code calls it in-process; it keeps its state in a
+ * Where Outpost sits: between your app and Polar, as a proxy. Your code calls it in-process; it keeps its state in a
  * Redis you run; events go up to Polar batched, and reducers and snapshots come back down.
  */
 
@@ -91,8 +90,8 @@ const cells = (
   })
 
 /**
- * A part drawn as a panel: its name, an optional mark, and rows of what it keeps, each a label and a reading. Polar and
- * Igloo are drawn the same way, so the two read as one system.
+ * A part drawn as a panel: its name and rows of what it keeps, each a label and a reading. Polar and
+ * Outpost are drawn the same way, so the two read as one system.
  */
 function Panel({
   x,
@@ -100,7 +99,6 @@ function Panel({
   w,
   h,
   name,
-  mark = false,
   rows,
 }: {
   x: number
@@ -108,11 +106,9 @@ function Panel({
   w: number
   h: number
   name: string
-  mark?: boolean
   rows: [string, ReactNode][]
 }) {
   const col = x + 64
-  const size = 10
   return (
     <g>
       <rect
@@ -125,13 +121,6 @@ function Panel({
         strokeWidth={HAIR}
       />
       {text(x + 12, y + 18, name, LINE, 8.5)}
-      {mark ? (
-        <path
-          d={LOGO_MARK_PATH}
-          fill={LINE}
-          transform={`translate(${x + w - 12 - size} ${y + 8}) scale(${size / LOGO_MARK_SIZE})`}
-        />
-      ) : null}
       {rows.map(([label, reading], i) => {
         const ry = y + 46 + i * 20
         return (
@@ -191,9 +180,9 @@ function figure() {
       {text(app.x + 12, app.y + 46, 'customerMeter()')}
       <Panel
         {...igloo}
-        name="IGLOO"
+        name="OUTPOST"
         rows={[
-          ['reducers', text(0, 0, 'Σ tokens', LINE)],
+          ['reducers', text(0, 0, 'Σ output_tokens', LINE)],
           ['buckets', cells(0, 0, 6, 10, { open: 2 })],
           ['checks', text(0, 0, '0 ms', LINE)],
         ]}
@@ -201,10 +190,9 @@ function figure() {
       <Panel
         {...polar}
         name="POLAR"
-        mark
         rows={[
           ['events', cells(0, 0, 8, 6, { head: true })],
-          ['reducers', text(0, 0, 'Σ tokens', LINE)],
+          ['reducers', text(0, 0, 'Σ output_tokens', LINE)],
           ['buckets', cells(0, 0, 6, 10, { open: 2 })],
         ]}
       />
@@ -257,15 +245,15 @@ function figure() {
 
 export const igloo = landscape(
   'm-igloo',
-  'Where Igloo sits',
+  'Where Outpost sits',
   'Between your app and Polar, with its state in your Redis.',
-  'Igloo between your app and Polar: your code calls it in-process, its state is in your Redis, events go up to Polar batched, and reducers and snapshots come back down.',
+  'Outpost between your app and Polar: your code calls it in-process, its state is in your Redis, events go up to Polar batched, and reducers and snapshots come back down.',
   figure(),
   [
     [
       'In your process',
       [
-        'Igloo is part of the Polar SDK and runs in your app. Your code hands it events and asks it to check a customer’s meter; neither call goes to Polar.',
+        'Outpost is part of the Polar SDK and runs in your app. Your code hands it events and asks it to check a customer’s meter, and neither call goes to Polar.',
       ],
     ],
     [

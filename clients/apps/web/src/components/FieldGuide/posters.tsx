@@ -119,6 +119,33 @@ const simulations = (
   </>
 )
 
+/** One billing engine above, three processors beneath it, one of them wired in. */
+const payments = (
+  <>
+    <rect x={44} y={26} width={32} height={20} stroke={INK} />
+    {line(60, 46, 60, 66, INK)}
+    <line x1={30} y1={66} x2={90} y2={66} stroke={DIM} {...DOTS} />
+    {line(60, 66, 30, 66, INK)}
+    {[30, 60, 90].map((x, i) => (
+      <g key={x}>
+        {i === 0 ? (
+          line(x, 66, x, 80, INK)
+        ) : (
+          <line x1={x} y1={66} x2={x} y2={80} stroke={DIM} {...DOTS} />
+        )}
+        <rect
+          x={x - 9}
+          y={80}
+          width={18}
+          height={14}
+          stroke={i === 0 ? INK : DIM}
+          fill={i === 0 ? INK : 'none'}
+        />
+      </g>
+    ))}
+  </>
+)
+
 /** A balance drawn down by usage, step by step, and lifted by a grant before it reaches zero. */
 const DRAIN = [
   'M22 32H30V38H38V44H46V50H54V56H62V62H68',
@@ -223,5 +250,6 @@ export const POSTERS: Record<string, ReactNode> = {
   Simulations: simulations,
   Credits: credits,
   Entitlements: gates,
+  Payments: payments,
   Identities: identities,
 }

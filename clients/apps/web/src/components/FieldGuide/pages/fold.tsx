@@ -4,8 +4,7 @@ import { landscape } from './more'
 
 /**
  * Reducers and buckets: a reducer matches events, each slot of the strip adds into the five-minute bucket beneath it,
- * and every bucket keeps a count and a sum. The billed buckets are sealed; an older event that arrives after the seal
- * goes into a new generation of its bucket, drawn open beneath it.
+ * and every bucket keeps a count and a sum. The billed buckets are sealed, and the rest are still open.
  */
 
 const X0 = 100,
@@ -32,10 +31,6 @@ const EVENTS: [number, number][] = [
   [28.9, 920],
 ]
 const SEALED = 4
-/** An event from 14:08 that arrived after its bucket was sealed, and the height of the generation it opens. */
-const LATE: [number, number] = [8.3, 500]
-const LATE_SLOT = Math.floor(LATE[0] / 5)
-const GEN_H = 22
 
 const at = (minute: number) => X0 + (minute / 5) * BW
 const fmt = (v: number) => v.toLocaleString('en-US')
@@ -72,8 +67,8 @@ function figure() {
         strokeWidth={HAIR}
       />
       {label(X0 + 12, 132, 'REDUCER')}
-      {label(X0 + 12, 146, 'Σ tokens', LINE, 8.5)}
-      {label(X0 + 12, 160, 'where name = "tokens.out"')}
+      {label(X0 + 12, 146, 'Σ output_tokens', LINE, 8.5)}
+      {label(X0 + 12, 160, 'where name = "llm.completion"')}
 
       <line
         x1={X0}
@@ -93,24 +88,47 @@ function figure() {
       >
         EVENTS
       </text>
-      {/* One guide per bucket: everything in the slot above it folds into it. */}
-      {buckets.map((_, i) => (
-        <line
-          key={i}
-          x1={X0 + (i + 0.5) * BW}
-          x2={X0 + (i + 0.5) * BW}
-          y1={LANE + 3}
-          y2={TOP}
-          stroke={DIM}
-          strokeWidth={HAIR}
-          {...DOTTED}
-        />
+      {/* Each event on the lane at the minute it happened, dropping into the bucket beneath it. */}
+      {EVENTS.map(([m], i) => (
+        <g key={i}>
+          <line
+            x1={at(m)}
+            x2={at(m)}
+            y1={LANE + 3}
+            y2={TOP - 4}
+            stroke={DIM}
+            strokeWidth={HAIR}
+            {...DOTTED}
+          />
+          <path
+            d={`M${at(m) - 2} ${TOP - 4}L${at(m)} ${TOP - 1}L${at(m) + 2} ${TOP - 4}Z`}
+            fill={DIM}
+          />
+        </g>
       ))}
-      {buckets.map((_, i) => (
-        <Anchor key={i} at={[X0 + (i + 0.5) * BW, LANE]} />
+      {EVENTS.map(([m], i) => (
+        <Anchor key={i} at={[at(m), LANE]} size={2.6} />
       ))}
-      <circle cx={at(LATE[0])} cy={LANE} r={2.2} fill={LINE} />
-      {label(at(LATE[0]) + 6, LANE - 8, 'LATE · 14:08', LINE)}
+      <text
+        x={X0 - 12}
+        y={TOP + 22}
+        fontSize={7.5}
+        fill={DIM}
+        textAnchor="end"
+        style={{ ...MONO, letterSpacing: 0 }}
+      >
+        BUCKETS
+      </text>
+      <text
+        x={X0 - 12}
+        y={TOP + 37}
+        fontSize={7.5}
+        fill={DIM}
+        textAnchor="end"
+        style={{ ...MONO, letterSpacing: 0 }}
+      >
+        Σ tokens
+      </text>
 
       {/* One outline for the sealed run, one dotted for the open one, and each divider drawn once. */}
       <rect
@@ -145,44 +163,22 @@ function figure() {
                 {...(open ? DOTTED : {})}
               />
             ) : null}
-            {label(x + 10, TOP + 20, `count ${b.count}`, open ? DIM : LINE)}
-            {label(x + 10, TOP + 36, `sum ${fmt(b.sum)}`, open ? DIM : LINE)}
-            {label(
-              x,
-              TOP + BH + GEN_H + 16,
-              `14:${String(i * 5).padStart(2, '0')}`,
-            )}
+            {label(x + 10, TOP + 22, fmt(b.sum), open ? DIM : LINE, 10)}
+            {label(x + 10, TOP + 37, `${b.count} events`)}
+            {label(x, TOP + BH + 16, `14:${String(i * 5).padStart(2, '0')}`)}
           </g>
         )
       })}
 
-      {/* The late event's own generation of the sealed bucket: open, and billed on the next invoice. */}
-      <rect
-        x={X0 + LATE_SLOT * BW}
-        y={TOP + BH}
-        width={BW}
-        height={GEN_H}
-        fill={BG}
-        stroke={MID}
-        strokeWidth={HAIR}
-        {...DOTTED}
-      />
-      {label(
-        X0 + LATE_SLOT * BW + 10,
-        TOP + BH + 14,
-        `gen 2  +${fmt(LATE[1])}`,
-        LINE,
-      )}
-
       <Dimension
-        a={[X0, TOP + BH + GEN_H + 34]}
-        b={[X0 + SEALED * BW, TOP + BH + GEN_H + 34]}
+        a={[X0, TOP + BH + 34]}
+        b={[X0 + SEALED * BW, TOP + BH + 34]}
         text="SEALED · BILLED"
         side={12}
       />
       <Dimension
-        a={[X0 + SEALED * BW, TOP + BH + GEN_H + 34]}
-        b={[end, TOP + BH + GEN_H + 34]}
+        a={[X0 + SEALED * BW, TOP + BH + 34]}
+        b={[end, TOP + BH + 34]}
         text="OPEN"
         side={12}
       />
@@ -193,8 +189,8 @@ function figure() {
 export const fold = landscape(
   'm-fold',
   'Reducers and buckets',
-  'Events add up into five-minute buckets. An invoice adds up buckets, not events.',
-  'A reducer over half an hour: events drop into the five-minute bucket their timestamp falls in, each bucket keeps a count and a sum, the billed buckets are sealed, and an event from 14:08 that arrived after the seal opens a second generation of its bucket.',
+  'Events add up into five-minute buckets, and an invoice adds up the buckets.',
+  'A reducer over half an hour: events drop into the five-minute bucket their timestamp falls in, each bucket keeps a count and a sum, and the billed buckets are sealed.',
   figure(),
   [
     [
@@ -210,9 +206,9 @@ export const fold = landscape(
       ],
     ],
     [
-      'Sealed, not closed',
+      'Sealed once billed',
       [
-        'When a period is billed, its buckets are sealed and never change. An older event can still arrive: it goes into a new generation of the same bucket, so it counts at the time it happened and is billed on the next invoice.',
+        'When a period is billed, its buckets are sealed and never change. An event for that period that arrives late still counts at the time it happened, and is charged on the next invoice.',
       ],
     ],
   ],

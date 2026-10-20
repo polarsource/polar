@@ -1,7 +1,10 @@
+import { gateways } from './gateways'
+import { faultTolerance } from './principles'
 import type { ReactNode } from 'react'
 import { agentOps } from './agents'
 import { marginCheck } from './check'
 import { delegation } from './identities'
+import { polarBilling, psp } from './payments'
 import { branchReplay, simulationCompare } from './simulations'
 import { cover } from './cover'
 import { fold } from './fold'
@@ -39,29 +42,34 @@ export const chapters: { title: string; ids: string[] }[] = [
     title: 'Front matter',
     ids: ['cover', 'm-contents'],
   },
-  { title: '00 · Principles', ids: ['m-principle', 'm-agents'] },
+  { title: '00 · Principles', ids: ['m-principle', 'm-agents', 'm-tolerant'] },
   { title: '01 · Billing as code', ids: ['m-code', 'm-cli', 'm-check'] },
   {
     title: '02 · Events',
-    ids: ['m-event', 'm-ledger', 'm-ingest'],
+    ids: ['m-event', 'm-ledger', 'm-ingest', 'm-gateways'],
   },
   {
     title: '03 · Meters',
     ids: ['m-meter', 'm-fold', 'm-tiers'],
   },
   { title: '04 · Local-first', ids: ['m-igloo', 'm-latency', 'm-reconcile'] },
-  { title: '05 · Guardrails', ids: ['m-signals', 'm-margin'] },
-  { title: '06 · Simulations', ids: ['m-branch', 'm-compare'] },
-  { title: '07 · Credits', ids: ['m-credits', 'm-grants', 'm-zero'] },
-  { title: '08 · Entitlements', ids: ['m-gates', 'm-flow', 'm-entitlements'] },
-  { title: '09 · Identities', ids: ['m-nesting', 'm-delegate'] },
+  { title: '05 · Identities', ids: ['m-nesting', 'm-delegate'] },
+  { title: '06 · Guardrails', ids: ['m-signals', 'm-margin'] },
+  { title: '07 · Simulations', ids: ['m-branch', 'm-compare'] },
+  { title: '08 · Credits', ids: ['m-credits', 'm-grants', 'm-zero'] },
+  { title: '09 · Entitlements', ids: ['m-gates', 'm-entitlements'] },
+  { title: '10 · Payments', ids: ['m-mor', 'm-flow', 'm-psp'] },
 ]
 const ORDER = chapters.flatMap((c) => c.ids)
 const all = [
+  polarBilling,
+  psp,
   delegation,
   branchReplay,
   simulationCompare,
   agentOps,
+  faultTolerance,
+  gateways,
   cover,
   marginCheck,
   fold,

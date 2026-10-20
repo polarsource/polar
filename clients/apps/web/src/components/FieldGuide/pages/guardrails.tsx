@@ -170,7 +170,7 @@ export const signals = landscape(
     [
       'Enter and exit',
       [
-        'The signal fires when the number crosses into the condition, and again when it leaves. Not on every event: a side effect runs once per crossing.',
+        'The signal fires when the number crosses into the condition, and again when it leaves, so a side effect runs once per crossing.',
       ],
     ],
     [

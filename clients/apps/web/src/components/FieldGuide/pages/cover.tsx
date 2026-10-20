@@ -24,7 +24,7 @@ export const cover: Piece = {
   id: 'cover',
   title: 'Agent-first Billing: A Field Guide',
   kind: 'manual',
-  note: 'The cover: the mark, constructed. Every tip on one circle; the arc on a second of the same radius.',
+  note: 'The cover: the mark, constructed. Every tip sits on one circle, and the arc on a second circle of the same radius.',
   w: SW,
   h: SH,
   cols: 1,

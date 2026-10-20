@@ -12,7 +12,7 @@ export function Cover() {
           <br />
           <span className="text-[#7b7b7b]">A Field Guide</span>
         </h1>
-        <p className="m-0 max-w-[440px] text-[20px] leading-[1.35] font-[450] text-[#7b7b7b]">
+        <p className="m-0 max-w-[520px] text-[22px] leading-[1.3] font-[450] text-[#7b7b7b] md:text-[26px]">
           How we’re building the most ambitious metering and billing engine for
           AI software.
         </p>

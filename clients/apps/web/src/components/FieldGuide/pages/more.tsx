@@ -150,20 +150,20 @@ const ingestion = (() => {
   return landscape(
     'm-ingest',
     'Late events',
-    'An event counts when it happened, not when it arrived.',
+    'An event counts at the time it happened.',
     'Six events, in the order they arrived and the order they happened. The two that arrived late are drawn in ink, and each still counts at the time it happened.',
     fig,
     [
       [
         'Arrival',
         [
-          'Events can arrive late: a retry, a queue that backed up, a batch sent at the end of a job. Each carries the time it happened, and Polar uses that time, not the time it landed.',
+          'Events can arrive late: a retry, a queue that backed up, a batch sent at the end of a job. Each carries the time it happened, and Polar uses that time.',
         ],
       ],
       [
         'Same answer',
         [
-          'A meter over the event log therefore gives the same answer whether an event took a millisecond or a day to arrive, and a late event slots into its place rather than onto the end.',
+          'A meter over the event log gives the same answer whether an event took a millisecond or a day to arrive. A late event slots into its place in time.',
         ],
       ],
     ],
@@ -325,7 +325,7 @@ const reconciliation = (() => {
   const POLAR = 150,
     BASE = 290,
     BAND = 312
-  // Events step Igloo's balance up as they land; Polar's snapshots settle it at three points along the way.
+  // Events step Outpost's balance up as they land; Polar's snapshots settle it at three points along the way.
   const steps = [
     90, 108, 130, 158, 178, 196, 222, 246, 262, 288, 310, 336, 358, 378,
   ]
@@ -365,7 +365,7 @@ const reconciliation = (() => {
         stroke={MID}
         strokeWidth={HAIR}
       />
-      {label(x0 - 8, BASE + 2.5, 'IGLOO')}
+      {label(x0 - 8, BASE + 2.5, 'OUTPOST')}
       <line
         x1={x0}
         x2={x1}
@@ -411,26 +411,26 @@ const reconciliation = (() => {
   return landscape(
     'm-reconcile',
     'Reconciliation',
-    'Igloo answers now. Polar\u2019s snapshots correct it as buckets close.',
-    'Igloo\u2019s balance as one step line, rising as events land, with Polar\u2019s snapshots settling it at points along the way: settled usage from Polar up to the latest snapshot, open local buckets after it.',
+    'Outpost answers now. Polar\u2019s snapshots correct it as buckets close.',
+    'Outpost\u2019s balance as one step line, rising as events land, with Polar\u2019s snapshots settling it at points along the way: settled usage from Polar up to the latest snapshot, open local buckets after it.',
     fig,
     [
       [
         'Two folds',
         [
-          'Igloo folds what your process has seen. Polar folds everything, including events from your other processes and events that arrived late.',
+          'Outpost folds what your process has seen. Polar folds everything, including events from your other processes and events that arrived late.',
         ],
       ],
       [
         'Snapshots',
         [
-          'When a bucket closes, a late event lands or credits change, Polar pushes a snapshot: the customer\u2019s settled usage up to a point in time. It replaces Igloo\u2019s totals before that point, and the local buckets behind it are dropped.',
+          'When a bucket closes, a late event lands or credits change, Polar pushes a snapshot: the customer\u2019s settled usage up to a point in time. It replaces Outpost\u2019s totals before that point, and the local buckets behind it are dropped.',
         ],
       ],
       [
         'Never backwards',
         [
-          'Every snapshot carries a version, and an older one is never applied over a newer one. If the connection drops, Igloo keeps answering from what it has and asks for fresh snapshots when it is back.',
+          'Every snapshot carries a version, and an older one is never applied over a newer one. If the connection drops, Outpost keeps answering from what it has and asks for fresh snapshots when it is back.',
         ],
       ],
     ],
@@ -535,7 +535,7 @@ const grants = (() => {
       [
         'Expiry',
         [
-          'When a grant expires, its unused remainder is written off with an event of its own, and the balance is simply the fold over all of them.',
+          'When a grant expires, its unused remainder is written off with an event of its own, and the balance is the fold over all of them.',
         ],
       ],
     ],
@@ -548,11 +548,11 @@ const zero = (() => {
   const { line } = term(70, 150, 8, 11.6)
   const rows: TermTok[][] = [
     [D('   TIME   EVENT                      CREDITS   BALANCE')],
-    [{ t: '   09:41  tokens.out                    -314     1,250' }],
-    [{ t: '   09:52  tokens.out                    -980       270' }],
+    [{ t: '   09:41  llm.completion                -314     1,250' }],
+    [{ t: '   09:52  llm.completion                -980       270' }],
     [
       {
-        t: '   10:07  tokens.out                    -412      -142',
+        t: '   10:07  llm.completion                -412      -142',
         tone: 'del',
       },
     ],
@@ -577,7 +577,7 @@ const zero = (() => {
       [
         'Never refused',
         [
-          'Polar records every event, even the one that takes the balance under zero. The balance just goes negative: here, -142.',
+          'Polar records every event, even the one that takes the balance under zero. The balance goes negative, here to -142.',
         ],
       ],
       [
@@ -599,13 +599,12 @@ const zero = (() => {
 // ---------------------------------------------------------------- 06 Entitlements · On a product
 
 const entitlements = (() => {
-  const x0 = 70,
+  const x0 = 103,
     y0 = 160
-  const rows: [string, string, boolean][] = [
-    ['api', 'ACCESS', true],
-    ['credits', '10,000 / MONTH', true],
-    ['exports', 'ACCESS', false],
-    ['license', 'KEY · 1 SEAT', true],
+  const rows: [string, string][] = [
+    ['api', 'ACCESS'],
+    ['credits', '10,000 / MONTH'],
+    ['license', 'KEY · 1 SEAT'],
   ]
   const fig = (
     <>
@@ -648,13 +647,13 @@ const entitlements = (() => {
       />
       <line
         x1={x0 + 40}
-        x2={x0 + 240}
+        x2={x0 + 40 + (rows.length - 1) * 66}
         y1={y0 + 48}
         y2={y0 + 48}
         stroke={MID}
         strokeWidth={HAIR}
       />
-      {rows.map(([name, kind, on], i) => {
+      {rows.map(([name, kind], i) => {
         const x = x0 + 40 + i * 66
         return (
           <g key={name}>
@@ -672,15 +671,14 @@ const entitlements = (() => {
               width={56}
               height={20}
               fill={BG}
-              stroke={on ? LINE : MID}
+              stroke={LINE}
               strokeWidth={HAIR}
-              strokeDasharray={on ? undefined : '2 2'}
             />
             <text
               x={x}
               y={y0 + 77}
               fontSize={7.5}
-              fill={on ? LINE : DIM}
+              fill={LINE}
               textAnchor="middle"
               style={MONO}
             >
@@ -700,14 +698,6 @@ const entitlements = (() => {
         )
       })}
       <Callout
-        at={[x0 + 40 + 2 * 66, y0 + 84]}
-        to={[x0 + 40 + 2 * 66, y0 + 134]}
-        route="v"
-        dot={false}
-      >
-        NOT ON THIS PLAN
-      </Callout>
-      <Callout
         at={[x0 + 40, y0 + 36]}
         to={[x0 + 40 - 28, y0 + 36]}
         side="left"
@@ -721,13 +711,13 @@ const entitlements = (() => {
     'm-entitlements',
     'On a product',
     'What a product grants, held by the customer while they subscribe.',
-    'A product and the four entitlements it may grant: three on this plan, one not. Each is granted when the subscription is active.',
+    'A product and the three entitlements it grants: API access, 10,000 credits a month and a license key. Each is granted when the subscription is active.',
     fig,
     [
       [
         'Templates',
         [
-          'A product declares its entitlements: access to the API, a monthly grant of credits, exports, a license key. Each is a template.',
+          'A product lists what it grants: access to the API, a monthly grant of credits, a license key. Each is a template the customer gets a copy of.',
         ],
       ],
       [

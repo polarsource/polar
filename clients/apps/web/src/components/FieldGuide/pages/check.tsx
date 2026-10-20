@@ -46,7 +46,7 @@ const REPORT: TermTok[][] = [
   ],
   [],
   [D('plan      '), { t: 'pro' }],
-  [D('meter     '), { t: 'tokens.out' }],
+  [D('meter     '), { t: 'output tokens' }],
   [D('price     '), { t: '$2.00 / M tokens' }],
   [
     D('cost      '),

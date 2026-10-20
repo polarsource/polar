@@ -7,8 +7,8 @@ const EXAMPLE = {
   stamp: '2026-10-18T14:02:11Z',
   customer: 'acme',
   actor: 'agent_ada',
-  name: 'tokens.out',
-  metadata: '{ tokens: 1240, model: "…" }',
+  name: 'llm.completion',
+  metadata: '{ input_tokens: 3120, output_tokens: 1240, … }',
 }
 
 /** The event page: one event, field by field, on a 32-column ruler. */

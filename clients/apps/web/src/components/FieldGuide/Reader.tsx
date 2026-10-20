@@ -142,8 +142,9 @@ export default function FieldGuideReader() {
         <Link href="/" aria-label="Polar" className="flex text-white">
           <LogoIcon size={24} />
         </Link>
-        <span className="hidden text-center text-[15px] text-[#7b7b7b] md:block">
-          Agent-first Billing<span className="mx-3">·</span>A Field Guide
+        <span className="hidden gap-x-3 text-center text-[15px] md:flex">
+          <span>Agent-first Billing</span>
+          <span className="text-[#7b7b7b]">A Field Guide</span>
         </span>
         <div className="flex justify-end">
           <RequestAccess />

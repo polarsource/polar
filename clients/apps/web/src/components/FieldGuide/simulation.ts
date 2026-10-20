@@ -6,8 +6,7 @@ import { useSyncExternalStore } from 'react'
  */
 
 export type EventName =
-  | 'tokens.in'
-  | 'tokens.out'
+  | 'llm.completion'
   | 'image.gen'
   | 'api.call'
   | 'credit.granted'
@@ -19,6 +18,7 @@ export interface SimEvent {
   name: EventName
   customer: string
   actor: string
+  /** The units its meter counts: output tokens for a completion. */
   quantity: number
   at: number
 }
@@ -48,8 +48,7 @@ const fresh = (): SimState => ({
   events: [],
   head: 0,
   usage: {
-    'tokens.in': 0,
-    'tokens.out': 0,
+    'llm.completion': 0,
     'image.gen': 0,
     'api.call': 0,
     'credit.granted': 0,
@@ -57,8 +56,7 @@ const fresh = (): SimState => ({
   credits: 0,
   consumed: 0,
   rates: {
-    'tokens.in': 1 / 1_000_000,
-    'tokens.out': 3 / 1_000_000,
+    'llm.completion': 3 / 1_000_000,
     'image.gen': 0.04,
     'api.call': 0.001,
     'credit.granted': 0,
@@ -80,10 +78,13 @@ const draft = (): Omit<SimEvent, 'id' | 'n' | 'at'> => {
   const r = Math.random()
   const actor = pick(ACTORS)
   const customer = 'acme'
-  if (r < 0.42)
-    return { name: 'tokens.out', quantity: 120 + rand(1400), customer, actor }
   if (r < 0.72)
-    return { name: 'tokens.in', quantity: 300 + rand(2600), customer, actor }
+    return {
+      name: 'llm.completion',
+      quantity: 120 + rand(1400),
+      customer,
+      actor,
+    }
   if (r < 0.88) return { name: 'api.call', quantity: 1, customer, actor }
   return { name: 'image.gen', quantity: 1 + rand(3), customer, actor }
 }
@@ -91,7 +92,7 @@ const draft = (): Omit<SimEvent, 'id' | 'n' | 'at'> => {
 const append = (e: Omit<SimEvent, 'id' | 'n'>, s: SimState): SimState => {
   const n = s.head + 1
   const ev: SimEvent = { ...e, n, id: `evt_${n.toString(36).padStart(5, '0')}` }
-  const drain = ev.name === 'tokens.out' ? ev.quantity : 0
+  const drain = ev.name === 'llm.completion' ? ev.quantity : 0
   return {
     ...s,
     events: [...s.events, ev].slice(-KEEP),
@@ -109,7 +110,7 @@ const append = (e: Omit<SimEvent, 'id' | 'n'>, s: SimState): SimState => {
 export function emit(at = Date.now()) {
   let next = state
   const e = draft()
-  const drain = e.name === 'tokens.out' ? e.quantity : 0
+  const drain = e.name === 'llm.completion' ? e.quantity : 0
   if (next.credits - drain < 0)
     next = append(
       {
@@ -144,7 +145,7 @@ export function reset() {
 export const setRate = (perMillion: number) =>
   set({
     ...state,
-    rates: { ...state.rates, 'tokens.out': perMillion / 1_000_000 },
+    rates: { ...state.rates, 'llm.completion': perMillion / 1_000_000 },
   })
 
 export function useSim<T>(select: (s: SimState) => T): T {

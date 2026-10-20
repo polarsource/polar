@@ -16,7 +16,7 @@ export function LiveBalance({
 }) {
   const sim = useSim((s) => s)
   const { line, gutter, bar, dot, LH } = term(X0, 150)
-  const draws = sim.events.filter((e) => e.name === 'tokens.out').slice(-4)
+  const draws = sim.events.filter((e) => e.name === 'llm.completion').slice(-4)
   const grant = [...sim.events]
     .reverse()
     .find((e) => e.name === 'credit.granted')
@@ -33,10 +33,7 @@ export function LiveBalance({
         0,
         [
           T(day(e.at), 7),
-          {
-            t: `${e.name.padEnd(12)}${num(e.quantity).padStart(6)} × 1`,
-            w: 24,
-          },
+          { t: e.name, w: 24 },
           { t: `-${num(e.quantity)}`, w: 9, tone: 'dim' },
           { t: num(bal), tone: last ? 'inv' : 'ink', w: 7 },
         ],

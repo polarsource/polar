@@ -104,7 +104,7 @@ export const branchReplay = landscape(
     [
       'Real usage, replayed',
       [
-        'A simulation runs your real events from the last month through the branch, so you see what each customer would actually have paid, not an estimate.',
+        'A simulation runs your real events from the last month through the branch, so you see what each customer would actually have paid.',
       ],
     ],
     [

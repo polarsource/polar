@@ -5,9 +5,7 @@ import { useSim, type SimEvent } from '../simulation'
 /** An event's metadata as the row has room for it: the field that carries the measurement, and an ellipsis. */
 const metadata = (e: SimEvent) => {
   switch (e.name) {
-    case 'tokens.in':
-      return `{ input_tokens: ${e.quantity}, … }`
-    case 'tokens.out':
+    case 'llm.completion':
       return `{ output_tokens: ${e.quantity}, … }`
     case 'image.gen':
       return `{ images: ${e.quantity}, … }`

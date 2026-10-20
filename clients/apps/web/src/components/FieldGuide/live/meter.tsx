@@ -21,7 +21,7 @@ export function LiveMeter({
 }) {
   const sim = useSim((s) => s)
   const recent = sim.events.slice(-5)
-  const reading = sim.usage['tokens.out']
+  const reading = sim.usage['llm.completion']
   const frac = 1 - Math.exp(-reading / 40000)
   const deg = frac * 180
   const strand = (i: number) => {
@@ -67,7 +67,7 @@ export function LiveMeter({
         textAnchor="middle"
         style={MONO}
       >
-        {num(reading)} tokens.out
+        {num(reading)} output tokens
       </text>
     </g>
   )
